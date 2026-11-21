@@ -184,12 +184,12 @@ no profile at all.
   one capture, and argon has none*, in the `BUGS` of `crates/serial_console/src/board.rs` and
   `notes/board-console.md`.
 - **Recorded.** *Nothing gates a board profile against the board it claims to describe*, in
-  `crates/serial_console/src/board.rs`'s `BUGS`. It is the gap `crates/boot_ladder` carries against
+  `crates/serial_console/src/board.rs`'s `BUGS`. It is the gap `boot_ladder` carries against
   the kernel, one level out, with the same mechanism: review, plus a capture for every rung asserted
   on.
 - **Recorded.** *The soak's console markers are string literals agreeing by a reader having checked,
   in three places*, in the `BUGS` of `crates/serial_console/src/stop.rs`. They were never hoisted
-  into `crates/boot_ladder`. It is a kernel change, outside parts 1 and 4, and the soak's are now
+  into `boot_ladder`. It is a kernel change, outside parts 1 and 4, and the soak's are now
   the last set in that state.
 - **Recorded.** *No byte of the writing mode has reached a board*, in the `BUGS` of `stop.rs` and of
   `notes/board-console.md`. The first bench run closes it, and its `DISARMED` line is the result.

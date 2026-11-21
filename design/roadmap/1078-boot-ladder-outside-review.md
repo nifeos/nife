@@ -11,7 +11,7 @@ needs_person: yes
 
 *(The number is the recording lane's. The title and slug are provisional.)*
 
-Raised by a read-only outside review of `crates/boot_ladder` as a stranger to this tree would meet
+Raised by a read-only outside review of `boot_ladder` as a stranger to this tree would meet
 it. It changes nothing; it lists what the next lanes change before the crate moves to its own
 repository and before any tag.
 
@@ -150,12 +150,12 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 
 ## Finding status
 
-- P0-1, manifest stands alone: Open. The license, `rust-version`, description, readme, keywords,
-  categories and lints are literal ([#3655](https://github.com/nifeos/nife/pull/3655)); the
-  `repository` line is missing, and the move tool's `add_repository` writes it.
-- P0-2, the files a stranger needs: Open. The README and both licenses exist
-  ([#3655](https://github.com/nifeos/nife/pull/3655)); `CHANGELOG.md`, `_typos.toml` and
-  `docs/stranger-test.md` with a stranger run come with the move's scaffold.
+- P0-1, manifest stands alone: Done. The license, `rust-version`, description, readme, keywords,
+  categories and lints are literal ([#3655](https://github.com/nifeos/nife/pull/3655)), and the
+  move wrote the `repository` line.
+- P0-2, the files a stranger needs: Open. The README, both licenses, `CHANGELOG.md`,
+  `_typos.toml` and `docs/stranger-test.md` exist in nifeos/boot_ladder. No stranger run is on
+  record yet, and the README's proof steps are nifeos/boot_ladder#1.
 - P0-3, shipped text points into the tree: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
   [#3655](https://github.com/nifeos/nife/pull/3655). Tree references remain only in `Name:` blocks,
   which the move strips.
@@ -170,7 +170,7 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
   with a falsification patch.
 - P1-7, head literals in `xtask`: Open. The literals are gone
   ([#3655](https://github.com/nifeos/nife/pull/3655)); the `script/lint` section that refuses a head
-  literal outside `crates/boot_ladder`, tests and fixtures is not written, and as a new lint section
+  literal outside `boot_ladder`, tests and fixtures is not written, and as a new lint section
   it is a reviewed interface.
 - P1-8, the ten public names: Done, [#3589](https://github.com/nifeos/nife/pull/3589),
   [#3655](https://github.com/nifeos/nife/pull/3655). Ratified as built (ruled 2026-11-19 UTC).
@@ -186,8 +186,8 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 - P2-11, a version policy: Done, [#3655](https://github.com/nifeos/nife/pull/3655). The README
   states it; no identity constant exists.
 - P2-12, growth already proposed: Open. Milestone 972 (the boot stick's shared names are code) and
-  the two hoists of soak markers and job-mix fields land before the move, or this block records that
-  they wait.
+  the two hoists of soak markers and job-mix fields wait; each lands in nifeos/boot_ladder and moves
+  the pin.
 - P2-13, the banner's tail: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
   [#3586](https://github.com/nifeos/nife/pull/3586). The crate states that the tail is free text and
   a reader takes the architecture from the machine line.
@@ -200,9 +200,11 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 - Decision, clear the review: Done (ruled 2026-11-21 UTC, option A). The crate moves with
   `publish = false`, no tag and no publication, and carries only the console lines; `kernel_half`
   and `self_test_program` stay in nife as `self_test_contract`.
-- The move: Open. The review package is
-  [notes/crate-reviews/boot-ladder.md](../../notes/crate-reviews/boot-ladder.md). The split is in
-  tree; nifeos/boot_ladder does not exist yet.
+- The move: Done. The review package is
+  [notes/crate-reviews/boot-ladder.md](../../notes/crate-reviews/boot-ladder.md). The crate lives in
+  [nifeos/boot_ladder](https://github.com/nifeos/boot_ladder), and nife depends on it by git and
+  `rev`, a commit on its `main`, with `version = "0.1.0"`. It keeps `publish = false`; no tag
+  exists, and crates.io holds no release.
 
 ## Open decisions
 

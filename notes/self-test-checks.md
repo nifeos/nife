@@ -51,7 +51,7 @@ builds before the shell.
 
 ## The verdict's mechanics
 
-- The fixed strings come from `crates/boot_ladder`, so the kernel and `crates/serial_console` hold
+- The fixed strings come from `boot_ladder`, so the kernel and `crates/serial_console` hold
   one copy. Each carries its own trailing space, so a matcher that finds one has found a boundary
   rather than the start of a longer word.
 - The total is the length of `boot_ladder::SELF_TEST_CHECKS`, not a count of calls. A listed check
