@@ -1,6 +1,6 @@
 //! An intrusive first in, first out (FIFO) queue: the link lives inside the node, so push and pop cannot allocate or
-//! fail, and a pop hands back the node itself. The kernel's run queues and migration inboxes use
-//! it. Nothing here checks rule 2 below. See notes/intrusive-queues.md.
+//! fail, and a pop hands back the node itself. Nothing here checks rule 2 below; the README holds
+//! the contract's fine print, the examples and what the proofs cover.
 //!
 //! # The caller's contract
 //!
@@ -17,6 +17,11 @@
 #![cfg_attr(not(test), no_std)]
 
 use core::ptr::NonNull;
+
+/// The README's examples, compiled and run as doctests.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
 
 /// A type that carries its own queue link.
 ///
@@ -64,8 +69,7 @@ pub unsafe trait Node: Sized {
 /// Neither `Clone` nor `Copy`: [`Queue::push_back`] consumes it and [`Queue::pop_front`] hands it
 /// back, so a node cannot be on two queues without `unsafe`. `#[repr(transparent)]` over its
 /// [`NonNull`], so `Option<Unqueued<T>>` is one pointer wide. It cannot carry lifetime (rule 2),
-/// which [`Unqueued::new`] discharges once. A dropped token strands its node. See
-/// notes/intrusive-queues.md.
+/// which [`Unqueued::new`] discharges once. A dropped token strands its node.
 ///
 /// Name: ratified 2026-11-19 (UTC), with `new`, `as_ptr` and `as_non_null`.
 #[repr(transparent)]
@@ -272,8 +276,9 @@ impl<T: Node> Queue<T> {
             None => self.head = Some(node),
         }
         self.tail = Some(node);
-        // Wrapping, on every IPC (release builds check overflow, notes/overflow-checks.md): `len`
-        // counts distinct live linked nodes of nonzero size, so it never reaches `usize::MAX`.
+        // Wrapping: a plain `+` carries an overflow check in any profile that enables them, on the
+        // path every push takes. `len` counts distinct live linked nodes of nonzero size, so it
+        // never reaches `usize::MAX`, and that check could never fire.
         self.len = self.len.wrapping_add(1);
     }
 
@@ -318,10 +323,9 @@ impl<T: Node> Default for Queue<T> {
     }
 }
 
-/// Machine-checked proofs (DECISIONS §14 (the project's direction)). The harness drives the real
-/// `Queue` with a symbolic operation sequence against a trivially-correct model (an array and two
-/// counters), covering every push/pop pattern up to the bound, the regrowth-from-empty transitions
-/// included.
+/// Machine-checked proofs. The harness drives the real `Queue` with a symbolic operation sequence
+/// against a trivially-correct model (an array and two counters), covering every push/pop pattern
+/// up to the bound, the regrowth-from-empty transitions included.
 #[cfg(kani)]
 mod verification {
     use super::*;

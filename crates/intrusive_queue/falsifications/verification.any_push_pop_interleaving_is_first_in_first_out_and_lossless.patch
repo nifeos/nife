@@ -14,7 +14,7 @@ threads.
 diff --git a/crates/intrusive_queue/src/lib.rs b/crates/intrusive_queue/src/lib.rs
 --- a/crates/intrusive_queue/src/lib.rs
 +++ b/crates/intrusive_queue/src/lib.rs
-@@ -212,5 +212,2 @@ impl<T: Node> Queue<T> {
+@@ -295,5 +295,2 @@ impl<T: Node> Queue<T> {
              self.head = (*node.as_ptr()).next();
 -            if self.head.is_none() {
 -                self.tail = None;
