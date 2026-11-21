@@ -237,7 +237,8 @@ Blocks: the move, and through it the tag and the first publish.
 - **Done.** The review package, [notes/crate-reviews/address-space-layout.md](../../notes/crate-reviews/address-space-layout.md),
   lists every public name with its state.
 - **Outstanding.** The architect's ruling on the provisional names of items 7, 9, 15 and 17, and
-  the clearance of the package; items 7, 15 and 17 are not built; the move's items 2, 5 (the rest of the scaffold), 11 and 13, with item 18 left to 1017.
+  the clearance of the package. Items 7, 15 and 17 are not built. The move still owes items 2, 5
+  (the rest of the scaffold), 11 and 13; item 18 is left to 1017.
 
 ## BUGS
 
