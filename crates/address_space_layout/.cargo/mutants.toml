@@ -1,7 +1,0 @@
-# cargo-mutants configuration, read from the crate root.
-#
-# src/verification.rs is `#[cfg(kani)]` (see the end of src/lib.rs), so `cargo test` never
-# compiles it: a change to it cannot fail any test, and every mutant of it survives for that reason
-# alone. Kani checks its proofs in CI, and each proof carries a falsification patch under
-# falsifications/ that must make Kani fail. That is the module's mutation testing.
-exclude_globs = ["src/verification.rs"]

@@ -20,7 +20,7 @@ confinement_attackers = []
 
 [dependencies]
 # Each window is a pair page, checked at compile time against the address-space map.
-address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
 # The JH7110 Ethernet control process's handoff and report carry the driver crate's types.
 designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "0e8f92bf67e58016983164cb52bf274e08e1d7ef" }
 # The xHCI register window is drawn from the controller's decoded capability registers.

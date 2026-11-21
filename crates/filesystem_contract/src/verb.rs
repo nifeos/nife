@@ -437,6 +437,9 @@ pub mod file_grant {
     ];
 
     /// `EBADF`: no such handle, and only that (see [`POLICY`]'s BUGS).
+    ///
+    /// The POSIX error number, spelled as `errno.h` spells it.
+    #[doc(alias = "bad file descriptor")]
     pub const EBADF: i32 = 9;
 
     /// The policy for an opcode, or `None` for an opcode the contract does not carry.

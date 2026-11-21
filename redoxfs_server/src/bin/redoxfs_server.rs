@@ -52,7 +52,7 @@ const FILE: u64 = 2;
 const READY: u64 = 3;
 
 /// Where the kernel maps the two shared regions: the block channel, a service window on the
-/// address-space map (`crates/address_space_layout`), above the heap band and below the image band.
+/// address-space map (`nifeos/address_space_layout`), above the heap band and below the image band.
 ///
 /// [`BLK_PAGE`] is `block::MAXIMUM_TRANSFER_BYTES` bytes wide rather than one page (milestone 138 step 4)
 /// and [`FILE_PAGE`] is `fs::MAXIMUM_TRANSFER_BYTES` bytes wide rather than one page (step 3);

@@ -63,6 +63,9 @@ pub mod block;
 /// relative to a handle under it: no global namespace, no absolute path. A handle is a small
 /// integer the server mints and validates against this session's table, so forging one is
 /// meaningless.
+///
+/// The module is named as the standard library names its own, `std::fs`.
+#[doc(alias = "filesystem")]
 pub mod fs;
 
 /// **What a directory capability carries**: the rights ladder ([`directory::Rights`]) and its one
@@ -103,6 +106,9 @@ pub mod directory_entry;
 ///
 /// - Free space is a forecast, not a reservation; see [`fs::STATFS`]'s BUGS.
 /// - There is no inode count: SMB's volume classes carry none, so nothing above has asked.
+///
+/// The module is named for the POSIX call `statfs(2)`.
+#[doc(alias = "volume_statistics")]
 pub mod statfs;
 
 /// **The per-file grant**: holding one file rather than a directory, and how the narrowing travels.

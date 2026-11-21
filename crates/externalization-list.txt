@@ -7,7 +7,6 @@
 # not mention nife, a nife program or a nife package. A crate that has already left is removed from
 # this file by the pull request that moves it.
 abi
-address_space_layout
 capability_manifest_note
 current_cpu_contract
 domain_name_resolution_contract
