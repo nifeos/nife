@@ -40,7 +40,7 @@ sides of the system call boundary.
 |---|---|
 | `rendezvous`, `reply` | send, receive, call, reap, survey and badge; the one-shot answer |
 | `memory_region`, `usage`, `object_type` | retype, split, destroy and usage; which figure to ask for; what a page becomes |
-| `page_frame`, `address_space`, `futex` | map, revoke and slice; map, list, unmap, wait and wake; the futex flags |
+| `page_frame`, `address_space`, `address_wait` | map, revoke and slice; map, list, unmap, wait and wake; the address wait flags |
 | `thread_control_block`, `process`, `fault`, `survey` | threads and processes; the death message; the survey records |
 | `notification`, `timer`, `interrupt`, `cycle_counter` | doorbells, deadlines, interrupts and what a cycle read counts |
 | `virtio`, `uart`, `port_range`, `reboot`, `console` | device, console and machine methods (`console` is historical) |

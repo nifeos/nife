@@ -38,7 +38,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/benchmarks/drift-since-the-design/roadmap/2026-10-10-floor.md (bullets 2 and 3) | `TPIDR_EL0` hand-over toll (~48 instr per switch) named not measured; riscv64 and x86_64 not bisected | Measure the remaining 2026-10-10 drift candidates | S  |
 |  notes/cryptography-provider.md | TLS handshake/transfer cost measured only under QEMU TCG; nothing on radon or xenon, nothing separating aarch64 from riscv64 | TLS handshake cost on real boards | S  |
 |  notes/effort-levels.md | Effort levels measured on Claude only, never the rented backend ("most consequential gap") | Repeat the effort-level benchmark on the rented backend | M  |
-|  notes/futex.md | Wake placement on the waker's core (wrong for broadcast) is unmeasured | Measure futex wake placement for broadcast | S  |
+|  notes/address-wait.md | Wake placement on the waker's core (wrong for broadcast) is unmeasured | Measure address wait wake placement for broadcast | S  |
 |  notes/hung-component.md | The spinner hang shape (never `BLOCKED`) is untested; "easiest to detect" | Test the spinner hang shape | S  |
 |  notes/hvf-leg.md | Nothing asserts the `test result: ok. N passed` string `hvf_kernel_leg` matches; a rewording makes the leg always fail | Assert the HVF verdict string exists | S  |
 |  notes/hvf-leg.md | Failed HVF run leaves an exception storm; guest should park in `wfi` after a marker, host must stop on the marker (both halves together) | HVF guest parks after the semihosting exit | M  |
@@ -66,7 +66,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  script/stranger-test (model) | `record.json` does not record which model ran; run 6 differed from 1 to 5 | Record the model in the stranger-test run record | S  |
 |  script/stranger-test (tripwire) | `reached_withheld_note` fires on the bare filename; should compare note-only content or the `git show HEAD~1:` call | Make the withheld-note tripwire fire only on real reads | S  |
 |  system_tests/src/user.rs | modules sorting after `thread_leak_police` (seven now) run after the probe and can leak unpoliced; nothing enforces order | Enforce that no test module sorts after the leak probe | S  |
-|  system_tests/src/user/futex_tests.rs | wake is called from the kernel test because threads could not share a space; milestone 812 (BUILT) now allows two threads | Drive futex wake from a second thread in the same space | S  |
+|  system_tests/src/user/address_wait_tests.rs | wake is called from the kernel test because threads could not share a space; milestone 812 (BUILT) now allows two threads | Drive address wait wake from a second thread in the same space | S  |
 |  system_tests/src/user/login_user_schedule_tests.rs | one unexplained DENIED on the HVF leg (1 of 10 runs); not investigated | Run down the login DENIED seen once on HVF | S  |
 |  system_tests/src/user/map_revocation_window_tests.rs | `DeviceFrame` arm of MAP_INTO reasoned, not driven | Drive the DeviceFrame arm of MAP_INTO under revocation | S  |
 |  system_tests/src/user/revocation_in_flight_tests.rs | `DeviceFrame` and `PortRange` sweeps untested through a parked hand-off; `inter_process_communication_receive_capability` skips `port_range_grant` | Drive DeviceFrame and PortRange revocation through a parked hand-off | M  |

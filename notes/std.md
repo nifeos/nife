@@ -154,7 +154,7 @@ The load-bearing fields:
 - `"os": "nife"` selects our `sys` backend through every dispatcher.
 - `"panic-strategy": "abort"` means unwinding machinery is never linked; `panic!` prints and faults.
 - `"singlethread": false` since milestone 812 (`std::thread::spawn` runs real threads in one
-  address space): futex locks, key-based thread-locals through the thread pointer, and real
+  address space): address wait locks, key-based thread-locals through the thread pointer, and real
   threads. [The threads appendix](std/threads.md) has the PAL.
 - softfloat (aarch64 `-neon`, riscv `lp64`, x86_64 `-mmx,-sse...,+soft-float` with
   `"rustc-abi": "softfloat"`) matches EL0/U-mode/ring 3 with no FP save area, the same choice the

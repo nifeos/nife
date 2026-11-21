@@ -17,7 +17,7 @@
 //! library, stage 2: threads)). A file call holds it for the call; a call that can wait (a pipe or
 //! socket read or write) takes the descriptor's object out and lets the lock go before it waits.
 //! `errno` is per thread (`platform::ERRNO`); the threads are `crate::pthread`'s, and relibc's
-//! locks wait through `futex.rs`.
+//! locks wait through `address_wait.rs`.
 
 use alloc::collections::BTreeMap;
 use alloc::string::String;
@@ -278,8 +278,8 @@ fn duration_to_timespec(d: core::time::Duration) -> timespec {
 }
 
 /// The monotonic clock's zero: the first time anything asked. `Instant` has no absolute value on
-/// any platform, so `CLOCK_MONOTONIC` counts from here. `futex.rs` and `stream.rs` measure their
-/// deadlines on it, because relibc passes a futex deadline on `CLOCK_MONOTONIC`.
+/// any platform, so `CLOCK_MONOTONIC` counts from here. `address_wait.rs` and `stream.rs` measure their
+/// deadlines on it, because relibc passes an address wait deadline on `CLOCK_MONOTONIC`.
 pub(crate) fn monotonic() -> core::time::Duration {
     static ZERO: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
     ZERO.get_or_init(std::time::Instant::now).elapsed()
@@ -546,11 +546,11 @@ impl Pal for Sys {
 
     unsafe fn futex_wait(addr: *mut u32, val: u32, deadline: Option<&timespec>) -> Result<()> {
         // SAFETY: relibc passes a live word of one of its locks, changed only atomically.
-        unsafe { super::futex::wait(addr, val, deadline) }
+        unsafe { super::address_wait::wait(addr, val, deadline) }
     }
 
     unsafe fn futex_wake(addr: *mut u32, num: u32) -> Result<u32> {
-        Ok(super::futex::wake(addr, num))
+        Ok(super::address_wait::wake(addr, num))
     }
 
     unsafe fn utimensat(

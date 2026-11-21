@@ -403,7 +403,7 @@ fn endow_child(tcb: u64, endow: &ChildEndowment, aspace: u64) -> Result<(), ()> 
     }
     for &(child_slot, our_slot, rights) in endow.placed {
         let source = if our_slot == CHILDS_OWN_SPACE {
-            // `WRITE` to shape it, or `READ` alone for the futex waits a `std` program's locks make
+            // `WRITE` to shape it, or `READ` alone for the address waits a `std` program's locks make
             // on it (milestone 812); never `GRANT`.
             if rights != abi::rights::WRITE && rights != abi::rights::READ {
                 return Err(());

@@ -22,7 +22,7 @@
 //!   slot 9  endpoint    a name resolver, badged      only if given names to resolve; page at RESOLVER_PAGE
 //!   slot 10 process     its own process, with BIND   only if it may spawn threads (milestone 812)
 //!   slot 11 thread      its own first thread, WRITE  with slot 10
-//!   slot 12 space       its own address space, READ  for futex waits; without it locks yield
+//!   slot 12 space       its own address space, READ  for address waits; without it locks yield
 //!   slots 22-28 endpoints  further resolver badges     one per further zone granted, in order
 //!   slot 29 endpoint    standard input, badged       only for a program the owner's console types to
 //!   slot 30 endpoint    standard input, a byte stream, READ   only if the line redirected or piped its input
@@ -129,7 +129,7 @@ pub const PROCESS_SLOT: u64 = 10;
 /// other way. Given with [`PROCESS_SLOT`].
 pub const THREAD_SLOT: u64 = 11;
 
-/// **This program's own address space, with `READ`** (milestone 812): the capability futex `WAIT`
+/// **This program's own address space, with `READ`** (milestone 812): the capability address wait `WAIT`
 /// and `WAKE` are invoked on, so `std`'s locks sleep rather than spin. Without it they yield.
 pub const SPACE_SLOT: u64 = 12;
 

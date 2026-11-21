@@ -720,16 +720,16 @@ mod suspension_tests;
 #[cfg(test)]
 mod thread_pointer_tests;
 
-/// **Futex wait and wake** (milestone 812 (`std::thread::spawn` runs real threads in one address
+/// **Address wait and wake** (milestone 812 (`std::thread::spawn` runs real threads in one address
 /// space), §269 (how threads share a process) fork 2): a waiter sleeps until its word is woken, a
 /// changed word does not sleep, a destroyed waiter leaves the table, and every reserved form is
 /// refused. Cross-ISA, one hand-written waiter per ISA (DECISIONS §19).
 #[cfg(test)]
-mod futex_tests;
+mod address_wait_tests;
 
 /// **The process object** (milestone 812 (`std::thread::spawn` runs real threads in one address
 /// space), §269 (how threads share a process) forks 1, 3 and 5): threads joined by `BIND` share a
-/// space, a table and a futex; `exit`, `DESTROY` and a destroyed region end every member; and the
+/// space, a table and an address wait; `exit`, `DESTROY` and a destroyed region end every member; and the
 /// contract's refusals hold. Cross-ISA (DECISIONS §19).
 #[cfg(test)]
 mod process_tests;

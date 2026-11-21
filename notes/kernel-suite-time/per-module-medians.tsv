@@ -58,7 +58,7 @@ glob_grant_tests	145	183	178
 map_revocation_window_tests	107	170	161
 unmap_tests	95	159	137
 el0_boundary_tests	136	153	150
-futex_tests	135	149	152
+address_wait_tests	135	149	152
 notification_tests	97	147	135
 capability_tests	117	130	199
 address_space_tests	108	128	115

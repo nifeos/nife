@@ -1,4 +1,4 @@
-Falsifies `system_tests::user::process_tests::two_threads_of_one_process_share_its_space_its_table_and_a_futex`.
+Falsifies `system_tests::user::process_tests::two_threads_of_one_process_share_its_space_its_table_and_an_address_wait`.
 
 Architecture: aarch64, riscv64, x86_64
 
@@ -11,7 +11,7 @@ empty, so its `WAKE` answers `NoSuchSlot`.
 diff --git a/kernel/src/sched/process.rs b/kernel/src/sched/process.rs
 --- a/kernel/src/sched/process.rs
 +++ b/kernel/src/sched/process.rs
-@@ -165,7 +165,7 @@ pub(super) fn join(
+@@ -170,7 +170,7 @@ pub(super) fn join(
              }
          }
          (*ptr).process = Some(pid);

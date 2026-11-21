@@ -123,7 +123,7 @@ retry by an owner that already has a retry loop.
   The rendezvous name in `wait_on` is still taken on trust, and a stale one would leave a dangling
   pointer in a queue, which is why a `debug_assert` pairs `Blocked` with a recorded wait.
 - A thread waiting on a notification, whose page may outlive the region, is removed from its waiter
-  queue. A thread in `AddressSpace::WAIT` is removed from the futex table under its key, where a
+  queue. A thread in `AddressSpace::WAIT` is removed from the address wait table under its key, where a
   later `WAKE` would otherwise walk a freed TCB. A suspended thread (§300 (the paused state)) is on
   no queue and holds its own token.
 - `killed` is set as well as the state, so the flag keeps one meaning: a thread this teardown

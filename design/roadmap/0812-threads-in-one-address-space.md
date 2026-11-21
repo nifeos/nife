@@ -172,7 +172,7 @@ exit. A second check runs `rayon`'s parallel sum to the same answer.
 - **Built, on all three architectures** (pull request #1892, 2026-10-10 UTC, to calef's rulings on
   §269 and on #1892's four questions and its `rayon` question):
   - the process object, with `BIND` and the shared table (items 1 to 4, 13; `notes/processes.md`);
-  - futex wait and wake (item 7; `notes/futex.md`);
+  - futex wait and wake (item 7; `notes/address-wait.md`);
   - the thread pointer (item 14; `notes/thread-pointer.md`);
   - the per-thread current-CPU page and its allowance (items 11 and 16);
   - `SYS_EXIT_THREAD`;
@@ -202,7 +202,7 @@ exit. A second check runs `rayon`'s parallel sum to the same answer.
 
 - **Recorded.** The `std` heap's contention under threads is milestone 561's, with this block's
   measurement as its first consumer.
-- **Recorded.** `notes/futex.md`, `notes/processes.md`, `notes/thread-pointer.md` and
+- **Recorded.** `notes/address-wait.md`, `notes/processes.md`, `notes/thread-pointer.md` and
   `notes/std/threads.md` carry this milestone's limits in their `BUGS`, each where its code is read.
 - **Recorded.** The semantics of `SYS_EXIT_THREAD`, `abi::process`, `BIND`, the futex methods,
   `SET_THREAD_POINTER`, and `CONFIGURE`'s sixth word and result are §276 (the thread system calls as

@@ -29,7 +29,7 @@ fetched and are not counted.
 | `src/platform/linux/` | 1,252 | the Linux platform layer |
 | `redox-rt/` | 7,485 | Redox's userspace runtime: fork, signals, process management |
 | `src/ld_so/` | 4,016 | the dynamic linker and TLS setup |
-| `src/pthread/`, `src/sync/` | 1,947 | its own pthreads, mutexes and condition variables on a futex |
+| `src/pthread/`, `src/sync/` | 1,947 | its own pthreads, mutexes and condition variables on an address wait |
 
 License: MIT (`LICENSE`, "Copyright (c) 2018 Redox OS"), compatible with this tree's MIT/Apache-2.0.
 Toolchain: nightly pinned to `nightly-2026-05-24`, built as a `staticlib` by a Makefile that sets
@@ -74,7 +74,7 @@ Each row is a place nife's constraints differ from Redox's, and which way it arg
 | Process and user identity | pids, uids, process groups, sessions | no process identifier (`std::process::id` is 0); identity is attribution, not authority, per milestone 49 (users, login, and attribution) | about twenty `get*id`/`set*id` methods | adapting: fixed answers in the layer, each in its `BUGS` |
 | Memory | `mmap` and `brk` | `untyped::MAP` from the process's own budget, per §22 (Rust `std` on the native ABI) and §31 rule 4 | dlmalloc over `Pal::mmap` | owning the allocator: notes/std.md says `std`'s allocator is the only heap algorithm, and §31 rule 4 already ties C's heap to it |
 | Thread-local storage | static TLS set up by `ld_so/tcb.rs`, with a Redox-specific `OsSpecific` block in the TCB | userspace targets are `singlethread: true`; nothing context-switches `TPIDR_EL0` | TLS and the TCB live in the dynamic linker | owning: a static-only TLS block is a few hundred lines, and the linker it lives in is not wanted |
-| Threads | relibc's own pthreads on `rlct_clone` and a futex | milestone 812 (`std::thread::spawn` runs real threads in one address space) built them (2026-10-10 UTC), with a private futex: `AddressSpace::WAIT` and `WAKE` ([futex](futex.md)) | `Pal::futex_wait`/`futex_wake` underneath everything in `src/sync/` | adapting, onto 812's wait-on-address primitive |
+| Threads | relibc's own pthreads on `rlct_clone` and an address wait | milestone 812 (`std::thread::spawn` runs real threads in one address space) built them (2026-10-10 UTC), with a private address wait: `AddressSpace::WAIT` and `WAKE` ([address wait](address-wait.md)) | `Pal::futex_wait`/`futex_wake` (relibc's fast user-space mutex pair) underneath everything in `src/sync/` | adapting, onto 812's wait-on-address primitive |
 | Dynamic linking | `ld.so` and `dlopen` | static ELF only (notes/abi.md, section 3) | `src/ld_so/`, 4,016 lines, entangled with startup and TLS | owning: dropped, and startup rewritten without it |
 | Floating point | hard-float targets | userspace is softfloat on all three ISAs (`targets/*.json`); the kernel saves FP state since milestone 447 (a thread's vector registers are its own), but the targets have not flipped, which is milestone 534 (the soft-float targets could now be flipped) | assumes hard float; `libm` and `openlibm` | neither: STREAM's number waits on 534 whichever library runs it |
 | Dependencies | whatever Redox wants | each one a ruling under §46 (thin primitives or whole subsystems) | about thirty crates, two from git | owning: stage 1 takes only what it uses, each named in its `Reuse:` line |
@@ -158,7 +158,7 @@ its source relies on are recorded here rather than in its comments.
 - One client per protocol. Because the platform layer is built on `std`, a protocol change lands in
   one place. A C program and a Rust program granted the same directory cannot see different things
   in it. The cost is a few hundred KiB of `std` in every C program.
-- The futex is built from `thread::park` and `Thread::unpark` because `std` does not export its own
+- The address wait is built from `thread::park` and `Thread::unpark` because `std` does not export its own
   and the crate makes no system call. On nife each of those is one kernel wait or one kernel wake on
   a word of the parked thread's own. The table's shape is WebKit's parking lot, which Rust's
   `parking_lot` crate also takes.
@@ -211,6 +211,6 @@ compile time that its constants equal the crate's, so the two cannot drift.
 - The Redox contribution policy was read in `redox-os/redox`'s `CONTRIBUTING.md`; relibc's own
   `CONTRIBUTING.md` does not repeat it. Reading the project-wide policy as covering relibc is this
   note's inference.
-- The futex row rests on milestone 812's wait-on-address primitive, which is private-only (keyed by
-  space and address, 32-bit words, no timeout yet; see [futex](futex.md)). A `src/sync/` path that
+- The address wait row rests on milestone 812's wait-on-address primitive, which is private-only (keyed by
+  space and address, 32-bit words, no timeout yet; see [address wait](address-wait.md)). A `src/sync/` path that
   needs a shared or timed wait has to be adapted to that.

@@ -123,11 +123,11 @@ footprint. It bears on fatal risk 7 (confinement); the integrator cites it at me
 The exit path walks the page tables for the clear-word and stores zero through the direct map with
 no lock held across the two. A sibling thread holding `WRITE` on the region can destroy it in
 between, and a reused frame then takes four zero bytes it does not belong to. `WAIT`'s load has the
-same walk, and `notes/futex.md` recorded only the load, as a one-bit observation. Not shown
+same walk, and `notes/address-wait.md` recorded only the load, as a one-bit observation. Not shown
 reachable: the audit did not confirm that a destroyed region's frames can be reused inside the
 window. Proposed as
-[a futex word is walked and touched under the revocation lock](../roadmap/0958-a-futex-word-is-walked-and-touched-under-the-revocation-lock.md),
-and `notes/futex.md`'s `BUGS` now names the store. It bears on fatal risk 7 if it is reachable.
+[a futex word is walked and touched under the revocation lock](../roadmap/0958-an-address-wait-word-is-walked-and-touched-under-the-revocation-lock.md),
+and `notes/address-wait.md`'s `BUGS` now names the store. It bears on fatal risk 7 if it is reachable.
 
 ### 4. MINTED: the xHCI driver is mapped the USB Legacy Support capability
 

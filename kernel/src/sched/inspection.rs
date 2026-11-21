@@ -533,9 +533,9 @@ fn dump_thread_wait(t: &Thread) {
     match t.handshake.wait_on {
         Some(Wait::Rendezvous(ep, role)) => crate::println!(" wait={ep:#x}/{role:?}"),
         Some(Wait::Notification(n)) => crate::println!(" wait={n:#x}/Notification"),
-        Some(Wait::Futex(k)) => {
+        Some(Wait::Address(k)) => {
             crate::println!(
-                " wait={:#x}@{:#x}/Futex",
+                " wait={:#x}@{:#x}/AddressWait",
                 k.virtual_address,
                 k.address_space
             );

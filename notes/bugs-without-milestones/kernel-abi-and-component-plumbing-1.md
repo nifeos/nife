@@ -42,7 +42,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/address-space-map.md (first bullet) | band functions check membership only; two pair pages one program maps can collide unseen | A collision check for pair pages in the address-space map | S  |
 |  notes/dependency-orchestration.md | `Requirements::problem()` ignores `depends_on`; a two-contract cycle compiles | Reject `depends_on` cycles at declaration | S  |
 |  notes/frames.md | A failed multi-page `MAP` undoes the mapping but does not return the page tables it spent | Return page tables on a failed multi-page MAP | S  |
-|  notes/futex.md | No futex timeout (blocks `park_timeout`, `Condvar::wait_timeout`, `pthread_cond_timedwait`); milestone 106 (A wait that ends on either the interrupt or the deadline) timers exist | Futex wait with a deadline | M  |
+|  notes/address-wait.md | No address wait timeout (blocks `park_timeout`, `Condvar::wait_timeout`, `pthread_cond_timedwait`); milestone 106 (A wait that ends on either the interrupt or the deadline) timers exist | Address wait wait with a deadline | M  |
 |  notes/hung-component.md | Nothing watches a component between swaps | Liveness watch between swaps | M  |
 |  notes/hung-component.md | `SURVEY` does not say what a thread is blocked on, so no wait-for graph; a decision, not a task | Report what a thread is blocked on | L  |
 |  notes/interactive-stack-swap.md | Terminal contract does not say which requests are repeatable; `swish`/`rmle` handle `FLAG_RETRY` but not `Gone`, so a swap reads as a failed read (architect question) | Terminal contract: repeatable requests and `Gone` | M  |

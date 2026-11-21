@@ -8,8 +8,8 @@ package of [crate-reviews.md](../crate-reviews.md), in its own file as every pac
 The kernel's blocking primitives, as plain state machines over intrusive queues. `Rendezvous` is a
 synchronous endpoint where a send and a receive meet or one waits, with a pending-signal count for
 a bound interrupt. `Notification` is a word with waiters. `Timer` is a one-shot timer with the
-helpers that keep a cached earliest deadline. `FutexTable` holds futex wait queues. It is `no_std` with no allocator and one dependency, `intrusive_queue`. Sixteen Kani harnesses
-prove the one-queue invariant, the token discipline and the delivery rules. The timer and the futex
+helpers that keep a cached earliest deadline. `AddressWaitTable` holds address wait queues. It is `no_std` with no allocator and one dependency, `intrusive_queue`. Sixteen Kani harnesses
+prove the one-queue invariant, the token discipline and the delivery rules. The timer and the address wait
 table stay in this crate (maintainer, provisional, 2026-11-14 UTC, D2); the README the move writes
 states the shared reason (the same token discipline and proof shape) in its first line. The
 record is milestone 1095 (`inter_process_communication`: what an outside maintainer would fix before it leaves), at
@@ -35,7 +35,7 @@ record is milestone 1095 (`inter_process_communication`: what an outside maintai
 | root | `Rendezvous`, `SendVerdict` (`Rendezvous`, `Blocked`, `Refused`), `ReceiveVerdict` (`Signal`, `FromSender`, `Blocked`), `RendezvousCounts` |
 | `notification` | `Notification`, `SignalVerdict` (`Woke`, `ToBound`, `Counted`, `Empty`), `WaitVerdict` (`Word`, `Blocked`), `NotificationCounts` |
 | `timer` | `Timer`, `ArmVerdict` (`Pending`, `DueNow`), `NEVER`, `lowered`, `is_due`, `next_due`, `earliest` |
-| `futex` | `FutexTable<T, const BUCKETS: usize>`, `Key { address_space, virtual_address }` |
+| `address_wait` | `AddressWaitTable<T, const BUCKETS: usize>`, `Key { address_space, virtual_address }` |
 
 What a stranger may find surprising:
 
@@ -63,7 +63,7 @@ Sixteen harnesses in `notification.rs`, `timer.rs` and `verification.rs`, each w
 - A token comes back exactly when its node did not queue.
 - Removing a waiter keeps the invariant, a pending signal drains first, and the endpoint forgets a collected sender.
 
-The futex table has host tests and no
+The address wait table has host tests and no
 harness. The proofs are inductive steps over one waiter per queue.
 
 ## Names
@@ -76,8 +76,8 @@ The ones this package asks the architect to ratify, all provisional with a `Name
 | `SendVerdict`, `ReceiveVerdict`, `SignalVerdict`, `WaitVerdict`, `ArmVerdict` | D1 (2026-11-14) | `Sent` and `Received`; `SendOutcome`; keeping the bare names, which makes `Send` shadow `core::marker::Send` |
 | `Rendezvous::one_queue_invariant_holds` | D4 (2026-11-19) | `is_one_queue`; the question shape would read as a question about the queues |
 | `Key::virtual_address` | D4 | the bare `address`, which the register gate refuses |
-| `FutexTable<T, const BUCKETS: usize>` | D5 | keeping `Futexes`, which named a collection of objects when a futex is a key |
-| `FutexTable::len`, `FutexTable::is_empty` | D5 | `queued`; `is_empty` is what clippy asks of a public `len` |
+| `AddressWaitTable<T, const BUCKETS: usize>` | D5 | keeping the plural noun, which named a collection of objects when an address wait is a key |
+| `AddressWaitTable::len`, `AddressWaitTable::is_empty` | D5 | `queued`; `is_empty` is what clippy asks of a public `len` |
 | `Key::address_space` | D5 | `Key::space` |
 | `RendezvousCounts`, `NotificationCounts` | P2-16b | keeping the tuples |
 

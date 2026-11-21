@@ -1,4 +1,4 @@
-//! **The `AddressSpace` methods**: map into, unmap, the futex pair and the listing, with the run
+//! **The `AddressSpace` methods**: map into, unmap, the address wait pair and the listing, with the run
 //! arithmetic `PageFrame::MAP` shares. See notes/system-call-boundary.md.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
@@ -36,7 +36,7 @@ pub(super) fn address_space_invoke(
         }
         // §269 (how threads share a process) fork 2.
         abi::address_space::WAIT | abi::address_space::WAKE => {
-            address_space_futex(capability.rights, name, method, a0, a1, a2)
+            address_space_address_wait(capability.rights, name, method, a0, a1, a2)
         }
         _ => Err(Error::BadMethod),
     }
@@ -234,12 +234,12 @@ pub(super) fn unmap_run_prefix(
     }
 }
 
-/// `AddressSpace::WAIT` and `WAKE`: the checks every futex method shares, then the scheduler.
+/// `AddressSpace::WAIT` and `WAKE`: the checks every address wait method shares, then the scheduler.
 /// The order of the refusals is the contract `abi::address_space::WAIT` states: the flags first
 /// (`BadMethod`, a form this kernel does not answer), then the right (`NotPermitted`), the address
 /// (`BadPointer`), and last whether the space is the caller's own (`WrongObject`).
 #[inline(never)]
-fn address_space_futex(
+fn address_space_address_wait(
     rights: Rights,
     space: u64,
     method: u64,
@@ -247,7 +247,7 @@ fn address_space_futex(
     flags: u64,
     word: u64,
 ) -> Result<i64, Error> {
-    if !abi::futex::admitted(flags) {
+    if !abi::address_wait::admitted(flags) {
         return Err(Error::BadMethod);
     }
     if !rights.allows(Rights::READ) {
@@ -266,9 +266,9 @@ fn address_space_futex(
     }
     if method == abi::address_space::WAIT {
         // The expected value is the low 32 bits; the size admitted is 32 (§269).
-        sched::futex_wait(space, va, word as u32).map(|r| r as i64)
+        sched::address_wait(space, va, word as u32).map(|r| r as i64)
     } else {
-        Ok(sched::futex_wake(space, va, word) as i64)
+        Ok(sched::address_wake(space, va, word) as i64)
     }
 }
 

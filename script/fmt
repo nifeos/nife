@@ -93,7 +93,7 @@ cargo fmt --manifest-path entropy_backend/Cargo.toml "$@"
 rustfmt --edition 2024 --config skip_children=true "$@" \
     c_library/build.rs c_library/src/lib.rs c_library/src/start.rs c_library/src/long_double.rs \
     c_library/src/bin/c_program.rs c_library/src/platform/nife.rs c_library/src/platform/allocator.rs \
-    c_library/src/platform/stream.rs c_library/src/platform/futex.rs c_library/src/pthread.rs
+    c_library/src/platform/stream.rs c_library/src/platform/address_wait.rs c_library/src/pthread.rs
 
 # And `jig` (milestone 809 (the package client becomes a program)), its own workspace beside
 # `std_exerciser`, for that one's reason: a new workspace is a gate this file has to be told about.
