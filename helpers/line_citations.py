@@ -93,10 +93,15 @@ FENCE = re.compile(r'^\s{0,3}(```|~~~)')
 LIST_ITEM = re.compile(r'^\s*(?:[-*+]|\d+[.)])\s')
 
 
+# A crate's mutation exemptions are keyed by `src/<file>:<line>`, the form cargo-mutants reports and
+# the crate template's gate matches, so its lines are data and not citations.
+DATA_NAMES = ('.github/mutants-exempts',)
+
+
 def in_scope(path):
     if path.startswith(EXCLUDED_PREFIXES) or path == SELF:
         return False
-    return not path.endswith(DATA_EXTENSIONS)
+    return not path.endswith(DATA_EXTENSIONS) and not path.endswith(DATA_NAMES)
 
 
 def kind(target):
@@ -304,13 +309,14 @@ def selftest():
         failed += 1
         print(f'line-citations selftest: kinds {kinds}', file=sys.stderr)
     for p, want in (('vendor/x.md', False), ('bench/a.log', False), ('notes/d.tsv', False),
-                    (SELF, False), ('notes/x.md', True), ('script/lint', True)):
+                    (SELF, False), ('notes/x.md', True), ('script/lint', True),
+                    ('crates/a/.github/mutants-exempts', False)):
         if in_scope(p) != want:
             failed += 1
             print(f'line-citations selftest: in_scope({p!r}) is {not want}', file=sys.stderr)
     if failed:
         return 1
-    print(f'line-citations selftest: {len(cases) + 7} fixtures')
+    print(f'line-citations selftest: {len(cases) + 8} fixtures')
     return 0
 
 
