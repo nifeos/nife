@@ -70,7 +70,7 @@ pub const INTERFACE_ID: u64 = 6;
 /// unifying the protocol changed no instruction on the fastpath and cost no message, and the
 /// benchmark that prices `println!` cannot tell that anything happened. An opcode is a claim about
 /// what a message means; the cheapest claim to make is the one the wire was already making.
-pub const OPERATION_BYTES: u64 = 0;
+pub const OPERATION_BYTES: u8 = 0;
 
 /// **End of stream.** The writer is finished; no more bytes will come. The message is exactly
 /// `(`[`end_of_stream`]`(), 0, 0)`: every bit of the first word below the opcode is zero, and the second and
@@ -87,7 +87,7 @@ pub const OPERATION_BYTES: u64 = 0;
 /// Name: ratified 2026-11-21 (UTC). Spelled out; `eof` is the standard library's and C's spelling,
 /// kept as a documentation alias.
 #[doc(alias = "eof")]
-pub const OPERATION_END_OF_STREAM: u64 = 1;
+pub const OPERATION_END_OF_STREAM: u8 = 1;
 
 /// The most bytes one message carries: two 64-bit words. Not a tuning parameter. It is what fits in
 /// the registers a `SEND` already has, and enlarging it means giving a sink a shared page, which is
@@ -101,16 +101,17 @@ pub const MAXIMUM_INLINE_BYTES: usize = 16;
 /// compile-time assertion.
 pub const GONE: i64 = -11;
 
-/// Pack an opcode and a length into a message's first word.
+/// Pack an opcode and a length into a message's first word: the opcode in bits 63:56 and the length
+/// in bits 31:0.
 ///
 /// Name: ratified 2026-11-21 (UTC).
-pub const fn first_word(operation: u64, len: u64) -> u64 {
-    (operation << OPERATION_SHIFT) | (len & 0xffff_ffff)
+pub const fn first_word(operation: u8, len: u32) -> u64 {
+    ((operation as u64) << OPERATION_SHIFT) | len as u64
 }
 
 /// The opcode of a message's first word.
-pub const fn operation(word_zero: u64) -> u64 {
-    word_zero >> OPERATION_SHIFT
+pub const fn operation(word_zero: u64) -> u8 {
+    (word_zero >> OPERATION_SHIFT) as u8
 }
 
 /// The byte count of a message's first word.
@@ -127,6 +128,35 @@ pub const fn end_of_stream() -> u64 {
     first_word(OPERATION_END_OF_STREAM, 0)
 }
 
+/// The three words of one message, in the order a `SEND` carries them: the first word (opcode, body
+/// kind, severity and count), then the second and third, which hold the bytes of a bytes message
+/// and are reserved in an end of stream. They ride in the three message registers of a `SEND`;
+/// this struct names them without tying the contract to a register assignment.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane byte-sink-contract-names. Replaces three
+/// positional `u64` arguments and a four-tuple; the fields take the names of the parameters they
+/// replace.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MessageWords {
+    /// The first word. See [`first_word`].
+    pub word_zero: u64,
+    /// The second word: bytes 0 to 7, little-endian, in a bytes message.
+    pub word_one: u64,
+    /// The third word: bytes 8 to 15, little-endian, in a bytes message.
+    pub word_two: u64,
+}
+
+impl MessageWords {
+    /// The three words of a message, in order.
+    pub const fn new(word_zero: u64, word_one: u64, word_two: u64) -> Self {
+        Self {
+            word_zero,
+            word_one,
+            word_two,
+        }
+    }
+}
+
 /// Pack up to [`MAXIMUM_INLINE_BYTES`] bytes into the three words of a `SEND`. Bytes past the
 /// sixteenth are **not** silently dropped: the caller chunks, and the returned count says how many
 /// were taken, so a caller that ignores it writes a short message, not a silently lost tail.
@@ -134,7 +164,7 @@ pub const fn end_of_stream() -> u64 {
 /// # Examples
 ///
 /// ```
-/// use byte_sink_contract::{MAXIMUM_INLINE_BYTES, Message, end_of_stream, pack, unpack};
+/// use byte_sink_contract::{MAXIMUM_INLINE_BYTES, Message, MessageWords, end_of_stream, pack, unpack};
 ///
 /// let line = b"the quick brown fox\n"; // 20 bytes, so two messages and an end of stream
 /// let mut messages = 0;
@@ -144,13 +174,13 @@ pub const fn end_of_stream() -> u64 {
 ///
 /// let mut rest = &line[..];
 /// while !rest.is_empty() {
-///     let (word_zero, word_one, word_two, taken) = pack(rest);
+///     let (words, taken) = pack(rest);
 ///     messages += 1;
 ///     rest = &rest[taken..]; // `pack` never drops a tail silently; the count says what it took
 ///
 ///     // The other end of the SEND.
 ///     let mut buf = [0u8; MAXIMUM_INLINE_BYTES];
-///     match unpack(word_zero, word_one, word_two, &mut buf) {
+///     match unpack(words, &mut buf) {
 ///         Message::Bytes(n) => {
 ///             received[got..got + n].copy_from_slice(&buf[..n]);
 ///             got += n;
@@ -158,8 +188,8 @@ pub const fn end_of_stream() -> u64 {
 ///         Message::EndOfStream | Message::Malformed => unreachable!(),
 ///     }
 /// }
-/// let (word_zero, word_one, word_two) = (end_of_stream(), 0, 0);
-/// if let Message::EndOfStream = unpack(word_zero, word_one, word_two, &mut [0u8; MAXIMUM_INLINE_BYTES]) {
+/// let end = MessageWords::new(end_of_stream(), 0, 0);
+/// if let Message::EndOfStream = unpack(end, &mut [0u8; MAXIMUM_INLINE_BYTES]) {
 ///     ended = true;
 /// }
 ///
@@ -167,7 +197,7 @@ pub const fn end_of_stream() -> u64 {
 /// assert_eq!(&received[..got], line);
 /// assert!(ended);
 /// ```
-pub fn pack(bytes: &[u8]) -> (u64, u64, u64, usize) {
+pub fn pack(bytes: &[u8]) -> (MessageWords, usize) {
     let n = if bytes.len() < MAXIMUM_INLINE_BYTES {
         bytes.len()
     } else {
@@ -180,9 +210,11 @@ pub fn pack(bytes: &[u8]) -> (u64, u64, u64, usize) {
     lo.copy_from_slice(&words[..8]);
     hi.copy_from_slice(&words[8..]);
     (
-        first_word(OPERATION_BYTES, n as u64),
-        u64::from_le_bytes(lo),
-        u64::from_le_bytes(hi),
+        MessageWords::new(
+            first_word(OPERATION_BYTES, n as u32),
+            u64::from_le_bytes(lo),
+            u64::from_le_bytes(hi),
+        ),
         n,
     )
 }
@@ -264,36 +296,38 @@ pub enum Message {
 ///
 /// ```
 /// use byte_sink_contract::{
-///     MAXIMUM_INLINE_BYTES, Message, OPERATION_BYTES, first_word, len, operation, pack, unpack,
+///     MAXIMUM_INLINE_BYTES, Message, MessageWords, OPERATION_BYTES, first_word, len, operation, pack, unpack,
 /// };
 ///
-/// let (word_zero, ..) = pack(b"hi");
-/// assert_eq!(word_zero, 2); // the whole word, not just its low bits
-/// assert_eq!(operation(word_zero), OPERATION_BYTES);
-/// assert_eq!(len(word_zero), 2);
+/// let (words, _) = pack(b"hi");
+/// assert_eq!(words.word_zero, 2); // the whole word, not just its low bits
+/// assert_eq!(operation(words.word_zero), OPERATION_BYTES);
+/// assert_eq!(len(words.word_zero), 2);
 ///
 /// // A writer claiming more bytes than three words can carry is malformed, not generous.
-/// let lying = first_word(OPERATION_BYTES, MAXIMUM_INLINE_BYTES as u64 + 1);
-/// assert_eq!(unpack(lying, 0, 0, &mut [0u8; MAXIMUM_INLINE_BYTES]), Message::Malformed);
+/// let lying = first_word(OPERATION_BYTES, MAXIMUM_INLINE_BYTES as u32 + 1);
+/// assert_eq!(unpack(MessageWords::new(lying, 0, 0), &mut [0u8; MAXIMUM_INLINE_BYTES]), Message::Malformed);
 /// ```
 ///
 /// An end of stream is the one exact message `(end_of_stream(), 0, 0)`. Its two reserved words carry
 /// nothing, and a writer that puts something in them is refused:
 ///
 /// ```
-/// use byte_sink_contract::{MAXIMUM_INLINE_BYTES, Message, end_of_stream, unpack};
+/// use byte_sink_contract::{MAXIMUM_INLINE_BYTES, Message, MessageWords, end_of_stream, unpack};
 ///
 /// let mut buf = [0u8; MAXIMUM_INLINE_BYTES];
-/// assert_eq!(unpack(end_of_stream(), 0, 0, &mut buf), Message::EndOfStream);
-/// assert_eq!(unpack(end_of_stream(), 0, 2, &mut buf), Message::Malformed); // a status in a reserved word
-/// assert_eq!(unpack(end_of_stream() | 1, 0, 0, &mut buf), Message::Malformed); // a length on an end of stream
+/// assert_eq!(unpack(MessageWords::new(end_of_stream(), 0, 0), &mut buf), Message::EndOfStream);
+/// // A status in a reserved word:
+/// assert_eq!(unpack(MessageWords::new(end_of_stream(), 0, 2), &mut buf), Message::Malformed);
+/// // A length on an end of stream:
+/// assert_eq!(unpack(MessageWords::new(end_of_stream() | 1, 0, 0), &mut buf), Message::Malformed);
 /// ```
-pub fn unpack(
-    word_zero: u64,
-    word_one: u64,
-    word_two: u64,
-    out: &mut [u8; MAXIMUM_INLINE_BYTES],
-) -> Message {
+pub fn unpack(words: MessageWords, out: &mut [u8; MAXIMUM_INLINE_BYTES]) -> Message {
+    let MessageWords {
+        word_zero,
+        word_one,
+        word_two,
+    } = words;
     match operation(word_zero) {
         OPERATION_BYTES => {
             // Compared as `u64`, so a target whose `usize` is narrower cannot truncate the count.
@@ -356,15 +390,38 @@ mod tests {
         for n in 0..=MAXIMUM_INLINE_BYTES {
             let src: [u8; MAXIMUM_INLINE_BYTES] =
                 core::array::from_fn(|i| (i as u8).wrapping_mul(37) ^ 0x5a);
-            let (word_zero, word_one, word_two, taken) = pack(&src[..n]);
+            let (
+                MessageWords {
+                    word_zero,
+                    word_one,
+                    word_two,
+                },
+                taken,
+            ) = pack(&src[..n]);
             assert_eq!(taken, n);
             let mut out = [0u8; MAXIMUM_INLINE_BYTES];
             assert_eq!(
-                unpack(word_zero, word_one, word_two, &mut out),
+                unpack(MessageWords::new(word_zero, word_one, word_two), &mut out),
                 Message::Bytes(n)
             );
             assert_eq!(&out[..n], &src[..n]);
         }
+    }
+
+    /// The wire is fixed: the packed words of a known input are the values every sink already
+    /// decodes, and the opcode and end of stream occupy the bits they always did.
+    #[test]
+    fn the_packed_words_of_a_known_input_are_the_wire_values() {
+        let (words, taken) = pack(b"0123456789abcdefXYZ");
+        assert_eq!(taken, 16);
+        assert_eq!(
+            words,
+            MessageWords::new(16, 0x3736_3534_3332_3130, 0x6665_6463_6261_3938)
+        );
+        assert_eq!(first_word(OPERATION_BYTES, 4), 4);
+        assert_eq!(end_of_stream(), 1 << 56);
+        assert_eq!(first_word(0xff, u32::MAX), 0xff00_0000_ffff_ffff);
+        assert_eq!(operation(0xab00_0000_0000_0001), 0xab);
     }
 
     /// A caller handing over more than one message holds gets a full message and an honest count,
@@ -372,7 +429,7 @@ mod tests {
     #[test]
     fn pack_takes_a_full_message_and_says_so() {
         let src = [7u8; 40];
-        let (word_zero, _, _, taken) = pack(&src);
+        let (MessageWords { word_zero, .. }, taken) = pack(&src);
         assert_eq!(taken, MAXIMUM_INLINE_BYTES);
         assert_eq!(len(word_zero), MAXIMUM_INLINE_BYTES);
     }
@@ -381,7 +438,7 @@ mod tests {
     /// first word IS its length, which is the wire std's stdout sent before this contract existed.
     #[test]
     fn a_bytes_messages_first_word_is_its_length() {
-        let (word_zero, _, _, _) = pack(b"nife");
+        let (MessageWords { word_zero, .. }, _) = pack(b"nife");
         assert_eq!(word_zero, 4);
     }
 
@@ -391,7 +448,14 @@ mod tests {
     /// level 0, which is emergency.
     #[test]
     fn severity_rides_beside_the_count_and_unset_is_not_emergency() {
-        let (word_zero, word_one, word_two, _) = pack(b"disk full");
+        let (
+            MessageWords {
+                word_zero,
+                word_one,
+                word_two,
+            },
+            _,
+        ) = pack(b"disk full");
         assert_eq!(severity(word_zero), None);
         let marked = with_severity(word_zero, 3);
         assert_eq!(severity(marked), Some(3));
@@ -400,7 +464,7 @@ mod tests {
         assert_eq!(kind(marked), KIND_TEXT);
         let mut out = [0u8; MAXIMUM_INLINE_BYTES];
         assert_eq!(
-            unpack(marked, word_one, word_two, &mut out),
+            unpack(MessageWords::new(marked, word_one, word_two), &mut out),
             Message::Bytes(9)
         );
         assert_eq!(&out[..9], b"disk full");
@@ -415,12 +479,19 @@ mod tests {
     fn end_of_stream_is_not_a_byte_count() {
         let mut out = [0u8; MAXIMUM_INLINE_BYTES];
         assert_eq!(
-            unpack(end_of_stream(), 0, 0, &mut out),
+            unpack(MessageWords::new(end_of_stream(), 0, 0), &mut out),
             Message::EndOfStream
         );
-        let (word_zero, word_one, word_two, _) = pack(&[]);
+        let (
+            MessageWords {
+                word_zero,
+                word_one,
+                word_two,
+            },
+            _,
+        ) = pack(&[]);
         assert_eq!(
-            unpack(word_zero, word_one, word_two, &mut out),
+            unpack(MessageWords::new(word_zero, word_one, word_two), &mut out),
             Message::Bytes(0)
         );
         assert_ne!(end_of_stream(), word_zero);
@@ -432,15 +503,24 @@ mod tests {
     fn a_malformed_message_is_refused_not_repaired() {
         let mut out = [0u8; MAXIMUM_INLINE_BYTES];
         assert_eq!(
-            unpack(first_word(OPERATION_BYTES, 17), 0, 0, &mut out),
+            unpack(
+                MessageWords::new(first_word(OPERATION_BYTES, 17), 0, 0),
+                &mut out
+            ),
             Message::Malformed,
             "a byte count past MAXIMUM_INLINE_BYTES must not be clamped",
         );
         assert_eq!(
-            unpack(first_word(OPERATION_BYTES, u32::MAX as u64), 0, 0, &mut out),
+            unpack(
+                MessageWords::new(first_word(OPERATION_BYTES, u32::MAX), 0, 0),
+                &mut out
+            ),
             Message::Malformed,
         );
-        assert_eq!(unpack(first_word(9, 4), 0, 0, &mut out), Message::Malformed);
+        assert_eq!(
+            unpack(MessageWords::new(first_word(9, 4), 0, 0), &mut out),
+            Message::Malformed
+        );
     }
 
     /// An end-of-stream message with a bit set in either reserved word, or anywhere in the first
@@ -451,25 +531,28 @@ mod tests {
         let mut out = [0u8; MAXIMUM_INLINE_BYTES];
         for bit in 0..64 {
             assert_eq!(
-                unpack(end_of_stream(), 1 << bit, 0, &mut out),
+                unpack(MessageWords::new(end_of_stream(), 1 << bit, 0), &mut out),
                 Message::Malformed,
                 "second word, bit {bit}",
             );
             assert_eq!(
-                unpack(end_of_stream(), 0, 1 << bit, &mut out),
+                unpack(MessageWords::new(end_of_stream(), 0, 1 << bit), &mut out),
                 Message::Malformed,
                 "third word, bit {bit}",
             );
         }
         for bit in 0..OPERATION_SHIFT {
             assert_eq!(
-                unpack(end_of_stream() | (1 << bit), 0, 0, &mut out),
+                unpack(
+                    MessageWords::new(end_of_stream() | (1 << bit), 0, 0),
+                    &mut out
+                ),
                 Message::Malformed,
                 "first word, bit {bit}",
             );
         }
         assert_eq!(
-            unpack(end_of_stream(), 0, 0, &mut out),
+            unpack(MessageWords::new(end_of_stream(), 0, 0), &mut out),
             Message::EndOfStream
         );
     }
@@ -524,19 +607,29 @@ mod tests {
     #[test]
     fn a_bytes_message_of_another_kind_is_refused() {
         let mut out = [0u8; MAXIMUM_INLINE_BYTES];
-        let (word_zero, word_one, word_two, _) = pack(b"text");
+        let (
+            MessageWords {
+                word_zero,
+                word_one,
+                word_two,
+            },
+            _,
+        ) = pack(b"text");
         assert_eq!(
-            unpack(word_zero, word_one, word_two, &mut out),
+            unpack(MessageWords::new(word_zero, word_one, word_two), &mut out),
             Message::Bytes(4)
         );
         let other = word_zero | (1 << KIND_SHIFT);
         assert_eq!(
-            unpack(other, word_one, word_two, &mut out),
+            unpack(MessageWords::new(other, word_one, word_two), &mut out),
             Message::Malformed
         );
         // The severity beside the kind does not move the line between the two.
         assert_eq!(
-            unpack(with_severity(word_zero, 2), word_one, word_two, &mut out),
+            unpack(
+                MessageWords::new(with_severity(word_zero, 2), word_one, word_two),
+                &mut out
+            ),
             Message::Bytes(4)
         );
     }

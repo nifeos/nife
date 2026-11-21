@@ -286,7 +286,10 @@ fn drain_report(report: crate::sched::RendezvousId, out: &mut [u8]) -> usize {
     loop {
         let words = sched::ipc_receive(report);
         let mut chunk = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(words[0], words[1], words[2]),
+            &mut chunk,
+        ) {
             byte_sink_contract::Message::Bytes(n) => {
                 let take = n.min(out.len() - len);
                 out[len..len + take].copy_from_slice(&chunk[..take]);
@@ -307,7 +310,10 @@ fn walk_rows(report: crate::sched::RendezvousId, row: &str) {
     loop {
         let words = sched::ipc_receive(report);
         let mut chunk = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(words[0], words[1], words[2]),
+            &mut chunk,
+        ) {
             byte_sink_contract::Message::Bytes(n) => {
                 let take = n.min(text.len() - len);
                 text[len..len + take].copy_from_slice(&chunk[..take]);

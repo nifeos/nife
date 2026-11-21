@@ -152,8 +152,8 @@ fn usage(record: u64) -> Result<u64, i64> {
 fn write_on(slot: u64, bytes: &[u8]) {
     let mut rest = bytes;
     while !rest.is_empty() {
-        let (w0, w1, w2, n) = byte_sink_contract::pack(rest);
-        send(slot, w0, w1, w2);
+        let (words, n) = byte_sink_contract::pack(rest);
+        send(slot, words.word_zero, words.word_one, words.word_two);
         rest = &rest[n..];
     }
 }

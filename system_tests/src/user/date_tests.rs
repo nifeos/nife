@@ -294,9 +294,7 @@ fn a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty() {
     assert!(
         matches!(
             byte_sink_contract::unpack(
-                m[0],
-                m[1],
-                m[2],
+                byte_sink_contract::MessageWords::new(m[0], m[1], m[2]),
                 &mut [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES]
             ),
             byte_sink_contract::Message::EndOfStream
@@ -310,9 +308,7 @@ fn a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty() {
     assert!(
         matches!(
             byte_sink_contract::unpack(
-                m[0],
-                m[1],
-                m[2],
+                byte_sink_contract::MessageWords::new(m[0], m[1], m[2]),
                 &mut [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES]
             ),
             byte_sink_contract::Message::EndOfStream

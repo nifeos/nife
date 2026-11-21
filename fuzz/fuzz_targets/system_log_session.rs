@@ -151,14 +151,14 @@ fn write_chunk(u: &mut Unstructured, log: &mut Log, badge: u64, now: u64) -> Arb
         chunk.extend_from_slice(FRAGMENTS[u.choose_index(FRAGMENTS.len())?]);
     }
     chunk.truncate(16);
-    let (mut w0, w1, w2, _) = pack(&chunk);
+    let (mut words, _) = pack(&chunk);
     if u.ratio(1, 4)? {
-        w0 = with_severity(w0, u.int_in_range(0..=7)?);
+        words.word_zero = with_severity(words.word_zero, u.int_in_range(0..=7)?);
     }
     if u.ratio(1, 32)? {
-        w0 = u.arbitrary()?;
+        words.word_zero = u.arbitrary()?;
     }
-    log.handle(badge, w0, w1, w2, now);
+    log.handle(badge, words.word_zero, words.word_one, words.word_two, now);
     Ok(())
 }
 

@@ -135,8 +135,8 @@ fn one_reader_two_sources_and_the_same_answer() {
     let out = spawn_wc(pipe, endpoints);
     let mut off = 0usize;
     while off < fixture::TRANSCRIPT.len() {
-        let (w0, w1, w2, n) = byte_sink_contract::pack(&fixture::TRANSCRIPT[off..]);
-        crate::sched::ipc_send(pipe, [w0, w1, w2]);
+        let (words, n) = byte_sink_contract::pack(&fixture::TRANSCRIPT[off..]);
+        crate::sched::ipc_send(pipe, [words.word_zero, words.word_one, words.word_two]);
         off += n;
     }
     crate::sched::ipc_send(pipe, [byte_sink_contract::end_of_stream(), 0, 0]);

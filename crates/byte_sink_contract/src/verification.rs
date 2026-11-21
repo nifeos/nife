@@ -18,11 +18,18 @@ fn any_prefix_survives_pack_then_unpack() {
     let src: [u8; MAXIMUM_INLINE_BYTES] = kani::any();
     let mut n = 0;
     while n <= MAXIMUM_INLINE_BYTES {
-        let (word_zero, word_one, word_two, taken) = pack(&src[..n]);
+        let (
+            MessageWords {
+                word_zero,
+                word_one,
+                word_two,
+            },
+            taken,
+        ) = pack(&src[..n]);
         assert_eq!(taken, n);
         let mut out = [0u8; MAXIMUM_INLINE_BYTES];
         assert_eq!(
-            unpack(word_zero, word_one, word_two, &mut out),
+            unpack(MessageWords::new(word_zero, word_one, word_two), &mut out),
             Message::Bytes(n)
         );
         assert_eq!(out[..n], src[..n]);
@@ -36,7 +43,7 @@ fn any_prefix_survives_pack_then_unpack() {
 fn unpack_never_answers_more_than_a_message_holds() {
     let (word_zero, word_one, word_two): (u64, u64, u64) = kani::any();
     let mut out = [0u8; MAXIMUM_INLINE_BYTES];
-    if let Message::Bytes(n) = unpack(word_zero, word_one, word_two, &mut out) {
+    if let Message::Bytes(n) = unpack(MessageWords::new(word_zero, word_one, word_two), &mut out) {
         assert!(n <= MAXIMUM_INLINE_BYTES);
     }
 }
@@ -73,7 +80,7 @@ fn an_end_of_stream_decodes_exactly_from_its_one_message() {
     let word_one: u64 = kani::any();
     let word_two: u64 = kani::any();
     let mut out = [0u8; MAXIMUM_INLINE_BYTES];
-    let decoded = unpack(word_zero, word_one, word_two, &mut out);
+    let decoded = unpack(MessageWords::new(word_zero, word_one, word_two), &mut out);
     assert_eq!(
         decoded == Message::EndOfStream,
         (word_zero, word_one, word_two) == (end_of_stream(), 0, 0)
@@ -84,7 +91,7 @@ fn an_end_of_stream_decodes_exactly_from_its_one_message() {
 /// Falsification: replayable `crates/byte_sink_contract/falsifications/verification.end_of_stream_is_no_bytes_message.patch`
 #[kani::proof]
 fn end_of_stream_is_no_bytes_message() {
-    let n: u64 = kani::any();
-    kani::assume(n <= MAXIMUM_INLINE_BYTES as u64);
+    let n: u32 = kani::any();
+    kani::assume(n <= MAXIMUM_INLINE_BYTES as u32);
     assert_ne!(end_of_stream(), first_word(OPERATION_BYTES, n));
 }

@@ -41,8 +41,8 @@ user_mode_runtime::program_entry!(start);
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let mut rest = LINE;
     while !rest.is_empty() {
-        let (w0, w1, w2, n) = byte_sink_contract::pack(rest);
-        send(OUT, w0, w1, w2);
+        let (words, n) = byte_sink_contract::pack(rest);
+        send(OUT, words.word_zero, words.word_one, words.word_two);
         rest = &rest[n..];
     }
     send(OUT, byte_sink_contract::end_of_stream(), 0, 0);

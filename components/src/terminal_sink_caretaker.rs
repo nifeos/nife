@@ -47,7 +47,10 @@ fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
     loop {
         let (w0, w1, w2) = receive(SINK);
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(w0, w1, w2),
+            &mut buf,
+        ) {
             byte_sink_contract::Message::Bytes(n) => print(&buf[..n]),
             // One endpoint serves every client in turn, so a writer's end is not the terminal's.
             byte_sink_contract::Message::EndOfStream => {}

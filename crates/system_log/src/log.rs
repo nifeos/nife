@@ -39,12 +39,12 @@ pub enum Handled {
 /// log.handle(0, control::word(control::OPERATION_READER, control::SCOPE_SYSTEM, 0, 9), 0, 0, 0);
 ///
 /// let (a, b) = (b"first half, then", b"one\n");
-/// let (w0, w1, w2, _) = pack(a);
-/// log.handle(1, w0, w1, w2, 10);
-/// let (w0, w1, w2, _) = pack(b"hello from beta\n");
-/// log.handle(2, w0, w1, w2, 20);
-/// let (w0, w1, w2, _) = pack(b);
-/// log.handle(1, w0, w1, w2, 30);
+/// let (words, _) = pack(a);
+/// log.handle(1, words.word_zero, words.word_one, words.word_two, 10);
+/// let (words, _) = pack(b"hello from beta\n");
+/// log.handle(2, words.word_zero, words.word_one, words.word_two, 20);
+/// let (words, _) = pack(b);
+/// log.handle(1, words.word_zero, words.word_one, words.word_two, 30);
 ///
 /// let mut window = [0u8; read::WINDOW_BYTES];
 /// let asked = log.handle(9, read::request(), 0, 0, 40);
@@ -115,7 +115,7 @@ impl Log {
             return Handled::Nothing;
         }
         let mut bytes = [0u8; MAXIMUM_INLINE_BYTES];
-        match unpack(w0, w1, w2, &mut bytes) {
+        match unpack(MessageWords::new(w0, w1, w2), &mut bytes) {
             Message::Bytes(n) => {
                 let level = byte_sink_contract::severity(w0);
                 // Split the borrow: the assembler emits while the store takes the line.

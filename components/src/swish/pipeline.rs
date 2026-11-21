@@ -590,10 +590,15 @@ impl SinkWriter {
         if self.n == 0 || self.stopped {
             return;
         }
-        let (w0, w1, w2, _) = byte_sink_contract::pack(&self.buf[..self.n]);
+        let (words, _) = byte_sink_contract::pack(&self.buf[..self.n]);
         self.n = 0;
         if !matches!(
-            byte_sink_contract::classify(send(self.slot, w0, w1, w2)),
+            byte_sink_contract::classify(send(
+                self.slot,
+                words.word_zero,
+                words.word_one,
+                words.word_two
+            )),
             byte_sink_contract::Sent::Ok
         ) {
             self.stopped = true;
@@ -864,7 +869,10 @@ fn drain_into(f: &mut FileOut) {
             return;
         }
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(w0, w1, w2),
+            &mut buf,
+        ) {
             byte_sink_contract::Message::Bytes(n) => f.push(&buf[..n]),
             byte_sink_contract::Message::EndOfStream => {
                 f.finish();

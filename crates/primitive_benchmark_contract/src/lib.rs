@@ -145,8 +145,11 @@ pub fn write_row(
     let length = format_row(&mut line, prefix, row, ticks, count);
     let mut offset = 0;
     while offset < length {
-        let (w0, w1, w2, took) = byte_sink_contract::pack(&line[offset..length]);
-        if !matches!(send(w0, w1, w2), byte_sink_contract::Sent::Ok) {
+        let (words, took) = byte_sink_contract::pack(&line[offset..length]);
+        if !matches!(
+            send(words.word_zero, words.word_one, words.word_two),
+            byte_sink_contract::Sent::Ok
+        ) {
             return;
         }
         offset += took;
@@ -201,7 +204,10 @@ mod tests {
                 sent += 1;
                 assert!(sent <= 8, "write_row did not stop");
                 let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-                match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
+                match byte_sink_contract::unpack(
+                    byte_sink_contract::MessageWords::new(w0, w1, w2),
+                    &mut buf,
+                ) {
                     byte_sink_contract::Message::Bytes(n) => {
                         bytes[length..length + n].copy_from_slice(&buf[..n]);
                         length += n;
@@ -232,9 +238,10 @@ mod tests {
                 sent += 1;
                 assert!(sent <= 8, "write_row did not stop");
                 let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-                if let byte_sink_contract::Message::Bytes(0) =
-                    byte_sink_contract::unpack(w0, w1, w2, &mut buf)
-                {
+                if let byte_sink_contract::Message::Bytes(0) = byte_sink_contract::unpack(
+                    byte_sink_contract::MessageWords::new(w0, w1, w2),
+                    &mut buf,
+                ) {
                     empty += 1;
                 }
                 byte_sink_contract::Sent::Ok

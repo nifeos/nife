@@ -60,9 +60,7 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
         // `rm` speaks the sink contract it declares, so the report is decoded the way any sink
         // decodes it: an end of stream with a non-zero reserved word is malformed, not an end.
         match byte_sink_contract::unpack(
-            w0,
-            w1,
-            w2,
+            byte_sink_contract::MessageWords::new(w0, w1, w2),
             &mut [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES],
         ) {
             byte_sink_contract::Message::Bytes(_) => {}

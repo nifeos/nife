@@ -134,7 +134,10 @@ fn count() -> (u64, u64, u64) {
     loop {
         let (w0, w1, w2) = receive(SOURCE);
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        let n = match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
+        let n = match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(w0, w1, w2),
+            &mut buf,
+        ) {
             byte_sink_contract::Message::Bytes(n) => n,
             byte_sink_contract::Message::EndOfStream => break,
             byte_sink_contract::Message::Malformed => break,
@@ -181,12 +184,17 @@ fn report(lines: u64, words: u64, bytes: u64) {
 
     let mut off = 0usize;
     while off < n {
-        let (w0, w1, w2, took) = byte_sink_contract::pack(&out[off..n]);
+        let (words, took) = byte_sink_contract::pack(&out[off..n]);
         // A failed send is not recoverable and not reportable: the one channel this program would
         // report on is the one that failed. `Gone` means the reader stopped caring, which is
         // exactly when there is nothing left to say.
         if !matches!(
-            byte_sink_contract::classify(send(SINK, w0, w1, w2)),
+            byte_sink_contract::classify(send(
+                SINK,
+                words.word_zero,
+                words.word_one,
+                words.word_two
+            )),
             byte_sink_contract::Sent::Ok
         ) {
             return;

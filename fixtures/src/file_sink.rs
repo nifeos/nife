@@ -21,10 +21,10 @@
 //! ```
 //! use byte_sink_contract::{end_of_stream, pack};
 //!
-//! let (w0, w1, w2, n) = pack(b"hello\n"); // SEND these three words: append n bytes
+//! let (words, n) = pack(b"hello\n"); // SEND these three words: append n bytes
 //! assert_eq!(n, 6);
 //! let _end = end_of_stream();                // SEND this: close the file
-//! # let _ = (w0, w1, w2);
+//! # let _ = (words.word_zero, words.word_one, words.word_two);
 //! ```
 //!
 
@@ -123,7 +123,10 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     loop {
         let (w0, w1, w2) = receive(SINK);
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(w0, w1, w2),
+            &mut buf,
+        ) {
             byte_sink_contract::Message::Bytes(0) => {}
             byte_sink_contract::Message::Bytes(n) => {
                 put(&buf[..n]);

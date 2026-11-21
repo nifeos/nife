@@ -74,10 +74,10 @@ neither `cargo package`, the QEMU-side `sink_tests` nor a build for a 16-bit tar
 | kind | items |
 |---|---|
 | identity | `VERSION`, `INTERFACE_ID` |
-| opcodes | `OPERATION_BYTES` (0), `OPERATION_END_OF_STREAM` (1), `OPERATION_SHIFT` (56) |
+| opcodes | `OPERATION_BYTES` (0) and `OPERATION_END_OF_STREAM` (1), both `u8`; `OPERATION_SHIFT` (56) |
 | first-word fields | `SEVERITY_SHIFT` (32), `KIND_SHIFT` (40), `KIND_TEXT` (0), `MAXIMUM_INLINE_BYTES` (16) |
-| first-word functions | `first_word(operation, len)`, `operation(word_zero)`, `len(word_zero)`, `end_of_stream()`, `severity(word_zero)`, `with_severity(word_zero, level)`, `kind(word_zero)` |
-| codec | `pack(bytes)` returning `(word_zero, word_one, word_two, taken)`, `unpack(word_zero, word_one, word_two, out)` returning `Message::{Bytes(n), EndOfStream, Malformed}` |
+| first-word functions | `first_word(operation: u8, len: u32)`, `operation(word_zero)`, `len(word_zero)`, `end_of_stream()`, `severity(word_zero)`, `with_severity(word_zero, level)`, `kind(word_zero)` |
+| codec | `MessageWords { word_zero, word_one, word_two }`, `pack(bytes)` returning `(MessageWords, taken)`, `unpack(words, out)` returning `Message::{Bytes(n), EndOfStream, Malformed}` |
 | send outcome | `GONE` (-11), `Sent::{Ok, Gone, NoSink}`, `classify(returned)` |
 | `byte_sink_fixture` (a separate in-tree crate, never published) | `TRANSCRIPT`, `SINK_NAME` (`"sinkout"`), `READY`, `DONE`, `BAD`, `code(sent)` |
 
@@ -116,14 +116,14 @@ The other P1 and P2 items:
 | P1-7, British spellings | done |
 | P1-10, zero-count rule | done |
 | P2-11, narrow `usize` | done; `unpack` compares the count as `u64` |
-| P2-12, `first_word` typed parameters | open; it still takes `u64` for both |
-| P2-13, a words struct for `pack` | open; `pack` still returns a bare four-tuple |
+| P2-12, `first_word` typed parameters | done (ruled 2026-11-21 UTC); `first_word` takes a `u8` opcode and a `u32` length, and the opcodes are `u8` |
+| P2-13, a words struct for `pack` | done (ruled 2026-11-21 UTC); `pack` returns `(MessageWords, taken)` and `unpack` takes the struct |
 | P2-14, mutant exemptions | open; they go into the new repository's `.github/mutants-exempts` |
 | P2-15, severity on any first word | done |
 
 ## Names
 
-The architect ratified every name below on 2026-11-21 (UTC).
+The architect ratified every name below on 2026-11-21 (UTC), except `MessageWords`, which stays provisional for the release review.
 
 | item | status | rule or reason |
 |---|---|---|
@@ -133,6 +133,7 @@ The architect ratified every name below on 2026-11-21 (UTC).
 | `returned` (parameter of `classify`) | ratified | the naming rules cover parameters; `return` is a keyword |
 | `byte_sink_fixture` (crate) | ratified | follows `filesystem_fixture` and `socket_fixture`; never published |
 | `VERSION`, `INTERFACE_ID` | ratified, values frozen | the identity pair every contract carries |
+| `MessageWords` (struct and `new`) | provisional, for release review | names the three words a `SEND` carries; the fields take the names of the parameters they replace |
 | `word_zero`, `word_one`, `word_two` | ratified | the three message registers, spelled out; doc comments keep the register names where they help |
 | `OPERATION_END_OF_STREAM`, `end_of_stream`, `Message::EndOfStream` | ratified, each with `#[doc(alias = "eof")]` | spelled out; `eof` is the standard library's and C's spelling |
 | `pack`, `unpack`, `classify`, `severity`, `with_severity`, `kind`, `len`, `operation` | ratified | `len` and `with` are std spellings; the rest are plain words |
@@ -160,18 +161,12 @@ licenses and the path in a comment. The crate has no dependency and no
 `unsafe`, its public API holds the wire and nothing else, six proofs each have a falsifying patch,
 and the decoder enforces what the documentation says about the wire.
 
-## Open questions
-
-- P2-12 (typed `first_word` parameters) and P2-13 (a words struct for `pack`) change the public
-  signatures before the release. Nobody has built either. Both are two-way until the first tag and
-  one-way after it.
-
 ## Decisions for the architect
 
 1. The move is cleared (2026-11-21 UTC).
 2. The Names table is ratified (2026-11-21 UTC).
 3. The identity pair `INTERFACE_ID` 6 and `VERSION` 1 is frozen as built (2026-11-21 UTC).
-4. P2-12 (typed `first_word` parameters) and P2-13 (a words struct for `pack`) remain open. Both
-   are two-way until the first tag, and the maintainer rules them provisionally.
+4. P2-12 (typed `first_word` parameters) and P2-13 (a words struct for `pack`) are ruled
+   (2026-11-21 UTC) and built. `MessageWords` is the one name left for the release review.
 
 Nothing here asks for a tag, a publication or a repository.

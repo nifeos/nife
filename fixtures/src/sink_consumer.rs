@@ -62,7 +62,10 @@ fn start(startup_word: u64, _a1: u64, _a2: u64) -> ! {
     loop {
         let (w0, w1, w2) = receive(INPUT);
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        let n = match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
+        let n = match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(w0, w1, w2),
+            &mut buf,
+        ) {
             byte_sink_contract::Message::Bytes(n) => n,
             // End of stream, or a message this framing does not know: stop reading either way.
             byte_sink_contract::Message::EndOfStream | byte_sink_contract::Message::Malformed => {

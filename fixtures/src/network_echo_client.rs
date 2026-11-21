@@ -176,8 +176,8 @@ fn finish(pieces: &[&[u8]]) -> ! {
     for piece in pieces {
         let mut rest = *piece;
         while !rest.is_empty() {
-            let (w0, w1, w2, n) = byte_sink_contract::pack(rest);
-            send(OUT, w0, w1, w2);
+            let (words, n) = byte_sink_contract::pack(rest);
+            send(OUT, words.word_zero, words.word_one, words.word_two);
             rest = &rest[n..];
         }
     }

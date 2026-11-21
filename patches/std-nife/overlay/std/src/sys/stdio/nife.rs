@@ -55,8 +55,8 @@ fn sink_gone() -> io::Error {
 
 /// One message on the sink. Returns how many bytes it carried.
 fn send_chunk(bytes: &[u8]) -> io::Result<usize> {
-    let (w0, w1, w2, n) = sinkproto::pack(bytes);
-    match sinkproto::classify(rt::send(rt::STDOUT_SLOT, w0, w1, w2)) {
+    let (words, n) = sinkproto::pack(bytes);
+    match sinkproto::classify(rt::send(rt::STDOUT_SLOT, words.word_zero, words.word_one, words.word_two)) {
         sinkproto::Sent::Ok => Ok(n),
         sinkproto::Sent::Gone => Err(sink_gone()),
         sinkproto::Sent::NoSink => Err(no_sink()),
@@ -117,7 +117,7 @@ fn read_stream(buf: &mut [u8]) -> Option<usize> {
             return None;
         }
         STREAM.store(STREAM_HELD, Ordering::Relaxed);
-        match sinkproto::unpack(w0, w1, w2, frame) {
+        match sinkproto::unpack(sinkproto::MessageWords::new(w0, w1, w2), frame) {
             sinkproto::Message::Bytes(n) => {
                 *at = 0;
                 *end = n;

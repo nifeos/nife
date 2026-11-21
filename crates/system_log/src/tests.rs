@@ -33,8 +33,8 @@ fn reader(log: &mut Log, badge: u32, user: &[u8], system: bool, window: u8) {
 fn write(log: &mut Log, badge: u64, bytes: &[u8], now: u64) {
     let mut rest = bytes;
     while !rest.is_empty() {
-        let (w0, w1, w2, n) = pack(rest);
-        log.handle(badge, w0, w1, w2, now);
+        let (words, n) = pack(rest);
+        log.handle(badge, words.word_zero, words.word_one, words.word_two, now);
         rest = &rest[n..];
     }
 }
@@ -93,8 +93,14 @@ fn severity_is_the_writers_bits_or_the_streams_inference() {
     reader(&mut log, 9, b"", true, 0);
     write(&mut log, 1, b"plain\n", 1);
     write(&mut log, 2, b"inferred\n", 2);
-    let (w0, w1, w2, _) = pack(b"explicit\n");
-    log.handle(2, with_severity(w0, severity::ERROR), w1, w2, 3);
+    let (words, _) = pack(b"explicit\n");
+    log.handle(
+        2,
+        with_severity(words.word_zero, severity::ERROR),
+        words.word_one,
+        words.word_two,
+        3,
+    );
     let (_, lines) = read_all(&mut log, 9, 0);
     assert!(lines[0].contains(r#""severity":"info","msg":"plain""#));
     assert!(lines[1].contains(r#""severity":"warning","msg":"inferred""#));
@@ -115,8 +121,8 @@ fn interleaved_writers_produce_whole_lines() {
     while !x.is_empty() || !y.is_empty() {
         for (badge, rest) in [(1u64, &mut x), (2, &mut y)] {
             if !rest.is_empty() {
-                let (w0, w1, w2, n) = pack(rest);
-                log.handle(badge, w0, w1, w2, 5);
+                let (words, n) = pack(rest);
+                log.handle(badge, words.word_zero, words.word_one, words.word_two, 5);
                 *rest = &rest[n..];
             }
         }

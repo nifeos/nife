@@ -55,7 +55,10 @@ pub(super) fn drain_sink(ep: crate::sched::RendezvousId, out: &mut [u8], what: &
     loop {
         let words = crate::sched::ipc_receive(ep);
         let mut chunk = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(words[0], words[1], words[2]),
+            &mut chunk,
+        ) {
             byte_sink_contract::Message::Bytes(n) => {
                 for &b in &chunk[..n] {
                     assert!(len < out.len(), "{what}: wrote more than the buffer holds");
@@ -127,7 +130,10 @@ pub(super) fn drain_sink_from(
             continue;
         }
         let mut chunk = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(words[0], words[1], words[2]),
+            &mut chunk,
+        ) {
             byte_sink_contract::Message::Bytes(n) => {
                 for &b in &chunk[..n] {
                     assert!(len < out.len(), "{what}: wrote more than the buffer holds");

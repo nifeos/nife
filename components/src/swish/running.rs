@@ -1258,7 +1258,10 @@ pub(super) fn drain_text_with(read: &mut dyn FnMut() -> Option<(u64, u64, u64)>)
             return;
         }
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(w0, w1, w2),
+            &mut buf,
+        ) {
             byte_sink_contract::Message::Bytes(n) => print(&buf[..n]),
             byte_sink_contract::Message::EndOfStream => return,
             byte_sink_contract::Message::Malformed => {
@@ -1365,7 +1368,10 @@ pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
         }
         let (w0, w1, w2) = receive(ep);
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(w0, w1, w2),
+            &mut buf,
+        ) {
             byte_sink_contract::Message::Bytes(n) => dest.push(&buf[..n]),
             byte_sink_contract::Message::EndOfStream => done += 1,
             // The progenitor's failure sentinel arrives here too, as an `OPERATION_END_OF_STREAM` it sends on this rendezvous so
