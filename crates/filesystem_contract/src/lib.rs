@@ -35,7 +35,7 @@ pub const OPERATION_SHIFT: u32 = 56;
 
 /// Build a request's first word from just an opcode (the block protocol's shape: the operand, a
 /// block index, rides in the second word).
-pub const fn req(operation: u64) -> u64 {
+pub const fn request(operation: u64) -> u64 {
     operation << OPERATION_SHIFT
 }
 

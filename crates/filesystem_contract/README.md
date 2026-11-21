@@ -12,7 +12,7 @@ travel only in a region the two parties share. A reply's first word is an `i64`:
 result, or the negated errno (`reply_err` and `reply_errno` are the one place that convention is
 defined). A word in `-4095..=-1` is the error code `1..=4095` (`MAXIMUM_ERRNO`); any other negative
 word is a protocol violation that reads as `EPROTO` (71), never as success; the sender's
-`reply_err` refuses a code outside `1..=4095`. The opcode sits in bits 63:56 of the first word (`OPERATION_SHIFT`, `req`, `operation`).
+`reply_err` refuses a code outside `1..=4095`. The opcode sits in bits 63:56 of the first word (`OPERATION_SHIFT`, `request`, `operation`).
 
 ## The contract
 
@@ -47,10 +47,10 @@ word is a protocol violation that reads as `EPROTO` (71), never as success; the 
 ## EXAMPLES
 
 ```rust
-use filesystem_contract::{directory, fs, operation, reply_err, reply_errno, req};
+use filesystem_contract::{directory, fs, operation, reply_err, reply_errno, request};
 
 // A block-protocol request is just an opcode.
-assert_eq!(operation(req(filesystem_contract::block::READ)), filesystem_contract::block::READ);
+assert_eq!(operation(request(filesystem_contract::block::READ)), filesystem_contract::block::READ);
 
 // An error is the negated errno; a length is itself.
 assert_eq!(reply_errno(reply_err(2)), Some(2));

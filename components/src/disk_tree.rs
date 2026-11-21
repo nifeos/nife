@@ -45,7 +45,7 @@ user_mode_runtime::program_entry!(start);
 
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 fn start(_: u64, _: u64, _: u64) -> ! {
-    let size = call(BLK, filesystem_contract::req(block::SIZE), 0).0 as i64;
+    let size = call(BLK, filesystem_contract::request(block::SIZE), 0).0 as i64;
     if size <= 0 {
         send(REPORT, 0xDEAD_0001, size as u64, 0);
         user_mode_runtime::exit();

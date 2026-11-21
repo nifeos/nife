@@ -555,7 +555,10 @@ impl Wiring {
     /// Play a client: one blk `operation` on `block` over the request endpoint, the way any holder
     /// of that endpoint would. Returns the server's status word.
     pub fn blk(&self, operation: u64, block: u64) -> i64 {
-        crate::sched::ipc_call(self.request, [filesystem_contract::req(operation), block])[0] as i64
+        crate::sched::ipc_call(
+            self.request,
+            [filesystem_contract::request(operation), block],
+        )[0] as i64
     }
 
     /// The transfer buffer's first block, through the direct map, for a caller staging a write or
