@@ -104,4 +104,4 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`byte_glob`](crate-reviews/byte-glob.md) | contract | cleared and moved (2026-11-20 UTC, no tag, no publish); nife pins `nifeos/byte_glob` by commit |
 | [`device_tree_blob`](crate-reviews/device-tree-blob.md) | 4 | cleared to move (2026-11-20 UTC, no tag, no publish) |
 | [`test_and_set_lock`](crate-reviews/test-and-set-lock.md) | 1109 | ready for review |
-| [`capability_table`](crate-reviews/capability-table.md) | kernel | ready for review; milestone 1081 asks for the clearance |
+| [`capability_table`](crate-reviews/capability-table.md) | kernel | ready for review; milestone 1081 (`capability_table`: what an outside maintainer would fix before it leaves) asks for the clearance |

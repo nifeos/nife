@@ -27,10 +27,10 @@ falsification patch. The kernel is its only consumer.
 | item | value |
 |---|---|
 | crate | `capability_table`, ratified 2026-08-01 as `capability` and renamed on the architect's ruling of 2026-11-16 (milestone 1081 D1) |
-| identity values | none: no `INTERFACE_ID`, `VERSION` or magic word. The crate is a library the kernel links, not a wire contract; the five right bits are pinned by `abi::rights` and asserted equal in `kernel/src/capability_object.rs` |
+| identity values | none: no `INTERFACE_ID`, `VERSION` or magic word. The crate is a library the kernel links, not a wire contract; `abi::rights` pins the five right bits and `kernel/src/capability_object.rs` asserts them equal |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, none yet (the milestone proposes 1.85; the tests pass there; the template's other crates say 1.88, so the move lane picks one) |
-| license | `license.workspace = true` today; the move writes `MIT OR Apache-2.0` and both texts. Nothing is adapted from outside |
+| license | `license.workspace = true` today; the move writes `MIT OR Apache-2.0` and both texts. The crate adapts nothing from outside |
 | `publish` | `false`; the crate is not on `crates/publish-allowlist.txt` |
 | size | `src/lib.rs` 1,025 lines and `src/tests.rs` 589 lines; 19 tracked files, 16 of them falsification patches |
 | mutation baseline | `.cargo/mutants-baseline.txt` has a row `capability 98 3 3 26` (caught, missed, timeout, unviable), under the old crate name and from before the later harness work; not rerun here |
@@ -42,7 +42,7 @@ falsification patch. The kernel is its only consumer.
 | path dependency | `kernel` only (`kernel/Cargo.toml`, with `version = "0.1.0"`) |
 | source files that call it | `kernel/src/capability_object.rs` (which keeps the alias `CapabilityTable<Object, CAPABILITY_TABLE_SLOTS>` and calls `Capability::delegate` from `Delegation::derive`), `kernel/src/sched/region_reaping.rs` (`reap_decision`, `survey_includes`), and `mint_child` through the retype and memory-region system calls |
 | other files that name the crate | 24, listed by the dry run: workflows, helper tables and selftests, `script/falsifications`, `script/lint`, `script/verify`, `packages/kernel.package.toml`, `SECURITY.md`, two bench logs, `helpers/trust_boundary_crates.tsv`, `helpers/template_report_baseline.txt` and six `system_tests` files and falsification patches. The move lane reads each |
-| fuzz, std farm | none: no fuzz target names the crate, and no source file is copied into the standard library |
+| fuzz, std farm | none: no fuzz target names the crate, and the standard library copies no source file |
 
 No test reads a `../../` file and no `include_str!` leaves the crate.
 
@@ -53,7 +53,7 @@ All results are from this lane, on `main` plus this pull request, on a Linux hos
 | check | result |
 |---|---|
 | `script/crate-standalone capability_table` | 8 failures, all known and all for the move: `names` (37 names not ratified, 36 of them with no `Name:` block and the rest provisional), manifest inherits `license`, manifest inherits `lints`, no `rust-version`, no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, one citation of a path into the tree (`src/tests.rs` line 291 names `script/verify`). The build on stable for the host and `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-elf` and `x86_64-unknown-none` passes; Kani proves 16 of 16 harnesses; all 16 falsification patches turn their harness red. Run time 1 minute 32 seconds |
-| `script/crate-move --dry-run --no-build`, template `crate-workflows` at its release `v8` | 7 findings for the move lane, none new: the README is missing, the manifest inherits two keys and has no `rust-version`, `standalone` repeats the file findings, `prose caps` fires on the staged scaffold README, and the same one citation. Every one of the 16 patches applies with no offset and no fuzz after the `Name:` blocks are stripped. Note: no mutation baseline row for `capability_table` |
+| `script/crate-move --dry-run --no-build`, template `crate-workflows` at its release `v8` | 7 findings for the move lane, none new: the README is missing, the manifest inherits two keys and has no `rust-version`, `standalone` repeats the file findings, `prose caps` fires on the staged scaffold README, and the same one citation. Every one of the 16 patches applies with no offset and no fuzz once the move strips the `Name:` blocks. Note: no mutation baseline row for `capability_table` |
 | `cargo test -p capability_table` | 26 unit tests and 2 doctests pass |
 | `cargo clippy -p capability_table --all-targets -- -D warnings`, `cargo doc` with warnings denied | no warning |
 | the template's naming checks at its head, over the staged `src/lib.rs` | `spelled_out`, `unit_symbols`, `question_shape`, `british_spelling` and `contract_names`: 164 names judged, 0 refused. `abbreviations`, report only: one component, `liveness` in a harness name |
@@ -69,7 +69,7 @@ Not run, and so not claimed:
   and `weekly` workflows, which run in the repository; a release dry run; `script/crate-move`
   with a build (the dry run used `--no-build`).
 - A 32-bit build. The host has no 32-bit target, so the slot truncation fix of milestone 1081's
-  item 4 is checked by its test and by reading.
+  item 4 rests on its test and on reading.
 - The template's `function_length`, `history_phrases` and `inflated_wording` at head were not run
   by hand; the dry run ran them at release `v8` and they pass.
 - The kernel's QEMU suite, which the merge queue runs.
@@ -109,16 +109,16 @@ No nife type appears in a public signature. What a stranger may find surprising:
   a second move. The review refuses a `nife_` prefix and adds no `#[doc(alias)]` for the old name.
 - The five names `Capability::delegate`, `Error::GrantRequired`, `Error::SlotOccupied`,
   `CapabilityTable::capacity` and `CapabilityTable::iter` stand as built (the architect,
-  2026-11-19 UTC, milestone 1081 D2, option A). `derive` is refused as a rename of `delegate`, and
-  `len` is not added because in std it counts the elements held.
-- No table has more than 64 slots, so the exact `(64, 64)` pin in the global-peak test cannot be
-  exceeded by any test; finding P2-14 is declined.
+  2026-11-19 UTC, milestone 1081 D2, option A). The ruling refuses `derive` as a rename of `delegate`, and
+  adds no `len` because in std it counts the elements held.
+- No table has more than 64 slots, so the exact `(64, 64)` pin in the global-peak test cannot
+  exceed it; finding P2-14 is declined.
 - The five right bits and their positions, the set-means-free word, the 64-slot ceiling and the
-  publishing hold are settled and are not reopened here.
+  publishing hold stand, and this package does not reopen them.
 
 ## Names
 
-The names table follows `script/names capability_table`. Nothing in it is ratified by this lane.
+The names table follows `script/names capability_table`. This lane ratifies nothing in it.
 The first four rows are the architect's rulings, which the crate's `Name:` blocks and the two
 "Provisional name." doc lines have not yet caught up with (see the blockers). Every row marked
 for the architect is the architect's to ratify, as built.
@@ -130,9 +130,9 @@ for the architect is the architect's to ratify, as built.
 | `Capability::delegate`, `Error::GrantRequired`, `Error::SlotOccupied`, `CapabilityTable::capacity`, `CapabilityTable::iter` | ratified 2026-11-19 UTC (D2) | the code still reads provisional |
 | `Capability` | for the architect to ratify | spelled out from `Cap` under the capability ruling of 2026-10-06 UTC; the block still reads provisional |
 | `Rights`, `NONE`, `READ`, `WRITE`, `GRANT`, `ENUMERATE`, `BIND`, `ALL`, `bits`, `from_bits`, `union`, `intersect`, `allows`, `is_subset_of` | for the architect to ratify | no block; the five bit positions are the system call wire format, so the right names are the vocabulary `abi::rights` also uses; `ALL` is built from the five and is no longer a literal |
-| `Capability::mint_child` | for the architect to ratify | the inheriting mint: same rights, new object. `derive` and `delegate` are taken by the narrowing, GRANT-checked path, so `mint_child` is not a synonym |
+| `Capability::mint_child` | for the architect to ratify | the inheriting mint: same rights, new object. the narrowing, GRANT-checked path already uses `derive` and `delegate`, so `mint_child` is not a synonym |
 | `Error::NoSuchSlot`, `CannotWiden`, `NoFreeSlot` | for the architect to ratify | no block |
-| `CapabilityTable::new`, `used`, `peak`, `is_empty`, `get`, `insert`, `insert_at`, `delete` | for the architect to ratify | the standard-library words (`len` is excluded by D2); `used` counts occupied slots and `peak` is the highest `used` ever seen |
+| `CapabilityTable::new`, `used`, `peak`, `is_empty`, `get`, `insert`, `insert_at`, `delete` | for the architect to ratify | the standard-library words (D2 excludes `len`); `used` counts occupied slots and `peak` is the highest `used` ever seen |
 | `CapabilityTable::insert_at_or_above`, `put` | for the architect to ratify | `insert_at_or_above` takes the lowest free slot at or above a floor; `insert_at` returns the slot and refuses an occupied one, `put` overwrites and returns `()`; the pair reads close, see open question 2 |
 | `CapabilityTable::derive` | for the architect to ratify | files `Capability::delegate`'s result in a second slot; the same word that D2 refused for the capability method now names the table method |
 | `CapabilityTable::delete_matching` | for the architect to ratify | takes `FnMut` |
@@ -187,8 +187,8 @@ crate has no dependency and no `unsafe`, its 16 harnesses prove and all 16 patch
 should, the tests, clippy and docs are clean, and the template's naming checks refuse nothing.
 Every blocker above is a writing task for the move lane (manifest, README, licenses, exemptions,
 one citation), none changes behavior, and none needs a design ruling. The names that the architect
-has not seen are listed above; they can be ratified in the same sitting or left provisional and
-reviewed at release, because every one is two-way until the first publish.
+has not seen are listed above; the architect can ratify them in the same sitting or leave them provisional for
+the release review, because every one is two-way until the first publish.
 
 ## Decisions for the architect
 
