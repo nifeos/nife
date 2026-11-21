@@ -13,8 +13,8 @@ Raised by a read-only review lane that met `crates/byte_sink_contract` as a stra
 the crate leaves for a repository of its own under milestone 1017 (the contract crates leave in this
 order), step 5. It changes nothing; it lists what the move lane and the lanes after it change.
 
-There is no review package for this crate in `notes/crate-reviews/`, so this review has no settled
-baseline to defer to. The baseline it takes instead is what the tree already records. That is the crate
+The review package for this crate is `notes/crate-reviews/byte-sink-contract.md`. The baseline this
+review takes is what the tree records. That is the crate
 name (`_contract` per `design/naming.md`), the ratified `INLINE_MAXIMUM`, and the two opcodes with
 `OPERATION_BYTES` at zero (notes/sink-protocol.md). It includes the severity bits that §242 (a
 system log) placed in the first word, and the interface id 6 and version 1 of milestone 956 (the
@@ -211,8 +211,9 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
   [#3581](https://github.com/nifeos/nife/pull/3581).
 - Decision D, the names: Done (maintainer provisional, 2026-11-14 UTC), built as P1-9,
   [#3873](https://github.com/nifeos/nife/pull/3873).
-- The move: Open. The review package is `notes/crate-reviews/byte-sink-contract.md`;
-  nifeos/byte_sink_contract does not exist; the clearance under Open decisions follows.
+- The move: Open. The review package is `notes/crate-reviews/byte-sink-contract.md`, ready for
+  review; nifeos/byte_sink_contract does not exist; the clearance under Open decisions follows.
+  `MAXIMUM_INLINE_BYTES` replaced the ratified `INLINE_MAXIMUM` and needs re-ratification.
 
 ## Open decisions
 
@@ -221,18 +222,15 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
 Background: `byte_sink_contract` is the one framing every "write these bytes there" destination
 speaks (a terminal, a file, a pipe), so a writer holds any of them in one capability slot. A crate
 that leaves nife gets a review package under `notes/crate-reviews/`, which an architect reads;
-clearing it is the go to create the crate's repository and move the crate. No package exists for
-this crate yet, so a package lane writes one first.
+clearing it is the go to create the crate's repository and move the crate. The package is
+`notes/crate-reviews/byte-sink-contract.md`.
 
-Before the package is worth reading, the in-tree work lands: `fixture` moves out (P1-3), the
-renames apply (P1-9), and a lane corrects the crate-root sentence on end-of-stream words (P1-8). The
+The in-tree work has landed: `fixture` is the crate `byte_sink_fixture` (P1-3), the end-of-stream
+words are reserved and the crate root says so (P1-8), and the four renames are applied (P1-9). The
 manifest, README, licenses and exemptions (P0-1, P2-14) come with the move itself.
 
-Recommendation: A.
-
-- A. Land P1-3, P1-8 and P1-9, then a package lane writes the review package, and the architect
-  clears it when it arrives.
-- B. Write the package now, with P1-3 and P1-9 listed as conditions of the clearance.
+Recommendation: clear it. The names table in the package, including `MAXIMUM_INLINE_BYTES`, which
+replaced the ratified `INLINE_MAXIMUM`, goes to the architect's name review with it.
 
 Door: one-way. The template's workflows and nife's pin act on a repository and a moved
 crate from the first day; moving back is a second move.
@@ -266,3 +264,4 @@ publish.
 An outside review of `byte_sink_contract` before it leaves found two findings that block the move. The crate does not stand alone, and its `VERSION` text specifies a wire operation that does not and cannot exist. It found eight to land before the first release. They are the fixture module in the public API, the `abi` dev-dependency, no proofs, a kind byte the decoder ignores, a British spelling, undefined end-of-stream words, names a later rule reopens, and a zero-count contradiction. It found five for later.
 Four decisions: the architect ruled the end-of-stream words reserved, and the maintainer decided,
 provisionally, no wire version operation, `fixture` out of the published crate, and the renames.
+The in-tree findings have landed and the review package awaits the clearance.
