@@ -21,7 +21,7 @@
 #      git repository: a row never measured, a crate edited and not committed, a crate committed
 #      since, an untracked file in it and a new Kani version each weigh the default instead. Fails if
 #      a weight outlives the code it measured.
-#   8. script/verify --only weighs its own row: a fixture table gives `capability_table` one unit, so
+#   8. script/verify --only weighs its own row: a fixture table gives `page_tables` one unit, so
 #      VERIFY_JOBS=2 on a four-unit pool admits two runs and the third waits for two units. The
 #      row's path is .kani-version, a file no lane edits in passing. Fails if the measurement does
 #      not reach the run.
@@ -80,7 +80,7 @@ unset LINT_NO_CARGO GITHUB_ACTIONS NIFE_KANI_UNITS NIFE_KANI_POOL VERIFY_JOBS
 NIFE_HEAVY_SLOT_DIR="$tmp/slots"
 NIFE_HEAVY_SLOTS=16
 export NIFE_HEAVY_SLOT_DIR NIFE_HEAVY_SLOTS
-# script/verify's KANI_APART table would split capability_table's row into a listing call and two proofs;
+# script/verify's KANI_APART table would split page_tables's row into a listing call and two proofs;
 # this file counts calls of its own, so the table is off here (helpers/verify-stub-selftest.sh tests it).
 NIFE_KANI_APART=
 export NIFE_KANI_APART
@@ -113,7 +113,7 @@ starts() { [ "$(grep -c '^start' "$tmp/events")" -ge "$1" ]; }
 # run3_decided: the third run either printed that it waits, or got its units and started a proof.
 run3_decided() { grep -q "waiting for" "$tmp/run3.out" || starts 3; }
 
-# three: start three `script/verify --only capability_table` runs one at a time, each only once the one before
+# three: start three `script/verify --only page_tables` runs one at a time, each only once the one before
 # it holds a proof, hold all of them until the third has either said it waits or started, then
 # release them and join. A third run that starts without waiting still ends the stage, and the
 # stage's own assertion then fails on what it saw.
@@ -121,7 +121,7 @@ three() {
 	rm -f "$tmp/go"
 	: >"$tmp/events"
 	for i in 1 2 3; do
-		"$root/script/verify" --only capability_table >"$tmp/run$i.out" 2>&1 &
+		"$root/script/verify" --only page_tables >"$tmp/run$i.out" 2>&1 &
 		pids="$pids $!"
 		if [ "$i" -lt 3 ]; then until_true "run $i to start its proof" starts "$i"; fi
 	done
@@ -150,7 +150,7 @@ grep -q "waiting for 2 of 4 Kani units" "$tmp/run3.out" || fail "stage 2: the th
 # 3.
 : >"$tmp/args"
 : >"$tmp/go"
-NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=8 "$root/script/verify" --only capability_table >"$tmp/clamp.out" 2>&1 ||
+NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=8 "$root/script/verify" --only page_tables >"$tmp/clamp.out" 2>&1 ||
 	fail "stage 3: the clamped run failed"
 grep -q "VERIFY_JOBS=8 lowered to 2" "$tmp/clamp.out" || fail "stage 3: the lowering was silent"
 grep -q -- "-j 2 " "$tmp/args" || fail "stage 3: cargo kani was not run at -j 2: $(cat "$tmp/args")"
@@ -170,7 +170,7 @@ grep -q "waiting for 5 of 11 Kani units" "$tmp/run3.out" || fail "stage 5: the t
 # 6. A holder in flight is named by lane, worktree and command.
 rm -f "$tmp/go"
 : >"$tmp/events"
-NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=1 "$root/script/verify" --only capability_table >/dev/null 2>&1 &
+NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=1 "$root/script/verify" --only page_tables >/dev/null 2>&1 &
 holder=$!
 until_true "the holder to start its proof" starts 1
 st="$(NIFE_VERIFY_MEMORY_BYTES=$POOL2 python3 "$root/helpers/heavy_slot.py" --status)"
@@ -235,7 +235,7 @@ PY
 # 8.
 [ -z "$(git -C "$root" status --porcelain -- .kani-version)" ] ||
 	fail "stage 8: .kani-version has local changes, so the fixture row cannot be fresh; commit it first"
-printf 'row\tpath\ttree\tkani\tpeak_mib\ncapability_table\t.kani-version\t%s\t%s\t1500\n' \
+printf 'row\tpath\ttree\tkani\tpeak_mib\npage_tables\t.kani-version\t%s\t%s\t1500\n' \
 	"$(git -C "$root" rev-parse HEAD:.kani-version)" "$(tr -d '[:space:]' <"$root/.kani-version")" >"$tmp/peaks.tsv"
 pids=""
 unset NIFE_KANI_HARNESS_GIB
@@ -247,7 +247,7 @@ grep -q "waiting for 2 of 4 Kani units" "$tmp/run3.out" ||
 # 9.
 rm -f "$tmp/go"
 : >"$tmp/events"
-small() { NIFE_HEAVY_SLOTS="$1" NIFE_KANI_HARNESS_GIB=2 NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=2 "$root/script/verify" --only capability_table; }
+small() { NIFE_HEAVY_SLOTS="$1" NIFE_KANI_HARNESS_GIB=2 NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=2 "$root/script/verify" --only page_tables; }
 small 2 >"$tmp/s9-holder.out" 2>&1 &
 pids="$!"
 until_true "the stage 9 holder to start its proof" starts 1

@@ -62,7 +62,7 @@ answers, in the prose's own words, and a derivation.
 | `harness-crates` | how many workspace packages carry at least one Kani proof harness | distinct packages among those files |
 | `sh-scripts` | how many `#!/bin/sh` scripts there are under `script/` and `helpers/`, which is the set shellcheck gates | files whose first line is exactly `#!/bin/sh` |
 | `system_calls` | how many system call numbers the ABI defines, which is the whole width of the trap | `pub const SYSTEM_CALL_*: u64` in `crates/abi/src/lib.rs` |
-| `rights-bits` | how many named single-bit rights a capability can carry | `pub const NAME: Rights = Rights(1 << N)` in `crates/capability_table` |
+| `rights-bits` | how many named single-bit rights a capability can carry | `pub const NAME: u64 = 1 << N` in `crates/abi/src/rights.rs` |
 | `loom-harnesses` | how many loom harnesses the tree carries, which is what `script/interleaving-check` runs | `loom::model(` calls in `crates//*.rs` |
 | `loom-crates` | how many crates carry at least one loom harness | distinct crate directories among those files |
 
