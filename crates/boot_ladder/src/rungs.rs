@@ -6,7 +6,7 @@
 
 /// **What a red verdict says before it names the checks that failed.**
 ///
-/// Uppercase, the tree's word for a failed check, which other boot lines also use. It appears
+/// Uppercase, the word other boot lines also use for a failed check. It appears
 /// *inside* a [`self_test`](crate::Heads::self_test) line, after any [`SELF_TEST_ABSENT`] list; a
 /// matcher wanting a failed verdict must find both.
 ///
@@ -19,7 +19,7 @@ pub const SELF_TEST_FAILED: &str = "FAILED: ";
 /// An absent check neither passed nor failed: the machine has no device for it to test, and the
 /// kernel's line for that check says which. The verdict stays green unless something says
 /// [`SELF_TEST_FAILED`], which always comes after this list when both are present. Whether an
-/// absence is acceptable is the board's fact, not the kernel's: `serial_console`'s board profiles
+/// absence is acceptable is the board's fact, not the kernel's: a console reader's board profiles
 /// name the checks that may not be absent on each board, and read such an absence as a failure.
 ///
 /// Name: ratified 2026-11-19 (UTC), block 1078.

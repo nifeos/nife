@@ -278,9 +278,9 @@ impl fmt::Display for CheckLine<'_> {
 /// `<system> self-test subject: thread 19, which the userspace check kills on purpose`.
 ///
 /// The thread id is decimal, as the kernel prints it in its own report of the kill (`user thread
-/// 19 killed: ...`), so a gate can match the two by number. `swish-check` excludes from its
-/// killed-thread check exactly the threads these lines name, and fails every other kill;
-/// [`subject_thread`] reads the number back.
+/// 19 killed: ...`), so a gate can match the two by number. A gate that fails on a killed thread can exclude exactly
+/// the threads these lines name and fail every other kill; [`subject_thread`] reads the number
+/// back.
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-11 UTC).
 pub struct SubjectLine<'a> {
@@ -461,7 +461,7 @@ mod tests {
 
     const HEADS: Heads<'static> = Heads::new("example");
 
-    /// The line a green tally prints is the shape `serial_console` reads.
+    /// The line a green tally prints is the shape a console reader reads.
     #[test]
     fn a_tally_prints_the_verdict_the_console_reads() {
         let mut t = Tally::new();
