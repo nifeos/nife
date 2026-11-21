@@ -29,7 +29,7 @@ linked.
 
 | | Where | Granularity |
 |---|---|---|
-| `DAIF.I` | the **CPU** | all-or-nothing. What `InterruptSafeMutex` uses. |
+| `DAIF.I` | the **CPU** | all-or-nothing. What `InterruptSafeMutualExclusionLock` uses. |
 | `GICC_PMR` | the **GIC** | selective, by priority. What Linux's "pseudo-NMI" uses to keep a watchdog alive inside a critical section. |
 
 ## aarch64: the CPU

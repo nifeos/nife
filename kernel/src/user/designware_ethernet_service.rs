@@ -125,8 +125,8 @@ static CONTROL_STACK: [AtomicU64; CONTROL_EXTRA_STACK_PAGES] =
 static CONTROL: AtomicU64 = AtomicU64::new(u64::MAX);
 
 /// The last bring-up's account, refused or not: one boot artifact, read by the bench boot's lines.
-static LAST_REPORT: crate::sync::InterruptSafeMutex<Option<Report>> =
-    crate::sync::InterruptSafeMutex::new(crate::sync::rank::RAM, None);
+static LAST_REPORT: crate::sync::InterruptSafeMutualExclusionLock<Option<Report>> =
+    crate::sync::InterruptSafeMutualExclusionLock::new(crate::sync::rank::RAM, None);
 
 /// **What the last bring-up saw**, as far as it got. `None` before any.
 #[cfg_attr(not(feature = "network_bench"), allow(dead_code))] // the bench boot is its reader

@@ -13,7 +13,7 @@ pub use memory_regions::{Ceilings, Counted, ObjectKind};
 use page_frames::{FRAME_BYTES, PageFrame};
 
 use crate::memory;
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 /// The most untyped regions that can be live **at once**. Slots are reused (the table is
 /// generational), so this bounds concurrent regions, not creations over the kernel's lifetime.
@@ -57,8 +57,8 @@ pub(crate) fn peak_region_count() -> usize {
 ///
 /// **Page units inside, byte addresses outside.** The crate is `FRAME_BYTES`-agnostic on purpose, so
 /// every conversion happens here, at the boundary where the constant is already in scope.
-static REGIONS: InterruptSafeMutex<RegionTable<MAXIMUM_REGIONS>> =
-    InterruptSafeMutex::new(rank::MEMORY_REGION, RegionTable::new());
+static REGIONS: InterruptSafeMutualExclusionLock<RegionTable<MAXIMUM_REGIONS>> =
+    InterruptSafeMutualExclusionLock::new(rank::MEMORY_REGION, RegionTable::new());
 
 /// The table's typed name for a region's `u64` form, which is what a capability carries.
 fn typed(region: u64) -> RegionName {

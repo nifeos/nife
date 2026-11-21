@@ -114,7 +114,7 @@ pub fn on_tick() {
     // machine and your share)).
     count_tick();
     // The corruption tripwire, one relaxed load when unarmed. Its println is safe here because the
-    // console's `InterruptSafeMutex` masks interrupts; its answer is ignored, because a sampling
+    // console's `InterruptSafeMutualExclusionLock` masks interrupts; its answer is ignored, because a sampling
     // instrument may skip a beat and the tick must never spin in interrupt context.
     let _ = canary::check();
 

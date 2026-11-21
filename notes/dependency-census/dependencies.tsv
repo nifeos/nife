@@ -7,7 +7,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 02	449	context	later	2026-09-20	2026-08-03	This refusal is M-449 (design/roadmap/0449-the-el2-to-el1-drop.md), which carries it with
 03	76	context	at-creation	2026-08-03	2026-08-03	Backfilled 2026-08-03 from history (M-76). Built in `ba47a27` (2026-07-13), written up in
 03	4	context	at-creation	2026-08-03	2026-08-03	than a fix; the real fix, a guard page below the stack, waited for M-4's MMU.
-03	5	context	at-creation	2026-08-03	2026-08-03	M-5. That arrived as `6974f6c` (IrqSafeMutex, handlers do not allocate) and was later
+03	5	context	at-creation	2026-08-03	2026-08-03	M-5. That arrived as `6974f6c` (InterruptSafeMutualExclusionLock, handlers do not allocate) and was later
 03	4	context	later	2026-09-03	2026-08-03	- **M-4.** The guard page below the kernel stack. The stack canary this milestone added is
 03	4	context	later	2026-09-03	2026-08-03	M-4 turns on.
 03	5	context	later	2026-09-03	2026-08-03	- **M-5.** The written-down locking discipline the commit demanded before a timer interrupt

@@ -19,7 +19,7 @@
 
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 /// The PLIC's MMIO base (a kernel virtual address in the direct map), stored by [`initialize`].
 static PLIC_BASE: AtomicUsize = AtomicUsize::new(0);
@@ -87,12 +87,12 @@ pub(crate) fn open_context(context: usize) {
 /// Serializes the per-context enable-bit words, the one read-modify-write in this driver: two
 /// interleaved updates lose one, and a lost enable masks a device forever.
 ///
-/// Context: an `InterruptSafeMutex` at [`rank::INTERRUPT_CONTROLLER`], a leaf taken holding
+/// Context: an `InterruptSafeMutualExclusionLock` at [`rank::INTERRUPT_CONTROLLER`], a leaf taken holding
 /// nothing, never by
 /// an interrupt handler. It guards `()`, not [`PLIC_BASE`], so claim/complete never takes it. See
 /// notes/interrupts/controller-drivers.md and notes/arch-audit.md finding 3.
-static ENABLE_BITS: InterruptSafeMutex<()> =
-    InterruptSafeMutex::new(rank::INTERRUPT_CONTROLLER, ());
+static ENABLE_BITS: InterruptSafeMutualExclusionLock<()> =
+    InterruptSafeMutualExclusionLock::new(rank::INTERRUPT_CONTROLLER, ());
 
 /// Set or clear `source`'s bit in `context`'s enable word, under [`ENABLE_BITS`]. Clearing is the
 /// tests' alone (the module doc says why nothing else clears one); it lives here so the

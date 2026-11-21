@@ -34,7 +34,7 @@ pub(crate) mod clockproto;
 pub(crate) mod entropyproto;
 // The byte-sink contract (milestone 50, notes/sink-protocol.md): the one framing every "write
 // these bytes there" destination speaks, generated verbatim from `crates/byte_sink_contract/src/lib.rs` by
-// the same xtask step. `sys/stdio` is a *writer* of it, so the receiving half (`unpack`, `Msg`)
+// the same xtask step. `sys/stdio` is a *writer* of it, so the receiving half (`unpack`, `Message`)
 // belongs to the sinks; hence the allow.
 #[allow(dead_code)]
 pub(crate) mod sinkproto;

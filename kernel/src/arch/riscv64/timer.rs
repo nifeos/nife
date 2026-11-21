@@ -566,16 +566,17 @@ mod tests {
     // here: from inside the guest a slow handler and a descheduled host look alike. See
     // notes/riscv-port/timer.md.
 
-    /// Holding an `InterruptSafeMutex` across more than one tick deadline loses a tick.
+    /// Holding an `InterruptSafeMutualExclusionLock` across more than one tick deadline loses a tick.
     ///
-    /// If it did not, the mutex would not be masking interrupts. This is the cost DECISIONS §9's
+    /// If it did not, the mutual exclusion lock would not be masking interrupts. This is the cost DECISIONS §9's
     /// short critical sections avoid.
     #[test_case]
     fn a_long_critical_section_costs_a_tick() {
         use crate::arch::timer;
-        use crate::sync::{InterruptSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
-        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 0);
 
         // Read `before` inside the critical section, where this thread cannot migrate, so the
         // window measured is exactly the masked one.
@@ -592,7 +593,7 @@ mod tests {
         assert!(
             within_periods(20, || timer::missed_ticks_on(hart) > before),
             "holding a lock across two tick periods did NOT lose a tick, which means \
-             InterruptSafeMutex is not masking interrupts and the deadlock in notes/locking.md \
+             InterruptSafeMutualExclusionLock is not masking interrupts and the deadlock in notes/locking.md \
              is live"
         );
     }
@@ -607,9 +608,10 @@ mod tests {
     #[test_case]
     fn a_late_tick_returns_to_the_grid() {
         use crate::arch::timer;
-        use crate::sync::{InterruptSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
-        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 0);
 
         let interval = timer::interval();
         // Inside the critical section the thread cannot migrate or be preempted, so the phase and
@@ -663,7 +665,7 @@ mod tests {
         );
     }
 
-    /// Holding an `InterruptSafeMutex` masks this hart's timer (`sstatus.SIE`), and releasing it
+    /// Holding an `InterruptSafeMutualExclusionLock` masks this hart's timer (`sstatus.SIE`), and releasing it
     /// delivers
     /// the held tick.
     ///
@@ -673,9 +675,10 @@ mod tests {
     #[test_case]
     fn holding_a_lock_masks_the_timer() {
         use crate::arch::{interrupts, timer};
-        use crate::sync::{InterruptSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
-        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 0);
 
         assert!(
             interrupts::is_enabled(),
@@ -705,7 +708,7 @@ mod tests {
             assert_eq!(
                 timer::ticks_on(hart),
                 before,
-                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutex is not masking \
+                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutualExclusionLock is not masking \
                  sstatus.SIE, and the deadlock in notes/locking.md is live: a handler that touched \
                  this lock would spin forever waiting for code that cannot run."
             );
@@ -721,7 +724,7 @@ mod tests {
             assert_eq!(
                 timer::ticks_on(hart),
                 before,
-                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutex is not masking \
+                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutualExclusionLock is not masking \
                  sstatus.SIE, and the deadlock in notes/locking.md is live: a handler that touched \
                  this lock would spin forever waiting for code that cannot run."
             );

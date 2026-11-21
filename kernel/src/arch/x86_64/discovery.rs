@@ -12,11 +12,12 @@
 
 use super::machine::{self, Acpi};
 use crate::println;
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 /// The ACPI walk [`initialize`] made, for the bring-up steps after `mmu::initialize` that cannot
 /// repeat it.
-static ACPI: InterruptSafeMutex<Option<Acpi>> = InterruptSafeMutex::new(rank::ACPI, None);
+static ACPI: InterruptSafeMutualExclusionLock<Option<Acpi>> =
+    InterruptSafeMutualExclusionLock::new(rank::ACPI, None);
 
 /// **Read `f`'s answer out of the ACPI walk.** The lock is held only for `f`, so `f` copies out
 /// what it needs and must take no lock ranked above [`rank::ACPI`]; the IOMMUs' tables are copied

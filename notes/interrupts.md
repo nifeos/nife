@@ -163,7 +163,7 @@ That is the bill for deadlock prevention, and why "keep critical sections short"
 that didn't get preempted.
 
 It is a strange thing to *assert*, until you notice: if that cost stopped being real,
-`InterruptSafeMutex` would have stopped masking, and the deadlock would be back.
+`InterruptSafeMutualExclusionLock` would have stopped masking, and the deadlock would be back.
 
 ---
 
@@ -270,7 +270,7 @@ core and does not decide (rule #2). The PLIC does the same per hart (`SOURCE_CTX
 claiming and completing against its own context.
 
 The PLIC's enable bits share one word per 32 sources, so setting one is a read-modify-write two
-harts can interleave, losing an enable. One `InterruptSafeMutex` at `rank::INTERRUPT_CONTROLLER`
+harts can interleave, losing an enable. One `InterruptSafeMutualExclusionLock` at `rank::INTERRUPT_CONTROLLER`
 serializes it
 ([arch-audit.md](arch-audit.md), finding 3).
 

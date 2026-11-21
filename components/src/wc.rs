@@ -133,11 +133,11 @@ fn count() -> (u64, u64, u64) {
 
     loop {
         let (w0, w1, w2) = receive(SOURCE);
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         let n = match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
-            byte_sink_contract::Msg::Bytes(n) => n,
-            byte_sink_contract::Msg::Eof => break,
-            byte_sink_contract::Msg::Malformed => break,
+            byte_sink_contract::Message::Bytes(n) => n,
+            byte_sink_contract::Message::Eof => break,
+            byte_sink_contract::Message::Malformed => break,
         };
         for &b in &buf[..n] {
             bytes += 1;

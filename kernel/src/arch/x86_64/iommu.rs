@@ -40,7 +40,7 @@ use page_tables::x86_64::Vtd;
 use pci_configuration_space::MsiTarget;
 
 use crate::arch::mmu::phys_to_virt;
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 // --- Register file (offsets from the DRHD's register base; Intel VT-d spec chapter 10, and
 // QEMU's hw/i386/intel_iommu_internal.h, which is this driver's ground truth for what q35's
@@ -524,7 +524,7 @@ impl Units {
     }
 }
 
-static IOMMU: InterruptSafeMutex<Units> = InterruptSafeMutex::new(
+static IOMMU: InterruptSafeMutualExclusionLock<Units> = InterruptSafeMutualExclusionLock::new(
     rank::IOMMU,
     Units {
         slots: [const { Slot::Absent }; MAXIMUM_TRANSLATION_UNITS],
@@ -537,7 +537,8 @@ static IOMMU: InterruptSafeMutex<Units> = InterruptSafeMutex::new(
 /// Every unit, device scope and RMRR the DMAR described, so [`attach`] can route a device to its
 /// owner and [`scope_of`] can say which unit that is. Recorded by [`initialize`]; never held at the
 /// same time as [`IOMMU`], because resolving a scope path reads configuration space.
-static DMAR: InterruptSafeMutex<Option<DmarUnits>> = InterruptSafeMutex::new(rank::IOMMU, None);
+static DMAR: InterruptSafeMutualExclusionLock<Option<DmarUnits>> =
+    InterruptSafeMutualExclusionLock::new(rank::IOMMU, None);
 
 fn r32(base: u64, off: u64) -> u32 {
     // SAFETY: the DRHD's register file lies inside the direct map (it is ordinary MMIO below the

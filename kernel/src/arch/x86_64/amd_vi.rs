@@ -22,7 +22,7 @@
 use machine_discovery::acpi::ivrs::{IvrsUnits, MAXIMUM_TRANSLATION_UNITS};
 
 use crate::arch::mmu::phys_to_virt;
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 // --- MMIO register offsets (section 3.3.1). ---
 const DEVICE_TABLE_BASE: u64 = 0x0000;
@@ -168,14 +168,16 @@ enum Slot {
     Refused(&'static str),
 }
 
-static UNITS: InterruptSafeMutex<[Slot; MAXIMUM_TRANSLATION_UNITS]> = InterruptSafeMutex::new(
-    rank::IOMMU,
-    [const { Slot::Absent }; MAXIMUM_TRANSLATION_UNITS],
-);
+static UNITS: InterruptSafeMutualExclusionLock<[Slot; MAXIMUM_TRANSLATION_UNITS]> =
+    InterruptSafeMutualExclusionLock::new(
+        rank::IOMMU,
+        [const { Slot::Absent }; MAXIMUM_TRANSLATION_UNITS],
+    );
 
 /// The IVRS as [`initialize`] read it, kept so `attach` can route a device to its unit. Never held
 /// at the same time as [`UNITS`].
-static IVRS: InterruptSafeMutex<Option<IvrsUnits>> = InterruptSafeMutex::new(rank::IOMMU, None);
+static IVRS: InterruptSafeMutualExclusionLock<Option<IvrsUnits>> =
+    InterruptSafeMutualExclusionLock::new(rank::IOMMU, None);
 
 fn r64(base: u64, off: u64) -> u64 {
     // SAFETY: the unit's register file lies inside the direct map, mapped device-typed by

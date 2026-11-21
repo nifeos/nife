@@ -46,13 +46,13 @@ user_mode_runtime::program_entry!(start);
 fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
     loop {
         let (w0, w1, w2) = receive(SINK);
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
-            byte_sink_contract::Msg::Bytes(n) => print(&buf[..n]),
+            byte_sink_contract::Message::Bytes(n) => print(&buf[..n]),
             // One endpoint serves every client in turn, so a writer's end is not the terminal's.
-            byte_sink_contract::Msg::Eof => {}
+            byte_sink_contract::Message::Eof => {}
             // Said aloud, or the client believes it printed.
-            byte_sink_contract::Msg::Malformed => {
+            byte_sink_contract::Message::Malformed => {
                 print(b"terminal_sink_caretaker: unreadable message\n");
             }
         }

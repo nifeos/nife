@@ -13,19 +13,19 @@ use page_frames::{FRAME_BYTES, PageFrame, PageFrameAllocator, Stats};
 
 use crate::arch::mmu::{phys_to_virt, virt_to_phys};
 use crate::println;
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 /// The frame allocator.
 ///
-/// `InterruptSafeMutex`, not a bare spinlock: an interrupt handler that tried to allocate while
+/// `InterruptSafeMutualExclusionLock`, not a bare spinlock: an interrupt handler that tried to allocate while
 /// the interrupted code held this lock would spin forever waiting for code that cannot
 /// run. See sync.rs and DECISIONS §9.
 ///
 /// The discipline that goes with it: **interrupt handlers do not allocate.** They record
 /// what happened and defer the work. The lock being interrupt-safe is the belt; that rule
 /// is the braces.
-static ALLOCATOR: InterruptSafeMutex<Option<PageFrameAllocator<'static>>> =
-    InterruptSafeMutex::new(rank::PAGE_FRAMES, None);
+static ALLOCATOR: InterruptSafeMutualExclusionLock<Option<PageFrameAllocator<'static>>> =
+    InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, None);
 
 /// The most `/memory` nodes and `/memreserve` entries we'll cope with.
 ///
@@ -1117,7 +1117,7 @@ struct RamMap {
     count: usize,
 }
 
-static RAM: InterruptSafeMutex<RamMap> = InterruptSafeMutex::new(
+static RAM: InterruptSafeMutualExclusionLock<RamMap> = InterruptSafeMutualExclusionLock::new(
     rank::RAM,
     RamMap {
         regions: [(0, 0); MAXIMUM_REGIONS],
@@ -1127,68 +1127,70 @@ static RAM: InterruptSafeMutex<RamMap> = InterruptSafeMutex::new(
 
 /// The GIC the device tree names, with its version (milestone 227). Physical addresses.
 #[cfg_attr(not(target_arch = "aarch64"), allow(dead_code))]
-static GIC_REGIONS: InterruptSafeMutex<Option<machine_discovery::gic::Gic>> =
-    InterruptSafeMutex::new(rank::RAM, None);
+static GIC_REGIONS: InterruptSafeMutualExclusionLock<Option<machine_discovery::gic::Gic>> =
+    InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 /// The PLIC's single register block, from the device tree (milestone 20). `None` on aarch64 (no such
 /// node) and until `initialize` has run.
-static PLIC_REGION: InterruptSafeMutex<Option<(u64, u64)>> =
-    InterruptSafeMutex::new(rank::RAM, None);
+static PLIC_REGION: InterruptSafeMutualExclusionLock<Option<(u64, u64)>> =
+    InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 /// The JH7110's SD/MMC controllers (milestone 53). `None` until `initialize`, and on every machine
 /// that is not a JH7110.
-static JH7110_STORAGE: InterruptSafeMutex<
+static JH7110_STORAGE: InterruptSafeMutualExclusionLock<
     Option<[Option<machine_discovery::jh7110::designware_mobile_storage::Slot>; 2]>,
-> = InterruptSafeMutex::new(rank::RAM, None);
+> = InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 /// The JH7110's STG clock-and-reset window, from the device tree or from the constant both
 /// published trees agree on (milestone 220 (this kernel drives no clock or reset controller)).
 /// `None` until `initialize`, and on every machine that is not a JH7110.
-static JH7110_CRG: InterruptSafeMutex<Option<jh7110_clock_and_reset::WindowLocation>> =
-    InterruptSafeMutex::new(rank::RAM, None);
+static JH7110_CRG: InterruptSafeMutualExclusionLock<
+    Option<jh7110_clock_and_reset::WindowLocation>,
+> = InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 /// The JH7110's SYS clock-and-reset window and the PMIC bus's plan (milestone 592). `None` until
 /// `initialize`, and on every machine that is not a JH7110.
-static JH7110_PMIC_BUS: InterruptSafeMutex<
+static JH7110_PMIC_BUS: InterruptSafeMutualExclusionLock<
     Option<(
         jh7110_clock_and_reset::WindowLocation,
         jh7110_clock_and_reset::PowerManagementChipBus,
     )>,
-> = InterruptSafeMutex::new(rank::RAM, None);
+> = InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 /// The JH7110's watchdog and its SYS window (milestone 593). `None` until `initialize`, and on
 /// every machine whose tree names no such watchdog.
 #[cfg(all(target_arch = "riscv64", soak_watchdog))]
-static JH7110_WATCHDOG: InterruptSafeMutex<
+static JH7110_WATCHDOG: InterruptSafeMutualExclusionLock<
     Option<(
         jh7110_watchdog::Discovered,
         jh7110_clock_and_reset::WindowLocation,
     )>,
-> = InterruptSafeMutex::new(rank::RAM, None);
+> = InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 /// The JH7110's first Ethernet port and its bring-up windows (milestone 53). `None` until
 /// `initialize`, and on every machine whose tree names no such port.
-static JH7110_ETHERNET: InterruptSafeMutex<Option<Jh7110Ethernet>> =
-    InterruptSafeMutex::new(rank::RAM, None);
+static JH7110_ETHERNET: InterruptSafeMutualExclusionLock<Option<Jh7110Ethernet>> =
+    InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 /// The JH7110's M.2 root port and its SYS window (milestone 163), or why a JH7110's tree gave none.
 /// The empty reason until `initialize`, and on every machine that is not a JH7110.
-static JH7110_PCI_EXPRESS: InterruptSafeMutex<Result<Jh7110PciExpress, &'static str>> =
-    InterruptSafeMutex::new(rank::RAM, Err(""));
+static JH7110_PCI_EXPRESS: InterruptSafeMutualExclusionLock<
+    Result<Jh7110PciExpress, &'static str>,
+> = InterruptSafeMutualExclusionLock::new(rank::RAM, Err(""));
 
 /// The generic-ECAM PCIe host bridge's windows: (ecam, mem32), each (base, size). Physical.
 type PciWindows = ((u64, u64), (u64, u64));
 
 /// `None` until `initialize`, and on a machine whose device tree has no such node (the JH7110,
 /// until its root port is brought up).
-static PCI_REGIONS: InterruptSafeMutex<Option<PciWindows>> =
-    InterruptSafeMutex::new(rank::RAM, None);
+static PCI_REGIONS: InterruptSafeMutualExclusionLock<Option<PciWindows>> =
+    InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 /// The SMMUv3's register block, from the device tree (milestone 16b). `None` unless the machine was
 /// started with `-machine virt,iommu=smmuv3` (and always on riscv, whose IOMMU is a PCI function
 /// found by enumeration, not a platform device with a node).
-static SMMU_REGION: InterruptSafeMutex<Option<(u64, u64)>> =
-    InterruptSafeMutex::new(rank::RAM, None);
+static SMMU_REGION: InterruptSafeMutualExclusionLock<Option<(u64, u64)>> =
+    InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 /// VT-d's register blocks (base, size), one per DRHD in table order (milestone 161 (the
 /// `x86_64` kernel port), roadmap item 6; every unit since milestone 594 (every VT-d unit
@@ -1199,9 +1201,9 @@ static SMMU_REGION: InterruptSafeMutex<Option<(u64, u64)>> =
 /// file is a mapped device window before `arch::iommu::initialize` ever reads it
 /// (`arch::x86_64::iommu`'s own accessors go through `phys_to_virt`, which is arithmetic, not a
 /// promise the address is mapped).
-static VTD_REGIONS: InterruptSafeMutex<
+static VTD_REGIONS: InterruptSafeMutualExclusionLock<
     [Option<(u64, u64)>; machine_discovery::acpi::MAXIMUM_TRANSLATION_UNITS],
-> = InterruptSafeMutex::new(
+> = InterruptSafeMutualExclusionLock::new(
     rank::RAM,
     [None; machine_discovery::acpi::MAXIMUM_TRANSLATION_UNITS],
 );
@@ -1209,28 +1211,28 @@ static VTD_REGIONS: InterruptSafeMutex<
 /// AMD-Vi's register blocks (base, size), one per IVHD the IVRS names (lane `amd-vi`). The same
 /// role as [`VTD_REGIONS`] on an AMD machine, kept apart rather than shared because the two are
 /// named for the hardware they hold and a machine has one kind or the other.
-static AMD_VI_REGIONS: InterruptSafeMutex<
+static AMD_VI_REGIONS: InterruptSafeMutualExclusionLock<
     [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAXIMUM_TRANSLATION_UNITS],
-> = InterruptSafeMutex::new(
+> = InterruptSafeMutualExclusionLock::new(
     rank::RAM,
     [None; machine_discovery::acpi::ivrs::MAXIMUM_TRANSLATION_UNITS],
 );
 
 /// The screen the boot handoff described (milestone 243). See [`framebuffer`].
-static FRAMEBUFFER: InterruptSafeMutex<Option<(u64, u64)>> =
-    InterruptSafeMutex::new(rank::RAM, None);
+static FRAMEBUFFER: InterruptSafeMutualExclusionLock<Option<(u64, u64)>> =
+    InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 /// The RTC's register block and binding kind (milestone 51 (wall-clock time, the `date` command,
 /// and an NTP service)). `None` until `initialize` has run, and on a machine whose device tree
 /// describes neither RTC we can drive.
-static RTC_REGION: InterruptSafeMutex<Option<(u64, u64, u64)>> =
-    InterruptSafeMutex::new(rank::RAM, None);
+static RTC_REGION: InterruptSafeMutualExclusionLock<Option<(u64, u64, u64)>> =
+    InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 /// The console UART's interrupt line, from the device tree. `None` until `initialize`, and on a
 /// tree that does not say.
 #[doc(alias = "irq")]
-static UART_INTERRUPT_NUMBER: InterruptSafeMutex<Option<u32>> =
-    InterruptSafeMutex::new(rank::RAM, None);
+static UART_INTERRUPT_NUMBER: InterruptSafeMutualExclusionLock<Option<u32>> =
+    InterruptSafeMutualExclusionLock::new(rank::RAM, None);
 
 static BITMAP_START: AtomicUsize = AtomicUsize::new(0);
 static BITMAP_BYTES: AtomicUsize = AtomicUsize::new(0);

@@ -25,7 +25,7 @@ pub mod registry;
 pub mod ring;
 
 use assembler::{Assembler, Line};
-use byte_sink_contract::{INLINE_MAXIMUM, Msg, unpack};
+use byte_sink_contract::{MAXIMUM_INLINE_BYTES, Message, unpack};
 use registry::{Name, Registry};
 use ring::Ring;
 pub use system_log_contract::record;

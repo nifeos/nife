@@ -10,7 +10,7 @@ use core::sync::atomic::{AtomicU8, AtomicU32, Ordering};
 use machine_discovery::aarch64::{Conduit, Isa, Psci};
 
 use super::instructions;
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 use crate::{print, println};
 
 /// The record, written once by [`initialize`] and read by the boot print, `mmu::initialize` and the
@@ -18,9 +18,10 @@ use crate::{print, println};
 ///
 /// `None` until then, so a read before discovery panics naming this file rather than reporting a
 /// plausible all-zero machine.
-static ISA: InterruptSafeMutex<Option<Isa>> = InterruptSafeMutex::new(rank::ISA, None);
+static ISA: InterruptSafeMutualExclusionLock<Option<Isa>> =
+    InterruptSafeMutualExclusionLock::new(rank::ISA, None);
 
-/// The `/psci` record, in plain atomics rather than behind the mutex above: `cpu_start` reads it
+/// The `/psci` record, in plain atomics rather than behind the mutual exclusion lock above: `cpu_start` reads it
 /// on the bring-up path with interrupts enabled, and it is written once before any secondary exists.
 const PSCI_ABSENT: u8 = 0;
 const PSCI_NO_METHOD: u8 = 1;

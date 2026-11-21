@@ -93,7 +93,7 @@ Only one register needs serializing (finding 3 of notes/arch-audit.md):
 Two interleaved enable updates lose one, and a lost enable leaves a device masked forever. It is
 reachable: `enable` runs in thread context on any hart, and affinity puts several sources on each
 context. The GIC needs no such lock, because its set-enable and clear-enable registers are
-write-1-to-set and write-1-to-clear. The lock is an `InterruptSafeMutex` though no handler takes it:
+write-1-to-set and write-1-to-clear. The lock is an `InterruptSafeMutualExclusionLock` though no handler takes it:
 the
 section is two MMIO accesses, so masking costs nothing, and a handler that took a plain spinlock
 here would be the deadlock §9 (locking: IrqSafeMutex, plus a discipline) forbids. Its rank is

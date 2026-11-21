@@ -72,10 +72,11 @@ def is_hex(token):
     return bool(HEX.match(token)) and (len(token) == 2 or any(c.isdigit() for c in token))
 
 
-def initials(words):
+def initials(words, keep_small=False):
+    """The letters the words give. The small words in STOP give none, unless `keep_small`."""
     out = ''
     for w in words:
-        if w.lower() in STOP:
+        if w.lower() in STOP and not keep_small:
             continue
         if w.isupper() and len(w) >= 2:
             out += w.lower()
@@ -88,13 +89,18 @@ def initials(words):
 def spells(token, words):
     """Do the words' initials spell the token (or its leading part)?"""
     want = re.sub(r'[0-9]', '', token).lower()
-    got = initials(words)
     if len(words) == 1 and len(want) >= 3 and words[0][0].lower() == want[0]:
         # One word the letters are cut from, as `null (NUL)`.
         rest = iter(words[0].lower())
         if all(c in rest for c in want):
             return True
-    return len(got) >= 2 and want.startswith(got)
+    # Both counts are accepted: `Federal Bureau of Investigation (FBI)` skips the small word and
+    # `Request for Comments (RFC)` keeps it.
+    for keep_small in (False, True):
+        got = initials(words, keep_small)
+        if len(got) >= 2 and want.startswith(got):
+            return True
+    return False
 
 
 def expanded(stream, start, end, token):
@@ -210,6 +216,12 @@ def selftest():
         ('A byte 0xFF, then FF and AA55 and MAX_SIZE.\n', []),
         ('Controller or Namespace Structure (CNS) value. A Wrong Words (CNS) twist.\n', []),
         ('Some Wrong Words (EFI) pair.\n', ['EFI']),
+        ('//! Request for Comments (RFC) 5905.\n', []),
+        ('Internet of Things (IoT) devices. The IoT again.\n', []),
+        ('Internet of Things (RFC) is wrong. Point of Sale (SOP) too.\n', ['RFC', 'SOP']),
+        ('Point of Sale (POS) keeps the small word. The POS again.\n', []),
+        ('The RFC and the POS.\n', ['RFC', 'POS']),
+        ('Federal Bureau of Investigation (FBI) still skips the small word.\n', []),
         ('OpenID Connect (OIDC) and PCI Express (PCIe) and Non-Volatile Memory Express (NVMe).\n', ['PCI']),
     ]
     failed = 0

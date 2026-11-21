@@ -1,4 +1,4 @@
-Falsifies `system_tests::user::std_threads_tests::four_std_threads_share_a_mutex_an_atomic_and_a_space`.
+Falsifies `system_tests::user::std_threads_tests::four_std_threads_share_a_mutual_exclusion_lock_an_atomic_and_a_space`.
 
 Architecture: aarch64, riscv64, x86_64
 
