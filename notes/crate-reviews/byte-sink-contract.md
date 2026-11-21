@@ -62,9 +62,9 @@ All commands ran in this lane's worktree, at `main` with this lane's edits to do
 | `python3 helpers/lint_externalized_crates.py --count` | one hit for this crate: the test payload `b"nife"` (`src/lib.rs` line 360), which is not a wire literal |
 | `script/lint` | see the pull request's checks |
 
-Not run, and so not claimed: the stranger test, since there is no README to follow, and the template's
-naming checks and `abbreviations` report, which need a checkout of `nifeos/crate-workflows` (the
-renames of P1-9 apply what that report listed, and the test local `src` remains). Also not run:
+Not run, and so not claimed: the stranger test, since there is no README to follow. Also not run are
+the template's naming checks and `abbreviations` report, which need a checkout of
+`nifeos/crate-workflows`. The renames of P1-9 apply what that report listed, and the test local `src` remains. Also not run:
 `cargo-mutants`, whose census belongs to its own window, and Miri. A first release has no baseline
 for `cargo-semver-checks`, and no repository exists for the template's workflows. The lane ran
 neither `cargo package`, the QEMU-side `sink_tests` nor a build for a 16-bit target.
