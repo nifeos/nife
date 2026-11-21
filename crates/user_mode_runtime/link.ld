@@ -10,7 +10,7 @@
  * the image band, which runs up to the stack band at 0x7F00_0000, so an image may be 496 MiB. It
  * was 0x400000 until 2026-09-26, which left 896 KiB before the stack, and `ripgrep` had to be
  * relinked by substitution to fit. A linker script cannot name a Rust constant, so the number is
- * written here and `crates/address_space_layout`'s host test parses this line and fails if the two
+ * written here and `user_mode_runtime`'s host test (`src/linker_script.rs`) parses this line and fails if the two
  * differ. Everything above 2 GiB is out of reach for this line: x86_64 links with the small code
  * model, which puts every symbol under 0x8000_0000 (see that crate's docs).
  *

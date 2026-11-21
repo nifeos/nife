@@ -55,7 +55,7 @@ const STACK: u64 = rt::STACK_SLOT;
 const NET_MEMORY_REGION: u64 = rt::NET_MEMORY_REGION_SLOT;
 
 /// Where each socket's shared frame maps in this process. One page per id, from the start of the
-/// address-space map's runtime windows (`crates/address_space_layout`), below std's three runtime pages
+/// address-space map's runtime windows (`nifeos/address_space_layout`), below std's three runtime pages
 /// at 0x1100_0000, so 4,096 sockets before the two meet. net_stack maps
 /// the same frame at its own address; the two are the one shared page the contract grants.
 const PAGE_FRAME_BASE: u64 = 0x0000_0000_1000_0000;

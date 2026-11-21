@@ -15,7 +15,7 @@ user_mode_runtime = { version = "0.1.0", path = "../user_mode_runtime" }
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): where a child's
 # stack goes, and the check that refuses an image the map has no room for, shared with
 # `kernel::user::load` so the two loaders agree.
-address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "2a22dbdb966d50eb98e8c69ccb59d86275cf3065" }
 # The x86_64 timebase page's fixed VA (milestone 161's `cntfrq` follow-up): this crate's own
 # x86_64-gated code in `lay_out_child` needs the same constant `kernel::user::load` and
 # `user_mode_runtime::cntfrq` agree on, so no party keeps its own copy.

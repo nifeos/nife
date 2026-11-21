@@ -491,7 +491,6 @@ page_tables	4	the address arithmetic, and the page set for an IOMMU domain
 memory_regions	512	the untyped-region accounting, no double-free
 static_elf	111	the loader's front half, and the note walk, panic-free on hostile input
 page_frames	18	the physical frame allocator
-address_space_layout	3	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
 allocation_cache	3	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
 domain_name_resolution_contract	494	the grant table: any short run of control messages never panics, and a badge is in force only once a message said Granted, in a window that never moves
 program_argument_contract	74	the argument page parser: never panics, yields exactly len items, and a parsed page holds exactly the records its header states

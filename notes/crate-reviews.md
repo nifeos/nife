@@ -95,7 +95,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`domain_name_resolution_contract`](crate-reviews/domain-name-resolution-contract.md) | 6 | ready for review |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | cleared to move (2026-11-21 UTC, repository `nifeos/socket_contract` approved, `publish = false`, no tag, no publish); the move lane first proves the `std` farm builds from the pinned checkout |
 | [`machine_statistics_contract`](crate-reviews/machine-statistics-contract.md) | contract | cleared to move (2026-11-20 UTC, no tag, no publish); the move waits for `address_space_layout` and `current_cpu_contract` |
-| [`address_space_layout`](crate-reviews/address-space-layout.md) | 3 | cleared 2026-11-21 (UTC); the move follows |
+| [`address_space_layout`](crate-reviews/address-space-layout.md) | 3 | cleared 2026-11-21 (UTC); moved to `nifeos/address_space_layout`, pinned by `rev`, `publish = false`, no tag, no publish |
 | [`user_mode_runtime`](crate-reviews/user-mode-runtime.md) | 3 | cleared to move (2026-11-21 UTC, `publish = false`, no tag, no publish); the move waits for `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` to leave the tree; thin machine checks recorded as a limitation |
 | [`memory_region_heap`](crate-reviews/memory-region-heap.md) | 9 | cleared to move (2026-11-20 UTC, no tag, no publish); the move waits for `abi`, `address_space_layout` and `user_mode_runtime` to get repositories |
 | [`environment_contract`](crate-reviews/environment-contract.md) | contract | clearance for the architect (names ratified) |

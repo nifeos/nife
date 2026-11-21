@@ -6,7 +6,7 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 license.workspace = true
 
 [dev-dependencies]
-address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "2a22dbdb966d50eb98e8c69ccb59d86275cf3065" }
 
 [lints]
 workspace = true

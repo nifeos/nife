@@ -17,7 +17,7 @@ workspace = true
 [dependencies]
 nifefs = { version = "0.1.0", path = "../crates/nifefs" }
 # The address-space map, milestone 206 (a program image has under 896 KiB): every archived program is checked against its image band.
-address_space_layout = { version = "0.1.0", path = "../crates/address_space_layout" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "2a22dbdb966d50eb98e8c69ccb59d86275cf3065" }
 # The documentation store (milestone 40). The index is built HERE, on a host with a heap and no
 # constraints, because the guest has neither: there is no directory iteration in this system, so
 # "what pages exist" cannot be discovered at runtime and has to be computed at image time. Only the
