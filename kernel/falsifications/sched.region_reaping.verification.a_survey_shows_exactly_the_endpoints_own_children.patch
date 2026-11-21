@@ -19,7 +19,7 @@ diff --git a/kernel/src/sched/region_reaping.rs b/kernel/src/sched/region_reapin
 index db941b37d..b06419f00 100644
 --- a/kernel/src/sched/region_reaping.rs
 +++ b/kernel/src/sched/region_reaping.rs
-@@ -395,9 +395,9 @@ const fn reap_decision(
+@@ -395,8 +395,8 @@ const fn reap_decision(
  /// the domain.
  const fn survey_includes(
      supervising_rendezvous: Option<RendezvousId>,
@@ -30,4 +30,3 @@ index db941b37d..b06419f00 100644
 +    supervising_rendezvous.is_some()
  }
  
- /// Collect a corpse a supervision rendezvous supervises (§32 (a supervisor may collect a
