@@ -48,8 +48,7 @@ then the decisions and the release step.
 - Item 2 (P0), the order and pairing are stale: Done. The crate's README and root `BUGS` say the
   crate depends on `filesystem_contract` by path inside one workspace. Milestone 1017's step 2 row
   still gives the removed dev-dependency as the reason for the pairing, and its owner corrects it.
-- Item 3 (P0), acronyms and British spelling: Done. The doc comments were read in full
-  ([#3566](https://github.com/nifeos/nife/pull/3566)) and the `MOTD` literal now says
+- Item 3 (P0), acronyms and British spelling: Done. [#3566](https://github.com/nifeos/nife/pull/3566) read the doc comments in full, and the `MOTD` literal now says
   "an unprivileged client" where it said `EL0`, in the crate and in the test that compares it.
 - Item 4 (P0), names the gates refuse: Ruled (Decision 2, maintainer, provisional, 2026-11-14 UTC).
   Not built: `SCRATCH_INIT`, `MADE_DIR`, `NAV_DIR`, `TOUCH_MTIME_ADVANCED`, `twotrees`, `navscape`
