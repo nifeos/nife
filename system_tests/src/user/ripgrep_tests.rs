@@ -509,7 +509,7 @@ fn ripgrep_searches_the_tree_it_was_granted() {
     };
     let text = core::str::from_utf8(&got[..len]).unwrap_or("<not utf-8>");
     assert!(
-        text.contains("narrow/n000:nife walk entry\n"),
+        text.contains("narrow/n000:walk entry body\n"),
         "rg printed no match line for narrow/n000",
     );
     for (n, what) in [
@@ -557,7 +557,7 @@ fn ripgrep_without_enumerate_is_refused_rather_than_empty() {
         "rg did not name the refusal: a walk it could not make read as something else",
     );
     assert!(
-        !text.contains(":nife walk entry"),
+        !text.contains(":walk entry body"),
         "rg printed a match through a grant that cannot list",
     );
     assert!(
@@ -589,7 +589,7 @@ fn ripgrep_reaches_a_named_file_without_enumerate() {
     };
     assert_eq!(
         core::str::from_utf8(&got[..len]).unwrap_or("<not utf-8>"),
-        "nife walk entry\n",
+        "walk entry body\n",
         "rg did not find the line in the file it was named",
     );
 }

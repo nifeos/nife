@@ -4,7 +4,7 @@ Test data for a filesystem stack, in one place so the programs that touch it agr
 contents of the files a test image ships, the verdict words of the witnesses that probe the stack
 from inside a guest, and the shapes of the walk and throughput benchmarks. `no_std`. Its one
 dependency is `filesystem_contract`, whose protocols it is written against. It was written for the
-nife filesystem stack's QEMU tests, and the host build that writes the image, the in-guest client
+stack's QEMU tests, and the host build that writes the image, the in-guest client
 that reads and writes it and the test that asserts the client's report all read the same constants.
 
 It is not a wire contract, and the kernel and the initial program do not depend on it. Several
@@ -55,8 +55,7 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
 
 ## BUGS
 
-- While `filesystem_contract` is a path dependency this crate builds only beside it. The contract
-  leaves first, and this crate then pins it by revision.
+- `filesystem_contract` is a path dependency inside this repository's workspace, so this crate builds only beside it.
 - Much of the crate describes the QEMU test runs of the stack it was written for (the witnesses, the
   benchmark phases), not a filesystem in general. A third party gets the file names and the shapes as examples.
 

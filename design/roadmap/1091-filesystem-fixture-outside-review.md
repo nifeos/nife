@@ -45,14 +45,12 @@ then the decisions and the release step.
   [crate-workflows#66](https://github.com/nifeos/crate-workflows/pull/66) allows git sources on the
   organization, and [crate-workflows#64](https://github.com/nifeos/crate-workflows/pull/64) supports
   a repository of several crates.
-- Item 2 (P0), the order and pairing are stale: Ruled (Decision 1, 2026-11-14 UTC). Not built: the
-  crate's README (line 58) and root `BUGS` (`src/lib.rs` line 12) still say the contract leaves
-  first and this crate then pins it by revision. Under the ruling both say the crate depends on
-  `filesystem_contract` by path inside one workspace. Milestone 1017's step 2 row still gives the
-  removed dev-dependency as the reason for the pairing, and its owner corrects it.
-- Item 3 (P0), acronyms and British spelling: Open. The doc comments read in full
-  ([#3566](https://github.com/nifeos/nife/pull/3566)); `EL0` remains in the `MOTD` literal
-  (`src/lib.rs` line 44), which the system tests compare, and changes with item 6.
+- Item 2 (P0), the order and pairing are stale: Done. The crate's README and root `BUGS` say the
+  crate depends on `filesystem_contract` by path inside one workspace. Milestone 1017's step 2 row
+  still gives the removed dev-dependency as the reason for the pairing, and its owner corrects it.
+- Item 3 (P0), acronyms and British spelling: Done. The doc comments were read in full
+  ([#3566](https://github.com/nifeos/nife/pull/3566)) and the `MOTD` literal now says
+  "an unprivileged client" where it said `EL0`, in the crate and in the test that compares it.
 - Item 4 (P0), names the gates refuse: Ruled (Decision 2, maintainer, provisional, 2026-11-14 UTC).
   Not built: `SCRATCH_INIT`, `MADE_DIR`, `NAV_DIR`, `TOUCH_MTIME_ADVANCED`, `twotrees`, `navscape`
   and the rest of the three tables are still in the crate; one rename lane applies them across the
@@ -61,9 +59,9 @@ then the decisions and the release step.
   [The fixture's package](../../notes/crate-reviews/filesystem-fixture.md) and
   [the contract's](../../notes/crate-reviews/filesystem-contract.md) form the one package. It asks
   for the crate name and the identity values now, and for the item names after item 4.
-- Item 6 (P1), the crate describes this tree: Open. Eight mentions of nife remain in `src/lib.rs`
-  and one in the README, and the data literals (`"nife walk entry\n"`, `"nife boot"`) change with
-  the image builder and `xtask/src/disk_check.rs`.
+- Item 6 (P1), the crate describes this tree: Done. No shipped text names nife. The data literals
+  are `"walk entry body\n"`, the partition names `boot`, `root` and `data`, and a `MADE_BODY` that
+  says "created on the target"; the tests that compare them read the same constants.
 - Item 7 (P1), history residue: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 8 (P1), the `durability` module is unused: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566) deleted the module.
