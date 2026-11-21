@@ -1,7 +1,7 @@
 //! **The self-test's tally and the lines it prints**, shared by its two halves: the kernel, which
-//! runs the checks of its own internals, and `boot_self_test`, the userspace program the progenitor
-//! runs for the checks that need a user program. Both print through this code, so a check line and the verdict read
-//! the same whichever half printed them.
+//! runs the checks of its own internals, and a user program that runs the checks that need one.
+//! Both print through this code, so a check line and the verdict read the same whichever half
+//! printed them.
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`, for what the module renders.
@@ -78,9 +78,9 @@ pub enum Outcome {
 /// [`SELF_TEST_CHECKS`]. No allocation, because a self-test that could fail to report by running
 /// out of memory would report on the wrong thing.
 ///
-/// The kernel records its half and hands the three words to the progenitor
-/// ([`to_words`](Tally::to_words)); `boot_self_test` reads them back
-/// ([`from_words`](Tally::from_words)), records the rest and prints the verdict.
+/// The kernel records its half and hands the three words on ([`to_words`](Tally::to_words)); the
+/// user program reads them back ([`from_words`](Tally::from_words)), records the rest and prints
+/// the verdict.
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-10 UTC).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -158,9 +158,8 @@ impl Tally {
     }
 
     /// **The tally in one word**: passed in the low [`PACKED_FIELD_BITS`] bits, failed in the next,
-    /// absent in the next. The form a one-word message carries: `boot_self_test` sends it to the
-    /// progenitor with its verdict, and the progenitor sends it on to the kernel, which paints the
-    /// verdict on a screen it still holds.
+    /// absent in the next. The form a one-word message carries, such as the one in which the user
+    /// program sends its tally back to the kernel with the verdict.
     ///
     /// Name: provisional.
     pub const fn to_packed(&self) -> u64 {
