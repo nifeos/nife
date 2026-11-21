@@ -297,6 +297,11 @@ def exempts_note(row):
             f'# {todo}\n')
 
 
+def lists_survivors(text):
+    """Whether an exempts file names a mutant, `<file>:<line> # <reason>`, on a line of its own."""
+    return any(line.strip() and not line.lstrip().startswith('#') for line in text.splitlines())
+
+
 FUZZ_MANIFEST = 'fuzz/Cargo.toml'
 # Files in a fixture directory that are tools or prose, not inputs.
 NOT_AN_INPUT = ('.sh', '.md', '.py', '.toml')
@@ -703,6 +708,9 @@ def stage(root, crate, into, tree, sha, report):
         report('note', 'mutation baseline', f'no row for {crate} in {BASELINE}')
     elif not os.path.exists(exempts):
         report('FAIL', 'mutation baseline', 'the template staged no .github/mutants-exempts to carry the row')
+    elif lists_survivors(open(exempts).read()):
+        report('ok', 'mutation baseline', 'the crate lists its own survivors in .github/mutants-exempts, '
+                                          'so the census counts are not carried')
     else:
         with open(exempts, 'a') as f:
             f.write('\n' + exempts_note(row))
@@ -1048,6 +1056,7 @@ def selftest():
     assert 'caught 54, missed 3, timeout 1, unviable 4' in note and '3 missed' in note, note
     assert all(l.startswith('#') for l in note.splitlines()) and not NIFE_WORD.search(note), note
     assert 'no line is expected' in exempts_note((9, 0, 0, 0))
+    assert lists_survivors('# a comment\nsrc/lib.rs:4 # why\n') and not lists_survivors('# only\n\n')
     assert nife_mentions('a nife line\nb"nife"; // wire literal\nx\n') == [1]
     assert nife_mentions('KEEP(*(.note.nife.*)) /* wire literal */') == []
     assert nife_mentions('// wire literal nife') == [1]
