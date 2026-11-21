@@ -3,7 +3,7 @@
 An appendix to [the milestone](../1121-moho-rename-plan.md).
 
 `git grep -c -E <pattern>` at `nifeos/nife@97d16ae8b` and `nifeos/basalt@2c437ca`, summed by file
-kind. It counts lines, not occurrences. The kinds are taken from the path in this order:
+kind. It counts lines, not occurrences. Each line takes its kind from the path, in this order:
 `vendor/`, `patches/std-nife/` (the overlay), `xtask/`, `.github/`, `targets/`, any `build.rs`,
 `helpers/` and `script/`, then `*.md`, `Cargo.toml` and `Cargo.lock`, `*.rs`, other `*.toml`, and
 everything else.
@@ -35,8 +35,8 @@ What the kinds hold:
   naming-rule baseline (1) and two mutation CSVs (7 each).
 - 27 falsification patches, under `system_tests/falsifications/` and
   `crates/capability_plan/falsifications/`, name the old spellings in their context lines. A patch
-  whose context no longer matches does not apply, so each is regenerated in the step that renames
-  its context.
+  whose context no longer matches does not apply, so the step that renames its context regenerates
+  it.
 - The 15 packages that depend on `abi`: `components`, `capability_plan`,
   `confined_system_call_fuzzer_contract`, `memory_region_heap`, `pgrep`, `pmap`, `process_builder`,
   `ps`, `system_initializer`, `top`, `user_mode_runtime`, `fixtures`, `jig`, `kernel` and
@@ -58,7 +58,7 @@ What the kinds hold:
 ## The prose, by status
 
 Markdown lines naming any spelling that moves, by where they live. The rename checklist moves the
-live ones and keeps the closed ones, except that a path is fixed everywhere.
+live ones and keeps the closed ones, except that a path changes everywhere.
 
 | where | lines | files | moves |
 |---|---|---|---|
@@ -96,4 +96,4 @@ On 2026-11-21:
 - LLVM: `OSType` in `llvm/include/llvm/TargetParser/Triple.h` on main has no `Moho` or `Nife`. The
   target specifications name LLVM triples without an OS (`aarch64-unknown-none`, `riscv64`,
   `x86_64-unknown-none-elf`), so LLVM never sees the name.
-- The Linux sources were not searched.
+- Nobody searched the Linux sources.

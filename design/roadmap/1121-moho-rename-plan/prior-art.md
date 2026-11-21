@@ -2,7 +2,7 @@
 
 An appendix to [the milestone](../1121-moho-rename-plan.md).
 
-Each entry was read on 2026-11-21 at the source named.
+The lane read each entry on 2026-11-21 at the source named.
 
 | system | what it renamed or kept | how | source |
 |---|---|---|---|
