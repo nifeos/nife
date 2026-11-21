@@ -230,7 +230,7 @@ What is left is under "Finding status" above.
 - **Milestone 1017.** The crate moves in its order, and the move lane takes items 2, 5, 6 and 10.
 - **Outstanding.** Item 8's single offset type, which waits on the window API's offset type.
   Item 7's loop proof is bounded at four candidates, as the appendix says.
-- **Outstanding.** The clearance, under "Open decisions" above.
+- **Outstanding.** The move itself, which begins by proving the `std` farm builds from the pinned checkout.
 
 ## Index row
 
