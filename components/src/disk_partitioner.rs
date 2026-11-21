@@ -27,7 +27,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use filesystem_contract::{block, req};
+use filesystem_contract::{block, request};
 use filesystem_fixture::blank;
 use globally_unique_identifier_partition_table::entry::{Entry, NAME_UNITS};
 use globally_unique_identifier_partition_table::guid::types;
@@ -201,7 +201,7 @@ fn partition() -> ! {
 
     // The disk's own size, asked of the disk rather than assumed. A layout that does not fit is a
     // refusal from `PartitionTable::create`, not a truncated table.
-    let size = call(BLK, req(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::SIZE), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, R_DISK_FAILED, 2, size as u64);
         user_mode_runtime::exit()
@@ -267,7 +267,7 @@ fn verify() -> ! {
     let mut partitions = 0u64;
     let mut data_first_lba = 0u64;
 
-    let size = call(BLK, req(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::SIZE), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, 0, 0, 0);
         user_mode_runtime::exit()
@@ -372,7 +372,7 @@ fn write_at(first_logical_block_address: u64, data: &[u8]) -> bool {
         let block = byte_at / TRANSFER;
         let offset = (byte_at % TRANSFER) as usize;
         let n = core::cmp::min(block::BLOCK_BYTES - offset, data.len() - done);
-        if (call(BLK, req(block::READ), block).0 as i64) < 0 {
+        if (call(BLK, request(block::READ), block).0 as i64) < 0 {
             return false;
         }
         // SAFETY: BLK_PAGE is a mapped, writable page of exactly one transfer block, and `offset +
@@ -384,7 +384,7 @@ fn write_at(first_logical_block_address: u64, data: &[u8]) -> bool {
                 n,
             );
         }
-        if (call(BLK, req(block::WRITE), block).0 as i64) < 0 {
+        if (call(BLK, request(block::WRITE), block).0 as i64) < 0 {
             return false;
         }
         done += n;
@@ -413,7 +413,7 @@ fn read_span(span: Span, into: &mut [u8]) -> bool {
         if at + block::BLOCK_BYTES > into.len() {
             return false;
         }
-        if (call(BLK, req(block::READ), span.first_block + i).0 as i64) < 0 {
+        if (call(BLK, request(block::READ), span.first_block + i).0 as i64) < 0 {
             return false;
         }
         // SAFETY: BLK_PAGE is a mapped page of exactly one block, and the destination window was

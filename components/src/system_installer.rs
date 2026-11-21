@@ -31,7 +31,7 @@
 
 use boot_slot::{SlotHeader, State};
 use file_allocation_table as fat;
-use filesystem_contract::{block, req};
+use filesystem_contract::{block, request};
 use globally_unique_identifier_partition_table::entry::Entry;
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
@@ -202,7 +202,7 @@ fn start(role: u64, a1: u64, _a2: u64) -> ! {
 /// A disk this cannot read, or one with no table, is [`R_EMPTY`]: "there is no nife here" is the
 /// honest answer to both, and the caller's next step after either is to ask a person.
 fn survey() -> ! {
-    let size = call(BLK, req(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::SIZE), 0).0 as i64;
     if size <= 0 {
         send(REPORT, R_EMPTY, 0, 0);
         user_mode_runtime::exit()
@@ -238,7 +238,7 @@ fn survey() -> ! {
 fn read_primary() -> bool {
     let head = primary();
     for i in 0..5u64 {
-        if (call(BLK, req(block::READ), i).0 as i64) < 0 {
+        if (call(BLK, request(block::READ), i).0 as i64) < 0 {
             return false;
         }
         // SAFETY: `BLK_PAGE` is a mapped page of exactly one transfer block, and the destination
@@ -271,7 +271,7 @@ const MAXIMUM_PARTITIONS: usize = 16;
 /// complete before the primary is touched. See notes/installing/system-installer.md; nothing yet
 /// reads the backup when the primary fails to parse (`uefi_loader::chooser`'s `BUGS`).
 fn confirm(slot: u64) -> ! {
-    let size = call(BLK, req(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::SIZE), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, R_DISK_FAILED, 1, size as u64);
         user_mode_runtime::exit()
@@ -386,7 +386,7 @@ fn confirm(slot: u64) -> ! {
 /// The whole of it, in the order that makes a refusal cheap: ask the disk its size, lay the
 /// arithmetic out, draw the randomness, and only then write.
 fn install(boot_file_len: u64) -> ! {
-    let size = call(BLK, req(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::SIZE), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, R_DISK_FAILED, 1, size as u64);
         user_mode_runtime::exit()
@@ -448,7 +448,7 @@ fn install(boot_file_len: u64) -> ! {
 
     // One flush, so that what a reboot reads is what this program wrote rather than what a
     // controller still has in a cache.
-    let _ = call(BLK, req(block::FLUSH), 0);
+    let _ = call(BLK, request(block::FLUSH), 0);
 
     send(REPORT, R_INSTALLED, layout.data_first, layout.esp_first);
     user_mode_runtime::exit()
@@ -646,7 +646,7 @@ fn write_efi_system_partition(
             }
         }
         let block = (layout.esp_first + sector) / SECTORS_PER_TRANSFER;
-        if (call(BLK, req(block::WRITE), block).0 as i64) < 0 {
+        if (call(BLK, request(block::WRITE), block).0 as i64) < 0 {
             return Err(40);
         }
         sector += SECTORS_PER_TRANSFER;
@@ -688,7 +688,7 @@ fn write_slot(slot_first: u64, boot_file_len: u64) -> Result<(), u64> {
         return Err(51);
     }
     let header_block = slot_first / SECTORS_PER_TRANSFER;
-    if (call(BLK, req(block::WRITE), header_block).0 as i64) < 0 {
+    if (call(BLK, request(block::WRITE), header_block).0 as i64) < 0 {
         return Err(52);
     }
 
@@ -721,7 +721,7 @@ fn copy_boot_file(first_block: u64, boot_file_len: u64, step: u64) -> Result<(),
                 core::ptr::write_bytes((BLK_PAGE as *mut u8).add(n), 0, TRANSFER as usize - n);
             }
         }
-        if (call(BLK, req(block::WRITE), first_block + i).0 as i64) < 0 {
+        if (call(BLK, request(block::WRITE), first_block + i).0 as i64) < 0 {
             return Err(step);
         }
     }
@@ -742,7 +742,7 @@ fn write_at(first_logical_block_address: u64, data: &[u8]) -> bool {
         let block = byte_at / TRANSFER;
         let offset = (byte_at % TRANSFER) as usize;
         let n = core::cmp::min(block::BLOCK_BYTES - offset, data.len() - done);
-        if (call(BLK, req(block::READ), block).0 as i64) < 0 {
+        if (call(BLK, request(block::READ), block).0 as i64) < 0 {
             return false;
         }
         // SAFETY: `BLK_PAGE` is a mapped, writable page of exactly one transfer block, and
@@ -754,7 +754,7 @@ fn write_at(first_logical_block_address: u64, data: &[u8]) -> bool {
                 n,
             );
         }
-        if (call(BLK, req(block::WRITE), block).0 as i64) < 0 {
+        if (call(BLK, request(block::WRITE), block).0 as i64) < 0 {
             return false;
         }
         done += n;

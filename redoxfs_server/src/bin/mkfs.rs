@@ -43,7 +43,7 @@
 
 extern crate alloc;
 
-use filesystem_contract::{block, req};
+use filesystem_contract::{block, request};
 use filesystem_fixture::blank;
 use globally_unique_identifier_partition_table::PartitionTable;
 use nife_partition_types::NIFE_DATA;
@@ -317,7 +317,7 @@ fn data_partition() -> Option<(u64, u64)> {
 /// One blk `CALL`: the opcode and a block index, with the bulk in [`BLK_PAGE`]. Negative is an
 /// error, and "there is no endpoint in that slot" is one of them.
 fn blk_call(operation_code: u64, block: u64) -> i64 {
-    let (r0, _) = call(BLK, req(operation_code), block);
+    let (r0, _) = call(BLK, request(operation_code), block);
     r0 as i64
 }
 

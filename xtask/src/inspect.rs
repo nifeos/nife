@@ -145,11 +145,14 @@ fn strip_tag(path: &str) -> &'static str {
 }
 
 /// **Read the program ELF at `path` for packing, with its debug information removed**
-/// (`llvm-objcopy --strip-debug`), and return the stripped bytes.
+/// (`llvm-objcopy --strip-debug --discard-locals`), and return the stripped bytes.
 ///
 /// The initial ramdisk is reserved RAM and a debug build is almost all `.debug_*`, which nothing
 /// reads (`crates/static_elf` parses program headers only; faults are symbolised offline against
-/// `target/`). `--strip-debug`, not `--strip-all`, keeps the symbol table. A missing `llvm-objcopy`
+/// `target/`). `--strip-debug`, not `--strip-all`, keeps the symbol table, less its assembler-private
+/// `.L` labels (`--discard-locals`): they name no function or object, and `nightly-2026-11-21`'s
+/// LLVM for riscv64 keeps one per relaxable instruction, which tripled `timetable`'s symbol table
+/// to 1.1 MB and overran `user_timetable_keeper`'s region. A missing `llvm-objcopy`
 /// is a hard failure, because the measured-boot digest (§26 (the fault endpoint)'s phase B.1) is
 /// taken over these bytes, and a build whose bytes depended on installed tools would have a
 /// different trust root on each machine. See notes/progenitor-and-loading.md, "The archive carries
@@ -176,12 +179,13 @@ pub(crate) fn read_stripped(path: &str) -> std::io::Result<Vec<u8>> {
     std::fs::metadata(path)?;
     let status = Command::new(&objcopy)
         .arg("--strip-debug")
+        .arg("--discard-locals")
         .arg(path)
         .arg(&dst)
         .status()?;
     if !status.success() {
         return Err(std::io::Error::other(format!(
-            "{objcopy} --strip-debug {path} failed ({status})"
+            "{objcopy} --strip-debug --discard-locals {path} failed ({status})"
         )));
     }
     std::fs::read(&dst)
