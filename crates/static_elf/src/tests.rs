@@ -164,7 +164,7 @@ fn a_writable_executable_segment_is_refused() {
 /// whatever is after the buffer and then **maps it into a process**.
 #[test]
 fn a_segment_that_runs_off_the_end_is_refused() {
-    // memsz is a match for the lie, so `SegmentTruncated` does not fire first and we
+    // memsz is a match for the lie, so `MemorySmallerThanFile` does not fire first and we
     // genuinely exercise the bounds check on the FILE.
     let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 0x1000_0000);
     b.lie_about_filesz = Some(0x1000_0000);
@@ -189,7 +189,7 @@ fn memsz_smaller_than_filesz_is_refused() {
     let bytes = Builder::new()
         .seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 4) // memsz 4 < filesz 16
         .build();
-    assert_eq!(Elf::parse(&bytes).err(), Some(Error::SegmentTruncated));
+    assert_eq!(Elf::parse(&bytes).err(), Some(Error::MemorySmallerThanFile));
 }
 
 /// A binary for a machine the crate does not name at all is refused. SPARC (2) goes through
@@ -342,7 +342,10 @@ fn an_execute_only_segment_is_accepted_and_is_not_readable() {
 fn a_short_phentsize_is_refused() {
     let mut bytes = good();
     bytes[54..56].copy_from_slice(&8u16.to_le_bytes());
-    assert_eq!(Elf::parse(&bytes).err(), Some(Error::BadProgramHeaders));
+    assert_eq!(
+        Elf::parse(&bytes).err(),
+        Some(Error::ProgramHeadersOutOfBounds)
+    );
 }
 
 /// The header-count cap is exclusive: exactly `MAXIMUM_PHNUM` (64) headers must still parse,
@@ -572,7 +575,7 @@ fn errors_print_and_a_64_bit_field_is_never_truncated() {
     // `memsz` too large for `usize` is not "less than" any `filesz` that fits.
     assert_ne!(
         check_segment_bounds(1 << 20, 0, 16, 0x40_0000, u64::MAX),
-        Err(Error::SegmentTruncated)
+        Err(Error::MemorySmallerThanFile)
     );
 }
 
@@ -591,9 +594,9 @@ fn every_refusal_prints_a_distinct_sentence() {
         Error::WrongMachine,
         Error::NeedsRelocation,
         Error::NotExecutable,
-        Error::BadProgramHeaders,
+        Error::ProgramHeadersOutOfBounds,
         Error::SegmentOutOfBounds,
-        Error::SegmentTruncated,
+        Error::MemorySmallerThanFile,
         Error::WritableAndExecutable,
         Error::SegmentUnreachable,
         Error::SegmentsOverlap,

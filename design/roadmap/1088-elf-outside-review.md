@@ -16,7 +16,7 @@ The reviewer read it the way a stranger meeting it in its own repository would. 
 **The crate has no review package.** `notes/crate-reviews/` holds no `elf.md` and
 [the index](../../notes/crate-reviews.md) has no row for it, so there is no settled baseline of
 names and decisions to leave closed. The one ratified name is the crate's own, `static_elf`,
-recorded in `src/lib.rs` and ruled below; this block does not reopen it. Every other public name is marked provisional in the source. The baseline the review
+recorded in `src/lib.rs` and ruled below; this block does not reopen it. The architect ratified the public names on 2026-11-21 (UTC), apart from the three `MACHINE_*` constants, and renamed `Error::SegmentTruncated` to `Error::MemorySmallerThanFile` and `Error::BadProgramHeaders` to `Error::ProgramHeadersOutOfBounds`; the source records each. The baseline the review
 did take is [milestone 784 (reuse what the tree wrote: which first-party code an existing library should replace)'s comparison of the crate against three readers](0784-reuse-what-the-tree-wrote/elf-against-three-readers.md).
 That comparison measured fit, hostile input, proofs, cost and upkeep. It ended in the ruling that the crate
 stays ours. The baseline also takes the order in which milestone 857 (crates released on their own) moves it.
@@ -43,7 +43,7 @@ repository. Judged against both halves:
   review), which is why the crate is named `static_elf`. The review found the machine fixed to the
   build, the page size of the overlap check fixed at 4 KiB, 29 citations of this tree in shipped
   text, and no README, license file or manifest metadata. All of those are now fixed (Finding
-  status); what remains for a release is the move's own items and the ratified names.
+  status); what remains for a release is the move's own items.
 
 Verdict: a candidate to leave, on the shared ground, as a `publish = false` repository first, the
 way the other extracted crates left. Publication is a separate later question, and the publishing

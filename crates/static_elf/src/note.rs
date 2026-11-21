@@ -59,12 +59,12 @@ pub struct NoteSegment {
     pub offset: u64,
     /// `p_filesz`: how many bytes it has.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    /// Name: ratified 2026-11-21 (UTC).
     #[doc(alias = "p_filesz")]
     pub bytes: u64,
     /// `p_align`, which says how the notes inside are padded.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    /// Name: ratified 2026-11-21 (UTC).
     #[doc(alias = "p_align")]
     pub alignment: u64,
 }
