@@ -51,7 +51,7 @@ pub use unsupported_fs::{canonicalize, link, readlink, symlink};
 ///
 /// `RENAME` replaces an existing destination and has no flag to refuse one. DECISIONS §129 (whether
 /// `RENAME` grows a `NOREPLACE` flag) holds that flag until a customer needs it, while recording
-/// that `redoxfs_server` could check it atomically for one branch and a spare bit in `rename_dst`'s
+/// that `redoxfs_server` could check it atomically for one branch and a spare bit in `rename_destination`'s
 /// word. Building it here instead, as a `stat` of the destination followed by `rename`, would be
 /// two requests with another client free to create the name between them: the racy emulation §42
 /// (a filesystem declares what it offers and must be truthful) refuses. So this is upstream's own

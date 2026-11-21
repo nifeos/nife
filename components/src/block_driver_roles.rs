@@ -1255,7 +1255,7 @@ pub fn run_block_server(direct_memory_access_phys: u64) -> ! {
         let to = req.delivered.into_reply();
         // Clamp, as `fs_service.rs` does for the file channel: a request is never trusted to stay
         // inside the shared region just because its packing could spell a larger count.
-        let count = block::req_blocks(w0).min(block::TRANSFER_BLOCKS) as u64;
+        let count = block::request_block_count(w0).min(block::TRANSFER_BLOCKS) as u64;
         let operation = filesystem_contract::operation(w0);
         let r0: i64 = match operation {
             block::READ | block::WRITE => {

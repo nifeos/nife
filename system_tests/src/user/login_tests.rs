@@ -64,7 +64,7 @@ fn ensure_home_subtree(fs_ep: sched::RendezvousId, fs_page_frame: u64, name: &[u
     let r = sched::ipc_call(
         fs_ep,
         [
-            filesystem_contract::fs::req(
+            filesystem_contract::fs::request(
                 filesystem_contract::fs::MKDIR,
                 filesystem_contract::fs::ROOT,
                 name.len() as u64,
@@ -84,7 +84,7 @@ fn ensure_home_subtree(fs_ep: sched::RendezvousId, fs_page_frame: u64, name: &[u
             let _ = sched::ipc_call(
                 fs_ep,
                 [
-                    filesystem_contract::fs::req(filesystem_contract::fs::CLOSE, r[0], 0),
+                    filesystem_contract::fs::request(filesystem_contract::fs::CLOSE, r[0], 0),
                     0,
                 ],
             );

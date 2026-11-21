@@ -45,7 +45,7 @@ impl File {
                 // `create_new` means "must not already exist", and it does. Close the handle the open
                 // just minted rather than leaking it for the life of the process: the error path is
                 // the one nobody exercises, so it is the one that leaks.
-                let _ = request(proto::req(proto::CLOSE, h, 0), 0);
+                let _ = request(proto::request(proto::CLOSE, h, 0), 0);
                 return Err(io::const_error!(
                     io::ErrorKind::AlreadyExists,
                     "the file already exists"
@@ -65,8 +65,8 @@ impl File {
         // Truncate after the open, so a fresh file (already empty) pays nothing and an existing one
         // is emptied before the first write rather than after it.
         if opts.truncate {
-            if let Err(e) = request(proto::req(proto::TRUNCATE, handle, 0), 0) {
-                let _ = request(proto::req(proto::CLOSE, handle, 0), 0);
+            if let Err(e) = request(proto::request(proto::TRUNCATE, handle, 0), 0) {
+                let _ = request(proto::request(proto::CLOSE, handle, 0), 0);
                 return Err(e);
             }
         }
@@ -87,7 +87,7 @@ impl File {
     }
 
     pub fn file_attr(&self) -> io::Result<FileAttr> {
-        let size = request(proto::req(proto::FSTAT, self.handle, 0), 0)?;
+        let size = request(proto::request(proto::FSTAT, self.handle, 0), 0)?;
         // Anything that got as far as a handle came through `OPEN`, which refuses a directory
         // (`EISDIR`), so this is a file by construction. No mtime: `GET_MODIFICATION_TIME` takes a name and a
         // handle has none ([`Mtime`] says why the PAL does not re-resolve the one it was opened by).
@@ -135,7 +135,7 @@ impl File {
     /// function passes.
     pub fn truncate(&self, size: u64) -> io::Result<()> {
         self.size_hint.store(0, Ordering::Relaxed);
-        request(proto::req(proto::TRUNCATE, self.handle, 0), size)?;
+        request(proto::request(proto::TRUNCATE, self.handle, 0), size)?;
         Ok(())
     }
 
@@ -146,7 +146,7 @@ impl File {
         let pos = self.pos.load(Ordering::Relaxed);
         let want = buf.len().min(PAGE);
         let mut p = page();
-        let n = (request(proto::req(proto::READ, self.handle, want as u64), pos)? as usize).min(want);
+        let n = (request(proto::request(proto::READ, self.handle, want as u64), pos)? as usize).min(want);
         p.get(&mut buf[..n]);
         drop(p);
         self.pos.store(pos + n as u64, Ordering::Relaxed);
@@ -180,7 +180,7 @@ impl File {
         let mut p = page();
         p.put(&buf[..chunk]);
         let n =
-            (request(proto::req(proto::WRITE, self.handle, chunk as u64), pos)? as usize).min(chunk);
+            (request(proto::request(proto::WRITE, self.handle, chunk as u64), pos)? as usize).min(chunk);
         drop(p);
         self.pos.store(pos + n as u64, Ordering::Relaxed);
         Ok(n)
@@ -276,6 +276,6 @@ impl Drop for File {
     fn drop(&mut self) {
         // `CLOSE` frees the server's handle-table slot. A failure here has nowhere to go and
         // nothing to fix: the process is done with the file either way.
-        let _ = request(proto::req(proto::CLOSE, self.handle, 0), 0);
+        let _ = request(proto::request(proto::CLOSE, self.handle, 0), 0);
     }
 }

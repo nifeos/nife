@@ -19,13 +19,13 @@ fn a_file_request_round_trips() {
     kani::assume(opcode <= 0xff);
     kani::assume(handle <= fs::MAXIMUM_HANDLE);
     kani::assume(length <= fs::MAXIMUM_LENGTH_BYTES);
-    let w0 = fs::req(opcode, handle, length);
+    let w0 = fs::request(opcode, handle, length);
     assert!(operation(w0) == opcode);
-    assert!(fs::req_handle(w0) == handle);
-    assert!(fs::req_len(w0) as u64 == length);
-    let w1 = fs::rename_dst(handle, length);
-    assert!(fs::dst_handle(w1) == handle);
-    assert!(fs::dst_len(w1) as u64 == length);
+    assert!(fs::request_handle(w0) == handle);
+    assert!(fs::request_length_bytes(w0) as u64 == length);
+    let w1 = fs::rename_destination(handle, length);
+    assert!(fs::destination_handle(w1) == handle);
+    assert!(fs::destination_length_bytes(w1) as u64 == length);
 }
 
 /// **An attribute reply is non-negative for every kind and length, and round-trips.** A negative
@@ -50,9 +50,9 @@ fn a_block_request_round_trips() {
     let blocks: usize = kani::any();
     kani::assume(opcode <= 0xff);
     kani::assume((1..=block::TRANSFER_BLOCKS).contains(&blocks));
-    let w0 = block::req(opcode, blocks);
+    let w0 = block::request(opcode, blocks);
     assert!(operation(w0) == opcode);
-    assert!(block::req_blocks(w0) == blocks);
+    assert!(block::request_block_count(w0) == blocks);
 }
 
 /// **A packed name comes back whole at every length the two words hold.** Eight bytes are all the

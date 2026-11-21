@@ -12,10 +12,10 @@ fn file_request_packs_and_unpacks() {
         (fs::CREATE, 0, 11),
         (fs::TRUNCATE, 42, 0),
     ] {
-        let w = fs::req(o, h, l);
+        let w = fs::request(o, h, l);
         assert_eq!(operation(w), o, "opcode");
-        assert_eq!(fs::req_handle(w), h, "handle");
-        assert_eq!(fs::req_len(w) as u64, l, "len");
+        assert_eq!(fs::request_handle(w), h, "handle");
+        assert_eq!(fs::request_length_bytes(w) as u64, l, "len");
     }
 }
 
@@ -23,10 +23,10 @@ fn file_request_packs_and_unpacks() {
 fn a_handle_never_collides_with_the_opcode_or_length() {
     // A big handle must not spill into the opcode field, and a max length must not spill into
     // the handle: the READ path packs all three and reads them back independently.
-    let w = fs::req(fs::READ, fs::MAXIMUM_HANDLE, fs::MAXIMUM_LENGTH_BYTES);
+    let w = fs::request(fs::READ, fs::MAXIMUM_HANDLE, fs::MAXIMUM_LENGTH_BYTES);
     assert_eq!(operation(w), fs::READ);
-    assert_eq!(fs::req_handle(w), fs::MAXIMUM_HANDLE);
-    assert_eq!(fs::req_len(w) as u64, fs::MAXIMUM_LENGTH_BYTES);
+    assert_eq!(fs::request_handle(w), fs::MAXIMUM_HANDLE);
+    assert_eq!(fs::request_length_bytes(w) as u64, fs::MAXIMUM_LENGTH_BYTES);
 }
 
 // --- The directory capability ---
@@ -54,18 +54,26 @@ fn a_rename_carries_two_directories_and_two_lengths_without_them_bleeding() {
         ),
         (fs::MAXIMUM_HANDLE, 1, 0, fs::MAXIMUM_LENGTH_BYTES),
     ] {
-        let w0 = fs::req(fs::RENAME, sh, sl);
-        let w1 = fs::rename_dst(dh, dl);
+        let w0 = fs::request(fs::RENAME, sh, sl);
+        let w1 = fs::rename_destination(dh, dl);
         assert_eq!(operation(w0), fs::RENAME);
-        assert_eq!(fs::req_handle(w0), sh, "source handle");
-        assert_eq!(fs::req_len(w0) as u64, sl, "source name length");
-        assert_eq!(fs::dst_handle(w1), dh, "destination handle");
-        assert_eq!(fs::dst_len(w1) as u64, dl, "destination name length");
+        assert_eq!(fs::request_handle(w0), sh, "source handle");
+        assert_eq!(
+            fs::request_length_bytes(w0) as u64,
+            sl,
+            "source name length"
+        );
+        assert_eq!(fs::destination_handle(w1), dh, "destination handle");
+        assert_eq!(
+            fs::destination_length_bytes(w1) as u64,
+            dl,
+            "destination name length"
+        );
     }
     // A destination in the same directory is the ordinary rename, and it must not be confusable
     // with "no destination given": handle 0 IS a directory (the bound one), so a zero second
     // word means "rename inside your root", which is exactly what a plain `mv a b` wants.
-    assert_eq!(fs::dst_handle(0), fs::ROOT);
+    assert_eq!(fs::destination_handle(0), fs::ROOT);
 }
 
 // The tests from here down each pin something a mutation run over this crate showed nothing
@@ -80,13 +88,33 @@ fn a_rename_carries_two_directories_and_two_lengths_without_them_bleeding() {
 /// not run in the EL0 build. What is left here is the round trip, which needs the packing.
 #[test]
 fn a_single_page_request_still_means_one_page() {
-    let w0 = fs::req(fs::READ, 1, PAGE_BYTES as u64);
-    assert_eq!(fs::req_len(w0), PAGE_BYTES);
-    assert_eq!(fs::req_handle(w0), 1);
+    let w0 = fs::request(fs::READ, 1, PAGE_BYTES as u64);
+    assert_eq!(fs::request_length_bytes(w0), PAGE_BYTES);
+    assert_eq!(fs::request_handle(w0), 1);
     assert_eq!(operation(w0), fs::READ);
 
     // And the largest the channel permits survives the same 40-bit field.
-    let w0 = fs::req(fs::WRITE, 1, fs::MAXIMUM_TRANSFER_BYTES as u64);
-    assert_eq!(fs::req_len(w0), fs::MAXIMUM_TRANSFER_BYTES);
+    let w0 = fs::request(fs::WRITE, 1, fs::MAXIMUM_TRANSFER_BYTES as u64);
+    assert_eq!(fs::request_length_bytes(w0), fs::MAXIMUM_TRANSFER_BYTES);
     assert_eq!(operation(w0), fs::WRITE);
+}
+
+#[test]
+fn the_packed_words_are_the_wire_bytes_they_always_were() {
+    // Known inputs, spelled as bit fields: operation in bits 63:56, handle in 55:40, length in 39:0.
+    let w0 = fs::request(fs::READ, 3, 1024);
+    assert_eq!(w0, (fs::READ << 56) | (3 << 40) | 1024);
+    assert_eq!(fs::request_handle(w0), 3);
+    assert_eq!(fs::request_length_bytes(w0), 1024);
+
+    // A rename's second word is the same two fields without the opcode.
+    let w1 = fs::rename_destination(5, 12);
+    assert_eq!(w1, (5 << 40) | 12);
+    assert_eq!(fs::destination_handle(w1), 5);
+    assert_eq!(fs::destination_length_bytes(w1), 12);
+
+    // A block request stores the count less one in the low byte.
+    let w0 = block::request(block::READ, 4);
+    assert_eq!(w0, (block::READ << 56) | 3);
+    assert_eq!(block::request_block_count(w0), 4);
 }

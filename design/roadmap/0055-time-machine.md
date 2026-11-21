@@ -53,7 +53,7 @@ while imagining it is "a file server".
 - Apple metadata: §99 (where Apple's metadata lands: stream or sidecar), 2026-08-18, chose option 1.
   The server claims no named streams and macOS writes `._` sidecars itself, at zero new code. A Time
   Machine backup is a sparse bundle of directories and band files and never touches this surface.
-- `ReplaceIfExists`: §129 priced a no-replace flag in the unclaimed bits 63:56 of `fs::rename_dst`.
+- `ReplaceIfExists`: §129 priced a no-replace flag in the unclaimed bits 63:56 of `fs::rename_destination`.
   calef's call was "build it when we have a customer". §42 (a filesystem declares what it offers and
   must be truthful) was amended to correct its racy-emulation reason and still declines the feature.
 - mDNS is required, measured 2026-07-30: `dns-sd -B _adisk._tcp` returns the router, which

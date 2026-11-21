@@ -451,7 +451,8 @@ fn through_el0(slot: &Slot, r: &ReadOnlyProbeReport, write: bool) -> El0 {
     if ready[0] != filesystem_contract::READY {
         return El0::NotReady(ready[0], ready[1], ready[2]);
     }
-    let call = |op, block| crate::sched::ipc_call(w.request, [block::req(op, 1), block])[0] as i64;
+    let call =
+        |op, block| crate::sched::ipc_call(w.request, [block::request(op, 1), block])[0] as i64;
     // SAFETY: the service allocated these pages for the server and its one client, which this boot
     // thread now is; the direct map covers them, and the server touches them only inside a call.
     let shared = unsafe {

@@ -149,7 +149,7 @@ that rung, and a right nothing enforces is a right the contract is lying about.
 
 The wire. The only verb here that names two directories, so it is the only one whose second word
 is not a scalar. The source is the request word's handle and length as usual; the destination rides
-in the second word packed by `fs::rename_dst` with the same two fields. Both names are in the shared
+in the second word packed by `fs::rename_destination` with the same two fields. Both names are in the shared
 page, source first, back to back. A pair longer than the page is `EINVAL` rather than a clamp,
 because clamping a name renames something else.
 
@@ -221,7 +221,7 @@ Descend and then descend again, from a client, asking for less each time:
 ```rust
 // the granted directory is always fs::ROOT on your own endpoint
 put_page(b"deeper");
-let child = call(FILE, fs::req(fs::OPENDIR, fs::ROOT, 6), dir::DESCEND | dir::READ).0 as i64;
+let child = call(FILE, fs::request(fs::OPENDIR, fs::ROOT, 6), dir::DESCEND | dir::READ).0 as i64;
 // `child` can read and descend. It cannot create, remove or enumerate, and asking for
 // dir::ALL here would have been EPERM rather than a quietly smaller capability.
 ```
@@ -233,8 +233,8 @@ put_page(b"tmp");           // the source name
 put_page_at(3, b"report");  // the destination, immediately after it
 let r = call(
     FILE,
-    fs::req(fs::RENAME, fs::ROOT, 3),
-    fs::rename_dst(fs::ROOT, 6),
+    fs::request(fs::RENAME, fs::ROOT, 3),
+    fs::rename_destination(fs::ROOT, 6),
 ).0 as i64;
 // 0, or -EROFS if this capability carries no REMOVE (source) or no CREATE (destination).
 ```

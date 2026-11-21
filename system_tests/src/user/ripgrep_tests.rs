@@ -375,50 +375,50 @@ fn a_bound_grant_reaches_nothing_outside_it() {
 
     let inside = "narrow/n000";
     let len = stage(inside);
-    let h = call(fs::req(fs::OPEN, fs::ROOT, len), directory::READ, b);
+    let h = call(fs::request(fs::OPEN, fs::ROOT, len), directory::READ, b);
     assert!(
         h >= 0,
         "a file inside the bound subtree would not open: {h}"
     );
-    assert_eq!(call(fs::req(fs::CLOSE, h as u64, 0), 0, b), 0);
+    assert_eq!(call(fs::request(fs::CLOSE, h as u64, 0), 0, b), 0);
 
     let len = stage(filesystem_fixture::MOTD_NAME);
     assert_eq!(
-        call(fs::req(fs::OPEN, fs::ROOT, len), directory::READ, b),
+        call(fs::request(fs::OPEN, fs::ROOT, len), directory::READ, b),
         -2,
         "the image root's motd is not in the subtree, so it is not there (ENOENT)",
     );
     let len0 = stage_in(grant.shared, filesystem_fixture::MOTD_NAME);
-    let theirs = call(fs::req(fs::OPEN, fs::ROOT, len0), directory::READ, 0);
+    let theirs = call(fs::request(fs::OPEN, fs::ROOT, len0), directory::READ, 0);
     assert!(
         theirs >= 0,
         "the kernel's unbound call could not open motd: {theirs}"
     );
     assert_eq!(
-        call(fs::req(fs::FSTAT, theirs as u64, 0), 0, b),
+        call(fs::request(fs::FSTAT, theirs as u64, 0), 0, b),
         -9,
         "a handle the badge did not mint is not its to use (EBADF)",
     );
-    let _ = call(fs::req(fs::CLOSE, theirs as u64, 0), 0, 0);
+    let _ = call(fs::request(fs::CLOSE, theirs as u64, 0), 0, 0);
     assert_eq!(
-        call(fs::req(fs::BIND, fs::ROOT, 0), b + 1, b),
+        call(fs::request(fs::BIND, fs::ROOT, 0), b + 1, b),
         -1,
         "a bound badge cannot bind another (EPERM)",
     );
     assert_eq!(
-        call(fs::req(fs::CLOSE, fs::ROOT, 0), 0, b),
+        call(fs::request(fs::CLOSE, fs::ROOT, 0), 0, b),
         -22,
         "a bound badge cannot close its grant's root (EINVAL)",
     );
 
     assert_eq!(
-        call(fs::req(fs::UNBIND, 0, 0), b, 0),
+        call(fs::request(fs::UNBIND, 0, 0), b, 0),
         0,
         "the kernel takes the grant back"
     );
     let len = stage(inside);
     assert_eq!(
-        call(fs::req(fs::OPEN, fs::ROOT, len), directory::READ, b),
+        call(fs::request(fs::OPEN, fs::ROOT, len), directory::READ, b),
         -9,
         "after UNBIND the badge reaches nothing, not the whole image (EBADF)",
     );

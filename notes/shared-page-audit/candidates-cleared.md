@@ -14,9 +14,9 @@ place a future change could break something.
 destination handle and length, and `SETXATTR`'s value length and type code all come from `w0`/`w1`.
 `len` is clamped to `BLOCK`; `RENAME` and `SETXATTR` refuse rather than clamp when the two payloads
 would overrun the page, which is right (clamping a name renames something else). The bit-packed
-fields cannot overflow the additions that check them: `req_len` is masked to 40 bits, `dst_len` to
+fields cannot overflow the additions that check them: `request_length_bytes` is masked to 40 bits, `destination_length_bytes` to
 40, `spec_value_len` to 32, and `len` is already at most 4096, so every sum is far inside `u64`. On a
-32-bit target `len + dst_len` would wrap; this kernel has no 32-bit target and, if it ever does,
+32-bit target `len + destination_length_bytes` would wrap; this kernel has no 32-bit target and, if it ever does,
 that sum is the line to revisit.
 
 `GETXATTR` copies the name to the stack before writing the reply over it, and says why. That is

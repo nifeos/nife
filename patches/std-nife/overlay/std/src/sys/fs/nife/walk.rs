@@ -96,7 +96,7 @@ impl Drop for At {
         if self.0 != proto::ROOT {
             // A failure has nowhere to go: we are done with the handle either way, and a leaked
             // server-side slot is the cost of a reply we could not have acted on.
-            let _ = request(proto::req(proto::CLOSE, self.0, 0), 0);
+            let _ = request(proto::request(proto::CLOSE, self.0, 0), 0);
         }
     }
 }
@@ -113,7 +113,7 @@ impl Drop for At {
 /// asks for `fsproto::directory::PARENT_RIGHTS` (§98), the parent's rights whatever they are.
 pub(super) fn descend(p: &mut Page, parent: &At, name: &str, want: u64) -> io::Result<At> {
     p.put(name.as_bytes());
-    let handle = request(proto::req(proto::OPENDIR, parent.0, name.len() as u64), want)?;
+    let handle = request(proto::request(proto::OPENDIR, parent.0, name.len() as u64), want)?;
     Ok(At(handle))
 }
 

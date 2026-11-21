@@ -281,9 +281,9 @@ pub(super) fn user(nav: &mut Nav, verb: grant_plan::UserVerb<'_>) {
         return say(Say::Failed(-h as i32));
     }
     let h = h as u64;
-    let truncated = call(t.slot, fs::req(fs::TRUNCATE, h, 0), 0).0 as i64;
+    let truncated = call(t.slot, fs::request(fs::TRUNCATE, h, 0), 0).0 as i64;
     put_page(&edited[..n]);
-    let wrote = call(t.slot, fs::req(fs::WRITE, h, n as u64), 0).0 as i64;
+    let wrote = call(t.slot, fs::request(fs::WRITE, h, n as u64), 0).0 as i64;
     nav.close_in(t, h);
     if truncated < 0 || wrote != n as i64 {
         return say(Say::Failed(

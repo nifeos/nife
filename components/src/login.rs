@@ -1443,18 +1443,18 @@ fn read_file(at: u64, name: &[u8], out: &mut [u8]) -> Option<usize> {
     use filesystem_contract::fs;
     let page = file_page()?;
     page[..name.len()].copy_from_slice(name);
-    let opened = call(FS_EP, fs::req(fs::OPEN, at, name.len() as u64), 0).0 as i64;
+    let opened = call(FS_EP, fs::request(fs::OPEN, at, name.len() as u64), 0).0 as i64;
     if opened < 0 {
         return None;
     }
     let handle = opened as u64;
-    let size = call(FS_EP, fs::req(fs::FSTAT, handle, 0), 0).0 as i64;
+    let size = call(FS_EP, fs::request(fs::FSTAT, handle, 0), 0).0 as i64;
     let read = if (0..=out.len().min(login_contract::PAGE) as i64).contains(&size) {
-        call(FS_EP, fs::req(fs::READ, handle, size as u64), 0).0 as i64
+        call(FS_EP, fs::request(fs::READ, handle, size as u64), 0).0 as i64
     } else {
         -1
     };
-    call(FS_EP, fs::req(fs::CLOSE, handle, 0), 0);
+    call(FS_EP, fs::request(fs::CLOSE, handle, 0), 0);
     let n = usize::try_from(read).ok()?.min(out.len());
     out[..n].copy_from_slice(&page[..n]);
     Some(n)
@@ -1468,18 +1468,23 @@ fn write_root_file(name: &[u8], bytes: &[u8]) -> bool {
         return false;
     };
     page[..name.len()].copy_from_slice(name);
-    let mut h = call(FS_EP, fs::req(fs::CREATE, fs::ROOT, name.len() as u64), 0).0 as i64;
+    let mut h = call(
+        FS_EP,
+        fs::request(fs::CREATE, fs::ROOT, name.len() as u64),
+        0,
+    )
+    .0 as i64;
     if h < 0 {
         page[..name.len()].copy_from_slice(name);
-        h = call(FS_EP, fs::req(fs::OPEN, fs::ROOT, name.len() as u64), 0).0 as i64;
-        if h < 0 || (call(FS_EP, fs::req(fs::TRUNCATE, h as u64, 0), 0).0 as i64) < 0 {
+        h = call(FS_EP, fs::request(fs::OPEN, fs::ROOT, name.len() as u64), 0).0 as i64;
+        if h < 0 || (call(FS_EP, fs::request(fs::TRUNCATE, h as u64, 0), 0).0 as i64) < 0 {
             return false;
         }
     }
     let h = h as u64;
     page[..bytes.len()].copy_from_slice(bytes);
-    let wrote = call(FS_EP, fs::req(fs::WRITE, h, bytes.len() as u64), 0).0 as i64;
-    call(FS_EP, fs::req(fs::CLOSE, h, 0), 0);
+    let wrote = call(FS_EP, fs::request(fs::WRITE, h, bytes.len() as u64), 0).0 as i64;
+    call(FS_EP, fs::request(fs::CLOSE, h, 0), 0);
     wrote == bytes.len() as i64
 }
 
@@ -1492,7 +1497,7 @@ fn read_stored_schedule(identity: &[u8], out: &mut [u8]) -> Option<usize> {
     page[..identity.len()].copy_from_slice(identity);
     let d = call(
         FS_EP,
-        fs::req(fs::OPENDIR, fs::ROOT, identity.len() as u64),
+        fs::request(fs::OPENDIR, fs::ROOT, identity.len() as u64),
         directory::READ | directory::DESCEND,
     )
     .0 as i64;
@@ -1504,7 +1509,7 @@ fn read_stored_schedule(identity: &[u8], out: &mut [u8]) -> Option<usize> {
         timetable_store::SCHEDULE_FILE_NAME.as_bytes(),
         out,
     );
-    call(FS_EP, fs::req(fs::CLOSE, d as u64, 0), 0);
+    call(FS_EP, fs::request(fs::CLOSE, d as u64, 0), 0);
     n
 }
 

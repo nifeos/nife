@@ -12,12 +12,12 @@ const BS: usize = block::BLOCK_BYTES;
 fn call(t: &mut Tree, code: u64, handle: u64, name: &[u8], w1: u64) -> Answer {
     let mut page = [0u8; fs::MAXIMUM_TRANSFER_BYTES];
     page[..name.len()].copy_from_slice(name);
-    t.handle(fs::req(code, handle, name.len() as u64), w1, &mut page)
+    t.handle(fs::request(code, handle, name.len() as u64), w1, &mut page)
 }
 
 fn read(t: &mut Tree, handle: u64, len: u64, offset: u64) -> Answer {
     let mut page = [0u8; fs::MAXIMUM_TRANSFER_BYTES];
-    t.handle(fs::req(fs::READ, handle, len), offset, &mut page)
+    t.handle(fs::request(fs::READ, handle, len), offset, &mut page)
 }
 
 fn handle_of(a: Answer) -> u64 {
@@ -164,13 +164,13 @@ fn a_grant_without_read_cannot_open_the_file() {
 fn listings_name_what_is_there() {
     let mut t = Tree::new(SIZE);
     let mut page = [0u8; fs::MAXIMUM_TRANSFER_BYTES];
-    let Answer::Reply(n, _) = t.handle(fs::req(fs::READDIR, fs::ROOT, 0), 0, &mut page) else {
+    let Answer::Reply(n, _) = t.handle(fs::request(fs::READDIR, fs::ROOT, 0), 0, &mut page) else {
         panic!()
     };
     let got: std::vec::Vec<_> = directory_entry::iter(&page[..n as usize]).collect();
     assert_eq!(got, [(DIRECTORY, true)]);
     assert_eq!(
-        t.handle(fs::req(fs::READDIR, fs::ROOT, 0), 1, &mut page),
+        t.handle(fs::request(fs::READDIR, fs::ROOT, 0), 1, &mut page),
         Answer::Reply(0, 0)
     );
 }
@@ -264,9 +264,9 @@ fn a_name_longer_than_the_buffer_or_the_page_is_refused() {
         err(directory::EINVAL)
     );
     let mut page = *b"nvme0";
-    let w0 = fs::req(fs::OPENDIR, fs::ROOT, 5);
+    let w0 = fs::request(fs::OPENDIR, fs::ROOT, 5);
     assert!(matches!(t.handle(w0, directory::READ, &mut page), Answer::Reply(h, _) if h > 0));
-    let w0 = fs::req(fs::OPENDIR, fs::ROOT, 6);
+    let w0 = fs::request(fs::OPENDIR, fs::ROOT, 6);
     assert_eq!(
         t.handle(w0, directory::READ, &mut page),
         err(directory::EINVAL)
@@ -297,7 +297,7 @@ fn the_other_verbs_answer_what_a_read_only_disk_can_say() {
     assert_eq!(read(&mut t, f, 0, 0), Answer::Reply(0, 0));
     let mut page = [0u8; 64];
     assert_eq!(
-        t.handle(fs::req(fs::READDIR, f, 0), 0, &mut page),
+        t.handle(fs::request(fs::READDIR, f, 0), 0, &mut page),
         err(directory::ENOTDIR)
     );
 }
@@ -315,7 +315,7 @@ fn a_listing_without_enumerate_is_refused() {
     ));
     let mut page = [0u8; 64];
     assert_eq!(
-        t.handle(fs::req(fs::READDIR, d, 0), 0, &mut page),
+        t.handle(fs::request(fs::READDIR, d, 0), 0, &mut page),
         err(directory::EPERM)
     );
 }

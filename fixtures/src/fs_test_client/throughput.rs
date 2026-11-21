@@ -60,7 +60,7 @@ pub(crate) fn throughput() -> ! {
     let ticks = counter_ticks().wrapping_sub(start);
     // The file is exactly as long as the phase claims to have written it. Without this a server
     // that answered every write with a short count would still produce a throughput number.
-    let (size, _) = call(FILE, fs::req(fs::FSTAT, handle, 0), 0);
+    let (size, _) = call(FILE, fs::request(fs::FSTAT, handle, 0), 0);
     require(size == tp::BLOCKS * tp::UNIT as u64);
     send(REPORT, ticks, tp::BLOCKS, tp::SEQ_WRITE);
 
@@ -123,7 +123,7 @@ pub(crate) fn throughput() -> ! {
     }
     let ticks = counter_ticks().wrapping_sub(start);
     // The file did not grow: a random write that appended would be measuring allocation.
-    let (size, _) = call(FILE, fs::req(fs::FSTAT, handle, 0), 0);
+    let (size, _) = call(FILE, fs::request(fs::FSTAT, handle, 0), 0);
     require(size == tp::BLOCKS * tp::UNIT as u64);
     send(REPORT, ticks, tp::BLOCKS, tp::RAND_WRITE);
 
@@ -136,12 +136,12 @@ pub(crate) fn throughput() -> ! {
 fn throughput_file() -> u64 {
     let name = fixture::THROUGHPUT_NAME;
     put_page(name.as_bytes());
-    let (r0, _) = call(FILE, fs::req(fs::CREATE, 0, name.len() as u64), 0);
+    let (r0, _) = call(FILE, fs::request(fs::CREATE, 0, name.len() as u64), 0);
     if (r0 as i64) >= 0 {
         return r0;
     }
     let h = open(name);
-    let (t, _) = call(FILE, fs::req(fs::TRUNCATE, h, 0), 0);
+    let (t, _) = call(FILE, fs::request(fs::TRUNCATE, h, 0), 0);
     require((t as i64) >= 0);
     h
 }
@@ -150,7 +150,7 @@ fn throughput_file() -> u64 {
 /// measured window holds the request and not a 4 KiB byte-at-a-time fill.
 fn write_unit(handle: u64, offset: u64) {
     let unit = fixture::throughput::UNIT;
-    let (r0, _) = call(FILE, fs::req(fs::WRITE, handle, unit as u64), offset);
+    let (r0, _) = call(FILE, fs::request(fs::WRITE, handle, unit as u64), offset);
     if (r0 as i64) < 0 {
         fail(STAGE_WRITE, r0);
     }

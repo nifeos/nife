@@ -194,7 +194,7 @@ impl Nav {
         w1: u64,
     ) -> i64 {
         put_page(name);
-        call(t.slot, fs::req(verb, handle, name.len() as u64), w1).0 as i64
+        call(t.slot, fs::request(verb, handle, name.len() as u64), w1).0 as i64
     }
 
     /// Close a handle we opened in the tree we stand in. A failure here is not reportable and not
@@ -206,7 +206,7 @@ impl Nav {
 
     /// [`Nav::close`] on a named tree.
     pub(super) fn close_in(&self, t: Tree, handle: u64) {
-        call(t.slot, fs::req(fs::CLOSE, handle, 0), 0);
+        call(t.slot, fs::request(fs::CLOSE, handle, 0), 0);
     }
 
     /// **Resolve a path without moving and open it**, from the root when the token began with `/`
@@ -623,7 +623,7 @@ impl Nav {
         // Bounded so a server whose cursor does not advance costs a short listing rather than a
         // prompt that never comes back.
         for _ in 0..ROUNDS {
-            let n = call(t.slot, fs::req(fs::READDIR, handle, 0), cursor).0 as i64;
+            let n = call(t.slot, fs::request(fs::READDIR, handle, 0), cursor).0 as i64;
             if n < 0 {
                 return Say::Failed(-n as i32);
             }

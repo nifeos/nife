@@ -52,5 +52,5 @@ crate keeps every errno as the platform spells it, which is the case the errno n
 
 Concrete example. A caretaker that reads `verb::of(operation).takes_name()` today would read
 `verb::of(operation).takes_name()` still; one that compares `grant::spec_rights(w)` reads
-`grant::specification_rights(w)`; a client that sends `fs::req(fs::GETMTIME, ..)` sends
-`fs::req(fs::GET_MODIFICATION_TIME, ..)`, and the number 20 does not change.
+`grant::specification_rights(w)`; a client that sends `fs::request(fs::GETMTIME, ..)` sends
+`fs::request(fs::GET_MODIFICATION_TIME, ..)`, and the number 20 does not change.

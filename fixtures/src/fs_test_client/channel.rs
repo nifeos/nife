@@ -60,7 +60,7 @@ pub(crate) fn get_page(n: usize, out: &mut [u8]) {
 /// forged request) is REPORTED, not trapped, so the server's reason survives the failure.
 pub(crate) fn open(name: &str) -> u64 {
     put_page(name.as_bytes());
-    let (r0, _) = call(FILE, fs::req(fs::OPEN, 0, name.len() as u64), 0);
+    let (r0, _) = call(FILE, fs::request(fs::OPEN, 0, name.len() as u64), 0);
     if (r0 as i64) < 0 {
         fail(STAGE_OPEN, r0);
     }
@@ -95,7 +95,11 @@ pub(crate) fn fail(stage: u64, r0: u64) -> ! {
 /// Write `data` to `handle` at `offset`; checks the server accepted the whole slice.
 pub(crate) fn write(handle: u64, offset: u64, data: &[u8]) {
     put_page(data);
-    let (r0, _) = call(FILE, fs::req(fs::WRITE, handle, data.len() as u64), offset);
+    let (r0, _) = call(
+        FILE,
+        fs::request(fs::WRITE, handle, data.len() as u64),
+        offset,
+    );
     if (r0 as i64) < 0 {
         fail(STAGE_WRITE, r0);
     }
@@ -104,7 +108,7 @@ pub(crate) fn write(handle: u64, offset: u64, data: &[u8]) {
 
 /// Read up to `n` bytes from `handle` at `offset` into the shared page; returns the count.
 pub(crate) fn read(handle: u64, offset: u64, n: usize) -> usize {
-    let (r0, _) = call(FILE, fs::req(fs::READ, handle, n as u64), offset);
+    let (r0, _) = call(FILE, fs::request(fs::READ, handle, n as u64), offset);
     if (r0 as i64) < 0 {
         fail(STAGE_READ, r0);
     }
@@ -114,13 +118,13 @@ pub(crate) fn read(handle: u64, offset: u64, n: usize) -> usize {
 /// `OPEN` a name under a directory handle; the raw reply, so a refusal is a value rather than a trap.
 pub(crate) fn dir_open(parent: u64, name: &str) -> i64 {
     put_page(name.as_bytes());
-    call(FILE, fs::req(fs::OPEN, parent, name.len() as u64), 0).0 as i64
+    call(FILE, fs::request(fs::OPEN, parent, name.len() as u64), 0).0 as i64
 }
 
 /// `CREATE` a name under a directory handle.
 pub(crate) fn dir_create(parent: u64, name: &str) -> i64 {
     put_page(name.as_bytes());
-    call(FILE, fs::req(fs::CREATE, parent, name.len() as u64), 0).0 as i64
+    call(FILE, fs::request(fs::CREATE, parent, name.len() as u64), 0).0 as i64
 }
 
 /// `OPENDIR`: descend, asking for `rights`. The requested rights ride in the second word.
@@ -128,7 +132,7 @@ pub(crate) fn dir_descend(parent: u64, name: &str, rights: u64) -> i64 {
     put_page(name.as_bytes());
     call(
         FILE,
-        fs::req(fs::OPENDIR, parent, name.len() as u64),
+        fs::request(fs::OPENDIR, parent, name.len() as u64),
         rights,
     )
     .0 as i64
@@ -137,14 +141,19 @@ pub(crate) fn dir_descend(parent: u64, name: &str, rights: u64) -> i64 {
 /// `MKDIR`: the same shape as [`dir_descend`], with creation.
 pub(crate) fn dir_mkdir(parent: u64, name: &str, rights: u64) -> i64 {
     put_page(name.as_bytes());
-    call(FILE, fs::req(fs::MKDIR, parent, name.len() as u64), rights).0 as i64
+    call(
+        FILE,
+        fs::request(fs::MKDIR, parent, name.len() as u64),
+        rights,
+    )
+    .0 as i64
 }
 
 /// `UNLINK` a name under a directory handle; the raw reply, so a name that was not there is a value
 /// rather than a trap. The witness uses it to clean up after itself and to provoke a node's death.
 pub(crate) fn dir_unlink(parent: u64, name: &str) -> i64 {
     put_page(name.as_bytes());
-    call(FILE, fs::req(fs::UNLINK, parent, name.len() as u64), 0).0 as i64
+    call(FILE, fs::request(fs::UNLINK, parent, name.len() as u64), 0).0 as i64
 }
 
 /// `RENAME`: two directories and two names, so both names go into the page back to back (source
@@ -154,8 +163,8 @@ pub(crate) fn dir_rename(src_dir: u64, src: &str, dst_dir: u64, dst: &str) -> i6
     put_page_at(src.len(), dst.as_bytes());
     call(
         FILE,
-        fs::req(fs::RENAME, src_dir, src.len() as u64),
-        fs::rename_dst(dst_dir, dst.len() as u64),
+        fs::request(fs::RENAME, src_dir, src.len() as u64),
+        fs::rename_destination(dst_dir, dst.len() as u64),
     )
     .0 as i64
 }

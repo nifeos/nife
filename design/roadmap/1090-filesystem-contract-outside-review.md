@@ -62,7 +62,7 @@ are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `b
   `register_names` exemption for `block::SIZE`, because the template has no exemption file for it.
 - Item 6 (P1), `reply_errno` not total: Done, [#3577](https://github.com/nifeos/nife/pull/3577).
   Built with Decision C.
-- Item 7 (P1), the packers mask: Open. `fs::req`, `rename_dst` and both `specification` packers
+- Item 7 (P1), the packers mask: Open. `fs::request`, `rename_destination` and both `specification` packers
   still mask; each proxy call site that forwards a client's length or handle needs a refusal first,
   so a client cannot crash a caretaker, and then the packers assert.
 - Item 8 (P1), seven unproven properties: Open. Six harnesses with falsification patches are in
@@ -82,7 +82,7 @@ are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `b
   fact are placement calls the maintainer makes.
 - Item 13 (P1), dates and British spellings: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 14 (P2), `req_blocks` decodes 256: Open. `block.rs` still returns `(w0 & 0xff) + 1`; clamp
+- Item 14 (P2), `request_block_count` decodes 256: Open. `block.rs` still returns `(w0 & 0xff) + 1`; clamp
   or `Option` is a two-way door the maintainer rules provisionally.
 - Item 15 (P2), `directory_entry::encode` accepts an empty name: Open. Unchanged; refusing in the
   encoder or documenting it is a two-way door the maintainer rules provisionally.

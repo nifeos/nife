@@ -114,14 +114,14 @@ fn get_page(n: usize, out: &mut [u8]) {
 /// contract's `i64`, so a negative value is a negated errno.
 fn name_call(verb: u64, handle: u64, name: &[u8], w1: u64) -> i64 {
     put_page(name);
-    call(DIR, fs::req(verb, handle, name.len() as u64), w1).0 as i64
+    call(DIR, fs::request(verb, handle, name.len() as u64), w1).0 as i64
 }
 
 /// Give a directory handle back. A failure here is not actionable and is deliberately dropped: this
 /// program is exiting shortly either way, and a handle nobody closes pins a node in a server whose
 /// table outlives its clients.
 fn close(handle: u64) {
-    call(DIR, fs::req(fs::CLOSE, handle, 0), 0);
+    call(DIR, fs::request(fs::CLOSE, handle, 0), 0);
 }
 
 /// **Remove `name` from the directory `parent` names**, recursing if it is a directory and `-r` is
@@ -204,7 +204,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
 fn empty(handle: u64, flags: u64, depth: usize, count: &mut u64) -> Result<(), i32> {
     let mut first_error = None;
     for _ in 0..MAXIMUM_ROUNDS {
-        let n = call(DIR, fs::req(fs::READDIR, handle, 0), 0).0 as i64;
+        let n = call(DIR, fs::request(fs::READDIR, handle, 0), 0).0 as i64;
         if n < 0 {
             // `ENUMERATE` withheld is `EPERM` here, and that is the walk stopping where the
             // capability stops: it can see the directory and not what is in it.
@@ -248,7 +248,7 @@ fn empty(handle: u64, flags: u64, depth: usize, count: &mut u64) -> Result<(), i
 /// listing, no rounds: a set namespace is *fixed*, so re-reading as [`empty`] must would hand this
 /// loop the names it has already taken away, a page of `ENOENT`s.
 fn sweep(flags: u64, count: &mut u64) -> Result<(), i32> {
-    let n = call(DIR, fs::req(fs::READDIR, fs::ROOT, 0), 0).0 as i64;
+    let n = call(DIR, fs::request(fs::READDIR, fs::ROOT, 0), 0).0 as i64;
     if n < 0 {
         // A capability that may not be listed cannot say what it was granted, which is the one
         // failure this mode cannot work around.

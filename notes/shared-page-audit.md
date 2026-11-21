@@ -107,7 +107,7 @@ Worth stating before the findings, because it is the reason there are so few.
 Lengths, offsets, counts, handles, opcodes and rectangles all travel in the IPC register words,
 never in the page. The kernel copies a message's words into its own state at `SEND` time and hands
 them to the receiver in registers, so by the time a server sees them they are in memory only that
-server can write. `filesystem_contract::fs::req` packs opcode, handle and a 40-bit length into one word;
+server can write. `filesystem_contract::fs::request` packs opcode, handle and a 40-bit length into one word;
 `graphics_contract` packs a whole rectangle into four 14-bit fields of one word; `credential_contract` packs two
 lengths into one word. There is no contract in this tree whose length field lives in the shared
 page. That removes the entire classic form of the bug (read a length from the page, bound-check
@@ -116,7 +116,7 @@ it, read it again to size the copy) by construction rather than by care.
 Three consequences fell out of the sweep and bound the search:
 
 - Every payload length is clamped to the page at the top of its serve loop and the clamp is a
-  local, not a re-read. `handle` in `redoxfs_server/src/dispatch.rs`, `let len = fs::req_len(w0).min(BLOCK);` is the pattern,
+  local, not a re-read. `handle` in `redoxfs_server/src/dispatch.rs`, `let len = fs::request_length_bytes(w0).min(BLOCK);` is the pattern,
   and the three caretakers, `line_editor`, `display_terminal` and `sink` all repeat it.
 - The one contract whose decode lives in a host-testable crate is the one with a proof.
   `credential_contract::read` takes the page and the register word, checks both lengths against their

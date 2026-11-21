@@ -11,7 +11,7 @@ a 64 MiB constant, with a `BUGS` entry explaining that nothing in the stack coul
 
 ## The wire
 
-`fs::req(fs::STATFS, handle, 0)`, with the second word 0. The reply fills the shared page with
+`fs::request(fs::STATFS, handle, 0)`, with the second word 0. The reply fills the shared page with
 `filesystem_contract::statfs`'s record, and `r0` is its length. The record is three little-endian
 `u64`s: the allocation unit in bytes, the volume's size in those units, and how many are free. That
 is `READDIR`'s and `LISTXATTR`'s existing shape rather than a new one, and it is forced. A reply word

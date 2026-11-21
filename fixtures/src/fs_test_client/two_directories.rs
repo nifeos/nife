@@ -90,5 +90,5 @@ pub(crate) fn two_dir() -> ! {
 /// [`FILE`](crate::channel::FILE) and this is the one role that holds two.
 fn dir_open_on(ep: u64, parent: u64, name: &[u8]) -> i64 {
     put_page(name);
-    call(ep, fs::req(fs::OPEN, parent, name.len() as u64), 0).0 as i64
+    call(ep, fs::request(fs::OPEN, parent, name.len() as u64), 0).0 as i64
 }

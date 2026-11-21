@@ -81,7 +81,7 @@ count, so both points move the same file.
 
 That is the finding about the contract. `fs_proto::fs::TRANSFER_PAGES` is 16 instead of 1, so the
 region a client and the FS server share is sixteen contiguous pages and a `READ` or `WRITE` may
-carry all of it. Nothing in the packed request word changed. `fs::req` has carried a 40-bit length
+carry all of it. Nothing in the packed request word changed. `fs::request` has carried a 40-bit length
 since [milestone 32 (a real filesystem)](../0032-redoxfs-fs-server.md), so the packing was
 never what limited a transfer to 4096 bytes. The page was. No new opcode, no second reply word, no
 descriptor, no changed field, and the shape a reader of `fs_proto` meets is the one already there.

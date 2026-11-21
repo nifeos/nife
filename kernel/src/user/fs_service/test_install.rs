@@ -20,7 +20,7 @@ pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) 
     let call = |w: [u64; 2]| crate::sched::ipc_call(fs_ep, w)[0] as i64;
     let named = |page: &mut [u8], verb: u64, at: u64, name: &str, w1: u64| {
         page[..name.len()].copy_from_slice(name.as_bytes());
-        call([fs::req(verb, at, name.len() as u64), w1])
+        call([fs::request(verb, at, name.len() as u64), w1])
     };
     // A directory under `at`, made if it is not there.
     let dir = |page: &mut [u8], at: u64, name: &str| {
@@ -41,26 +41,26 @@ pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) 
         assert!(h >= 0, "could not open or create {file} ({h})");
         let h = h as u64;
         assert_eq!(
-            call([fs::req(fs::TRUNCATE, h, 0), 0]),
+            call([fs::request(fs::TRUNCATE, h, 0), 0]),
             0,
             "could not truncate {file}"
         );
         for (k, chunk) in contents.chunks(PAGE_BYTES).enumerate() {
             page[..chunk.len()].copy_from_slice(chunk);
             let wrote = call([
-                fs::req(fs::WRITE, h, chunk.len() as u64),
+                fs::request(fs::WRITE, h, chunk.len() as u64),
                 (k * PAGE_BYTES) as u64,
             ]);
             assert_eq!(wrote, chunk.len() as i64, "short write of {file}");
         }
-        call([fs::req(fs::CLOSE, h, 0), 0]);
+        call([fs::request(fs::CLOSE, h, 0), 0]);
     };
     let packages = dir(page, fs::ROOT, installed_programs::PACKAGES);
     let n = dir(page, packages, name);
     let v = dir(page, n, version);
     put(page, v, program, bytes);
     for h in [v, n, packages] {
-        call([fs::req(fs::CLOSE, h, 0), 0]);
+        call([fs::request(fs::CLOSE, h, 0), 0]);
     }
 
     // The row and its pointer: the bytes' path is its package and version columns, and its
@@ -92,5 +92,5 @@ pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) 
         installed_programs::CURRENT,
         &current[..current_len],
     );
-    call([fs::req(fs::CLOSE, activation, 0), 0]);
+    call([fs::request(fs::CLOSE, activation, 0), 0]);
 }
