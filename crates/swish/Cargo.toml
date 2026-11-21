@@ -49,7 +49,7 @@ filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 
 # `has_magic`, and only that. Whether an arbitrary word is a pattern at all is asked before anything
 # treats it as a path, so `echo a:b` prints text instead of being refused as a name. Expansion itself
-# is `grant_plan::expand`; this crate moved the dependency off `user`, which no longer uses it.
+# is `grant_plan::expansion`; this crate moved the dependency off `user`, which no longer uses it.
 byte_glob = { version = "0.1.0", git = "https://github.com/nifeos/byte_glob", rev = "f5dae9092130be6d66f176d2e1942a4c36686818" }
 
 # `index::Ranked` and `index::Found`, so `apropos`'s answer is rendered here with everything else

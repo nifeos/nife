@@ -8,13 +8,13 @@
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
 use grant_contract::Manifest;
-use grant_plan::expand::Expansion;
-use grant_plan::{Endowment, Holdings, Refusal};
+use grant_plan::expansion::Expansion;
+use grant_plan::{Endowment, Refusal, ShellHoldings};
 use program_table::Program;
 
 use crate::{Entry, Schedule};
 
-/// **What this scheduler holds**: `grant_plan::Holdings` one level out, the authority it could
+/// **What this scheduler holds**: `grant_plan::ShellHoldings` one level out, the authority it could
 /// back an entry's grants with.
 ///
 /// A parameter, so that "this scheduler holds nothing to back that" is a statement about one
@@ -145,16 +145,16 @@ pub enum Admission {
 
 /// Plan one entry's command against its program's manifest and against what the scheduler holds.
 pub(super) fn admit(command: &[u8], held: Held) -> Admission {
-    let spec = grant_plan::parse_run(command);
+    let spec = grant_plan::parse_invocation(command);
     // Planned as if this scheduler held a directory, whether or not it does: planning against
     // `held.dir` would refuse a designation (`wc report.txt`) as the line's fault when it is the
     // scheduler's, and `unbacked` below answers whether one is held. The directory is the only
     // holding lent, so a line wrong for any other reason is still refused. The position is the
     // root: a scheduler has no `cd`, and a working directory that moved between registration and a
     // fire would change what an already planned grant means.
-    let holdings = Holdings {
+    let holdings = ShellHoldings {
         directory: true,
-        ..Holdings::default()
+        ..ShellHoldings::default()
     };
     match program_table::plan(&spec, holdings, Expansion::none()) {
         Err(r) => Admission::Refused(r),
@@ -180,10 +180,10 @@ pub(super) fn admit_installed_row(entry: &Entry<'_>, m: Manifest, held: Held) ->
 /// the prompt's own convention for bytes, so nothing about the program may be read off that row:
 /// the endowment carries `m`.
 fn admit_installed(command: &[u8], m: Manifest, held: Held) -> Admission {
-    let spec = grant_plan::parse_run(command);
-    let holdings = Holdings {
+    let spec = grant_plan::parse_invocation(command);
+    let holdings = ShellHoldings {
         directory: true,
-        ..Holdings::default()
+        ..ShellHoldings::default()
     };
     match grant_plan::plan_against(&spec, m, holdings, Expansion::none()) {
         Err(r) => Admission::Refused(r),

@@ -123,7 +123,7 @@ the prompt prints need none, so they moved; the terminal page, the spawn channel
 requests and the pipe endpoints did not.
 
 Two functions in the crate take the shell's directory read as a callback, `expand`, rather than
-losing it. Matching a pattern is pure and lives in `grant_plan::expand`; only *reading* the
+losing it. Matching a pattern is pure and lives in `grant_plan::expansion`; only *reading* the
 directory needs a capability. So `swish::echo` and `swish::expansion` are host-testable end to end
 against a fixture directory, which is what makes `echo *.txt` and `caps rm *.txt` provably render
 the same set.

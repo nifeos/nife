@@ -430,7 +430,7 @@ fn a_bound_grant_reaches_nothing_outside_it() {
 // what to do) gave a foreign program an argv and milestone 206 (a program image has under 896 KiB)
 // gave it room for its image. The grant is the walk tests' caretaker over
 // `fixture::walk::ROOT`; the words are `fixture::walk::RG_SEARCH`, made into an argv by
-// `grant_plan::argv`, the shell's own function, so `rg` hears what `swish` would send for that
+// `grant_plan::write_argument_page`, the shell's own function, so `rg` hears what `swish` would send for that
 // line. This is the kernel harness, not the prompt: `rg` is in this archive only because somebody
 // ran `cargo xtask basalt-fetch`, and it is never part of the base image (calef, 2026-10-07: it is
 // installed by `jig`, from its own package).

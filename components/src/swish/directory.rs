@@ -36,7 +36,7 @@ pub(super) const DIR_TERMINAL: u64 = 4;
 pub(super) fn expansion(
     nav: &mut Nav,
     spec: &ParsedInvocation,
-) -> Result<grant_plan::expand::Expansion, Say> {
+) -> Result<grant_plan::expansion::Expansion, Say> {
     swish::expansion(spec, &mut |token| nav.expand(token))
 }
 

@@ -44,13 +44,13 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
    Finding: the units rule says a length or a limit ends with its unit (`MAXIMUM_NAME_BYTES`, never
    `MAXIMUM_NAME_LEN`). The release review reopens a name ratified before that rule. Seven public
    limits are in bytes with no unit: `MAXIMUM_FILE_NAME` (ratified; `src/lexing.rs` line 16),
-   `expand::MAXIMUM_NAME` (ratified; `src/expand.rs` line 16), `nav::MAXIMUM_NAME` (ratified;
+   `expansion::MAXIMUM_NAME` (ratified; `src/expansion.rs` line 16), `nav::MAXIMUM_NAME` (ratified;
    `src/nav.rs` line 25) and `nav::MAXIMUM_DIRECTORY_NAME` (line 34). The list goes on with
    `nav::RENDER_MAXIMUM` (ratified; line 44), `program_table::spawnproto::HOLDER_MAXIMUM` (ratified;
    line 493) and `grant_contract::verbs::MAXIMUM_VERB` (ratified; line 100).
-   `expand::NAME_BYTES` and `MAXIMUM_WORDS_NAME_BYTES` (`src/lexing.rs` line 25) carry their
+   `expansion::NAME_BYTES` and `MAXIMUM_WORDS_NAME_BYTES` (`src/lexing.rs` line 25) carry their
    unit. The template's `register_names.py` refuses the four private fields `len`
-   (`src/expand.rs` line 46, `grant_contract/src/manifest.rs` line 123,
+   (`src/expansion.rs` line 46, `grant_contract/src/manifest.rs` line 123,
    `program_table/src/spawnproto.rs` line 631) and `name_len` (`src/nav.rs` line 500) at a
    ceiling of 0. The
    `standalone` job is red on them. `MAXIMUM_NAMES`, `MAXIMUM_DEPTH`, `MAXIMUM_BINDS`,
@@ -131,7 +131,7 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
     Finding: `plan`, `plan_stage`, `plan_against` and `plan_against_with` take `Holdings` (1,008
     bytes), `Expansion` (568) and `Streams` (1,216) by value and return `Endowment` (2,344). The
     crate records two stack overflows caused by exactly this shape (`src/command.rs` lines 389 to
-    392; `src/expand.rs` lines 539 to 541) and works around them inside (`Holdings::anchor` writes
+    392; `src/expansion.rs` lines 539 to 541) and works around them inside (`Holdings::anchor` writes
     through an out-parameter). The sizes are a fact of the `no_std`, no-`alloc` design, and the
     crate says so at `Sink`, `Source` and `Diagnostics`; what it does not do is keep them off the
     call path or pin them.
@@ -148,7 +148,7 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
     `MAXIMUM_FILE_NAME` is 252 and `NAME_BYTES` is 512, and nothing says so where the cast is. A
     raised limit would truncate silently, which is the one thing this crate promises never to do
     with a name.
-    Evidence: `src/expand.rs` lines 42, 68, 94 and 179; `src/nav.rs` lines 213, 271 and 586.
+    Evidence: `src/expansion.rs` lines 42, 68, 94 and 179; `src/nav.rs` lines 213, 271 and 586.
     Change: a `const` assertion beside each limit (`MAXIMUM_FILE_NAME <= u8::MAX as usize`,
     `NAME_BYTES <= u16::MAX as usize`, `MAXIMUM_DIRECTORY_NAME <= u8::MAX as usize`), or
     `u8::try_from` where a `const` cannot reach.

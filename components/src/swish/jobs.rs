@@ -277,27 +277,27 @@ pub(super) fn watch(h: &Held) -> bool {
         }
         // Fold in every ^C the terminal has seen since we started watching.
         let n = intr_count().wrapping_sub(base);
-        let mut action = Action::None;
+        let mut action = InterruptAction::None;
         while fed < n {
             fed += 1;
             let a = esc.on_interrupt();
-            if !matches!(a, Action::None) {
+            if !matches!(a, InterruptAction::None) {
                 action = a; // Forcible (a second ^C) wins over Cooperative (the first)
             }
         }
-        if matches!(action, Action::None) {
+        if matches!(action, InterruptAction::None) {
             action = esc.on_tick(); // the grace timeout: escalate a job that ignored the first ^C
         }
         match action {
-            Action::Cooperative => {
+            InterruptAction::Cooperative => {
                 jf.write_volatile(job_channel_page::INTERRUPT as u64, 1u64);
                 print(b"  ^C: asked the job to stop.\n");
             }
-            Action::Forcible => {
+            InterruptAction::Forcible => {
                 forcible(job_ut);
                 return false;
             }
-            Action::None => {}
+            InterruptAction::None => {}
         }
         watch_pause();
     }
@@ -622,7 +622,7 @@ pub(super) fn background(nav: &mut Nav, cmd: &[u8]) {
         return;
     }
     let spec = match grant_plan::parse(cmd) {
-        Command::Run(spec) if !spec.program.contains(&b'/') => spec,
+        CommandLine::Run(spec) if !spec.program.contains(&b'/') => spec,
         _ => return not_held(),
     };
     let expanded = match expansion(nav, &spec) {

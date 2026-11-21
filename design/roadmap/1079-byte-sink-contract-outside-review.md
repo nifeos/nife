@@ -210,9 +210,9 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
 - Decision C, end-of-stream words reserved: Done (ruled 2026-11-14 UTC, option A),
   [#3581](https://github.com/nifeos/nife/pull/3581).
 - Decision D, the names: Ruled (maintainer provisional, 2026-11-14 UTC). Not built: P1-9.
-- The move: Open. No review package exists under `notes/crate-reviews/`, and
-  nifeos/byte_sink_contract does not exist; a package lane comes first, then the clearance under
-  Open decisions.
+- The move: Open. The review package is `notes/crate-reviews/byte-sink-contract.md`; it recommends
+  not clearing until P1-3, P1-8 and P1-9 land. nifeos/byte_sink_contract does not exist; the
+  clearance under Open decisions follows the three items.
 
 ## Open decisions
 

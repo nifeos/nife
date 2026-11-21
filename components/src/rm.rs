@@ -83,7 +83,7 @@ const LISTING: usize = 128;
 /// which is why it can be larger than [`LISTING`] on a program with four stack pages.
 const SET_LISTING: usize = directory_entry::record_len(0)
     * filesystem_contract::nameset::MAXIMUM_NAMES
-    + filesystem_contract::nameset::NAME_BYTES;
+    + filesystem_contract::nameset::MAXIMUM_NAME_SET_BYTES;
 
 /// The most rounds one directory takes before the walk gives up on it. A ceiling rather than a limit
 /// on directories: **each round removes everything it saw and starts again at cursor 0**, because a

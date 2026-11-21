@@ -34,7 +34,7 @@ pinned toolchain, every run under a 12 GiB memory cap:
 - The recorded mutation results: the baseline run's 21 survivors were all dispositioned (14 killed,
   7 confirmed hangs, none deferred), and the first weekly census reports 100% caught. No census ran here.
 - Every call site in the tree, read: `swish::words` asks `has_magic` before anything else;
-  `grant_plan::expand::offer` matches with the default dot rule; `pgrep` matches state names with
+  `grant_plan::expansion::offer` matches with the default dot rule; `pgrep` matches state names with
   `LeadingDot::Ordinary`.
 
 Read and reasoned about, not run: the correctness of `match_steps`, `decode` and `class_at` on every

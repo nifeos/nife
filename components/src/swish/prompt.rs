@@ -52,7 +52,7 @@ pub(super) static mut RANKED: documentation::index::Ranked = documentation::inde
 
 /// **`apropos <word>`: name the installed pages that mention it.**
 ///
-/// A builtin (`grant_plan::Command::Apropos` says why): it opens the store at the root of what this
+/// A builtin (`grant_plan::CommandLine::Apropos` says why): it opens the store at the root of what this
 /// shell holds, so a `cd` does not move the manual, reads the manifest, and hands each shard to
 /// `documentation::index::search`, which `cargo xtask manual <word>` runs on the host. It grants
 /// and spawns nothing. Returns the filesystem's errno for a bundle that would not open, after the

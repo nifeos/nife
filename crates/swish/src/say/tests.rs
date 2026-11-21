@@ -7,13 +7,13 @@ use crate::test_support::shown;
 fn every_say_but_nothing_is_one_line() {
     assert_eq!(shown(|o| write_say(Say::Nothing, o)), "");
     for s in [
-        Say::Refused(Refused::AtYourRoot),
-        Say::Refused(Refused::NotAName),
+        Say::Refused(PathRefusal::AtYourRoot),
+        Say::Refused(PathRefusal::NotAName),
         Say::Failed(-2),
         Say::NoDirectory,
         Say::NeedsAName,
         Say::Cannot(Refusal::NoMatch),
-        Say::CannotBind(navigation::BindRefused::TooMany),
+        Say::CannotBind(navigation::BindRefusal::TooMany),
     ] {
         let line = shown(|o| write_say(s, o));
         assert!(line.ends_with('\n'), "{s:?} does not end its line");
@@ -32,11 +32,11 @@ fn a_filesystem_refusal_keeps_the_filesystems_own_words() {
     );
 }
 
-/// [`Say::CannotBind`] renders [`navigation::BindRefused`]'s own message, the same shape
+/// [`Say::CannotBind`] renders [`navigation::BindRefusal`]'s own message, the same shape
 /// [`Say::Cannot`] and [`Say::Refused`] already use for their own refusal types.
 #[test]
 fn cannot_bind_renders_the_bind_refusals_own_message() {
-    let s = shown(|o| write_say(Say::CannotBind(navigation::BindRefused::AlreadyBound), o));
+    let s = shown(|o| write_say(Say::CannotBind(navigation::BindRefusal::AlreadyBound), o));
     assert_eq!(s, "  that name is already bound; unbind it first\n");
 }
 
@@ -45,6 +45,6 @@ fn cannot_bind_renders_the_bind_refusals_own_message() {
 fn the_heap_cap_is_named_in_kibibytes() {
     let say = shown(|o| write_say(Say::HeapFull, o));
     assert!(say.contains("its cap is 32 KiB"), "{say}");
-    let held = shown(|o| write_holdings(128, Holdings::default(), None, None, o));
+    let held = shown(|o| write_holdings(128, ShellHoldings::default(), None, None, o));
     assert!(held.contains("the first 32 KiB of them"), "{held}");
 }

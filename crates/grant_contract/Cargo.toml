@@ -14,7 +14,7 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-# The argument page, which the verb on a page is read from (`verb_of_page`, `delegated_within`).
+# The argument page, which the verb on a page is read from (`page_verb`, `delegated_identity`).
 program_argument_contract = { version = "0.1.0", path = "../program_argument_contract" }
 
 # A dev dependency only: one host test pins a word grant's rights to the filesystem contract's bits,

@@ -84,7 +84,7 @@ Rule, ruled 2026-11-19 (UTC) by the maintainer, provisional: a two-way door unti
 `length_bytes`. `filesystem_contract::grant::MAXIMUM_NAME`, which two of these mirror, moves in the
 same lane. A rename lane does the work, not the pull request that records the rule.
 
-Prior art. This tree's `program_argument_contract::PAGE_BYTES` and `expand::NAME_BYTES` carry their
+Prior art. This tree's `program_argument_contract::PAGE_BYTES` and `expansion::NAME_BYTES` carry their
 unit; POSIX's `PATH_MAX` and `NAME_MAX` are the case the rule avoids, since neither says whether the
 terminator counts. Where nife differs: the unit is in the name, not in a manual page.
 

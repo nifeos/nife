@@ -7,7 +7,7 @@ use super::*;
 /// serves (badged with `badge` if nonzero), its file page mapped where the PAL expects it, writing
 /// to `report`. Returns the heap's region, the thread, the stack frames and the argument page.
 ///
-/// `line` goes onto a fresh page through `grant_plan::argv`, handed over as the progenitor does: a
+/// `line` goes onto a fresh page through `grant_plan::write_argument_page`, handed over as the progenitor does: a
 /// `READ` page frame capability at `ARGS_SLOT`, mapped read-only at `ARGS_PAGE`. `None` leaves the
 /// slot empty: no arguments.
 ///
@@ -34,7 +34,8 @@ pub(super) fn spawn_std(
         // SAFETY: a frame just allocated and zeroed, reached through the direct map, which nothing
         // else holds until the program below is given it read-only.
         let page = unsafe { &mut *(mmu::phys_to_virt(phys) as *mut [u8; FRAME_BYTES as usize]) };
-        grant_plan::argv(line, page).expect("the harness's own command line is not an argv");
+        grant_plan::write_argument_page(line, page)
+            .expect("the harness's own command line is not an argv");
         phys
     });
 

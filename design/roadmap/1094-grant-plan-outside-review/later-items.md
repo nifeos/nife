@@ -7,7 +7,7 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
 15. `NameSet`'s `Debug` prints byte lists.
     Finding: `Name` debugs as the name, `NameSet` as `[[97, 46, ...]]`, because `iter` yields
     `&[u8]`. The baseline triage recorded this as a deferred finding and pinned it as is.
-    Evidence: `src/expand.rs` lines 103 to 108 and 749 to 752.
+    Evidence: `src/expansion.rs` lines 103 to 108 and 749 to 752.
     Change: render each name through `Name`'s impl (or `from_utf8` with the byte fallback) and
     change the pinned test on purpose.
     Door: two-way. Effort: XS.

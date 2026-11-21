@@ -144,7 +144,7 @@ B4 fails, with eight entries, the longest list any run has produced. In the stra
 2. Its recovery, `rm -rf std_exerciser/target`.
 3. `spawn_service` computes slot numbers per program.
 4. An integer argument reaches a non-interruptible child in `x1` via `tcb_start(tcb, 0, arg, 0)`.
-5. A `caps` preview of an input operand needs `Holdings::directory`.
+5. A `caps` preview of an input operand needs `ShellHoldings::directory`.
 6. An argument-plus-input manifest breaks a `swish` host test.
 7. `script/swish-check` is silent on success.
 8. The machine was pre-provisioned.
@@ -193,7 +193,7 @@ Still unopened after five runs: every file under `design/decisions/` (the gap th
 - There is an eighth edit site for a new program, and it depends on the manifest.
   `the_arg_line_follows_the_manifest_for_every_program` in `crates/swish/src/lib.rs` sweeps `Prog`
   and asks the manifest whether a program takes an argument, as its own doc comment argues it
-  should. Then it builds `"<name> 21"` against `Holdings::default()` and hard-codes the rest. Any
+  should. Then it builds `"<name> 21"` against `ShellHoldings::default()` and hard-codes the rest. Any
   program requiring an argument and an input turns it red, in a crate the person adding the program
   never opened. Recorded in `notes/adding-a-program.md`'s `BUGS`, unrepaired on `main`; the stranger
   repaired it only inside its disposable clone.
