@@ -260,8 +260,8 @@ pub(super) const MAXIMUM_KERNEL_EP_CHUNKS: usize =
 /// Ranked above the allocators, because the reaper (`finish_switch`) drops a dead `Thread` while
 /// holding it and that drop frees through the kernel MMU lock. Nothing under it allocates, so §9
 /// (locking)'s no-allocation-in-interrupt rule holds. See notes/ipc-tables-lock-inventory.md.
-pub(super) static IPC_TABLES: InterruptSafeMutex<Option<IpcTables>> =
-    InterruptSafeMutex::new(rank::IPC_TABLES, None);
+pub(super) static IPC_TABLES: InterruptSafeMutualExclusionLock<Option<IpcTables>> =
+    InterruptSafeMutualExclusionLock::new(rank::IPC_TABLES, None);
 
 /// The scheduler before anything is in it, as an installed scheduler, in `.rodata`. [`initialize`]
 /// copies its bytes into [`IPC_TABLES`] with `ptr::copy_nonoverlapping`, so an unoptimised build

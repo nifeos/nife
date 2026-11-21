@@ -63,7 +63,7 @@ blocks counted here.
 
 ## test_and_set_lock, the in-tree lock
 
-`InterruptSafeMutex` in `kernel/src/sync.rs` wraps `test_and_set_lock::SpinLock`, and a handful of statics
+`InterruptSafeMutualExclusionLock` in `kernel/src/sync.rs` wraps `test_and_set_lock::SpinLock`, and a handful of statics
 in
 `kernel/src/user/fs_service/two_dirs.rs` and `system_tests/` use it directly. It is not a registry
 crate, so the table and the helper do not list it; its sites are here because the claim below rests

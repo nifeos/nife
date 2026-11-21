@@ -8,7 +8,7 @@ use page_frames::FRAME_BYTES;
 use page_tables::Flags;
 
 use crate::arch::mmu;
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 pub type ThreadId = u64;
 
@@ -53,8 +53,8 @@ pub(crate) const UNNAMED: ThreadId = u64::MAX;
 /// page tables that already exist. `unmap_page` leaves intermediate tables standing, so
 /// bump-allocating addresses forever would cost an L2 and an L3 table for every 2 MiB consumed. A
 /// test asserts that a second batch of threads costs zero additional frames.
-static FREE_STACK_ADDRESS_SPACE: InterruptSafeMutex<FreeAddressSpace> =
-    InterruptSafeMutex::new(rank::STACK_VA, FreeAddressSpace::new());
+static FREE_STACK_ADDRESS_SPACE: InterruptSafeMutualExclusionLock<FreeAddressSpace> =
+    InterruptSafeMutualExclusionLock::new(rank::STACK_VA, FreeAddressSpace::new());
 
 /// A fixed stack of reusable stack-VA ranges. A range is pushed when a thread dies and popped when
 /// one spawns, so the count never exceeds the most threads alive at once; the array is sized from
@@ -601,7 +601,7 @@ pub(crate) unsafe fn initialize_fp_state(thread: *mut Thread) {
 /// microkernel)). Userspace sees only a slot index, so unforgeability is a bounds check. The order
 /// between the locks is written at the rank.
 pub(crate) type CapabilityTableLock =
-    crate::sync::InterruptSafeMutex<crate::capability_object::CapabilityTable>;
+    crate::sync::InterruptSafeMutualExclusionLock<crate::capability_object::CapabilityTable>;
 
 /// **Where a thread's capability table lives: past its FP register file, in the same TCB page.**
 ///
@@ -637,10 +637,11 @@ const _: () = assert!(
 /// of the table and then copied again into the page: two copies of 2 KiB on every thread's birth.
 /// One copy from here took 1,194 instructions off each riscv64 `spawn_reap` iteration.
 /// Never locked or borrowed as a lock: a copy of an unheld lock's bytes is a fresh unheld lock.
-static EMPTY_CAPABILITY_TABLE: CapabilityTableLock = crate::sync::InterruptSafeMutex::new(
-    crate::sync::rank::CAPABILITY_TABLE,
-    crate::capability_object::CapabilityTable::new(),
-);
+static EMPTY_CAPABILITY_TABLE: CapabilityTableLock =
+    crate::sync::InterruptSafeMutualExclusionLock::new(
+        crate::sync::rank::CAPABILITY_TABLE,
+        crate::capability_object::CapabilityTable::new(),
+    );
 
 /// Write an empty, unheld capability table at `table`.
 ///

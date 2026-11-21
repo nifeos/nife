@@ -8,7 +8,7 @@
 //! notes/mapping-log.md.
 
 use crate::arch::mmu;
-use crate::sync::{InterruptSafeGuard, InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeGuard, InterruptSafeMutualExclusionLock, rank};
 
 /// One recorded mapping: `va` in the owning space maps `phys`, under the capability whose run
 /// starts at `object`. `phys == 0` is a tombstone (no real frame is 0). The run's base names a
@@ -244,8 +244,8 @@ pub(crate) const MAXIMUM_SPACES: usize = crate::sched::MAXIMUM_THREADS + 32;
 
 /// The registry of live address spaces: the fixed index that finds each space's log, whose records
 /// live in the spaces' own regions.
-static SPACES: InterruptSafeMutex<Registry> =
-    InterruptSafeMutex::new(rank::MAPPINGS, Registry::new());
+static SPACES: InterruptSafeMutualExclusionLock<Registry> =
+    InterruptSafeMutualExclusionLock::new(rank::MAPPINGS, Registry::new());
 
 /// The registry array plus one past its highest live slot, so a walk costs the occupied prefix
 /// rather than [`MAXIMUM_SPACES`], which grows with `sched::MAXIMUM_THREADS` (notes/mapping-log.md

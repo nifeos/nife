@@ -25,7 +25,7 @@ use driver_process_contract::virtual_io::{
 
 use super::*;
 use crate::pci::PciVirtualIoDevice;
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 /// Where a direct driver's register window starts. The driver reads it from the startup page.
 const REGISTERS_VA: u64 = address_space_layout::pair_page(0x0000_0000_0100_0000);
@@ -53,8 +53,9 @@ const MAXIMUM_CARVED_FUNCTIONS: usize = 8;
 /// **Each function's DMA region**, by requester id, with its page count. `iommu::confine` runs
 /// once per function per boot (a second attach leaks the first domain's tables), so a function
 /// granted direct again gets its first region back, reset and zeroed.
-static CARVED: InterruptSafeMutex<[Option<(u32, u64, usize)>; MAXIMUM_CARVED_FUNCTIONS]> =
-    InterruptSafeMutex::new(rank::VIRTUAL_IO, [None; MAXIMUM_CARVED_FUNCTIONS]);
+static CARVED: InterruptSafeMutualExclusionLock<
+    [Option<(u32, u64, usize)>; MAXIMUM_CARVED_FUNCTIONS],
+> = InterruptSafeMutualExclusionLock::new(rank::VIRTUAL_IO, [None; MAXIMUM_CARVED_FUNCTIONS]);
 
 /// **Why a function gets the mediated grant.**
 ///

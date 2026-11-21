@@ -144,19 +144,22 @@ fn lock_order_violation(rank: u32, held: u32) -> ! {
     );
 }
 
-/// A spinlock that masks interrupts while it is held, and enforces a global lock order.
+/// A mutual exclusion lock (the common word is mutex) that is a spinlock masking interrupts while it
+/// is held, and enforces a global lock order.
 ///
 /// Every lock in the kernel should be one of these. Keep the critical section short: interrupts are
 /// off for the whole of it (DECISIONS §9).
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: provisional. `Mutex` spelled out as `MutualExclusionLock`; the earlier `InterruptSafe`
+/// qualifier was ratified 2026-10-27 (#2797).
 #[doc(alias = "irq")]
-pub struct InterruptSafeMutex<T> {
+#[doc(alias = "mutex")]
+pub struct InterruptSafeMutualExclusionLock<T> {
     inner: test_and_set_lock::SpinLock<T>,
     rank: u32,
 }
 
-impl<T> InterruptSafeMutex<T> {
+impl<T> InterruptSafeMutualExclusionLock<T> {
     /// Make a lock of `rank`, from [`rank`], holding `value`.
     pub const fn new(rank: u32, value: T) -> Self {
         Self {
@@ -236,11 +239,11 @@ impl<T> InterruptSafeMutex<T> {
 /// restored, when `find` does. The guard restores the state found before `find` ran.
 #[inline]
 pub(crate) fn lock_found<'a, T>(
-    find: impl FnOnce() -> Option<&'a InterruptSafeMutex<T>>,
+    find: impl FnOnce() -> Option<&'a InterruptSafeMutualExclusionLock<T>>,
 ) -> Option<InterruptSafeGuard<'a, T>> {
     let interrupts_were_enabled = interrupts::disable();
-    if let Some(mutex) = find() {
-        Some(mutex.lock_masked(interrupts_were_enabled))
+    if let Some(lock) = find() {
+        Some(lock.lock_masked(interrupts_were_enabled))
     } else {
         interrupts::restore(interrupts_were_enabled);
         None
@@ -298,11 +301,12 @@ mod tests {
 
     /// The lock masks interrupts for as long as it is held (notes/locking.md).
     #[test_case]
-    fn interrupt_safe_mutex_masks_interrupts_while_held() {
+    fn interrupt_safe_mutual_exclusion_lock_masks_interrupts_while_held() {
         use crate::arch::interrupts;
-        use crate::sync::{InterruptSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
-        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 7);
+        static M: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 7);
 
         interrupts::enable();
         assert!(
@@ -330,11 +334,12 @@ mod tests {
     /// A lock released where interrupts were already masked, in a handler or under an outer lock,
     /// must leave them masked.
     #[test_case]
-    fn interrupt_safe_mutex_restores_rather_than_enables() {
+    fn interrupt_safe_mutual_exclusion_lock_restores_rather_than_enables() {
         use crate::arch::interrupts;
-        use crate::sync::{InterruptSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
-        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 0);
 
         // Pretend we are inside an interrupt handler: interrupts already masked.
         let outer = interrupts::disable();
@@ -357,11 +362,13 @@ mod tests {
     #[test_case]
     fn nested_locks_restore_correctly() {
         use crate::arch::interrupts;
-        use crate::sync::{InterruptSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
         // A is taken first, so A must outrank B.
-        static A: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::STACK_VA, 1);
-        static B: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 2);
+        static A: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::STACK_VA, 1);
+        static B: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 2);
 
         interrupts::enable();
 
@@ -400,9 +407,10 @@ mod tests {
     /// The rank tracker follows the locks.
     #[test_case]
     fn taking_a_lock_records_its_rank() {
-        use crate::sync::{InterruptSafeMutex, current_rank, rank};
+        use crate::sync::{InterruptSafeMutualExclusionLock, current_rank, rank};
 
-        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 0);
 
         assert_eq!(current_rank(), rank::NONE);
         {
@@ -419,9 +427,10 @@ mod tests {
     /// While holding a lock, only a strictly lower rank may be taken (notes/deadlock.md).
     #[test_case]
     fn the_hierarchy_permits_only_strictly_decreasing_ranks() {
-        use crate::sync::{InterruptSafeMutex, rank, would_violate};
+        use crate::sync::{InterruptSafeMutualExclusionLock, rank, would_violate};
 
-        static FRAMES: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static FRAMES: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 0);
 
         let _g = FRAMES.lock();
 
@@ -447,10 +456,12 @@ mod tests {
     /// be checked against the wrong ceiling.
     #[test_case]
     fn releasing_an_inner_lock_restores_the_outer_rank() {
-        use crate::sync::{InterruptSafeMutex, current_rank, rank};
+        use crate::sync::{InterruptSafeMutualExclusionLock, current_rank, rank};
 
-        static OUTER: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::STACK_VA, 0);
-        static INNER: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static OUTER: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::STACK_VA, 0);
+        static INNER: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 0);
 
         let _o = OUTER.lock();
         assert_eq!(current_rank(), rank::STACK_VA);

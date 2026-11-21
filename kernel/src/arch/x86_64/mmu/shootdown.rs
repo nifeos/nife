@@ -18,7 +18,7 @@ pub(super) const SHOOTDOWN_ALL: u64 = u64::MAX;
 
 /// **The one shootdown in flight**, and the lock that makes it one.
 ///
-/// A raw `AtomicBool` rather than an [`crate::sync::InterruptSafeMutex`], deliberately, and the
+/// A raw `AtomicBool` rather than an [`crate::sync::InterruptSafeMutualExclusionLock`], deliberately, and the
 /// reason is
 /// the whole design below: a core spinning here is still reachable, because the message that ends
 /// the spin is an NMI. [`broadcast`] masks interrupts itself for as long as it holds this, because

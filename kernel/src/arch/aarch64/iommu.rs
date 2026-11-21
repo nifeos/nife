@@ -19,7 +19,7 @@
 
 use crate::arch::mmu::phys_to_virt;
 use crate::iommu::AttachError;
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 // --- Register file (offsets from the SMMU page; Arm IHI 0070, and QEMU's smmuv3-common.h) ---
 /// `SMMU_IDR0`, the first identification register (Arm IHI 0070, 6.3.1). `ST_LEVEL`, bits `[28:27]`,
@@ -168,7 +168,8 @@ struct Smmu {
     evtq_cons: u32,
 }
 
-static SMMU: InterruptSafeMutex<Option<Smmu>> = InterruptSafeMutex::new(rank::IOMMU, None);
+static SMMU: InterruptSafeMutualExclusionLock<Option<Smmu>> =
+    InterruptSafeMutualExclusionLock::new(rank::IOMMU, None);
 
 fn r32(base: u64, off: u64) -> u32 {
     // SAFETY: the SMMU register page is device-mapped (mmu::map_everything region 9, gated on the

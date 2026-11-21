@@ -437,7 +437,7 @@ const NO_OWNER: u32 = u32::MAX;
 /// live in a static without a lock: the GSI in bits 15:0, "active low" in bit 16, "level triggered"
 /// in bit 17. [`NO_ROUTING`] means [`record_isa_routing`] has not run.
 ///
-/// Packed rather than held as a `[IsaInterruptRouting; 16]` behind a mutex because it is written
+/// Packed rather than held as a `[IsaInterruptRouting; 16]` behind a mutual exclusion lock because it is written
 /// once,
 /// during single-threaded boot, and read from interrupt-controller code where taking a lock would
 /// be the more surprising thing.

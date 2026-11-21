@@ -554,14 +554,15 @@ mod tests {
     /// **The cost of masking, made visible.**
     ///
     /// A lock held across more than one tick period loses a tick, which is why DECISIONS §9 keeps
-    /// critical sections short. If it stopped costing one, `InterruptSafeMutex` would have stopped
+    /// critical sections short. If it stopped costing one, `InterruptSafeMutualExclusionLock` would have stopped
     /// masking. See notes/interrupts.md.
     #[test_case]
     fn a_long_critical_section_costs_a_tick() {
         use crate::arch::timer;
-        use crate::sync::{InterruptSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
-        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 0);
 
         // Read inside the critical section, where this thread cannot be preempted or migrated.
         let (cpu, before) = {
@@ -576,7 +577,7 @@ mod tests {
         assert!(
             within_periods(20, || timer::missed_ticks_on(cpu) > before),
             "holding a lock across two tick periods did NOT lose a tick, which means \
-             InterruptSafeMutex is not masking interrupts and the deadlock is live"
+             InterruptSafeMutualExclusionLock is not masking interrupts and the deadlock is live"
         );
     }
 
@@ -590,9 +591,10 @@ mod tests {
     #[test_case]
     fn a_late_tick_returns_to_the_grid() {
         use crate::arch::timer;
-        use crate::sync::{InterruptSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
-        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 0);
 
         let interval = timer::interval();
         // Inside the critical section the thread cannot migrate or be preempted, so the phase and
@@ -655,9 +657,10 @@ mod tests {
     #[test_case]
     fn holding_a_lock_masks_the_timer() {
         use crate::arch::{interrupts, timer};
-        use crate::sync::{InterruptSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
-        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutualExclusionLock<u32> =
+            InterruptSafeMutualExclusionLock::new(rank::PAGE_FRAMES, 0);
 
         assert!(
             interrupts::is_enabled(),
@@ -685,7 +688,7 @@ mod tests {
             assert_eq!(
                 timer::ticks_on(cpu),
                 before,
-                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutex is not masking, \
+                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutualExclusionLock is not masking, \
                  and the deadlock in notes/locking.md is live: a handler that touched this lock \
                  would spin forever waiting for code that cannot run."
             );
@@ -701,7 +704,7 @@ mod tests {
             assert_eq!(
                 timer::ticks_on(cpu),
                 before,
-                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutex is not masking, \
+                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutualExclusionLock is not masking, \
                  and the deadlock in notes/locking.md is live: a handler that touched this lock \
                  would spin forever waiting for code that cannot run."
             );
