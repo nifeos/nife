@@ -18,7 +18,7 @@ pub const MAXIMUM_NAMES: usize = 8;
 /// bytes. Over it is the same
 /// refusal as a ninth name, never a truncation.
 ///
-/// Name: provisional (milestone 946).
+/// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_NAME_SET_BYTES: usize = 512;
 
 /// Bytes an encoded set occupies at most: a two-byte header per name, the names, and the

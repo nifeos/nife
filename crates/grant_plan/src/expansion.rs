@@ -32,7 +32,7 @@ pub const MAXIMUM_NAMES: usize = 8;
 /// test, and exceeding it is the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md
 /// ("The bytes a set carries").
 ///
-/// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
+/// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_NAME_SET_BYTES: usize = 512;
 
 // `NameSet::ends` holds offsets into the packed bytes as `u16`, and `Name` holds its length as a `u8`.
@@ -83,8 +83,7 @@ impl Name {
 /// the name cannot travel in a grant, or because the set already holds it. It carries no detail, as
 /// the caller turns it into the refusal that suits the line.
 ///
-/// Name: provisional (ruled 2026-11-20 UTC with `NameSet::try_push`; the architect clears it with
-/// the crate's review).
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NameSetFull;
 
@@ -184,8 +183,8 @@ impl NameSet {
     /// travel in a grant or is already held; the caller must turn that into a refusal rather than
     /// carrying on with a smaller set.
     ///
-    /// Name: provisional (`try_` because it can fail, and it returns a `Result` rather than a
-    /// `bool`; ruled 2026-11-20 UTC).
+    /// Name: ratified 2026-11-20 (UTC). `try_` because it can fail, and it returns a `Result`
+    /// rather than a `bool`.
     pub fn try_push(&mut self, name: &[u8], is_directory: bool) -> Result<(), NameSetFull> {
         if !crate::is_valid_file_name(name) || self.contains(name) || !self.has_room_for(name.len())
         {
@@ -462,6 +461,8 @@ impl Batch {
     ///
     /// Both halves matter: a batch with nothing after it ends the sweep, and so does an empty batch,
     /// because there is no watermark to carry forward.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn next_resume(&self) -> Option<Resume> {
         if !self.more {
             return None;
@@ -480,6 +481,8 @@ impl Batch {
 /// the exact mistake this OS exists to not make.
 ///
 /// A token ending in `..` designates a directory rather than a name, so there is no pattern in it.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn last_component_has_magic(token: &[u8]) -> Result<bool, Refusal> {
     let parsed = navigation::path(token).map_err(crate::nav_refusal)?;
     let steps = parsed.steps();
@@ -528,6 +531,8 @@ impl Designation {
     /// Add a name found here, or one the program may create. A full set is
     /// [`Refusal::TooManyNames`], and a name that cannot travel in a grant
     /// [`Refusal::MatchNotNameable`], rather than a smaller grant than the line said.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn try_add_name(&mut self, name: &[u8], is_directory: bool) -> Result<(), Refusal> {
         if self.names.contains(name) {
             return Ok(());
@@ -543,6 +548,8 @@ impl Designation {
     }
 
     /// A word named the current directory itself.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn designate_here(&mut self) {
         self.here = true;
     }
@@ -611,6 +618,8 @@ impl Expansion {
     }
 
     /// The positional at `index` was a pattern, and these are the names it matched.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn new(index: usize, names: NameSet) -> Self {
         Expansion {
             at: Some(index),

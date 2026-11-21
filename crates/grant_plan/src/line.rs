@@ -192,6 +192,8 @@ impl<'a> Line<'a> {
     ///
     /// `file` is the caller's already-designated [`crate::FileGrant`], because resolving a name
     /// needs the shell's position and this module deliberately knows nothing about directories.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn stage_sink(&self, i: usize, file: Option<crate::FileGrant>) -> Sink {
         if i + 1 < self.nstages {
             Sink::Pipe
@@ -204,6 +206,8 @@ impl<'a> Line<'a> {
     }
 
     /// What stage `i`'s input slot holds. The mirror of [`stage_sink`](Line::stage_sink).
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn stage_source(&self, i: usize, file: Option<crate::FileGrant>) -> Source {
         if i > 0 {
             Source::Pipe

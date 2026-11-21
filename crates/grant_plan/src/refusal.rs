@@ -30,6 +30,8 @@ pub enum Refusal {
     FileRequired,
     /// The program is endowed a **directory** and the command named nothing in one. `rm` with no
     /// operand is this: there is no default, because a default would be a grant nobody typed.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     DirectoryRequired,
     /// A short option this program does not declare. Refused at the prompt rather than handed over
     /// for the program to ignore, and it is the same rule as an unplaceable token: **the line means
@@ -151,6 +153,8 @@ pub enum Refusal {
     /// put a reader after it (`| wc`) rather than to change anything the program does. See
     /// [`check_chain`](crate::check_chain) and notes/pipes.md: with no select, no poll and no timed receive, one wait
     /// point per process is the whole of the reason.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     NoReaderStage,
     /// **A builtin in a pipeline stage that the shell cannot supply.** `cd | wc` is the shape: a
     /// builtin rebinds what the shell holds and produces no stream. The producing builtins (`echo`,

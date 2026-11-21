@@ -48,6 +48,8 @@ pub const MAXIMUM_RENDERED_PATH_BYTES: usize =
 
 /// Why a token cannot be navigated. Each is a fact about the *name*, never about a permission,
 /// which is the distinction the whole model rests on.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PathRefusal {
     /// A component that is not a name: empty, longer than [`MAXIMUM_NAME_BYTES`], or carrying a byte a
@@ -189,6 +191,8 @@ pub fn path(token: &[u8]) -> Result<Path<'_>, PathRefusal> {
 /// Whether one component can be a name at all. The same rule the FS server enforces at its own
 /// boundary (`check_component`), stated here so the shell refuses at the prompt rather than sending
 /// a request it knows will be `EINVAL`.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn is_valid_component(part: &[u8]) -> bool {
     !part.is_empty()
         && part.len() <= MAXIMUM_NAME_BYTES
@@ -203,7 +207,7 @@ pub fn is_valid_component(part: &[u8]) -> bool {
 /// Whether one component can be a directory this shell stands in: [`is_valid_component`], and at most
 /// [`MAXIMUM_DIRECTORY_NAME_BYTES`] bytes.
 ///
-/// Name: provisional (milestone 946).
+/// Name: ratified 2026-11-20 (UTC).
 pub fn is_valid_directory_name(part: &[u8]) -> bool {
     is_valid_component(part) && part.len() <= MAXIMUM_DIRECTORY_NAME_BYTES
 }
@@ -214,6 +218,8 @@ pub fn is_valid_directory_name(part: &[u8]) -> bool {
 /// It is a value, not a handle, which is what makes [`crate::FileGrant`] able to carry one: a grant
 /// planned at the prompt records the directory it was resolved against, and a later `cd` cannot
 /// change what that grant means.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct DirectoryPath {
     names: [[u8; MAXIMUM_DIRECTORY_NAME_BYTES]; MAXIMUM_DEPTH],
@@ -401,6 +407,8 @@ pub struct TwoRoots<'a> {
 }
 
 /// Which of a [`TwoRoots`]' two grants an absolute path resolved into.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum GrantSide {
     /// The first grant, [`TwoRoots::new`]'s `label_a`.
@@ -531,6 +539,8 @@ impl BindEntry {
 
 /// Why [`Bindings::add`] refused. Each variant is a fact about the *table or the name*, the same
 /// discipline [`PathRefusal`] states for a path: never a permission, always a shape or a slot.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BindRefusal {
     /// The token is not a single nameable component: empty, too long, or carrying `/`.

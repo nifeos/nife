@@ -178,6 +178,8 @@ pub fn read(token: &[u8]) -> Result<Word<'_>, Refusal> {
 /// The returned index is one past the token. An unterminated quote runs to the end of the line and
 /// is [`Refusal::UnclosedQuote`] when [`read`] looks at it, so this function does not have to
 /// decide anything.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn token_end(line: &[u8], i: usize, stop: &dyn Fn(u8) -> bool) -> usize {
     let mut c = Cursor::new();
     let mut j = i;

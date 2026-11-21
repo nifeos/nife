@@ -10,6 +10,8 @@ use crate::{Manifest, ParsedInvocation, line, navigation};
 
 /// A parsed command line. The shell dispatches on this; only [`CommandLine::Run`] carries a grant
 /// expression that must be planned against a manifest.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CommandLine<'a> {
     /// An empty line. Reprompt.
@@ -124,14 +126,14 @@ pub enum CommandLine<'a> {
     /// `fg [%N]`: **watch a background job in the foreground**, the most recent when no operand
     /// names one, under the same `^C` escalation a job started in the foreground gets. Nothing is
     /// revoked or granted: no job holds terminal input, so foreground means the shell is watching.
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (UTC).
     Foreground(&'a [u8]),
     /// `bg [%N]`: **resume a job `^Z` stopped, without watching it**, the newest stopped job when
     /// no operand names one. The resume is `ThreadControlBlock::RESUME` on the TCB the shell holds
     /// for a supervised job (DECISIONS §309 (a supervised job's `ThreadControlBlock` goes to the
     /// shell that asked for it)).
     ///
-    /// Name: provisional, minted 2026-10-18 (UTC) by lane/48-ctrl-z.
+    /// Name: ratified 2026-11-20 (UTC).
     Background(&'a [u8]),
     /// A program invocation: `<prog> [--mem N] [token ...]`. Named `Run` for the act of running a
     /// program, not for a verb on the line; milestone 47 deleted the verb. A first word that is not
@@ -308,6 +310,8 @@ pub mod rm_options {
 /// statement about the shell's actual capability table, not a hardcoded era: the same command line is a
 /// refusal in a shell that was granted no directory and a real grant in one that was, and neither
 /// the parser nor the manifest can tell them apart.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct ShellHoldings {
     /// The shell holds a directory capability it can narrow into a per-file grant.
@@ -353,6 +357,8 @@ impl MountedTree {
     }
 
     /// Where the second tree is mounted, as a path in the one tree.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn mount_point(&self) -> navigation::DirectoryPath {
         self.mount
     }
@@ -404,6 +410,8 @@ impl ShellHoldings {
     /// choice rather than a style: every caller is on a shell's walking or planning path, the shell
     /// runs a debug build on a few pages of stack, and returning a `DirectoryPath` by value put nearly 2 KiB
     /// in this frame, which overflowed the globbing witness (`glob_grant_tests`).
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn steps_after_start<'s, 'p>(
         &self,
         from_root: bool,
@@ -428,6 +436,8 @@ impl ShellHoldings {
     /// its own root, for a path that runs through its mount point; the first tree, unchanged, for
     /// everything else. This is the bookkeeping calef's ruling keeps out of sight: a path never
     /// says which tree it is in, and this is the one place that decides.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn serving_tree(
         &self,
         path: &navigation::DirectoryPath,
@@ -450,6 +460,8 @@ impl ShellHoldings {
     /// [`ShellHoldings::serving_tree`] reversed: the path in the one tree for a position inside `side`. What
     /// `caps` prints for a planned grant, which records the tree and the position rather than the
     /// path it came from.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn path_in_one_tree(
         &self,
         side: navigation::GrantSide,

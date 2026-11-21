@@ -200,7 +200,7 @@ pub fn verb_key<'o>(
 /// assert_eq!(&out[..n], b"lab-runner");
 /// ```
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+/// Name: ratified 2026-11-20 (UTC).
 pub fn delegated_identity(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
     let args = program_argument_contract::ArgumentPage::parse(page);
     let mut words = args.iter().skip(1);
@@ -221,6 +221,8 @@ pub fn delegated_identity(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
 /// as the program will read them. `grant_plan::line_verb`'s reading of the page `grant_plan::write_argument_page`
 /// assembled from the line, which is what the progenitor holds; `None` for a page that does not
 /// parse, has one word, or whose second is longer than [`MAXIMUM_VERB_BYTES`] or holds a space.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn page_verb<'o>(page: &[u8], out: &'o mut [u8; MAXIMUM_VERB_BYTES]) -> Option<&'o [u8]> {
     let args = program_argument_contract::ArgumentPage::parse(page);
     let mut words = args.iter().skip(1);

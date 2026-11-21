@@ -60,6 +60,8 @@ fn split_tokens<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> (&'b [&'a [u
 /// because `ripgrep` skips the first element and `clap` treats it as the binary's name. Refused,
 /// with the page left not an argv, for [`check_words`]'s reasons, which the planner already asked
 /// of the same line.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn write_argument_page(
     line: &[u8],
     page: &mut [u8; program_argument_contract::PAGE_BYTES],
@@ -93,7 +95,7 @@ pub fn check_words(line: &[u8]) -> Result<(), Refusal> {
 /// Every word of `line`, quotes off, with an unquoted pattern refused. The one walk [`write_argument_page`] and
 /// [`check_words`] share, so the check and the page cannot disagree about what a word is, and the
 /// shell's designation walks it too (milestone 205), so it designates from the same words the
-/// program hears. Name: provisional.
+/// program hears. Name: ratified 2026-11-20 (UTC).
 pub fn for_each_word(
     line: &[u8],
     f: &mut dyn FnMut(&[u8]) -> Result<(), Refusal>,
@@ -283,6 +285,8 @@ pub fn user_verb(tail: &[u8]) -> UserVerb<'_> {
 /// Classify [`CommandLine::Vouch`]'s tail: one operand, a path (it has a `/`), whose last component
 /// ([`vouched_name`]) the installed-programs table can record. `None` for anything else, which the shell
 /// answers with what it takes.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn vouch_operand(tail: &[u8]) -> Option<&[u8]> {
     let path = tail.trim_ascii();
     let one_word = !path.is_empty() && !path.iter().any(u8::is_ascii_whitespace);
@@ -314,6 +318,8 @@ pub fn vouched_name(path: &[u8]) -> Option<&[u8]> {
 /// classify is a flag: a token starting with `-` that is not `--mem` is refused rather than allowed
 /// to fall into the file position, which is the single way a typo could otherwise become a
 /// capability transfer.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn parse_invocation(line: &[u8]) -> ParsedInvocation<'_> {
     let mut toks: [&[u8]; 16] = [b""; 16];
     let (toks, left_over) = split_tokens(line, &mut toks);
@@ -477,6 +483,8 @@ impl<'a> ParsedInvocation<'a> {
     }
 
     /// The short-option letters typed, in order. Meaningless until a manifest says which exist.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn short_options(&self) -> &[u8] {
         &self.short_options[..self.short_option_count]
     }
@@ -501,7 +509,7 @@ mod tests;
 /// [`MAXIMUM_VERB_BYTES`], or when it holds a space itself, so a quoted `'list -u'` is no verb. Copied
 /// into `out`, because a quoted word's text is a temporary.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (UTC).
 pub fn line_verb<'o>(line: &[u8], out: &'o mut [u8; MAXIMUM_VERB_BYTES]) -> Option<&'o [u8]> {
     let mut seen = 0usize;
     let mut held = [[0u8; MAXIMUM_VERB_BYTES]; 2];

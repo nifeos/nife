@@ -27,6 +27,8 @@ pub const MAXIMUM_WORDS_NAME_BYTES: usize = 16;
 /// Whether a designated name can travel as a grant at all. A name is a single component, the same
 /// rule the FS server enforces (DECISIONS §27): a path is not something this shell can express,
 /// because there is no namespace here to walk.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn is_valid_file_name(name: &[u8]) -> bool {
     !name.is_empty()
         && name.len() <= MAXIMUM_FILE_NAME_BYTES

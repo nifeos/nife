@@ -9,6 +9,8 @@
 // ---- the two-tier interrupt escalation policy (DECISIONS §24) ----
 
 /// What the shell should do this step of watching a foreground job for `^C`.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum InterruptAction {
     /// Nothing this step.

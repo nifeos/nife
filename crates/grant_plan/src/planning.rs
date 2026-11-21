@@ -57,6 +57,8 @@ pub fn plan_against(
 
 /// [`plan_against`], with the operators' answer. The one that does the work; the other two are the
 /// spellings without a pipeline on the line.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn plan_against_with_streams(
     run: &ParsedInvocation<'_>,
     m: Manifest,
@@ -371,12 +373,14 @@ fn plan_memory_grant(run: &ParsedInvocation<'_>, m: &Manifest) -> Result<u64, Re
     Ok(mem_pages)
 }
 
-/// **Resolve an output redirection's name into the grant that backs it** (milestone 50).
+/// **Resolve an output redirection's name into the grant that backs it** (milestone 50 (pipes and redirection)).
 ///
 /// `> report.txt` designates a file the same way an operand does: the leading path is walked against
 /// where the shell stands **now**, once, and the result is a value. So this is `designate` with the
 /// pattern case taken out, because [`line::split`] has already refused a pattern here. The grant is
 /// writable: the program is handed a sink, not a file.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn output_file_grant(
     token: &[u8],
     shell_holdings: ShellHoldings,
@@ -386,6 +390,8 @@ pub fn output_file_grant(
 
 /// **Resolve an input redirection's name into the grant that backs it.** The same walk as
 /// [`output_file_grant`], and the grant is read-only: the program is handed a source, not a file.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn input_file_grant(token: &[u8], shell_holdings: ShellHoldings) -> Result<FileGrant, Refusal> {
     redirection_file_grant(token, shell_holdings, false)
 }
