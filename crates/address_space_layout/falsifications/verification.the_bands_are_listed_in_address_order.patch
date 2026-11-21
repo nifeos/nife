@@ -30,4 +30,4 @@ index cf32cd949..3c83b0eba 100644
 -        );
          assert!(band.start < band.end, "a band is empty");
          assert!(
-             band.start.is_multiple_of(PAGE),
+             band.start.is_multiple_of(PAGE_BYTES),

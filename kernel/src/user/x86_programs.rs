@@ -156,7 +156,7 @@ pub const fn port_out_then_exit(port: u16, val: u8) -> [u32; 4] {
 
 /// The address of the current-CPU word a ring-3 thread reads its own core from:
 /// `current_cpu_contract::CPU_OFFSET_BYTES` into that crate's page. It is under 2 GiB
-/// (`address_space_layout::CODE_MODEL_CEILING`), so the 32-bit absolute form of `mov` below
+/// (`address_space_layout::CODE_MODEL_CEILING_VIRTUAL_ADDRESS`), so the 32-bit absolute form of `mov` below
 /// addresses it with no sign-extension surprise.
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
 const CURRENT_CPU_WORD: u32 =

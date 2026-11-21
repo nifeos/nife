@@ -13,7 +13,7 @@ index cb71c3977..d58d9d550 100644
      };
      assert!(
 -        band.holds(start_virtual_address, end_virtual_address),
-+        band.holds(start_virtual_address, end_virtual_address + PAGE),
++        band.holds(start_virtual_address, end_virtual_address + PAGE_BYTES),
          "a window must lie wholly inside its band"
      );
      start_virtual_address

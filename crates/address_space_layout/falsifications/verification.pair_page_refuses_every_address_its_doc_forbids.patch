@@ -12,8 +12,8 @@ index cb71c3977..5287e2232 100644
  /// in the source; what the call adds is that an address outside [`PAIR_PAGES`], or not page
  /// aligned, stops the build instead of colliding with a runtime page at run time.
  pub const fn pair_page(virtual_address: u64) -> u64 {
--    window(PAIR_PAGES, virtual_address, PAGE)
-+    window(PAIR_PAGES, virtual_address & !(PAGE - 1), PAGE)
+-    window(PAIR_PAGES, virtual_address, PAGE_BYTES)
++    window(PAIR_PAGES, virtual_address & !(PAGE_BYTES - 1), PAGE_BYTES)
  }
  
  /// **A runtime window's address, checked against the map at compile time.** As [`pair_page`], for

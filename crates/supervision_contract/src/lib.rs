@@ -75,10 +75,10 @@ pub const REP_FAILED: u64 = 3;
 /// Where a child's highest stack page sits, one address for every process this system builds, so
 /// `process_builder::configure_child` computes the entry `sp` without being told.
 ///
-/// The map's `STACK_TOP_PAGE` (milestone 206 (a program image has under 896 KiB), DECISIONS §171
+/// The map's `STACK_TOP_PAGE_VIRTUAL_ADDRESS` (milestone 206 (a program image has under 896 KiB), DECISIONS §171
 /// (where a program image starts) option D), which `kernel::user::USER_STACK_VA` also names, so
 /// neither can move without the other.
-pub const CHILD_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+pub const CHILD_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
 
 /// The stack a child gets when its builder does not say otherwise ([`ChildEndowment::new`]): four
 /// pages, enough for the supervision tree's programs. A child at the interactive prompt gets three

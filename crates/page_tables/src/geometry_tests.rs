@@ -69,3 +69,19 @@ fn the_mapper_reports_the_root_it_was_built_on() {
     };
     assert_eq!(m.root(), 0x8_2000);
 }
+
+/// **The user layout's split shifts are this crate's.** `address_space_layout` places every user
+/// band below the lowest of them and cannot depend on this crate, so it restates the three CPU
+/// formats' `SPLIT_SHIFT` in `LOW_HALF_SPLIT_SHIFTS`. This holds the restatement to the source: a
+/// format whose split moved would fail here before a band could land in its kernel half.
+#[test]
+fn the_user_layout_restates_each_cpu_formats_split_shift() {
+    assert_eq!(
+        address_space_layout::LOW_HALF_SPLIT_SHIFTS,
+        [
+            ("aarch64", Aarch64::SPLIT_SHIFT),
+            ("x86_64", Ia32e::SPLIT_SHIFT),
+            ("riscv64", Sv39::SPLIT_SHIFT),
+        ]
+    );
+}

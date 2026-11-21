@@ -4,7 +4,7 @@
 //! Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, after the crate it
 //! serves.
 
-use address_space_layout::{PAGE, pair_page};
+use address_space_layout::{PAGE_BYTES, pair_page};
 use startup_page_contract::WindowKind;
 
 /// The DMA region, `e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages, normal memory. The virtio server's one DMA
@@ -111,7 +111,7 @@ impl Handoff {
     ///
     /// Name: provisional. No ruling covers it.
     pub fn unpack(arg0: u64, arg1: u64) -> Option<Handoff> {
-        if arg0 & 0xffff != ROLE_TAG || arg1 == 0 || !arg1.is_multiple_of(PAGE) {
+        if arg0 & 0xffff != ROLE_TAG || arg1 == 0 || !arg1.is_multiple_of(PAGE_BYTES) {
             return None;
         }
         let b = (arg0 >> 16).to_le_bytes();

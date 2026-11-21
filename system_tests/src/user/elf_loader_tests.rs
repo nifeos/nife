@@ -82,7 +82,7 @@ fn an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused() {
 #[test_case]
 fn an_elf_that_asks_for_a_writable_executable_page_is_refused() {
     let image = forged_elf(
-        address_space_layout::IMAGE_BASE,
+        address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS,
         static_elf::READABLE | static_elf::WRITABLE | static_elf::EXECUTABLE,
     );
 
@@ -104,19 +104,21 @@ fn an_elf_that_asks_for_a_writable_executable_page_is_refused() {
 /// half a gigabyte, so reaching `AddressSpace::new` would have reported running out of memory.
 #[test_case]
 fn an_image_too_large_for_its_band_is_refused_as_too_large() {
-    use address_space_layout::{IMAGE, IMAGE_BASE, ImagePlacement, PAGE, STACK};
+    use address_space_layout::{
+        IMAGE, IMAGE_BASE_VIRTUAL_ADDRESS, ImagePlacement, PAGE_BYTES, STACK,
+    };
 
     let image = forged_elf_sized(
-        IMAGE_BASE,
+        IMAGE_BASE_VIRTUAL_ADDRESS,
         static_elf::READABLE | static_elf::EXECUTABLE,
-        IMAGE.bytes() + PAGE,
+        IMAGE.bytes() + PAGE_BYTES,
     );
 
     assert_eq!(
         load(&image, 0, &[]).err(),
         Some(LoadError::Misplaced(ImagePlacement::TooLarge {
-            image_end: IMAGE.end + PAGE,
-            stack_base: STACK.start,
+            image_end_virtual_address: IMAGE.end + PAGE_BYTES,
+            stack_base_virtual_address: STACK.start,
         })),
     );
 }
@@ -131,8 +133,8 @@ fn an_image_linked_below_the_image_band_is_refused_as_outside_it() {
         load(&image, 0, &[]).err(),
         Some(LoadError::Misplaced(
             address_space_layout::ImagePlacement::OutsideBand {
-                image_start: 0x40_0000,
-                image_end: 0x40_1000,
+                image_start_virtual_address: 0x40_0000,
+                image_end_virtual_address: 0x40_1000,
             }
         )),
     );
@@ -142,19 +144,19 @@ fn an_image_linked_below_the_image_band_is_refused_as_outside_it() {
 /// into the stack, loads, and its last page is mapped where the image band says.
 #[test_case]
 fn an_image_past_the_old_ceiling_loads() {
-    use address_space_layout::IMAGE_BASE;
+    use address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
     const BYTES: u64 = 2 << 20;
 
     let image = forged_elf_sized(
-        IMAGE_BASE,
+        IMAGE_BASE_VIRTUAL_ADDRESS,
         static_elf::READABLE | static_elf::EXECUTABLE,
         BYTES,
     );
     let (space, entry) = load(&image, 0, &[]).expect("a 2 MiB image did not load");
-    assert_eq!(entry, IMAGE_BASE);
+    assert_eq!(entry, IMAGE_BASE_VIRTUAL_ADDRESS);
 
     let last = space.while_installed(|| {
-        mmu::translate_user(IMAGE_BASE + BYTES - page_frames::FRAME_BYTES).is_some()
+        mmu::translate_user(IMAGE_BASE_VIRTUAL_ADDRESS + BYTES - page_frames::FRAME_BYTES).is_some()
     });
     drop(space);
     assert!(last, "the image's last page is not mapped");
@@ -183,7 +185,7 @@ fn the_initial_ramdisk_holds_a_native_executable() {
 
     assert_eq!(
         e.entry(),
-        address_space_layout::IMAGE_BASE,
+        address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS,
         "linked somewhere unexpected"
     );
 
@@ -243,7 +245,7 @@ fn a_real_elf_from_the_initial_ramdisk_runs_at_el0_and_verifies_itself() {
 /// test fail.
 #[test_case]
 fn the_loader_writes_the_startup_page_read_only() {
-    use address_space_layout::IMAGE_BASE;
+    use address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
     use startup_page_contract::{PAGE_VIRTUAL_ADDRESS, StartupPage, Window, WindowKind};
 
     let doorbell = Window {
@@ -251,7 +253,10 @@ fn the_loader_writes_the_startup_page_read_only() {
         virtual_address: 0x9c_0000,
         pages: 1,
     };
-    let image = forged_elf(IMAGE_BASE, static_elf::READABLE | static_elf::EXECUTABLE);
+    let image = forged_elf(
+        IMAGE_BASE_VIRTUAL_ADDRESS,
+        static_elf::READABLE | static_elf::EXECUTABLE,
+    );
     let (space, _) = load(&image, 0, &[doorbell]).expect("a one-window spawn did not load");
     let (writable, listed, count) = space.while_installed(|| {
         let (phys, flags) =

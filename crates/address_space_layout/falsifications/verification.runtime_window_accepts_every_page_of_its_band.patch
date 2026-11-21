@@ -12,8 +12,8 @@ index cb71c3977..4572c9610 100644
  /// **A runtime window's address, checked against the map at compile time.** As [`pair_page`], for
  /// [`RUNTIME_WINDOWS`].
  pub const fn runtime_window(virtual_address: u64) -> u64 {
--    window(RUNTIME_WINDOWS, virtual_address, PAGE)
-+    window(RUNTIME_WINDOWS, virtual_address, 2 * PAGE)
+-    window(RUNTIME_WINDOWS, virtual_address, PAGE_BYTES)
++    window(RUNTIME_WINDOWS, virtual_address, 2 * PAGE_BYTES)
  }
  
  /// **Where the initial ramdisk archive is mapped**, read-only, before a program's `_start` runs: a

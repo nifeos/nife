@@ -15,7 +15,7 @@ index cf32cd949..fc31443cd 100644
  /// a block channel (`0x5000_0000`, 8 MiB), a C seam's grant pages, a screen aperture.
  pub const SERVICE_WINDOWS: Band = Band {
 -    start: HEAP.end,
-+    start: HEAP.end - PAGE,
++    start: HEAP.end - PAGE_BYTES,
      end: 0x6000_0000,
  };
  
@@ -29,4 +29,4 @@ index cf32cd949..fc31443cd 100644
 -        );
          assert!(band.start < band.end, "a band is empty");
          assert!(
-             band.start.is_multiple_of(PAGE),
+             band.start.is_multiple_of(PAGE_BYTES),

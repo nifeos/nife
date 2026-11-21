@@ -174,8 +174,8 @@ const CHILD_PAGES: u64 = 10; // the child's address space root + tables + one st
 // and top stack page (milestone 206 (a program image has under 896 KiB)). That keeps the page tables this benchmark pays for the shape
 // every real spawn pays for: one table for the code, one shared by the stack and the current-CPU
 // page, the same count as when both lived at `0x40_0000` and `0x50_0000`.
-const CHILD_CODE_VA: u64 = address_space_layout::IMAGE_BASE;
-const CHILD_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+const CHILD_CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
+const CHILD_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
 const SPAWN_SCRATCH_VA: u64 = address_space_layout::pair_page(0x0100_0000); // where we map the shared code frame to write the stub
 const SPAWN_PAGE: u64 = 4096;
 

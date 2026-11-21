@@ -26,8 +26,8 @@ use crate::sched;
 /// Where the child's code and stack go: in the address-space map's image and stack bands like any
 /// program's, but one 2 MiB window in from `supervision_tests`' addresses, so a stray global could
 /// not make one test's leftovers look like another's.
-const CODE_VA: u64 = address_space_layout::IMAGE_BASE + 0x20_0000;
-const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE - 0x20_0000;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS + 0x20_0000;
+const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS - 0x20_0000;
 
 /// The port the children write to: COM1's **scratch register** (`0x3FF`, the eighth of the eight
 /// ports the range names). It is inside the granted `(0x3F8, 8)` range, so a holder may write it, and

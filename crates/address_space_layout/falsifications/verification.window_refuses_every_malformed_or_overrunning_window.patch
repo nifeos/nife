@@ -9,11 +9,11 @@ index cb71c3977..beba76b1c 100644
 --- a/crates/address_space_layout/src/lib.rs
 +++ b/crates/address_space_layout/src/lib.rs
 @@ -230,10 +230,6 @@ pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64 {
-         start_virtual_address.is_multiple_of(PAGE),
+         start_virtual_address.is_multiple_of(PAGE_BYTES),
          "a window must start on a page"
      );
 -    assert!(
--        bytes.is_multiple_of(PAGE),
+-        bytes.is_multiple_of(PAGE_BYTES),
 -        "a window must be a whole number of pages"
 -    );
      let Some(end_virtual_address) = start_virtual_address.checked_add(bytes) else {

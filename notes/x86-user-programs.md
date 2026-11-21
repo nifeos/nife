@@ -106,7 +106,7 @@ unrelated to the hand-off.
 `port_out_reporting_cpu` reads its core from the current-CPU page (`current_cpu_contract`, written
 by the context switch on the core doing the switch) once before the `out` and once after. It sends
 `[word, core after, core before]`, and equal values bracket the `out` on one core. The word's
-address is under 2 GiB (`address_space_layout::CODE_MODEL_CEILING`), so the 32-bit absolute form of
+address is under 2 GiB (`address_space_layout::CODE_MODEL_CEILING_VIRTUAL_ADDRESS`), so the 32-bit absolute form of
 `mov` reaches it without a sign-extension surprise.
 
 `port_out_on_cpu_then_exit` checks the core first and runs the `out` only on core `cpu`. On any

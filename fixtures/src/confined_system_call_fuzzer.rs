@@ -45,7 +45,7 @@ use confined_system_call_fuzzer_contract::{
 use user_mode_runtime::{exit, raw_system_call, receive};
 
 const SLOTS: u64 = abi::CAPABILITY_TABLE_SLOTS;
-const PAGE: u64 = address_space_layout::PAGE;
+const PAGE: u64 = address_space_layout::PAGE_BYTES;
 
 fn splitmix(x: u64) -> u64 {
     let mut z = x.wrapping_add(0x9E37_79B9_7F4A_7C15);
@@ -90,8 +90,8 @@ impl Rng {
         match self.below(10) {
             0..=5 => PLAYGROUND_VA + self.below(PLAYGROUND_PAGES) * PAGE,
             6 => REPORT_VA,
-            7 => address_space_layout::IMAGE_BASE + self.below(4) * PAGE,
-            8 => address_space_layout::STACK_TOP_PAGE,
+            7 => address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS + self.below(4) * PAGE,
+            8 => address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS,
             _ => match self.below(3) {
                 0 => PLAYGROUND_VA + self.below(PAGE), // misaligned
                 1 => 0xFFFF_0000_0000_0000 | (self.next() & 0xFFFF_F000), // the kernel half

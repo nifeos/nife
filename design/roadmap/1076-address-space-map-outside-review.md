@@ -50,7 +50,7 @@ otherwise.
    Evidence: `src/lib.rs` line 358; the standalone build above. Milestone 1017's blocker table names this
    row with the same resolution.
    Change: invert the test. `user_mode_runtime` stays in nife and already depends on the crate, so
-   the test moves there and parses its own `link.ld` against `address_space_layout::IMAGE_BASE`. The
+   the test moves there and parses its own `link.ld` against `address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS`. The
    `IMAGE` band's doc comment (line 111) stops promising "a host test here holds the two to the
    same number" and says where the test lives.
    Door: two-way. Effort: S.

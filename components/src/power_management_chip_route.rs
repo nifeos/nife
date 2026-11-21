@@ -88,7 +88,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     let window = page
         .window(CONTROLLER_KIND)
         .expect("the spawner lists the controller page");
-    assert!(u64::from(window.pages) * address_space_layout::PAGE >= USED_BYTES);
+    assert!(u64::from(window.pages) * address_space_layout::PAGE_BYTES >= USED_BYTES);
     // SAFETY: the spawner maps the controller page device-typed for the life of the process, and
     // nothing else in this address space touches it.
     let registers = Page(unsafe { MappedWindow::new(window.virtual_address, USED_BYTES) });

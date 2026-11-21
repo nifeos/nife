@@ -47,7 +47,7 @@ Twenty-seven manifests name the crate (twenty-five in the review packet, plus th
 | prose and tables | `packages/contracts.package.toml`, `helpers/trust_boundary_crates.tsv`, `crates/externalization-list.txt`, `helpers/interface_declarations_check.py` |
 
 The linker script test now lives in `user_mode_runtime` (`src/linker_script.rs`), which parses its
-own `link.ld` against `address_space_layout::IMAGE_BASE`. No test in the crate reads a file outside
+own `link.ld` against `address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS`. No test in the crate reads a file outside
 it, and no `include_str!` remains. The crate has no fuzz target.
 
 ## What was run
@@ -84,10 +84,10 @@ floor. The lane runs `script/lint` before it pushes, and CI runs it again.
 | page size | `PAGE` (4096) |
 | type | `Band { start, end }` with `bytes`, `contains`, `holds` |
 | bands | `NULL_GUARD`, `PAIR_PAGES`, `RUNTIME_WINDOWS`, `HEAP`, `SERVICE_WINDOWS`, `IMAGE`, `STACK`, `PROCESS_PAGES`, and `BANDS: &[(&str, Band)]` in address order |
-| addresses | `CODE_MODEL_CEILING`, `IMAGE_BASE`, `STACK_TOP`, `STACK_TOP_PAGE`, `CURRENT_CPU_PAGE`, `INITIAL_RAMDISK_VIRTUAL_ADDRESS` |
+| addresses | `CODE_MODEL_CEILING_VIRTUAL_ADDRESS`, `IMAGE_BASE_VIRTUAL_ADDRESS`, `STACK_TOP_VIRTUAL_ADDRESS`, `STACK_TOP_PAGE_VIRTUAL_ADDRESS`, `CURRENT_CPU_PAGE_VIRTUAL_ADDRESS`, `INITIAL_RAMDISK_VIRTUAL_ADDRESS` |
 | count | `MAXIMUM_STACK_PAGES` |
 | checked placement | `window(band, start_virtual_address, bytes)`, `pair_page`, `runtime_window`, `service_window` |
-| image check | `check_image(start, end)`, `ImagePlacement::{TooLarge { image_end, stack_base }, OutsideBand { image_start, image_end }}` |
+| image check | `check_image(start, end)`, `ImagePlacement::{TooLarge { image_end_virtual_address, stack_base_virtual_address }, OutsideBand { image_start_virtual_address, image_end_virtual_address }}` |
 
 No nife type appears in a signature. What a stranger may find surprising:
 

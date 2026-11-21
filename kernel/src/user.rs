@@ -17,8 +17,8 @@ use crate::memory;
 /// stack gets the rest mapped below it, a page at a time. Derived from `address_space_layout`'s stack
 /// band. A program names its own load address in its ELF header, which [`load`] checks against the
 /// map's image band.
-pub const USER_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
-pub const USER_STACK_TOP: u64 = address_space_layout::STACK_TOP;
+pub const USER_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
+pub const USER_STACK_TOP: u64 = address_space_layout::STACK_TOP_VIRTUAL_ADDRESS;
 const _: () = assert!(USER_STACK_TOP == USER_STACK_VA + FRAME_BYTES);
 
 /// The frame size as the page size `static_elf` rounds segments to, so the loader's page ranges are

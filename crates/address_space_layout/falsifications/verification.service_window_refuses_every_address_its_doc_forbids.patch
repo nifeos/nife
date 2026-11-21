@@ -12,8 +12,8 @@ index cb71c3977..377e0f16e 100644
  /// **A service window's address, checked against the map at compile time.** As [`pair_page`], for
  /// [`SERVICE_WINDOWS`].
  pub const fn service_window(virtual_address: u64) -> u64 {
--    window(SERVICE_WINDOWS, virtual_address, PAGE)
-+    window(Band { start: SERVICE_WINDOWS.start, end: SERVICE_WINDOWS.end + PAGE }, virtual_address, PAGE)
+-    window(SERVICE_WINDOWS, virtual_address, PAGE_BYTES)
++    window(Band { start: SERVICE_WINDOWS.start, end: SERVICE_WINDOWS.end + PAGE_BYTES }, virtual_address, PAGE_BYTES)
  }
  
  /// **Why an image does not fit the map.** Both variants name the numbers a reader needs to fix the
