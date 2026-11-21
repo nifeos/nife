@@ -566,6 +566,12 @@ mod tests {
     }
 
     #[test]
+    fn a_band_contains_its_start_and_not_its_end() {
+        assert!(IMAGE.contains(IMAGE.start) && IMAGE.contains(IMAGE.end - 1));
+        assert!(!IMAGE.contains(IMAGE.start - 1) && !IMAGE.contains(IMAGE.end));
+    }
+
+    #[test]
     fn a_band_built_with_new_is_the_band_its_fields_name() {
         const BUILT: Band = Band::new(IMAGE.start, IMAGE.end);
         assert_eq!(BUILT, IMAGE);
