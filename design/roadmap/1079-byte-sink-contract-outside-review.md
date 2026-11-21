@@ -194,12 +194,12 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
 - P1-10, the zero-count contradiction: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - P2-11, `len` on a narrow `usize`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
   `unpack` compares the count as `u64`.
-- P2-12, `req` drops high bits: Open. Typed `operation: u8` and `len: u32` parameters retype the
-  public opcode constants; a two-way door before the release, which the maintainer rules
-  provisionally.
-- P2-13, `pack` returns a bare four-tuple: Open. Whether `pack` and `unpack` take a words struct is
-  two-way until the release, and the maintainer rules it provisionally; if taken, the struct's name
-  joins the release name review.
+- P2-12, `req` drops high bits: Done (maintainer provisional, two-way door),
+  [#3880](https://github.com/nifeos/nife/pull/3880). `first_word` takes typed `operation: u8` and
+  `len: u32` parameters, so a caller cannot pass bits the word drops.
+- P2-13, `pack` returns a bare four-tuple: Done (maintainer provisional, two-way door),
+  [#3880](https://github.com/nifeos/nife/pull/3880). `pack` and `unpack` take and return
+  `MessageWords`; the struct's name stays provisional and joins the release name review.
 - P2-14, equivalent mutants: Open. Four exemptions with their reasons go into the new repository's
   `.github/mutants-exempts`.
 - P2-15, severity bits on any first word: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
@@ -211,8 +211,9 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
   [#3581](https://github.com/nifeos/nife/pull/3581).
 - Decision D, the names: Done (maintainer provisional, 2026-11-14 UTC), built as P1-9,
   [#3873](https://github.com/nifeos/nife/pull/3873).
-- The move: Open. The review package is `notes/crate-reviews/byte-sink-contract.md`, ready for
-  review; nifeos/byte_sink_contract does not exist; the clearance under Open decisions follows.
+- The move: Done as a pin. nifeos/byte_sink_contract exists with `check` and `proofs` green, and
+  nife depends on it at commit 8a6c4599882e505d219829fd106d9e572d56f6e9 (`version = "0.1.0"`,
+  `publish = false`). No tag and no publish; a pre-release tag moves the pin later.
   `MAXIMUM_INLINE_BYTES` replaced the ratified `INLINE_MAXIMUM` and needs re-ratification.
 
 ## Open decisions

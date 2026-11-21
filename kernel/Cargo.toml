@@ -138,7 +138,7 @@ coremark = { version = "0.1.0", path = "../crates/coremark", optional = true }
 # does on Linux)): the bench reads a std program's transcript through the same framing the PAL packs
 # with. Only `bench` uses it; the system tests have their own copy of the dependency (milestone 609
 # (the system tests leave the kernel crate)).
-byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract", optional = true }
+byte_sink_contract = { version = "0.1.0", git = "https://github.com/nifeos/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9", optional = true }
 primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_benchmark_contract", optional = true }
 # The kernel's ring layout and the F3 record (milestone 342 (the kernel and the `console` server
 # drive one UART from two address spaces)): the kernel writes what the log service reads, so both

@@ -9,7 +9,6 @@ kind = "sdk"
 home = { repo = "contracts", status = "provisional" }
 interfaces = [
     "abi",
-    "byte_sink_contract",
     "primitive_benchmark_contract",
     "capability_witness_contract",
     "confined_system_call_fuzzer_contract",

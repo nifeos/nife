@@ -84,7 +84,6 @@ members = [
     "crates/socket_contract",
     "crates/socket_fixture",
     "crates/network_stack",
-    "crates/byte_sink_contract",
     "crates/primitive_benchmark_contract",
     "crates/walk_pricing",
     "crates/subtree_scope",
