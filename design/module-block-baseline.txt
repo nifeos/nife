@@ -5380,36 +5380,8 @@ crates/pmap/src/lib.rs::write_report
 
 
 
-crates/program_argument_contract/src/lib.rs::EMPTY
-
-crates/program_argument_contract/src/lib.rs::HEADER_BYTES
-
-crates/program_argument_contract/src/lib.rs::Iter
-
 crates/program_argument_contract/src/lib.rs::MAGIC
 
-crates/program_argument_contract/src/lib.rs::PAGE_BYTES
-
-crates/program_argument_contract/src/lib.rs::PageBuilder
-
-crates/program_argument_contract/src/lib.rs::Refused
-
-crates/program_argument_contract/src/lib.rs::count
-
-crates/program_argument_contract/src/lib.rs::finish
-
-
-crates/program_argument_contract/src/lib.rs::is_empty
-
-crates/program_argument_contract/src/lib.rs::iter
-
-crates/program_argument_contract/src/lib.rs::len
-
-crates/program_argument_contract/src/lib.rs::new
-
-crates/program_argument_contract/src/lib.rs::parse
-
-crates/program_argument_contract/src/lib.rs::push
 
 crates/program_table/src/image.rs
 
