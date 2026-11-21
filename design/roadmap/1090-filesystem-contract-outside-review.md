@@ -59,6 +59,8 @@ are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `b
   The renames are in force ([#3726](https://github.com/nifeos/nife/pull/3726)). Not built: a
   `doc(alias)` and source line on each kept POSIX verb and errno name (only `xattr` has an alias),
   and the `register_names` exemption for `block::SIZE` once the template's exemption file exists.
+  The test `a_grant_spec_carries_its_length_and_its_direction_apart` (`src/grant/tests.rs`), which
+  the template's `spelled_out` refuses, takes Decision B's `specification` spelling.
 - Item 6 (P1), `reply_errno` not total: Done, [#3577](https://github.com/nifeos/nife/pull/3577).
   Built with Decision C.
 - Item 7 (P1), the packers mask: Open. `fs::req`, `rename_dst` and both `specification` packers
@@ -105,16 +107,17 @@ are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `b
 - Decision C, the reply error range: Done, [#3577](https://github.com/nifeos/nife/pull/3577). Ruled
   2026-11-14 UTC.
 - Decision D, §99's store name: Done. Ruled 2026-11-19 UTC; §99 names `.extended-attributes`.
-- Review package: Open. `notes/crate-reviews/` has no package for this crate; one package may cover
-  both crates of the shared repository.
+- Review package: Done. [The contract's package](../../notes/crate-reviews/filesystem-contract.md)
+  and [the fixture's](../../notes/crate-reviews/filesystem-fixture.md) form the one package; the
+  clearance and the name ratification wait for the architect.
 - Decision E, the review package and clearance of the shared repository: Ruled (maintainer,
-  provisional for the package step, 2026-11-19 UTC). A lane writes one package once the other items
-  land; the clearance stays open until the architect gives it.
+  provisional for the package step, 2026-11-19 UTC). The package is written; the clearance stays
+  open until the architect gives it.
 
 ## Open decisions
 
 None. The review package carries the name ratification and the clearance of the review, which stay
-the architect's once the package exists.
+the architect's.
 
 ## Goal
 
