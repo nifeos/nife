@@ -336,6 +336,24 @@ fn an_execute_only_segment_is_accepted_and_is_not_readable() {
     assert!(!seg.is_writable());
 }
 
+/// `e_phentsize` is checked against the size of a program header from both sides: one byte short
+/// is refused, and a larger entry (which the format allows) is not refused for its size.
+#[test]
+fn the_phentsize_boundary_is_one_whole_header() {
+    let mut bytes = good();
+    bytes[54..56].copy_from_slice(&((PHDR_SIZE - 1) as u16).to_le_bytes());
+    assert_eq!(
+        Elf::parse(&bytes).err(),
+        Some(Error::ProgramHeadersOutOfBounds)
+    );
+    let mut bytes = good();
+    bytes[54..56].copy_from_slice(&((PHDR_SIZE + 8) as u16).to_le_bytes());
+    assert_ne!(
+        Elf::parse(&bytes).err(),
+        Some(Error::ProgramHeadersOutOfBounds)
+    );
+}
+
 /// `e_phentsize` smaller than a program header means the table entries we would read do not
 /// exist as described. The builder always writes 56, so this patches the header bytes to lie.
 #[test]
