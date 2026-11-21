@@ -21,7 +21,10 @@ pub const MAXIMUM_ERRNO: i32 = 4095;
 /// `EPROTO` (71): what [`reply_errno`] answers for a negative word outside
 /// `-MAXIMUM_ERRNO..=-1`, a reply that breaks the protocol.
 ///
+/// The POSIX error number, spelled as `errno.h` spells it.
+///
 /// Name: provisional, minted 2026-11-14 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
+#[doc(alias = "protocol error")]
 pub const EPROTO: i32 = 71;
 
 /// Turn a redox/POSIX errno into a reply's first word: the negated number, so the client can invert

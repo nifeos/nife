@@ -114,7 +114,7 @@ What the milestone marks done, checked against the source and the runs above:
 | item | state | evidence |
 |---|---|---|
 | 4, `rm.rs` covered | landed ([#3566](https://github.com/nifeos/nife/pull/3566)) | the test `a_status_is_the_errno_and_success_is_zero` |
-| 5, Decision B's renames | landed ([#3726](https://github.com/nifeos/nife/pull/3726)) | the packet's public API carries every proposed name of the table; `#[doc(alias = "xattr")]` sits on `extended_attribute` (`src/lib.rs` line 137). The other aliases are not built |
+| 5, Decision B's renames | landed ([#3726](https://github.com/nifeos/nife/pull/3726)) | the packet's public API carries every proposed name of the table; `#[doc(alias = "xattr")]` sits on `extended_attribute` (`src/lib.rs` line 137). The kept verb and errno names, `fs` and `statfs` carry their aliases and source lines |
 | 6, `reply_errno` total | landed ([#3577](https://github.com/nifeos/nife/pull/3577)) | `reply::reply_errno` maps every out-of-range negative word to `EPROTO`; two harnesses prove it for every `i64`, and both fail under their patches |
 | 8, proofs | partly landed ([#3566](https://github.com/nifeos/nife/pull/3566), [#3637](https://github.com/nifeos/nife/pull/3637)) | six of the 11 harnesses came with this item, each with its patch; the termination of the four walkers is unproven |
 | 13, 17, 18, 19, 20 | landed ([#3566](https://github.com/nifeos/nife/pull/3566)) | no British spelling (`british_spelling` 0); the length-or-offset doc on `MAXIMUM_LENGTH_BYTES`; a `const` assertion that `usize::BITS >= 40`; no warning at 1.88 in the scratch workspace |
@@ -173,9 +173,9 @@ Kept as they are, with the reason, under Decision B:
 
 | item | status | reason |
 |---|---|---|
-| the POSIX verbs (`OPEN`, `READ`, `WRITE`, `CLOSE`, `FSTAT`, `CREATE`, `TRUNCATE`, `OPENDIR`, `READDIR`, `MKDIR`, `RENAME`, `UNLINK`, `RMDIR`, `GETXATTR`, `SETXATTR`, `LISTXATTR`, `REMOVEXATTR`, `STATFS`, `SYNC`) | no block; the alias and the source line are not built (item 5) | a specification's term of art |
-| the errno constants (`EROFS`, `EPERM`, `EISDIR`, `ENOTDIR`, `EINVAL`, `ENOTEMPTY`, `ENODATA`, `ERANGE`, `E2BIG`, `ENOSPC`, `ENOTSUP`, `EBADF`) | no block; aliases not built | the platform's spelling, as the `libc` crate keeps it |
-| module `fs`, module `statfs` | no block; aliases `filesystem` and `volume_statistics` not built | `fs` mirrors `std::fs`; `statfs` is the call's name |
+| the POSIX verbs (`OPEN`, `READ`, `WRITE`, `CLOSE`, `FSTAT`, `CREATE`, `TRUNCATE`, `OPENDIR`, `READDIR`, `MKDIR`, `RENAME`, `UNLINK`, `RMDIR`, `GETXATTR`, `SETXATTR`, `LISTXATTR`, `REMOVEXATTR`, `STATFS`, `SYNC`) | no block; each carries `#[doc(alias)]` and a source line | a specification's term of art |
+| the errno constants (`EROFS`, `EPERM`, `EISDIR`, `ENOTDIR`, `EINVAL`, `ENOTEMPTY`, `ENODATA`, `ERANGE`, `E2BIG`, `ENOSPC`, `ENOTSUP`, `EBADF`) | no block; each carries `#[doc(alias)]` and a source line | the platform's spelling, as the `libc` crate keeps it |
+| module `fs`, module `statfs` | no block; aliases `filesystem` and `volume_statistics` | `fs` mirrors `std::fs`; `statfs` is the call's name |
 | `block::SIZE` | no block; the `register_names` exemption is not built | an opcode, not a size |
 
 Built and provisional, not in Decision B's table:
@@ -209,7 +209,7 @@ The full table for the ratifying pull request is the output of
 | Item 1: the six mentions of nife in `README.md` (lines 5 and 87), `src/lib.rs` line 33, `src/grant.rs` lines 11 and 13 and `src/extended_attribute.rs` line 76; the `publish` comment; a `repository` field; the `Name:` strip. | move lane |
 | Item 2: a crate-root `clippy.toml` with `doc-valid-idents = ["RedoxFS", ".."]`. The scratch workspace above shows nine findings without it. | move lane |
 | Item 3: the eleven patches rewritten from `a/crates/filesystem_contract/...` to `a/src/...` and `git apply -p1`, and the path in `src/proofs.rs` line 4. | move lane |
-| Item 5: the aliases and source lines on the kept POSIX verb and errno names, the `fs` and `statfs` aliases, and the `register_names` exemption for `block::SIZE`. The test name `a_grant_spec_carries_its_length_and_its_direction_apart`, which `spelled_out` refuses, joins this item; its name follows Decision B's `spec` row. | a rename lane before the move |
+| Item 5: the `register_names` exemption for `block::SIZE`. The template has no exemption file for the gate, so the exemption needs a template change first. | the template, then a lane |
 | Item 10: the README in the scaffold's shape, with the badge row and the Kani cost. | move lane |
 | The workspace: one repository root manifest listing both crates; the template's caller workflows with `allow-unpublished` for the fixture. Items 2, 3, 4 and 6 of milestone 1091 (`filesystem_fixture`: what an outside maintainer would fix before it leaves) must land first. | move lane |
 | The `std` farm copies `src/lib.rs` into the patched standard library; it must read the pinned checkout's source, or the move breaks the platform layer's build. | maintainer, as for `socket_contract` |
@@ -223,8 +223,8 @@ Ready to clear, together with `filesystem_fixture`. The crate has no dependency,
 foreign type in its public API. Its eleven proofs each fail under their patch. It builds and tests
 green at 1.88 for the host and the three bare-metal targets, alone and inside a two-crate
 workspace. The two failures of `script/crate-standalone` are the ones a move writes (the name
-ratification and a patch path). The two template naming refusals are one test name and the kept
-`block::SIZE`, both item 5. The decisions the milestone took to the architect (A, C, D) are ruled and
+ratification and a patch path). The one template naming refusal is the kept
+`block::SIZE`, item 5. The decisions the milestone took to the architect (A, C, D) are ruled and
 built.
 
 ## Open questions

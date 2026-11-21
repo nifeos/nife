@@ -56,11 +56,10 @@ are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `b
 - Item 4 (P0), `rm.rs` uncovered: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
   `a_status_is_the_errno_and_success_is_zero`.
 - Item 5 (P0), names the gates refuse: Ruled (Decision B, maintainer, provisional, 2026-11-14 UTC).
-  The renames are in force ([#3726](https://github.com/nifeos/nife/pull/3726)). Not built: a
-  `doc(alias)` and source line on each kept POSIX verb and errno name (only `xattr` has an alias),
-  and the `register_names` exemption for `block::SIZE` once the template's exemption file exists.
-  The test `a_grant_spec_carries_its_length_and_its_direction_apart` (`src/grant/tests.rs`), which
-  the template's `spelled_out` refuses, takes Decision B's `specification` spelling.
+  The renames are in force ([#3726](https://github.com/nifeos/nife/pull/3726)), each kept POSIX verb
+  and errno name carries `#[doc(alias)]` and a source line, `fs` and `statfs` carry their aliases, and
+  the test that `spelled_out` refused follows the `specification` row. Not built: the
+  `register_names` exemption for `block::SIZE`, because the template has no exemption file for it.
 - Item 6 (P1), `reply_errno` not total: Done, [#3577](https://github.com/nifeos/nife/pull/3577).
   Built with Decision C.
 - Item 7 (P1), the packers mask: Open. `fs::request`, `rename_destination` and both `specification` packers

@@ -58,7 +58,7 @@ fn a_granted_name_may_be_longer_than_two_words() {
 }
 
 #[test]
-fn a_grant_spec_carries_its_length_and_its_direction_apart() {
+fn a_grant_specification_carries_its_length_and_its_direction_apart() {
     // A read grant and a write grant of the same name differ only here, so the two fields must
     // not bleed: a 16-byte name must not look like a write bit, and write must not lengthen it.
     let ro = grant::specification(16, grant::READ);

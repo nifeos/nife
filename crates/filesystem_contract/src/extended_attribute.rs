@@ -47,13 +47,25 @@ pub const RAW: u32 = 0;
 /// `ENODATA`: the named attribute is not set on this node. The only error that means absence,
 /// which is the discipline `ENOENT` earns in [`directory::explain`]: an instrument that reads any
 /// failure as "not there" reports filesystems that never existed.
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "no data available")]
 pub const ENODATA: i32 = 61;
 /// `ERANGE`: the name is empty, longer than [`MAXIMUM_NAME_BYTES`], or holds a NUL byte. A fact about the
 /// name, not about the capability.
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "result out of range")]
 pub const ERANGE: i32 = 34;
 /// `E2BIG`: the value is longer than [`MAXIMUM_VALUE_BYTES`].
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "argument list too long")]
 pub const E2BIG: i32 = 7;
 /// `ENOSPC`: the node already holds [`MAXIMUM_ATTRIBUTES`] attributes and this would be a new one.
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "no space left on device")]
 pub const ENOSPC: i32 = 28;
 /// `EOPNOTSUPP`: **this capability does not offer extended attributes at all.**
 ///
@@ -64,6 +76,9 @@ pub const ENOSPC: i32 = 28;
 /// learns that its capability does not carry attributes rather than that its request was
 /// malformed. `EINVAL` would have been the silent degradation, because it reads as "you sent
 /// nonsense" rather than "this does not do that".
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "operation not supported")]
 pub const ENOTSUP: i32 = 95;
 
 /// **The reserved name the attribute store lives under**, in the image root.
