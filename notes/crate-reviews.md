@@ -93,7 +93,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`intrusive_queue`](crate-reviews/intrusive-queue.md) | 10 | cleared to move (2026-11-20 UTC, no tag, no publish) |
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |
 | [`domain_name_resolution_contract`](crate-reviews/domain-name-resolution-contract.md) | 6 | ready for review |
-| [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |
+| [`socket_contract`](crate-reviews/socket-contract.md) | contract | cleared to move (2026-11-21 UTC, repository `nifeos/socket_contract` approved, `publish = false`, no tag, no publish); the move lane first proves the `std` farm builds from the pinned checkout |
 | [`machine_statistics_contract`](crate-reviews/machine-statistics-contract.md) | contract | cleared to move (2026-11-20 UTC, no tag, no publish); the move waits for `address_space_layout` and `current_cpu_contract` |
 | [`address_space_layout`](crate-reviews/address-space-layout.md) | 3 | ready for review; the names of items 7, 9, 15 and 17 wait for the architect |
 | [`user_mode_runtime`](crate-reviews/user-mode-runtime.md) | 3 | ready for review |
