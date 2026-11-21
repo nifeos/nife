@@ -43,9 +43,7 @@
 #![no_std]
 
 mod heads;
-pub mod kernel_half;
 mod rungs;
-pub mod self_test_program;
 pub mod verdict;
 
 pub use heads::{Head, Heads};

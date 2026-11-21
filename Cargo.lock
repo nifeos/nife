@@ -276,6 +276,7 @@ dependencies = [
  "program_table",
  "ps",
  "screen_console",
+ "self_test_contract",
  "slabtop",
  "smoltcp",
  "socket_contract",
@@ -925,6 +926,7 @@ dependencies = [
  "primitive_benchmark_contract",
  "program_table",
  "screen_console",
+ "self_test_contract",
  "soak_page",
  "socket_contract",
  "startup_page_contract",
@@ -1369,6 +1371,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "self_test_contract"
+version = "0.1.0"
+dependencies = [
+ "boot_ladder",
+]
+
+[[package]]
 name = "serde_core"
 version = "1.0.229"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1567,7 +1576,6 @@ dependencies = [
  "abi",
  "address_space_layout",
  "base_digest_contract",
- "boot_ladder",
  "byte_sink_contract",
  "capability_manifest_note",
  "credential_contract",
@@ -1588,6 +1596,7 @@ dependencies = [
  "process_builder",
  "program_asks",
  "program_table",
+ "self_test_contract",
  "socket_contract",
  "static_elf",
  "std_runtime_contract",

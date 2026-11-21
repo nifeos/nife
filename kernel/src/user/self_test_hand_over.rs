@@ -1,5 +1,5 @@
 //! **What the kernel hands the progenitor for the boot self-test's userspace half** (milestone
-//! 1063): the page that carries the kernel's half (`boot_ladder::kernel_half`), the JH7110 TRNG
+//! 1063): the page that carries the kernel's half (`self_test_contract::kernel_half`), the JH7110 TRNG
 //! service the `clock` and `true_random_number_generator` checks read, and disk 0's virtio trio for
 //! `block_device`. The progenitor passes all of it to `boot_self_test` and keeps none of it. On a
 //! machine with a screen it also grants the endpoint the verdict comes back on, for the kernel to
@@ -18,7 +18,7 @@
 //!   verdict or was never built, leaves [`paint_the_verdict`]'s kernel thread parked on its
 //!   receive for the life of the boot.
 
-use boot_ladder::kernel_half::{KernelHalf, flag, word};
+use self_test_contract::kernel_half::{KernelHalf, flag, word};
 
 use super::*;
 use crate::capability_object::{
