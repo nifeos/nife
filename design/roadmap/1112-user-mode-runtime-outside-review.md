@@ -5,7 +5,7 @@ milestone_dependencies: 1017
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 1112. `user_mode_runtime`: what an outside maintainer would fix before it leaves
 
@@ -85,8 +85,13 @@ crate's own reasons.
   2026-11-14 UTC).
 - Review package: Done, [#3815](https://github.com/nifeos/nife/pull/3815): the package is
   `notes/crate-reviews/user-mode-runtime.md`, with its index row.
-- Clearing the review package, which approves the repository and the move: Open. calef's. The names
-  are ratified; the clearance is separate. The move also waits on milestone 1017 step 3.
+- Clearing the review package, which approves the repository and the move: Done, ruled 2026-11-21 UTC,
+  option A. The repository `nifeos/user_mode_runtime` is approved as `publish = false`, with no tag and no
+  publish. The move waits until `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract`
+  have left the tree and are git pins (milestone 1017 step 3). The thin machine checks (13 unit tests, 9
+  doctests mostly `no_run`, no Kani harness, no fuzz target, no Miri or mutation baseline, most of the
+  public functions covered only by QEMU boot tests) are a recorded limitation; a first tag needs its own
+  ruling.
 
 ## Open decisions
 
@@ -127,6 +132,8 @@ Background. A crate leaves nife only after calef clears its review package, and 
 its repository (the rule of 2026-11-01 UTC). The package exists
 (`notes/crate-reviews/user-mode-runtime.md`). Every nife program and `disk-tools` depend on this crate, so it leaves at step 3 of milestone
 1017, after the contract crates it links.
+
+Ruled 2026-11-21 UTC: A. The move waits for the four path dependencies above to leave the tree.
 
 Recommendation: A, clear the package, now that it and P0-3 have landed; milestone 1017 step 3 times the move.
 

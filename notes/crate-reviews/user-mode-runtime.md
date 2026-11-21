@@ -4,10 +4,12 @@
 [crate-reviews.md](../crate-reviews.md), in its own file because the packages together outgrow the
 page.*
 
-The names are ratified (2026-11-20 UTC). The architect reads this to clear the crate for its move to its own
-repository. That move is step 3 of
+The names are ratified (2026-11-20 UTC). The architect cleared the package on 2026-11-21 UTC: the repository
+`nifeos/user_mode_runtime` is approved as `publish = false`, with no tag and no publish. The move to that
+repository is step 3 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md),
-after the contract crates the crate links. It describes the crate as `main` plus this branch leaves it. The
+after the contract crates the crate links, and waits until `abi`, `address_space_layout`,
+`current_cpu_contract` and `socket_contract` have left the tree and are git pins. It describes the crate as `main` plus this branch leaves it. The
 outside review that produced the work is
 [milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1112-user-mode-runtime-outside-review.md).
 
@@ -34,7 +36,7 @@ block, none is provisional and 42 have no block (the module-block baseline holds
 | edition, `rust-version` | 2024, 1.88, both literals |
 | license | `MIT OR Apache-2.0`, both texts at the crate root, written in the manifest. The crate adapts no source |
 | `publish` | `false`, with the one-sentence reason in the manifest: milestone 1017 keeps moved crates unpublished under §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit) until their release milestone |
-| dependencies | `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` by path, `counter_frequency_contract` by path outside `aarch64`, and `clock_contract` and `entropy_contract` already by git `rev` |
+| dependencies | `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` by path, `counter_frequency_contract` by git `rev` outside `aarch64`, and `clock_contract` and `entropy_contract` already by git `rev` |
 | manifest metadata | description, keywords (`no-std`, `runtime`, `system_call`), categories (`no-std`, `embedded`, `os`), `readme`, and `[package.metadata.docs.rs]` for the three targets. The `repository` key waits for the move |
 | size | 14 files under `src`, 2,689 lines |
 | lints | literal `[lints.rust]` and `[lints.clippy]` tables, the same set `current_cpu_contract` carries |
@@ -74,7 +76,7 @@ version rows.
 | `RUSTDOCFLAGS="-D warnings" cargo doc -p user_mode_runtime`, host and the same three targets | no warning. One unresolved link (`trap` in `counter_hertz`'s doc) predated this branch and is fixed |
 | `cargo build -p components -p fixtures --target <each of the three>` | pass on all three |
 | `redoxfs_server`: `cargo test` and `cargo clippy --all-targets -- -D warnings` | pass (86, 5, 2, 1 and 1 tests across its targets) |
-| the call sites of the removed accessors | none remain: `grep` finds no `read_u8` through `write_u64` call on a window anywhere in `components`, `fixtures`, `crates`, `patches` or the notes. The three `DirectMemoryAccessRegion` impls in the `designware_ethernet` and `e1000e` transports keep their trait methods `read_u64` and `write_u64`, and call `read::<u64>` inside |
+| the call sites of the removed accessors | none remain: `grep` finds no `read_u8` through `write_u64` call on a window anywhere in `components`, `fixtures`, `crates`, `patches` or the notes. The three `DirectMemoryAccessRegion` impls in the `designware_ethernet` and `e1000e` transports keep their trait methods `read_u64` and `write_u64`, and call `read_volatile::<u64>` inside |
 | MSRV: a copy of the crate and its path dependencies (five before `clock_contract` left) outside the tree, `cargo +1.88 build` | passes for the host; `--lib` passes for the three bare-metal targets |
 | `python3 helpers/template_report_gates.py --check` | clean. The rows for `prose_acronyms` (23) and `readme_acronyms` (1) left `helpers/template_report_baseline.txt`; `abbreviations` (8) and `register_names` (2) stay |
 | `python3 helpers/name_release.py --draft user_mode_runtime` | 122 rows: 79 ratified, none provisional, 42 with no block, 1 recorded (`_start`) |
@@ -119,7 +121,7 @@ are `i64` words: a negative value is an `abi::Error`, and the doc of each call s
 
 What a stranger may find surprising:
 
-- `read::<T>` and `write::<T>` are the only accessors. They take the sealed `WindowInteger` (`u8`,
+- `read_volatile::<T>` and `write_volatile::<T>` are the only accessors. They take the sealed `WindowInteger` (`u8`,
   `u16`, `u32`, `u64` and arrays of them), check bounds and alignment, and panic on a misaligned or
   wrapping offset. The sized forms `read_u8` through `write_u64` were removed in this branch (a
   maintainer ruling, provisional until the first tag); adding them back later is compatible, and
@@ -179,9 +181,9 @@ The ratification replaced every provisional block with a ratified one dated 2026
 
 | item | owner |
 |---|---|
-| Clear the package for the move. The names are ratified; the clearance is the architect's and stays open. | architect |
+| Wait for `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` to leave the tree, so they become git pins. The package is cleared (2026-11-21 UTC). | the contract crates' move lanes |
 | Move `notes/user-mode-runtime.md` and `notes/user-mode-runtime/` into the crate's `docs/`, and drop the externalized-crates ceiling to zero (milestone 1112 P1-8). The text cites 34 nife paths, 31 milestones, 31 sections and the architect's name in the sources and the manifest, which the standalone `citations` check lists. | move lane |
-| Convert the four path dependencies (`abi`, `address_space_layout`, `current_cpu_contract`, `socket_contract`) and `counter_frequency_contract` to `git` and `rev` with `version = "0.1.0"`, once each has left. | move lane, after the contract crates |
+| Convert the four path dependencies (`abi`, `address_space_layout`, `current_cpu_contract`, `socket_contract`) to `git` and `rev` with `version = "0.1.0"`, once each has left (`counter_frequency_contract` is already a git pin). | move lane, after the contract crates |
 | `helpers/template_report_baseline.txt` holds two rows (`abbreviations` 8, `register_names` 2) and `packages/runtime.package.toml` and `crates/externalization-list.txt` list the crate. | move lane |
 | The template's scaffold findings (the pull request template names the architect, `CONTRIBUTING.md` cites a nife path, the commit hook and `deny.toml` mention nife) are listed in the runbook's `BUGS`. | move lane |
 | Every dependent's manifest (the ones listed above) repoints to the new repository by a full commit. | move lane, step 3 of milestone 1017 |
@@ -191,13 +193,18 @@ The ratification replaced every provisional block with a ratified one dated 2026
 
 ## Open questions
 
-1. Whether the crate wants a harness before the tag. Recommendation: no; the checks above cover the
-   hostile-input surface, and the first tag does not depend on one.
+1. Whether the crate wants a harness before the tag. The clearance records the thin machine checks as a
+   limitation, and a first tag needs its own ruling.
 
 ## Recommendation
 
-The names are ratified, and the package waits for the architect to clear it. The crate has a literal manifest, a README for three targets, license files,
+Cleared to move (2026-11-21 UTC, `publish = false`, no tag, no publish). The move waits for `abi`,
+`address_space_layout`, `current_cpu_contract` and `socket_contract` to leave the tree. The crate has a literal manifest, a README for three targets, license files,
 one way to read and write a window and no acronym left unexpanded at its first use. What remains is
 the move lane's text work (P1-8) and the contract crates that leave first.
 
-Ready for review.
+Limitation, recorded at the clearance: the machine checks are thin. The crate has 13 unit tests, 9 doctests
+(most `no_run`), no Kani harness, no fuzz target and no Miri or mutation baseline. QEMU boot tests cover
+most of its roughly 104 public functions. A first tag needs its own ruling.
+
+Cleared.
