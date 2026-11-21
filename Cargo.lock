@@ -792,7 +792,7 @@ source = "git+https://github.com/nifeos/interfaces_note?rev=bfa27187a87e0cc1916e
 [[package]]
 name = "intrusive_queue"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/intrusive_queue?rev=4dc5e18321dc7940e6523140fdefb3b693431e35#4dc5e18321dc7940e6523140fdefb3b693431e35"
+source = "git+https://github.com/nifeos/intrusive_queue?rev=08c31f2d1397edc91f8046d068eaaf4f116b580b#08c31f2d1397edc91f8046d068eaaf4f116b580b"
 
 [[package]]
 name = "jh7110_clock_and_reset"
