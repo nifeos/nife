@@ -10,7 +10,7 @@
 
 use filesystem_contract::fs;
 use filesystem_fixture as fixture;
-use grant_plan::navigation::{TwoRoots, Which};
+use grant_plan::navigation::{GrantSide, TwoRoots};
 use user_mode_runtime::{call, exit, send};
 
 use crate::channel::put_page;
@@ -42,8 +42,8 @@ pub(crate) fn two_dir() -> ! {
 
     // `/a/inner`: resolves to grant A, one component deep, and opens through slot 0.
     match namespace.resolve(b"/a/inner") {
-        Ok((Which::A, cwd)) if cwd.depth() == 1 => {
-            if dir_open_on(FILE_A, fs::ROOT, cwd.component(0)) >= 0 {
+        Ok((GrantSide::First, working_directory)) if working_directory.depth() == 1 => {
+            if dir_open_on(FILE_A, fs::ROOT, working_directory.component(0)) >= 0 {
                 v |= t::OPENED_A;
             } else {
                 v |= t::GRANTED_ACCESS_FAILED;
@@ -54,8 +54,8 @@ pub(crate) fn two_dir() -> ! {
 
     // `/b/secret`: the same claim, through the second grant and slot 1.
     match namespace.resolve(b"/b/secret") {
-        Ok((Which::B, cwd)) if cwd.depth() == 1 => {
-            if dir_open_on(FILE_B, fs::ROOT, cwd.component(0)) >= 0 {
+        Ok((GrantSide::Second, working_directory)) if working_directory.depth() == 1 => {
+            if dir_open_on(FILE_B, fs::ROOT, working_directory.component(0)) >= 0 {
                 v |= t::OPENED_B;
             } else {
                 v |= t::GRANTED_ACCESS_FAILED;

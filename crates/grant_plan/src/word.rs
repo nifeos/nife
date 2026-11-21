@@ -11,7 +11,7 @@
 //! # BUGS
 //!
 //! - **No backslash escape while tokens are slices.** `my\ notes.txt` names a file whose name
-//!   contains a backslash, and `navigation::component_fits` refuses that byte, so the line is refused.
+//!   contains a backslash, and `navigation::is_valid_component` refuses that byte, so the line is refused.
 //! - **Adjacent pieces are not joined.** `a"b"` and `'it''s'` are refused where POSIX joins them.
 //! - **`"$?"` prints `$?`**, because both forms are literal; variables will have to split them.
 
@@ -178,7 +178,9 @@ pub fn read(token: &[u8]) -> Result<Word<'_>, Refusal> {
 /// The returned index is one past the token. An unterminated quote runs to the end of the line and
 /// is [`Refusal::UnclosedQuote`] when [`read`] looks at it, so this function does not have to
 /// decide anything.
-pub fn span(line: &[u8], i: usize, stop: &dyn Fn(u8) -> bool) -> usize {
+///
+/// Name: ratified 2026-11-20 (UTC).
+pub fn token_end(line: &[u8], i: usize, stop: &dyn Fn(u8) -> bool) -> usize {
     let mut c = Cursor::new();
     let mut j = i;
     while j < line.len() {
@@ -265,11 +267,11 @@ mod tests {
     fn a_span_stops_at_a_bare_delimiter_and_not_at_a_quoted_one() {
         let line = b"date > 'my out.txt' extra";
         let at = 7;
-        let end = span(line, at, &|b| b.is_ascii_whitespace());
+        let end = token_end(line, at, &|b| b.is_ascii_whitespace());
         assert_eq!(&line[at..end], b"'my out.txt'");
         // ... and the same scan on a bare word stops at the first space.
         let line = b"date > my out.txt";
-        let end = span(line, 7, &|b| b.is_ascii_whitespace());
+        let end = token_end(line, 7, &|b| b.is_ascii_whitespace());
         assert_eq!(&line[7..end], b"my");
     }
 

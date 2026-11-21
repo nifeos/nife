@@ -260,7 +260,7 @@ against run, so a shell that ignored the feature fails both halves.
 ## BUGS, named where the reader meets them
 
 - No backslash escape, and none is planned while tokens are slices. `my\ notes.txt` is a file
-  whose name contains a backslash, and `navigation::component_fits` refuses that byte, so the line is
+  whose name contains a backslash, and `navigation::is_valid_component` refuses that byte, so the line is
   refused rather than misread. The quoted spelling is the one that works.
 - **Adjacent pieces are not joined.** `a"b"` is `Refusal::PartlyQuoted` where POSIX reads `ab`, and
   `'it''s'` is the same where POSIX joins three pieces. Both are refused by name rather than

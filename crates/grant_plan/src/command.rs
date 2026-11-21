@@ -1,17 +1,19 @@
-//! **What a parsed line is, and what a grant holds**: `Command`, `Endowment`, the file and
-//! directory grants, `rm`'s option bits, and the shell's `Holdings`. `ParsedInvocation` is in `parsing`,
+//! **What a parsed line is, and what a grant holds**: `CommandLine`, `Endowment`, the file and
+//! directory grants, `rm`'s option bits, and the shell's `ShellHoldings`. `ParsedInvocation` is in `parsing`,
 //! beside the one function that builds it (§272 (the grant-plan crate root splits into private
 //! modules), fork 3). The crate root re-exports every public item.
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
-use crate::expand::{Name, NameSet};
+use crate::expansion::{Name, NameSet};
 use crate::{Manifest, ParsedInvocation, line, navigation};
 
-/// A parsed command line. The shell dispatches on this; only [`Command::Run`] carries a grant
+/// A parsed command line. The shell dispatches on this; only [`CommandLine::Run`] carries a grant
 /// expression that must be planned against a manifest.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Command<'a> {
+pub enum CommandLine<'a> {
     /// An empty line. Reprompt.
     Empty,
     /// `help`.
@@ -23,12 +25,11 @@ pub enum Command<'a> {
     /// you would have typed, unprefixed, which is the whole point of the spelling: what you inspect
     /// and what you run cannot drift apart.
     ///
-    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
-    /// `Capabilities` under the capability ruling of 2026-10-06 (UTC).
+    /// Name: ratified 2026-11-20 (UTC).
     Capabilities(&'a [u8]),
     /// `time <command>`: run that command exactly as typed and say how long it took.
     ///
-    /// A prefix word, carrying a whole command line for [`Capabilities`](Command::Capabilities)'s reason: `time
+    /// A prefix word, carrying a whole command line for [`Capabilities`](CommandLine::Capabilities)'s reason: `time
     /// date | wc` times the pipeline, so the tail keeps its operators and the shell re-dispatches
     /// it as it would untimed. It grants nothing: the shell times the tail with its own clock, so a
     /// child holding no clock can be timed. See notes/time-command.md.
@@ -36,18 +37,18 @@ pub enum Command<'a> {
     /// `xargs <command>`: run that command once per **batch** of what its pattern matched
     /// (milestone 109 (`xargs`: batching a grant too large to hand over)). The name is provisional.
     ///
-    /// A prefix word that grants nothing, as [`Command::Time`] is. A batching program would have to
+    /// A prefix word that grants nothing, as [`CommandLine::Time`] is. A batching program would have to
     /// hold the whole directory, since nothing carries the union of the batches, and a name in a
     /// pipe is text that grants a program nothing. See notes/glob-grant.md.
     Xargs(&'a [u8]),
     /// `scope { commands }`: **run a group of commands, then put back what they changed in this
     /// shell's own state** (milestone 52 (subshells without `fork`), DECISIONS §160 (what a subshell copies)): the working directory and the names
     /// `bind` filed, and the variables and options when this shell has them. The tail is the whole
-    /// `{ ... }`, carried unsplit for [`Capabilities`](Command::Capabilities)'s reason, and
+    /// `{ ... }`, carried unsplit for [`Capabilities`](CommandLine::Capabilities)'s reason, and
     /// `swish::scope` reads it. It touches no capability, so what a command did to the world
     /// (a file made, a program run) stays done.
     ///
-    /// Name: provisional (milestone 52, 2026-10-27 UTC), for calef's naming pass.
+    /// Name: ratified 2026-11-20 (UTC).
     Scope(&'a [u8]),
     /// `cd [path]`: rebind the shell's position inside the directory capability it already holds.
     /// **A builtin, in the same category as `caps`**: it spawns nothing, grants nothing, and confers
@@ -57,7 +58,7 @@ pub enum Command<'a> {
     /// An empty operand means **your root**. There is no `HOME` here, and the root of your namespace
     /// is the one distinguished place you have: it is exactly what you were granted.
     Cd(&'a [u8]),
-    /// `pwd`: print where you are, **relative to your root** ([`navigation::Cwd::render`]). Naming anything
+    /// `pwd`: print where you are, **relative to your root** ([`navigation::DirectoryPath::render`]). Naming anything
     /// above it would imply a namespace that does not exist.
     Pwd,
     /// `ls [path]`: enumerate a directory you can reach, the cwd by default. A builtin rather than a
@@ -72,24 +73,24 @@ pub enum Command<'a> {
     /// a caller-chosen instant (DECISIONS §112 (`touch`'s two behaviors need two rights): the
     /// ability to *lie about history*).
     ///
-    /// A builtin in [`Mkdir`](Command::Mkdir)'s category: both forms take only the shell's own
+    /// A builtin in [`Mkdir`](CommandLine::Mkdir)'s category: both forms take only the shell's own
     /// directory capability (`directory::WRITE`, and `directory::SETTIME` for `-t`). [`TouchOperands::at`]
     /// carries the `-t` text unparsed; it is read where the grant is made (`Nav::touch` in
     /// `components/src/swish/navigation.rs`). See notes/touch.md.
     Touch(TouchOperands<'a>),
     /// `bind <target> <name>`: name a position this shell already reached some other way, so
-    /// `/<name>/...` reaches it too ([`navigation::Bindings`]). A builtin in [`Mkdir`](Command::Mkdir)'s
+    /// `/<name>/...` reaches it too ([`navigation::Bindings`]). A builtin in [`Mkdir`](CommandLine::Mkdir)'s
     /// category: it mints no capability and spawns nothing.
     ///
     /// `target` is resolved at bind time against wherever this shell stands, as any operand is;
     /// `name` is the single component the entry is filed under. Neither is tokenized further, as
-    /// [`Command::Cd`]'s and [`Command::Mkdir`]'s one path operand is not.
+    /// [`CommandLine::Cd`]'s and [`CommandLine::Mkdir`]'s one path operand is not.
     Bind(&'a [u8], &'a [u8]),
     /// `apropos <term>`: **name the installed pages that mention a word** (milestone 40 (documentation
     /// as a system service) phase 2). The operand is one word, folded the way the host builder
     /// folded the text it indexed.
     ///
-    /// A builtin in [`Ls`](Command::Ls)'s category: search is enumeration the shell already holds,
+    /// A builtin in [`Ls`](CommandLine::Ls)'s category: search is enumeration the shell already holds,
     /// and a searching program would need the whole documentation store. It yields names, never
     /// capabilities, so a grant happens only when a person types a result at a program. See
     /// notes/documentation/apropos-builtin.md.
@@ -98,7 +99,7 @@ pub enum Command<'a> {
     /// the owner's console)), so they run vouched, recorded under the path's last component. An
     /// activation request (`spawn_protocol::Activation::Vouch`) on the spawn endpoint, which `jig`'s
     /// installer endpoint refuses (milestone 809 (the package client becomes a program)), so a
-    /// vouch stays the owner's console's, and the tail is classified by [`vouch_verb`](crate::vouch_verb).
+    /// vouch stays the owner's console's, and the tail is classified by [`vouch_operand`](crate::vouch_operand).
     /// A builtin because it names no package: the bytes are what is vouched. Name: provisional
     /// (2026-09-26).
     Vouch(&'a [u8]),
@@ -124,15 +125,15 @@ pub enum Command<'a> {
     /// `fg [%N]`: **watch a background job in the foreground**, the most recent when no operand
     /// names one, under the same `^C` escalation a job started in the foreground gets. Nothing is
     /// revoked or granted: no job holds terminal input, so foreground means the shell is watching.
-    /// Name: provisional.
-    Fg(&'a [u8]),
+    /// Name: ratified 2026-11-20 (UTC).
+    Foreground(&'a [u8]),
     /// `bg [%N]`: **resume a job `^Z` stopped, without watching it**, the newest stopped job when
     /// no operand names one. The resume is `ThreadControlBlock::RESUME` on the TCB the shell holds
     /// for a supervised job (DECISIONS §309 (a supervised job's `ThreadControlBlock` goes to the
     /// shell that asked for it)).
     ///
-    /// Name: provisional, minted 2026-10-18 (UTC) by lane/48-ctrl-z.
-    Bg(&'a [u8]),
+    /// Name: ratified 2026-11-20 (UTC).
+    Background(&'a [u8]),
     /// A program invocation: `<prog> [--mem N] [token ...]`. Named `Run` for the act of running a
     /// program, not for a verb on the line; milestone 47 deleted the verb. A first word that is not
     /// a builtin lands here even when no such program exists, and the shell's planner answers
@@ -141,7 +142,7 @@ pub enum Command<'a> {
     Run(ParsedInvocation<'a>),
 }
 
-/// [`Command::Touch`]'s operand: the name, and (with `-t`) the instant asserted for it.
+/// [`CommandLine::Touch`]'s operand: the name, and (with `-t`) the instant asserted for it.
 ///
 /// `at` carries the `-t` token's bytes exactly as typed, unparsed: this crate classifies which
 /// token is which, it does not know what an RFC 3339 instant is. `None` is bare `touch`, which
@@ -170,6 +171,8 @@ pub const MAXIMUM_SHORT_OPTIONS: usize = 8;
 /// **It borrows nothing from the command line**: a name a pattern produced comes out of a directory
 /// listing rather than out of the line, so the grant owns it. With [`FileGrant::directory`] a
 /// value, not a pointer at the shell, nothing after planning can change what an endowment means.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Endowment {
     /// **The declared needs this endowment was planned against**: the manifest the caller passed,
@@ -219,7 +222,7 @@ pub struct Endowment {
     /// which cannot be fed and so cannot be the thing that blocks).
     ///
     /// It is carried on the endowment rather than looked up from `prog.manifest()` because
-    /// [`check_chain`](crate::check_chain) asks about a **whole planned line** and because [`plan_against_with`](crate::plan_against_with) can be
+    /// [`check_chain`](crate::check_chain) asks about a **whole planned line** and because [`plan_against_with_streams`](crate::plan_against_with_streams) can be
     /// given an explicit manifest. That is what keeps the check live, tested logic rather than a
     /// branch nothing reaches: no shipped program declares `true` yet, and the host tests plan one
     /// that does, exactly as `FileGrantDeclaration::Required` is exercised.
@@ -235,17 +238,19 @@ pub struct Endowment {
 /// the operand's leading path, held as a value, so a `cd` after planning cannot change what the
 /// grant means and the child has no cwd to re-resolve against. See notes/shell-navigation.md ("The
 /// cwd stops at the process boundary").
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct FileGrant {
     /// **Which of the shell's trees `dir` is in**, since milestone 154 (a process that holds two
-    /// directory capabilities): always [`navigation::Which::A`] for a
+    /// directory capabilities): always [`navigation::GrantSide::First`] for a
     /// shell holding one directory, and whichever tree the operand named for a shell holding two.
     /// A required field rather than a default, so nothing that builds a grant can forget that a
     /// position means nothing without the tree it is a position in.
-    pub which: navigation::Which,
-    /// The directory the name was resolved in, relative to the root of [`FileGrant::which`]'s
+    pub side: navigation::GrantSide,
+    /// The directory the name was resolved in, relative to the root of [`FileGrant::side`]'s
     /// tree, fixed at plan time.
-    pub directory: navigation::Cwd,
+    pub directory: navigation::DirectoryPath,
     /// The final component. Always a single component: a path was resolved into `dir`, not passed
     /// on, because the FS contract takes one component per request and no server here walks a path.
     ///
@@ -269,17 +274,17 @@ pub struct FileGrant {
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct DirectoryGrant {
-    /// **Which of the shell's trees `dir` is in**, [`FileGrant::which`]'s reason (milestone 154).
-    pub which: navigation::Which,
-    /// The directory the capability designates, relative to the root of [`DirectoryGrant::which`]'s
+    /// **Which of the shell's trees `dir` is in**, [`FileGrant::side`]'s reason (milestone 154).
+    pub side: navigation::GrantSide,
+    /// The directory the capability designates, relative to the root of [`DirectoryGrant::side`]'s
     /// tree, fixed at plan time.
-    pub directory: navigation::Cwd,
+    pub directory: navigation::DirectoryPath,
     /// The names in it the program is to act on: exactly one for a literal operand, the matched set
     /// for a pattern. Each is a single component, for [`FileGrant`]'s reason: a path was resolved
     /// into `dir` rather than passed on.
     ///
     /// **Empty means the whole directory**, and only a program that hears words gets that: its
-    /// line said `.` ([`expand::Designation::is_here`](crate::expand::Designation::is_here)). Every other grant carries at least one name.
+    /// line said `.` ([`expansion::Designation::is_here`](crate::expansion::Designation::is_here)). Every other grant carries at least one name.
     pub names: NameSet,
     /// The capability must reach **below** this directory (walk into it and list it), because the
     /// program was given the option its manifest declares for that. False means it may take names
@@ -308,114 +313,122 @@ pub mod rm_options {
 /// statement about the shell's actual capability table, not a hardcoded era: the same command line is a
 /// refusal in a shell that was granted no directory and a real grant in one that was, and neither
 /// the parser nor the manifest can tell them apart.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub struct Holdings {
+pub struct ShellHoldings {
     /// The shell holds a directory capability it can narrow into a per-file grant.
     pub directory: bool,
     /// **A second directory capability, mounted at a position in the first** (milestone 154, a
     /// process that holds two directory capabilities). `None` for a one-grant shell, which
     /// resolves and prints exactly as it always has.
     ///
-    /// Name: ratified 2026-10-18 (calef: "Yes"). The shape is provisional.
+    /// Name: ratified 2026-10-18. The shape is provisional.
     pub mounted: Option<MountedTree>,
     /// **Where the shell stands, in the one tree it presents**: a path from its root, through a
-    /// mount point when it stands in the second tree ([`Holdings::locate`] says which tree that
+    /// mount point when it stands in the second tree ([`ShellHoldings::serving_tree`] says which tree that
     /// is and where inside it). A working directory is a directory capability used as the default
     /// base for resolving names, so it belongs here beside the fact that there is one. Defaults to
     /// the root, which is also the only position a shell holding no directory can be in.
-    pub cwd: navigation::Cwd,
+    pub working_directory: navigation::DirectoryPath,
     /// **Names this shell has bound to a position it already reached some other way**
     /// (`bind`, milestone 47 (navigation and naming); [`navigation::Bindings`]'s own doc has the full
-    /// design). A bound position is a path in the one tree, like [`Holdings::cwd`], so a bind can
+    /// design). A bound position is a path in the one tree, like [`ShellHoldings::working_directory`], so a bind can
     /// point through a mount point with nothing special to say about it.
     pub binds: navigation::Bindings,
 }
 
 /// **A second tree, and where it is mounted in the first** (milestone 154).
 ///
-/// calef ruled the presentation on 2026-09-26: *"One tree with other trees mounted at names in
-/// it."* The user sees one root; the second tree appears at a mount point, like a Unix mount or a
+/// The presentation is one tree with other trees mounted at names in it. The user sees one root; the second tree appears at a mount point, like a Unix mount or a
 /// Plan 9 `bind`, and which capability serves a name is bookkeeping the shell keeps to itself. So
 /// the whole of what this records is the mount point. Where the shell stands is a path in the one
-/// tree ([`Holdings::cwd`]); which tree that is follows from whether the path runs through here.
+/// tree ([`ShellHoldings::working_directory`]); which tree that is follows from whether the path runs through here.
 ///
-/// Name: ratified 2026-10-18 (calef: "Yes"). The shape is provisional.
+/// Name: ratified 2026-10-18. The shape is provisional.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct MountedTree {
-    mount: navigation::Cwd,
+    mount: navigation::DirectoryPath,
 }
 
 impl MountedTree {
     /// A second tree mounted at `mount`. `None` at the root: the root is the first tree's, and a
     /// mount there would hide all of it.
-    pub fn mounted_at(mount: navigation::Cwd) -> Option<Self> {
+    pub fn mounted_at(mount: navigation::DirectoryPath) -> Option<Self> {
         (!mount.is_root()).then_some(MountedTree { mount })
     }
 
     /// Where the second tree is mounted, as a path in the one tree.
-    pub fn mount(&self) -> navigation::Cwd {
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
+    pub fn mount_point(&self) -> navigation::DirectoryPath {
         self.mount
     }
 }
 
-impl Holdings {
+impl ShellHoldings {
     /// **Where `token` lands, without moving**: a path in the one tree this shell presents.
-    /// [`Holdings::locate`] turns it into the tree that serves it and the position inside that
+    /// [`ShellHoldings::serving_tree`] turns it into the tree that serves it and the position inside that
     /// tree.
     ///
     /// A relative token resolves from where the shell stands and an absolute one from the root, or
     /// from a bound position when its first component is a bound name. `..` is plain path
     /// arithmetic, so `..` from a mount point is its parent in the first tree, as a Unix mount is,
     /// and `..` at the root refuses as it always has.
-    pub fn resolve(&self, token: &[u8]) -> Result<navigation::Cwd, navigation::Refused> {
+    pub fn resolve(
+        &self,
+        token: &[u8],
+    ) -> Result<navigation::DirectoryPath, navigation::PathRefusal> {
         let p = navigation::path(token)?;
         self.resolve_path(&p)
     }
 
-    /// [`Holdings::resolve`] for a token already parsed.
+    /// [`ShellHoldings::resolve`] for a token already parsed.
     pub fn resolve_path(
         &self,
         p: &navigation::Path<'_>,
-    ) -> Result<navigation::Cwd, navigation::Refused> {
+    ) -> Result<navigation::DirectoryPath, navigation::PathRefusal> {
         self.resolve_steps(p.is_from_root(), p.steps())
     }
 
-    /// [`Holdings::resolve`] for a bare step sequence and where it starts from, which is what a
+    /// [`ShellHoldings::resolve`] for a bare step sequence and where it starts from, which is what a
     /// path's *lead* is (every step but the last).
     pub fn resolve_steps(
         &self,
         from_root: bool,
         steps: &[navigation::Step<'_>],
-    ) -> Result<navigation::Cwd, navigation::Refused> {
-        let mut pos = navigation::Cwd::root();
-        let rest = self.anchor(from_root, steps, &mut pos);
-        pos.apply(rest)?;
-        Ok(pos)
+    ) -> Result<navigation::DirectoryPath, navigation::PathRefusal> {
+        let mut start = navigation::DirectoryPath::root();
+        let rest = self.steps_after_start(from_root, steps, &mut start);
+        start.apply(rest)?;
+        Ok(start)
     }
 
-    /// **Where a step sequence starts**, written into `pos`, and the steps left to apply from
+    /// **Where a step sequence starts**, written into `start`, and the steps left to apply from
     /// there: where the shell stands for a relative sequence, a bound position with the bound
     /// name consumed for one whose first component is bound, and the root otherwise.
     ///
     /// **The position is an out-parameter rather than part of the result**, and that is a measured
     /// choice rather than a style: every caller is on a shell's walking or planning path, the shell
-    /// runs a debug build on a few pages of stack, and returning a `Cwd` by value put nearly 2 KiB
+    /// runs a debug build on a few pages of stack, and returning a `DirectoryPath` by value put nearly 2 KiB
     /// in this frame, which overflowed the globbing witness (`glob_grant_tests`).
-    pub fn anchor<'s, 'p>(
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
+    pub fn steps_after_start<'s, 'p>(
         &self,
         from_root: bool,
         steps: &'s [navigation::Step<'p>],
-        pos: &mut navigation::Cwd,
+        start: &mut navigation::DirectoryPath,
     ) -> &'s [navigation::Step<'p>] {
         if !from_root {
-            *pos = self.cwd;
+            *start = self.working_directory;
             return steps;
         }
-        *pos = navigation::Cwd::root();
+        *start = navigation::DirectoryPath::root();
         if let Some((navigation::Step::Down(first), rest)) = steps.split_first()
             && let Some(entry) = self.binds.lookup(first)
         {
-            *pos = entry.position();
+            *start = entry.position();
             return rest;
         }
         steps
@@ -423,35 +436,46 @@ impl Holdings {
 
     /// **Which tree serves a path in the one tree, and where inside it**: the second tree, from
     /// its own root, for a path that runs through its mount point; the first tree, unchanged, for
-    /// everything else. This is the bookkeeping calef's ruling keeps out of sight: a path never
+    /// everything else. This is the bookkeeping the one-tree presentation keeps out of sight: a path never
     /// says which tree it is in, and this is the one place that decides.
-    pub fn locate(&self, place: &navigation::Cwd) -> (navigation::Which, navigation::Cwd) {
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
+    pub fn serving_tree(
+        &self,
+        path: &navigation::DirectoryPath,
+    ) -> (navigation::GrantSide, navigation::DirectoryPath) {
         if let Some(sd) = &self.mounted {
             let m = &sd.mount;
-            if place.depth() >= m.depth()
-                && (0..m.depth()).all(|l| place.component(l) == m.component(l))
+            if path.depth() >= m.depth()
+                && (0..m.depth()).all(|l| path.component(l) == m.component(l))
             {
-                let mut inside = navigation::Cwd::root();
-                for l in m.depth()..place.depth() {
-                    inside.descend(place.component(l));
+                let mut inside = navigation::DirectoryPath::root();
+                for l in m.depth()..path.depth() {
+                    inside.descend(path.component(l));
                 }
-                return (navigation::Which::B, inside);
+                return (navigation::GrantSide::Second, inside);
             }
         }
-        (navigation::Which::A, *place)
+        (navigation::GrantSide::First, *path)
     }
 
-    /// [`Holdings::locate`] reversed: the path in the one tree for a position inside `which`. What
+    /// [`ShellHoldings::serving_tree`] reversed: the path in the one tree for a position inside `side`. What
     /// `caps` prints for a planned grant, which records the tree and the position rather than the
     /// path it came from.
-    pub fn place(&self, which: navigation::Which, pos: &navigation::Cwd) -> navigation::Cwd {
-        match (which, &self.mounted) {
-            (navigation::Which::B, Some(sd)) => {
-                let mut place = sd.mount;
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
+    pub fn path_in_one_tree(
+        &self,
+        side: navigation::GrantSide,
+        pos: &navigation::DirectoryPath,
+    ) -> navigation::DirectoryPath {
+        match (side, &self.mounted) {
+            (navigation::GrantSide::Second, Some(sd)) => {
+                let mut path = sd.mount;
                 for l in 0..pos.depth() {
-                    place.descend(pos.component(l));
+                    path.descend(pos.component(l));
                 }
-                place
+                path
             }
             _ => *pos,
         }
@@ -464,12 +488,12 @@ impl Holdings {
     pub fn bind(
         &mut self,
         name: &[u8],
-        pos: navigation::Cwd,
-    ) -> Result<(), navigation::BindRefused> {
+        pos: navigation::DirectoryPath,
+    ) -> Result<(), navigation::BindRefusal> {
         if let Some(sd) = &self.mounted
             && name == sd.mount.component(0)
         {
-            return Err(navigation::BindRefused::ReservedLabel);
+            return Err(navigation::BindRefusal::ReservedLabel);
         }
         self.binds.add(name, pos)
     }

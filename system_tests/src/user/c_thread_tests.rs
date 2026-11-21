@@ -42,7 +42,8 @@ fn run_hackbench(line: &str, out: &mut [u8]) -> usize {
             &mut *(crate::arch::mmu::phys_to_virt(args) as *mut [u8; FRAME_BYTES as usize])
         };
         page.fill(0);
-        grant_plan::argv(line.as_bytes(), page).expect("the test's line is not an argv");
+        grant_plan::write_argument_page(line.as_bytes(), page)
+            .expect("the test's line is not an argv");
     }
     let clock_page = clock.page_phys;
     let len = super::std_threads_tests::run_as_process_with(
@@ -115,7 +116,8 @@ pub(super) fn run_in_grant(
             &mut *(crate::arch::mmu::phys_to_virt(args) as *mut [u8; FRAME_BYTES as usize])
         };
         page.fill(0);
-        grant_plan::argv(line.as_bytes(), page).expect("the test's line is not an argv");
+        grant_plan::write_argument_page(line.as_bytes(), page)
+            .expect("the test's line is not an argv");
     }
     let len = super::std_threads_tests::run_as_process_with(
         image,

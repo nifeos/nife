@@ -22,7 +22,7 @@ pub(super) fn scope_block(nav: &mut Nav, tail: &[u8]) {
         Ok(commands) => commands,
         Err(r) => return say(Say::Cannot(r)),
     };
-    let stood = nav.holds.cwd;
+    let stood = nav.holds.working_directory;
     let names = nav.holds.binds;
 
     dispatch_line(nav, commands);
@@ -31,7 +31,7 @@ pub(super) fn scope_block(nav: &mut Nav, tail: &[u8]) {
     let answer = last();
     nav.holds.binds = names;
     let mut restored = true;
-    if nav.holds.cwd != stood {
+    if nav.holds.working_directory != stood {
         let said = nav.return_to(stood);
         if said != Say::Nothing {
             restored = false;

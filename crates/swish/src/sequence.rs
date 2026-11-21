@@ -11,8 +11,8 @@
 //!   ([`background`]).
 //! - A skipped segment leaves `$?` alone, as bash does.
 
+use grant_plan::Refusal;
 use grant_plan::word::Cursor;
-use grant_plan::{Refusal, trim};
 
 use crate::{Status, scope};
 
@@ -70,7 +70,7 @@ impl<'a> Sequence<'a> {
     }
 
     /// How many segments the line has. Always at least one: an empty line is one empty segment,
-    /// which [`grant_plan::parse`] reads as [`grant_plan::Command::Empty`], exactly as it did
+    /// which [`grant_plan::parse`] reads as [`grant_plan::CommandLine::Empty`], exactly as it did
     /// before this module existed.
     pub fn len(&self) -> usize {
         self.n
@@ -149,7 +149,7 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
                 continue;
             }
         };
-        let seg = trim(&line[start..i]);
+        let seg = line[start..i].trim_ascii();
         if seg.is_empty() {
             return Err(Refusal::EmptySegment);
         }
@@ -172,7 +172,7 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
         return Err(Refusal::ScopeMalformed);
     }
 
-    let tail = trim(&line[start..]);
+    let tail = line[start..].trim_ascii();
     if scope::has_parenthesized_command(tail) {
         return Err(Refusal::GroupingParentheses);
     }
@@ -217,7 +217,7 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
 /// ```
 #[must_use]
 pub fn background(line: &[u8]) -> Option<&[u8]> {
-    let t = trim(line);
+    let t = line.trim_ascii();
     let (&last, before) = t.split_last()?;
     if last != b'&' || before.last() == Some(&b'&') {
         return None;
@@ -231,7 +231,7 @@ pub fn background(line: &[u8]) -> Option<&[u8]> {
     if c.is_open() {
         return None;
     }
-    Some(trim(before))
+    Some(before.trim_ascii())
 }
 
 #[cfg(test)]
@@ -261,7 +261,7 @@ mod tests {
             // Never empty, whatever was typed: an empty line is one empty segment, which is what
             // `len`'s "always at least one" means and what `route` relies on.
             assert!(!s.is_empty());
-            assert_eq!(s.segments()[0], (Joint::First, trim(line)));
+            assert_eq!(s.segments()[0], (Joint::First, line.trim_ascii()));
         }
     }
 

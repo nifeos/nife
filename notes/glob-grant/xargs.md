@@ -25,7 +25,7 @@ the bound came down instead of the cap going up.
 
 A name may be 252 bytes (milestone 946 (a granted file name can be longer than sixteen bytes)).
 Eight slots of 252 would make every set cost eight times what ordinary names need. So a set has a
-second bound, `nameset::NAME_BYTES`: 512 bytes of name, all its names together. That is two of the
+second bound, `nameset::MAXIMUM_NAME_SET_BYTES`: 512 bytes of name, all its names together. That is two of the
 longest names, or eight of 64. The shell's `NameSet` packs its names into those bytes. A copy is
 544 bytes, where eight slots of 252 would be 2,040. Over either bound is `Refusal::TooManyNames`.
 A batch is cut at whichever bound it meets first. Everything it leaves out sorts after everything
@@ -39,8 +39,8 @@ things answer it:
 
 | change | where | effect |
 |---|---|---|
-| the planner compiled optimized in a debug build | `Cargo.toml`, `grant_plan` | `plan_against_with`'s frame from 16,528 bytes to 5,504, below the branch point's 7,504 |
-| a set packed, and no name kept to cut a batch | `grant_plan::expand` | `Expander` and `NameSet` copies in `Nav::expand` |
+| the planner compiled optimized in a debug build | `Cargo.toml`, `grant_plan` | `plan_against_with_streams`'s frame from 16,528 bytes to 5,504, below the branch point's 7,504 |
+| a set packed, and no name kept to cut a batch | `grant_plan::expansion` | `Expander` and `NameSet` copies in `Nav::expand` |
 | the shell's own stack, 21 pages | `system_initializer::SHELL_STACK_PAGES` | seventeen measured and four of headroom |
 
 The eight names stand. They are what a set costs in names, and the bytes are what it costs in
@@ -191,7 +191,7 @@ line. Two things fall out. Every command path inherits batching for free: `echo`
 `caps` preview and a pipeline stage all reach a pattern through that function, so none of them knows
 a sweep is running. And a batched line cannot disagree with an unbatched one about what a pattern
 designates, because membership is decided in `Expander::offer` for both. Only the collection policy
-differs (`grant_plan::expand::Expander::batch` takes the eight smallest and reports that more
+differs (`grant_plan::expansion::Expander::batch` takes the eight smallest and reports that more
 remain, where `Expander::new` refuses the ninth).
 
 The refusals survive batching, deliberately. A matched name that cannot travel in a grant still

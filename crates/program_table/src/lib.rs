@@ -33,7 +33,9 @@ pub use budgets::{
 // The vocabulary the rows are written in, in scope under the names the modules here always used.
 // Not re-exported: each item has one public path, in the crate that defines it.
 pub(crate) use grant_contract::*;
-pub(crate) use grant_plan::{Endowment, Holdings, ParsedInvocation, Refusal, Streams, expand};
+pub(crate) use grant_plan::{
+    Endowment, ParsedInvocation, Refusal, ShellHoldings, Streams, expansion,
+};
 pub use image::{
     IMAGE_ROW, ImageRefusal, NO_NOTE_MANIFEST, UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST, Vouch,
     image_can_carry, image_hears_words, image_manifest, image_request_fits,
