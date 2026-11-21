@@ -47,7 +47,7 @@ The `Name:` blocks in `src/lib.rs` read ratified; the move strips them. No name 
 
 - `kernel`: the run queues and migration inboxes (`kernel/src/cpu.rs`, `sched.rs`, `thread.rs`);
   `Thread` implements `Node` and is `Send`, so the new bound holds.
-- `crates/inter_process_communication`: the futex and rendezvous queues, and the notification
+- `crates/inter_process_communication`: the address wait and rendezvous queues, and the notification
   queue.
 - `components` and the other programs do not name the crate; they link it through the kernel's
   consumers only on the host build.

@@ -8,7 +8,7 @@
 # cleared row's line and leaves the blank line, so two changes that clear adjacent rows merge in git.
 components/src/swish/witness.rs::removed question-shape
 
-crates/abi/src/futex.rs::admitted question-shape
+crates/abi/src/address_wait.rs::admitted question-shape
 
 
 crates/address_space_identifier/src/lib.rs::ASIDS spelled-out

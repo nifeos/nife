@@ -363,9 +363,9 @@ system_tests::user::force_kill_tests::destroy_reclaims_a_region_whose_resident_b
 system_tests::user::force_kill_tests::destroy_reclaims_a_region_whose_resident_is_blocked_in_receive	9	14	14
 system_tests::user::force_kill_tests::tearing_down_a_reply_parked_caller_sweeps_the_reply_capability	15	23	25
 system_tests::user::fs_shared_page_tests::a_second_client_cannot_substitute_the_name_on_its_own_window	54	69	80
-system_tests::user::futex_tests::a_waiter_sleeps_until_its_word_is_woken	119	125	126
-system_tests::user::futex_tests::a_waiter_whose_region_is_destroyed_leaves_the_futex_table	9	14	15
-system_tests::user::futex_tests::the_reserved_futex_forms_and_foreign_words_are_refused	7	10	12
+system_tests::user::address_wait_tests::a_waiter_sleeps_until_its_word_is_woken	119	125	126
+system_tests::user::address_wait_tests::a_waiter_whose_region_is_destroyed_leaves_the_address_wait_table	9	14	15
+system_tests::user::address_wait_tests::the_reserved_address_wait_forms_and_foreign_words_are_refused	7	10	12
 system_tests::user::glob_grant_tests::what_a_shell_shows_is_what_a_set_grant_takes_away	145	183	178
 system_tests::user::heap_tests::a_process_runs_alloc_collections_on_its_own_memory_region	46	76	89
 system_tests::user::identity_provisioning_tests::a_duplicate_identity_is_refused_without_disturbing_the_original	689	1025	1
@@ -499,11 +499,11 @@ system_tests::user::printenv_tests::an_unpublished_config_page_reads_as_no_confi
 system_tests::user::printenv_tests::no_capability_at_all_is_said_plainly	19	28	27
 system_tests::user::printenv_tests::printenv_prints_the_page_it_was_granted	23	34	29
 system_tests::user::process_tests::a_destroyed_region_ends_the_process_in_it_and_its_members	30	45	40
-system_tests::user::process_tests::a_member_stranded_killed_on_a_futex_is_finished_and_reaped	12	19	17
+system_tests::user::process_tests::a_member_stranded_killed_on_an_address_wait_is_finished_and_reaped	12	19	17
 system_tests::user::process_tests::a_members_exit_ends_its_process_and_the_supervisor_hears	25	41	33
 system_tests::user::process_tests::a_process_refuses_what_its_contract_refuses	12	19	17
 system_tests::user::process_tests::each_member_of_a_process_has_its_own_current_cpu_page	35	48	62
-system_tests::user::process_tests::two_threads_of_one_process_share_its_space_its_table_and_a_futex	18	25	26
+system_tests::user::process_tests::two_threads_of_one_process_share_its_space_its_table_and_an_address_wait	18	25	26
 system_tests::user::raw_mode_tests::a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them	38	47	43
 system_tests::user::raw_mode_tests::a_keystroke_edited_by_the_client_costs_two_more_round_trips	277	306	299
 system_tests::user::raw_mode_tests::a_raw_read_parked_before_data_arrives_still_gets_it	96	112	104

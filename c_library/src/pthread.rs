@@ -103,7 +103,7 @@ std::thread_local! {
 }
 
 /// Threads made here that have not yet ended, which a main-thread `pthread_exit` waits for. A
-/// futex word: [`thread_ended`] wakes it.
+/// address wait word: [`thread_ended`] wakes it.
 static LIVE: AtomicU32 = AtomicU32::new(0);
 static NEXT_TID: AtomicI32 = AtomicI32::new(1);
 
@@ -168,7 +168,7 @@ fn run(this: Arc<Pthread>, start: extern "C" fn(*mut c_void) -> *mut c_void, arg
 
 fn thread_ended() {
     LIVE.fetch_sub(1, Ordering::Release);
-    crate::platform::futex::wake(LIVE.as_ptr(), u32::MAX);
+    crate::platform::address_wait::wake(LIVE.as_ptr(), u32::MAX);
 }
 
 /// **`pthread_create`**: a `std` thread running `start_routine(arg)`, joinable or detached as
@@ -297,7 +297,7 @@ pub unsafe fn exit_current_thread(retval: Retval) -> ! {
             if live == 0 {
                 break;
             }
-            let _ = crate::platform::futex::wait_on(&LIVE, live, None);
+            let _ = crate::platform::address_wait::wait_on(&LIVE, live, None);
         }
         // SAFETY: the C library's `exit`, which runs the `atexit` handlers and flushes the C
         // streams, called once.

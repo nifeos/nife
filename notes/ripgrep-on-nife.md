@@ -122,7 +122,7 @@ every pull request (`script/ci-build`).
 
 The first full `x86_64` suite hung the four-thread test past its 90 s ceiling at two cores. The PAL
 held a spinlock on its one file page across each `CALL`, so idle workers spun while the holder
-waited on the caretaker. It is `std`'s futex mutex now (`sys/fs/nife/page.rs`), and the test takes
+waited on the caretaker. It is `std`'s address wait mutex now (`sys/fs/nife/page.rs`), and the test takes
 about 0.5 s there. The comparison with Linux below stays serial on both sides.
 
 ## The refusal, through `rg`

@@ -160,7 +160,7 @@ impl StdLayout {
             rt::INDEX_SOURCES_PAGE,
         );
         // Its own process with `BIND`, its first thread for the thread pointer, and its space with
-        // `READ` for futex waits (milestone 812 (real threads in one address space)).
+        // `READ` for address waits (milestone 812 (real threads in one address space)).
         l.place(
             rt::PROCESS_SLOT,
             supervision_contract::CHILDS_OWN_PROCESS,

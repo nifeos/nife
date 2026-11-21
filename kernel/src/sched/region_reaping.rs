@@ -95,10 +95,10 @@ pub(super) fn finish_blocked_resident(sched: &mut IpcTables, tid: ThreadId) {
                 hold_token(token);
             }
         }
-        // On the futex table under its key, where a later `WAKE` would walk a freed TCB.
-        Some(Wait::Futex(key)) => {
+        // On the address wait table under its key, where a later `WAKE` would walk a freed TCB.
+        Some(Wait::AddressWait(key)) => {
             let ptr = thread_control_block_ptr(sched, tid);
-            if let Some(token) = sched.futexes.remove(key, ptr) {
+            if let Some(token) = sched.address_waits.remove(key, ptr) {
                 hold_token(token);
             }
         }

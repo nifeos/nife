@@ -3,7 +3,7 @@
 //! pull request #1892).
 //!
 //! Two hand-written threads join one process through `CONFIGURE` with a `BIND` capability and
-//! share its space, its capability table and a futex; a sibling's `exit` ends the main thread and
+//! share its space, its capability table and an address wait; a sibling's `exit` ends the main thread and
 //! its supervisor hears; `DESTROY` and a destroyed region end every member; and each refusal the
 //! contract states is made. One stub per ISA for each program, so the same claims hold on all three
 //! (§19 (architectural parity is a tenet)).
@@ -15,8 +15,8 @@
 //!   instant a process ends. `notes/processes.md` records it.
 
 use abi::Error;
+use abi::address_wait::{PRIVATE, SIZE_U32};
 use abi::fault::{EVENT_EXIT, FAULT_RENDEZVOUS_SLOT};
-use abi::futex::{PRIVATE, SIZE_U32};
 
 use super::*;
 use crate::capability_object::{Object, Rights};
@@ -27,11 +27,11 @@ const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
 pub(super) const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
 /// A second stack, two pages below the first so a guard page sits between them.
 const STACK_B_VA: u64 = STACK_VA - 2 * page_frames::FRAME_BYTES;
-/// The shared page: the futex word at `+0`, the waiter's return count at `+8` and results at
-/// `+16` (as `futex_tests` lays them out), the waker's `WAKE` result at `+24`.
+/// The shared page: the address wait word at `+0`, the waiter's return count at `+8` and results at
+/// `+16` (as `address_wait_tests` lays them out), the waker's `WAKE` result at `+24`.
 const VA: u64 = address_space_layout::pair_page(0x0060_0000);
 
-/// **The waker.** Entry registers: a capability slot, `VA`, the futex flags. Stores `1` in the
+/// **The waker.** Entry registers: a capability slot, `VA`, the address wait flags. Stores `1` in the
 /// word, `WAKE`s one waiter on it through the slot, stores the result at `+24`, then
 /// `SYSTEM_CALL_EXIT_THREAD(0)`: it ends itself and not its process.
 #[cfg(target_arch = "aarch64")]
@@ -237,20 +237,20 @@ fn try_join(
     (tid, tcb, page)
 }
 
-/// **Two threads of one process share its space, its capability table and a futex.**
+/// **Two threads of one process share its space, its capability table and an address wait.**
 ///
-/// The waiter (`futex_tests`' program) and the waker run in one space, and the futex word is one
+/// The waiter (`address_wait_tests`' program) and the waker run in one space, and the address wait word is one
 /// word of it. Both pass slot 0 to `WAIT` and `WAKE`, inserted once through the waiter's TCB: the
 /// waker can name it only because the table is the process's. The waker wakes the waiter (a
-/// user-to-user handoff, where `futex_tests`' waker is the kernel), then ends itself with
+/// user-to-user handoff, where `address_wait_tests`' waker is the kernel), then ends itself with
 /// `SYSTEM_CALL_EXIT_THREAD`, and the process goes on with one member. `DESTROY` then ends that member
 /// too, and the space goes with the process.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.process_tests.two_threads_of_one_process_share_its_space_its_table_and_a_futex.patch`
+/// Falsification: replayable `system_tests/falsifications/user.process_tests.two_threads_of_one_process_share_its_space_its_table_and_an_address_wait.patch`
 #[test_case]
-fn two_threads_of_one_process_share_its_space_its_table_and_a_futex() {
+fn two_threads_of_one_process_share_its_space_its_table_and_an_address_wait() {
     let region = crate::memory_region::create(32).expect("no region");
-    let (space, page) = lay_out(region, &[super::futex_tests::WAITER, WAKER]);
+    let (space, page) = lay_out(region, &[super::address_wait_tests::WAITER, WAKER]);
     let (process, pid) = create_process(region, space);
     assert_eq!(
         sched::process_state(pid),
@@ -289,7 +289,7 @@ fn two_threads_of_one_process_share_its_space_its_table_and_a_futex() {
     let flags = PRIVATE | SIZE_U32;
     sched::start_thread_control_block(waiter, [0, VA, flags]).expect("start the waiter");
     assert!(
-        wait_for(5, || sched::futex_waiters(space, VA) == 1),
+        wait_for(5, || sched::address_wait_waiters(space, VA) == 1),
         "the waiter never parked on the shared word",
     );
     sched::start_thread_control_block(waker, [0, VA, flags]).expect("start the waker");
@@ -693,19 +693,19 @@ fn a_destroyed_region_ends_the_process_in_it_and_its_members() {
     sched::reclaim_region(threads).expect("the thread region did not come back");
 }
 
-/// **A member stranded killed on a futex is finished and reaped, not kept forever.** A member that
+/// **A member stranded killed on an address wait is finished and reaped, not kept forever.** A member that
 /// was mid-way into blocking when its process ended is marked killed rather than finished, because
 /// it is still on its core; once its switch-out completes it is parked with nothing left to wake
 /// it. CI's `thead-c906` leg met it as `rayon`'s workers, which spin and then sleep. The race cannot
 /// be staged on demand, so this stages its outcome (`sched::strand_member`) and asks the sweep that
 /// runs after a departing member's reap to clear it: the member is gone, nothing is left on the
-/// futex, and the process has no member and no space.
+/// address wait, and the process has no member and no space.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.process_tests.a_member_stranded_killed_on_a_futex_is_finished_and_reaped.patch`
+/// Falsification: replayable `system_tests/falsifications/user.process_tests.a_member_stranded_killed_on_an_address_wait_is_finished_and_reaped.patch`
 #[test_case]
-fn a_member_stranded_killed_on_a_futex_is_finished_and_reaped() {
+fn a_member_stranded_killed_on_an_address_wait_is_finished_and_reaped() {
     let region = crate::memory_region::create(32).expect("no region");
-    let (space, _) = lay_out(region, &[super::futex_tests::WAITER]);
+    let (space, _) = lay_out(region, &[super::address_wait_tests::WAITER]);
     let (process, pid) = create_process(region, space);
     let (waiter, waiter_tcb) = join(region, process, 0, STACK_VA);
     let reader = sched::grant(crate::capability_object::address_space_capability(
@@ -726,7 +726,7 @@ fn a_member_stranded_killed_on_a_futex_is_finished_and_reaped() {
     );
     sched::start_thread_control_block(waiter, [0, VA, PRIVATE | SIZE_U32]).expect("start");
     assert!(
-        wait_for(5, || sched::futex_waiters(space, VA) == 1),
+        wait_for(5, || sched::address_wait_waiters(space, VA) == 1),
         "the waiter never parked",
     );
 
@@ -734,12 +734,12 @@ fn a_member_stranded_killed_on_a_futex_is_finished_and_reaped() {
     sched::reap_corpses_now(pid);
     assert!(
         wait_for(5, || !sched::is_thread_present(waiter)),
-        "a member stranded killed on a futex was never finished",
+        "a member stranded killed on an address wait was never finished",
     );
     assert_eq!(
-        sched::futex_waiters(space, VA),
+        sched::address_wait_waiters(space, VA),
         0,
-        "the finished member is still on the futex"
+        "the finished member is still on the address wait"
     );
     assert_eq!(
         sched::process_state(pid),

@@ -1,4 +1,4 @@
-Falsifies `system_tests::user::process_tests::two_threads_of_one_process_share_its_space_its_table_and_a_futex`.
+Falsifies `system_tests::user::process_tests::two_threads_of_one_process_share_its_space_its_table_and_an_address_wait`.
 
 Architecture: aarch64, riscv64, x86_64
 

@@ -4,7 +4,7 @@ Architecture: aarch64, riscv64, x86_64
 
 The defect, in milestone 812 (`std::thread::spawn` runs real threads in one address space): a
 member that its process's end finished where it was blocked is never reaped, because nothing
-switches it out again. `rayon`'s idle workers are asleep on a futex when `main` returns, so the
+switches it out again. `rayon`'s idle workers are asleep on an address wait when `main` returns, so the
 process keeps its workers' corpses and its space until its region is destroyed. The four-thread test
 joins every thread before it exits and cannot see this.
 

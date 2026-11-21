@@ -45,9 +45,9 @@ c_library/src/platform/allocator.rs::free
 
 c_library/src/platform/allocator.rs::realloc
 
-c_library/src/platform/futex.rs::wait
+c_library/src/platform/address_wait.rs::wait
 
-c_library/src/platform/futex.rs::wake
+c_library/src/platform/address_wait.rs::wake
 
 c_library/src/platform/nife.rs
 
@@ -243,21 +243,21 @@ crates/abi/src/fault.rs::EVENT_EXIT
 crates/abi/src/fault.rs::EVENT_FAULT
 
 
-crates/abi/src/futex.rs
+crates/abi/src/address_wait.rs
 
-crates/abi/src/futex.rs::PRIVATE
+crates/abi/src/address_wait.rs::PRIVATE
 
-crates/abi/src/futex.rs::SIZE_MASK
+crates/abi/src/address_wait.rs::SIZE_MASK
 
-crates/abi/src/futex.rs::SIZE_U16
+crates/abi/src/address_wait.rs::SIZE_U16
 
-crates/abi/src/futex.rs::SIZE_U32
+crates/abi/src/address_wait.rs::SIZE_U32
 
-crates/abi/src/futex.rs::SIZE_U64
+crates/abi/src/address_wait.rs::SIZE_U64
 
-crates/abi/src/futex.rs::SIZE_U8
+crates/abi/src/address_wait.rs::SIZE_U8
 
-crates/abi/src/futex.rs::admitted
+crates/abi/src/address_wait.rs::admitted
 
 
 crates/abi/src/interrupt.rs::WAIT
@@ -3807,18 +3807,18 @@ crates/http_response/src/lib.rs::status
 crates/http_response/src/lib.rs::with_room
 
 
-crates/inter_process_communication/src/futex.rs::Key
+crates/inter_process_communication/src/address_wait.rs::Key
 
-crates/inter_process_communication/src/futex.rs::new
+crates/inter_process_communication/src/address_wait.rs::new
 
-crates/inter_process_communication/src/futex.rs::park
+crates/inter_process_communication/src/address_wait.rs::park
 
 
-crates/inter_process_communication/src/futex.rs::remove
+crates/inter_process_communication/src/address_wait.rs::remove
 
-crates/inter_process_communication/src/futex.rs::take
+crates/inter_process_communication/src/address_wait.rs::take
 
-crates/inter_process_communication/src/futex.rs::waiters
+crates/inter_process_communication/src/address_wait.rs::waiters
 
 crates/inter_process_communication/src/notification.rs::Notification
 
@@ -8379,17 +8379,17 @@ kernel/src/sched/departure.rs::fault
 
 kernel/src/sched/departure.rs::yield_now
 
-kernel/src/sched/futex.rs
+kernel/src/sched/address_wait.rs
 
-kernel/src/sched/futex.rs::futex_queued
+kernel/src/sched/address_wait.rs::address_wait_queued
 
-kernel/src/sched/futex.rs::futex_wait
+kernel/src/sched/address_wait.rs::address_wait
 
-kernel/src/sched/futex.rs::futex_waiters
+kernel/src/sched/address_wait.rs::address_wait_waiters
 
-kernel/src/sched/futex.rs::futex_wake
+kernel/src/sched/address_wait.rs::address_wake
 
-kernel/src/sched/futex.rs::is_current_space
+kernel/src/sched/address_wait.rs::is_current_space
 
 kernel/src/sched/inspection.rs::ConductorMove
 
@@ -9452,7 +9452,7 @@ notes/frames.md
 
 notes/fs-server.md
 
-notes/futex.md
+notes/address-wait.md
 
 notes/fuzzing-the-services.md
 
@@ -10153,7 +10153,7 @@ system_tests/src/user/force_kill_tests.rs
 
 system_tests/src/user/fs_shared_page_tests.rs
 
-system_tests/src/user/futex_tests.rs
+system_tests/src/user/address_wait_tests.rs
 
 system_tests/src/user/glob_grant_tests.rs
 

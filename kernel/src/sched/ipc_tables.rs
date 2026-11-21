@@ -1,5 +1,5 @@
 //! The tables behind `IPC_TABLES`: [`IpcTables`] itself, the one lock it sits behind, the limits
-//! that size it ([`MAXIMUM_THREADS`], [`MAXIMUM_RENDEZVOUS`], the futex buckets and the kernel's
+//! that size it ([`MAXIMUM_THREADS`], [`MAXIMUM_RENDEZVOUS`], the address wait buckets and the kernel's
 //! endpoint chunks), and the rendezvous-pressure instrument. See
 //! notes/ipc-tables-lock-inventory.md.
 //!
@@ -66,18 +66,19 @@ pub(super) struct IpcTables {
     /// The timer registry (§147 (a timer a userspace service cannot hold)): name to the page a
     /// [`TimerPage`] lives at. The expiry walk iterates it.
     pub(super) timer_table: generational_table::Table<TimerPageAddress, MAXIMUM_TIMERS>,
-    /// The futex wait queues (§269 (how threads share a process) fork 2): threads parked in
+    /// The address wait queues (§269 (how threads share a process) fork 2): threads parked in
     /// `AddressSpace::WAIT`, by `(space, address)`. Under this lock so that the check of the word,
-    /// the park, and a waker's take are one order. See [`futex_wait`].
-    pub(super) futexes: inter_process_communication::futex::FutexTable<Thread, FUTEX_BUCKETS>,
+    /// the park, and a waker's take are one order. See `address_wait.rs`.
+    pub(super) address_waits:
+        inter_process_communication::address_wait::AddressWaitTable<Thread, ADDRESS_WAIT_BUCKETS>,
     /// The process registry: name to the physical address of a process's page.
     pub(super) processes:
         generational_table::Table<ProcessPageAddress, { process::MAXIMUM_PROCESSES }>,
 }
 
-/// How many buckets the futex table hashes into: a wake walks one, four waiters each on average
+/// How many buckets the address wait table hashes into: a wake walks one, four waiters each on average
 /// with the machine full. Twenty-four bytes each.
-pub(super) const FUTEX_BUCKETS: usize = 64;
+pub(super) const ADDRESS_WAIT_BUCKETS: usize = 64;
 
 /// The most endpoints that can exist at once: the registry's bound.
 pub(crate) const MAXIMUM_RENDEZVOUS: usize = 2048;
@@ -277,7 +278,7 @@ pub(super) static EMPTY_INSTALLED_TABLES: IpcTablesImage = IpcTablesImage(Some(I
     kernel_ep_chunks: 0,
     notification_table: generational_table::Table::new(),
     timer_table: generational_table::Table::new(),
-    futexes: inter_process_communication::futex::FutexTable::new(),
+    address_waits: inter_process_communication::address_wait::AddressWaitTable::new(),
     processes: generational_table::Table::new(),
 }));
 

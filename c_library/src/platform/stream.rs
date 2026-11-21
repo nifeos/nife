@@ -5,7 +5,7 @@
 //! message over a `pipe` or a `socketpair(AF_UNIX, SOCK_STREAM)` and waits with `poll`). Both ends
 //! live in one process, so a pipe is a byte queue in its memory behind a lock and a socket pair is
 //! two of them crossed. Nothing here makes a system call; blocking is `std`'s `Condvar`, the kernel
-//! futex on nife (`notes/futex.md`). `poll` waits on a process-wide generation counter that every
+//! address wait on nife (`notes/address-wait.md`). `poll` waits on a process-wide generation counter that every
 //! pipe change advances, so one sleeping `poll` wakes for any pipe and rescans.
 
 //! # BUGS
@@ -268,7 +268,7 @@ static POLLERS: AtomicUsize = AtomicUsize::new(0);
 fn advance() {
     GENERATION.fetch_add(1, Ordering::SeqCst);
     if POLLERS.load(Ordering::SeqCst) > 0 {
-        super::futex::wake(GENERATION.as_ptr(), u32::MAX);
+        super::address_wait::wake(GENERATION.as_ptr(), u32::MAX);
     }
 }
 
@@ -306,7 +306,7 @@ pub(crate) fn poll(
             POLLERS.fetch_sub(1, Ordering::SeqCst);
             return Ok(ready);
         }
-        let r = super::futex::wait_on(&GENERATION, seen, deadline.as_ref());
+        let r = super::address_wait::wait_on(&GENERATION, seen, deadline.as_ref());
         POLLERS.fetch_sub(1, Ordering::SeqCst);
         if let Err(Errno(ETIMEDOUT)) = r {
             return Ok(0);

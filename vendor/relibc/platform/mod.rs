@@ -31,8 +31,8 @@ pub use self::allocator::{alloc, alloc_align, alloc_usable_size, free, realloc};
 mod allocator;
 
 // nife: the wait-on-address pair, and pipes, socket pairs and `poll`, nife's code (milestone 836).
-#[path = "../../../c_library/src/platform/futex.rs"]
-pub(crate) mod futex;
+#[path = "../../../c_library/src/platform/address_wait.rs"]
+pub(crate) mod address_wait;
 #[path = "../../../c_library/src/platform/stream.rs"]
 mod stream;
 

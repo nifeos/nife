@@ -21,4 +21,4 @@ diff --git a/kernel/src/system_call/address_space.rs b/kernel/src/system_call/ad
 +        abi::address_space::UNMAP => address_space_unmap(name, a0),
          // §269 (how threads share a process) fork 2.
          abi::address_space::WAIT | abi::address_space::WAKE => {
-             address_space_futex(capability.rights, name, method, a0, a1, a2)
+             address_space_address_wait(capability.rights, name, method, a0, a1, a2)

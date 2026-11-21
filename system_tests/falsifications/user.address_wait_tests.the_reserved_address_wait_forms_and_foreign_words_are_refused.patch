@@ -1,0 +1,22 @@
+Falsifies `system_tests::user::address_wait_tests::the_reserved_address_wait_forms_and_foreign_words_are_refused`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect: the address wait methods of milestone 812 (`std::thread::spawn` runs real threads in one
+address space) admit every flags word, so a shared address wait and a 64-bit address wait, both of which §269
+(how threads share a process) reserves, are served as if they were the private 32-bit form.
+
+Expected to fail: "a shared address wait was not refused as a form this kernel does not answer", which
+gets `NotPermitted` from the next check instead of `BadMethod`.
+
+diff --git a/crates/abi/src/address_wait.rs b/crates/abi/src/address_wait.rs
+--- a/crates/abi/src/address_wait.rs
++++ b/crates/abi/src/address_wait.rs
+@@ -14,5 +14,6 @@ pub const PRIVATE: u64 = 1 << 7;
+ 
+ /// **Is this a `flags` word the kernel answers?** Exactly one today.
+ pub const fn admitted(flags: u64) -> bool {
+-    flags == PRIVATE | SIZE_U32
++    let _ = flags;
++    true
+ }

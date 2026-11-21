@@ -124,11 +124,11 @@ fn the_fault_slot_is_inside_the_capability_table() {
     );
 }
 
-/// **The futex call admits exactly one flags word**: private and 32-bit. Every other size,
+/// **The address wait call admits exactly one flags word**: private and 32-bit. Every other size,
 /// and the shared form, is refused.
 #[test]
-fn the_futex_admits_only_a_private_32_bit_word() {
-    use crate::futex::{PRIVATE, SIZE_U8, SIZE_U16, SIZE_U32, SIZE_U64, admitted};
+fn the_address_wait_admits_only_a_private_32_bit_word() {
+    use crate::address_wait::{PRIVATE, SIZE_U8, SIZE_U16, SIZE_U32, SIZE_U64, admitted};
     assert!(admitted(PRIVATE | SIZE_U32));
     assert!(!admitted(SIZE_U32));
     for size in [SIZE_U8, SIZE_U16, SIZE_U64] {
@@ -222,12 +222,12 @@ fn the_system_call_numbers_and_the_first_object_modules_are_pinned() {
         crate::fault::FAULT_RENDEZVOUS_SLOT => 63,
         crate::fault::EVENT_FAULT => 1,
         crate::fault::EVENT_EXIT => 2,
-        crate::futex::SIZE_U8 => 0,
-        crate::futex::SIZE_U16 => 1,
-        crate::futex::SIZE_U32 => 2,
-        crate::futex::SIZE_U64 => 3,
-        crate::futex::SIZE_MASK => 3,
-        crate::futex::PRIVATE => 128,
+        crate::address_wait::SIZE_U8 => 0,
+        crate::address_wait::SIZE_U16 => 1,
+        crate::address_wait::SIZE_U32 => 2,
+        crate::address_wait::SIZE_U64 => 3,
+        crate::address_wait::SIZE_MASK => 3,
+        crate::address_wait::PRIVATE => 128,
         crate::interrupt::WAIT => 0,
         crate::interrupt::ACKNOWLEDGE => 1,
         crate::memory_region::MAP => 0,
@@ -363,10 +363,10 @@ fn every_public_number_is_pinned() {
     const MODULES: &[&str] = &[
         "",
         "address_space",
+        "address_wait",
         "console",
         "cycle_counter",
         "fault",
-        "futex",
         "interrupt",
         "memory_region",
         "notification",

@@ -22,9 +22,9 @@ use crate::thread::{
 // Each child is part of this module split across files (§271 (the scheduler file splits into
 // submodules of `sched`)), not a client of it: it takes `use super::*` to reach `IPC_TABLES` and
 // the thread table, and is re-exported whole, so every path outside `sched` is unchanged.
+mod address_wait;
 mod capabilities;
 mod configure;
-mod futex;
 mod inspection;
 mod interrupt_route;
 mod ipc_tables;
@@ -40,6 +40,9 @@ mod thread_control_block;
 mod thread_table;
 mod timer;
 
+pub use address_wait::{address_wait, address_wake, is_current_space};
+#[cfg_attr(not(feature = "system_tests"), allow(unused_imports))]
+pub use address_wait::{address_wait_queued, address_wait_waiters};
 pub use capabilities::*;
 #[cfg(target_arch = "riscv64")]
 pub use configure::current_thread_pointer;
@@ -55,9 +58,6 @@ pub use configure::{
     configure_thread_control_block, configure_thread_control_block_joining,
     configure_thread_control_block_with_thread_pointer, set_thread_pointer,
 };
-#[cfg_attr(not(feature = "system_tests"), allow(unused_imports))]
-pub use futex::{futex_queued, futex_waiters};
-pub use futex::{futex_wait, futex_wake, is_current_space};
 pub use inspection::*;
 pub use interrupt_route::*;
 pub use ipc_tables::*;

@@ -4,7 +4,7 @@
 
 `crates/inter_process_communication` holds the decisions the kernel's IPC makes, with no kernel in
 them, so they can be proved on the host. It has four parts: the synchronous rendezvous, the
-notification, the timer and the futex wait queues. The kernel wraps each one with what the crate
+notification, the timer and the address wait queues. The kernel wraps each one with what the crate
 cannot see: mailboxes, run queues, the one-shot Reply, the thread table and the locks. The note
 name is provisional.
 
@@ -142,13 +142,13 @@ The walk fires one due timer per call and the kernel signals it before calling a
 rescan shape the kernel's region sweeps use: no buffer of fired targets, so no bound on how many
 can fire in one tick.
 
-## The futex queues
+## The address wait queues
 
-A futex is a key, an address space and a virtual address, not an object. That keeps `std`'s
+An address wait is a key, an address space and a virtual address, not an object. That keeps `std`'s
 `Mutex::new` `const` and free of system_calls. The module is `B` buckets of intrusive FIFOs, a key
 hashed to a bucket, and oldest waiter first within a key. Keys can collide in a bucket, so every
 lookup asks the caller each waiter's key, which is the kernel's own record. The kernel side is in
-[futex.md](futex.md).
+[address-wait.md](address-wait.md).
 
 ## How it is proved
 

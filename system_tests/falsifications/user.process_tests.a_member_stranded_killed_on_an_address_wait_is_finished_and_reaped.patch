@@ -1,13 +1,13 @@
-Falsifies `system_tests::user::process_tests::a_member_stranded_killed_on_a_futex_is_finished_and_reaped`.
+Falsifies `system_tests::user::process_tests::a_member_stranded_killed_on_an_address_wait_is_finished_and_reaped`.
 
 Architecture: aarch64, riscv64, x86_64
 
 The defect, in milestone 812 (`std::thread::spawn` runs real threads in one address space)'s process
 object: the sweep after a departing member's reap no longer finishes a member left parked and killed,
-so a member that was mid-way into blocking when its process ended stays on the futex for good, and
+so a member that was mid-way into blocking when its process ended stays on the address wait for good, and
 holds the process's space until its region is destroyed.
 
-Expected to fail: "a member stranded killed on a futex was never finished".
+Expected to fail: "a member stranded killed on an address wait was never finished".
 
 diff --git a/kernel/src/sched/process.rs b/kernel/src/sched/process.rs
 index 68aa9f979..662e26f44 100644

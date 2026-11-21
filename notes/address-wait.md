@@ -1,15 +1,15 @@
-# Futex wait and wake
+# Address wait and wake
 
 *Written 2026-10-10 (UTC) by milestone 812 (`std::thread::spawn` runs real threads in one address
 space)'s lane. The ruling is §269 (how threads share a process) fork 2; the wire contract is
-`abi::address_space::WAIT` and `WAKE`, and the flags are `abi::futex`.*
+`abi::address_space::WAIT` and `WAKE`, and the flags are `abi::address_wait`.*
 
 ## What it is for
 
 `std`'s locks on Linux, the BSDs, Fuchsia and WASI are built on one primitive: park this thread on a
 word if the word still holds what I saw, and wake up to `n` threads parked on a word. `Mutex::new`
 is `const` and makes no system call, so the kernel cannot know a lock exists until the first time it
-is contended. A futex needs no object, which is why §269 chose it over a capability per lock.
+is contended. An address wait (Linux calls it a fast user-space mutex, "futex") needs no object, which is why §269 chose it over a capability per lock.
 
 ## The contract, in short
 
@@ -33,13 +33,13 @@ without sleeping. If it lands after, the waiter is already parked when `WAKE` lo
 load is `Acquire`, so whatever the waker wrote before its store is visible to the thread once it
 returns.
 
-The queues are `crates/inter_process_communication/src/futex.rs`: 64 buckets of intrusive FIFOs,
+The queues are `crates/inter_process_communication/src/address_wait.rs`: 64 buckets of intrusive FIFOs,
 keyed by `(space name, address)`. A wake takes waiters oldest first and leaves the others in
 their order. A thread torn down while parked is unlinked by `sched::finish_blocked_resident`.
 
 ## How it is proved
 
-`system_tests/src/user/futex_tests.rs`, on all three architectures, with a hand-written waiter per
+`system_tests/src/user/address_wait_tests.rs`, on all three architectures, with a hand-written waiter per
 ISA:
 
 - a parked waiter stays parked until its word is woken, ignores a wake of the next word, and then
@@ -52,7 +52,7 @@ order, `max`, and removal.
 
 ## BUGS
 
-- **No timeout.** `std`'s `futex_wait` takes one, for `park_timeout`, `Condvar::wait_timeout` and
+- **No timeout.** `std`'s `address_wait` takes one, for `park_timeout`, `Condvar::wait_timeout` and
   timed lock attempts. `WAIT` has no fourth word for it. A deadline could ride in the sixth argument
   register, the way `CONFIGURE`'s thread pointer does, and be served by the timers milestone 106 (a
   wait that ends on either the interrupt or the deadline) built. Until then those `std` calls cannot
@@ -65,7 +65,7 @@ order, `max`, and removal.
   a frame being freed. Nothing read is returned, but whether the thread sleeps depends on it, which
   is a one-bit observation. Not argued either way yet; the fix is to walk under the lock the
   revocation path takes.
-- `SYSTEM_CALL_EXIT_THREAD`'s clear-word store has the same unlocked walk (`sched::futex`), and it is a
+- `SYSTEM_CALL_EXIT_THREAD`'s clear-word store has the same unlocked walk (`sched::address_wait`), and it is a
   store, not a load. If a sibling thread destroys the region behind the word between the walk and
   the store, and the frame is reused, four zero bytes land in a frame this space no longer owns.
   Not shown reachable; the 2026-10-20 security audit proposes the walk-and-store under the

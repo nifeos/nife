@@ -1,5 +1,5 @@
 //! The decision core of the kernel's IPC: the synchronous rendezvous, the notification, the timer
-//! and the futex wait queues, each a state machine the kernel wraps with what it cannot see.
+//! and the address wait queues, each a state machine the kernel wraps with what it cannot see.
 //!
 //! A rendezvous holds two intrusive wait queues and a pending-signal count, and at most one of the
 //! queues is ever non-empty. See `notes/inter-process-communication.md` for the design and the
@@ -16,7 +16,8 @@ use core::ptr::NonNull;
 
 use intrusive_queue::{Node, Queue, Unqueued};
 
-pub mod futex;
+#[doc(alias = "futex")]
+pub mod address_wait;
 pub mod notification;
 pub mod timer;
 

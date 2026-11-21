@@ -14,7 +14,7 @@ An appendix to [the milestone](../1075-abi-outside-review.md).
   `readme_badges` pass on the README.
 - A test fails when a `pub const` number of the crate is not pinned; the new repository carries the
   rule that a pinned line changes only with `ABI_VERSION`.
-- `futex::is_admitted` and `TryFrom<i64> for Error` exist; `admitted` and `from_ret` do not.
+- `address_wait::is_admitted` and `TryFrom<i64> for Error` exist; `admitted` and `from_ret` do not.
 - A review package for `abi` exists under `notes/crate-reviews/` with a row in the index, every public
   item carries a `Name:` block, and the architect has cleared it.
 - The first weekly mutation run in the new repository has one `mutants-exempts` line per survivor

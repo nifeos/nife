@@ -46,18 +46,18 @@ pub const LIST: u64 = 1;
 pub const UNMAP: u64 = 2;
 
 /// `invoke(capability, WAIT, va, flags, expected)` -> `0` woken, `1` the word did not hold `expected`
-/// **Futex wait: park the calling
+/// **Address wait: park the calling
 /// thread on the word at `va` in its own space if it still holds `expected`**, checked and parked
 /// as one step against [`WAKE`]. Semantics follow the thread system calls as built.
 ///
-/// - `flags` is [`super::futex::PRIVATE`] `|` [`super::futex::SIZE_U32`], or else `BadMethod`.
+/// - `flags` is [`super::address_wait::PRIVATE`] `|` [`super::address_wait::SIZE_U32`], or else `BadMethod`.
 /// - The capability must name the caller's own space (`WrongObject`) with `READ` (`NotPermitted`).
 /// - `va` must be 4-aligned, in the user half and mapped readable, else `BadPointer`.
 /// - `Gone` if ended without a wake. A `0` may be spurious, so a caller re-checks its word. No
 ///   timeout yet. *(Name and number provisional.)*
 pub const WAIT: u64 = 3;
 
-/// `invoke(capability, WAKE, va, flags, count)` -> the number of threads woken. **Futex wake: release up to `count` threads parked
+/// `invoke(capability, WAKE, va, flags, count)` -> the number of threads woken. **Address wait wake: release up to `count` threads parked
 /// by [`WAIT`] on the word at `va` in the caller's own space**, oldest first. `u64::MAX` wakes all.
 /// Refuses what [`WAIT`] refuses, except that the word need not be mapped: a wake reads no memory.
 /// *(Name and number provisional.)*
