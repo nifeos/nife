@@ -49,6 +49,7 @@ members = [
     "crates/page_frames",
     "crates/filesystem_contract",
     "crates/filesystem_fixture",
+    "crates/byte_sink_fixture",
     "crates/firmware_configuration",
     "crates/graphics_contract",
     "crates/master_boot_record",

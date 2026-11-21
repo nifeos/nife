@@ -1,4 +1,4 @@
-use byte_sink_contract::fixture;
+use byte_sink_fixture as fixture;
 
 use super::*;
 use crate::capability_object::{Rights, rendezvous_capability};

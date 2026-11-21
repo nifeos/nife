@@ -8,7 +8,7 @@
 //! copy of the intake endpoint and a report endpoint, so the badge reaches the service through the
 //! system call path every writer will use.
 
-use byte_sink_contract::fixture;
+use byte_sink_fixture as fixture;
 use system_log_contract::{control, read};
 
 use super::*;

@@ -41,7 +41,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use byte_sink_contract::fixture;
+use byte_sink_fixture as fixture;
 use filesystem_contract::fs;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, exit, send};
