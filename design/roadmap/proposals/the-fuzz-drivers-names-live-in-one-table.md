@@ -66,8 +66,7 @@ cannot disagree on a name. Protocol Buffers do the same for a wire format across
 differs in scale: two names per driver do not earn a generator, so the shared artifact is a table
 both sides parse, and a cross-repository check stands in for the single build syzkaller has.
 
-For example, renaming the confined driver's variable to `NIFE_CONFINED_SYSTEM_CALL_FUZZ_SEEDS` would
-be two pull requests. fuzz-host adds the row first. nife then marks the old row `retired`, adds the
+For example, a later rename of the confined driver's variable would be two pull requests. fuzz-host adds the row first. nife then marks the old row `retired`, adds the
 new one, and the drivers, the host script and the filer's copy all agree before any window runs.
 
 ## Open questions
