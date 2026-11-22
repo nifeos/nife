@@ -276,3 +276,53 @@ fn every_copied_file_resolves_in_this_workspace() {
         assert!(file.is_file(), "{}", file.display());
     }
 }
+
+/// Every copied file, as std takes it, names no source file the copy leaves behind, so the check
+/// `std-src` makes passes on this tree.
+#[test]
+fn every_copied_file_stands_alone() {
+    let directories = copied_package_directories()
+        .as_ref()
+        .expect("cargo metadata lists every copied package");
+    for copied in &COPIED_FILES {
+        let file = directories[copied.package].join(copied.file);
+        let text = std::fs::read_to_string(&file).unwrap();
+        if let Err(e) = copied_body(&file, &text) {
+            panic!("{}: {e}", file.display());
+        }
+    }
+}
+
+/// A private or nested `mod x;` and an ungated `include!` are refused; the same under a gate std
+/// never sets, a comment, and an inline module pass.
+#[test]
+fn a_file_the_copy_leaves_behind_is_refused() {
+    for refused in [
+        "mod private;",
+        "pub(crate) mod private;",
+        "pub mod fs {\n    pub mod nested;\n}",
+        "const TABLE: &[u8] = include_bytes!(\"table.bin\");",
+        "#[doc = include_str!(\"../README.md\")]\nstruct Readme;",
+        "#[cfg(feature = \"x\")]\nmod optional;",
+    ] {
+        assert!(!references_left_behind(refused).is_empty(), "{refused}");
+    }
+    for allowed in [
+        "#[cfg(kani)]\nmod verification;",
+        "#[cfg(any(test, kani))]\nmod verification;",
+        "#[cfg(doctest)]\n#[doc = include_str!(\"../README.md\")]\nstruct Readme;",
+        "// Read at run time, not with `include_str!`.",
+        "mod inline {\n    pub const A: u8 = 1;\n}",
+        "#[cfg(kani)]\nmod verification;\nconst B: u8 = 2;",
+    ] {
+        assert_eq!(
+            references_left_behind(allowed),
+            Vec::<String>::new(),
+            "{allowed}"
+        );
+    }
+    assert_eq!(
+        references_left_behind("#[cfg(kani)]\nmod verification;\nmod real;"),
+        ["mod real;"]
+    );
+}

@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
 milestone_dependencies: 1017, 956
 decision_dependencies: 204
@@ -51,8 +51,9 @@ Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_exter
 - 9, the builder and the readers disagree on unknown (P1): Done, [#3657](https://github.com/nifeos/nife/pull/3657).
 - 10, nothing machine-checked (P1): Done, [#3657](https://github.com/nifeos/nife/pull/3657).
 - 11, a stale BUGS section (P1): Done, [#3657](https://github.com/nifeos/nife/pull/3657).
-- 12, the single-file constraint (P1): Open. The README and `BUGS` sentence are in
-  [#3657](https://github.com/nifeos/nife/pull/3657); the farm check is not built.
+- 12, the single-file constraint (P1): Done, [#3953](https://github.com/nifeos/nife/pull/3953).
+  The README and `BUGS` sentence are in [#3657](https://github.com/nifeos/nife/pull/3657), and the
+  farm refuses a copied file that names a source file the copy leaves behind.
 - 13, `cfg_attr(not(test), no_std)` (P2): Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - 14, the type of `CPU_OFFSET_BYTES` (P2): Will not fix, ruled 2026-11-19. It stays `u64`.
 - 15, the kernel's safety comment says 16 bytes (P2): Done, [#3565](https://github.com/nifeos/nife/pull/3565).
@@ -227,10 +228,8 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
   disagree, the package wins.
 - Item 6 came from reading: no 32-bit build has run. The `rust-version` of 1.88 is checked by one
   build of the crate on that toolchain.
-- The farm check of item 12 is not built. The farm inlines a copied crate's `pub mod` files, so a
-  second source file does not by itself break the copy.
-  A private `mod x;` or an `include!` would, and a check for them must tell `cfg(test)` and `cfg(kani)` modules from real ones. Until it
-  exists, the crate's README and `BUGS` tell a stranger to keep one file.
+- The farm check of item 12 runs in nife, not in the crate's own repository, so a second source
+  file there fails at the next pin bump rather than in the crate's own pull request.
 - The template's behavior on a crate with zero harnesses was not exercised; the sibling's package
   left the same question open.
 - The prior-art rows marked "recalled" were not read in their sources during this review.
@@ -239,10 +238,8 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 4 and 12, each as [Finding status](#finding-status) gives it. Checked against the crate's
-  code and the template's naming helpers.
-- **Milestone 1017.** The contract crates leave in its order. This crate moves once the `Name:` blocks
-  read ratified, so the standalone gate's `names` check can pass.
+- **Outstanding.** Item 1's `repository` key, which the move commit adds.
+- **Milestone 1017.** The contract crates leave in its order, and this crate is ready to move.
 
 ## Index row
 
