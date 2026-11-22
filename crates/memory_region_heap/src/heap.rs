@@ -30,7 +30,7 @@ impl Refusal {
     ///
     /// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
     pub fn is_budget_spent(self) -> bool {
-        abi::Error::from_ret(self.code) == Some(abi::Error::OutOfMemory)
+        abi::Error::try_from(self.code) == Ok(abi::Error::OutOfMemory)
     }
 }
 

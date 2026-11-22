@@ -38,8 +38,9 @@ milestone reaches delivery.
   lives in `program_table`. `Cargo.toml` still inherits `license` and `[lints]`, and the move
   writes the crate's own manifest, a README and a LICENSE.
 - P1-4, the tokenizer drops a seventeenth token: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
-- P1-5, no proof: Open. Neither `grant_plan` nor `grant_contract` has a Kani harness; a lane writes
-  one per claim, and the two `job_windows` patches in `program_table` replay host tests.
+- P1-5, no proof: At the move. Neither `grant_plan` nor `grant_contract` has a Kani harness. By
+  the 2026-11-22 (UTC) ruling ([#3977](https://github.com/nifeos/nife/pull/3977)), a lane writes one per claim in each new repository before
+  any tag; the two `job_windows` patches in `program_table` replay host tests.
 - P1-6, limits carry their unit, and four fields named `len`: Done (ruled by the maintainer,
   provisional, 2026-11-19 UTC; two-way until the first publish). Every limit now ends in
   `_BYTES` or `_POLLS`, `MAXIMUM_VERB_BYTES` and `MAXIMUM_HOLDER_NAME_BYTES` among them, and the
@@ -64,8 +65,9 @@ milestone reaches delivery.
 - P1-13, an undeclared widening option: Done, [#3566](https://github.com/nifeos/nife/pull/3566) and [#3961](https://github.com/nifeos/nife/pull/3961). A `const` assertion in
   `program_table` checks every row with `Manifest::is_well_formed`, and the note decoder already
   refuses an undeclared subtree letter.
-- P1-14, the mutation record predates the split: Waiting on a full mutation run of the three
-  crates, which gives the figure the release gate asks for.
+- P1-14, the mutation record predates the split: At the move. By the 2026-11-22 (UTC) ruling
+  ([#3977](https://github.com/nifeos/nife/pull/3977)), the first mutation run of `grant_plan` and `grant_contract` happens in their own
+  repositories before any tag, and gives the figure the release gate asks for.
 - P2-15, `NameSet`'s `Debug`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-16, `Result<_, ()>` operands: Done, [#3961](https://github.com/nifeos/nife/pull/3961). `job_operand` and `kill_operands` return the
   error `NoJobNamed`, provisional.
@@ -79,10 +81,10 @@ milestone reaches delivery.
 - Decision, limits carry their unit: Done, [#3822](https://github.com/nifeos/nife/pull/3822), maintainer provisional 2026-11-19 (UTC).
 - Decision, the names `grant_contract` and `program_table`: Done, [#3822](https://github.com/nifeos/nife/pull/3822), ruled 2026-11-19
   (UTC), both as built.
-- Decision, review clearance and the repositories: Waiting on a ruling ([#3977](https://github.com/nifeos/nife/pull/3977)). The packages
-  `notes/crate-reviews/grant-plan.md` and `notes/crate-reviews/grant-contract.md` are written
-  ([#3822](https://github.com/nifeos/nife/pull/3822)) and read ready for review; the architect clears both crates together, with no tag and
-  no publication.
+- Decision, review clearance and the repositories: Done, [#3977](https://github.com/nifeos/nife/pull/3977), ruled 2026-11-22 (UTC). The
+  architect cleared `grant_plan` and `grant_contract` together, which approves creating both
+  repositories with `publish = false`, no tag and no publication. `grant_contract` moves after
+  `program_argument_contract` has its own repository, since it depends on that crate.
 - Decision, the names of both crates: Done, [#3868](https://github.com/nifeos/nife/pull/3868), ruled 2026-11-20 (UTC). Names with no block
   wait on rulings by family.
 
@@ -195,7 +197,11 @@ The rules in force, with their background and prior art, are in
 - Limits carry their unit: the maintainer's provisional ruling of 2026-11-19 (UTC), two-way until
   the first publish.
 - The names `grant_contract` and `program_table`: ruled 2026-11-19 (UTC), both as built.
-- Review clearance and the repositories: the maintainer's provisional ruling of 2026-11-19 (UTC).
+- Review clearance and the repositories: ruled 2026-11-22 (UTC). The architect cleared both
+  reviews together, which approves creating the two repositories with `publish = false`, no tag
+  and no publication.
+  The proofs (P1-5) and the first mutation run (P1-14) happen in the new repositories before any
+  tag, and `grant_contract` moves after `program_argument_contract` has its own repository.
 - The names of both crates: ruled 2026-11-20 (UTC) and built. `expand` is `expansion`, `Cwd` is
   `DirectoryPath`, `Which` is `GrantSide`, `Refused` is `PathRefusal`, `verb_of` is `line_verb`,
   `page_verb` and `delegated_identity` are the grant_contract spellings, the builtin variants of
@@ -233,6 +239,8 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
   no tag and no publish.
 - **Outstanding.** Every finding marked Open or Waiting on under "Finding status", each checked
   against the three crates' sources on main.
+- **Outstanding.** Creating `nifeos/grant_plan` and `nifeos/grant_contract`, cleared on
+  2026-11-22 (UTC); `grant_contract` waits on a repository for `program_argument_contract`.
 - **Done.** `crates/externalization-list.txt` names both crates that leave ([#3961](https://github.com/nifeos/nife/pull/3961));
   `program_table` stays in nife and needs no row.
 

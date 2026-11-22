@@ -72,20 +72,22 @@ license files. The crate adapts no source.
 | A README, with an example a doctest runs. | the move lane |
 | `rust-version`, `repository`, and the license files. | the move lane |
 | A review of 51 milestone citations, 29 section citations, 17 nife paths and 4 provenance lines in shipped text. | the move lane |
-| An entry in `crates/externalization-list.txt`, which names `grant_plan` and not this crate. | a lane, after clearance |
 | The tag `v0.1.0`. | calef |
 
 ## Proposed items
 
+Milestone 1094 carries the state of each finding. These remain for the move.
+
 1. P1-5: a Kani harness for the manifest's well-formedness and for the verb narrowing, with a
-   falsification patch for each.
-2. P1-9 and P1-9b: documentation for a stranger, then `missing_docs` denied at the crate root.
-3. P1-13: an undeclared widening option in `Manifest::is_well_formed`.
-4. P1-14: a mutation run on the crate.
+   falsification patch for each, written in the new repository before any tag.
+2. P1-14: the first mutation run of the crate, in the new repository before any tag.
+3. P1-9: documentation for a stranger; the move strips the citations and the provenance lines.
+
+P1-9b and P1-13 are built.
 
 ## Open questions
 
-None for this package. The clearance covers this crate with `grant_plan`.
+None for this package.
 
 ## Result of `script/crate-standalone`
 
@@ -96,4 +98,8 @@ sibling crates in nife. The run skips the build and proofs because the copy need
 
 ## Recommendation
 
-Ready for review.
+Cleared to move. The architect cleared this review together with `grant_plan`'s on 2026-11-22
+(UTC), which approves creating `nifeos/grant_contract` with `publish = false`, no tag and no
+publication. The crate depends on `program_argument_contract`, so it moves after that crate has its
+own repository. The proofs (P1-5) and the first mutation run (P1-14) happen in the new repository
+before any tag.

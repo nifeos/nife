@@ -17,9 +17,9 @@ sides of the system call boundary.
   holds each word on aarch64, riscv64 and `x86_64`: the system call number, then the slot, the method
   and the arguments. Word 0 returns a result or a negative `Error`.
 - Every method constant says what it takes, what it returns, the right it needs and its refusals.
-  The modules are listed below.
+  The table below lists the modules.
 - `Error` is `#[repr(i64)]`, from `NoSuchSlot` (-1) to `ResetDidNotHappen` (-15). Each variant says
-  when it is answered. `NoSuchSlot` (nothing there) and `Gone` (it was there and is gone) are
+  when the kernel answers it. `NoSuchSlot` (nothing there) and `Gone` (it was there and is gone) are
   different facts on purpose. `NotSupervised` deliberately does not tell "gone" from "not yours".
 - Rights are five bits (`READ`, `WRITE`, `GRANT`, `ENUMERATE`, `BIND`) that only ever narrow on
   delegation. `ALL` and `SPEND_ONLY` are the two useful masks.
@@ -29,12 +29,12 @@ sides of the system call boundary.
   interface in a program's declaration of what it links. A kernel refuses, at spawn, a program
   built against another version, and the ABI never dual-serves. A renumber of any public number
   bumps `ABI_VERSION`. A retired number stays in the crate as reserved and is never reused; the
-  console's `WRITE` is one, and a test holds it. The version gate
-  (`helpers/format_values_check.py`) refuses a change or removal of a public number without a
-  changed `ABI_VERSION`.
-- The numbers are pinned as literals in the crate's tests, and a test counts every public number
-  to see that each one is pinned. Changing a number fails the build until the test and the version
-  change with it.
+  console's `WRITE` is one, and a test holds it. A change that alters or removes a public number
+  changes `ABI_VERSION` in the same pull request, and a new number owes nothing.
+- The crate's tests pin every number as a literal, and a test counts the public numbers to see
+  that the pinned lists name each one. Changing a number fails the tests until its pinned line
+  changes with it, and `pinned-at-version-1.txt` records every pinned line of this version, so a
+  changed pinned line fails until `ABI_VERSION` moves and a new record joins it.
 
 | module | what it holds |
 |---|---|
@@ -43,7 +43,7 @@ sides of the system call boundary.
 | `page_frame`, `address_space`, `address_wait` | map, revoke and slice; map, list, unmap, wait and wake; the address wait flags |
 | `thread_control_block`, `process`, `fault`, `survey` | threads and processes; the death message; the survey records |
 | `notification`, `timer`, `interrupt`, `cycle_counter` | doorbells, deadlines, interrupts and what a cycle read counts |
-| `virtio`, `uart`, `port_range`, `reboot`, `console` | device, console and machine methods (`console` is historical) |
+| `virtual_io`, `uart`, `port_range`, `reboot`, `console` | device, console and machine methods (`console` holds one reserved number) |
 
 ## EXAMPLES
 
