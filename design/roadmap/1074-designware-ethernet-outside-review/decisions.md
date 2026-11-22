@@ -2,8 +2,8 @@
 
 An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
 
-Only one-way doors. Each was a public name or path that the first tag fixes. All four are ruled
-and built.
+Only one-way doors. Each was a public name or path that the first tag fixes. calef ruled all
+four, and the crate carries each ruling.
 
 ## Decision 1: Where the link type lives
 
