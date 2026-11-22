@@ -2,22 +2,33 @@
 name = "grant_contract"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "What a program declares it may be granted: manifest types, the capability slot numbers its spawner endows at, and the narrowing of a manifest by a command line's verb"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "capability", "manifest"]
+categories = ["no-std", "embedded"]
+publish = false     # stays false until the release that publishes this crate
 
 # What a program declares it needs and where it finds what it was given: the manifest types, the
 # capability slot numbers, and the narrowing of a manifest by a line's verb. A program reads a slot
-# number from here and links no parser; the shell's planner and the progenitor both read the same
-# declarations. Name: provisional (it waits on the naming-layers decision).
+# number from here and links no parser; a command-line planner and a spawner both read the same
+# declarations. Name: provisional.
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which the shared workflows run over this crate.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
 # The argument page, which the verb on a page is read from (`page_verb`, `delegated_identity`).
 program_argument_contract = { version = "0.1.0", path = "../program_argument_contract" }
-
-# A dev dependency only: one host test pins a word grant's rights to the filesystem contract's bits,
-# which this crate spells as numbers so that it does not link the contract.
-[dev-dependencies]
-file_system_contract = { version = "0.1.0", path = "../file_system_contract" }
