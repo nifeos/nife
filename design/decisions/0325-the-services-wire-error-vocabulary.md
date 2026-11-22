@@ -293,7 +293,7 @@ After (names provisional):
 
 ```rust
 // redoxfs_server/src/dispatch.rs
-(result.unwrap_or_else(|e| error::word(engine_code(e))), size) // Code::NotADirectory, word -260
+(result.unwrap_or_else(|e| error::word(engine_code(e))), size) // Code::NotADirectory, word -265
 // std overlay, errors.rs
 Code::NotADirectory => io::const_error!(io::ErrorKind::NotADirectory, "that name is not a directory"),
 // -1 is only ever the kernel's NoSuchSlot; reachable.rs needs no trade
@@ -302,7 +302,7 @@ Code::NotADirectory => io::const_error!(io::ErrorKind::NotADirectory, "that name
 ## What waits on this
 
 - The follow-on naming ruling: one spelled-out name per meaning, numbers from -256, and the map
-  from each of the 27 `errno` values. Its draft is a separate pull request.
+  from each of the 27 `errno` values. Its draft is #3923.
 - The names `MAXIMUM_ERRNO` and `EPROTO` in `file_system_contract::error` (#3914) become a nife
   bound and a nife protocol-violation code. #3914 can land the module rename with both as they are.
 - The constants `file_system_contract` copies (`EPERM`, `EROFS`, `ENOTDIR` and the rest).
