@@ -100,7 +100,11 @@ pub const ARG_REGISTRATION_PAGE: usize = 2;
 /// grants could name 252 bytes (milestone 946 (a granted file name can be longer than sixteen bytes)): `login_user_schedule_tests`' re-derived session
 /// faults at 52 pages and passes at 56. 60 is that with the four pages
 /// `user_timetable_keeper`'s budget still holds; this crate is compiled optimized in a debug build.
-pub const STACK_PAGES: u64 = 60;
+/// A directory path packing 512 bytes grew each `Endowment` from 2424 bytes to 4344, and the
+/// registration chain's frames, summed from `_start` the way the aarch64 debug build allocates
+/// them, from about 241 KiB to 411 KiB. 241 KiB is 59 pages, which 60 held, so 104 holds 411 KiB
+/// with the same margin and four pages more.
+pub const STACK_PAGES: u64 = 104;
 
 /// Exit codes, the verdict word on [`OUT_SLOT`] or the page's exit word. A clean finish is `0`.
 ///
