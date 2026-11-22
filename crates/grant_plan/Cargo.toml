@@ -2,35 +2,41 @@
 name = "grant_plan"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "Plans a capability shell's command line: parses a line and places each word into the grant a program's manifest declares, or refuses it at the prompt"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "capability", "shell", "parser"]
+categories = ["no-std", "command-line-interface", "parser-implementations"]
+publish = false     # stays false until the release that publishes this crate
 
-[lints]
-workspace = true
+# The grant-expression logic of a capability shell: naming a resource on the command line is what
+# grants it. It parses a line of bytes and plans each program invocation against that program's
+# manifest, with no input or output and no system call.
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which the shared workflows run over this crate.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
-
 # The matcher, and only the matcher. `byte_glob` is a total function on two byte strings with no
-# filesystem in it; deciding what a match *grants* is command-line logic, which is this crate's job.
-# Depending on it here is what makes "one matcher, driven by both `echo` and the grant planner" true
-# in the code rather than a convention two callers are trusted to keep.
-# The `version` is required, not decoration: cargo-deny treats a path dep with no version as a
-# wildcard, and `allow-wildcard-paths` deliberately does not exempt a crate that other crates depend
-# on. `grant_plan` is depended on by `user` and `kernel`, so it is exactly that case.
+# filesystem in it; deciding what a match grants is command-line logic, which is this crate's job.
 byte_glob = { version = "0.1.0", git = "https://github.com/nifeos/byte_glob", rev = "f5dae9092130be6d66f176d2e1942a4c36686818" }
 
 # The declarations a line is planned against: the manifest types, the slot numbers and the narrowing
 # by verb. A program reads them without linking this parser.
 grant_contract = { version = "0.1.0", path = "../grant_contract" }
 
-# The argument page's layout (milestone 205 (how a foreign program is told what to do), DECISIONS §170 (how a foreign program is told what to do)): `argv` assembles a line's words onto
-# it, so the shell and the std PAL that reads the page share one definition.
+# The argument page's layout: `argv` assembles a line's words onto it, so the shell and the program
+# that reads the page share one definition.
 program_argument_contract = { version = "0.1.0", path = "../program_argument_contract" }
-
-# `file_system_contract` is a DEV dependency only, and deliberately: the shell must be able to check a command
-# line without linking the filesystem contract. It is here so one host test can pin the grant name
-# limit against the contract that actually carries it, which is what makes the duplicated constant
-# safe rather than a drift waiting to happen.
-[dev-dependencies]
-file_system_contract = { version = "0.1.0", path = "../file_system_contract" }
-file_system_fixture = { version = "0.1.0", path = "../file_system_fixture" }

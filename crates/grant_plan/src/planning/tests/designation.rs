@@ -74,7 +74,7 @@ fn deplete_needs_its_grant() {
 }
 
 #[test]
-fn deplete_with_mem_plans_the_grant() {
+fn deplete_with_memory_plans_the_grant() {
     let CommandLine::Run(r) = parse(b"deplete --mem 16") else {
         panic!()
     };
@@ -85,7 +85,7 @@ fn deplete_with_mem_plans_the_grant() {
 }
 
 #[test]
-fn deplete_mem_out_of_range() {
+fn deplete_memory_out_of_range() {
     let CommandLine::Run(r) = parse(b"deplete --mem 999") else {
         panic!()
     };
@@ -149,7 +149,7 @@ fn unknown_program_is_refused_by_name() {
     );
     // A mistyped builtin lands here too, since the first word is a builtin or a program, so the
     // line points at both halves of what the prompt understands.
-    let CommandLine::Run(r) = parse(b"hlep") else {
+    let CommandLine::Run(r) = parse(b"helpp") else {
         panic!()
     };
     let msg = plan(&r, ShellHoldings::default()).unwrap_err().message();
@@ -212,7 +212,7 @@ const WRITES_A_FILE: Manifest = Manifest {
     ..READS_A_FILE
 };
 
-/// The shape milestone 47 says nothing ships yet and everything hinges on: a program that takes
+/// The shape nothing ships yet and everything hinges on: a program that takes
 /// **both** an integer and a file. It is the reason the prefix could be removed now (positional
 /// resolution is unambiguous while at most one bare token is a file) and the reason `ProgramArgumentDeclaration`
 /// will have to grow position and arity later.
@@ -243,7 +243,7 @@ const STAMPS_A_FILE: Manifest = Manifest {
     startup: StartupContract::Native,
 };
 
-// ---- `bind` (milestone 47 (navigation and naming): "blocked on a second grant") ----
+// ---- `bind` ----
 
 /// The source a line planned for `wc`, which reads a stream and designates it by name: the
 /// simplest per-command grant that carries a position.
@@ -302,9 +302,9 @@ fn a_grant_under_a_mount_point_is_in_the_mounted_tree() {
     );
 }
 
-/// **A bound name designates what it is bound to**, which it did not before milestone 154
-/// unified the resolvers: `designate` rooted every absolute token literally, so `wc
-/// /recent/x` asked for a directory named `recent` while `ls /recent` walked the bind.
+/// **A bound name designates what it is bound to**: one resolver serves `designate` and `ls`, so
+/// `wc /recent/x` walks the bind as `ls /recent` does, rather than asking for a directory named
+/// `recent`.
 #[test]
 fn a_bound_name_designates_what_it_is_bound_to() {
     let mut shell_holdings = WITH_DIRECTORY;
@@ -344,16 +344,15 @@ fn anchor_consumes_a_bound_name_and_nothing_else() {
     assert_eq!((base, rest.len()), (at(&[b"deep"]), 1));
 }
 
-/// The combination milestone 117's fifth stranger found no program declares: an integer
+/// A combination no shipped program declares: an integer
 /// argument **and** an input stream. Unlike [`STAMPS_A_FILE`]'s pairing with `FileGrantDeclaration`, this
 /// one needs no "positional arity" widening, because `arg` consumes a fixed position (index 0,
 /// numeric-shaped) before `input`'s bare-name fallback ever looks at what is left; see the
 /// `positionals_fill_the_manifest_slots_in_the_order_typed` and
 /// `an_argument_and_an_input_compose_by_the_same_fixed_order` tests below. Kept here rather than
-/// promoted to a shipped manifest: whether the combination is *wanted* is an architect's call,
-/// not
-/// this test's (design/roadmap/proposals/a-program-that-takes-an-argument-and-an-input.md).
-const TAKES_ARG_AND_READS: Manifest = Manifest {
+/// promoted to a shipped manifest: whether the combination is *wanted* is a design question, not
+/// this test's.
+const TAKES_PROGRAM_ARGUMENT_AND_READS: Manifest = Manifest {
     program_argument: ProgramArgumentDeclaration::Required,
     file: FileGrantDeclaration::Forbidden,
     input: InputDeclaration::Required {
@@ -422,15 +421,14 @@ fn positionals_fill_the_manifest_slots_in_the_order_typed() {
 /// **An argument and an input stream compose by fixed order, with no widening owed.** The integer
 /// argument takes position 0 before the input operand's fallback looks at what remains, as
 /// [`positionals_fill_the_manifest_slots_in_the_order_typed`] shows `arg` and `file` composing.
-/// No shipped program declares the combination, so `crates/swish`'s
-/// `the_arg_line_follows_the_manifest_for_every_program` never types it. See
-/// notes/grant-expression/grant-plan-crate.md ("Planning").
+/// No shipped program declares the combination, so a shell's test of every shipped manifest
+/// never types it.
 #[test]
 fn an_argument_and_an_input_stream_compose_by_the_same_fixed_order() {
     let CommandLine::Run(r) = parse(b"nth 21 report.txt") else {
         panic!()
     };
-    let e = plan_against(&r, TAKES_ARG_AND_READS, WITH_DIRECTORY).unwrap();
+    let e = plan_against(&r, TAKES_PROGRAM_ARGUMENT_AND_READS, WITH_DIRECTORY).unwrap();
     assert_eq!(e.program_argument, 21);
     assert_eq!(
         e.source,
@@ -450,7 +448,11 @@ fn an_argument_and_an_input_stream_compose_by_the_same_fixed_order() {
         panic!()
     };
     assert_eq!(
-        plan_against(&missing_input, TAKES_ARG_AND_READS, WITH_DIRECTORY),
+        plan_against(
+            &missing_input,
+            TAKES_PROGRAM_ARGUMENT_AND_READS,
+            WITH_DIRECTORY
+        ),
         Err(Refusal::InputRequired),
     );
 }
@@ -549,8 +551,8 @@ fn a_name_is_resolved_against_the_shells_position_at_grant_time() {
         "resolved where the shell was standing"
     );
 
-    // A path operand is resolved to a directory plus one component, so the FS contract still
-    // only ever sees a single name relative to a capability presented to it (§27 intact).
+    // A path operand is resolved to a directory plus one component, so the filesystem contract
+    // still only ever sees a single name relative to a capability presented to it.
     let CommandLine::Run(r) = parse(b"wc 2026/report.txt") else {
         panic!()
     };
@@ -603,7 +605,7 @@ fn the_no_such_capability_refusal_is_about_what_the_shell_holds() {
     assert_eq!(
         refused,
         Err(Refusal::NoSuchCapability(CapabilityKind::File)),
-        "with no directory in hand, it is the milestone's headline refusal",
+        "with no directory in hand, it is the capability model's headline refusal",
     );
     assert!(
         refused
@@ -665,10 +667,9 @@ fn date_takes_nothing_from_the_command_line() {
     );
 }
 
-/// **What a line's words designate becomes one directory grant at the current directory**
-/// (milestone 205, §170 clauses 2 and 5): the names for a line that named some, the whole
-/// directory for `.`, and nothing for a line that named nothing (calef's N1 ruling,
-/// 2026-09-27T06:27Z). A shell holding no directory cannot back a designation.
+/// **What a line's words designate becomes one directory grant at the current directory**: the
+/// names for a line that named some, the whole directory for `.`, and nothing for a line that
+/// named nothing. A shell holding no directory cannot back a designation.
 #[test]
 fn a_designation_becomes_one_grant_at_the_current_directory() {
     use expansion::Designation;
@@ -723,8 +724,7 @@ fn a_designation_becomes_one_grant_at_the_current_directory() {
     );
 }
 
-/// **Under a mount point, the words' grant is in the mounted tree** (milestone 834 (ioping on nife and Linux)): the second
-/// tree, at the position inside it, as every other grant there records it. It was the first tree
+/// **Under a mount point, the words' grant is in the mounted tree**: the second tree, at the position inside it, as every other grant there records it. It was the first tree
 /// at the mount-inclusive path, so the progenitor would have descended into a first-tree
 /// directory named after the mount point.
 #[test]

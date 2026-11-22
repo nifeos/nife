@@ -1,11 +1,11 @@
-//! **Expansion: what a pattern on the command line designates** (milestone 47's globbing lane).
+//! **Expansion: what a pattern on the command line designates.**
 //!
 //! The `byte_glob` crate answers whether a pattern matches a name; this module turns that into an
 //! authority. The expansion you see is the grant: `echo *.txt` prints the authority `rm *.txt`
 //! would transfer, because both drive one [`Expander`] over the same listing. [`Name`] and
 //! [`NameSet`] own their bytes, since a matched name comes out of a listing read into a reused
 //! buffer, not out of the line. Only a token's last component expands; `**` and qualifiers are
-//! out (notes/glob.md). See notes/glob-grant.md.
+//! out.
 //!
 //! Name: ratified 2026-11-20 (UTC).
 
@@ -21,8 +21,7 @@ pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 /// travels by value in a frame the caretaker keeps whole and through four frames of the shell's
 /// stack, and sixteen ran the shell off its stack. It matches
 /// `file_system_contract::nameset::MAXIMUM_NAMES`, pinned by a host test. Exceeding it is
-/// [`Refusal::TooManyNames`] at the prompt, never a truncation. See notes/glob-grant/xargs.md
-/// ("Why the bound is eight").
+/// [`Refusal::TooManyNames`] at the prompt, never a truncation.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_NAMES: usize = 8;
@@ -31,8 +30,7 @@ pub const MAXIMUM_NAMES: usize = 8;
 /// [`MAXIMUM_NAMES`]'s reason: a [`NameSet`] is copied through the shell's deepest frames, so it
 /// holds its names packed in this many bytes rather than [`MAXIMUM_NAMES`] slots of
 /// [`MAXIMUM_NAME_BYTES`] each. It matches `file_system_contract::nameset::MAXIMUM_NAME_SET_BYTES`, pinned by a host
-/// test, and exceeding it is the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md
-/// ("The bytes a set carries").
+/// test, and exceeding it is the same [`Refusal::TooManyNames`].
 ///
 /// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_NAME_SET_BYTES: usize = 512;
@@ -92,8 +90,8 @@ pub struct NameSetFull;
 /// **The namespace a grant designates**: one name for a plain token, the matched names for a
 /// pattern.
 ///
-/// This is the type that makes the milestone's finding true in the code rather than only in the
-/// prose. `fs_file_caretaker` serves "a namespace of exactly one name"; globbing generalizes it to
+/// This is the type that makes a pattern's grant true in the code rather than only in the prose.
+/// A file caretaker serves "a namespace of exactly one name"; globbing generalizes it to
 /// a set, and a literal operand is simply the set of one. Same caretaker shape, same `file_system_contract`
 /// protocol above and below, wider namespace, nothing new in the kernel.
 ///
@@ -311,8 +309,7 @@ pub struct Expander<'a> {
 /// The resume point is a **name**, not a directory cursor, which `rm` taking names away would
 /// shift. A name is stable under removal and insertion, so "the smallest matches strictly greater
 /// than this" terminates whatever the command does to what it was handed, and the shell, whose
-/// heap is capped at 32 KiB, never materializes a whole match. See notes/glob-grant/xargs.md ("The
-/// resume point is a name, not a cursor").
+/// heap is capped at 32 KiB, never materializes a whole match.
 ///
 /// [`Resume::After`] holds a whole [`Name`], up to 252 bytes, and a `Box` is not an option in a
 /// crate with no allocator; there is one of these per sweep.
@@ -352,7 +349,7 @@ impl<'a> Expander<'a> {
         }
     }
 
-    /// **One batch of an expansion, resumed from a name** (milestone 109).
+    /// **One batch of an expansion, resumed from a name**.
     ///
     /// The same membership decision as [`Expander::new`] and a different collection policy: instead
     /// of refusing the ninth match, this takes the smallest matches strictly after `resume` that fit
@@ -423,7 +420,7 @@ impl<'a> Expander<'a> {
     /// **A pattern that matched nothing is a refusal**, zsh's default rather than bash's. Nothing
     /// refuses `*` in a name, so passing the pattern through would build a grant for a name nobody
     /// has, which a later file called `*.rs` would make live; and an empty expansion is an empty
-    /// grant. See notes/glob-grant.md ("A pattern that matched nothing").
+    /// grant.
     pub fn finish(self) -> Result<NameSet, Refusal> {
         debug_assert!(
             self.resume.is_none(),
@@ -482,7 +479,7 @@ impl Batch {
 /// **Whether a token's last component is a pattern**, refusing one anywhere earlier.
 ///
 /// `logs/*.txt` is a pattern over the names in `logs`; `*/report.txt` is not something this system
-/// can answer, and the reason is notes/glob.md's rather than a limitation of the matcher:
+/// can answer, and the reason is not a limitation of the matcher:
 /// descending into a directory means **holding a capability for it**, so a pattern that selects
 /// directories to walk is asking an authority question, and hiding one inside a string matcher is
 /// the exact mistake this OS exists to not make.
@@ -509,14 +506,13 @@ pub fn last_component_has_magic(token: &[u8]) -> Result<bool, Refusal> {
     })
 }
 
-/// **Which of a line's words name something here, for a program that hears words** (milestone
-/// 205, DECISIONS §170 (how a foreign program is told what to do) clauses 2 to 5). The shell
+/// **Which of a line's words name something here, for a program that hears words.** The shell
 /// builds it before it plans, as it builds an [`Expansion`], because only the shell can ask the
 /// directory; the planner turns it into one [`crate::DirectoryGrant`] at the current directory.
 ///
 /// **Names**: each word whose first component names an entry here, and for a program that may
 /// create ([`crate::WordGrant::Create`]) each word that names nothing yet. **Here**: a word that is
-/// `.` (calef's N1 ruling, 2026-09-27T06:27Z: "to search here you type `rg pattern .`"). Neither:
+/// `.`: to search here you type `rg pattern .`. Neither:
 /// the line designated nothing and grants nothing.
 ///
 /// Name: ratified 2026-11-20 (UTC).
@@ -605,8 +601,7 @@ impl Expansion {
         }
     }
 
-    /// **What a line's words designate, for a program that hears words** (milestone 205 (how a
-    /// foreign program is told what to do)). No
+    /// **What a line's words designate, for a program that hears words**. No
     /// positional is expanded on such a line, so this and [`Expansion::at`] never meet.
     pub const fn designated(words: Designation) -> Self {
         Expansion {
@@ -677,10 +672,10 @@ mod tests {
         );
         assert_eq!(set.only(), None, "two names is not one name");
 
-        let dirs = expand(b"log*", &DIRECTORY_LISTING).unwrap();
-        assert_eq!(dirs.len(), 1);
-        assert_eq!(dirs.only(), Some(&b"logs"[..]));
-        assert_eq!(dirs.iter().next(), Some((&b"logs"[..], true)));
+        let directories = expand(b"log*", &DIRECTORY_LISTING).unwrap();
+        assert_eq!(directories.len(), 1);
+        assert_eq!(directories.only(), Some(&b"logs"[..]));
+        assert_eq!(directories.iter().next(), Some((&b"logs"[..], true)));
     }
 
     /// **A pattern that matched nothing is a refusal.** zsh's default, not bash's, and the reason is
@@ -819,7 +814,7 @@ mod tests {
         assert_debug(&set, "[\"a.txt\", \"logs\"]");
     }
 
-    // ---- batching at the bound (milestone 109) ----
+    // ---- batching at the bound ----
 
     /// **Twenty names in one directory, listed in an order that is deliberately not sorted.** A
     /// batch that took the first eight the directory yielded would answer differently from one that
@@ -864,7 +859,7 @@ mod tests {
         assert_eq!(
             expand(b"b*.txt", &listing),
             Err(Refusal::TooManyNames),
-            "unbatched, this is the refusal milestone 109 exists to answer",
+            "unbatched, this is the refusal batching exists to answer",
         );
 
         let mut seen = 0u32;
@@ -1000,7 +995,7 @@ mod tests {
         assert_eq!(done.next_resume(), None);
     }
 
-    /// **A set is bounded by its bytes as well as its count** (milestone 946): two of the longest
+    /// **A set is bounded by its bytes as well as its count**: two of the longest
     /// names fit, and a third name of any length is the same refusal as a ninth.
     #[test]
     fn a_set_refuses_past_its_bytes_as_it_does_past_its_count() {

@@ -152,12 +152,18 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
         // unbadged copy is the clients', and is never served a quiesce or the stdin read;
         // `SUPERVISOR_BADGE` carries only the quiesce (§232 (the `line_editor` swap contract)).
         // `proto::admits` holds the table. See notes/line-discipline.md.
-        let allowed = proto::admits(badge, proto::operation(w0));
-        if !allowed {
+        //
+        // A first word with a reserved bit set is refused before any of that (`proto::decode`), so
+        // a later version can give the bits a meaning.
+        let Some((operation, _)) = proto::decode(w0) else {
+            reply(slot, proto::BAD_REQUEST, 0);
+            continue;
+        };
+        if !proto::admits(badge, operation) {
             reply(slot, proto::BAD_REQUEST, 0);
             continue;
         }
-        term.serve(w0, w1, slot);
+        term.serve(operation, w0, w1, slot);
     }
 }
 
@@ -230,10 +236,11 @@ impl Terminal {
         }
     }
 
-    /// Answer one CALL by its operation. Per keystroke, so inlined into the serve loop.
+    /// Answer one CALL by its operation, which `proto::decode` read from `w0`. Per keystroke, so
+    /// inlined into the serve loop.
     #[inline]
-    fn serve(&mut self, w0: u64, w1: u64, slot: Reply) {
-        match proto::operation(w0) {
+    fn serve(&mut self, operation: u64, w0: u64, w1: u64, slot: Reply) {
+        match operation {
             proto::OPERATION_BYTES if self.raw_mode => self.bytes_raw(w0, w1, slot),
             proto::OPERATION_BYTES => self.bytes_cooked(w0, w1, slot),
             proto::OPERATION_RAWMODE => self.set_raw_mode(w0, slot),
