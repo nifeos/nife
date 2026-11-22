@@ -64,16 +64,16 @@ assert_eq!(f.metadata()?.modified().unwrap_err().kind(), ErrorKind::Unsupported)
 
 BUGS:
 
-- A file written while the clock is not set reads as early 1970. Once the clock page reports a set
-  clock the FS server stamps from the wall clock, but before that every mutation stamps a counter
-  (notes/touch.md's `BUGS`), and the contract says Unix seconds, so `modified()` of such a file is
-  `UNIX_EPOCH` plus a few seconds. The PAL cannot detect it, because `SETMTIME_AT` may legitimately
-  assert a small number.
+- A file written while the clock is not set shows early 1970. Once the clock page reports a set
+  clock, the FS server stamps from the wall clock. Before that every mutation stamps a counter
+  (notes/touch.md's `BUGS`), and the contract says Unix seconds. So `modified()` of such a file is
+  `UNIX_EPOCH` plus a few seconds. The PAL cannot tell, because `SETMTIME_AT` may legitimately assert
+  a small number.
 - A write only ever moves a timestamp forward. The engine (`vendor/redoxfs`'s `write_node` and
-  `truncate_node`) moves an mtime *forward* and never back, so a file the host tool made keeps its
-  host time through any write whose stamp is earlier (every one made before the clock is set), and a
-  file `set_times` put in the future stays there. So `std_exerciser` asserts a write moving a *made*
-  file forward, before the `set_times`, which is what the stamp can promise.
+  `truncate_node`) never moves an mtime back. A file the host tool made keeps its host time through
+  any write with an earlier stamp, which is every write before the clock is set. A file `set_times`
+  put in the future stays there. So `std_exerciser` asserts a write moving a *made* file forward,
+  before the `set_times`, which is what the stamp can promise.
 - Whole seconds only. The wire carries seconds and the server stores a zero nanosecond part, so
   `set_times` truncates. A second-granularity filesystem does the same on Unix and std documents
   precision as platform-dependent, so this is recorded rather than refused.

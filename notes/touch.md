@@ -54,19 +54,20 @@ down, applied to a file's timestamp instead of the machine's clock. See
 
 ## What "now" is, honestly
 
-"Now" for `SETMTIME` is the wall clock. The FS server holds the clock page read-only (the same
-authority `date` holds, DECISIONS §43 (reading the clock is a page)) and reads it as `date` does:
+"Now" for `SETMTIME` is the wall clock. The FS server holds the clock page read-only, the same
+authority `date` holds (DECISIONS §43 (reading the clock is a page)), and reads it as `date` does:
 `clock_contract::wall_nanoseconds(offset, monotonic_nanoseconds())`. Every stamp the server writes
-(`WRITE`, `CREATE`, `TRUNCATE`, `SETMTIME` and the extended attribute verbs) comes from one function,
-which returns the wall time as seconds and nanoseconds. If the reading is not strictly later than the
-server's previous stamp, the stamp is the previous one plus one nanosecond. So a `touch` after a
-`WRITE` never lands earlier than the write, two touches in sequence observe strictly increasing
-times (what a make-style staleness check depends on), and a clock stepped backward does not move a
-stamp backward. The wire carries whole seconds, so a stamp agrees with a `date` reading taken at the
-same instant to the second, except while a stamp is held ahead of a backward step.
+comes from one function. That covers `WRITE`, `CREATE`, `TRUNCATE`, `SETMTIME` and the extended
+attribute verbs. The function returns the wall time as seconds and nanoseconds. When the reading is
+not strictly later than the previous stamp, it returns the previous stamp plus one nanosecond.
 
-Until the clock page reports a set clock, or when the server was granted no clock page, "now" is a
-counter that adds one per stamp and is read as Unix seconds (see `BUGS`).
+So a `touch` after a `WRITE` never lands earlier than the write. Two touches in sequence see
+strictly increasing times, which a make-style staleness check depends on. A clock that steps backward
+does not move a stamp backward. The wire carries whole seconds, so a stamp agrees with a `date`
+reading taken at the same instant to the second, except while a step backward holds it ahead.
+
+Until the clock page reports a set clock, and when the server has no clock page, "now" is a counter
+that adds one per stamp. The server reads the counter as Unix seconds (see `BUGS`).
 
 ## The wire: three verbs, and why not one
 
@@ -182,12 +183,12 @@ mtime probes are not (yet) independently witnessed from the host. See `BUGS`.
 
 ## BUGS
 
-- **While the clock is not set, stamps are a counter.** Until the clock page reports a set clock
-  (or when the server holds no clock page, as the crash tests' servers do), every stamp is a counter
-  that starts at 2 and adds one per stamp, read as Unix seconds, so a file stamped then reads as a
-  time in January 1970 (notes/std/file-times.md has what `std` makes of it). Once the clock is set,
-  stamps continue from the later of the wall time and the last stamp, so they never go backward, but
-  a file stamped before that keeps its 1970 time until something changes it.
+- **While the clock is not set, stamps are a counter.** Until the clock page reports a set clock, and
+  for a server with no clock page (the crash tests' servers), every stamp is a counter that starts at
+  2 and adds one per stamp. The server reads it as Unix seconds, so a file stamped then shows a time
+  in January 1970 (notes/std/file-times.md has what `std` makes of it). Once the clock is set, stamps
+  continue from the later of the wall time and the last stamp. They never go backward, and a file
+  stamped before that keeps its 1970 time until something changes it.
 - **`-t` accepts RFC 3339, not Unix's compact `[[CC]YY]MMDDhhmm[.ss]]`.** See "`-t`'s syntax" above
   for why. A script written against Unix's `touch -t` syntax will not work unmodified here.
 - **No `-c` (don't create)**, because Unix's `-c` exists to suppress the create half, and there is

@@ -21,6 +21,8 @@ pub(crate) enum Entry {
 
 /// **Where the server reads the wall clock** (the clock page, in the EL0 binary; a fake in the host
 /// tests). One reading is Unix nanoseconds, or `None` while the clock is not set.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by lane/file-server-wall-clock-stamps.
 pub trait WallClock {
     /// The wall time now in nanoseconds since 1970, or `None` while the clock reads as unknown.
     fn wall_nanoseconds(&mut self) -> Option<u64>;
@@ -100,6 +102,8 @@ impl<D: Disk> Server<D> {
 
     /// Give the server a wall clock. Until it reads as set, stamps stay the counter
     /// (see the `BUGS` of [`Server`]).
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane/file-server-wall-clock-stamps.
     pub fn set_wall_clock(&mut self, clock: Box<dyn WallClock>) {
         self.wall = Some(clock);
     }
