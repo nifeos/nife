@@ -80,6 +80,7 @@ review-status	1	-	-	1	-	both	crate reviews keep one closed set of finding states
 -	1	-	-	0	-	both	naming conventions
 -	1	-	-	0	-	code	fixed /tmp paths in scripts (they race across worktrees; see the note above)
 -	1	-	-	0	-	both	proof-only modules: crate::arch is the host's
+-	1	-	-	0	-	code	a boot-line head is spelled once
 -	1	-	-	0	-	both	names meet the current naming rules
 -	1	-	-	0	-	code	every Kani harness carries a falsification record
 -	1	-	-	0	-	record	the audit index's selftest (fixture indexes: duplicates, triples, missing rows)

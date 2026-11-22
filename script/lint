@@ -3135,6 +3135,19 @@ print(f"proof-only modules: {len(files)} riscv64 file(s) on the aarch64 prover h
       "crate::arch reference recorded")
 PY
 
+# 5c. **A boot-line head is spelled once** (milestone 1078 (`boot_ladder`: what an outside
+#     maintainer would fix before it leaves), item 7; helpers/boot_line_heads.py, name
+#     provisional). The kernel, the shell and every reader build the heads from
+#     `boot_ladder::Heads`, and `serial_console::heads::HEADS` is nife's value of it. A gate that
+#     spells a head by hand passes every unit test after a wording change and then fails as a
+#     timeout. Test modules, fixtures and a copy marked `boot-line-head: copy, <reason>` pass;
+#     the helper's header says what it cannot see. Fixtures first, because a green run looks the
+#     same as a check that cannot fire.
+echo "==> a boot-line head is spelled once"
+# lint-scope: code
+python3 "$(dirname "$0")/../helpers/boot_line_heads.py" --selftest
+python3 "$(dirname "$0")/../helpers/boot_line_heads.py"
+
 # 6. **`notes/` and `design/` markdown filenames are lowercase and hyphenated** (CLAUDE.md).
 #    They are URL slugs the moment any of this is published, and a hyphen is a word separator in a
 #    URL where an underscore is a joiner. It is also the convention every documentation tree uses
