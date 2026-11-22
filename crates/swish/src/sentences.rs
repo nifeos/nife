@@ -229,7 +229,7 @@ pub const fn spawn_failure_sentence(answer: u64) -> &'static [u8] {
 
 /// What a malformed `vouch` line is answered with, sending nothing.
 pub const VOUCH_USAGE: &[u8] =
-    b"  vouch <file>: a path to a program, whose last name is at most sixteen bytes\n";
+    b"  vouch <file>: a path to a program, whose last name is at most 252 bytes\n";
 
 /// What a malformed `user` line is answered with, changing nothing (milestone 152 (durable delegation)).
 pub const USER_USAGE: &[u8] = b"  user suspend <name> | user resume <name>\n";
