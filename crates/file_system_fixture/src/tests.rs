@@ -108,9 +108,18 @@ fn every_witness_bit_is_a_distinct_single_bit() {
 #[test]
 fn every_witness_all_lists_each_bit_its_module_declares() {
     let source = include_str!("lib.rs");
-    for module in ["escape", "directory_escape", "endpoint_boundary", "mounted_tree", "navigation",
-                   "globbing", "attributes"] {
-        let start = source.find(&format!("\npub mod {module} {{\n")).expect("module declared");
+    for module in [
+        "escape",
+        "directory_escape",
+        "endpoint_boundary",
+        "mounted_tree",
+        "navigation",
+        "globbing",
+        "attributes",
+    ] {
+        let start = source
+            .find(&format!("\npub mod {module} {{\n"))
+            .expect("module declared");
         let body = &source[start..start + source[start..].find("\n}\n").expect("module closed")];
         let (declarations, listed) = body.split_once("    pub const ALL: [u64; ").expect("ALL");
         let declared: Vec<&str> = declarations
@@ -126,7 +135,10 @@ fn every_witness_all_lists_each_bit_its_module_declares() {
             .take_while(|line| *line != "    ];")
             .map(|line| line.trim().trim_end_matches(','))
             .collect();
-        assert_eq!(listed, declared, "{module}::ALL does not list exactly its declared bits");
+        assert_eq!(
+            listed, declared,
+            "{module}::ALL does not list exactly its declared bits"
+        );
     }
 }
 
@@ -361,7 +373,10 @@ fn the_attribute_witness_expectation_matches_its_bits() {
         seen & !ATTRIBUTES_FAILED,
         "a correct run reports every outcome and no failure",
     );
-    assert_eq!(EXPECTED, 0xFF, "the eight required claims are bits 0 through 7");
+    assert_eq!(
+        EXPECTED, 0xFF,
+        "the eight required claims are bits 0 through 7"
+    );
     // The witness's fixture has to be usable: two distinct names it can create and rename
     // between, and a name and value the store will actually accept.
     assert_ne!(PROBE, PROBE_MOVED);

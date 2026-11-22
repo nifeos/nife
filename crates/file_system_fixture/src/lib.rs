@@ -53,8 +53,7 @@ pub const SCRATCH_NAME: &str = "scratch";
 /// Placeholder contents the host tool writes; overwritten by the client's write test.
 ///
 /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
-pub const SCRATCH_PLACEHOLDER: &[u8] =
-    b"(placeholder overwritten by the client's write test)";
+pub const SCRATCH_PLACEHOLDER: &[u8] = b"(placeholder overwritten by the client's write test)";
 /// What the client writes to `scratch` and reads back; the host tool re-reads it after the run
 /// to prove the write reached the on-disk image and the filesystem is still consistent.
 pub const WRITE_PATTERN: &[u8] = b"CRKFS_WRITE_OK: this round-tripped through the RedoxFS image\n";

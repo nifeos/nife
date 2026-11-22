@@ -677,7 +677,10 @@ fn create_into_a_populated_root_and_look_it_up() {
     // The same names and contents the shipped image carries, so the root's shape matches.
     let mut srv = server_with(&[
         (file_system_fixture::MOTD_NAME, file_system_fixture::MOTD),
-        (file_system_fixture::SCRATCH_NAME, file_system_fixture::SCRATCH_PLACEHOLDER),
+        (
+            file_system_fixture::SCRATCH_NAME,
+            file_system_fixture::SCRATCH_PLACEHOLDER,
+        ),
     ]);
 
     let h = srv.create_file(&named("made-by-std")).unwrap();
@@ -712,7 +715,10 @@ fn create_through_the_block_chunking_does_not_loop() {
     fs.tx(|transaction| {
         for (name, body) in [
             (file_system_fixture::MOTD_NAME, file_system_fixture::MOTD),
-            (file_system_fixture::SCRATCH_NAME, file_system_fixture::SCRATCH_PLACEHOLDER),
+            (
+                file_system_fixture::SCRATCH_NAME,
+                file_system_fixture::SCRATCH_PLACEHOLDER,
+            ),
         ] {
             let ptr = transaction
                 .create_node(TreePtr::root(), name, Node::MODE_FILE | 0o644, 0, 0)?
