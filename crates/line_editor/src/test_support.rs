@@ -1,10 +1,10 @@
 //! **The terminal model the tests share**: `Screen` and `feed_all`, kept outside any one test
-//! module because the editor's tests and `handoff`'s both drive a [`LineDisc`] on it.
+//! module because the editor's tests and `handoff`'s both drive a [`LineEditor`] on it.
 //!
 //! Name: provisional (milestone 878's lane, 2026-10-12 UTC; §295 (the line editor's crate root
 //! splits into module files)).
 
-use crate::{Event, LineDisc, Sink};
+use crate::{Event, LineEditor, Sink};
 extern crate std;
 use std::string::String;
 use std::vec::Vec;
@@ -14,7 +14,7 @@ use std::vec::Vec;
 /// what lets the engine change its redraw strategy without rewriting every test.
 pub(super) struct Screen {
     row: Vec<u8>,
-    pub(super) col: usize,
+    pub(super) column: usize,
     pub(super) bells: usize,
     pub(super) cleared: bool,
 }
@@ -23,7 +23,7 @@ impl Screen {
     pub(super) fn new() -> Self {
         Screen {
             row: Vec::new(),
-            col: 0,
+            column: 0,
             bells: 0,
             cleared: false,
         }
@@ -45,8 +45,8 @@ impl Screen {
             let b = bytes[i];
             match b {
                 0x07 => self.bells += 1,
-                0x08 => self.col = self.col.saturating_sub(1),
-                b'\r' => self.col = 0,
+                0x08 => self.column = self.column.saturating_sub(1),
+                b'\r' => self.column = 0,
                 b'\n' => { /* row model: a fresh line, content untouched */ }
                 0x1b => {
                     // CSI only; that is all the engine emits.
@@ -61,29 +61,29 @@ impl Screen {
                     }
                     let count = if has_n { n } else { 1 };
                     match bytes[j] {
-                        b'D' => self.col = self.col.saturating_sub(count),
-                        b'C' => self.col += count,
-                        b'K' => self.row.truncate(self.col),
+                        b'D' => self.column = self.column.saturating_sub(count),
+                        b'C' => self.column += count,
+                        b'K' => self.row.truncate(self.column),
                         b'J' => {
                             self.row.clear();
                             self.cleared = true;
                         }
-                        b'H' => self.col = 0,
+                        b'H' => self.column = 0,
                         other => panic!("echo used unmodeled CSI final {other:?}"),
                     }
                     i = j;
                 }
                 _ => {
                     // A cursor moved past the row's end leaves blanks behind it.
-                    if self.col > self.row.len() {
-                        self.row.resize(self.col, b' ');
+                    if self.column > self.row.len() {
+                        self.row.resize(self.column, b' ');
                     }
-                    if self.col == self.row.len() {
+                    if self.column == self.row.len() {
                         self.row.push(b);
                     } else {
-                        self.row[self.col] = b;
+                        self.row[self.column] = b;
                     }
-                    self.col += 1;
+                    self.column += 1;
                 }
             }
             i += 1;
@@ -97,7 +97,7 @@ impl Sink for Screen {
     }
 }
 
-pub(super) fn feed_all(d: &mut LineDisc, s: &mut Screen, bytes: &[u8]) -> Vec<Event> {
+pub(super) fn feed_all(d: &mut LineEditor, s: &mut Screen, bytes: &[u8]) -> Vec<Event> {
     bytes
         .iter()
         .map(|&b| d.feed(b, s))

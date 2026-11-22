@@ -33,15 +33,15 @@ carriage return (CR), a line feed (LF) or a carriage return line feed (CRLF), an
 
 | Constant | Value | What it bounds |
 |---|---|---|
-| `LINE_MAXIMUM` | 256 | bytes in a line; the next printable byte is refused with a bell |
-| `PROMPT_MAXIMUM` | 64 | bytes of prompt repainted; a longer prompt is truncated |
-| `HIST` | 8 | history lines held; the oldest is overwritten |
-| `RAW_QUEUE_MAXIMUM` | 64 | bytes a `RawQueue` holds; a burst past it is dropped |
+| `MAXIMUM_LINE_BYTES` | 256 | bytes in a line; the next printable byte is refused with a bell |
+| `MAXIMUM_PROMPT_BYTES` | 64 | bytes of prompt repainted; a longer prompt is truncated |
+| `HISTORY_LINES` | 8 | history lines held; the oldest is overwritten |
+| `MAXIMUM_RAW_QUEUE_BYTES` | 64 | bytes a `RawQueue` holds; a burst past it is dropped |
 
 ## EXAMPLES
 
 ```rust
-use line_editor::{Event, LineDisc, Sink};
+use line_editor::{Event, LineEditor, Sink};
 
 struct Echo(Vec<u8>);
 impl Sink for Echo {
@@ -51,7 +51,7 @@ impl Sink for Echo {
 }
 
 let mut out = Echo(Vec::new());
-let mut editor = LineDisc::new();
+let mut editor = LineEditor::new();
 editor.start_line(b"> ", &mut out);
 for byte in b"hello" {
     editor.feed(*byte, &mut out);
@@ -68,7 +68,7 @@ range. The rest is host tests.
 
 ## Handoff
 
-`LineDisc::save` and `restore` write and read the editor's state as a blob whose layout is
+`LineEditor::save` and `restore` write and read the editor's state as a blob whose layout is
 documented on the `handoff` module and pinned by a test. A change to the layout bumps
 `handoff::LAYOUT`.
 

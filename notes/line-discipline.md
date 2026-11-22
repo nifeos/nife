@@ -36,7 +36,7 @@ The engine's bindings, as `crates/line_editor/src/lib.rs` implements them:
   and F, their SS3 forms, and the vt220 `~` forms.
 - Kill and yank: `^K` kills to the end, `^U` to the start, `^W` a word back, and `^Y` inserts the
   kill buffer.
-- History: the last `HIST` non-empty lines on up and down, with the line in progress stashed.
+- History: the last `HISTORY_LINES` non-empty lines on up and down, with the line in progress stashed.
 - CR or LF ends a line, and an LF straight after a CR is swallowed. Interactive input (CR) and
   piped input (LF, CRLF) both work without the caller knowing which it has.
 - `^C` discards the line. `^D` is end of input on an empty line and a delete otherwise, Unix's
@@ -46,10 +46,10 @@ Three things it leaves out on purpose:
 
 - It tracks no terminal size. The redraw math assumes one row, so a wrapped long line redraws
   wrongly past the margin. Probing the terminal would block the discipline on a terminal that may
-  never answer, such as a piped boot script, and `LINE_MAXIMUM` keeps the wrap rare.
+  never answer, such as a piped boot script, and `MAXIMUM_LINE_BYTES` keeps the wrap rare.
 - It does no tab completion, because that needs the command namespace. Tab comes back as
   `Event::Tab` and the terminal ignores it. The shell runs this engine itself in raw mode and
-  answers Tab with `LineDisc::pending` and `LineDisc::insert_text` (§227 (how Tab reaches the
+  answers Tab with `LineEditor::pending` and `LineEditor::insert_text` (§227 (how Tab reaches the
   shell)).
 - It keeps no output-side state. Newline translation is the free function `expand_output`,
   because output shares no state with input editing (notes/thread-control-block.md has the tty
