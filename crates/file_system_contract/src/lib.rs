@@ -168,9 +168,6 @@ pub const READY: u64 = 0xF5_0BEEF5;
 /// directory or a refused right, not only opening the subtree.
 pub const DESCENT_REFUSED: u64 = 0xF5_0DEAD5;
 
-/// What the `rm` program reports, and how a diagnostic is told from the verdict.
-pub mod rm;
-
 #[cfg(kani)]
 mod proofs;
 

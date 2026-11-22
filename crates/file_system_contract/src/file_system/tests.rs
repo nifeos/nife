@@ -147,5 +147,5 @@ fn the_packed_words_are_the_wire_bytes_they_always_were() {
     // A block request stores the count less one in the low byte.
     let w0 = block::request(block::READ, 4);
     assert_eq!(w0, (block::READ << 56) | 3);
-    assert_eq!(block::request_block_count(w0), 4);
+    assert_eq!(block::request_block_count(w0), Some(4));
 }

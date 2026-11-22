@@ -102,3 +102,13 @@ fn a_dirent_encodes_at_its_limits_and_not_past_them() {
         "a name one byte too long"
     );
 }
+
+/// **An empty name is refused**, as its two sibling encodings refuse one, so no listing a server
+/// writes carries an entry nobody can open.
+#[test]
+fn an_empty_name_is_refused() {
+    let mut page = [0u8; 8];
+    assert_eq!(directory_entry::encode(&mut page, b"", false), None);
+    assert_eq!(directory_entry::encode(&mut page, b"", true), None);
+    assert_eq!(page, [0u8; 8], "nothing is written");
+}

@@ -115,7 +115,7 @@ above its grant.
 
 The report is a byte sink and ends as every sink stream does, with `(end_of_stream(), 0, 0)`. The exit
 status and the count of names removed go after it, once, to a verdict endpoint at slot 2
-(`file_system_contract::rm::VERDICT_SLOT`). A `SEND` returns only once a receiver takes its message, so
+(`grant_plan::rm_report::VERDICT_SLOT`). A `SEND` returns only once a receiver takes its message, so
 the verdict cannot overtake the text: a reader drains the report to its end, then receives the
 verdict. The kernel's `start_granted_dir` and `start_granted_set` grant that endpoint when the
 caller asks (`verdict: true`). The spawn service leaves slot 2 empty, so at the prompt the kernel

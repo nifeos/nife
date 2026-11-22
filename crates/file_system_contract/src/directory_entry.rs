@@ -10,11 +10,17 @@ pub const fn record_len(name_len: usize) -> usize {
     2 + name_len
 }
 
-/// Write one record at the start of `out`, returning its length, or `None` if it does not fit or
-/// the name is too long to encode.
+/// Write one record at the start of `out`, returning its length, or `None` if it does not fit, the
+/// name is empty or the name is too long to encode.
+///
+/// An empty name is refused because no directory entry has one, and because the two sibling
+/// encodings ([`super::nameset`] and the attribute name list) cannot carry one: zero is their
+/// terminator. A server that meets such a name ends the listing before it, as it does for a name
+/// past 255 bytes. The refusal is provisional (restrictive first); [`iter`] still reads an empty
+/// name, so relaxing it later breaks no reader.
 pub fn encode(out: &mut [u8], name: &[u8], is_directory: bool) -> Option<usize> {
     let n = record_len(name.len());
-    if name.len() > u8::MAX as usize || out.len() < n {
+    if name.is_empty() || name.len() > u8::MAX as usize || out.len() < n {
         return None;
     }
     out[0] = if is_directory { IS_DIRECTORY } else { 0 };

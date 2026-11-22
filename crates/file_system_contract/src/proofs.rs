@@ -52,7 +52,7 @@ fn a_block_request_round_trips() {
     kani::assume((1..=block::TRANSFER_BLOCKS).contains(&blocks));
     let w0 = block::request(opcode, blocks);
     assert!(operation(w0) == opcode);
-    assert!(block::request_block_count(w0) == blocks);
+    assert!(block::request_block_count(w0) == Some(blocks));
 }
 
 /// **A packed name comes back whole at every length the two words hold.** Eight bytes are all the
