@@ -39,11 +39,11 @@ packages share, so it was ruled before any code.
    swish's installed path and `Label`, and `STEM_LEN`. basalt's `helpers/packages.py` reads nife's
    value instead of restating it. The log registration's 32-byte `NAME_MAX` is a wire field and
    widens with its protocol. `documentation`'s 72-byte path is not a package name and stays.
-5. **`jig install` refuses a package name longer than `jig remove` can carry.** The per-file grant
-   name, `filesystem_protocol::grant::MAX_NAME`, is 16 bytes because it rides in two `START` words,
-   and lifting it is its own milestone. Until that milestone lands, install checks the same 16
-   bytes, so nothing is installed that remove cannot remove. All six of basalt's packages fit; the
-   longest is `hackbench`, 9 bytes.
+5. **`jig install` refuses a package name over rule 1's 252 bytes** (ruled 2026-11-22 (UTC)).
+   `jig remove` carries its name on a page, as every name a start or activation message carries
+   does (milestone 1122 (every name travels on a page)), and the page holds
+   `file_system_contract::grant::MAXIMUM_NAME_BYTES`, 252 bytes, so nothing is installed that
+   remove cannot remove. All six of basalt's packages fit; the longest is `hackbench`, 9 bytes.
 6. **The format changes visibly, and `jig` refuses the old one.** `nifefs` is `CRKR0003`, for §58
    (a wider archive name)'s reason: a reader striding the old layout would find a plausible name
    at the wrong offset. A package becomes §197's zstd-compressed tar, which no `NIFEPKG1` reader
@@ -62,7 +62,7 @@ pins, and in CI a failed fetch fails the row. basalt builds its packages with th
    and the Kani harnesses), since images regenerate from the tree. `package_archive` writes
    §197's tar, `cargo xtask package` compresses it with zstd, and the readers accept `NIFEPKG1` too. The `NIFEPKG1` reader exists only to break the
    cycle: nife's CI must still install basalt's pinned packages until basalt has rebuilt them with
-   this commit. It is not compatibility for users. Rule 5's check lands here too.
+   this commit. It is not compatibility for users.
 2. basalt. Bump the nife pin to step 1's merge commit, cited as `nifeos/nife@<sha>`. Rebuild
    every package, rewrite every recipe's digest table with `--update-digests` (milestone 917
    (basalt's packages build reproducibly)), drop the hand-copied `NAME_LEN`, and publish a new
@@ -83,7 +83,7 @@ client as RPM and apk are (*"Yes"*), in a file `<name>-<version>-<architecture>.
 1. The container is ustar of regular files, read by upstream `tar-no-std` unpatched (*"Yes"*),
    with `package_archive`'s Kani harnesses proving properties through its public API. The build
    and the installer refuse a member path over 255 bytes split at a `/`, or a last component over
-   100. That is rule 1's recorded exception, as rule 5's 16 bytes is, until pax `path` support
+   100. That is rule 1's recorded exception until pax `path` support
    lands as its own milestone. That milestone offers `tar-no-std` a patch first, and forks or
    writes a reader only if it is refused or Kani cannot prove it.
 2. The first member is `package_measurements`, pairing with the boot archive's
@@ -265,5 +265,5 @@ Fedora's packaging guidelines as distinct from `rpm` itself.
 - The measurement counts names in the tree on 2026-10-17 (UTC). The per-architecture archives pack
   subsets of the 131, so the directory figures are an upper bound for any one image.
 - APFS's limit was measured on one macOS host; no Apple document stating it was found.
-- Rule 5 makes `jig install` refuse names `jig remove` cannot carry, which caps an installable
-  package name at 16 bytes until the grant milestone lands.
+- `package_archive`'s 32-byte name field still refuses a package name long before rule 5's 252
+  bytes do, so an installable package name is 32 bytes at most until that field widens.
