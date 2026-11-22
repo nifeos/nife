@@ -353,7 +353,7 @@ fn anchor_consumes_a_bound_name_and_nothing_else() {
 /// promoted to a shipped manifest: whether the combination is *wanted* is an architect's call,
 /// not
 /// this test's (design/roadmap/proposals/a-program-that-takes-an-argument-and-an-input.md).
-const TAKES_ARG_AND_READS: Manifest = Manifest {
+const TAKES_PROGRAM_ARGUMENT_AND_READS: Manifest = Manifest {
     program_argument: ProgramArgumentDeclaration::Required,
     file: FileGrantDeclaration::Forbidden,
     input: InputDeclaration::Required {
@@ -430,7 +430,7 @@ fn an_argument_and_an_input_stream_compose_by_the_same_fixed_order() {
     let CommandLine::Run(r) = parse(b"nth 21 report.txt") else {
         panic!()
     };
-    let e = plan_against(&r, TAKES_ARG_AND_READS, WITH_DIRECTORY).unwrap();
+    let e = plan_against(&r, TAKES_PROGRAM_ARGUMENT_AND_READS, WITH_DIRECTORY).unwrap();
     assert_eq!(e.program_argument, 21);
     assert_eq!(
         e.source,
@@ -450,7 +450,11 @@ fn an_argument_and_an_input_stream_compose_by_the_same_fixed_order() {
         panic!()
     };
     assert_eq!(
-        plan_against(&missing_input, TAKES_ARG_AND_READS, WITH_DIRECTORY),
+        plan_against(
+            &missing_input,
+            TAKES_PROGRAM_ARGUMENT_AND_READS,
+            WITH_DIRECTORY
+        ),
         Err(Refusal::InputRequired),
     );
 }

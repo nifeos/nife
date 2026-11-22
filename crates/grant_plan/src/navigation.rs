@@ -506,14 +506,14 @@ impl<'a> TwoRoots<'a> {
     pub fn resolve_from(
         &self,
         side: GrantSide,
-        pos: DirectoryPath,
+        position: DirectoryPath,
         token: &[u8],
     ) -> Result<(GrantSide, DirectoryPath), PathRefusal> {
         let p = path(token)?;
         if p.is_from_root() {
             self.resolve_absolute(&p)
         } else {
-            Ok((side, pos.resolve(&p)?))
+            Ok((side, position.resolve(&p)?))
         }
     }
 
@@ -522,12 +522,12 @@ impl<'a> TwoRoots<'a> {
     pub fn apply_from(
         &self,
         side: &mut GrantSide,
-        pos: &mut DirectoryPath,
+        position: &mut DirectoryPath,
         token: &[u8],
     ) -> Result<(), PathRefusal> {
-        let (w, p) = self.resolve_from(*side, *pos, token)?;
+        let (w, p) = self.resolve_from(*side, *position, token)?;
         *side = w;
-        *pos = p;
+        *position = p;
         Ok(())
     }
 }
@@ -620,7 +620,7 @@ impl Bindings {
 
     /// Bind `name` to `pos`, a path in the one tree the shell presents. Refuses a name that cannot be a component, one already
     /// bound, or a full table; never overwrites.
-    pub fn add(&mut self, name: &[u8], pos: DirectoryPath) -> Result<(), BindRefusal> {
+    pub fn add(&mut self, name: &[u8], position: DirectoryPath) -> Result<(), BindRefusal> {
         if !is_valid_component(name) || name.len() > MAXIMUM_BOUND_NAME_BYTES {
             return Err(BindRefusal::NotAName);
         }
@@ -637,7 +637,7 @@ impl Bindings {
         *slot = Some(BindEntry {
             name: packed,
             name_length_bytes: name.len() as u8,
-            position: pos,
+            position,
         });
         Ok(())
     }
@@ -674,8 +674,8 @@ impl Bindings {
     /// underneath). `None` when the label matches no bound entry.
     pub fn resolve_absolute(&self, p: &Path<'_>) -> Option<Result<DirectoryPath, PathRefusal>> {
         let (base, rest) = self.split_absolute(p)?;
-        let mut pos = base;
-        Some(pos.apply(rest).map(|_| pos))
+        let mut position = base;
+        Some(position.apply(rest).map(|_| position))
     }
 }
 
@@ -1154,10 +1154,10 @@ mod tests {
     #[test]
     fn a_relative_token_resolves_inside_the_current_tree() {
         let roots = TwoRoots::new(b"a", b"b");
-        let mut pos = DirectoryPath::root();
-        pos.descend(b"here");
+        let mut position = DirectoryPath::root();
+        position.descend(b"here");
         let (side, next) = roots
-            .resolve_from(GrantSide::Second, pos, b"deeper")
+            .resolve_from(GrantSide::Second, position, b"deeper")
             .unwrap();
         assert_eq!(
             side,
@@ -1172,9 +1172,9 @@ mod tests {
     #[test]
     fn an_absolute_token_moves_to_the_tree_it_names() {
         let roots = TwoRoots::new(b"a", b"b");
-        let pos = DirectoryPath::root();
+        let position = DirectoryPath::root();
         let (side, next) = roots
-            .resolve_from(GrantSide::First, pos, b"/b/elsewhere")
+            .resolve_from(GrantSide::First, position, b"/b/elsewhere")
             .unwrap();
         assert_eq!(side, GrantSide::Second);
         assert_pwd(&next, b"/elsewhere");
@@ -1192,11 +1192,13 @@ mod tests {
         );
         // One level down and back up composes normally, same as a single grant.
         let mut side = GrantSide::First;
-        let mut pos = DirectoryPath::root();
-        roots.apply_from(&mut side, &mut pos, b"/a/sub").unwrap();
-        roots.apply_from(&mut side, &mut pos, b"..").unwrap();
+        let mut position = DirectoryPath::root();
+        roots
+            .apply_from(&mut side, &mut position, b"/a/sub")
+            .unwrap();
+        roots.apply_from(&mut side, &mut position, b"..").unwrap();
         assert_eq!(side, GrantSide::First);
-        assert_pwd(&pos, b"/");
+        assert_pwd(&position, b"/");
     }
 
     /// **The starting position is the first-listed grant's own root** (`which = A`), matching the
@@ -1207,9 +1209,9 @@ mod tests {
     fn the_starting_position_is_grant_as_own_root() {
         let roots = TwoRoots::new(b"a", b"b");
         let start = (GrantSide::First, DirectoryPath::root());
-        let (side, pos) = roots.resolve_from(start.0, start.1, b"x").unwrap();
+        let (side, position) = roots.resolve_from(start.0, start.1, b"x").unwrap();
         assert_eq!(side, GrantSide::First);
-        assert_eq!(pos.component(0), b"x");
+        assert_eq!(position.component(0), b"x");
     }
 
     /// [`TwoRoots::apply_from`] is all-or-nothing, [`DirectoryPath::apply`]'s own rule composed rather than
@@ -1218,21 +1220,21 @@ mod tests {
     fn apply_from_moves_nothing_on_a_refusal() {
         let roots = TwoRoots::new(b"a", b"b");
         let mut side = GrantSide::First;
-        let mut pos = DirectoryPath::root();
-        pos.descend(b"sub");
+        let mut position = DirectoryPath::root();
+        position.descend(b"sub");
         assert_eq!(
-            roots.apply_from(&mut side, &mut pos, b".."),
+            roots.apply_from(&mut side, &mut position, b".."),
             Ok(()),
             "one legal ascent",
         );
         assert_eq!(side, GrantSide::First);
-        assert_pwd(&pos, b"/");
+        assert_pwd(&position, b"/");
         assert_eq!(
-            roots.apply_from(&mut side, &mut pos, b".."),
+            roots.apply_from(&mut side, &mut position, b".."),
             Err(PathRefusal::AtYourRoot),
         );
         assert_eq!(side, GrantSide::First, "a refusal moved nothing");
-        assert_pwd(&pos, b"/");
+        assert_pwd(&position, b"/");
     }
 
     // ---- `bind`: a value under a name, milestone 47's own sketch ----

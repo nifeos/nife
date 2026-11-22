@@ -342,7 +342,7 @@ pub fn parse_invocation(line: &[u8]) -> ParsedInvocation<'_> {
     let mut short_option_count = 0;
     let mut unexpected = None;
     let mut misquoted = None;
-    let mut have_prog = false;
+    let mut have_program = false;
 
     let mut i = 0;
     while i < toks.len() {
@@ -386,9 +386,9 @@ pub fn parse_invocation(line: &[u8]) -> ParsedInvocation<'_> {
             } else if unexpected.is_none() {
                 unexpected = Some(t);
             }
-        } else if !have_prog {
+        } else if !have_program {
             program = t;
-            have_prog = true;
+            have_program = true;
         } else if positional_count < MAXIMUM_POSITIONALS {
             positional_tokens[positional_count] = t;
             quoted_positionals[positional_count] = quoted;

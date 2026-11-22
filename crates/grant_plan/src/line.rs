@@ -221,7 +221,7 @@ impl<'a> Line<'a> {
 }
 
 /// Whether this byte is one of the three single-character operators.
-fn is_op(b: u8) -> bool {
+fn is_operator(b: u8) -> bool {
     b == b'|' || b == b'<' || b == b'>'
 }
 
@@ -232,7 +232,7 @@ fn is_op(b: u8) -> bool {
 /// boundary: `date 2> err` is a redirection, `least_authority_demo 2 > out` is the integer `2` followed by a `>`,
 /// and `wc2>f` writes to a file from a program called `wc2`. Every shell draws the line in the same
 /// place, and drawing it anywhere else would make a program's own argument disappear.
-fn is_diag_op(line: &[u8], i: usize, word_start: usize) -> bool {
+fn is_diagnostic_operator(line: &[u8], i: usize, word_start: usize) -> bool {
     line[i] == b'2'
         && line.get(i + 1) == Some(&b'>')
         && (i == word_start || line[i - 1].is_ascii_whitespace())
@@ -343,7 +343,7 @@ fn scan_command_words(line: &[u8], start: usize) -> Result<usize, Refusal> {
     let mut i = start;
     let mut c = word::Cursor::new();
     while i < line.len() {
-        if !c.is_open() && (is_op(line[i]) || is_diag_op(line, i, start)) {
+        if !c.is_open() && (is_operator(line[i]) || is_diagnostic_operator(line, i, start)) {
             break;
         }
         c.step(line[i]);
@@ -363,7 +363,9 @@ fn read_redirections<'a>(
     n: usize,
     r: &mut Redirects<'a>,
 ) -> Result<usize, Refusal> {
-    while i < line.len() && (line[i] == b'<' || line[i] == b'>' || is_diag_op(line, i, i)) {
+    while i < line.len()
+        && (line[i] == b'<' || line[i] == b'>' || is_diagnostic_operator(line, i, i))
+    {
         // Which stream this operator names, and how many characters spell it. `>>` is one
         // operator written with two characters and `2>>` one written with three; the extra
         // characters are consumed here rather than left to be read as operators with empty
@@ -395,7 +397,7 @@ fn read_redirections<'a>(
         // part of what is designated rather than the end of it. That is the correctness gap this
         // shell had: a file with a space in its name could not be written to at all.
         let t = i;
-        i = word::token_end(line, i, &|b| b.is_ascii_whitespace() || is_op(b));
+        i = word::token_end(line, i, &|b| b.is_ascii_whitespace() || is_operator(b));
         if i == t {
             return Err(Refusal::NoRedirectTarget);
         }
@@ -422,7 +424,7 @@ fn read_redirections<'a>(
         while j < line.len() && line[j].is_ascii_whitespace() {
             j += 1;
         }
-        if j < line.len() && !is_op(line[j]) && !is_diag_op(line, j, j) {
+        if j < line.len() && !is_operator(line[j]) && !is_diagnostic_operator(line, j, j) {
             return Err(Refusal::WordAfterRedirect);
         }
         i = j;

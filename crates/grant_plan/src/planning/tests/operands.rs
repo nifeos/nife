@@ -277,8 +277,8 @@ const LISTING: [(&[u8], bool); 4] = [
 /// Expand a pattern over [`LISTING`], the way both `echo` and the shell's grant path do.
 fn expanded(pattern: &[u8]) -> Result<expansion::NameSet, Refusal> {
     let mut e = Expander::new(pattern);
-    for (name, is_dir) in LISTING {
-        e.offer(name, is_dir);
+    for (name, is_directory) in LISTING {
+        e.offer(name, is_directory);
     }
     e.finish()
 }

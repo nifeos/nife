@@ -677,10 +677,10 @@ mod tests {
         );
         assert_eq!(set.only(), None, "two names is not one name");
 
-        let dirs = expand(b"log*", &DIRECTORY_LISTING).unwrap();
-        assert_eq!(dirs.len(), 1);
-        assert_eq!(dirs.only(), Some(&b"logs"[..]));
-        assert_eq!(dirs.iter().next(), Some((&b"logs"[..], true)));
+        let directories = expand(b"log*", &DIRECTORY_LISTING).unwrap();
+        assert_eq!(directories.len(), 1);
+        assert_eq!(directories.only(), Some(&b"logs"[..]));
+        assert_eq!(directories.iter().next(), Some((&b"logs"[..], true)));
     }
 
     /// **A pattern that matched nothing is a refusal.** zsh's default, not bash's, and the reason is

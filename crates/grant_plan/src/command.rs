@@ -467,17 +467,17 @@ impl ShellHoldings {
     pub fn path_in_one_tree(
         &self,
         side: navigation::GrantSide,
-        pos: &navigation::DirectoryPath,
+        position: &navigation::DirectoryPath,
     ) -> navigation::DirectoryPath {
         match (side, &self.mounted) {
             (navigation::GrantSide::Second, Some(sd)) => {
                 let mut path = sd.mount;
-                for l in 0..pos.depth() {
-                    path.descend(pos.component(l));
+                for l in 0..position.depth() {
+                    path.descend(position.component(l));
                 }
                 path
             }
-            _ => *pos,
+            _ => *position,
         }
     }
 
@@ -488,14 +488,14 @@ impl ShellHoldings {
     pub fn bind(
         &mut self,
         name: &[u8],
-        pos: navigation::DirectoryPath,
+        position: navigation::DirectoryPath,
     ) -> Result<(), navigation::BindRefusal> {
         if let Some(sd) = &self.mounted
             && name == sd.mount.component(0)
         {
             return Err(navigation::BindRefusal::ReservedLabel);
         }
-        self.binds.add(name, pos)
+        self.binds.add(name, position)
     }
 }
 
