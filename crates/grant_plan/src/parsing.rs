@@ -306,13 +306,13 @@ pub fn vouch_operand(tail: &[u8]) -> Option<&[u8]> {
 }
 
 /// **The name a vouched file is recorded under**: its path's last component, which is what a
-/// person sees in `caps`. `None` when it is empty, longer than the [`crate::MAXIMUM_WORDS_NAME_BYTES`] bytes a
-/// packed name carries, `.` or `..`, or holds a `#`, which the installed-programs table's lines
-/// cannot carry.
+/// person sees in `caps`. `None` when it is empty, longer than the [`crate::MAXIMUM_FILE_NAME_BYTES`] bytes
+/// the name's page carries (milestone 1122 (every name travels on a page)), `.` or `..`, or holds a
+/// `#`, which the installed-programs table's lines cannot carry.
 pub fn vouched_name(path: &[u8]) -> Option<&[u8]> {
     let name = path.rsplit(|&b| b == b'/').next().unwrap_or(path);
     let recordable = !name.is_empty()
-        && name.len() <= crate::MAXIMUM_WORDS_NAME_BYTES
+        && name.len() <= crate::MAXIMUM_FILE_NAME_BYTES
         && name != b"."
         && name != b".."
         && !name.contains(&b'#');

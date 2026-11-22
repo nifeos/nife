@@ -273,6 +273,22 @@ fn vouch_takes_one_path_and_names_it_by_its_last_component() {
         Some(&b"unvouched"[..])
     );
     assert_eq!(vouched_name(b"./a.out"), Some(&b"a.out"[..]));
+    // A name travels on a page (milestone 1122 (every name travels on a page)), so the last
+    // component may be as long as a file's name, and one byte more is refused.
+    let mut longest = b"./".to_vec();
+    longest.extend([b'v'; crate::MAXIMUM_FILE_NAME_BYTES]);
+    assert_eq!(
+        vouched_name(&longest),
+        Some(&longest[2..]),
+        "a {}-byte name is recorded whole",
+        crate::MAXIMUM_FILE_NAME_BYTES
+    );
+    assert_eq!(
+        vouch_operand(b"./seventeen-bytes!!"),
+        Some(&b"./seventeen-bytes!!"[..])
+    );
+    let mut over = longest.clone();
+    over.push(b'v');
     for bad in [
         &b""[..],
         b"a.out",
@@ -280,7 +296,7 @@ fn vouch_takes_one_path_and_names_it_by_its_last_component() {
         b"dir/",
         b"./..",
         b"./x#y",
-        b"./seventeen-bytes!!",
+        &over,
     ] {
         assert_eq!(vouch_operand(bad), None, "{:?}", core::str::from_utf8(bad));
     }
