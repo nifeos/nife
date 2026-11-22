@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 232, 295
@@ -244,7 +244,7 @@ interfaces carry checkable versions).
 ### The reserved bits of the terminal's first request word
 
 Background. A request's first word carries the operation in bits 63 to 56 and a length or count in
-bits 31 to 0; bits 55 to 32 are reserved, and a client sends zero there. Both terminal servers
+bits 31 to 0; bits 55 to 32 carry no meaning, and a client sends zero there. Both terminal servers
 shifted and masked the bits away, so they served a request that set one as if the bits were zero. Once a
 client outside nife builds against the published crate, a later version could not give those bits
 a meaning without breaking it.
@@ -307,9 +307,9 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 
 ## BUGS
 
-- No review package existed for this crate under `notes/crate-reviews/` when the review ran, so this block had no list
-  of accepted names and proposed items to measure itself against; it took the releasable-crates
-  disposition, the two notes and #2797 as the baseline.
+- The review ran before this crate had a review package, so it had no list of accepted names and
+  proposed items to measure itself against; it took the releasable-crates disposition, the two
+  notes and #2797 as the baseline.
 - The mutation figures come from records, not a re-run, and predate the module split and the unit
   renames; the census that confirms them belongs in the template's window.
 - The behavior of `noline`'s initialization comes from `notes/line-discipline.md`, and the review did not
@@ -321,5 +321,5 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 
 An outside review of `line_editor` before it leaves. The cut has landed: `terminal_contract` and
 `line_editor_component` hold the contract, and the engine depends on nothing. Thirteen of the
-fourteen items have landed, the engine's renames among them, and both review packages are cleared.
+fourteen items have landed, the engine's renames among them, and the architect cleared both review packages.
 The two moves remain.
