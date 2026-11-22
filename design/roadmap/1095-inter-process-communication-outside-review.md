@@ -1,5 +1,6 @@
 ---
 status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 101, 154
@@ -190,9 +191,9 @@ The rules in force, with their background and prior art, are in
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open or At the move under "Finding status", each checked
-  against the crate's sources on main and `nifeos/intrusive_queue`.
-- **Outstanding.** `crates/externalization-list.txt` does not name this crate; milestone 1017's list
+- **Recorded.** Every finding marked At the move under "Finding status" lands with the move, each
+  checked against the crate's sources on main and `nifeos/intrusive_queue`.
+- **Recorded.** `crates/externalization-list.txt` does not name this crate; milestone 1017's list
   records the pair, `intrusive_queue` first.
 
 ## Done when
