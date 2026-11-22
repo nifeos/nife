@@ -252,12 +252,11 @@ it. That ruling is not the adoption ruling above, which stays open.
 - **Done.** The plan: this block and its survey appendix name the crate, the measurements, the
   upstream work, our own tests and the conditions above.
 - **Outstanding.** The upstream round: the two bug fixes, the recovery-flag order, the safety
-  arguments, the cast replacement and the Kani harnesses. Each text goes to the architect before
-  anyone files it.
-- **Outstanding.** The [fuzz targets](0190-ext4-read-write/upstream/4-fuzz-targets.md), the
+  arguments, the cast replacement and the Kani harnesses.
+- **Outstanding.** Drafts awaiting the architect's review: the
+  [fuzz targets](0190-ext4-read-write/upstream/4-fuzz-targets.md), the
   [mount's error report](0190-ext4-read-write/upstream/7-mount-refusal-reason.md) and
-  [whole times in `InodeInfo`](0190-ext4-read-write/upstream/8-whole-inode-times.md), whose drafts
-  await the architect's review before anyone files them.
+  [whole times in `InodeInfo`](0190-ext4-read-write/upstream/8-whole-inode-times.md).
 - **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the
