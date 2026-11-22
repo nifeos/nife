@@ -1278,24 +1278,12 @@ impl Service<'_> {
             page.as_ref(),
         ) {
             _ if bound.is_some() => bound,
-            (true, Some(f), Some((care_words, _)), Some(w), Some(p))
-                if file_system_contract::grant::words_carry_no_name(
-                    care_words.0,
-                    care_words.1,
-                    care_words.2,
-                ) =>
-            {
-                bound_channel(
-                    f,
-                    (&mut spawn.windows, w),
-                    own_ut,
-                    &mut self.fs_mapped,
-                    (
-                        p.name(),
-                        file_system_contract::grant::specification_rights(care_words.2),
-                    ),
-                )
-            }
+            (true, Some(f), Some((care_words, _)), Some(w), Some(p)) => bind_directory(
+                f,
+                (&mut spawn.windows, w),
+                (own_ut, &mut self.fs_mapped),
+                (care_words, p),
+            ),
             _ => None,
         };
         let channel = match (bound, fs, window) {
@@ -1961,4 +1949,21 @@ fn build_job(
         }
         _ => None,
     }
+}
+
+/// **Bind the file server's badge to the directory a grant page names**, for a server that
+/// enforces subtree grants itself. `None` for `START` words that still carry a name, which no
+/// builder sends. Split out of `Service::wire_directory`.
+fn bind_directory(
+    fs: Fs,
+    window: (&mut Windows, u64),
+    (own_ut, mapped): (u64, &mut bool),
+    (care_words, page): ((u64, u64, u64), &ShellGrant),
+) -> Option<Fs> {
+    use file_system_contract::grant as gr;
+    if !gr::words_carry_no_name(care_words.0, care_words.1, care_words.2) {
+        return None;
+    }
+    let rights = gr::specification_rights(care_words.2);
+    bound_channel(fs, window, own_ut, mapped, (page.name(), rights))
 }
