@@ -154,7 +154,7 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 
 - **Done.** Decision B: `console::WRITE` stays as a reserved operation (#3596).
 - **Outstanding.** Decision A's rename to `moho_abi`, milestone 1121 step 3.
-- **Done.** The six ratified size names (#3998).
+- **Done.** The six ratified size names, [#3998](https://github.com/nifeos/nife/pull/3998).
 - **Outstanding.** The repository, once step 3 lands, then items 9, 20 and 21 at and after the move.
   The finding status above says what each needs.
 
