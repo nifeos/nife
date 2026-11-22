@@ -1,0 +1,525 @@
+From 047a1b6aeff539f66fb2bc9274e748d11c18c7d2 Mon Sep 17 00:00:00 2001
+From: Chris Alef <chris@crickertech.com>
+Date: Sun, 22 Nov 2026 19:11:14 +0000
+Subject: [PATCH 1/2] docs(rsext4): state the safety argument at each CRC32C
+ unsafe use
+
+Each call into a hardware CRC32C helper now names the CPU feature it
+needs and the register it was detected from. The aarch64 feature read
+says why `mrs` of an EL1 ID register is valid at EL0, and the aarch64
+loop has one unsafe block per pointer operation, each with its
+alignment and bounds argument, instead of one block over the whole
+body. The instructions executed are unchanged.
+---
+ fs/rsext4/src/crc32c/arm64.rs  | 88 +++++++++++++++++++++-------------
+ fs/rsext4/src/crc32c/crc32c.rs |  9 ++++
+ 2 files changed, 64 insertions(+), 33 deletions(-)
+
+diff --git a/fs/rsext4/src/crc32c/arm64.rs b/fs/rsext4/src/crc32c/arm64.rs
+index 7f2c87826..22c56daef 100644
+--- a/fs/rsext4/src/crc32c/arm64.rs
++++ b/fs/rsext4/src/crc32c/arm64.rs
+@@ -48,6 +48,12 @@ pub fn has_hardware_crc32() -> bool {
+     #[cfg(not(target_os = "macos"))]
+     {
+         let mut reg_val: u64;
++        // SAFETY: `mrs` only copies the read-only ID register into a
++        // general-purpose register and touches no memory. At EL1 the read is
++        // architectural. At EL0 it traps, and the instruction is only valid
++        // there because the kernel emulates the ID registers for user space
++        // (Linux does so when it sets `HWCAP_CPUID`); a host that does not
++        // emulate them delivers the trap as an illegal instruction.
+         unsafe {
+             // mrs: Move from System Register to general purpose register
+             asm!("mrs {}, ID_AA64ISAR0_EL1", out(reg) reg_val);
+@@ -76,44 +82,60 @@ pub fn has_hardware_crc32() -> bool {
+ pub unsafe fn crc32c_hardware(mut crc: u32, data: &[u8]) -> u32 {
+     // This helper only performs the raw CRC update step. Callers remain
+     // responsible for any ext4-specific init/finalize inversion.
+-    unsafe {
+-        let mut p = data.as_ptr();
+-        let mut len = data.len();
++    let mut p = data.as_ptr();
++    let mut len = data.len();
+ 
+-        // 1. Consume the unaligned prefix so the hot loop can use 64-bit loads.
+-        while len > 0 && !(p as usize).is_multiple_of(8) {
+-            crc = __crc32cb(crc, *p);
+-            p = p.add(1);
+-            len -= 1;
+-        }
++    // Every read below is in bounds because `len` counts the bytes left
++    // between `p` and the end of `data`, and each step reads at most `len`
++    // bytes before advancing `p` and lowering `len` by the same amount.
+ 
+-        // 2. Main loop: process aligned 64-bit chunks.
+-        while len >= 8 {
+-            let val = *(p as *const u64);
+-            crc = __crc32cd(crc, val);
+-            p = p.add(8);
+-            len -= 8;
+-        }
++    // 1. Consume the unaligned prefix so the hot loop can use 64-bit loads.
++    while len > 0 && !(p as usize).is_multiple_of(8) {
++        // SAFETY: `len > 0`, so `p` points at a byte of `data`.
++        let byte = unsafe { *p };
++        crc = __crc32cb(crc, byte);
++        // SAFETY: `p` stays within `data` or one past its end.
++        p = unsafe { p.add(1) };
++        len -= 1;
++    }
+ 
+-        // 3. Finish the tail with progressively smaller chunk sizes.
+-        if len >= 4 {
+-            let val = *(p as *const u32);
+-            crc = __crc32cw(crc, val);
+-            p = p.add(4);
+-            len -= 4;
+-        }
++    // 2. Main loop: process aligned 64-bit chunks.
++    while len >= 8 {
++        // SAFETY: the prefix loop left `p` 8-byte aligned, the loop advances
++        // it in steps of 8, and `len >= 8` keeps all eight bytes in `data`.
++        let val = unsafe { *(p as *const u64) };
++        crc = __crc32cd(crc, val);
++        // SAFETY: `p` stays within `data` or one past its end.
++        p = unsafe { p.add(8) };
++        len -= 8;
++    }
+ 
+-        if len >= 2 {
+-            let val = *(p as *const u16);
+-            crc = __crc32ch(crc, val);
+-            p = p.add(2);
+-            len -= 2;
+-        }
++    // 3. Finish the tail with progressively smaller chunk sizes.
++    if len >= 4 {
++        // SAFETY: `p` is 8-byte aligned here, so also 4-byte aligned, and
++        // `len >= 4` keeps the four bytes in `data`.
++        let val = unsafe { *(p as *const u32) };
++        crc = __crc32cw(crc, val);
++        // SAFETY: `p` stays within `data` or one past its end.
++        p = unsafe { p.add(4) };
++        len -= 4;
++    }
+ 
+-        if len > 0 {
+-            crc = __crc32cb(crc, *p);
+-        }
++    if len >= 2 {
++        // SAFETY: `p` advanced by 0 or 4 from an 8-byte boundary, so it is
++        // 2-byte aligned, and `len >= 2` keeps the two bytes in `data`.
++        let val = unsafe { *(p as *const u16) };
++        crc = __crc32ch(crc, val);
++        // SAFETY: `p` stays within `data` or one past its end.
++        p = unsafe { p.add(2) };
++        len -= 2;
++    }
+ 
+-        crc
++    if len > 0 {
++        // SAFETY: `len > 0`, so `p` points at the last byte of `data`.
++        let byte = unsafe { *p };
++        crc = __crc32cb(crc, byte);
+     }
++
++    crc
+ }
+diff --git a/fs/rsext4/src/crc32c/crc32c.rs b/fs/rsext4/src/crc32c/crc32c.rs
+index c7e9419c5..4ac78e957 100644
+--- a/fs/rsext4/src/crc32c/crc32c.rs
++++ b/fs/rsext4/src/crc32c/crc32c.rs
+@@ -94,6 +94,9 @@ pub fn crc32c_append(crc: u32, data: &[u8]) -> u32 {
+     #[cfg(target_arch = "aarch64")]
+     {
+         if is_hardware_crc32_supported() {
++            // SAFETY: `crc32c_hardware` needs the ARMv8 CRC32 extension, and
++            // `is_hardware_crc32_supported` has just read it as present from
++            // `ID_AA64ISAR0_EL1[19:16]` (see `crc32c::arm64`).
+             return unsafe { crc32c_hardware(crc, data) };
+         }
+     }
+@@ -104,6 +107,9 @@ pub fn crc32c_append(crc: u32, data: &[u8]) -> u32 {
+     #[cfg(target_arch = "x86_64")]
+     {
+         if is_hardware_crc32_supported() {
++            // SAFETY: `crc32c_hardware` needs SSE4.2, and
++            // `is_hardware_crc32_supported` has just read it as present from
++            // CPUID leaf 1 ECX bit 20 (see `crc32c::x86_64`).
+             return unsafe { crc32c_hardware(crc, data) };
+         }
+     }
+@@ -219,6 +225,9 @@ mod tests {
+                 for len in 0..=257 {
+                     let data = &storage[offset..offset + len];
+                     assert_eq!(
++                        // SAFETY: the test returned early above unless
++                        // `is_hardware_crc32_supported` read SSE4.2 as present
++                        // from CPUID leaf 1 ECX bit 20.
+                         unsafe { crate::crc32c::x86_64::crc32c_hardware(seed, data) },
+                         crc32c_update(seed, data),
+                         "offset={offset} length={len} seed={seed:#x}"
+-- 
+2.53.0
+
+
+From c8557449ff87507e951bc0ace795162e3c75d8cd Mon Sep 17 00:00:00 2001
+From: Chris Alef <chris@crickertech.com>
+Date: Sun, 22 Nov 2026 19:11:14 +0000
+Subject: [PATCH 2/2] fix(rsext4)!: decode group descriptors instead of casting
+ table bytes
+
+BlockGroupDescTable::get_desc and BlockGroupDescTableMut::get_desc_mut
+cast a byte offset in the table to &Ext4GroupDesc. That reference is
+undefined behaviour when the table bytes are not 4-byte aligned, reads
+the fields in native byte order, and always spans 64 bytes. With
+32-byte descriptors it reads the next record as the high halves, it
+returns None for the last record of an exactly sized table, and every
+update through the mutable view writes high halves into the next
+record.
+
+Both views now decode the record's own desc_size bytes with
+Ext4GroupDesc::decode_checked and the mutable view writes them back
+with encode_checked, so the 32-byte and 64-byte (and larger)
+descriptor sizes each touch only their own record.
+
+BREAKING CHANGE: get_desc returns Option<Ext4GroupDesc> by value,
+BlockGroupDescIter yields Ext4GroupDesc, and get_desc_mut is replaced
+by get_desc and set_desc on BlockGroupDescTableMut.
+---
+ fs/rsext4/src/blockgroup_description/table.rs | 126 +++++++++---------
+ fs/rsext4/src/blockgroup_description/tests.rs | 114 ++++++++++++++++
+ fs/rsext4/src/test_contracts.rs               |   2 +-
+ 3 files changed, 179 insertions(+), 63 deletions(-)
+
+diff --git a/fs/rsext4/src/blockgroup_description/table.rs b/fs/rsext4/src/blockgroup_description/table.rs
+index 4b68850af..bf7da09f3 100644
+--- a/fs/rsext4/src/blockgroup_description/table.rs
++++ b/fs/rsext4/src/blockgroup_description/table.rs
+@@ -22,18 +22,12 @@ impl<'a> BlockGroupDescTable<'a> {
+     }
+ 
+     /// Returns the descriptor for the specified group.
+-    pub fn get_desc(&self, group_idx: BGIndex) -> Option<&Ext4GroupDesc> {
+-        if group_idx.raw() >= self.group_count {
+-            return None;
+-        }
+-
+-        let offset = group_idx.as_usize().ok()?.checked_mul(self.desc_size)?;
+-        if offset + core::mem::size_of::<Ext4GroupDesc>() > self.data.len() {
+-            return None;
+-        }
+-
+-        let desc_ptr = self.data[offset..].as_ptr() as *const Ext4GroupDesc;
+-        unsafe { Some(&*desc_ptr) }
++    ///
++    /// The record is decoded from its `desc_size` bytes, so a 32-byte record
++    /// reads zero for every high half and the table needs no alignment.
++    pub fn get_desc(&self, group_idx: BGIndex) -> Option<Ext4GroupDesc> {
++        let range = record_range(group_idx, self.desc_size, self.group_count)?;
++        Ext4GroupDesc::decode_checked(self.data.get(range)?).ok()
+     }
+ 
+     /// Returns the number of descriptors in the table.
+@@ -112,8 +106,8 @@ pub struct BlockGroupDescIter<'a> {
+     current: u32,
+ }
+ 
+-impl<'a> Iterator for BlockGroupDescIter<'a> {
+-    type Item = &'a Ext4GroupDesc;
++impl Iterator for BlockGroupDescIter<'_> {
++    type Item = Ext4GroupDesc;
+ 
+     fn next(&mut self) -> Option<Self::Item> {
+         if self.current >= self.table.group_count {
+@@ -143,95 +137,103 @@ impl<'a> BlockGroupDescTableMut<'a> {
+         }
+     }
+ 
+-    /// Returns the mutable descriptor for the specified group.
+-    pub fn get_desc_mut(&mut self, group_idx: BGIndex) -> Option<&mut Ext4GroupDesc> {
+-        if group_idx.raw() >= self.group_count {
+-            return None;
+-        }
+-
+-        let offset = group_idx.as_usize().ok()?.checked_mul(self.desc_size)?;
+-        if offset + core::mem::size_of::<Ext4GroupDesc>() > self.data.len() {
+-            return None;
+-        }
+-
+-        let desc_ptr = self.data[offset..].as_mut_ptr() as *mut Ext4GroupDesc;
+-        unsafe { Some(&mut *desc_ptr) }
++    /// Returns the descriptor for the specified group.
++    pub fn get_desc(&self, group_idx: BGIndex) -> Option<Ext4GroupDesc> {
++        let range = record_range(group_idx, self.desc_size, self.group_count)?;
++        Ext4GroupDesc::decode_checked(self.data.get(range)?).ok()
++    }
++
++    /// Writes `desc` into the record of the specified group.
++    ///
++    /// Only the fields that fit the record's `desc_size` are written: a
++    /// 32-byte record drops the high halves, and bytes past the first 64 of a
++    /// larger record are kept.
++    pub fn set_desc(&mut self, group_idx: BGIndex, desc: &Ext4GroupDesc) -> bool {
++        let Some(range) = record_range(group_idx, self.desc_size, self.group_count) else {
++            return false;
++        };
++        let Some(record) = self.data.get_mut(range) else {
++            return false;
++        };
++        desc.encode_checked(record).is_ok()
++    }
++
++    /// Decodes one record, applies `change` to it and writes it back.
++    fn modify(&mut self, group_idx: BGIndex, change: impl FnOnce(&mut Ext4GroupDesc)) -> bool {
++        let Some(mut desc) = self.get_desc(group_idx) else {
++            return false;
++        };
++        change(&mut desc);
++        self.set_desc(group_idx, &desc)
+     }
+ 
+     /// Updates the free block count for one group.
+     pub fn update_free_blocks(&mut self, group_idx: BGIndex, count: u32) -> bool {
+-        if let Some(desc) = self.get_desc_mut(group_idx) {
++        self.modify(group_idx, |desc| {
+             desc.bg_free_blocks_count_lo = (count & 0xFFFF) as u16;
+             desc.bg_free_blocks_count_hi = ((count >> 16) & 0xFFFF) as u16;
+-            true
+-        } else {
+-            false
+-        }
++        })
+     }
+ 
+     /// Updates the free inode count for one group.
+     pub fn update_free_inodes(&mut self, group_idx: BGIndex, count: u32) -> bool {
+-        if let Some(desc) = self.get_desc_mut(group_idx) {
++        self.modify(group_idx, |desc| {
+             desc.bg_free_inodes_count_lo = (count & 0xFFFF) as u16;
+             desc.bg_free_inodes_count_hi = ((count >> 16) & 0xFFFF) as u16;
+-            true
+-        } else {
+-            false
+-        }
++        })
+     }
+ 
+     /// Updates the used directory count for one group.
+     pub fn update_used_dirs(&mut self, group_idx: BGIndex, count: u32) -> bool {
+-        if let Some(desc) = self.get_desc_mut(group_idx) {
++        self.modify(group_idx, |desc| {
+             desc.bg_used_dirs_count_lo = (count & 0xFFFF) as u16;
+             desc.bg_used_dirs_count_hi = ((count >> 16) & 0xFFFF) as u16;
+-            true
+-        } else {
+-            false
+-        }
++        })
+     }
+ 
+     /// Increments the used directory count for one group.
+     pub fn increment_used_dirs(&mut self, group_idx: BGIndex) -> bool {
+-        if let Some(desc) = self.get_desc_mut(group_idx) {
++        self.modify(group_idx, |desc| {
+             let count = desc.used_dirs_count() + 1;
+             desc.bg_used_dirs_count_lo = (count & 0xFFFF) as u16;
+             desc.bg_used_dirs_count_hi = ((count >> 16) & 0xFFFF) as u16;
+-            true
+-        } else {
+-            false
+-        }
++        })
+     }
+ 
+     /// Decrements the used directory count for one group.
+     pub fn decrement_used_dirs(&mut self, group_idx: BGIndex) -> bool {
+-        if let Some(desc) = self.get_desc_mut(group_idx) {
++        self.modify(group_idx, |desc| {
+             let count = desc.used_dirs_count().saturating_sub(1);
+             desc.bg_used_dirs_count_lo = (count & 0xFFFF) as u16;
+             desc.bg_used_dirs_count_hi = ((count >> 16) & 0xFFFF) as u16;
+-            true
+-        } else {
+-            false
+-        }
++        })
+     }
+ 
+     /// Sets descriptor flags for one group.
+     pub fn set_flags(&mut self, group_idx: BGIndex, flags: u16) -> bool {
+-        if let Some(desc) = self.get_desc_mut(group_idx) {
++        self.modify(group_idx, |desc| {
+             desc.bg_flags |= flags;
+-            true
+-        } else {
+-            false
+-        }
++        })
+     }
+ 
+     /// Clears descriptor flags for one group.
+     pub fn clear_flags(&mut self, group_idx: BGIndex, flags: u16) -> bool {
+-        if let Some(desc) = self.get_desc_mut(group_idx) {
++        self.modify(group_idx, |desc| {
+             desc.bg_flags &= !flags;
+-            true
+-        } else {
+-            false
+-        }
++        })
++    }
++}
++
++/// The byte range of one group's record, or `None` when the group is past the
++/// table or the range overflows.
++fn record_range(
++    group_idx: BGIndex,
++    desc_size: usize,
++    group_count: u32,
++) -> Option<core::ops::Range<usize>> {
++    if group_idx.raw() >= group_count {
++        return None;
+     }
++    let start = group_idx.as_usize().ok()?.checked_mul(desc_size)?;
++    Some(start..start.checked_add(desc_size)?)
+ }
+diff --git a/fs/rsext4/src/blockgroup_description/tests.rs b/fs/rsext4/src/blockgroup_description/tests.rs
+index 1fa6c3549..959366bf8 100644
+--- a/fs/rsext4/src/blockgroup_description/tests.rs
++++ b/fs/rsext4/src/blockgroup_description/tests.rs
+@@ -92,3 +92,117 @@ fn test_group_desc_64bit_values() {
+     assert_eq!(desc.free_inodes_count(), 200);
+     assert_eq!(desc.used_dirs_count(), 10);
+ }
++
++/// Writes `descs` into one table of `desc_size`-byte records that starts one
++/// byte into its buffer, so the table is not aligned for `Ext4GroupDesc`.
++fn unaligned_table(descs: &[Ext4GroupDesc], desc_size: usize) -> alloc::vec::Vec<u8> {
++    let mut buffer = alloc::vec![0u8; 1 + descs.len() * desc_size];
++    for (index, desc) in descs.iter().enumerate() {
++        let start = 1 + index * desc_size;
++        desc.encode_checked(&mut buffer[start..start + desc_size])
++            .unwrap();
++    }
++    buffer
++}
++
++#[test]
++fn descriptor_table_reads_and_updates_32_byte_records_in_place() {
++    use super::{BlockGroupDescTable, BlockGroupDescTableMut};
++    use crate::bmalloc::BGIndex;
++
++    let descs = [
++        Ext4GroupDesc {
++            bg_block_bitmap_lo: 0x0000_0101,
++            bg_free_blocks_count_lo: 5,
++            ..Default::default()
++        },
++        Ext4GroupDesc {
++            bg_block_bitmap_lo: 0xffff_ffff,
++            bg_inode_bitmap_lo: 0xffff_ffff,
++            bg_inode_table_lo: 0xffff_ffff,
++            bg_free_blocks_count_lo: 9,
++            bg_used_dirs_count_lo: 3,
++            ..Default::default()
++        },
++    ];
++    let mut buffer = unaligned_table(&descs, Ext4GroupDesc::GOOD_OLD_DESC_SIZE);
++    let second_record = buffer[33..65].to_vec();
++
++    let table = BlockGroupDescTable::new(&buffer[1..], Ext4GroupDesc::GOOD_OLD_DESC_SIZE, 2);
++    // A 32-byte record has no high halves: the next record must not be read as them.
++    assert_eq!(
++        table
++            .get_desc(BGIndex::new(0))
++            .map(|desc| desc.block_bitmap()),
++        Some(0x0000_0101)
++    );
++    // The last record of an exactly sized table is still inside the table.
++    assert_eq!(
++        table
++            .get_desc(BGIndex::new(1))
++            .map(|desc| desc.used_dirs_count()),
++        Some(3)
++    );
++    assert_eq!(table.iter().count(), 2);
++    assert_eq!(table.total_free_blocks(), 14);
++
++    let mut mutable_table =
++        BlockGroupDescTableMut::new(&mut buffer[1..], Ext4GroupDesc::GOOD_OLD_DESC_SIZE, 2);
++    assert!(mutable_table.update_free_blocks(BGIndex::new(0), 7));
++    assert!(mutable_table.increment_used_dirs(BGIndex::new(0)));
++    assert!(mutable_table.update_used_dirs(BGIndex::new(1), 4));
++    // Updating the first record leaves every byte of the second one alone,
++    // apart from the field written to it on purpose.
++    let mut expected_second = second_record;
++    expected_second[16..18].copy_from_slice(&4u16.to_le_bytes());
++    assert_eq!(&buffer[33..65], &expected_second[..]);
++
++    let table = BlockGroupDescTable::new(&buffer[1..], Ext4GroupDesc::GOOD_OLD_DESC_SIZE, 2);
++    let first = table.get_desc(BGIndex::new(0)).unwrap();
++    assert_eq!(first.free_blocks_count(), 7);
++    assert_eq!(first.used_dirs_count(), 1);
++}
++
++#[test]
++fn descriptor_table_reads_and_updates_64_byte_records_in_place() {
++    use super::{BlockGroupDescTable, BlockGroupDescTableMut};
++    use crate::bmalloc::BGIndex;
++
++    let descs = [
++        Ext4GroupDesc {
++            bg_block_bitmap_lo: 0x1234_5678,
++            bg_block_bitmap_hi: 0x0000_00ab,
++            bg_free_blocks_count_lo: 1,
++            ..Default::default()
++        },
++        Ext4GroupDesc {
++            bg_free_blocks_count_lo: 2,
++            bg_free_blocks_count_hi: 1,
++            bg_used_dirs_count_lo: 6,
++            ..Default::default()
++        },
++    ];
++    let mut buffer = unaligned_table(&descs, Ext4GroupDesc::EXT4_DESC_SIZE_64BIT);
++    let second_record = buffer[65..129].to_vec();
++
++    let table = BlockGroupDescTable::new(&buffer[1..], Ext4GroupDesc::EXT4_DESC_SIZE_64BIT, 2);
++    assert_eq!(
++        table
++            .get_desc(BGIndex::new(0))
++            .map(|desc| desc.block_bitmap()),
++        Some(0x0000_00ab_1234_5678)
++    );
++    assert_eq!(table.total_free_blocks(), 1 + 0x1_0002);
++
++    let mut mutable_table =
++        BlockGroupDescTableMut::new(&mut buffer[1..], Ext4GroupDesc::EXT4_DESC_SIZE_64BIT, 2);
++    assert!(mutable_table.update_free_blocks(BGIndex::new(0), 0x3_0004));
++    assert!(mutable_table.set_flags(BGIndex::new(0), Ext4GroupDesc::EXT4_BG_INODE_ZEROED));
++    assert_eq!(&buffer[65..129], &second_record[..]);
++
++    let table = BlockGroupDescTable::new(&buffer[1..], Ext4GroupDesc::EXT4_DESC_SIZE_64BIT, 2);
++    let first = table.get_desc(BGIndex::new(0)).unwrap();
++    assert_eq!(first.free_blocks_count(), 0x3_0004);
++    assert!(first.is_inode_table_zeroed());
++    assert_eq!(first.block_bitmap(), 0x0000_00ab_1234_5678);
++}
+diff --git a/fs/rsext4/src/test_contracts.rs b/fs/rsext4/src/test_contracts.rs
+index d22c54207..87ae94139 100644
+--- a/fs/rsext4/src/test_contracts.rs
++++ b/fs/rsext4/src/test_contracts.rs
+@@ -1512,7 +1512,7 @@ fn rsext4_blockgroup_table_and_stats_rules_hold() {
+     assert_eq!(table.iter().count(), 3);
+ 
+     let stats =
+-        BlockGroupStats::from_desc(BGIndex::new(0), table.get_desc(BGIndex::new(0)).unwrap());
++        BlockGroupStats::from_desc(BGIndex::new(0), &table.get_desc(BGIndex::new(0)).unwrap());
+     assert_eq!(stats.group_idx, BGIndex::new(0));
+     assert_eq!(stats.free_blocks, 2);
+     assert_eq!(stats.free_inodes, 3);
+-- 
+2.53.0
+
