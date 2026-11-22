@@ -1,6 +1,7 @@
 ---
 status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: 1019, 1062
 decision_dependencies: 320
 machine_requirements: none for the items; a VisionFive 2 for the board questions the review leaves open
@@ -231,12 +232,12 @@ closes (ruled 2026-11-18 UTC).
 
 ## Follow-on
 
-- **The move to nifeos/jh7110_clock_and_reset.** The review has its clearance and the repository
-  its approval (2026-11-11 UTC). The move carries items 5, 12 and 13 and decision 6, as the finding
-  status says.
-- **The server's transmit parent.** `jh7110_clock_and_reset_devices` applies the v1.3B parent to
-  the device at `0x1603_0000` on every board, and its BUGS section records it. The recommended fix
-  is that the spawner reads the parent with
+- **Milestone 819.** The move to nifeos/jh7110_clock_and_reset. The review has its clearance and
+  the repository its approval (2026-11-11 UTC). The move carries items 5, 12 and 13 and decision 6,
+  as the finding status says.
+- **Recorded.** The server's transmit parent. `jh7110_clock_and_reset_devices` applies the v1.3B
+  parent to the device at `0x1603_0000` on every board, and its BUGS section records it. The
+  recommended fix is that the spawner reads the parent with
   `machine_discovery::jh7110::clock_and_reset::first_ethernet_port_transmit_parent` and passes it
   in a startup-page entry or a spawn word, the way the power-management-chip route starter passes
   its timing (`driver_process_contract::power_management_chip_route`).
