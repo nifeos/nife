@@ -45,13 +45,15 @@ milestone reaches delivery.
   for the public ones: `INTERFACE_RECORD_BYTES`, `descriptor_bytes` and `note_bytes`, with no alias
   of the old spellings.
 - Item 10 (P1), `Declared` names a state: Done, [#3823](https://github.com/nifeos/nife/pull/3823). The type is `DeclaredInterface`.
-- Item 11 (P2), no fuzz target: Open. The opt-in is a per-repository choice, off by default, and
-  `nifeos/interfaces_note` has no `fuzz/` directory.
+- Item 11 (P2), no fuzz target: Waiting on [nifeos/interfaces_note#2](https://github.com/nifeos/interfaces_note/pull/2),
+  which adds a decoder target that encodes an accepted list back and compares, and opts the weekly
+  run in.
 - Item 12 (P2), the proof runs one direction: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 13 (P2), a test name the abbreviation report flags: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 14 (P2), `iter` yields by value: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 15 (P2), the triaged timeouts travel nowhere: Open. `.github/mutants-exempts` in
-  `nifeos/interfaces_note` carries no rows yet.
+- Item 15 (P2), the triaged timeouts travel nowhere: Waiting on
+  [nifeos/interfaces_note#2](https://github.com/nifeos/interfaces_note/pull/2), which carries the
+  three rows into `.github/mutants-exempts`. The template's gate fails an unexempted timeout.
 - Decision 1, the owner string: Done, [#3575](https://github.com/nifeos/nife/pull/3575).
 - Decision 2, ratifying the twenty public names: Done, [#3823](https://github.com/nifeos/nife/pull/3823) for the four renames and [#3835](https://github.com/nifeos/nife/pull/3835)
   for the ratified names, ruled 2026-11-19 (UTC).
@@ -205,7 +207,6 @@ The checks are in [the appendix](1096-interfaces-note-outside-review/done-when.m
   `.githooks/commit-msg`, `docs/stranger-test.md` and `.github/pull_request_template.md`, which
   the dry run counts among its findings. The template's `main` has removed them; the move waits for
   the release that carries the fix or notes the five lines as the template's.
-- Item 15 rests on an unverified reading of the template's mutation verdict.
 - The review did not replay the two falsification patches under Kani; the dry run applied them with
   `patch --dry-run -F0` only. `script/verify` replays them in the tree.
 - A whole-system refusal (a program with a wrong ABI entry sent through the image path) comes
