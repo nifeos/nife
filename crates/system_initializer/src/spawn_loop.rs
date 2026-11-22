@@ -1179,9 +1179,10 @@ impl Service<'_> {
         manifest: Option<grant_contract::Manifest>,
     ) -> Option<u64> {
         if let Some(b) = bound {
-            match (page, region, grant) {
+            match (page.filter(|p| p.is_set()), region, grant) {
                 // The job holds the file server's own endpoint, badged and bound: no caretaker.
-                (Some(p), ..) if !p.is_set() => Some(b.ep),
+                // That is a whole directory, and also the index store, whose job sent no page.
+                (None, ..) => Some(b.ep),
                 // **A set of names is served over the bound channel**: the badge is bound to the
                 // whole directory and the set is what narrows it, so `fs_nameset_caretaker` sits
                 // between, its page naming no directory, which tells it the bound root is its

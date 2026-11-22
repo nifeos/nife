@@ -11,7 +11,7 @@ use super::*;
 /// The most extra stack pages [`spawn_fs_client`] will map below the one `run` gives every
 /// program. Small on purpose: a client that needs more than this is a client whose frames want
 /// looking at, not a number that wants raising.
-pub(super) const CLIENT_EXTRA_STACK: usize = 8;
+pub(super) const CLIENT_EXTRA_STACK: usize = 11;
 
 // The slot [`spawn_fs_client`] grants a verdict endpoint at is the one `rm` sends on.
 const _: () = assert!(file_system_contract::rm::VERDICT_SLOT == 2);

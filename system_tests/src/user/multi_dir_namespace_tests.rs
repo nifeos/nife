@@ -110,13 +110,13 @@ fn two_tree_shell() -> Option<u64> {
             b: (file_system_fixture::tree::OTHER, rights),
             role: ROLE_TWO_TREES,
             arg: file_system_contract::grant::specification(0, rights),
-            // **Eight, this wiring's ceiling.** This script plans an `rm`, and the planner's own
-            // frames in a debug build (`plan_against_with_streams` alone is over 11 KiB) are the
-            // deepest chain it reaches, about 26 KiB with the witness above them. Four overflowed
-            // there, presenting as a data abort on the shell's own `sp` and then as the lost-wakeup
-            // watchdog. Seven left about 2 KiB of headroom until an `Endowment` grew 1920 bytes
-            // when a directory path came to pack 512 bytes.
-            stack_pages: 8,
+            // **Eleven.** This script plans an `rm`, and in a debug build the deepest direct chain
+            // from `_start` through `two_tree_rm` and the planner (`plan_against_with_streams`,
+            // `plan_input_operand`, `designate`) is about 43.8 KiB, the sum of each frame's
+            // prologue, most of it 512-byte directory paths held by value. Twelve pages leave about
+            // 4.3 KiB. An overflow presents as a data abort on the shell's own `sp` and then as the
+            // lost-wakeup watchdog.
+            stack_pages: 11,
         },
     )?;
     let [tag, verdict, ..] = sched::ipc_receive(report);
