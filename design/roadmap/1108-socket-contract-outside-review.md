@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
 milestone_dependencies: 1017, 1000
 decision_dependencies: none
@@ -48,13 +48,17 @@ proofs cover the one piece of logic the crate holds beyond the grants.
 - P1-5, the README against the scaffold: At the move. The badges, the `rustup target add` line,
   the Kani time and peak, the one-harness command, a falsify example and the undo remain, then a
   stranger run.
-- P1-6, three equivalent mutants: At the move. `.github/mutants-exempts` exists only in the new
-  repository; the move exempts them with the triage's reasons.
+- P1-6, three equivalent mutants: At the move. The three are `|` to `^` in `listen_grant`,
+  `udp_bind_grant` and `peer_word`, whose operands share no bit. `.github/mutants-exempts` exists
+  only in the new repository; the move exempts them with the triage's reasons.
 - P2-7, the ephemeral cursor unproven: Done, [#3580](https://github.com/nifeos/nife/pull/3580) and
   [#3610](https://github.com/nifeos/nife/pull/3610).
-- P2-8, offsets and lengths of mixed types: Open. `FRAME_BYTES` and the byte order are in place;
-  the offsets stay `u64` while `MAXIMUM_PAYLOAD_BYTES` (was `DATA_MAXIMUM`) is `usize`, and one type waits on a change to
-  `user_mode_runtime`'s window API that no milestone holds.
+- P2-8, offsets and lengths of mixed types: Will not fix, provisional, ruled 2026-11-22 UTC as a
+  two-way door. `FRAME_BYTES` names the frame size and the layout note states the byte order once.
+  Each type matches its consumer: an offset is `u64` because `MappedWindow` takes `u64` offsets at
+  every call site, and `MAXIMUM_PAYLOAD_BYTES` is `usize` because it sizes arrays and slices. One
+  type would move the casts to the window calls without removing them. The types turn one-way at
+  the first release.
 - P2-9, names: Done, [#3811](https://github.com/nifeos/nife/pull/3811) built the package's names
   table, and the architect ratified it as built on 2026-11-20 UTC. `Cursor::next` and `polled_wait::next` keep their spelling (the
   table keeps them). `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC), and the template
@@ -215,8 +219,7 @@ The checks are in [the appendix](1108-socket-contract-outside-review/done-when.m
 - **Milestone 1017.** The crate moves in its order, and the move lane takes the items marked At the
   move. The move begins by proving the `std` farm builds from the pinned checkout. The review
   package `notes/crate-reviews/socket-contract.md` holds its own decisions, all ruled or built.
-- **Outstanding.** Item 8's single offset type, which waits on the window API's offset type.
-  Item 7's loop proof is bounded at four candidates, as the appendix says.
+- **Outstanding.** Item 7's loop proof is bounded at four candidates, as the appendix says.
 
 ## Index row
 
