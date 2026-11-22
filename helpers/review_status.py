@@ -14,8 +14,9 @@ may wrap onto indented lines. Its shape is
 
     - <label>: <state><rest>
 
-where <label> names the finding ("Item 3 (P1), 12-byte `reg`", "Decision 2, `size_bytes`") and
-carries its severity as `(P0)`, `(P1)` or `(P2)` when the review gave one. <state> is one of the
+where <label> names the finding ("Item 3 (P1), 12-byte `reg`", "P1-3, the ring layout",
+"Decision 2, `size_bytes`") and carries its severity, as `(P0)` or as the review's own `P0-1` id,
+when the review gave one. <state> is one of the
 closed set below, and the check holds each to what it needs.
 
     Done              the finding is fixed; the bullet cites the pull request that fixed it, as
@@ -51,7 +52,7 @@ TITLE = re.compile(
 )
 STATUS = re.compile(r"^status:\s*(\S+)", re.M)
 SECTION = re.compile(r"^## Finding status\n(.*?)(?=^## |\Z)", re.M | re.S)
-SEVERITY = re.compile(r"\((P[0-9])\)")
+SEVERITY = re.compile(r"\((P[0-9])\)|^(P[0-9])-\d+\b")
 PULL_REQUEST = re.compile(r"(?:\b[\w.-]+/[\w.-]+)?#\d+\b")
 RULED = re.compile(r"\bruled\b[^.]*\b\d{4}-\d{2}-\d{2}\b", re.I)
 
@@ -63,17 +64,112 @@ STATE = re.compile(
     r"|^(Waiting on) \S"
 )
 
-# Converted batch by batch, one pull request each; a block named here keeps its older wording until
-# its batch lands, and the check skips it. Each batch sits on its own line so that two batches
-# landing in either order touch different lines. The last batch empties the set.
-NOT_YET_CONVERTED = set()
-NOT_YET_CONVERTED |= {1073, 1074, 1075, 1076, 1077, 1078, 1079, 1081, 1082, 1083}
-#
-NOT_YET_CONVERTED |= {1084, 1085, 1086, 1087, 1088, 1089, 1090, 1091, 1092, 1093}
-#
-NOT_YET_CONVERTED |= {1094, 1095, 1096, 1097, 1098, 1099, 1100, 1101, 1102, 1103}
-#
-NOT_YET_CONVERTED |= {1104, 1105, 1106, 1107, 1108, 1109, 1110, 1111, 1112, 1113}
+# A review named here keeps its older wording until the pull request that converts it lands, and the
+# check skips it. Each number sits on its own line, between separator lines, so that pull requests
+# converting different reviews delete lines git merges in either order. The last one empties the set.
+NOT_YET_CONVERTED = {
+    #
+    1048,
+    #
+    1049,
+    #
+    1050,
+    #
+    1057,
+    #
+    1058,
+    #
+    1059,
+    #
+    1060,
+    #
+    1061,
+    #
+    1071,
+    #
+    1072,
+    #
+    1073,
+    #
+    1074,
+    #
+    1075,
+    #
+    1076,
+    #
+    1077,
+    #
+    1078,
+    #
+    1079,
+    #
+    1081,
+    #
+    1082,
+    #
+    1083,
+    #
+    1084,
+    #
+    1085,
+    #
+    1086,
+    #
+    1087,
+    #
+    1088,
+    #
+    1089,
+    #
+    1090,
+    #
+    1091,
+    #
+    1092,
+    #
+    1093,
+    #
+    1094,
+    #
+    1095,
+    #
+    1096,
+    #
+    1097,
+    #
+    1098,
+    #
+    1099,
+    #
+    1100,
+    #
+    1101,
+    #
+    1102,
+    #
+    1103,
+    #
+    1104,
+    #
+    1105,
+    #
+    1106,
+    #
+    1107,
+    #
+    1108,
+    #
+    1109,
+    #
+    1110,
+    #
+    1111,
+    #
+    1112,
+    #
+    1113,
+    #
+}
 
 
 def split_label(entry):
@@ -141,7 +237,7 @@ def parse_block(text):
             continue
         state = state.group(1) or state.group(2)
         severity = SEVERITY.search(label)
-        severity = severity.group(1) if severity else ""
+        severity = (severity.group(1) or severity.group(2)) if severity else ""
         if severity and severity not in ("P0", "P1", "P2"):
             problems.append(f"severity {severity} is not P0, P1 or P2: {short}")
         if state == "Done" and not PULL_REQUEST.search(entry):
@@ -223,7 +319,8 @@ def selftest():
             "- Item 4: At the move.\n"
             "- Item 5: At the release, the manifest.\n"
             "- Decision 1: Will not fix, ruled 2026-11-14 (UTC): the reason.\n"
-            "- Item 6: Done in nifeos/other#3.\n")
+            "- Item 6: Done in nifeos/other#3.\n"
+            "- P1-7, an id: Open.\n")
     cases = [
         ("the closed set parses", block("PARTIAL", good), 0),
         ("all terminal and BUILT", block("BUILT", "- Item 1: Done, #1.\n- Item 2: At the move.\n"), 0),
@@ -249,10 +346,11 @@ def selftest():
     parsed = parse_block(block("PARTIAL", good))
     states = [f["state"] for f in parsed[3]]
     if states != ["Done", "Open", "Waiting on", "At the move", "At the release", "Will not fix",
-                  "Done"]:
+                  "Done", "Open"]:
         failed += 1
         print(f"selftest FAIL: states read as {states}", file=sys.stderr)
-    if [f["severity"] for f in parsed[3]][:3] != ["P0", "P1", "P2"]:
+    if [f["severity"] for f in parsed[3]][:3] + [parsed[3][-1]["severity"]] != ["P0", "P1", "P2",
+                                                                                "P1"]:
         failed += 1
         print("selftest FAIL: severities misread", file=sys.stderr)
     if parsed[3][1]["label"] != "Item 2 (P1), `a: b`":
@@ -260,7 +358,7 @@ def selftest():
         print(f"selftest FAIL: label read as {parsed[3][1]['label']}", file=sys.stderr)
     reviews = [("9001-demo.md",) + parsed]
     out = table(reviews)
-    if "Item 1" in out or out.splitlines()[1].split() != ["9001", "demo", "2", "1", "1", "1", "1",
+    if "Item 1" in out or out.splitlines()[1].split() != ["9001", "demo", "2", "2", "1", "1", "1",
                                                           "1", "-"]:
         failed += 1
         print(f"selftest FAIL: table:\n{out}", file=sys.stderr)
@@ -269,7 +367,7 @@ def selftest():
         failed += 1
         print(f"selftest FAIL: open P0 not listed:\n{open_p0}", file=sys.stderr)
     listed = open_list(reviews)
-    if "Item 1" in listed or "Waiting on a board run" not in listed or listed.count("\n") != 4:
+    if "Item 1" in listed or "Waiting on a board run" not in listed or listed.count("\n") != 5:
         failed += 1
         print(f"selftest FAIL: --open:\n{listed}", file=sys.stderr)
     superseded = block("SUPERSEDED", "- Item 1: Partly.\n")
