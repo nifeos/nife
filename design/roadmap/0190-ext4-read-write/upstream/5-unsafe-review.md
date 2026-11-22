@@ -88,7 +88,7 @@ fix(rsext4)!: decode group descriptors instead of casting table bytes, and state
 `fs/rsext4` has two `unsafe` casts from table bytes to a struct reference, and nine CRC32C `unsafe` uses, some of which state no safety argument.
 
 1. `BlockGroupDescTable::get_desc` and `BlockGroupDescTableMut::get_desc_mut` cast a byte offset in the table straight to `&Ext4GroupDesc` / `&mut Ext4GroupDesc`. That has three problems:
-   - `Ext4GroupDesc` needs 4-byte alignment, and the table bytes (a slice of a `Vec<u8>`, say) do not guarantee it. Making the reference when they are not aligned is undefined behaviour in itself; a debug build's alignment check aborts the process (`misaligned pointer dereference`).
+   - `Ext4GroupDesc` needs 4-byte alignment, and the table bytes (a slice of a `Vec<u8>`, say) do not guarantee it. Making the reference when they are not aligned is undefined behavior in itself; a debug build's alignment check aborts the process (`misaligned pointer dereference`).
    - The cast reads the fields in native byte order, and the on-disk format is little-endian.
    - The reference always spans 64 bytes. With 32-byte descriptors (a filesystem without the `64bit` feature, such as one made with `mke2fs -O ^64bit` or converted from ext3), a read takes the next record as the `_hi` halves, the last record of an exactly sized table returns `None`, and every update through the mutable view writes high halves into the next record.
 2. On the CRC32C paths, the aarch64 `mrs` read, the aarch64 hardware loop (its whole body is one `unsafe` block), and the three calls to `crc32c_hardware` in `crc32c_append` and in a test do not say where the CPU feature they rely on is detected. The two x86_64 `asm!` blocks already say so, and this PR leaves them alone.
@@ -105,7 +105,7 @@ The second commit (`fix(rsext4)!`) removes the two casts and their `unsafe`:
 
 - Both views decode the record's own `desc_size` bytes with `Ext4GroupDesc::decode_checked`, and the mutable view writes them back with `encode_checked`, so 32-byte and 64-byte (and larger) descriptors each touch only their own record.
 - `get_desc` returns `Option<Ext4GroupDesc>` by value and `BlockGroupDescIter` yields `Ext4GroupDesc`; on `BlockGroupDescTableMut`, `get_desc_mut` becomes `get_desc` and `set_desc`. The update methods such as `update_free_blocks` now read, change and write back.
-- Two new tests, `descriptor_table_reads_and_updates_32_byte_records_in_place` and `descriptor_table_reads_and_updates_64_byte_records_in_place`, put the table in a deliberately unaligned buffer, write each record little-endian, read every record, update one, and check that the bytes of its neighbours did not change.
+- Two new tests, `descriptor_table_reads_and_updates_32_byte_records_in_place` and `descriptor_table_reads_and_updates_64_byte_records_in_place`, put the table in a deliberately unaligned buffer, write each record little-endian, read every record, update one, and check that the bytes of its neighbors did not change.
 
 ## Reasoning of each step
 
@@ -118,7 +118,7 @@ The second commit (`fix(rsext4)!`) removes the two casts and their `unsafe`:
 
 Verified:
 
-- Before the fix (the base `6e80b940d`, with only the new test file swapped in): in a debug build both new tests abort at `table.rs:36:23` with `misaligned pointer dereference`. In a release build the 32-byte test fails at `tests.rs:133` (`left: Some(18446744069414584577)`, `right: Some(257)`, the bytes of the next record) and the 64-byte test passes (a release build does not check alignment, so the undefined behaviour of the unaligned reference does not show there).
+- Before the fix (the base `6e80b940d`, with only the new test file swapped in): in a debug build both new tests abort at `table.rs:36:23` with `misaligned pointer dereference`. In a release build the 32-byte test fails at `tests.rs:133` (`left: Some(18446744069414584577)`, `right: Some(257)`, the bytes of the next record) and the 64-byte test passes (a release build does not check alignment, so the undefined behavior of the unaligned reference does not show there).
 - After the fix: both new tests pass, and all 430 tests of `cargo test -p rsext4 --lib` pass.
 - `cargo xtask clippy --package rsext4`: all 3 checks pass.
 - `cargo clippy --no-deps -p rsext4 --target aarch64-unknown-none-softfloat -- -D warnings` passes (the changed `arm64.rs` compiles only on aarch64).
@@ -129,7 +129,7 @@ Not verified, and why:
 
 - Two tests in `rsext4`'s `tests/filesystem_growth.rs` and `ax-fs-ng`'s `root_growth_preserves_other_partitions_and_ext4_contents` fail, with `grow:features_or_durability` returning `Unsupported`. They fail the same way on the base commit and are unrelated to this change: the test host's `mke2fs` 1.47.2 enables the `orphan_file` compat feature by default, and the growth code refuses it.
 - The aarch64 hardware CRC32C path was only compiled and checked with clippy, not run on aarch64 hardware. The first commit does not change the instructions executed; it only makes the `unsafe` blocks smaller.
-- QEMU was not run: runtime behaviour changes only in descriptor table reads and writes, which the host unit tests cover.
+- QEMU was not run: runtime behavior changes only in descriptor table reads and writes, which the host unit tests cover.
 ```
 
 ## Test evidence

@@ -164,15 +164,15 @@ index c7e9419c5..4ac78e957 100644
 2.53.0
 
 
-From c8557449ff87507e951bc0ace795162e3c75d8cd Mon Sep 17 00:00:00 2001
+From 8eb23af5c011b5ceaa01109e666b8ad55602f03b Mon Sep 17 00:00:00 2001
 From: Chris Alef <chris@crickertech.com>
-Date: Sun, 22 Nov 2026 19:11:14 +0000
+Date: Sun, 22 Nov 2026 20:40:42 +0000
 Subject: [PATCH 2/2] fix(rsext4)!: decode group descriptors instead of casting
  table bytes
 
 BlockGroupDescTable::get_desc and BlockGroupDescTableMut::get_desc_mut
 cast a byte offset in the table to &Ext4GroupDesc. That reference is
-undefined behaviour when the table bytes are not 4-byte aligned, reads
+undefined behavior when the table bytes are not 4-byte aligned, reads
 the fields in native byte order, and always spans 64 bytes. With
 32-byte descriptors it reads the next record as the high halves, it
 returns None for the last record of an exactly sized table, and every
