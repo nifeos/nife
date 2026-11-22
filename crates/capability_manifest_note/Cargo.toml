@@ -40,6 +40,3 @@ domain_name_resolution_contract = { version = "0.1.0", path = "../domain_name_re
 # Only to hold its note header to this crate's: that crate repeats the owner string so it can
 # depend on nothing, and a test here is what notices if the two drift.
 interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfaces_note", rev = "bfa27187a87e0cc1916efb06238b2dd2ece004eb" }
-# The shipped programs' manifests, which the tests encode and decode; the library never names a
-# program.
-program_table = { version = "0.1.0", path = "../program_table" }

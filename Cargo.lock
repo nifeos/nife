@@ -163,7 +163,6 @@ dependencies = [
  "domain_name_resolution_contract",
  "grant_contract",
  "interfaces_note",
- "program_table",
 ]
 
 [[package]]
