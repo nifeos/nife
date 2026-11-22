@@ -461,3 +461,27 @@ fn a_record_with_a_kind_past_the_maximum_ends_the_walk() {
 fn a_specification_refuses_a_length_past_32_bits() {
     let _ = extended_attribute::specification(extended_attribute::RAW, 1 << 32);
 }
+
+/// The bounded half of `proofs::the_attribute_list_walk_ends` and
+/// `proofs::the_attribute_store_walk_ends`: a page of the smallest records walks to its end.
+#[test]
+fn a_page_of_the_smallest_records_walks_to_its_end() {
+    let mut page = [0u8; PAGE_BYTES];
+    for record in page.chunks_exact_mut(2) {
+        record.copy_from_slice(&[1, b'a']);
+    }
+    assert_eq!(
+        extended_attribute::list::iter(&page).count(),
+        PAGE_BYTES / extended_attribute::list::record_len(1)
+    );
+    let smallest = extended_attribute::store::record_len(1, 0);
+    let mut blob = [0u8; PAGE_BYTES];
+    for record in blob.chunks_exact_mut(smallest) {
+        record[0] = 1;
+        record[smallest - 1] = b'a';
+    }
+    assert_eq!(
+        extended_attribute::store::iter(&blob).count(),
+        PAGE_BYTES / smallest
+    );
+}
