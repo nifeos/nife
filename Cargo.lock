@@ -673,8 +673,6 @@ name = "grant_plan"
 version = "0.1.0"
 dependencies = [
  "byte_glob",
- "file_system_contract",
- "file_system_fixture",
  "grant_contract",
  "program_argument_contract",
 ]
@@ -1269,8 +1267,10 @@ dependencies = [
 name = "program_table"
 version = "0.1.0"
 dependencies = [
+ "byte_glob",
  "capability_manifest_note",
  "file_system_contract",
+ "file_system_fixture",
  "grant_contract",
  "grant_plan",
  "primitive_benchmark_contract",
