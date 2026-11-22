@@ -1,6 +1,8 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-11-22
+decided: 2026-11-22
+ratified_by: calef
 ---
 
 # 325. The error vocabulary the services speak on the wire
@@ -31,14 +33,11 @@ and needs to know whether their vocabulary stays.
 
 ## The decision
 
-Whether the services keep Linux-numbered POSIX `errno` as their wire error vocabulary, or nife
-defines its own wire error codes and each server translates at its boundary.
-
-## Recommendation: nife's own codes, in a range disjoint from the kernel's
+Ruled 2026-11-22 (UTC): option (B), nife's own codes in a range disjoint from the kernel's.
 
 - A reply's error word is a nife code. One table names every code a service may send, by meaning,
-  with spelled-out names (`NotFound`, `ReadOnly`, `NotADirectory`; the names are a later naming
-  ruling, not this one).
+  with spelled-out names (`NotFound`, `ReadOnly`, `NotADirectory`; the names and numbers are a
+  follow-on naming ruling, which assigns them before any code changes).
 - This decision fixes the two ranges now and keeps them disjoint. The kernel keeps `-1..=-255` (it
   uses 15). Services use `-256..=-4095`. A word below -4095 stays a protocol violation, the rule of
   2026-11-14 (block 1090, decision C), so the bound 4095 survives with a nife name.
@@ -46,18 +45,20 @@ defines its own wire error codes and each server translates at its boundary.
   nife code in one function, and nothing below that boundary changes.
 - `errno` stays where POSIX is the contract: the C library's `errno` (`c_library_errno`), which is
   already translated from `io::ErrorKind` and never reads the wire.
+- The word carries a number, not a string (option (I) below).
+- Optional detail text beside a code is not decided. It stays a possible later addition, and a
+  compatible one, since the code alone keeps its meaning.
 
-The reason is on the merits, not effort; it is the dearer option. The spaces collide: one
-collision is live (-1) and six are latent, and the `std` overlay trades an answer away to live with
-the live one. (B) removes that by construction and puts the vocabulary on nife's own meanings and
-names, as every newer contract does. An offset (G) fixes the collision more cheaply; against it the
-case is that taking (G) now and (B) later renumbers twice.
+The reason is on the merits; (B) is the dearer option. One collision is live (-1) and six are
+latent. (B) removes them by construction and names the codes by nife's meanings, as every newer
+contract does. An offset (G) fixes the collision more cheaply, but (G) now and (B) later renumbers
+twice.
 
 ## Is the premise true
 
 Yes, with one correction. The services do speak Linux numbers (`redox_syscall` 0.9.0's `error.rs`),
 but more of them than `file_system_contract` names: 19 more, and `block_driver_roles` writes raw
-`-95`, `-5` and `-22`. Sockets do not use `errno` at all.
+`-95`, `-5` and `-22`.
 
 ## Every code in use on any wire
 
@@ -109,14 +110,12 @@ The block protocol (`filesystem_contract::block`), all synthesized: virtio block
 (`block_driver_roles`) `EINVAL` 22, `EIO` 5, `EOPNOTSUPP` 95; NVMe
 (`non_volatile_memory_express_data_plane`) and SD card (`designware_mobile_storage`) `EINVAL` 22,
 `EROFS` 30, `EIO` 5. The file server, the one production client, turns every negative block reply
-into `EIO` (`redoxfs_server/src/bin/redoxfs_server.rs`, `mkfs.rs`), except `SYNC`'s, which it
-passes through. Only `kernel/src/storage_bench.rs` and the system tests read the others.
+into `EIO` except `SYNC`'s, which it passes through.
 
 The graphics protocol: `graphics_contract::EINVAL` and `compositor`'s `EBADOP`, both -22.
 
-Sockets (`socket_contract`): no `errno`. Per-protocol outcomes (`CONNECT_REFUSED` 1,
-`PORT_CLAIM_DENIED` 1, `PORT_CLAIM_IN_USE` 2) and one sentinel, `REPLY_ERROR` = `1 << 32`, a
-positive word, so it never meets the kernel's range.
+Sockets (`socket_contract`): no `errno`, only per-protocol outcomes (`CONNECT_REFUSED` 1) and a
+positive sentinel, `REPLY_ERROR` = `1 << 32`.
 
 ### The overlap, measured
 
@@ -136,7 +135,7 @@ So one collision is live: -1, an empty slot or the server's `EPERM`. The overlay
 server (`reachable.rs`). That is safe only because every entry point probes reachability first, and
 the probe still guards -1, -2 and -3. Codes -2 and -5 could come back only from a misbuilt spawn.
 -7, -9, -12 and -13 are latent: no `CALL` answers them, but a new refusal there would collide
-silently. notes/std/fs.md calls it a wart and names "a tag or an offset" as the fix.
+silently.
 
 ## What else was considered, and why each lost
 
@@ -145,7 +144,7 @@ lost because it keeps the overlap, and because its one argument, compatibility, 
 `rm` makes its exit status the raw `errno`. `std` maps by meaning and the C library maps again from
 `ErrorKind`. It also ties the wire to one host's numbering (macOS's `EPROTO` is 100, recalled).
 
-**(B) nife's own codes, disjoint from the kernel's (recommended).**
+**(B) nife's own codes, disjoint from the kernel's (chosen).**
 
 **(C) One vocabulary shared with `abi::Error`.** Fuchsia's model: one table, one
 decoder. It lost on where the table lives: `abi` is the system call surface, §10 (process model:
@@ -175,6 +174,11 @@ naming rule and the newer contracts point to, renumbers twice. Taking (B) once a
 system call surface (§10) that every program depends on, to protect a vocabulary nobody chose, and
 leaves that vocabulary as it is.
 
+**(I) Strings instead of numbers.** Refused. Programs would compare text to decide what failed. A
+string needs the shared page on every failure, where a code fits in the reply word. Free text can
+carry across a trust boundary what the client was not granted, such as a name outside its
+directory. And neither the compiler nor Kani can check text the way it checks an enumeration.
+
 ## What the tree already does
 
 `abi::Error` is nife's own enum with spelled-out names and a decoder (`Error::from_ret`) that
@@ -182,8 +186,7 @@ refuses unknown values: the shape (B) asks of the services. Every newer contract
 enum and none uses `errno`: `socket_contract`, `startup_page_contract::Refusal`,
 `driver_process_contract`'s `WindowRefusal`, `jh7110_clock_and_reset_contract::Status`.
 `subtree_scope::Refusal` is (B) already, with an `errno` table on the far side
-(`Refusal::errno`). `c_library_errno` is the one place POSIX is the contract, and it translates
-from `ErrorKind` by meaning.
+(`Refusal::errno`).
 
 ## Prior art
 
@@ -271,8 +274,8 @@ Yes, against each rival. At equal cost (B) beats (A) and (D) because it removes 
 (H) because it leaves the system call surface alone. Against (G) the margin is thin: both separate
 the spaces, and (B) wins only by numbering from nife's own table, as the newer contracts and the
 naming rule do, so the table is not renumbered a second time. The real costs run the other way: (A)
-is free, (G) and (H) are small, and (B) is the hundreds of lines above. So the recommendation is not
-about effort. If the ruling wants only the collision gone, (G) is the cheapest way to do that.
+is free, (G) and (H) are small, and (B) is the hundreds of lines above. So the choice is not
+about effort.
 
 ## A concrete example
 
@@ -298,8 +301,10 @@ Code::NotADirectory => io::const_error!(io::ErrorKind::NotADirectory, "that name
 
 ## What waits on this
 
-- The names `MAXIMUM_ERRNO` and `EPROTO` in `file_system_contract::error` (#3914). Under (B) they
-  become a nife bound and a nife protocol-violation code; under (A) only their naming remains. #3914 can land the module rename with both names as they are.
+- The follow-on naming ruling: one spelled-out name per meaning, numbers from -256, and the map
+  from each of the 27 `errno` values. Its draft is a separate pull request.
+- The names `MAXIMUM_ERRNO` and `EPROTO` in `file_system_contract::error` (#3914) become a nife
+  bound and a nife protocol-violation code. #3914 can land the module rename with both as they are.
 - The constants `file_system_contract` copies (`EPERM`, `EROFS`, `ENOTDIR` and the rest).
 - §324 (the names of message and result words) does not wait: it names the positions of result
   words, not the codes in them.
@@ -308,12 +313,12 @@ Code::NotADirectory => io::const_error!(io::ErrorKind::NotADirectory, "that name
 
 `reachable.rs` (`no_capability`) and notes/std/fs.md ("A wart of the contract") give the kernel's
 range as -1..-8; it is -1..-15. notes/std/fs.md also says a revoked endpoint reads as
-`PermissionDenied`; revocation answers `Gone` -11, which the overlay reads as `Other`. This lane
-leaves both alone; whichever lane builds the ruling corrects them.
+`PermissionDenied`; revocation answers `Gone` -11, which the overlay reads as `Other`. The lane that
+builds this ruling corrects both.
 
 ## What was not checked
 
 Whether every engine code can reach the wire through the file server. What every object's method 4
-answers when a misbuilt spawn puts it in a service slot. §301's view of an exit status. The
+answers when a misbuilt spawn puts it in a service slot. The
 fixtures' and system tests' sites one by one, counted in the total only. And the exact numbers
 inside `-256..=-4095`, which the naming ruling assigns.
