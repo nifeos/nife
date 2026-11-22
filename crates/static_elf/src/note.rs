@@ -3,7 +3,7 @@
 //! The reader goes through the program headers, not the section headers, so a binary stripped of
 //! its section headers (`strip --strip-section-headers`, `sstrip`) keeps its notes. A program that
 //! carries a description of itself in a note, for a launcher to read before it runs the program, is
-//! the case it was built for. Every public name here is provisional.
+//! the case it was built for.
 //!
 //! Nothing here runs inside [`Elf::parse`]. A whole-image reader uses [`Elf::note`]; a streaming
 //! reader uses [`NoteSegments::from_head`] and feeds each segment to one [`NoteSearch`]. Both
@@ -21,7 +21,9 @@ pub(crate) const PT_NOTE: u32 = 4;
 /// The three header words.
 const NHDR_SIZE: usize = 12;
 
-/// Why a note lookup refused the file. Provisional name.
+/// Why a note lookup refused the file.
+///
+/// Name: ratified 2026-11-21 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NoteError {
     /// The first bytes are not a little-endian ELF64 header whose program header table lies inside
@@ -53,7 +55,9 @@ impl core::fmt::Display for NoteError {
 
 impl core::error::Error for NoteError {}
 
-/// **Where one `PT_NOTE` lies in its file.** Provisional name.
+/// **Where one `PT_NOTE` lies in its file.**
+///
+/// Name: ratified 2026-11-21 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NoteSegment {
     /// `p_offset`: where the segment's bytes start in the file.
@@ -87,13 +91,14 @@ impl NoteSegment {
     }
 }
 
-/// **Every `PT_NOTE` in a program header table**, read from a file's first bytes. Provisional
-/// name.
+/// **Every `PT_NOTE` in a program header table**, read from a file's first bytes.
 ///
 /// It checks only what it needs to find the table: the magic, 64-bit, little-endian, an entry size
 /// of at least 56 bytes, at most 64 entries, and a table that lies wholly inside `head`. It does not
 /// check the machine or the file type, because it does not load anything; [`Elf::parse`] does that
 /// for the bytes that are run.
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub struct NoteSegments<'a> {
     table: &'a [u8],
     phentsize: usize,
@@ -257,11 +262,13 @@ fn find_in_segment<'a>(
     Ok(found)
 }
 
-/// **One lookup, fed a segment at a time.** Provisional name.
+/// **One lookup, fed a segment at a time.**
 ///
 /// What [`Elf::note`] does over a whole image, for a reader that holds one segment at a time, such
 /// as one streaming a file a page at a time. Every segment must be fed, in table order, for "the
 /// same note twice" to be caught; a caller that stops at the first match has read a different rule.
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub struct NoteSearch<'o> {
     owner: &'o [u8],
     kind: u32,
@@ -294,7 +301,7 @@ impl<'o> NoteSearch<'o> {
 
 impl<'a> Elf<'a> {
     /// **The descriptor of the one note owned by `owner` with type `kind`**, or `None` if the file
-    /// has no such note. Provisional name.
+    /// has no such note.
     ///
     /// `owner` is the name without its NUL (`b"GNU"`). Every `PT_NOTE` segment is walked in full,
     /// so a malformed note anywhere refuses the lookup, and so does a second copy of the one asked
