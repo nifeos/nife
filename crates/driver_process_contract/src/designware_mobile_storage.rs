@@ -38,11 +38,11 @@ pub const REGISTER_KIND: WindowKind = WindowKind(8);
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
 pub const TRANSFER_KIND: WindowKind = WindowKind(9);
 
-/// Card sectors in one `blk` block. An SD card's sector is `blk`'s 512-byte sector.
+/// Card sectors in one `blk` block. An SD card's sector is 512 bytes, fixed by the SD specification.
 ///
 /// Name: provisional, carried 2026-10-25 (UTC) by lane crates-stand-alone-cuts from the driver
 /// crate, where the name had no block.
-pub const SECTORS_PER_BLOCK: u64 = block::SECTORS_PER_BLOCK;
+pub const SECTORS_PER_BLOCK: u64 = (block::BLOCK_BYTES as u64) / 512;
 
 /// **The part of the card a server may touch**, in card sectors.
 ///

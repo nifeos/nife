@@ -8,7 +8,7 @@ use super::*;
 /// 55). This pins the choice argued at `file_system_contract::file_system::SYNC`: a device flush stalls the
 /// queue for every client, and a holder with nothing written has nothing to make durable. It also
 /// pins the shape: either kind of handle, because the answer is about the storage, which is
-/// `STATFS`'s rule and why this goes through `node_at` rather than `file_at`.
+/// `GET_VOLUME_STATISTICS`'s rule and why this goes through `node_at` rather than `file_at`.
 #[test]
 fn a_sync_needs_write_and_takes_a_handle_of_either_kind() {
     let mut fs = FileSystem::create(BlockDisk(VecIo(vec![0u8; 16 * 1024 * 1024])), None, 0, 0)

@@ -17,11 +17,11 @@ pub const VERSION: u32 = 1;
 pub const INTERFACE_ID: u64 = 14;
 
 /// Read [`request_block_count`] filesystem blocks starting at `w1` from the disk into the shared
-/// region. Reply `r0` = 0 on success, or [`super::reply_err`] on failure; the bytes land at the
+/// region. Reply `r0` = 0 on success, or [`super::error::word`] on failure; the bytes land at the
 /// start of the shared region, block `w1` first.
 pub const READ: u64 = 1;
 /// Write [`request_block_count`] filesystem blocks, now in the shared region, to the disk starting at
-/// `w1`. Reply `r0` = 0 on success, or [`super::reply_err`] on failure.
+/// `w1`. Reply `r0` = 0 on success, or [`super::error::word`] on failure.
 pub const WRITE: u64 = 2;
 /// Ask the disk's size in bytes. `w1` ignored. Reply `r0` = the size (always non-negative here).
 ///
@@ -46,15 +46,13 @@ pub const FLUSH: u64 = 4;
 /// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `file_system_contract`).
 pub const BLOCK_BYTES: usize = PAGE_BYTES;
 
-/// The logical block size a partition table counts in: the 512-byte sector every disk this
-/// project has met presents and the unit the virtio blk wire counts in. Nothing on the wire
-/// reports it (`disk_surveyor`'s BUGS), so it is stated here once and every consumer takes it
-/// from here, the shipping installer included, which depends on no test data.
-/// Name: provisional (milestone 886); calef names public items.
-pub const SECTOR_BYTES: u64 = 512;
-
-/// The number of sectors in one filesystem block (`BLOCK_BYTES / SECTOR_BYTES = 8`).
-pub const SECTORS_PER_BLOCK: u64 = (BLOCK_BYTES as u64) / SECTOR_BYTES;
+/// The logical block size a partition table counts in, in bytes: the device's logical block size,
+/// assumed to be 512 until a driver reports it. Nothing yet carries the driver's size to the
+/// partitioner (`disk_surveyor`'s BUGS), so it is stated here once and every consumer takes it from
+/// here, the shipping installer included, which depends on no test data.
+///
+/// Name: ratified 2026-11-22.
+pub const LOGICAL_BLOCK_BYTES: u64 = 512;
 
 /// **How many blocks the shared region spans, and the most one [`READ`] or [`WRITE`] may carry.**
 /// Equal to `file_system::TRANSFER_PAGES` on purpose, so a full file request fans out to one blk request

@@ -10,7 +10,7 @@ use super::*;
 
 /// One request on the FS service. Returns the reply's first word as a count/handle, or an
 /// `io::Error`. The wire convention is `file_system_contract`'s: non-negative is a result, negative is a
-/// negated errno ([`fsproto::reply_errno`]).
+/// negated errno ([`fsproto::error::code`]).
 pub(super) fn request(w0: u64, w1: u64) -> io::Result<u64> {
     let (r0, _) = rt::call(FS, w0, w1);
     reply(r0)
@@ -20,7 +20,7 @@ pub(super) fn request(w0: u64, w1: u64) -> io::Result<u64> {
 /// an `io::Error` later. [`FileAttr`] needs that, because `Metadata` is a value std hands back
 /// whole and `modified()` is where a refused `GET_MODIFICATION_TIME_UNIX_SECONDS` has to surface, not `metadata()`.
 pub(super) fn reply(r0: u64) -> io::Result<u64> {
-    match fsproto::reply_errno(r0 as i64) {
+    match fsproto::error::code(r0 as i64) {
         None => Ok(r0),
         // The kernel refusing the invoke (a revoked or missing endpoint) is the same answer a
         // program with no directory capability gets: the platform cannot do this.

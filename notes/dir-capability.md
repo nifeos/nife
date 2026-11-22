@@ -104,7 +104,7 @@ onto a directory's raw bytes.
 ## Handle 0 is the bound directory
 
 The bound directory is an ordinary entry in
-the handle table at `fs::ROOT`, which is 0 because every client that ever sent an `OPEN` already
+the handle table at `file_system::ROOT`, which is 0 because every client that ever sent an `OPEN` already
 sent 0 in that field and meant exactly this. So there is no separate "current directory" for a verb
 to forget to consult: every name-taking verb resolves under a handle, always. File handles start at
 1, and the root cannot be closed (`EINVAL`, because it is not something the client opened).
@@ -122,7 +122,7 @@ delete what is there", made structural.
 
 The FS server's handle table is per *server*, not per client. Two clients sharing one endpoint
 share those handles. A rights-carrying handle therefore attenuates only *its holder*: anyone holding
-the FS-service endpoint can name `fs::ROOT` and be back at the image root, whatever narrow handle
+the FS-service endpoint can name `file_system::ROOT` and be back at the image root, whatever narrow handle
 they were given. Rights on a handle are not confinement.
 
 So confining a program to a subtree is not "give it a narrow handle". It is give it an endpoint
@@ -219,9 +219,9 @@ let [tag, verdict, ..] = sched::ipc_receive(report);
 Descend and then descend again, from a client, asking for less each time:
 
 ```rust
-// the granted directory is always fs::ROOT on your own endpoint
+// the granted directory is always file_system::ROOT on your own endpoint
 put_page(b"deeper");
-let child = call(FILE, fs::request(fs::OPENDIR, fs::ROOT, 6), dir::DESCEND | dir::READ).0 as i64;
+let child = call(FILE, fs::request(file_system::OPENDIR, file_system::ROOT, 6), dir::DESCEND | dir::READ).0 as i64;
 // `child` can read and descend. It cannot create, remove or enumerate, and asking for
 // dir::ALL here would have been EPERM rather than a quietly smaller capability.
 ```
@@ -233,8 +233,8 @@ put_page(b"tmp");           // the source name
 put_page_at(3, b"report");  // the destination, immediately after it
 let r = call(
     FILE,
-    fs::request(fs::RENAME, fs::ROOT, 3),
-    fs::rename_destination(fs::ROOT, 6),
+    fs::request(file_system::RENAME, file_system::ROOT, 3),
+    fs::rename_destination(file_system::ROOT, 6),
 ).0 as i64;
 // 0, or -EROFS if this capability carries no REMOVE (source) or no CREATE (destination).
 ```

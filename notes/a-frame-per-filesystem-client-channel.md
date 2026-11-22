@@ -27,7 +27,7 @@ client side only. The server is the other holder of every channel, and it:
 - learns nothing about its caller. `RECEIVE_CAPABILITY` hands it two words and a one-shot Reply capability,
   and the serve loop's own comment says so: "endpoint-only naming means we never learn who they
   are, only how to answer";
-- maps one window at `FILE_PAGE`, `fs::TRANSFER_PAGES` (16) pages wide, and reads every name and
+- maps one window at `FILE_PAGE`, `file_system::TRANSFER_PAGES` (16) pages wide, and reads every name and
   every `WRITE` payload from its start.
 
 So if two clients each had a private frame, the server would read one window, and there is
@@ -64,7 +64,7 @@ the witness test's job, and it is the next piece of this milestone either way.
 
 All costs below are computed from constants in the tree, not measured on a boot, except where a
 benchmark note is cited. The per-channel figure is the same under A, C and D: one channel is
-`fs::TRANSFER_PAGES` = 16 pages, 64 KiB of physically contiguous memory per concurrent client,
+`file_system::TRANSFER_PAGES` = 16 pages, 64 KiB of physically contiguous memory per concurrent client,
 where today the whole boot shares one 64 KiB channel. A directory job's region is
 `DIR_JOB_REGION_PAGES` = 96 pages (384 KiB), so carving the channel from the job's own region adds
 about 17% to it.

@@ -1235,11 +1235,11 @@ pub mod blank {
     /// The disk's size in 512-byte logical blocks. 64 MiB, matching the `sgdisk` fixture disk so
     /// the two are comparable at a glance.
     pub const DISK_BLOCKS: u64 = 131_072;
-    /// The logical block size the table counts in. Every disk this project has met uses it, and
-    /// nothing on the blk wire reports it (`disk_surveyor`'s BUGS).
+    /// The logical block size the table counts in: the contract's, so the fixture and the
+    /// installer cannot disagree about it.
     ///
     /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
-    pub const LOGICAL_BLOCK_BYTES: u64 = 512;
+    pub const LOGICAL_BLOCK_BYTES: u64 = file_system_contract::block::LOGICAL_BLOCK_BYTES;
 
     /// The system partition of the Extensible Firmware Interface: first and last logical block, inclusive. 2048 is the 1 MiB
     /// alignment every real tool uses. Nothing formats it or [`LINUX`]; they give the table more

@@ -183,4 +183,4 @@ lives there, one layer below the one milestone 138 is about.
   image, which is not the allocator's own answer. A block a record has vacated keeps its old bytes, so
   the count would drift upward on a rewritten image. These images were made, imported into once and
   never written again, the case where count and allocation agree. RedoxFS's own free-block count
-  (`file_system_contract::file_system::STATFS`) would be exact and needs a guest or a verb the host tool lacks.
+  (`file_system_contract::file_system::GET_VOLUME_STATISTICS`) would be exact and needs a guest or a verb the host tool lacks.

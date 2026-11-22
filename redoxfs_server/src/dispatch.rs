@@ -26,7 +26,7 @@
 //!   between `extended_attribute::is_valid_name` and the store's use of it, or the value as it is stored. Only
 //!   `GETXATTR` copies first.
 
-use file_system_contract::{block, extended_attribute, file_system, operation, reply_err};
+use file_system_contract::{block, error, extended_attribute, file_system, operation};
 use redoxfs::Disk;
 use syscall::error::{EINVAL, EPERM, Error, Result};
 
@@ -56,7 +56,7 @@ impl<D: Disk> Server<D> {
     /// `window` must be at least [`file_system::MAXIMUM_TRANSFER_BYTES`] bytes, which the EL0 binary's mapped
     /// window is exactly. A shorter slice panics on the first verb that reaches past it.
     ///
-    /// This is the **only** place a RedoxFS error becomes a wire value ([`reply_err`]); everything
+    /// This is the **only** place a RedoxFS error becomes a wire value ([`error::word`]); everything
     /// below it speaks `syscall::error::Result`.
     pub fn handle(
         &mut self,
@@ -74,7 +74,7 @@ impl<D: Disk> Server<D> {
             return if code == file_system::SYNC {
                 (edges.sync(), 0)
             } else {
-                (reply_err(EPERM), 0)
+                (error::word(EPERM), 0)
             };
         }
         // A bound badge's handles go through `subtree_scope` (milestone 606 (a directory walk costs
@@ -93,7 +93,7 @@ impl<D: Disk> Server<D> {
         };
         let handle = match admitted {
             Ok(h) => h,
-            Err(e) => return (reply_err(e.errno), 0),
+            Err(e) => return (error::word(e.errno), 0),
         };
         // Two clamps (milestone 138 (close the read gap) step 3): a reply length this server
         // chooses stays inside the one page every client maps, and only `READ` and `WRITE`, whose
@@ -132,7 +132,7 @@ impl<D: Disk> Server<D> {
             _ => 0,
         };
         // The one error-mapping site: RedoxFS's Error -> the negated-errno wire value.
-        (result.unwrap_or_else(|e| reply_err(e.errno)), size)
+        (result.unwrap_or_else(|e| error::word(e.errno)), size)
     }
 
     /// **The file and directory verbs**: open, read, write, create, list, rename and remove. Any
@@ -246,16 +246,18 @@ impl<D: Disk> Server<D> {
             file_system::SYNC => self.sync_permitted(handle).map(|()| edges.sync()),
             // A record in the channel, `r0` its length: three u64s do not fit a reply word, and
             // encoding here keeps the core's verbs free of the wire's layout.
-            file_system::STATFS => self.statfs(handle).and_then(|(block, total, free)| {
-                file_system_contract::file_system_statistics::encode(
-                    &mut window[..BLOCK],
-                    block,
-                    total,
-                    free,
-                )
-                .map(|n| n as i64)
-                .ok_or(Error::new(EINVAL))
-            }),
+            file_system::GET_VOLUME_STATISTICS => {
+                self.statfs(handle).and_then(|(block, total, free)| {
+                    file_system_contract::volume_statistics::encode(
+                        &mut window[..BLOCK],
+                        block,
+                        total,
+                        free,
+                    )
+                    .map(|n| n as i64)
+                    .ok_or(Error::new(EINVAL))
+                })
+            }
             // The mtime verbs (milestone 47's `touch`; DECISIONS §112 (`touch`'s two behaviors need
             // two rights)), in UNLINK's shape. The rights split lives in [`Server::mtime`] and its
             // two siblings.

@@ -25,7 +25,7 @@
 //! # The error boundary
 //!
 //! Every method here returns `syscall::error::Result`, RedoxFS's own error type, unmapped. The
-//! translation to the wire (a negated errno, `file_system_contract::reply_err`) happens once, at the
+//! translation to the wire (a negated errno, `file_system_contract::error::word`) happens once, at the
 //! process boundary, and nowhere else: there is no ABI type in here to leak.
 
 #![cfg_attr(not(test), no_std)]

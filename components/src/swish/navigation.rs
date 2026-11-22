@@ -489,10 +489,10 @@ impl Nav {
     }
 
     /// **`touch`**: create an empty file if the name is not there (a no-op if it already is), then
-    /// bump its modification time. Bare `touch` sets it to now (`fs::SET_MODIFICATION_TIME`, needs only the
-    /// `WRITE` this shell already holds); `-t` asserts a caller-chosen instant (`fs::SET_MODIFICATION_TIME_AT_UNIX_SECONDS`,
+    /// bump its modification time. Bare `touch` sets it to now (`file_system::SET_MODIFICATION_TIME`, needs only the
+    /// `WRITE` this shell already holds); `-t` asserts a caller-chosen instant (`file_system::SET_MODIFICATION_TIME_AT_UNIX_SECONDS`,
     /// needs `WRITE` **and** `SET_MODIFICATION_TIME_AT`, DECISIONS §112). The create half is `mkdir`'s shape, one
-    /// right narrower: `fs::CREATE` mints a name and this builtin gives the handle straight back,
+    /// right narrower: `file_system::CREATE` mints a name and this builtin gives the handle straight back,
     /// because touching a file is not opening it.
     ///
     /// **Milestone 47 built the create half first and the mtime half here**, in that order, because

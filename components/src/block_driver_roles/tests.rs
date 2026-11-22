@@ -42,7 +42,7 @@ fn window_access_fits_holds_the_access_inside_the_window_and_aligned() {
 /// client that would overflow the sector arithmetic is refused, not wrapped.
 #[test]
 fn transfer_first_sector_refuses_a_request_past_the_end_of_the_disk() {
-    let sectors_per_block = block::SECTORS_PER_BLOCK;
+    let sectors_per_block = SECTORS_PER_BLOCK;
     let capacity = 100 * sectors_per_block; // a disk of 100 filesystem blocks
     assert_eq!(transfer_first_sector(0, 1, capacity), Some(0));
     assert_eq!(

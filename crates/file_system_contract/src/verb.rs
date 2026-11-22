@@ -260,12 +260,12 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         false,
         directory::rights::WRITE,
     ),
-    // STATFS names a handle and nothing else: no operand, no second word, no right. The reply
+    // GET_VOLUME_STATISTICS names a handle and nothing else: no operand, no second word, no right. The reply
     // fills the shared page, which costs a proxy nothing because the page is the one all three
     // parties already share (see `fs_subtree_caretaker`'s `PAGE_VA`).
     row(
-        file_system::STATFS,
-        "STATFS",
+        file_system::GET_VOLUME_STATISTICS,
+        "GET_VOLUME_STATISTICS",
         Operand::None,
         false,
         false,
@@ -425,12 +425,12 @@ pub mod file_grant {
         Policy::Forward, // SETXATTR, EROFS without the direction
         Policy::Forward, // LISTXATTR
         Policy::Forward, // REMOVEXATTR, EROFS without the direction
-        // STATFS is forwarded rather than refused, and it is the one directory-shaped question
+        // GET_VOLUME_STATISTICS is forwarded rather than refused, and it is the one directory-shaped question
         // that means something through a file capability: a program granted one file to write
         // still has to know whether its next write fits. The server takes any handle it minted,
         // so the caretaker's substituted file handle answers it.
-        Policy::Forward, // STATFS
-        // SYNC is forwarded for STATFS's reason (any handle qualifies, the question is about
+        Policy::Forward, // GET_VOLUME_STATISTICS
+        // SYNC is forwarded for GET_VOLUME_STATISTICS's reason (any handle qualifies, the question is about
         // the device) and refused with EROFS through a read-only grant by `Policy::Forward`'s
         // own rule, matching SYNC's own doc ("Rights: directory::rights::WRITE").
         Policy::Forward, // SYNC

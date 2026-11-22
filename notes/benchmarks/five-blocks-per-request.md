@@ -173,7 +173,7 @@ the block priced.
 ### The workload question, answered by reading
 
 *The code quoted below changed on 2026-08-19 (milestone 55 (Time Machine)). The section stands because its
-reasoning makes the change legible.* `smb_server`'s two `min`s now read `fs::TRANSFER_MAXIMUM`
+reasoning makes the change legible.* `smb_server`'s two `min`s now read `file_system::TRANSFER_MAXIMUM`
 rather than `file_system_contract::PAGE`, so a Mac writing a megabyte arrives as 16 requests rather
 than 256. Measured through a real SMB client: write 4.8x, read 2.4x, against the 8.02x and 5.67x
 step 3 measured on the contract itself ([steps 1 and 3](read-path-record-and-request-size.md)). The

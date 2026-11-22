@@ -213,7 +213,7 @@ fn probe_attributes(writable: bool) -> u64 {
         ),
         0,
     );
-    if file_system_contract::reply_errno(g0 as i64) == Some(extended_attribute::ENOTSUP) {
+    if file_system_contract::error::code(g0 as i64) == Some(extended_attribute::ENOTSUP) {
         verdict |= escape::GRANTED_ATTRIBUTES_FAILED;
     }
 

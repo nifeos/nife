@@ -143,7 +143,7 @@ fn mkdir_home(identity: &[u8]) -> Option<i32> {
         file_system::request(file_system::MKDIR, file_system::ROOT, identity.len() as u64),
         file_system_contract::directory::rights::ALL,
     );
-    match file_system_contract::reply_errno(r0 as i64) {
+    match file_system_contract::error::code(r0 as i64) {
         Some(errno) => Some(errno),
         None => {
             // Best-effort: a failed close leaks a handle-table slot in the file service and

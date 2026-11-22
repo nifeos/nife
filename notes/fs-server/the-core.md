@@ -66,9 +66,9 @@ holds. It refuses to hand back less than was asked for without saying so, which 
 silent degradation. `MKDIR` needs `DESCEND` as well as `CREATE`, because making a directory you could
 not have walked into would mint a capability out of a right that was withheld.
 
-### `STATFS` and `SYNC`
+### `GET_VOLUME_STATISTICS` and `SYNC`
 
-`STATFS` validates the handle and then ignores it. Holding any minted handle is what entitles a
+`GET_VOLUME_STATISTICS` validates the handle and then ignores it. Holding any minted handle is what entitles a
 caller to ask, and the answer is about the one image behind all of them. It reads `header.size()` and
 `allocator().free()` outside a transaction, because opening one to answer a question would put a
 commit in the path of a read-only verb. RedoxFS's own `clone` computes free space from the same pair.
@@ -78,7 +78,7 @@ time.
 `Server::sync_permitted` is the permission half of `SYNC` and performs no flush. The flush is a
 `blk::FLUSH` to the block server, so it lives in the binary with the rest of the IO. RedoxFS's `Disk`
 trait has no sync method, and this tree does not modify vendored code to add one. It takes a handle
-of either kind, as `STATFS` does, and needs `WRITE`: a flush stalls the queue for every client, and a
+of either kind, as `GET_VOLUME_STATISTICS` does, and needs `WRITE`: a flush stalls the queue for every client, and a
 read-only holder has nothing outstanding to make durable.
 
 ## Names

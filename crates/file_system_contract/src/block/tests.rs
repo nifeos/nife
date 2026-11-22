@@ -43,7 +43,7 @@ fn blk_request_refuses_a_count_past_the_transfer_limit() {
 }
 
 #[test]
-fn a_filesystem_block_is_eight_sectors() {
+fn a_filesystem_block_is_eight_logical_blocks() {
     assert_eq!(block::BLOCK_BYTES, PAGE_BYTES);
-    assert_eq!(block::SECTORS_PER_BLOCK, 8);
+    assert_eq!(block::BLOCK_BYTES as u64 / block::LOGICAL_BLOCK_BYTES, 8);
 }

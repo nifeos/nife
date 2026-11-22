@@ -831,7 +831,7 @@ pub(super) struct DirWords {
 /// two words hold (`grant::MAXIMUM_WORDS_NAME_BYTES`, milestone 946 (a granted file name can be longer than sixteen bytes)) does: the program is told
 /// `grant::WHOLE_NAMESPACE` and the grant becomes a set of that one name, which
 /// `fs_nameset_caretaker` serves and [`spawn_dir_grant`] writes on a page. Nothing between here and
-/// the process decodes the words. The namespace root travels as an empty directory name, which the caretaker narrows with `fs::NARROW` (§173 (narrowing the root of the shell's namespace)). Refused with nothing spawned: a second tree,
+/// the process decodes the words. The namespace root travels as an empty directory name, which the caretaker narrows with `file_system::NARROW` (§173 (narrowing the root of the shell's namespace)). Refused with nothing spawned: a second tree,
 /// a directory deeper than one level, a set of more than one name, and a directory whose name does
 /// not fit in a grant's two argument words. See `notes/swish-language/running.md`, "The directory
 /// grant".
@@ -850,7 +850,7 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
     // deeper path is a *chain* of caretakers (DECISIONS §92 names it as the case supervision was
     // chosen for) and the progenitor builds one. **The root of this shell's namespace has no name
     // to descend into, so its grant is an empty name**, which the caretaker reads as "narrow the
-    // directory you hold" (`fs::NARROW`, §173).
+    // directory you hold" (`file_system::NARROW`, §173).
     let dir: &[u8] = match g.directory.depth() {
         0 => b"",
         1 => g.directory.component(0),

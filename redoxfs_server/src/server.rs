@@ -653,7 +653,7 @@ impl<D: Disk> Server<D> {
         Ok(())
     }
 
-    /// How much room the image has ([`file_system_contract::file_system::STATFS`], milestone 54 (a network file service a Mac can actually mount)), as
+    /// How much room the image has ([`file_system_contract::file_system::GET_VOLUME_STATISTICS`], milestone 54 (a network file service a Mac can actually mount)), as
     /// `(block_size, total_blocks, free_blocks)`.
     ///
     /// The handle is validated and not used: holding any minted handle entitles a caller to ask, so

@@ -239,7 +239,7 @@ fn a_client_stages_in_the_window_its_badge_names() {
     );
 
     // **Read-only is the capability's, not the disk tree's code** (`can_write`).
-    let erofs = file_system_contract::reply_err(30);
+    let erofs = file_system_contract::error::word(30);
     assert_eq!(
         call(block::WRITE, DISK_TREE_WINDOW),
         erofs,
@@ -253,7 +253,7 @@ fn a_client_stages_in_the_window_its_badge_names() {
     // **A badge no client was given is refused**, not folded onto window 0.
     assert_eq!(
         call(block::READ, CLIENT_WINDOWS as u64),
-        file_system_contract::reply_err(22),
+        file_system_contract::error::word(22),
         "a badge past the last window was served"
     );
 }

@@ -53,7 +53,7 @@ pub(super) fn stat_under(at: u64, path: &Path) -> io::Result<FileAttr> {
     // The name again: nothing promises `OPEN`'s reply left the page as it found it.
     p.put(name.as_bytes());
     let (r0, _) = rt::call(FS, proto::request(proto::GET_MODIFICATION_TIME_UNIX_SECONDS, at.0, name.len() as u64), 0);
-    let mtime = match fsproto::reply_errno(r0 as i64) {
+    let mtime = match fsproto::error::code(r0 as i64) {
         None => Mtime::Seconds(r0),
         Some(_) => Mtime::Refused(r0),
     };

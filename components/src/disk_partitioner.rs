@@ -27,6 +27,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
+use file_system_contract::block::LOGICAL_BLOCK_BYTES;
 use file_system_contract::{block, request};
 use file_system_fixture::blank;
 use globally_unique_identifier_partition_table::entry::{Entry, NAME_UNITS};
@@ -55,9 +56,6 @@ const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 
 /// The transfer unit of the block service: one filesystem block per request.
 const TRANSFER: u64 = block::BLOCK_BYTES as u64;
-
-/// The logical block size a GPT counts in. See BUGS.
-const LBA: u64 = blank::LOGICAL_BLOCK_BYTES;
 
 // The roles, in `a0`. Must match kernel/src/user/disk_service.rs.
 const ROLE_PARTITION: u64 = 0;
@@ -202,15 +200,20 @@ fn partition() -> ! {
     // The disk's own size, asked of the disk rather than assumed. A layout that does not fit is a
     // refusal from `PartitionTable::create`, not a truncated table.
     let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
-    if size <= 0 || !(size as u64).is_multiple_of(LBA) {
+    if size <= 0 || !(size as u64).is_multiple_of(LOGICAL_BLOCK_BYTES) {
         send(REPORT, R_DISK_FAILED, 2, size as u64);
         user_mode_runtime::exit()
     }
-    let block_count = size as u64 / LBA;
+    let block_count = size as u64 / LOGICAL_BLOCK_BYTES;
 
     let array = array();
-    let Ok(table) = PartitionTable::create(guids[0], LBA as usize, block_count, &parts, array)
-    else {
+    let Ok(table) = PartitionTable::create(
+        guids[0],
+        LOGICAL_BLOCK_BYTES as usize,
+        block_count,
+        &parts,
+        array,
+    ) else {
         send(REPORT, R_DISK_FAILED, 3, block_count);
         user_mode_runtime::exit()
     };
@@ -218,7 +221,7 @@ fn partition() -> ! {
     // One logical block of scratch, built and written one at a time: the MBR, the primary header,
     // and the backup header are each 512 bytes at a known LBA, and the entry array is written
     // straight out of the buffer `PartitionTable::create` filled.
-    let mut block = [0u8; LBA as usize];
+    let mut block = [0u8; LOGICAL_BLOCK_BYTES as usize];
     let entries: &[u8] = table.entry_array();
 
     let steps: [(u64, Option<&[u8]>); 5] = [
@@ -268,11 +271,11 @@ fn verify() -> ! {
     let mut data_first_lba = 0u64;
 
     let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
-    if size <= 0 || !(size as u64).is_multiple_of(LBA) {
+    if size <= 0 || !(size as u64).is_multiple_of(LOGICAL_BLOCK_BYTES) {
         send(REPORT, 0, 0, 0);
         user_mode_runtime::exit()
     }
-    let block_count = size as u64 / LBA;
+    let block_count = size as u64 / LOGICAL_BLOCK_BYTES;
 
     let head = primary();
     if !read_at(0, &mut head[..]) {
@@ -282,7 +285,7 @@ fn verify() -> ! {
     let head: &[u8] = head;
 
     if globally_unique_identifier_partition_table::master_boot_record::validate(
-        &head[..LBA as usize],
+        &head[..LOGICAL_BLOCK_BYTES as usize],
         block_count,
     )
     .is_ok()
@@ -290,8 +293,8 @@ fn verify() -> ! {
         flags |= F_MBR;
     }
     let Ok(table) = PartitionTable::parse(
-        &head[LBA as usize..2 * LBA as usize],
-        &head[2 * LBA as usize..],
+        &head[LOGICAL_BLOCK_BYTES as usize..2 * LOGICAL_BLOCK_BYTES as usize],
+        &head[2 * LOGICAL_BLOCK_BYTES as usize..],
     ) else {
         send(REPORT, flags, 0, 0);
         user_mode_runtime::exit()
@@ -304,15 +307,22 @@ fn verify() -> ! {
     let backup_blocks = block_count.saturating_sub(backup_lba);
     let tail = backup();
     if backup_blocks > 1
-        && let Some(span) = Span::covering(backup_lba * LBA, backup_blocks * LBA, TRANSFER)
+        && let Some(span) = Span::covering(
+            backup_lba * LOGICAL_BLOCK_BYTES,
+            backup_blocks * LOGICAL_BLOCK_BYTES,
+            TRANSFER,
+        )
         && span.blocks as usize * block::BLOCK_BYTES <= tail.len()
         && read_span(span, &mut tail[..])
     {
         let array = span.offset;
-        let header = array + (backup_blocks as usize - 1) * LBA as usize;
+        let header = array + (backup_blocks as usize - 1) * LOGICAL_BLOCK_BYTES as usize;
         let tail: &[u8] = tail;
         if table
-            .check_backup(&tail[header..header + LBA as usize], &tail[array..header])
+            .check_backup(
+                &tail[header..header + LOGICAL_BLOCK_BYTES as usize],
+                &tail[array..header],
+            )
             .is_ok()
         {
             flags |= F_BACKUP;
@@ -368,7 +378,7 @@ fn verify() -> ! {
 fn write_at(first_logical_block_address: u64, data: &[u8]) -> bool {
     let mut done = 0usize;
     while done < data.len() {
-        let byte_at = first_logical_block_address * LBA + done as u64;
+        let byte_at = first_logical_block_address * LOGICAL_BLOCK_BYTES + done as u64;
         let block = byte_at / TRANSFER;
         let offset = (byte_at % TRANSFER) as usize;
         let n = core::cmp::min(block::BLOCK_BYTES - offset, data.len() - done);
@@ -396,7 +406,7 @@ fn write_at(first_logical_block_address: u64, data: &[u8]) -> bool {
 /// transfer blocks and `first_logical_block_address` must land on one.
 fn read_at(first_logical_block_address: u64, into: &mut [u8]) -> bool {
     match Span::covering(
-        first_logical_block_address * LBA,
+        first_logical_block_address * LOGICAL_BLOCK_BYTES,
         into.len() as u64,
         TRANSFER,
     ) {

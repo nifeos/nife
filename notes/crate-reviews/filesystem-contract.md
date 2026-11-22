@@ -22,7 +22,7 @@ low byte of the first word. The file protocol (interface 15) runs between a clie
 filesystem server: 23 verbs (open, read, write, the directory verbs, the extended-attribute verbs,
 `NARROW`, `BIND`), each an endpoint `CALL` of two words with bytes only in a shared region. Around
 them sit the directory rights and their attenuation, the verb table a caretaker consults, the
-`READDIR` and name-set encodings, the `STATFS` record, the grant packers and the extended-attribute
+`READDIR` and name-set encodings, the `GET_VOLUME_STATISTICS` record, the grant packers and the extended-attribute
 store. A reply word is a result or a negated error code bounded at 4095, and any other negative word
 reads as `EPROTO` (Decision C). The crate is `no_std`, has no dependency of any kind and no `unsafe`,
 and eleven Kani harnesses, each with a falsification patch, prove the packers, the rights and the
@@ -33,7 +33,7 @@ reply decoding.
 | item | value |
 |---|---|
 | crate | `file_system_contract`, ratified 2026-08-23 UTC |
-| identity values | `block::INTERFACE_ID` 14 and `fs::INTERFACE_ID` 15, each with `VERSION` 1, rows 14 and 15 of [milestone 956 (the linked interfaces carry checkable versions)](../../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md)'s id table. No magic word. The four constants carry provisional `Name:` blocks; see Names |
+| identity values | `block::INTERFACE_ID` 14 and `file_system::INTERFACE_ID` 15, each with `VERSION` 1, rows 14 and 15 of [milestone 956 (the linked interfaces carry checkable versions)](../../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md)'s id table. No magic word. The four constants carry provisional `Name:` blocks; see Names |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, 1.88 |
 | license | `MIT OR Apache-2.0`, literal in the manifest; `LICENSE-MIT` and `LICENSE-APACHE` in the crate |
@@ -90,7 +90,7 @@ fuzz, Miri or the QEMU filesystem tests.
 | `fs` (interface 15) | identity, `ROOT`, 23 opcodes, the transfer and window limits, the request and rename-destination packers |
 | `directory` | ten rights, six errno constants, `explain`, `Rights` |
 | `verb` | `Verb`, `Operand`, `TABLE` (23 rows), `of`; `file_grant` |
-| `directory_entry`, `nameset`, `statfs` | the `READDIR`, name-set and `STATFS` encodings |
+| `directory_entry`, `nameset`, `volume_statistics` | the `READDIR`, name-set and `GET_VOLUME_STATISTICS` encodings |
 | `grant` | the grant packers and their limits |
 | `extended_attribute` (alias `xattr`) | the specification and reply packers, `STORE_DIRECTORY`, and the submodules `list` and `store` |
 | `rm` | `VERDICT_SLOT`, `OK`, `status` |
@@ -128,7 +128,7 @@ Also open: items 7, 9, 11, 12, 14 to 16, 21 and 22, and the walker termination o
 ## Names
 
 The architect ratified the crate name. Ten `tests` modules carry the standing module name ratified
-2026-11-20 UTC. The roadmap records rulings this table does not reopen: `fs::VERSION`,
+2026-11-20 UTC. The roadmap records rulings this table does not reopen: `file_system::VERSION`,
 `block::VERSION` and the two `INTERFACE_ID`s, every opcode number, `ROOT` as 0, the 8-bit opcode
 field at bits 63:56, the error-code choices, `NARROW`, `PARENT_RIGHTS` and `BIND_SYNC`, and the
 limits of #2797. The `Name:` blocks of the constants among those still read provisional (the four
@@ -148,9 +148,9 @@ The names Decision B's table renamed, as built, provisional:
 | module `block` | `blk` | an expansion everyone says |
 | module `directory_entry` | `dirent` | the same |
 | module `extended_attribute`, alias `xattr` | `xattr` | the same |
-| `fs::GET_MODIFICATION_TIME_UNIX_SECONDS`, `SET_MODIFICATION_TIME`, `SET_MODIFICATION_TIME_AT_UNIX_SECONDS` | `GETMTIME`, `SETMTIME`, `SETMTIME_AT` | `mtime` is a ruled word |
+| `file_system::GET_MODIFICATION_TIME_UNIX_SECONDS`, `SET_MODIFICATION_TIME`, `SET_MODIFICATION_TIME_AT_UNIX_SECONDS` | `GETMTIME`, `SETMTIME`, `SETMTIME_AT` | `mtime` is a ruled word |
 | `block::BLOCK_BYTES` | `BLOCK_SIZE` | a size carries its unit |
-| `file_system_statistics::RECORD_BYTES` | `LEN` | the same |
+| `volume_statistics::RECORD_BYTES` | `LEN` | the same |
 | `extended_attribute::store::RECORD_HEADER_BYTES` | `RECORD_HEADER` | the same |
 | `nameset::MAXIMUM_BYTES` | `BYTES` | a limit opens `MAXIMUM_` |
 | `grant::MAXIMUM_WORDS_NAME_BYTES` | `WORDS_NAME` | a limit with its unit |
@@ -165,17 +165,17 @@ The names #2797 ratified that Decision B renamed under the later units and count
 |---|---|
 | `extended_attribute::MAXIMUM_NAME_BYTES`, `grant::MAXIMUM_NAME_BYTES` | `MAXIMUM_NAME` |
 | `extended_attribute::MAXIMUM_VALUE_BYTES` | `MAXIMUM_VALUE` |
-| `fs::MAXIMUM_TRANSFER_BYTES`, `block::MAXIMUM_TRANSFER_BYTES` | `TRANSFER_MAXIMUM` |
-| `fs::MAXIMUM_LENGTH_BYTES` | `MAXIMUM_LENGTH_OR_OFFSET` |
+| `file_system::MAXIMUM_TRANSFER_BYTES`, `block::MAXIMUM_TRANSFER_BYTES` | `TRANSFER_MAXIMUM` |
+| `file_system::MAXIMUM_LENGTH_BYTES` | `MAXIMUM_LENGTH_OR_OFFSET` |
 | `extended_attribute::MAXIMUM_ATTRIBUTES` | `MAXIMUM_COUNT` |
 
 Kept as they are, with the reason, under Decision B:
 
 | item | status | reason |
 |---|---|---|
-| the POSIX verbs (`OPEN`, `READ`, `WRITE`, `CLOSE`, `FSTAT`, `CREATE`, `TRUNCATE`, `OPENDIR`, `READDIR`, `MKDIR`, `RENAME`, `UNLINK`, `RMDIR`, `GETXATTR`, `SETXATTR`, `LISTXATTR`, `REMOVEXATTR`, `STATFS`, `SYNC`) | no block; each carries `#[doc(alias)]` and a source line | a specification's term of art |
+| the POSIX verbs (`OPEN`, `READ`, `WRITE`, `CLOSE`, `FSTAT`, `CREATE`, `TRUNCATE`, `OPENDIR`, `READDIR`, `MKDIR`, `RENAME`, `UNLINK`, `RMDIR`, `GETXATTR`, `SETXATTR`, `LISTXATTR`, `REMOVEXATTR`, `GET_VOLUME_STATISTICS`, `SYNC`) | no block; each carries `#[doc(alias)]` and a source line | a specification's term of art |
 | the errno constants (`EROFS`, `EPERM`, `EISDIR`, `ENOTDIR`, `EINVAL`, `ENOTEMPTY`, `ENODATA`, `ERANGE`, `E2BIG`, `ENOSPC`, `ENOTSUP`, `EBADF`) | no block; each carries `#[doc(alias)]` and a source line | the platform's spelling, as the `libc` crate keeps it |
-| module `fs`, module `statfs` | no block; aliases `filesystem` and `volume_statistics` | `fs` mirrors `std::fs`; `statfs` is the call's name |
+| module `file_system`, module `volume_statistics` | ratified 2026-11-22; aliases `fs` and `statfs` | `fs` mirrors `std::fs`; `statfs` is the call's name |
 | `block::GET_SIZE_BYTES` | no block; the `register_names` exemption is not built | an opcode, not a size |
 
 Built and provisional, not in Decision B's table:
@@ -188,7 +188,7 @@ Built and provisional, not in Decision B's table:
 | `directory::Rights::substitute_parent_rights` | provisional | |
 | `grant::fits_words` | provisional | beside `fits` and `MAXIMUM_WORDS_NAME_BYTES` |
 | `verb::Verb::mints_handle_without_name` | provisional | |
-| `block::SECTOR_BYTES` | provisional (milestone 886 (the filesystem test fixture moves to its own crate)) | |
+| `block::LOGICAL_BLOCK_BYTES` | ratified 2026-11-22 | |
 | `rm::VERDICT_SLOT` | ratified 2026-11-22 | as built |
 | `DESCENT_REFUSED` | ratified 2026-11-22 | as built |
 
@@ -240,7 +240,7 @@ and 22 change what a release build does with a bad field, so they turn one-way a
 2. Ratify the Names section's four tables: Decision B's renames as built, the seven new spellings of
    names #2797 ratified, the kept POSIX verb and errno spellings, and the provisional names Decision
    B does not list. Provisional names stay provisional until the architect rules.
-3. Ratify the identity values `block::INTERFACE_ID` 14 and `fs::INTERFACE_ID` 15, each at `VERSION`
+3. Ratify the identity values `block::INTERFACE_ID` 14 and `file_system::INTERFACE_ID` 15, each at `VERSION`
    1, as frozen, as for the other contract crates.
 4. The request packers carry spelled-out names (built, provisional); ratify them with the rest.
 

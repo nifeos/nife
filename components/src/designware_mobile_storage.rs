@@ -158,10 +158,10 @@ fn transfer_blocks(
     write: bool,
 ) -> i64 {
     let Some(lba) = h.window.translate(block, count as u64) else {
-        return file_system_contract::reply_err(EINVAL);
+        return file_system_contract::error::word(EINVAL);
     };
     if write && !h.window.writable {
-        return file_system_contract::reply_err(EROFS);
+        return file_system_contract::error::word(EROFS);
     }
     let buf = &mut transfer()[..count * block::BLOCK_BYTES];
     let r = if write {
@@ -171,7 +171,7 @@ fn transfer_blocks(
     };
     match r {
         Ok(()) => count as i64,
-        Err(_) => file_system_contract::reply_err(EIO),
+        Err(_) => file_system_contract::error::word(EIO),
     }
 }
 
@@ -201,10 +201,10 @@ fn serve(mut host: HostController<Page>, card: Card, h: Handoff) -> ! {
                         flushes += 1;
                         flushes
                     }
-                    _ => file_system_contract::reply_err(EIO),
+                    _ => file_system_contract::error::word(EIO),
                 }
             }
-            _ => file_system_contract::reply_err(EINVAL),
+            _ => file_system_contract::error::word(EINVAL),
         };
         reply(reply_capability, r0 as u64, 0);
     }

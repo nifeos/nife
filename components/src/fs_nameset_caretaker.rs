@@ -24,9 +24,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use file_system_contract::{
-    directory_entry, file_system, grant, nameset, operation, reply_err, reply_errno, verb,
-};
+use file_system_contract::{directory_entry, error, file_system, grant, nameset, operation, verb};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{Reply, call, receive_request, send};
 
@@ -167,11 +165,11 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         let code = operation(w0);
         let asked = file_system::request_handle(w0);
         let Some(server_handle) = table.get(asked) else {
-            reply(reply_slot, reply_err(EBADF), 0);
+            reply(reply_slot, error::word(EBADF), 0);
             continue;
         };
         let Some(v) = verb::of(code) else {
-            reply(reply_slot, reply_err(EINVAL), 0);
+            reply(reply_slot, error::word(EINVAL), 0);
             continue;
         };
         // The filter is at the granted directory and nowhere else: what is under a directory the
@@ -181,7 +179,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         // A verb that reissues a handle without a name would hand back the whole directory with
         // the set filter left behind, so the granted directory refuses it (`Verb::mints_handle_without_name`).
         if filtered && v.mints_handle_without_name() {
-            reply(reply_slot, reply_err(EPERM), 0);
+            reply(reply_slot, error::word(EPERM), 0);
             continue;
         }
 
@@ -199,7 +197,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
             };
             let n = name_at(0, first, &mut buf);
             if !nameset::contains(set, &buf[..n]) {
-                reply(reply_slot, reply_err(ENOENT), 0);
+                reply(reply_slot, error::word(ENOENT), 0);
                 continue;
             }
             // Write the checked name back before forwarding (milestone 43,
@@ -213,7 +211,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         let mut size = 0u64;
         let r: i64 = if code == file_system::CLOSE {
             if asked == file_system::ROOT {
-                reply_err(EINVAL)
+                error::word(EINVAL)
             } else {
                 table.0[asked as usize] = None;
                 forward(
@@ -244,12 +242,12 @@ fn serve(dir: u64, set: &[u8]) -> ! {
                 put_at(len, &dst[..dn]);
             }
             match destination_handle {
-                _ if !(src_ok && dst_ok) => reply_err(ENOENT),
+                _ if !(src_ok && dst_ok) => error::word(ENOENT),
                 Some(d) => forward(
                     file_system::request(code, server_handle, len as u64),
                     file_system::rename_destination(d, destination_length_bytes as u64),
                 ),
-                None => reply_err(EBADF),
+                None => error::word(EBADF),
             }
         } else {
             // Everything else is `fs_subtree_caretaker`'s one forward, driven by the same table: the
@@ -269,7 +267,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
                     Some(client) => client as i64,
                     None => {
                         forward(file_system::request(file_system::CLOSE, r as u64, 0), 0);
-                        reply_err(EMFILE)
+                        error::word(EMFILE)
                     }
                 }
             }
@@ -335,7 +333,7 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
             grant::specification_rights(spec),
         )
     };
-    if reply_errno(r0 as i64).is_some() {
+    if error::code(r0 as i64).is_some() {
         panic!();
     }
     let dir = r0;

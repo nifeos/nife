@@ -28,7 +28,7 @@ still usable: 8 of 10 rounds at each point landed within 6% of the 203,000 to 20
 baseline the earlier sweeps established. The figures below are the median of all 10 rounds at each
 point. That is milestone 38's discipline (discard a loaded round rather than average it) adapted to
 a run where almost every round is close and one or two are not. The file transfer size stays at
-`fs::TRANSFER_PAGES = 16` (64 KiB, step 3's setting) for both points; only `blk::TRANSFER_BLOCKS`
+`file_system::TRANSFER_PAGES = 16` (64 KiB, step 3's setting) for both points; only `blk::TRANSFER_BLOCKS`
 varies.
 
 | phase | 1 block per blk CALL | 16 blocks per blk CALL | speedup |
@@ -44,7 +44,7 @@ varies.
 The naive model says sixteen round trips become one, so the win should be close to 16x. It is not,
 because steps 1 and 3 already changed what is inside the batch.
 
-`fs::TRANSFER_PAGES` is 16 (64 KiB per file-level request), but `RECORD_LEVEL` is 1 (step 1): an
+`file_system::TRANSFER_PAGES` is 16 (64 KiB per file-level request), but `RECORD_LEVEL` is 1 (step 1): an
 8 KiB record, two blocks. RedoxFS's engine (`Transaction::read_node`/`read_node_inner`,
 `vendor/redoxfs/src/transaction.rs`) walks the tree once per file-level `Server::read`/`write` call.
 That walk is `read_tree`, five single-block reads: the L3/L2/L1/L0 spine and the target node. The
@@ -88,7 +88,7 @@ coverage of the real device is unchanged by this step, not merely re-run.
   internal consistency (a predicted ~296 us saving against a measured 284 to 302 us across three
   independent phases) are the evidence of a real signal. It is not the quiet single-tenant machine
   the record-level and transfer-size sweeps had.
-- `blk::TRANSFER_BLOCKS` was set equal to `fs::TRANSFER_PAGES` (16) for symmetry with step 3, not
+- `blk::TRANSFER_BLOCKS` was set equal to `file_system::TRANSFER_PAGES` (16) for symmetry with step 3, not
   because 16 is where step 4's curve bends. Nobody has swept it independently the way
   `bench/record-level-sweep.sh` swept the record level. `sh bench/blk-transfer-sweep.sh` takes any
   list of block counts and would answer this in one run.
@@ -121,7 +121,7 @@ invalidation, slot-collision safety and multi-block bypass, in milliseconds with
 `sh bench/cache-slots-sweep.sh 8 1 64`, on the same shared, noisy machine as step 4 (`uptime` load
 15 to 19). Capacity 1 is not quite "off", since the same block asked for twice in a row still hits.
 But the tree walk touches five different blocks per call, so a one-slot cache thrashes across a
-single walk and rarely survives to the next; the sweep's own doc says so. `fs::TRANSFER_PAGES`
+single walk and rarely survives to the next; the sweep's own doc says so. `file_system::TRANSFER_PAGES`
 (64 KiB) and `blk::TRANSFER_BLOCKS` (16) are at their step-3 and step-4 settings for both points. This
 isolates the cache's marginal contribution on top of everything already shipped.
 

@@ -215,7 +215,7 @@ const VERBS: &[u64] = &[
     file_system::SETXATTR,
     file_system::LISTXATTR,
     file_system::REMOVEXATTR,
-    file_system::STATFS,
+    file_system::GET_VOLUME_STATISTICS,
     file_system::SYNC,
     file_system::GET_MODIFICATION_TIME_UNIX_SECONDS,
     file_system::SET_MODIFICATION_TIME,

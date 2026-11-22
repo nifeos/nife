@@ -98,7 +98,7 @@ first `p` acknowledged operations, and `p` never goes backwards. A host injector
 recorded write log to every fault point. Every power cut and every torn last write is
 prefix-consistent. A lying device that drops or tears one write is caught or recovered and never
 silently wrong, because every block pointer carries a seahash. Our block server now issues a real
-flush (`fs::SYNC`), and ordering between writes stays the device's job. A device-level test tears a
+flush (`file_system::SYNC`), and ordering between writes stays the device's job. A device-level test tears a
 real virtio write inside a real FS-server process and recovers it with a second one.
 [`fs-server/crash-consistency.md`](fs-server/crash-consistency.md) has the tables, the controls and
 the corrections.
@@ -207,7 +207,7 @@ shares the dispatch, never the attenuation. Its `Operand::Name` versus `Operand:
 what keeps a name-set capability from escaping its set.
 [`fs-server/verb-table.md`](fs-server/verb-table.md) has the fields.
 
-## `STATFS` (milestone 54 (a network file service a Mac can actually mount))
+## `GET_VOLUME_STATISTICS` (milestone 54 (a network file service a Mac can actually mount))
 
 Op 18 answers how much room the store behind a capability has: the allocation unit, the volume size
 and the free count, as a record whose length is its version. It demands no right, so a write-only

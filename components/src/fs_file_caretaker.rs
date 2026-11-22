@@ -28,7 +28,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use file_system_contract::{file_system, grant, operation, reply_err, reply_errno};
+use file_system_contract::{error, file_system, grant, operation};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{Reply, call, receive_request, send};
 
@@ -113,7 +113,7 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
         // One refusal site: an opcode this contract does not carry gets `EBADF`, as a forged
         // handle does.
         let (Some(v), Some(policy)) = (verb::of(code), verb::file_grant::of(code)) else {
-            reply(reply_slot, reply_err(EBADF));
+            reply(reply_slot, error::word(EBADF));
             continue;
         };
 
@@ -130,26 +130,26 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
                 if len == name.len() && &asked_name[..len] == name {
                     grant::HANDLE as i64
                 } else {
-                    reply_err(2) // ENOENT
+                    error::word(2) // ENOENT
                 }
             }
             // CLOSE is answered, not forwarded: this process owns the underlying handle for its
             // whole life, so a client's CLOSE must not make the next request fail.
             Policy::Local if asked == grant::HANDLE => 0,
             // A CLOSE of a handle this capability never minted.
-            Policy::Local => reply_err(EBADF),
+            Policy::Local => error::word(EBADF),
             // The client's handle is checked and then replaced by this process's, so a request
             // that gets through names the granted file whatever the client meant. Extended
             // attributes ride here too, and `mutates()` refuses changing them read-only.
-            Policy::Forward if asked != grant::HANDLE => reply_err(EBADF),
-            Policy::Forward if v.mutates() && !writable => reply_err(grant::EROFS),
+            Policy::Forward if asked != grant::HANDLE => error::word(EBADF),
+            Policy::Forward if v.mutates() && !writable => error::word(grant::EROFS),
             Policy::Forward => {
                 let n = if v.carries_len() { len as u64 } else { 0 };
                 let second = if v.carries_w1 { w1 } else { 0 };
                 forward(file_system::request(code, handle, n), second)
             }
             // Not offered: the row's errno says which "no", ENOTDIR for every directory verb.
-            Policy::Refused(errno) => reply_err(errno),
+            Policy::Refused(errno) => error::word(errno),
         };
         reply(reply_slot, r);
     }
@@ -166,7 +166,7 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // failure lands at the grant rather than at the first read.
     put(name);
     let (r0, _) = call(FS, file_system::request(file_system::OPEN, 0, n as u64), 0);
-    if reply_errno(r0 as i64).is_some() {
+    if error::code(r0 as i64).is_some() {
         panic!();
     }
 

@@ -43,10 +43,10 @@ inside it by its full path, and lists the directory back. A listing is a fact ab
 view, so a leaf shown as a full path is a bug this side *can* see. What it cannot see is whether a
 directory reached RedoxFS. A share that ignored the separator would create a file literally called
 `tm_bands\band0` in the share root, and that is indistinguishable from success on the wire. The verify
-role descends with `fs::OPENDIR`, and reports `DIR_IS_A_FILE` when the answer is `ENOTDIR`, which is
+role descends with `file_system::OPENDIR`, and reports `DIR_IS_A_FILE` when the answer is `ENOTDIR`, which is
 exactly that failure named.
 
-The prober asserts `FileFsFullSizeInformation` is not the nominal constant. That is the `STATFS` half
+The prober asserts `FileFsFullSizeInformation` is not the nominal constant. That is the `GET_VOLUME_STATISTICS` half
 arriving where Time Machine will read it.
 
 The Apple leg rides the first CREATE, because that is where a Mac puts it. The prober's open of the

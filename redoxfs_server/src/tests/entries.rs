@@ -376,7 +376,7 @@ fn a_subtree_built_through_directory_handles_survives_a_reopen() {
     let n = srv.read(f, 0, &mut buf).unwrap();
     assert_eq!(&buf[..n], b"written two levels down");
 }
-// --- STATFS (milestone 54) ---
+// --- GET_VOLUME_STATISTICS (milestone 54) ---
 
 /// **The volume's numbers are the image's, and writing to it moves the free count.**
 ///
@@ -398,7 +398,7 @@ fn statfs_reports_the_image_and_a_write_takes_space_out_of_it() {
     );
     // `server_with` builds a 16 MiB DiskMemory; the filesystem is that minus the reservation
     // RedoxFS makes at the front, so the assertion is a range rather than an equality.
-    let bytes = file_system_contract::file_system_statistics::total_bytes(block, total);
+    let bytes = file_system_contract::volume_statistics::total_bytes(block, total);
     assert!(
         (8 * 1024 * 1024..=16 * 1024 * 1024).contains(&bytes),
         "a 16 MiB image reported {bytes} bytes",
@@ -440,7 +440,7 @@ fn statfs_answers_through_a_capability_that_carries_nothing() {
     assert_eq!(
         srv.statfs(narrow).unwrap().0,
         redoxfs::BLOCK_SIZE,
-        "STATFS asks for no right; see file_system_contract::file_system::STATFS",
+        "GET_VOLUME_STATISTICS asks for no right; see file_system_contract::file_system::GET_VOLUME_STATISTICS",
     );
 }
 

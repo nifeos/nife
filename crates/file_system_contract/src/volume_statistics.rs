@@ -1,4 +1,4 @@
-/// Bytes one record takes. Also the value [`super::file_system::STATFS`] answers with on success; see
+/// Bytes one record takes. Also the value [`super::file_system::GET_VOLUME_STATISTICS`] answers with on success; see
 /// the module header on why the length is the version.
 ///
 /// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `file_system_contract`).
@@ -20,7 +20,7 @@ pub fn encode(
     Some(RECORD_BYTES)
 }
 
-/// Read a record from the start of `buf` (the `r0` bytes a `file_system::STATFS` reply filled), as
+/// Read a record from the start of `buf` (the `r0` bytes a `file_system::GET_VOLUME_STATISTICS` reply filled), as
 /// `(block_size, total_blocks, free_blocks)`. `None` if the reply is shorter than this version
 /// of the record, which is what a truncated reply looks like and must not be read as zeroes.
 pub fn decode(buf: &[u8]) -> Option<(u64, u64, u64)> {

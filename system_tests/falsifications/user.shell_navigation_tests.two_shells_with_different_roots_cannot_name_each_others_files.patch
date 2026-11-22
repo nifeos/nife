@@ -5,7 +5,7 @@ Architecture: aarch64, riscv64, x86_64
 The defect is the caretaker serving the filesystem server's own root instead of the narrowed
 handle it was just given. `fs_subtree_caretaker` opens the subtree it was named, receives back
 a handle `r0` that reaches that subtree and nothing above it, and then serves `r0` as its
-client's slot-0 "root of my namespace". Serving `fs::ROOT` instead gives the shell a namespace
+client's slot-0 "root of my namespace". Serving `file_system::ROOT` instead gives the shell a namespace
 rooted at the whole image, which is precisely the authority §50 says it must not have.
 
 Expected to fail, and it does, at `system_tests/src/user/shell_navigation_tests.rs:99` on 2026-09-16:
@@ -55,7 +55,7 @@ diff --git a/components/src/fs_subtree_caretaker.rs b/components/src/fs_subtree_
  
      send(REPORT, file_system_contract::READY, 0, 0);
 -    serve(r0);
-+    serve(fs::ROOT);
++    serve(file_system::ROOT);
  }
  
  user_mode_runtime::panic_handler!();

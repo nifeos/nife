@@ -82,7 +82,7 @@ pub(crate) const STAGE_WRITE: u64 = 3;
 /// compared against `SUCCESS`.
 ///
 /// `w0` is the raw reply word, `w1` is `0xBADD_0000 | stage << 12 | errno`. The errno is recovered
-/// with `file_system_contract::reply_errno`'s rule (a negative reply is a negated errno). Note the known
+/// with `file_system_contract::error::code`'s rule (a negative reply is a negated errno). Note the known
 /// reply-space overlap (notes/std/fs.md): the kernel's own `invoke` errors are -1..-8, so a small value
 /// here is ambiguous between "the server returned this errno" and "the IPC itself failed". The raw
 /// word travels in `w0` precisely so that ambiguity is visible rather than hidden.

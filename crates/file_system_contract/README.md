@@ -14,10 +14,10 @@ message and never reads an opcode.
 
 Each request is an endpoint `CALL` of two words, answered through a one-shot reply capability.
 Bytes travel only in a region the two parties share. A reply's first word is an `i64`: a
-non-negative result, or the negated errno. `reply_err` and `reply_errno` are the one place that
+non-negative result, or the negated errno. `error::word` and `error::code` are the one place that
 convention lives. A word in `-4095..=-1` is the error code `1..=4095` (`MAXIMUM_ERRNO`). Any other
 negative word is a protocol violation, and it reads as `EPROTO` (71), never as success. The
-sender's `reply_err` refuses a code outside `1..=4095`. The opcode sits in bits 63:56 of the first
+sender's `error::word` refuses a code outside `1..=4095`. The opcode sits in bits 63:56 of the first
 word (`OPERATION_SHIFT`, `request`, `operation`).
 
 ## The contract
@@ -32,7 +32,7 @@ word (`OPERATION_SHIFT`, `request`, `operation`).
   directory. A transfer is up to `file_system::TRANSFER_PAGES` (16) pages, and `file_system::VERSION` is the version.
   The verbs are `OPEN`, `READ`, `WRITE`, `CLOSE`, `FSTAT`, `CREATE`, `TRUNCATE`, `OPENDIR`,
   `READDIR`, `MKDIR`, `RENAME`, `UNLINK`, `RMDIR`, `GETXATTR`, `SETXATTR`, `LISTXATTR`,
-  `REMOVEXATTR`, `STATFS`, `SYNC`, `GET_MODIFICATION_TIME_UNIX_SECONDS`, `SET_MODIFICATION_TIME`,
+  `REMOVEXATTR`, `GET_VOLUME_STATISTICS`, `SYNC`, `GET_MODIFICATION_TIME_UNIX_SECONDS`, `SET_MODIFICATION_TIME`,
   `SET_MODIFICATION_TIME_AT_UNIX_SECONDS` and `NARROW`. `BIND`, `UNBIND` and `BIND_SYNC` sit outside the
   table's range, so no caretaker forwards them.
 - `directory` is what a directory capability carries: a rights set of `ENUMERATE`, `READ`, `WRITE`,
@@ -42,8 +42,8 @@ word (`OPERATION_SHIFT`, `request`, `operation`).
   is `EROFS`, and `ENUMERATE` is `EPERM`. `explain` gives a fact-only sentence for each errno.
 - `verb` declares each request's argument shape and the rights a server demands, once, in `TABLE`,
   so every caretaker dispatches off it. A verb in `file_system` without a row is a compile error.
-- `directory_entry`, `statfs`, `grant`, `nameset` and `extended_attribute` are the encodings. A
-  listing in the shared page is a flags byte, a length byte, then the name. A `statfs` reply is
+- `directory_entry`, `volume_statistics`, `grant`, `nameset` and `extended_attribute` are the encodings. A
+  listing in the shared page is a flags byte, a length byte, then the name. A `volume_statistics` reply is
   three little-endian `u64`: the allocation unit, the volume size and the free count in those units.
   The reply length is the version. A `grant` is a per-file grant: a name that fits two words or is
   longer, plus `READ` and `WRITE`. A `nameset` is a directory attenuated to at most eight names and
@@ -55,14 +55,14 @@ word (`OPERATION_SHIFT`, `request`, `operation`).
 ## EXAMPLES
 
 ```rust
-use file_system_contract::{directory, file_system, operation, reply_err, reply_errno, request};
+use file_system_contract::{directory, error, file_system, operation, request};
 
 // A block-protocol request is just an opcode.
 assert_eq!(operation(request(file_system_contract::block::READ)), file_system_contract::block::READ);
 
 // An error is the negated errno; a length is itself.
-assert_eq!(reply_errno(reply_err(2)), Some(2));
-assert_eq!(reply_errno(4096), None);
+assert_eq!(error::code(error::word(2)), Some(2));
+assert_eq!(error::code(4096), None);
 
 // A child directory never carries a right its parent lacks.
 let parent = directory::Rights::root(directory::rights::READ | directory::rights::ENUMERATE);
@@ -113,7 +113,7 @@ The patch swaps the bitwise AND in `attenuate` for an OR, so the failing run rep
 
 ## BUGS
 
-- `STATFS` answers about the whole image, never a subtree. Its free count is a forecast, not a
+- `GET_VOLUME_STATISTICS` answers about the whole image, never a subtree. Its free count is a forecast, not a
   reservation, because the store's `ENOSPC` at write time decides. Two subtrees on one image can
   signal through it.
 - `SYNC` syncs the whole device and does not fence. A write and a sync issued at once on two

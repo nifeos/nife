@@ -26,7 +26,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use file_system_contract::{file_system, grant, operation, reply_err, reply_errno, verb};
+use file_system_contract::{error, file_system, grant, operation, verb};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{Reply, call, exit, receive_request, send};
 
@@ -135,13 +135,13 @@ fn serve(dir: u64) -> ! {
         let len = file_system::request_length_bytes(w0).min(PAGE) as u64;
         let code = operation(w0);
         let Some(server_handle) = table.get(file_system::request_handle(w0)) else {
-            reply(reply_slot, reply_err(EBADF), 0);
+            reply(reply_slot, error::word(EBADF), 0);
             continue;
         };
         // An opcode the contract does not carry. One refusal site, and `EINVAL` because a word this
         // contract cannot resolve is a malformed request rather than a capability's refusal.
         let Some(v) = verb::of(code) else {
-            reply(reply_slot, reply_err(EINVAL), 0);
+            reply(reply_slot, error::word(EINVAL), 0);
             continue;
         };
 
@@ -154,7 +154,7 @@ fn serve(dir: u64) -> ! {
             // close it could make every later request in its own session fail.
             let client = file_system::request_handle(w0);
             if client == file_system::ROOT {
-                reply_err(EINVAL)
+                error::word(EINVAL)
             } else {
                 table.0[client as usize] = None;
                 forward(
@@ -173,7 +173,7 @@ fn serve(dir: u64) -> ! {
                         file_system::destination_length_bytes(w1).min(PAGE) as u64,
                     ),
                 ),
-                None => reply_err(EBADF),
+                None => error::word(EBADF),
             }
         } else {
             // `len` travels only for the verbs whose length field counts something and `w1` only
@@ -199,7 +199,7 @@ fn serve(dir: u64) -> ! {
                         // process holds the only reference to it and would otherwise pin a node for
                         // the rest of the boot.
                         forward(file_system::request(file_system::CLOSE, r as u64, 0), 0);
-                        reply_err(EMFILE)
+                        error::word(EMFILE)
                     }
                 }
             }
@@ -237,7 +237,7 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // command and has no second thread, so a caretaker that died silently would park the machine in
     // `RECEIVE`, and `rm nosuchdir/x` is ordinary. It then exits: with no narrowed handle, serving
     // would mean answering from `file_system::ROOT`, the whole directory it was meant to attenuate.
-    if let Some(errno) = reply_errno(r0 as i64) {
+    if let Some(errno) = error::code(r0 as i64) {
         send(
             REPORT,
             file_system_contract::DESCENT_REFUSED,

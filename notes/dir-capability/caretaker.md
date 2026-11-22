@@ -25,7 +25,7 @@ reaches *through the handle that request minted*. There is no branch in the care
 be wrong about it.
 
 What the process does is translate a namespace. The client numbers its handles in its own space
-starting at `fs::ROOT`, which is the granted directory. The caretaker maps each to the FS server's
+starting at `file_system::ROOT`, which is the granted directory. The caretaker maps each to the FS server's
 number and forwards the request otherwise unchanged. A client that guesses a handle is guessing in
 a table with a handful of inhabitants, none of which it chose. A number the caretaker never minted
 is `EBADF` from one check.
@@ -91,7 +91,7 @@ no second thread. A caretaker that died before answering would leave the progeni
 `RECEIVE` and the whole machine with it, and `rm nosuchdir/x` is an ordinary thing to type. So a
 refused descent sends `file_system_contract::DESCENT_REFUSED` with the errno, and the caretaker
 exits. It does not serve: it holds no narrowed handle, and serving anyway would mean answering from
-`fs::ROOT`, which is the whole directory it was meant to attenuate. What the prompt then says about
+`file_system::ROOT`, which is the whole directory it was meant to attenuate. What the prompt then says about
 the cause is in [limitations.md](limitations.md).
 
 The destructive verbs are forwarded like every other verb. The FS server resolves the name under the

@@ -148,7 +148,7 @@ of real demand.
 Four behaviors are worth knowing before you use them:
 
 - `read_dir(".")` lists the granted directory itself and costs no `OPENDIR`; the handle is
-  `fs::ROOT`. `read_dir("sub")` descends first (`OPENDIR` mints a capability to `sub`, the
+  `file_system::ROOT`. `read_dir("sub")` descends first (`OPENDIR` mints a capability to `sub`, the
   enumeration runs through it, and it is closed afterwards), because there is no other way to name
   what is inside `sub`. There are no `.` and `..` entries: they would be names for things no
   capability designates.

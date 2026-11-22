@@ -19,7 +19,7 @@
 #![no_std]
 
 use file_system_contract::{
-    block, directory, directory_entry, extended_attribute, file_system, operation, reply_err, verb,
+    block, directory, directory_entry, error, extended_attribute, file_system, operation, verb,
 };
 
 /// The one directory under the root: the controller, as Linux's `nvme0`.
@@ -104,7 +104,7 @@ pub enum Answer {
 }
 
 fn err(errno: i32) -> Answer {
-    Answer::Reply(reply_err(errno), 0)
+    Answer::Reply(error::word(errno), 0)
 }
 
 /// The namespace and its handle table.
@@ -184,7 +184,7 @@ impl Tree {
             file_system::LISTXATTR => Answer::Reply(0, 0),
             file_system::GETXATTR => err(extended_attribute::ENODATA),
             _ if v.mutates() => err(directory::EROFS),
-            // GET_MODIFICATION_TIME_UNIX_SECONDS, STATFS and the binding verbs: a disk has no modification time or free
+            // GET_MODIFICATION_TIME_UNIX_SECONDS, GET_VOLUME_STATISTICS and the binding verbs: a disk has no modification time or free
             // count this server could truthfully give, and it enforces no bound subtree.
             _ => err(EOPNOTSUPP),
         }

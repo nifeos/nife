@@ -126,10 +126,10 @@ packing, and most mutants a tool can make there cannot change a value.
   names beside the numbers, so two phases sharing one make two rows a reader cannot tell apart.
   Closed by `every_throughput_phase_tag_has_its_own_name`, which also pins the count against
   `PHASES`.
-- `file_system_statistics::free_bytes` replaced by `0` (1). Its only assertion was `free_bytes(4096, 0) == 0`,
+- `volume_statistics::free_bytes` replaced by `0` (1). Its only assertion was `free_bytes(4096, 0) == 0`,
   which the mutant satisfies. A volume with room would have reported itself full to everything that
   asks before it writes.
-- `file_system_statistics::encode`'s `out.len() < LEN` under `<=` (1). The tests covered `LEN - 1` and 64 and
+- `volume_statistics::encode`'s `out.len() < LEN` under `<=` (1). The tests covered `LEN - 1` and 64 and
   never `LEN` itself. That is the one size a caller sizing its page from the constant would hand it.
 
 #### The thirty-eight equivalents, in four groups

@@ -44,6 +44,19 @@ use user_mode_runtime::{
     exit, interrupt_acknowledge, interrupt_wait, receive_request, reply, send,
 };
 
+/// The virtio block wire's fixed sector, in bytes: the unit the request header's `sector` field
+/// and the device's capacity count in, whatever the disk's own logical block size.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by the file-system-contract-rename lane (split from
+/// the contract's `SECTOR_BYTES`, ruled 2026-11-22).
+pub const SECTOR_BYTES: u64 = 512;
+
+/// The number of virtio sectors in one filesystem block (`BLOCK_BYTES / SECTOR_BYTES = 8`).
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by the file-system-contract-rename lane (ruled
+/// 2026-11-22: it divides by the wire sector, so it keeps its name and lives beside it).
+pub const SECTORS_PER_BLOCK: u64 = (block::BLOCK_BYTES as u64) / SECTOR_BYTES;
+
 // The kernel maps the DMA page at this fixed VA (must match kernel/src/user/virtual_io_service.rs).
 // The device REGISTERS are NOT mapped: we drive the device through a `VirtualIo` capability (slot 2),
 // so we cannot point it outside this DMA region. See kernel/src/virtual_io.rs.
@@ -1261,7 +1274,7 @@ pub fn run_block_server(direct_memory_access_phys: u64) -> ! {
             block::READ | block::WRITE => {
                 match transfer_first_sector(block, count, capacity_sectors) {
                     // EINVAL: some block of the request lies past the end of the disk.
-                    None => file_system_contract::reply_err(22),
+                    None => file_system_contract::error::word(22),
                     Some(sector) => {
                         let done = if operation == block::READ {
                             block_read(direct_memory_access_phys, sector, count)
@@ -1272,7 +1285,7 @@ pub fn run_block_server(direct_memory_access_phys: u64) -> ! {
                         if done {
                             0
                         } else {
-                            file_system_contract::reply_err(5)
+                            file_system_contract::error::word(5)
                         }
                     }
                 }
@@ -1304,8 +1317,8 @@ pub fn run_block_server(direct_memory_access_phys: u64) -> ! {
 /// when any block of it lies past a disk of `capacity_sectors` sectors, or when the arithmetic
 /// would overflow. The block index arrives from a client, so nothing about it is trusted.
 fn transfer_first_sector(block: u64, count: u64, capacity_sectors: u64) -> Option<u64> {
-    let first = block.checked_mul(block::SECTORS_PER_BLOCK)?;
-    let end = first.checked_add(count.checked_mul(block::SECTORS_PER_BLOCK)?)?;
+    let first = block.checked_mul(SECTORS_PER_BLOCK)?;
+    let end = first.checked_add(count.checked_mul(SECTORS_PER_BLOCK)?)?;
     (count >= 1 && end <= capacity_sectors).then_some(first)
 }
 
@@ -1436,7 +1449,7 @@ fn capacity_sectors() -> u64 {
 /// client would read as an error.
 fn disk_size_bytes(capacity_sectors: u64) -> i64 {
     capacity_sectors
-        .saturating_mul(block::SECTOR_BYTES)
+        .saturating_mul(SECTOR_BYTES)
         .min(i64::MAX as u64) as i64
 }
 

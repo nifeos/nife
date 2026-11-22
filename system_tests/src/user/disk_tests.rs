@@ -521,7 +521,7 @@ fn mkfs_phase(
 /// `transfer_first_sector` would turn this test red, but that run has not been made.
 #[test_case]
 fn a_transfer_past_the_disks_capacity_is_refused_and_the_block_server_keeps_serving() {
-    use file_system_contract::{block, reply_err};
+    use file_system_contract::{block, error};
 
     let Some(disk) = disk_service::blank_disk(fs_service::blk_server_image()) else {
         skip_unless_required!(
@@ -542,7 +542,7 @@ fn a_transfer_past_the_disks_capacity_is_refused_and_the_block_server_keeps_serv
     let first_past_the_end = size as u64 / block::BLOCK_BYTES as u64;
     // The largest index whose sector number (eight sectors to a block) still fits a `u64` is
     // `u64::MAX / 8`, so one more overflows the multiplication the server must check.
-    let overflowing = u64::MAX / block::SECTORS_PER_BLOCK + 1;
+    let overflowing = u64::MAX / (block::BLOCK_BYTES as u64 / 512) + 1;
 
     for (what, index) in [
         ("the first block past the end", first_past_the_end),
@@ -551,7 +551,7 @@ fn a_transfer_past_the_disks_capacity_is_refused_and_the_block_server_keeps_serv
         for (verb, operation) in [("read", block::READ), ("write", block::WRITE)] {
             assert_eq!(
                 call(operation, index),
-                reply_err(22),
+                error::word(22),
                 "a {verb} of {what} must answer EINVAL"
             );
         }

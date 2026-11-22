@@ -350,12 +350,12 @@ fn serve(mut plane: Plane) -> ! {
         // allows a larger number to be spelled.
         let count = block::request_block_count(w0).min(TRANSFER_BLOCKS);
         let Some(window) = client_window(req.badge) else {
-            reply(reply_to, file_system_contract::reply_err(22) as u64, 0); // EINVAL
+            reply(reply_to, file_system_contract::error::word(22) as u64, 0); // EINVAL
             continue;
         };
         let op = file_system_contract::operation(w0);
         if (op == block::WRITE || op == block::FLUSH) && !can_write(req.badge) {
-            reply(reply_to, file_system_contract::reply_err(30) as u64, 0); // EROFS
+            reply(reply_to, file_system_contract::error::word(30) as u64, 0); // EROFS
             continue;
         }
         let r0: i64 = match op {
@@ -372,10 +372,10 @@ fn serve(mut plane: Plane) -> ! {
                         plane.flushes += 1;
                         plane.flushes
                     }
-                    Err(_) => file_system_contract::reply_err(5), // EIO
+                    Err(_) => file_system_contract::error::word(5), // EIO
                 }
             }
-            _ => file_system_contract::reply_err(22), // EINVAL: an opcode this server has no verb for
+            _ => file_system_contract::error::word(22), // EINVAL: an opcode this server has no verb for
         };
         reply(reply_to, r0 as u64, 0);
     }
@@ -423,7 +423,7 @@ fn transfer_range(plane: &mut Plane, block: u64, window: usize, count: usize, wr
             .transfer(block.saturating_add(i as u64), window, i, write)
             .is_err()
         {
-            return file_system_contract::reply_err(5); // EIO
+            return file_system_contract::error::word(5); // EIO
         }
     }
     0

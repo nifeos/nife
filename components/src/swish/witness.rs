@@ -992,7 +992,7 @@ fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
         return;
     };
 
-    // Bare `touch`, real command line, real dispatch through `Nav::touch` to `fs::SET_MODIFICATION_TIME`.
+    // Bare `touch`, real command line, real dispatch through `Nav::touch` to `file_system::SET_MODIFICATION_TIME`.
     let mut cmd = [0u8; 32];
     let Some(Say::Nothing) = run_line(nav, line(&mut cmd, b"touch ", touched)) else {
         return;
@@ -1006,7 +1006,7 @@ fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
     *v |= nb::TOUCH_MODIFICATION_TIME_ADVANCED;
 
     // `touch -t <RFC 3339>`, a real command line the parser has to split into three tokens
-    // (`touch`, `-t`, the instant, the name) and dispatch to `fs::SET_MODIFICATION_TIME_AT_UNIX_SECONDS` with the seconds
+    // (`touch`, `-t`, the instant, the name) and dispatch to `file_system::SET_MODIFICATION_TIME_AT_UNIX_SECONDS` with the seconds
     // value `jiff` decoded from it. The buffer is sized for exactly this one line: "touch -t "
     // (9) + the RFC 3339 text (20) + " " (1) + the name (at most 16, `run_name`'s own bound).
     const AT_PREFIX: &[u8] = b"touch -t ";
@@ -1038,7 +1038,7 @@ fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
 /// entirely, unlike [`touch_mtime_probes`]: what this proves is that a `verb::TABLE` row or a
 /// caretaker forwarding bug cannot smuggle the arbitrary-time authority past a handle that never
 /// carried it, which a test that only ever grants `directory::rights::ALL` (every other probe in this script)
-/// cannot exercise. A raw `fs::MKDIR` mints a **fresh** directory attenuated to `WRITE` and not
+/// cannot exercise. A raw `file_system::MKDIR` mints a **fresh** directory attenuated to `WRITE` and not
 /// `SET_MODIFICATION_TIME_AT`, one level below the shell's own root, and both mtime verbs are sent straight to it.
 fn touch_mtime_without_settime(nav: &Nav, name: &[u8], v: &mut u64) {
     use file_system_contract::directory;

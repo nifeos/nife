@@ -117,7 +117,7 @@ pub const fn specification_value_len(w1: u64) -> usize {
 /// Pack [`file_system::GETXATTR`]'s reply: the kind in the high bits, the value's length in the low 32.
 ///
 /// **It is an [`i64`] and it must stay non-negative**, because this whole protocol's error
-/// boundary is "negative is a negated errno" ([`super::reply_err`]). That is what costs the kind
+/// boundary is "negative is a negated errno" ([`super::error::word`]). That is what costs the kind
 /// its 32nd bit, and it is the right trade: a separate reply word does not exist, and a header
 /// in front of the value would make every client copy the value twice.
 pub const fn reply(kind: u32, value_len: usize) -> i64 {

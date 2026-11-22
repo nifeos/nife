@@ -67,7 +67,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
    refuses `xattr::spec`, `spec_kind` and `spec_value_len` (`src/xattr.rs` line 82, `:86`, `:90`).
    It also refuses seven `is_dir` and `spec` bindings in tests. `register_names` (ceiling 0): `blk::SIZE` (`src/blk.rs` line 27, an opcode, so a false
    positive), `BLOCK_SIZE` (`src/blk.rs` line 43), `MAXIMUM_LENGTH_OR_OFFSET` (`src/fs.rs` line 309,
-   ratified), `file_system_statistics::LEN` (`src/statfs.rs` line 3). `question_shape`: `in_opcode_order`
+   ratified), `volume_statistics::LEN` (`src/statfs.rs` line 3). `question_shape`: `in_opcode_order`
    (`src/verb.rs` line 319). The naming worklist inside nife lists the same ten wire-or-format names.
    `GETMTIME`, `SETMTIME` and `SETMTIME_AT` (`src/fs.rs` line 193, `:204`, `:214`) contain `mtime`,
    which the spelled-out list expands, and the gate does not split `GETMTIME` into components, so

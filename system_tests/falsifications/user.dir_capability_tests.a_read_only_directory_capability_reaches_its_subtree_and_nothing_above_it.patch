@@ -5,7 +5,7 @@ Architecture: aarch64, riscv64, x86_64
 The defect is the caretaker serving the filesystem server's own root instead of the narrowed handle
 it was just given. `fs_subtree_caretaker` opens the subtree it was named, gets back a handle `r0`
 that reaches that subtree and nothing above it, and serves `r0` as its client's slot-0 root. Serving
-`fs::ROOT` instead hands the attacker the whole image, which is the authority §50 (namespace composition, not stored paths)
+`file_system::ROOT` instead hands the attacker the whole image, which is the authority §50 (namespace composition, not stored paths)
 says a subtree grant must not carry.
 
 This is the same hunk as row 24's record (`shell_navigation_tests::two_shells_...`), and it lands
@@ -39,7 +39,7 @@ diff --git a/components/src/fs_subtree_caretaker.rs b/components/src/fs_subtree_
  
      send(REPORT, file_system_contract::READY, 0, 0);
 -    serve(r0);
-+    serve(fs::ROOT);
++    serve(file_system::ROOT);
  }
  
  user_mode_runtime::panic_handler!();

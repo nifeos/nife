@@ -18,7 +18,7 @@
 /// Name: provisional, minted 2026-11-14 (UTC) by the lane of milestone 1090 (an outside review of `file_system_contract`).
 pub const MAXIMUM_ERRNO: i32 = 4095;
 
-/// `EPROTO` (71): what [`reply_errno`] answers for a negative word outside
+/// `EPROTO` (71): what [`code`] answers for a negative word outside
 /// `-MAXIMUM_ERRNO..=-1`, a reply that breaks the protocol.
 ///
 /// The POSIX error number, spelled as `errno.h` spells it.
@@ -38,16 +38,18 @@ pub const EPROTO: i32 = 71;
 /// place that can still name it. The check is one comparison on a path that already builds a reply,
 /// and a release build that skipped it would turn the same bug into a silent success on the wire.
 /// Every caller passes a named errno constant or an engine errno, all far below the bound.
-pub const fn reply_err(errno: i32) -> i64 {
+///
+/// Name: ratified 2026-11-22.
+pub const fn word(code: i32) -> i64 {
     assert!(
-        1 <= errno && errno <= MAXIMUM_ERRNO,
+        1 <= code && code <= MAXIMUM_ERRNO,
         "an error code is 1..=MAXIMUM_ERRNO"
     );
-    -(errno as i64)
+    -(code as i64)
 }
 
 /// The errno behind an error reply, or `None` if the reply is a (non-negative) success. The inverse
-/// of [`reply_err`], for a client turning a wire error back into an `ErrorKind`.
+/// of [`word`], for a client turning a wire error back into an `ErrorKind`.
 ///
 /// A word in `-MAXIMUM_ERRNO..=-1` is the code `1..=MAXIMUM_ERRNO`. Any other negative word is a
 /// protocol violation and reads as [`EPROTO`]; it is never `None`, so it cannot pass for success,
@@ -58,26 +60,29 @@ pub const fn reply_err(errno: i32) -> i64 {
 /// One word, no flag bit: a length and an errno come out of the same register.
 ///
 /// ```
-/// use file_system_contract::{EPROTO, reply_err, reply_errno};
+/// use file_system_contract::EPROTO;
+/// use file_system_contract::error::{code, word};
 ///
 /// // A READ that moved 4096 bytes, and a READ at end of file. Both are results.
-/// assert_eq!(reply_errno(4096), None);
-/// assert_eq!(reply_errno(0), None);
+/// assert_eq!(code(4096), None);
+/// assert_eq!(code(0), None);
 ///
 /// // ENOENT, mapped once at the server's serve loop and nowhere else.
-/// let wire = reply_err(2);
+/// let wire = word(2);
 /// assert_eq!(wire, -2);
-/// assert_eq!(reply_errno(wire), Some(2));
+/// assert_eq!(code(wire), Some(2));
 ///
 /// // A negative word past the bound is a protocol violation, not an errno and not a success.
-/// assert_eq!(reply_errno(-4096), Some(EPROTO));
-/// assert_eq!(reply_errno(i64::MIN), Some(EPROTO));
+/// assert_eq!(code(-4096), Some(EPROTO));
+/// assert_eq!(code(i64::MIN), Some(EPROTO));
 /// ```
-pub const fn reply_errno(r0: i64) -> Option<i32> {
-    if r0 >= 0 {
+///
+/// Name: ratified 2026-11-22.
+pub const fn code(word: i64) -> Option<i32> {
+    if word >= 0 {
         None
-    } else if r0 >= -(MAXIMUM_ERRNO as i64) {
-        Some((-r0) as i32)
+    } else if word >= -(MAXIMUM_ERRNO as i64) {
+        Some((-word) as i32)
     } else {
         Some(EPROTO)
     }
@@ -95,15 +100,15 @@ mod proofs {
     #[kani::proof]
     fn every_word_decodes_within_the_bound() {
         let word: i64 = kani::any();
-        match reply_errno(word) {
+        match code(word) {
             None => assert!(word >= 0),
-            Some(code) => {
+            Some(decoded) => {
                 assert!(word < 0);
-                assert!((1..=MAXIMUM_ERRNO).contains(&code));
+                assert!((1..=MAXIMUM_ERRNO).contains(&decoded));
                 if word >= -(MAXIMUM_ERRNO as i64) {
-                    assert_eq!(code as i64, -word);
+                    assert_eq!(decoded as i64, -word);
                 } else {
-                    assert_eq!(code, EPROTO);
+                    assert_eq!(decoded, EPROTO);
                 }
             }
         }
@@ -113,10 +118,10 @@ mod proofs {
     /// Falsification: replayable `crates/file_system_contract/falsifications/error.proofs.a_sent_code_round_trips.patch`
     #[kani::proof]
     fn a_sent_code_round_trips() {
-        let code: i32 = kani::any();
-        kani::assume((1..=MAXIMUM_ERRNO).contains(&code));
-        let word = reply_err(code);
-        assert!(word < 0);
-        assert_eq!(reply_errno(word), Some(code));
+        let sent: i32 = kani::any();
+        kani::assume((1..=MAXIMUM_ERRNO).contains(&sent));
+        let on_the_wire = word(sent);
+        assert!(on_the_wire < 0);
+        assert_eq!(code(on_the_wire), Some(sent));
     }
 }

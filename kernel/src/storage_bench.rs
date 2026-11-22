@@ -466,7 +466,7 @@ fn through_el0(slot: &Slot, r: &ReadOnlyProbeReport, write: bool) -> El0 {
     }
     let past = window.sectors / 8;
     let got = call(block::READ, past);
-    if got != file_system_contract::reply_err(22) {
+    if got != file_system_contract::error::word(22) {
         return El0::Wrong("READ past the window is EINVAL", got);
     }
     let got = call(block::READ, 0);
@@ -519,7 +519,7 @@ fn read_only_checks(
         return El0::Wrong("block 0 is the boot sector the kernel read", 0);
     }
     let got = call(block::WRITE, 0);
-    if got != file_system_contract::reply_err(30) {
+    if got != file_system_contract::error::word(30) {
         return El0::Wrong("WRITE to a read-only window is EROFS", got);
     }
     El0::Served

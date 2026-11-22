@@ -31,7 +31,7 @@ Recommendation, one table, to rule as a set and apply in one lane after the move
 | module `statfs` | keep, alias `volume_statistics` | a POSIX call name |
 | `GETMTIME`, `SETMTIME`, `SETMTIME_AT` | `GET_MODIFICATION_TIME_UNIX_SECONDS`, `SET_MODIFICATION_TIME`, `SET_MODIFICATION_TIME_AT_UNIX_SECONDS` | `mtime` is a ruled word; provisional today |
 | `blk::BLOCK_SIZE` | `BLOCK_BYTES` | a size carries its unit |
-| `file_system_statistics::LEN` | `RECORD_BYTES` | the same |
+| `volume_statistics::LEN` | `RECORD_BYTES` | the same |
 | `store::RECORD_HEADER` | `RECORD_HEADER_BYTES` | the same |
 | `nameset::BYTES` | `MAXIMUM_BYTES` | a limit opens `MAXIMUM_` |
 | `grant::WORDS_NAME` | `MAXIMUM_WORDS_NAME_BYTES` | a limit with its unit |

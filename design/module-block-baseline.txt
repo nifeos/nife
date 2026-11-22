@@ -2008,8 +2008,6 @@ crates/file_system_contract/src/block.rs::FLUSH
 
 crates/file_system_contract/src/block.rs::READ
 
-crates/file_system_contract/src/block.rs::SECTORS_PER_BLOCK
-
 crates/file_system_contract/src/block.rs::TRANSFER_BLOCKS
 
 crates/file_system_contract/src/block.rs::WRITE
@@ -2073,10 +2071,6 @@ crates/file_system_contract/src/directory_entry.rs::iter
 
 crates/file_system_contract/src/directory_entry.rs::record_len
 
-
-crates/file_system_contract/src/error.rs::reply_err
-
-crates/file_system_contract/src/error.rs::reply_errno
 
 crates/file_system_contract/src/extended_attribute.rs
 
@@ -2166,8 +2160,6 @@ crates/file_system_contract/src/file_system.rs::ROOT
 
 crates/file_system_contract/src/file_system.rs::SETXATTR
 
-crates/file_system_contract/src/file_system.rs::STATFS
-
 crates/file_system_contract/src/file_system.rs::SYNC
 
 
@@ -2191,17 +2183,6 @@ crates/file_system_contract/src/file_system.rs::WRITE
 
 
 
-
-crates/file_system_contract/src/file_system_statistics.rs
-
-crates/file_system_contract/src/file_system_statistics.rs::decode
-
-crates/file_system_contract/src/file_system_statistics.rs::encode
-
-crates/file_system_contract/src/file_system_statistics.rs::free_bytes
-
-
-crates/file_system_contract/src/file_system_statistics.rs::total_bytes
 
 crates/file_system_contract/src/grant.rs
 
@@ -2287,6 +2268,17 @@ crates/file_system_contract/src/verb.rs::takes_name
 
 
 
+
+crates/file_system_contract/src/volume_statistics.rs
+
+crates/file_system_contract/src/volume_statistics.rs::decode
+
+crates/file_system_contract/src/volume_statistics.rs::encode
+
+crates/file_system_contract/src/volume_statistics.rs::free_bytes
+
+
+crates/file_system_contract/src/volume_statistics.rs::total_bytes
 
 crates/file_system_fixture/src/lib.rs::A
 

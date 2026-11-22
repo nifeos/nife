@@ -72,7 +72,7 @@ fn ensure_home_subtree(fs_ep: sched::RendezvousId, fs_page_frame: u64, name: &[u
             file_system_contract::directory::rights::ALL,
         ],
     );
-    match file_system_contract::reply_errno(r[0] as i64) {
+    match file_system_contract::error::code(r[0] as i64) {
         Some(errno) => assert_eq!(
             errno,
             EEXIST,

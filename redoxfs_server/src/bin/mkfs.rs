@@ -43,6 +43,7 @@
 
 extern crate alloc;
 
+use file_system_contract::block::LOGICAL_BLOCK_BYTES;
 use file_system_contract::{block, request};
 use file_system_fixture::blank;
 use globally_unique_identifier_partition_table::PartitionTable;
@@ -72,10 +73,6 @@ const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 /// One filesystem block / one shared page, in bytes. RedoxFS's `BLOCK_SIZE` and the blk wire's
 /// transfer unit are the same number, which is what lets a `Disk` block be a blk block.
 const BLOCK: usize = block::BLOCK_BYTES;
-
-/// The logical block size the partition table counts in (`disk_surveyor`'s BUGS: nothing on the
-/// wire reports the device's).
-const LBA: u64 = blank::LOGICAL_BLOCK_BYTES;
 
 /// The heap cap. The engine keeps a compress buffer sized by `RECORD_SIZE` (128 KiB, still the ceiling after milestone
 /// 138 lowered the *created* record level, because the buffer must fit any record this build can
@@ -269,7 +266,7 @@ fn data_partition() -> Option<(u64, u64)> {
     if size <= 0 {
         return None; // no endpoint in slot BLK, or a device that cannot say how big it is
     }
-    let device_blocks = (size as u64) / LBA;
+    let device_blocks = (size as u64) / LOGICAL_BLOCK_BYTES;
 
     // LBA 0..=33: the protective MBR, the header, and the whole 16 KiB entry array. Five transfer
     // blocks cover it. On the heap rather than in `.bss` because this program has one.
@@ -290,16 +287,16 @@ fn data_partition() -> Option<(u64, u64)> {
     }
 
     let table = PartitionTable::parse(
-        &head[LBA as usize..2 * LBA as usize],
-        &head[2 * LBA as usize..],
+        &head[LOGICAL_BLOCK_BYTES as usize..2 * LOGICAL_BLOCK_BYTES as usize],
+        &head[2 * LOGICAL_BLOCK_BYTES as usize..],
     )
     .ok()?;
     for (_, part) in table.partitions() {
         if part.type_guid != NIFE_DATA {
             continue;
         }
-        let start = part.first_logical_block_address * LBA;
-        let len = part.blocks()? * LBA;
+        let start = part.first_logical_block_address * LOGICAL_BLOCK_BYTES;
+        let len = part.blocks()? * LOGICAL_BLOCK_BYTES;
         // Both ends on a filesystem block, or refuse. See BUGS: a filesystem whose blocks straddle
         // the partition's first byte is readable only through the offset disk that wrote it.
         if !start.is_multiple_of(BLOCK_SIZE) || !len.is_multiple_of(BLOCK_SIZE) {
@@ -308,7 +305,7 @@ fn data_partition() -> Option<(u64, u64)> {
         let first_block = start / BLOCK_SIZE;
         let blocks = len / BLOCK_SIZE;
         // And inside the device the block service is actually serving.
-        if first_block + blocks > device_blocks * LBA / BLOCK_SIZE {
+        if first_block + blocks > device_blocks * LOGICAL_BLOCK_BYTES / BLOCK_SIZE {
             return Some((0, 0));
         }
         return Some((first_block, blocks));

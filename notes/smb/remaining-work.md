@@ -21,7 +21,7 @@ This is milestone 54 (a network file service a Mac can actually mount).
    rights split is now expressible end to end. A directory capability carrying `WRITE | CREATE` and
    not `REMOVE` gives a share that takes backups and destroys nothing, and the FS server enforces it
    under an adapter that never sees the mask.
-3. ~~A `statfs` verb for `fs_proto`~~ Done (2026-08-16): `fs::STATFS`, op 18, and the SMB volume
+3. ~~A `statfs` verb for `fs_proto`~~ Done (2026-08-16): `file_system::GET_VOLUME_STATISTICS`, op 18, and the SMB volume
    classes report the image's real numbers through it. The wire decisions are in
    [wire-decisions.md](wire-decisions.md) and in pull request #255.
 4. ~~Subdirectories~~ Done (2026-08-16): `smb_proto::path`, the `Share` seam's directory ids and its

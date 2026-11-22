@@ -17,7 +17,7 @@ The records this file cites by number:
 ## Descent: a nested path, and a directory a program can hold (milestone 122)
 
 Until this milestone the PAL called `OPENDIR` in exactly one place, inside `read_dir`, against
-`fs::ROOT`, and then let the handle go. Nothing in `std` held a directory, so a name had to be one
+`file_system::ROOT`, and then let the handle go. Nothing in `std` held a directory, so a name had to be one
 component and a nested path was refused as a class.
 
 The consequence was sharp and is worth stating before the fix, because it is the shape of the bug
@@ -125,7 +125,7 @@ refusal that is correct-looking reads exactly like a refusal that is correct.
 ### Two live bugs the walk found
 
 Both were in the tree before this milestone and neither could show against the granted directory,
-because nothing is *requested* there: `fs::ROOT` carries whatever the endpoint carries.
+because nothing is *requested* there: `file_system::ROOT` carries whatever the endpoint carries.
 
 - A created file was unwritable one directory down. A file handle carries
   `parent & (READ | WRITE)` (`create_file_at`, the same arithmetic as `open_file_at`). So a descent

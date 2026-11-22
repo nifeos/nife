@@ -62,7 +62,7 @@ impl FileAttr {
             // answers it for all three mtime verbs because it has no directory to resolve a name
             // under (`file_system_contract::grant::POLICY`). Reported as what it is rather than as
             // `NotADirectory`, which would read as a statement about the file.
-            Mtime::Refused(r0) if fsproto::reply_errno(r0 as i64) == Some(20) => {
+            Mtime::Refused(r0) if fsproto::error::code(r0 as i64) == Some(20) => {
                 Err(io::const_error!(
                     io::ErrorKind::Unsupported,
                     "this process holds a single-file grant, and the contract reads an mtime by \

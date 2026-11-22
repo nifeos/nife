@@ -25,6 +25,6 @@ index 86031f252..a62419d8e 100644
          let count = block::request_block_count(w0).min(TRANSFER_BLOCKS);
 -        let Some(window) = client_window(req.badge) else {
 +        let Some(window) = client_window(req.badge).map(|_| 0) else {
-             reply(reply_to, file_system_contract::reply_err(22) as u64, 0); // EINVAL
+             reply(reply_to, file_system_contract::error::word(22) as u64, 0); // EINVAL
              continue;
          };

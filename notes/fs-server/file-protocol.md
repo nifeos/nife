@@ -5,7 +5,7 @@ An appendix to [notes/fs-server.md](../fs-server.md). The doc comments in
 why each verb is shaped the way it is. The directory rights and their errnos are in
 [notes/dir-capability.md](../dir-capability.md), `RENAME` is in
 [dir-capability/rename.md](../dir-capability/rename.md), `UNLINK` and `RMDIR` are in
-[notes/rm.md](../rm.md), the mtime verbs are in [notes/touch.md](../touch.md), and `STATFS`'s record
+[notes/rm.md](../rm.md), the mtime verbs are in [notes/touch.md](../touch.md), and `GET_VOLUME_STATISTICS`'s record
 is in [statfs.md](statfs.md).
 
 ## OPEN takes a path, and reports a size
@@ -103,12 +103,12 @@ Samba's `source3/include/MacExtensions.h`, and Apple's own SMB client carries `u
 afpinfo[60]`. The 402-byte figure that also appears is a different blob, the AppleDouble-shaped
 buffer on Samba's netatalk metadata path (`uint8_t ad_data[402]` in `vfs_fruit.c`). Both fit.
 
-## STATFS and SYNC, and the write volume they leak
+## GET_VOLUME_STATISTICS and SYNC, and the write volume they leak
 
-`STATFS` answers about the whole image, and the number moves when somebody else writes. So it is a
+`GET_VOLUME_STATISTICS` answers about the whole image, and the number moves when somebody else writes. So it is a
 channel and not only a leak, and that is recorded and accepted. Two programs confined to disjoint
 subtrees of one image can communicate: one writes and truncates to move the free count, and the
-other polls `STATFS`. The bandwidth is unmeasured. It cannot be fixed at the verb, because a true
+other polls `GET_VOLUME_STATISTICS`. The bandwidth is unmeasured. It cannot be fixed at the verb, because a true
 answer moves when the volume moves. Per-subtree quotas would replace it with a private number.
 Until then, two subtrees on one image are not isolated from each other's write volume, and isolation
 needs two images.
@@ -179,11 +179,11 @@ The block channel grew the same way. The device DMAs straight into the shared re
 limited a request to one block. The count rides in the request word's low eight bits as `blocks - 1`.
 The all-zero word that a single-block caller sends still decodes as one block. That is why
 `disk_surveyor`, `disk_partitioner` and `mkfs` need no change. `blk::TRANSFER_BLOCKS` equals
-`fs::TRANSFER_PAGES`, so a full file request becomes one block request per RedoxFS `Disk` call.
+`file_system::TRANSFER_PAGES`, so a full file request becomes one block request per RedoxFS `Disk` call.
 
 ## Eight client windows
 
-`fs::CLIENT_WINDOWS` is eight. That covers the heaviest path the tree wires: a shell, a set-grant
+`file_system::CLIENT_WINDOWS` is eight. That covers the heaviest path the tree wires: a shell, a set-grant
 caretaker, a `>` file caretaker, and headroom. It costs the server 512 KiB of mapped frames. The
 production value is a capacity decision nobody has made. The design of a frame per channel is in
 [notes/a-frame-per-filesystem-client-channel.md](../a-frame-per-filesystem-client-channel.md).

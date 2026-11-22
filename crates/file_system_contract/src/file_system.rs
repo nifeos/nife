@@ -199,10 +199,10 @@ pub const LISTXATTR: u64 = 16;
 #[doc(alias = "remove extended attribute")]
 pub const REMOVEXATTR: u64 = 17;
 
-/// **How much room the store behind this capability has**: POSIX `statfs`, cut to three numbers.
+/// **How much room the store behind this capability has**: the volume's statistics, cut to three numbers.
 /// [`request_length_bytes`] and `w1` are 0; [`request_handle`] is any handle this server minted, [`ROOT`] included,
 /// and holding one is the whole qualification: it needs no right. Reply `r0` = the bytes of the
-/// shared page filled ([`super::file_system_statistics::RECORD_BYTES`]) with the [`super::file_system_statistics`] record, or an error;
+/// shared page filled ([`super::volume_statistics::RECORD_BYTES`]) with the [`super::volume_statistics`] record, or an error;
 /// `EBADF` for a handle the server did not mint.
 ///
 /// # BUGS
@@ -213,9 +213,11 @@ pub const REMOVEXATTR: u64 = 17;
 ///   the same way.
 /// - The numbers are a forecast: the store's `ENOSPC` at write time decides.
 ///
-/// POSIX call: `statfs(2)`.
-#[doc(alias = "file system statistics")]
-pub const STATFS: u64 = 18;
+/// POSIX call: `statfs(2)`; `statfs` finds it as an alias.
+///
+/// Name: ratified 2026-11-22. The number, 18, is unchanged.
+#[doc(alias = "statfs")]
+pub const GET_VOLUME_STATISTICS: u64 = 18;
 
 /// **Make everything this server has acknowledged durable**.
 /// [`request_length_bytes`] and `w1` are 0; [`request_handle`] is any handle this server minted. Reply `r0` = how

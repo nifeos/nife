@@ -139,14 +139,14 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
         ),
     )
     .0 as i64;
-    if file_system_contract::reply_errno(r) == Some(extended_attribute::E2BIG) {
+    if file_system_contract::error::code(r) == Some(extended_attribute::E2BIG) {
         v |= attributes::OVERSIZE_REFUSED;
     }
 
     // 4. Removing it takes it away, and reading it afterwards is ENODATA. Without this the round
     //    trip above is equally true of a store that never forgets anything.
     if xattr_remove(scratch, attributes::NAME) >= 0
-        && file_system_contract::reply_errno(xattr_get(scratch, attributes::NAME))
+        && file_system_contract::error::code(xattr_get(scratch, attributes::NAME))
             == Some(extended_attribute::ENODATA)
     {
         v |= attributes::GONE_AFTER_REMOVE;

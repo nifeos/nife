@@ -112,24 +112,27 @@ fn only_narrow_reissues_a_handle_without_a_name() {
     assert_eq!(reissuing, ["NARROW"]);
 }
 
-/// **`STATFS` asks for no right and mints no handle**, which is the whole of its row and the
+/// **`GET_VOLUME_STATISTICS` asks for no right and mints no handle**, which is the whole of its row and the
 /// part a caretaker acts on. Spelled out rather than derived, for [`verb::TABLE`]'s reason: a
 /// row that grew a rights requirement would silently make a write-only grant unable to ask
 /// whether its next write fits.
 #[test]
-fn statfs_names_a_handle_and_nothing_else() {
-    let v = verb::of(file_system::STATFS).unwrap();
-    assert_eq!(v.name, "STATFS");
+fn get_volume_statistics_names_a_handle_and_nothing_else() {
+    let v = verb::of(file_system::GET_VOLUME_STATISTICS).unwrap();
+    assert_eq!(v.name, "GET_VOLUME_STATISTICS");
     assert_eq!(v.needs_all, 0);
     assert_eq!(v.needs_any, 0);
-    assert!(!v.carries_len(), "STATFS's length field counts nothing");
-    assert!(!v.carries_w1, "STATFS has no second word");
+    assert!(
+        !v.carries_len(),
+        "GET_VOLUME_STATISTICS's length field counts nothing"
+    );
+    assert!(!v.carries_w1, "GET_VOLUME_STATISTICS has no second word");
     assert!(!v.mints_handle);
     assert!(!v.mutates(), "asking how full a disk is changes nothing");
     assert!(!v.takes_name(), "a name filter has nothing to filter here");
     // Forwarded through a per-file grant: see the policy row's own comment.
     assert_eq!(
-        verb::file_grant::of(file_system::STATFS),
+        verb::file_grant::of(file_system::GET_VOLUME_STATISTICS),
         Some(verb::file_grant::Policy::Forward)
     );
 }
@@ -319,7 +322,7 @@ fn the_verb_predicates_partition_the_table_as_documented() {
         "TRUNCATE",
         "READDIR",
         "LISTXATTR",
-        "STATFS",
+        "GET_VOLUME_STATISTICS",
         "SYNC",
         "NARROW",
     ];

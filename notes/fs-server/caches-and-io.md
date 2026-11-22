@@ -77,7 +77,7 @@ When two payloads share the page (`RENAME`'s two names, `SETXATTR`'s name and va
 something nobody wrote.
 
 `OPEN`'s reply carries the file's size in its second word (ruling B), so a client reading a whole
-file needs no `FSTAT`. `STATFS` is encoded in the dispatch rather than the core, which keeps the
+file needs no `FSTAT`. `GET_VOLUME_STATISTICS` is encoded in the dispatch rather than the core, which keeps the
 core's verbs free of the wire layout.
 
 `SYNC`'s reply is the block server's own word, a count of completed flushes, so a client can prove each
@@ -107,7 +107,7 @@ stack grant goes with turning it on.
 The Reply names the caller and nothing else. With endpoint-only naming the server learns how to
 answer a request, never who sent it. The badge picks the client's window and scope.
 
-A badge at or past `fs::CLIENT_WINDOWS` would point outside the mapped windows. `admit` refuses it
+A badge at or past `file_system::CLIENT_WINDOWS` would point outside the mapped windows. `admit` refuses it
 first (milestone 726 (an unknown badge fails closed in subtree_scope)); `window_base` folds it onto
 window 0 as a second line, which fails loudly rather than reading unmapped memory.
 

@@ -1,11 +1,11 @@
-//! **The filesystem wire protocols**: the block protocol ([`block`]) and the file protocol ([`file_system`]),
+//! **The filesystem wire protocols**: the block protocol ([`block`]) and the file system protocol ([`file_system`]),
 //! in one crate so the block server, the filesystem server, the client and the kernel-side tests
 //! share one definition. The kernel routes these words as any inter-process communication and never
 //! reads an opcode, so a new verb changes this crate and its note, not the system call surface.
 //!
 //! Each request is an endpoint `CALL` of two words, answered through the one-shot Reply
 //! capability; bytes travel only in the region the two parties share. A reply's first word is an
-//! [`i64`], a result or the negated errno ([`reply_err`]): `-MAXIMUM_ERRNO..=-1` is an error, a
+//! [`i64`], a result or the negated errno ([`error::word`]): `-MAXIMUM_ERRNO..=-1` is an error, a
 //! negative word outside it is a protocol violation read as `EPROTO`, and anything else is a
 //! result ([`MAXIMUM_ERRNO`] has the rule whole).
 //!
@@ -46,12 +46,12 @@ pub const fn operation(w0: u64) -> u64 {
     w0 >> OPERATION_SHIFT
 }
 
-/// **The reply word's error range**: [`MAXIMUM_ERRNO`], [`EPROTO`], [`reply_err`] and
-/// [`reply_errno`], the one place the error convention is defined.
+/// **The reply word's error range**: [`MAXIMUM_ERRNO`], [`EPROTO`], [`error::word`] and
+/// [`error::code`], the one place the error convention is defined.
 ///
 /// Name: ratified 2026-11-22.
 pub mod error;
-pub use error::{EPROTO, MAXIMUM_ERRNO, reply_err, reply_errno};
+pub use error::{EPROTO, MAXIMUM_ERRNO};
 
 /// **The block-IPC protocol** (filesystem server to block server): read blocks, write blocks, ask the
 /// size, flush, shaped like the RedoxFS `Disk` trait the filesystem server implements over it. The unit is
@@ -60,13 +60,15 @@ pub use error::{EPROTO, MAXIMUM_ERRNO, reply_err, reply_errno};
 /// 512-byte virtio sectors the device transfers.
 pub mod block;
 
-/// **The file-service protocol** (client to filesystem server). The endpoint a client holds is the
+/// **The file system protocol** (client to file system server). The endpoint a client holds is the
 /// directory capability, bound in the server to one directory node, and every name is resolved
 /// relative to a handle under it: no global namespace, no absolute path. A handle is a small
 /// integer the server mints and validates against this session's table, so forging one is
 /// meaningless.
 ///
-/// The module is named as the standard library names its own, `std::fs`.
+/// The module is the standard library's `std::fs`, spelled out; `fs` finds it as an alias.
+///
+/// Name: ratified 2026-11-22.
 #[doc(alias = "fs")]
 pub mod file_system;
 
@@ -97,21 +99,23 @@ pub mod verb;
 /// that would not fit and the cursor resumes there.
 pub mod directory_entry;
 
-/// **How [`file_system::STATFS`] packs the volume's numbers into the shared page.**
+/// **How [`file_system::GET_VOLUME_STATISTICS`] packs the volume's numbers into the shared page.**
 ///
 /// Three little-endian `u64`s, in order: the allocation unit in bytes, the volume's size in those
 /// units, and how many are free. The unit is a field, not [`PAGE_BYTES`]. The reply's length is the
-/// version: a client reads the fields it knows when `r0 >= LEN` ([`file_system_statistics::decode`]), so there is
+/// version: a client reads the fields it knows when `r0 >= LEN` ([`volume_statistics::decode`]), so there is
 /// no version word.
 ///
 /// # BUGS
 ///
-/// - Free space is a forecast, not a reservation; see [`file_system::STATFS`]'s BUGS.
+/// - Free space is a forecast, not a reservation; see [`file_system::GET_VOLUME_STATISTICS`]'s BUGS.
 /// - There is no inode count: Server Message Block (SMB) volume classes carry none, so nothing above has asked.
 ///
-/// The module is named for the Portable Operating System Interface (POSIX) call `statfs(2)`.
+/// The module is the volume's statistics, as the Portable Operating System Interface (POSIX) call `statfs(2)` reports them; `statfs` finds it as an alias.
+///
+/// Name: ratified 2026-11-22.
 #[doc(alias = "statfs")]
-pub mod file_system_statistics;
+pub mod volume_statistics;
 
 /// **The per-file grant**: holding one file rather than a directory, and how the narrowing travels.
 ///

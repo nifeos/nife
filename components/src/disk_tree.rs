@@ -17,7 +17,7 @@
 #![no_main]
 
 use disk_tree::{Answer, Tree};
-use file_system_contract::{block, file_system, reply_err};
+use file_system_contract::{block, error, file_system};
 use user_mode_runtime::{call, receive_request, reply, send};
 
 /// Slot 0: the NVMe server's request endpoint, `WRITE`, badged
@@ -59,7 +59,7 @@ fn start(_: u64, _: u64, _: u64) -> ! {
             continue;
         };
         if req.badge as usize >= file_system::CLIENT_WINDOWS {
-            reply(to, reply_err(EINVAL) as u64, 0);
+            reply(to, error::word(EINVAL) as u64, 0);
             continue;
         }
         // SAFETY: the wiring maps `file_system::CLIENT_WINDOWS` windows of `file_system::MAXIMUM_TRANSFER_BYTES` bytes at
@@ -76,7 +76,7 @@ fn start(_: u64, _: u64, _: u64) -> ! {
             Answer::Read(read) => {
                 let got = call(BLK, block::request(block::READ, read.blocks), read.block).0 as i64;
                 if got < 0 {
-                    (reply_err(EIO), 0)
+                    (error::word(EIO), 0)
                 } else {
                     // SAFETY: the NVMe window is `block::MAXIMUM_TRANSFER_BYTES` bytes at BLK_PAGE and
                     // `skip + len` never passes `read.blocks` blocks (`crates/disk_tree`'s tests).

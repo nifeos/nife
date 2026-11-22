@@ -346,7 +346,7 @@ fn a_walk_through_a_bound_grant_is_priced() {
 #[test_case]
 fn a_bound_grant_reaches_nothing_outside_it() {
     use file_system_contract::directory::rights;
-    use file_system_contract::file_system;
+    use file_system_contract::file_system::{BIND, CLOSE, FSTAT, OPEN, ROOT, UNBIND, request};
     use file_system_fixture::walk as tree;
     skip_without_the_walk!();
     let Some(grant) = fs_service::bind_subtree(
@@ -379,85 +379,50 @@ fn a_bound_grant_reaches_nothing_outside_it() {
 
     let inside = "narrow/n000";
     let len = stage(inside);
-    let h = call(
-        file_system::request(file_system::OPEN, file_system::ROOT, len),
-        rights::READ,
-        b,
-    );
+    let h = call(request(OPEN, ROOT, len), rights::READ, b);
     assert!(
         h >= 0,
         "a file inside the bound subtree would not open: {h}"
     );
-    assert_eq!(
-        call(file_system::request(file_system::CLOSE, h as u64, 0), 0, b),
-        0
-    );
+    assert_eq!(call(request(CLOSE, h as u64, 0), 0, b), 0);
 
     let len = stage(file_system_fixture::MOTD_NAME);
     assert_eq!(
-        call(
-            file_system::request(file_system::OPEN, file_system::ROOT, len),
-            rights::READ,
-            b
-        ),
+        call(request(OPEN, ROOT, len), rights::READ, b),
         -2,
         "the image root's motd is not in the subtree, so it is not there (ENOENT)",
     );
     let len0 = stage_in(grant.shared, file_system_fixture::MOTD_NAME);
-    let theirs = call(
-        file_system::request(file_system::OPEN, file_system::ROOT, len0),
-        rights::READ,
-        0,
-    );
+    let theirs = call(request(OPEN, ROOT, len0), rights::READ, 0);
     assert!(
         theirs >= 0,
         "the kernel's unbound call could not open motd: {theirs}"
     );
     assert_eq!(
-        call(
-            file_system::request(file_system::FSTAT, theirs as u64, 0),
-            0,
-            b
-        ),
+        call(request(FSTAT, theirs as u64, 0), 0, b),
         -9,
         "a handle the badge did not mint is not its to use (EBADF)",
     );
-    let _ = call(
-        file_system::request(file_system::CLOSE, theirs as u64, 0),
-        0,
-        0,
-    );
+    let _ = call(request(CLOSE, theirs as u64, 0), 0, 0);
     assert_eq!(
-        call(
-            file_system::request(file_system::BIND, file_system::ROOT, 0),
-            b + 1,
-            b
-        ),
+        call(request(BIND, ROOT, 0), b + 1, b),
         -1,
         "a bound badge cannot bind another (EPERM)",
     );
     assert_eq!(
-        call(
-            file_system::request(file_system::CLOSE, file_system::ROOT, 0),
-            0,
-            b
-        ),
+        call(request(CLOSE, ROOT, 0), 0, b),
         -22,
         "a bound badge cannot close its grant's root (EINVAL)",
     );
 
     assert_eq!(
-        call(file_system::request(file_system::UNBIND, 0, 0), b, 0),
+        call(request(UNBIND, 0, 0), b, 0),
         0,
         "the kernel takes the grant back"
     );
     let len = stage(inside);
     assert_eq!(
-        call(
-            file_system::request(file_system::OPEN, file_system::ROOT, len),
-            rights::READ,
-            b
-        ),
+        call(request(OPEN, ROOT, len), rights::READ, b),
         -9,
         "after UNBIND the badge reaches nothing, not the whole image (EBADF)",
     );
