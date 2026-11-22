@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -125,13 +126,9 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
 
 ## BUGS
 
-- `script/crate-move --dry-run` runs the pinned template's checks, not the template head's, and
-  its notes say so. The dry run also runs no clippy pass, so item 2 was invisible to it, and its
-  citation check did not report the manifest comment of item 6. The same gap hid two more refusals
-  that the template head and stable clippy made over the staged copy: a README with no badge row,
-  and a bare `VisionFive` that nife's own `clippy.toml` accepts and the standalone copy does not.
-  Both are fixed in the crate. All of these are findings against `helpers/crate_move.py`, for a
-  lane of its own.
+- `script/crate-move --dry-run` runs the newest template release's checks, not the template head's,
+  and its notes say so. A gate the template adds after that release first runs in the new
+  repository.
 - The dry run's three remaining findings (`.github/pull_request_template.md` line 2,
   `CONTRIBUTING.md` line 23, and five "mentions nife" lines in `.githooks/commit-msg`, `deny.toml`,
   `docs/stranger-test.md` and `rustfmt.toml`) are in the pinned `v7` scaffold, not in this crate.
@@ -146,50 +143,51 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
 
 ## Finding status
 
-- Item 1, the `std` farm reads the source by path: Done,
+- Item 1 (P0), the `std` farm reads the source by path: Done,
   [#3514](https://github.com/nifeos/nife/pull/3514).
-- Item 2, clippy red on stable: Done, [#3513](https://github.com/nifeos/nife/pull/3513).
-- Item 3, BUGS in the contract's own terms: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
-- Item 4, the band is the reader's to apply: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
-- Item 5, pointer-width assertion: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
-- Item 6, manifest `publish` comment: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
-- Item 7, documentation a stranger reads: Done, [#3556](https://github.com/nifeos/nife/pull/3556),
-  with the review package's three move edits.
-- Item 8, the template's prose gates: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
-- Item 9, two Kani harnesses with falsification patches: Done,
+- Item 2 (P0), clippy red on stable: Done, [#3513](https://github.com/nifeos/nife/pull/3513).
+- Item 3 (P1), BUGS in the contract's own terms: Done,
   [#3556](https://github.com/nifeos/nife/pull/3556).
-- Item 10, private offset constants: Done, [#3571](https://github.com/nifeos/nife/pull/3571).
-- Item 11, README says where the end-to-end test lives: Done,
+- Item 4 (P1), the band is the reader's to apply: Done,
   [#3556](https://github.com/nifeos/nife/pull/3556).
-- Item 12, `Debug` prints the address: Declined. No change until the next change to the crate's
-  public interface ([the appendix](1073-counter-frequency-contract-outside-review/later-items.md)).
+- Item 5 (P1), pointer-width assertion: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 6 (P1), manifest `publish` comment: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 7 (P1), documentation a stranger reads: Done,
+  [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 8 (P1), the template's prose gates: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 9 (P1), two Kani harnesses with falsification patches: Done,
+  [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 10 (P2), private offset constants: Done, [#3571](https://github.com/nifeos/nife/pull/3571).
+- Item 11 (P2), README says where the end-to-end test lives: Done,
+  [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 12 (P2), `Debug` prints the address: Won't fix. The address is a compile-time constant in
+  every real use, and the change waits for the next change to the crate's public interface;
+  maintainer's ruling, 2026-11-14 (UTC).
 - The frozen identity: Done, [#3516](https://github.com/nifeos/nife/pull/3516).
 - The mutation census after the harnesses: Done,
   [run 43876176886](https://github.com/nifeos/nife/actions/runs/43876176886): 23 mutants tested,
   0 missed.
-- The kernel's zeroed frame: Done, [#3283](https://github.com/nifeos/nife/pull/3283): the kernel
-  states the outcome at `timebase_page_phys` (BUGS below).
-- The move dry run's gaps: Open. `helpers/crate_move.py` runs no clippy pass and does not report a
-  manifest comment that cites a nife path (BUGS below); a lane of its own fixes both.
+- The kernel's zeroed frame: Done, [#3283](https://github.com/nifeos/nife/pull/3283).
+- The move dry run's gaps: Done, [#3940](https://github.com/nifeos/nife/pull/3940).
+  `script/crate-move --dry-run` runs the template's `clippy` job on stable and reports a path
+  that leaves the crate, such as the manifest's old `publish` comment.
 - The review package: Done, [#3615](https://github.com/nifeos/nife/pull/3615),
   [#3626](https://github.com/nifeos/nife/pull/3626) and
-  [#3635](https://github.com/nifeos/nife/pull/3635); it states that it is ready.
-- Clearance of the review package: Done. Ruled 2026-11-19 (UTC), under "Clearing the review
-  package" above.
-- The move to its own repository: Done. The crate lives at `nifeos/counter_frequency_contract`
+  [#3635](https://github.com/nifeos/nife/pull/3635).
+- Clearance of the review package: Done, [#3773](https://github.com/nifeos/nife/pull/3773).
+- The move to its own repository: Done. The crate lives at `nifeos/counter_frequency_contract`,
   and nife pins it by the commit of its tag.
-- The stranger test: Done. The record is `docs/stranger-test.md` in the new repository
-  ([nifeos/counter_frequency_contract#2](https://github.com/nifeos/counter_frequency_contract/pull/2)),
-  and [#3](https://github.com/nifeos/counter_frequency_contract/pull/3) closed its README findings.
-- A pre-release tag: Done. The release workflow made `v0.1.0-pre.1` once the first full mutation
-  run and the release dry run passed
-  ([#4](https://github.com/nifeos/counter_frequency_contract/pull/4) left the Kani harness module
-  out of mutation).
-- Publishing: Open. A contract crate never publishes to crates.io; the tag is its release.
+- The stranger test: Done,
+  [nifeos/counter_frequency_contract#2](https://github.com/nifeos/counter_frequency_contract/pull/2)
+  and [nifeos/counter_frequency_contract#3](https://github.com/nifeos/counter_frequency_contract/pull/3).
+- A pre-release tag: Done. The release workflow made `v0.1.0-pre.1` after
+  [nifeos/counter_frequency_contract#4](https://github.com/nifeos/counter_frequency_contract/pull/4).
+- Publishing to crates.io: Won't fix. A contract crate never publishes, and the tag is its release;
+  ruled 2026-11-19 (UTC), under "The pre-release tag" above.
 
 ## Open decisions
 
-None. The publishing hold stands.
+None.
 
 ## Follow-on
 
@@ -197,8 +195,8 @@ None. The publishing hold stands.
 - **Recorded.** The architect cleared the review (ruled 2026-11-19 UTC), which approves creating
   the repository and moving the crate. The same ruling approves the tag `v0.1.0-pre.1`, after the
   move check and the release dry run pass.
-- **Outstanding.** The move dry run's two gaps in `helpers/crate_move.py`. The finding status
-  above says what each needs.
+- **Recorded.** The move dry run runs the template's `clippy` job and reports a path that leaves
+  the crate.
 - **Recorded.** Item 12 (`Debug` prints the address) is `design/roadmap/1073-counter-frequency-contract-outside-review/later-items.md`
   item 12: no change until the next API change.
 
@@ -209,4 +207,4 @@ have landed. They cover the `std` farm's source lookup, the stable clippy failur
 entries in the contract's own terms. They also cover the band the reader applies, the pointer-width
 assertion, the manifest comment and the documentation fixes. The rest are the template's prose
 gates, two Kani harnesses, and a README sentence on where the end-to-end test lives. Item 10, the private offset constants, follows the family rule. The identity does not change, and
-the architect cleared the review and approved the tag `v0.1.0-pre.1` (ruled 2026-11-19 UTC), so the crate moves to its own repository next.
+the crate lives in its own repository at the tag `v0.1.0-pre.1`. A contract crate never publishes.
