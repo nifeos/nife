@@ -307,6 +307,7 @@ if [ "$TH1520" = yes ]; then
  * Scaleway's rather than this tree's guess.
  */
 / {
+    /* boot-line-head: copy, the image title, which no reader matches */
     description = "nife on the TH1520, milestone 89";
     #address-cells = <2>;
     #size-cells = <0>;

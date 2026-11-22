@@ -219,58 +219,8 @@ The P2 items are in [the appendix](1074-designware-ethernet-outside-review/later
 
 ## Decisions for the architect
 
-Only one-way doors. Each was a public name or path that the first tag fixes. All four are ruled
-and built.
-
-### Decision 1: Where the link type lives
-
-Ruled 2026-11-14 (UTC). A crate-level `link` module holds `Link` and `Speed`. The
-`motorcomm_physical_layer_device` module does not re-export either, so every caller imports
-`designware_ethernet::link::{Link, Speed}`. A restrictive start leaves room to add a re-export
-later; removing one would break callers.
-
-Example: `use designware_ethernet::link::{Link, Speed}; controller::start(&mut hardware, Link {
-speed: Speed::Thousand, full_duplex: true }, false);`
-
-### Decision 2: Whether the compile-time gates are API
-
-Ruled 2026-11-14 (UTC). The sixteen `…_DO_NOT_OVERLAP: ()` constants are `pub(crate)`, each with
-`#[allow(dead_code)]`, so they are not API. A `pub(crate)` constant is still a name the mutation
-exclusions in `.cargo/mutants.toml` can cite, and those comments keep naming them unchanged.
-
-Example: `pub(crate) const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(…);`
-
-### Decision 3: The five public names the register gate refused
-
-Ruled 2026-11-14 (UTC). The five names carry the spellings below, each `Name:` line says ratified
-2026-11-14, and the three length masks keep their specification aliases (`RDES3_LENGTH`,
-`TDES2_BUF1_LEN`, `TDES3_FRAME_LEN`). No alias records an earlier nife spelling.
-
-| name | what it is |
-|---|---|
-| `TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK` | buffer 1's length field, in bytes |
-| `TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK` | the whole frame's length field, in bytes |
-| `RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK` | the received frame's length field, in bytes |
-| `DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES` | the page of the window holding channel 0's registers |
-| `GMAC0_INTERFACE_SELECT_REGISTER` | the always-on system controller register holding `gmac0`'s interface select, alias `AON_SYSCFG_12` |
-
-Example: `let length = (word_3 & RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK) as usize;`
-
-### Decision 4: The five names that say what they hold
-
-Ruled 2026-11-16 (UTC), option A: `station_mac_address`, `physical_layer_device_bus_address`,
-`direct_memory_access_physical_address_bits`, `AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR`
-and `AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX` stand as built. MAC stays an
-accepted abbreviation (`design/naming.md`), so each `station_mac_address` field's doc opens with
-"media access control".
-
-Example: `let address = discovered.station_mac_address.unwrap_or(from_registers);`
-
-### Not brought
-
-The two Motorcomm alias sets carry OpenBSD's and FreeBSD's spellings and no Linux one (#3319), as
-`design/naming.md` requires; they need no ruling. Items 6 and 21 stay two-way until the tag, and the
-crate takes the narrow option as the maintainer's provisional call. Item 11 is a template rule.
+Four one-way doors, all ruled and built. Each ruling, its date and an example are in
+[the decisions appendix](1074-designware-ethernet-outside-review/decisions.md).
 
 ## Open decisions
 
@@ -293,26 +243,45 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
 - The review did not run Kani, cargo-mutants or Miri, and did not build at `rust-version` 1.88.
   The template's weekly `msrv` job will; a lane that touches the proofs runs `cargo kani` before
   it pushes.
-- `notes/project-metrics/mutation-rowless-survivors.csv` still names the crate's functions by their
-  earlier spellings (`fifo_bytes`, `mac_conf`, `rx_verdict`); a nife housekeeping item, not the
-  crate's. Open: a lane.
 
-## Where this stands
+## Finding status
 
-Finished: decisions 1 to 4, items 1 to 11 and the move (#3569, #3634); the Motorcomm alias sets
-(#3319); the weekly job's failure on main (nifeos/designware_ethernet#7).
-
-- Items 12 to 15 and 17 to 21: built in nifeos/designware_ethernet#9, open. Blocker: review and
-  merge.
-- Item 16's 10 Mbit/s inversion. Blocker: bench.
-- The pin bump to #9's commit, moving the transport to `is_frame_waiting`. Blocker: #9.
-- A green full mutation run on the crate's main, for the dry run. Blocker: the schedule.
-- The `v0.1.0-pre.1` tag, ruled; then publishing. Blocker: the dry run, then the publishing hold.
-- The rowless-survivor names. Blocker: other, a lane.
+- Item 1 (P0), the template's naming and prose gates: Done, [#3569](https://github.com/nifeos/nife/pull/3569), [#3624](https://github.com/nifeos/nife/pull/3624) and [#3634](https://github.com/nifeos/nife/pull/3634).
+- Item 2 (P0), the manifest's outside pointers and `repository`: Done, [#3624](https://github.com/nifeos/nife/pull/3624).
+- Item 3 (P1), the receive and reclaim bounds: Done, [#3624](https://github.com/nifeos/nife/pull/3624) and
+  [nifeos/designware_ethernet#10](https://github.com/nifeos/designware_ethernet/pull/10), whose test reaches the receive budget.
+- Item 4 (P1), `Link` and `Speed` in a `link` module: Done, [#3569](https://github.com/nifeos/nife/pull/3569).
+- Item 5 (P1), the sixteen compile-time gates: Done, [#3569](https://github.com/nifeos/nife/pull/3569).
+- Item 6 (P1), one visibility rule for the register constants: Done, [#3624](https://github.com/nifeos/nife/pull/3624).
+- Item 7 (P1), the README's stranger path: Done, [#3624](https://github.com/nifeos/nife/pull/3624), [#3634](https://github.com/nifeos/nife/pull/3634) and [nifeos/designware_ethernet#7](https://github.com/nifeos/designware_ethernet/pull/7).
+- Item 8 (P1), the bench machine's name and the board's: Done, [#3624](https://github.com/nifeos/nife/pull/3624) and [nifeos/designware_ethernet#5](https://github.com/nifeos/designware_ethernet/pull/5).
+- Item 9 (P1), the falsification patches regenerated: Done, [#3634](https://github.com/nifeos/nife/pull/3634).
+- Item 10 (P1), two rename artifacts: Done, [#3624](https://github.com/nifeos/nife/pull/3624).
+- Item 11 (P1), `100BASE-TX` against the spelled-out gate: Done, [#3624](https://github.com/nifeos/nife/pull/3624).
+- Item 12 (P2), literal field values: Done, [nifeos/designware_ethernet#9](https://github.com/nifeos/designware_ethernet/pull/9).
+- Item 13 (P2), a short buffer loses the frame: Done, [nifeos/designware_ethernet#9](https://github.com/nifeos/designware_ethernet/pull/9).
+- Item 14 (P2), the extended-address port restored on failure: Done, [nifeos/designware_ethernet#9](https://github.com/nifeos/designware_ethernet/pull/9).
+- Item 15 (P2), a defaulted drive current: Done, [nifeos/designware_ethernet#9](https://github.com/nifeos/designware_ethernet/pull/9).
+- Item 16 (P2), the fallback's 10 Mbit/s transmit clock inversion: Waiting on a board run.
+- Item 17 (P2), the stale-transmit verdict and the receive clock: Done, [nifeos/designware_ethernet#9](https://github.com/nifeos/designware_ethernet/pull/9).
+- Item 18 (P2), the transport's own peek: Done, [nifeos/designware_ethernet#9](https://github.com/nifeos/designware_ethernet/pull/9) and [#3939](https://github.com/nifeos/nife/pull/3939).
+- Item 19 (P2), `start` twice: Done, [nifeos/designware_ethernet#9](https://github.com/nifeos/designware_ethernet/pull/9).
+- Item 20 (P2), small text fixes: Done, [#3624](https://github.com/nifeos/nife/pull/3624) and [nifeos/designware_ethernet#9](https://github.com/nifeos/designware_ethernet/pull/9).
+- Item 21 (P2), the crate root's descriptor re-exports: Done, [nifeos/designware_ethernet#9](https://github.com/nifeos/designware_ethernet/pull/9).
+- Decision 1, where the link type lives: Done, [#3569](https://github.com/nifeos/nife/pull/3569).
+- Decision 2, the compile-time gates are not API: Done, [#3569](https://github.com/nifeos/nife/pull/3569).
+- Decision 3, the five public names: Done, [#3569](https://github.com/nifeos/nife/pull/3569).
+- Decision 4, the five names that say what they hold: Done, [#3624](https://github.com/nifeos/nife/pull/3624).
+- The `v0.1.0-pre.1` tag: Waiting on a green release dry run (ruled 2026-11-19 UTC). The dry
+  run's gate needs a full mutation run green on the same commit, and the crate's scheduled run
+  still defers its record.
+- Publishing: Waiting on the publishing hold, which keeps every crate unpublished until the last
+  outside-review milestone closes (ruled 2026-11-18 UTC).
 
 ## Follow-on
 
-- **Outstanding.** Each item under Where this stands, checked against both repositories' main.
+- **Outstanding.** Each line under Finding status that is not Done, checked against both
+  repositories' main.
 
 ## Index row
 
