@@ -218,9 +218,6 @@ exclude_re = [
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in keyboard_report$",
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in ports_report$",
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in failure_report$",
-    # grant_plan: the const-level shift survivor is command.rs's RECURSIVE, `1 << 0`, the
-    # identity; the rest of the file's constant shifts are pinned by existing tests, which stay.
-    "^crates/grant_plan/src/command\\.rs:\\d+:\\d+: replace << with >>$",
     # serial_console: decode_exact's three pixel channels, each a byte shifted to its own third
     # of the word, per THE_PIXEL_CHANNELS_SHARE_NO_BIT, beside the function.
     "^crates/serial_console/src/screen\\.rs:\\d+:\\d+: replace \\| with \\^ in decode_exact$",

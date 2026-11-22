@@ -20,7 +20,6 @@ members = [
     "crates/cpu_set",
     "crates/current_cpu_contract",
     "crates/confined_system_call_fuzzer_contract",
-    "crates/grant_plan",
     "crates/program_table",
     "crates/credentialer",
     "crates/credential_contract",
