@@ -53,6 +53,7 @@ Full rows: [records-and-indexes.md](scripts/records-and-indexes.md).
 | `script/apropos <word>` | Search every document in the repository. |
 | `script/site` | Build the design record as a website and report its broken links. |
 | `script/names` | Who named this, when, and what was refused. |
+| `script/review-status` | The crates' outside reviews: one row per crate; `--open` lists what is left. |
 | `script/metrics` | The weekly measures behind `notes/project-metrics.md`. |
 
 ### How the project measures itself
