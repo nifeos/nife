@@ -40,8 +40,8 @@
 //!   maps read-only, so this is a property of the format under corruption and not an attack
 //!   surface; a checksum would be a wire-format change.
 //! - [`ArgumentPage::from_virtual_address`] reads through a `usize` pointer, so on a target
-//!   narrower than 64 bits an address above 4 GiB would read a different page. No target built here
-//!   is that narrow.
+//!   narrower than 64 bits an address above 4 GiB would read a different page. Its `# Safety`
+//!   section makes a fitting address the caller's promise. No target built here is that narrow.
 //! - This crate is one file, `src/lib.rs`: the nife repository's `std` port copies it by name, so a
 //!   module split, or an inner attribute the port cannot carry, breaks that build and not this one.
 //!   A test checks that `src/` holds no other file.
@@ -301,7 +301,9 @@ impl<'a> ArgumentPage<'a> {
     /// # Safety
     ///
     /// `virtual_address` must be the start of [`PAGE_BYTES`] of readable memory that stays mapped and unwritten
-    /// for `'a`. The loader maps this page read-only and nothing writes it after assembly.
+    /// for `'a`. The loader maps this page read-only and nothing writes it after assembly. The
+    /// address must also fit the target's `usize`, since it becomes a pointer through one: on a
+    /// target narrower than 64 bits, a larger address names a different page.
     #[must_use]
     pub unsafe fn from_virtual_address(virtual_address: u64) -> Self {
         // SAFETY: the caller's contract, exactly.

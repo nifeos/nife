@@ -73,7 +73,8 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
   checksum. No single-field damage yields a partial argv. The page has one writer and maps
   read-only, so this is a property of the format under corruption and not an attack surface.
 - `from_virtual_address` reads through a `usize` pointer, so on a target narrower than 64 bits an
-  address above 4 GiB would read a different page. No target built here is that narrow.
+  address above 4 GiB would read a different page. Its `# Safety` section makes a fitting address
+  the caller's promise. No target built here is that narrow.
 - A secret on a command line is plain bytes on this page.
 - This crate is one file, `src/lib.rs`, because the nife repository's `std` port copies it by
   name. A test checks that `src/` holds no other file.
