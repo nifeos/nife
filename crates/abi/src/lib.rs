@@ -106,13 +106,6 @@ pub const SYSTEM_CALL_CAPABILITY_DELETE: u64 = 3;
 /// `SYS_EXIT_THREAD`.
 pub const SYSTEM_CALL_EXIT_THREAD: u64 = 4;
 
-/// An index into the calling thread's capability table. **Not a pointer, not a handle you can
-/// guess.** The kernel looks in *your* table, and if the slot is empty you get `NoSuchSlot`.
-///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
-/// `CapSlot` under the capability ruling of 2026-10-06 (UTC).
-pub type CapabilitySlot = u64;
-
 /// The number of slots in a thread's capability table, mirroring the kernel's
 /// the size of the kernel's own table, so userspace can name [`fault::FAULT_RENDEZVOUS_SLOT`] without
 /// reaching into the kernel. The kernel asserts its table size equal to this at compile time, so
