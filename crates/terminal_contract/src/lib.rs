@@ -265,5 +265,19 @@ pub const fn is_retry(r0: u64, r1: u64) -> bool {
 /// A sentinel rather than silence, so a confused client fails fast instead of hanging.
 pub const BAD_REQUEST: u64 = u64::MAX;
 
+/// This interface's identity in a program's `INTERFACES` note: 25, the terminal's requests and
+/// replies. The number is this interface's for good: no other interface takes it, and a format
+/// change is a new version, never a new number. A program declares the pair of this id and
+/// [`VERSION`].
+///
+/// Name: provisional. The number waits on the architect's freeze.
+pub const INTERFACE_ID: u64 = 25;
+
+/// The wire's version, one for the operations, flags, badges and reply shapes together. A break
+/// bumps it; an addition (a new operation, a new flag) does not.
+///
+/// Name: provisional.
+pub const VERSION: u32 = 1;
+
 #[cfg(test)]
 mod tests;

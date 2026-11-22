@@ -116,3 +116,9 @@ fn each_badge_admits_exactly_its_surface() {
         );
     }
 }
+
+#[test]
+fn the_identity_is_interface_25_version_1() {
+    assert_eq!(proto::INTERFACE_ID, 25);
+    assert_eq!(proto::VERSION, 1);
+}
