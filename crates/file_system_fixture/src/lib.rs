@@ -52,7 +52,7 @@ pub const SCRATCH_NAME: &str = "scratch";
 ///
 /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
 pub const SCRATCH_PLACEHOLDER: &[u8] =
-    b"(placeholder overwritten by the redoxfs_server write test)";
+    b"(placeholder overwritten by the client's write test)";
 /// What the client writes to `scratch` and reads back; the host tool re-reads it after the run
 /// to prove the write reached the on-disk image and the filesystem is still consistent.
 pub const WRITE_PATTERN: &[u8] = b"CRKFS_WRITE_OK: this round-tripped through the RedoxFS image\n";
@@ -403,7 +403,7 @@ pub mod tree {
     pub const NAVIGATION_TOUCH_AT_UNIX_SECONDS: u64 = 1_893_456_000;
     /// The fresh directory the navigating witness mints with `MKDIR`, attenuated to `WRITE` and
     /// not `SET_MODIFICATION_TIME_AT`, to prove `touch -t` needs the right through the real wire and not only in
-    /// `redoxfs_server`'s own host tests. Ten bytes plus a run digit, `run_name`'s bound.
+    /// the filesystem server's own host tests. Ten bytes plus a run digit, `run_name`'s bound.
     ///
     /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
     pub const NAVIGATION_TOUCH_NO_SETTIME: &str = "nav-notime";
@@ -859,7 +859,7 @@ pub mod directory_escape {
     /// Expected only with [`file_system_contract::directory::rights::WRITE`], which is [`WROTE`]'s rule applied to the
     /// third way of changing a file.
     ///
-    /// The interesting part is *who* enforces it: `fs_subtree_caretaker` performs no check, so
+    /// The interesting part is *who* enforces it: the subtree caretaker performs no check, so
     /// this bit is a statement about the handle the filesystem server minted from the caretaker's one
     /// `OPENDIR`. A file handle inherits `READ`/`WRITE` from the directory it was opened
     /// through, so a read-only subtree grant is refused by the server rather than by a branch in
@@ -903,7 +903,7 @@ pub mod directory_escape {
     ];
 }
 
-/// **What the two-directory witness reports**: one process, two `fs_subtree_caretaker`s,
+/// **What the two-directory witness reports**: one process, two subtree caretakers,
 /// two capability table slots, and the negative control that only a union of two grants can state.
 ///
 /// A bitmap for [`directory_escape`]'s reason: the test asserts an *exact* set, so a witness that
@@ -955,7 +955,7 @@ pub mod endpoint_boundary {
 }
 
 /// **What a shell holding two trees reports**, the live half of holding two directory
-/// capabilities: the real `swish` builtins, `cd`, `pwd`, `ls`, `bind` and a
+/// capabilities: the real shell builtins `cd`, `pwd`, `ls` and `bind`, and a
 /// planned `<`, run over two live caretakers, the first over [`tree::SUB`] and the second over
 /// [`tree::OTHER`], mounted at [`mounted_tree::MOUNT`] in the first.
 ///
@@ -1145,7 +1145,7 @@ pub mod navigation {
     /// bit mean the caller's assertion moved rather than the server's own clock.
     pub const TOUCH_AT_ROUND_TRIPPED: u64 = 1 << 26;
     /// **A directory handle carrying `WRITE` and not `SET_MODIFICATION_TIME_AT` still bumped a name's mtime to
-    /// now**, through the real wire and the real `fs_subtree_caretaker`, not just the
+    /// now**, through the real wire and a real subtree caretaker, not just the
     /// filesystem server's in-process host tests. The rule that plain `WRITE` covers
     /// "now", made a measurement one layer further out: a bug in `verb::TABLE`'s row for
     /// `SET_MODIFICATION_TIME` (the wrong `needs_all`, or an off-by-one index after `SYNC`'s row was
@@ -1221,7 +1221,7 @@ pub mod navigation {
 /// reason every other witness here reports one, and with the same vacuity control at the end.
 ///
 /// The shell it runs in holds a real directory capability served by a real
-/// `fs_subtree_caretaker`, so what is under test is the prompt's own expansion path over a real
+/// subtree caretaker, so what is under test is the prompt's own expansion path over a real
 /// `READDIR`, not a reimplementation of it.
 ///
 /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
