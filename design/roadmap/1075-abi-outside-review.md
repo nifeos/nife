@@ -101,8 +101,9 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 ## Finding status
 
 - Item 1, P0, clippy red on `VisionFive 2`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 2 and decision A, P0, the published name: Waiting on milestone 1121 (the Moho rename plan)
-  step 3, the rename to `moho_abi` that §323 ruling 2 rules.
+- Item 2 and decision A, P0, the published name: Waiting on step 3 of milestone 1121 (the Moho
+  rename: the order in which the binary interface takes its name). That step renames the crate
+  `moho_abi`, as §323 (the binary interface, and the names of the layers) ruling 2 rules.
 - Item 3, P1, the crate names nife and nife programs: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Item 4, P1, twenty-eight references into nife: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Item 5, P1, the virtio error that does not exist: Done, [#3565](https://github.com/nifeos/nife/pull/3565).

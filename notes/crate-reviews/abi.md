@@ -18,9 +18,10 @@ conventions: the fault rendezvous slot, the console's register stride and the cy
 meaning. It is `no_std`, has no
 dependency and no `unsafe`, and holds only constants, two small enums and a handful of `const fn`
 decoders. Fifteen crates in this tree depend on it, the kernel and the runtime among them, and the
-`std` port carries a generated copy. The architect ruled its published name `moho_abi` (§323 ruling
-2, 2026-11-14 UTC); the rename is milestone 1121's work and has not landed, so the crate is still
-`abi` here. No file in the crate names nife, a path in this tree or a private machine.
+`std` port carries a generated copy. The architect ruled its published name `moho_abi` in §323 (the
+binary interface, and the names of the layers), ruling 2 of 2026-11-14 (UTC). The rename belongs to
+milestone 1121 (the Moho rename: the order in which the binary interface takes its name). It has not
+landed, so the crate is still `abi` here. No file in the crate names nife, a path in this tree or a private machine.
 
 ## Identity
 
@@ -91,7 +92,7 @@ the crate's name and no item's.
 
 Four names come from the outside review's items, set provisionally by the maintainer:
 
-- `address_wait::is_admitted`, formerly `admitted`: a function that answers yes or no is named like
+- `address_wait::is_admitted`: a function that answers yes or no is named like
   a question (item 12).
 - `impl TryFrom<i64> for Error`, which replaces `Error::from_ret` and hands a non-error word back
   (item 12).
@@ -113,7 +114,7 @@ system tests. The recommendation, for the architect to ratify or replace:
 
 | item | owner |
 |---|---|
-| The rename to `moho_abi` | milestone 1121 (the Moho rename plan), step 3 |
+| The rename to `moho_abi` | milestone 1121, step 3 |
 | The six size names above | a rename lane after the architect rules them |
 | The README's badge row, with the repository's name (item 9) | the move commit |
 | Convert the fifteen manifests and the `std` farm's copy to the pinned repository | the move lane's nife-side pull request |
