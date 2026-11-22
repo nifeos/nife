@@ -1,11 +1,12 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 1087. `domain_name_system`: what an outside maintainer would fix before it leaves
 
@@ -31,32 +32,43 @@ tool.
 
 Items 1 to 4 are under [P0](#p0-blocks-the-move), 5 to 9 in [the before-the-tag
 appendix](1087-domain-name-system-outside-review/before-the-tag.md), and 10 to 16 in [the later
-items](1087-domain-name-system-outside-review/later-items.md).
+items](1087-domain-name-system-outside-review/later-items.md). The crate lives in
+`nifeos/domain_name_system`, tagged `v0.1.0-pre.1`.
 
-- 1, unratified public names: Done, [#3728](https://github.com/nifeos/nife/pull/3728), which
-  ratified every public name as built.
-- 2, the manifest does not stand alone: Done, [#3658](https://github.com/nifeos/nife/pull/3658).
-- 3, the files a stranger needs are absent: Open. [#3658](https://github.com/nifeos/nife/pull/3658)
-  added the README and both license files. The scaffold files, the caller workflows,
-  `docs/stranger-test.md` and the stranger run come from `script/crate-move` at the move.
-- 4, shipped text points into nife: Done, [#3608](https://github.com/nifeos/nife/pull/3608).
-- 5, the fuzz target lives in nife: Open. [#3658](https://github.com/nifeos/nife/pull/3658) added
-  `#![forbid(unsafe_code)]`. The move stages the target in the crate's own `fuzz/`, and the weekly
-  caller passes `fuzz: true`.
-- 6, two length names break the units rule: Done, [#3608](https://github.com/nifeos/nife/pull/3608).
-- 7, names that need the specification, and the `address` gate: Open. Parts a, c and d landed in
-  [#3608](https://github.com/nifeos/nife/pull/3608) and
-  [#3668](https://github.com/nifeos/nife/pull/3668). Part b leaves a private binding `address`
-  (`src/lib.rs` line 977) and eight test names in `tests/replies.rs` that `register_names` refuses;
-  Decision 3 qualifies them as IPv4. The crate's `.github/accepted-words` adds `tcp` and `udp` at
-  the move, and `prose_acronyms` flags 13 acronyms in the README and `src/` for expansion or that
-  list.
-- 8, a TTL with its high bit set: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
-- 9, the three equivalent mutants: Open. The move commit writes their `.github/mutants-exempts`
-  lines, and `mutation / mutation` has no green full run on `main` yet.
-- 10 to 16, `Display` and `FromStr`, type sizes, an exhaustive `Error`, documentation drift,
-  host-name syntax, re-capturable fixtures and the TCP buffer: Done,
+- Item 1 (P0), unratified public names: Done, [#3728](https://github.com/nifeos/nife/pull/3728),
+  which ratified every public name as built.
+- Item 2 (P0), the manifest does not stand alone: Done,
+  [#3658](https://github.com/nifeos/nife/pull/3658).
+- Item 3 (P0), the files a stranger needs are absent: Done,
+  [#3658](https://github.com/nifeos/nife/pull/3658) for the README and both license files, the move
+  commit for the scaffold files and caller workflows, and nifeos/domain_name_system#3 for
+  `docs/stranger-test.md` and the stranger run.
+- Item 4 (P0), shipped text points into nife: Done,
   [#3608](https://github.com/nifeos/nife/pull/3608).
+- Item 5 (P1), the fuzz target lives in nife: Done,
+  [#3658](https://github.com/nifeos/nife/pull/3658) for `#![forbid(unsafe_code)]`, the move commit
+  for the crate's own `fuzz/` and the caller's `public-crash-inputs: true`, and
+  [#3818](https://github.com/nifeos/nife/pull/3818), which removed the target from nife.
+- Item 6 (P1), two length names break the units rule: Done,
+  [#3608](https://github.com/nifeos/nife/pull/3608).
+- Item 7 (P1), names that need the specification, and the `address` gate: Done, parts a, c and d in
+  [#3608](https://github.com/nifeos/nife/pull/3608) and
+  [#3668](https://github.com/nifeos/nife/pull/3668), and part b in nifeos/domain_name_system#1,
+  which names the binding and the test names as IPv4. `check / standalone` is green on the crate's
+  `main` with no `tcp` or `udp` line in `.github/accepted-words`.
+- Item 8 (P1), a TTL with its high bit set: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
+- Item 9 (P1), the equivalent mutants: Done, nifeos/domain_name_system#4, which exempts the six
+  survivors the first full run named, and `mutation / mutation` is green on the crate's `main`.
+- Item 10 (P2), `Display` and `FromStr`: Done, [#3608](https://github.com/nifeos/nife/pull/3608).
+- Item 11 (P2), type sizes: Done, [#3608](https://github.com/nifeos/nife/pull/3608).
+- Item 12 (P2), an exhaustive `Error`: Done, [#3608](https://github.com/nifeos/nife/pull/3608).
+- Item 13 (P2), documentation drift: Done, [#3608](https://github.com/nifeos/nife/pull/3608).
+- Item 14 (P2), host-name syntax: Done, [#3608](https://github.com/nifeos/nife/pull/3608).
+- Item 15 (P2), fixtures that cannot be re-captured: Done,
+  [#3608](https://github.com/nifeos/nife/pull/3608).
+- Item 16 (P2), the TCP buffer: Done, [#3608](https://github.com/nifeos/nife/pull/3608) for
+  `MAXIMUM_TCP_MESSAGE_BYTES` and the `TcpReply::new` sentence, and
+  [#3658](https://github.com/nifeos/nife/pull/3658) for the test client's buffer.
 - Decision 1, `MAXIMUM_LABEL_BYTES` and `HEADER_BYTES`: Done,
   [#3608](https://github.com/nifeos/nife/pull/3608), ratified by
   [#3728](https://github.com/nifeos/nife/pull/3728).
@@ -65,9 +77,10 @@ items](1087-domain-name-system-outside-review/later-items.md).
   [#3728](https://github.com/nifeos/nife/pull/3728).
 - Decision 3, the IPv4 address names: Done, [#3608](https://github.com/nifeos/nife/pull/3608),
   ratified by [#3728](https://github.com/nifeos/nife/pull/3728).
-- F-package, the review package: Done, [the package](../../notes/crate-reviews/domain-name-system.md).
-- F-clearance, review clearance: Open. [Decision 4](#decision-4-write-the-package-now-and-clear-the-move-from-it)
-  says the architect clears it from the package.
+- Decision 4, the review package and the clearance: Done,
+  [#3786](https://github.com/nifeos/nife/pull/3786) for [the
+  package](../../notes/crate-reviews/domain-name-system.md), cleared 2026-11-19 (UTC), and
+  [#3818](https://github.com/nifeos/nife/pull/3818) for the move.
 
 ## Open decisions
 
@@ -133,9 +146,8 @@ are `crates/domain_name_system/src/lib.rs` unless a path says otherwise.
    memory not measured). It adds one falsification run with its printed `VERIFICATION:- FAILED`, the
    BUGS list from the root doc, the minimum Rust version and the type sizes measured above. Record
    the first stranger run in `docs/stranger-test.md`. Door: two-way. Effort: S.
-   DONE for the README and both license files, which now sit in the crate directory. The scaffold's
-   other files, the caller workflows and `docs/stranger-test.md` come from `script/crate-move` at
-   the move, and the stranger run follows the move (step 12 of `notes/crate-move.md`).
+   DONE: the README and both license files, the scaffold's other files and caller workflows from the
+   move, and the stranger run in `docs/stranger-test.md`.
 
 4. Shipped text points into nife. DONE. Finding: line 4 sends the reader to `notes/name-resolution.md`.
    Line 7 names `fuzz/fuzz_targets/domain_name_system_reply.rs`, a path in nife (item 5 moves the
@@ -222,8 +234,8 @@ The checks are in [the appendix](1087-domain-name-system-outside-review/done-whe
 
 ## Follow-on
 
-- **Outstanding.** The open lines under [Finding status](#finding-status): items 3, 5, 7 and 9,
-  and the review clearance.
+- **Done.** Every finding, by the pull requests under [Finding status](#finding-status). The crate
+  lives in `nifeos/domain_name_system`, and its later work is that repository's.
 
 ## BUGS
 
@@ -244,5 +256,5 @@ An outside review of `domain_name_system` before it leaves. Four items block the
 names, a manifest and files that do not stand alone, text pointing into nife). Five land before the
 first tag (the fuzz target moving with the crate, two length names under the units rule, the
 specification's abbreviations and the `address` gate, a TTL the RFC says to zero, the three
-equivalent mutants). Seven more are for later. The architect has ratified the three name decisions,
-and the review clearance goes to the architect.
+equivalent mutants). Seven more are for later. The architect has ratified the three name decisions
+and cleared the move.

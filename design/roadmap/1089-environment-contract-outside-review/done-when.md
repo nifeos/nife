@@ -11,8 +11,8 @@ An appendix to [the milestone](../1089-environment-contract-outside-review.md).
   overlay and the callers, and both naming baselines lose their rows.
 - The crate records the identity values the architect rules, pinned by a host test and a `const`
   assertion, and the accessor names the milestone decides applied with their aliases.
-- A `verification` module with three harnesses and three falsification patches passes `cargo kani`
-  and `proofs / falsify` in the new repository.
+- Two harnesses and their patches pass `cargo kani` and `proofs / falsify`. A host test reads
+  back every member of every list.
 - `script/crate-standalone environment_contract` passes every row, and `cargo package --list`
   ships the README and both license texts.
 - A compile-time check holds the domain lists to their caps, `write_field` no longer

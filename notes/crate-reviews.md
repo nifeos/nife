@@ -109,6 +109,6 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`capability_table`](crate-reviews/capability-table.md) | kernel | cleared to move (2026-11-21 UTC, no tag, no publish); milestone 1081 (`capability_table`: what an outside maintainer would fix before it leaves) tracks the move |
 | [`file_system_contract`](crate-reviews/filesystem-contract.md) | 2 | ready for review; one clearance of the repository shared with `file_system_fixture`, and the names |
 | [`file_system_fixture`](crate-reviews/filesystem-fixture.md) | 2 | ready for review with `file_system_contract`; the item names wait for the rename lane of milestone 1091 (`file_system_fixture`: what an outside maintainer would fix before it leaves) |
-| [`byte_sink_contract`](crate-reviews/byte-sink-contract.md) | contract | ready for review; milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves) asks for the clearance |
+| [`byte_sink_contract`](crate-reviews/byte-sink-contract.md) | contract | cleared and moved (no tag, no publish); nife pins `nifeos/byte_sink_contract` by commit, and every finding of milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves) has landed |
 | [`line_editor`](crate-reviews/line-editor.md) | 1098 | ready for review; the move waits for the item 3 rename lane |
 | [`terminal_contract`](crate-reviews/terminal-contract.md) | contract | ready for review; the move waits for its interface number and the reserved-bit ruling |

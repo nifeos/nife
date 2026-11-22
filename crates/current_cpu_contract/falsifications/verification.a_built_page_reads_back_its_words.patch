@@ -8,10 +8,10 @@ Expected to fail: the harness's `assert_eq!(page.tick_hertz(), tick)`, on any ti
 differ from their reversal.
 
 diff --git a/crates/current_cpu_contract/src/lib.rs b/crates/current_cpu_contract/src/lib.rs
-index 8db0fc66b..fab5aee91 100644
+index 5fbeb834b..b95d4ddb2 100644
 --- a/crates/current_cpu_contract/src/lib.rs
 +++ b/crates/current_cpu_contract/src/lib.rs
-@@ -192,7 +192,7 @@ pub fn build_page_with(
+@@ -202,7 +202,7 @@ pub fn build_page_with(
      page[ALLOWANCE_OFFSET_BYTES..ALLOWANCE_OFFSET_BYTES + 8]
          .copy_from_slice(&allowance.map_or(0, NonZeroU64::get).to_le_bytes());
      page[TICK_HERTZ_OFFSET_BYTES..TICK_HERTZ_OFFSET_BYTES + 8]

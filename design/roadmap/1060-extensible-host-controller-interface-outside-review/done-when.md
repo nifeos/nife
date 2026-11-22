@@ -41,9 +41,6 @@ An appendix to [the milestone](../1060-extensible-host-controller-interface-outs
 The review ran none of these. Each needs a machine with an xHCI controller and a person at it, and
 closes with a dated bench record or a README `BUGS` line naming it as unrun.
 
-Status: Bench. None has a bench record. nifeos/extensible_host_controller_interface#23
-names each one in the README's `BUGS` as unrun on silicon.
-
 - The legacy support handoff on a controller whose firmware holds the BIOS semaphore: the semaphore
   clears, the system management interrupt enables clear, the events acknowledge, and the controller
   runs afterward.

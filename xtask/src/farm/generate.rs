@@ -82,19 +82,7 @@ pub(super) fn std_generate_modules() -> bool {
             eprintln!("std-src: cannot read {}", src.display());
             return false;
         };
-        let mut body: String = text
-            .lines()
-            .filter(|l| !l.trim_start().starts_with("#!["))
-            .collect::<Vec<_>>()
-            .join("\n");
-        if let Some(idx) = body.find("\n#[cfg(test)]\nmod tests") {
-            body.truncate(idx);
-        }
-        let modules = out_of_line_modules(&src, &body);
-        let body = match inline_modules(&body, |name| {
-            let (_, path) = modules.iter().find(|(n, _)| n == name)?;
-            std::fs::read_to_string(path).ok()
-        }) {
+        let body = match copied_body(&src, &text) {
             Ok(body) => body,
             Err(e) => {
                 eprintln!("std-src: {}: {e}", src.display());
@@ -114,6 +102,35 @@ pub(super) fn std_generate_modules() -> bool {
         }
     }
     true
+}
+
+/// One copied file's text as std takes it, before the doc-example strip: `text`, read from `src`,
+/// without its crate-level inner attributes and its trailing `#[cfg(test)]` module, with each
+/// column-0 `pub mod x;` inlined. Refuses a file whose `pub mod` file cannot be read, and one that
+/// still names a source file the copy leaves behind ([`references_left_behind`]).
+pub(super) fn copied_body(src: &Path, text: &str) -> Result<String, String> {
+    let mut body: String = text
+        .lines()
+        .filter(|l| !l.trim_start().starts_with("#!["))
+        .collect::<Vec<_>>()
+        .join("\n");
+    if let Some(idx) = body.find("\n#[cfg(test)]\nmod tests") {
+        body.truncate(idx);
+    }
+    let modules = out_of_line_modules(src, &body);
+    let body = inline_modules(&body, |name| {
+        let (_, path) = modules.iter().find(|(n, _)| n == name)?;
+        std::fs::read_to_string(path).ok()
+    })?;
+    let left_behind = references_left_behind(&body);
+    if !left_behind.is_empty() {
+        return Err(format!(
+            "`{}` names a source file the copy leaves behind; keep a copied crate to its file and \
+             its column-0 `pub mod` files",
+            left_behind.join("`, `")
+        ));
+    }
+    Ok(body)
 }
 
 /// The modules a crate root names out of line, as a column-0 `pub mod x;`, each with the `x.rs`
@@ -166,6 +183,78 @@ pub(super) fn inline_modules(
         out.push("}".to_string());
     }
     Ok(out.join("\n"))
+}
+
+/// The lines of `body`, a copied file after [`inline_modules`], that name a source file the copy
+/// leaves behind: an out-of-line `mod x;` (any visibility, at any indentation) or an `include!`,
+/// `include_str!` or `include_bytes!`. Each comes back trimmed, and an empty answer means the copy
+/// stands alone.
+///
+/// The copy is one file inside std, so a crate it is taken from keeps to that file and the
+/// column-0 `pub mod` files it inlines (milestone 1084 (`current_cpu_contract`: what an outside
+/// maintainer would fix before it leaves), item 12). Without this, a second file added in a crate's
+/// own repository breaks std's build with an error that points at the copy, not at the crate.
+/// An item whose attributes include `#[cfg(test)]`, `#[cfg(kani)]` or `#[cfg(doctest)]` (or an
+/// `any(...)` of only those) is allowed: nothing sets them when std builds, so the file it names is
+/// never read. A comment line is skipped. A line inside a string literal reads as code, so a false
+/// refusal there fails loudly, never silently.
+pub(super) fn references_left_behind(body: &str) -> Vec<String> {
+    const INCLUDES: [&str; 3] = ["include!(", "include_str!(", "include_bytes!("];
+    let mut found = Vec::new();
+    let mut gated = false;
+    for line in body.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("//") {
+            continue;
+        }
+        let names_include = INCLUDES.iter().any(|m| trimmed.contains(m));
+        if trimmed.starts_with("#[") {
+            gated |= is_build_time_only_gate(trimmed);
+            if names_include && !gated {
+                found.push(trimmed.to_string());
+            }
+            continue;
+        }
+        if (names_include || is_out_of_line_module(trimmed)) && !gated {
+            found.push(trimmed.to_string());
+        }
+        gated = false;
+    }
+    found
+}
+
+/// Whether `attribute` is a `#[cfg(...)]` that std's build never sets: `test`, `kani`, `doctest`,
+/// or an `any(...)` of only those.
+fn is_build_time_only_gate(attribute: &str) -> bool {
+    const UNSET: [&str; 3] = ["test", "kani", "doctest"];
+    let Some(inner) = attribute
+        .strip_prefix("#[cfg(")
+        .and_then(|a| a.strip_suffix(")]"))
+    else {
+        return false;
+    };
+    match inner.strip_prefix("any(").and_then(|i| i.strip_suffix(')')) {
+        Some(list) => list.split(',').all(|p| UNSET.contains(&p.trim())),
+        None => UNSET.contains(&inner.trim()),
+    }
+}
+
+/// Whether `line` (trimmed) declares a module whose body is in another file: `mod x;`, with any
+/// visibility before it.
+fn is_out_of_line_module(line: &str) -> bool {
+    let rest = if let Some(after) = line.strip_prefix("pub(") {
+        match after.find(") ") {
+            Some(close) => &after[close + 2..],
+            None => return false,
+        }
+    } else {
+        line.strip_prefix("pub ").unwrap_or(line)
+    };
+    rest.strip_prefix("mod ")
+        .and_then(|r| r.strip_suffix(';'))
+        .is_some_and(|name| {
+            !name.is_empty() && name.chars().all(|c| c == '_' || c.is_ascii_alphanumeric())
+        })
 }
 
 /// The heap algorithm's crate, `talc` (milestone 784 (reuse what the tree wrote), item d), as
