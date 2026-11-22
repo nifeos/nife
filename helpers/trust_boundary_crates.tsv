@@ -94,7 +94,7 @@ globally_unique_identifier_partition_table	shared	components,kernel,redoxfs_serv
 glyph_atlas	shared	components,fixtures,kernel
 gpt	userspace	retired
 grant_contract	shared	retired
-grant_plan	shared	components,fixtures,jig,kernel,std_exerciser
+grant_plan	shared	retired
 graphics_contract	shared	components,fixtures,kernel
 graphics_proto	shared	retired
 graphics_protocol	shared	retired

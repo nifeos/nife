@@ -76,8 +76,6 @@ globally_unique_identifier_partition_table abbreviations 29
 globally_unique_identifier_partition_table prose_acronyms 3
 glyph_atlas abbreviations 16
 glyph_atlas prose_acronyms 1
-grant_plan abbreviations 152
-grant_plan prose_acronyms 6
 graphics_contract abbreviations 9
 graphics_contract prose_acronyms 7
 graphics_contract readme_acronyms 2

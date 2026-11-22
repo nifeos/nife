@@ -19,4 +19,4 @@ file_system_fixture = { version = "0.1.0", path = "../file_system_fixture" }
 [dev-dependencies]
 # `examples/rg_host.rs` splits `fixture::walk::RG_SEARCH` with the function that builds nife's argv,
 # so the host's `rg` hears the words nife's does per milestone 121 (`ripgrep` on nife).
-grant_plan = { version = "0.1.0", path = "../grant_plan" }
+grant_plan = { version = "0.1.0", git = "https://github.com/nifeos/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
