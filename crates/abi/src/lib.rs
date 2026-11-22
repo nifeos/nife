@@ -114,6 +114,8 @@ pub const SYSTEM_CALL_EXIT_THREAD: u64 = 4;
 /// **Changing it is an ABI change**: [`fault::FAULT_RENDEZVOUS_SLOT`] is derived from it, so a supervisor
 /// built against another size writes the fault rendezvous to a slot the kernel does not read. Every
 /// program that names it is built against one copy of this crate.
+///
+/// Name: provisional.
 pub const CAPABILITY_TABLE_SLOTS: u64 = 64;
 
 /// Methods on a `Console` capability. **Reserved: the number is retired.**
@@ -307,6 +309,8 @@ pub mod uart;
 /// // already in the caller's own capability table, so its death reveals nothing new.
 /// assert_eq!(Error::NotSupervised as i64, -10);
 /// ```
+///
+/// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i64)]
 pub enum Error {

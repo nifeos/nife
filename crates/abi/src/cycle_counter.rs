@@ -1,3 +1,5 @@
+//! Name: provisional.
+
 /// What a cycle-counter read counts. The discriminant is the word a program sends when it
 /// reports a reading, and zero is deliberately not a meaning, so a zeroed message word reads
 /// as "no meaning reported" rather than as one of these.
@@ -35,6 +37,8 @@ pub enum CycleMeaning {
 
 impl CycleMeaning {
     /// The word this meaning travels as in a message.
+    ///
+    /// Name: provisional.
     #[must_use]
     pub const fn to_word(self) -> u64 {
         self as u64
@@ -42,6 +46,8 @@ impl CycleMeaning {
 
     /// The meaning a message word names, or `None` for a word that names none (zero
     /// included, which is what a sender that reported nothing leaves).
+    ///
+    /// Name: provisional.
     #[must_use]
     pub const fn from_word(word: u64) -> Option<Self> {
         match word {
@@ -54,6 +60,8 @@ impl CycleMeaning {
 
     /// Whether a difference of two reads is a count of the core's own clock cycles, as
     /// opposed to a fixed-rate reference clock's.
+    ///
+    /// Name: provisional.
     #[must_use]
     pub const fn is_core_cycles(self) -> bool {
         !matches!(self, Self::ConstantRateReferenceCycles)

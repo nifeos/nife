@@ -1,3 +1,5 @@
+//! Name: provisional.
+
 /// `invoke(capability, REBOOT, _, _, _)`. **On success it does not return**: the kernel asks the firmware
 /// for a cold reset (PSCI `SYSTEM_RESET` on aarch64, the SBI's system reset (SRST) extension,
 /// type 1, on riscv64, and on `x86_64` the reset register that the firmware's Advanced
@@ -8,6 +10,8 @@
 /// **It syncs nothing**: a caller with a writable filesystem asks it to sync
 /// and waits for the reply first. A firmware that accepts the call and hangs looks the same as a
 /// slow reset from inside the machine.
+///
+/// Name: provisional.
 pub const REBOOT: u64 = 0;
 
 /// **Why the machine did not restart, from PSCI**:
@@ -15,6 +19,8 @@ pub const REBOOT: u64 = 0;
 /// [`super::Error::ResetNotSupported`], `DENIED` (-3) is [`super::Error::ResetDenied`], and any
 /// other code means the reset was asked for and the machine is still running. The raw code is
 /// on the kernel console. *(Name provisional.)*
+///
+/// Name: provisional.
 pub const fn from_psci(code: i64) -> super::Error {
     match code {
         -1 => super::Error::ResetNotSupported,
@@ -25,6 +31,8 @@ pub const fn from_psci(code: i64) -> super::Error {
 
 /// **The same, from SBI SRST** `system_reset`'s `sbiret.error`: `SBI_ERR_NOT_SUPPORTED` (-2) and
 /// `SBI_ERR_DENIED` (-4). *(Name provisional.)*
+///
+/// Name: provisional.
 pub const fn from_sbi(code: i64) -> super::Error {
     match code {
         -2 => super::Error::ResetNotSupported,

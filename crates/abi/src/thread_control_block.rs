@@ -1,3 +1,5 @@
+//! Name: provisional.
+
 /// `invoke(capability, CONFIGURE, entry, user_sp, address_space_slot)` -> the thread's current-CPU page
 /// address, never negative (zero if none could be given). Bind the space in `address_space_slot`
 /// and set the EL0 entry and user stack of an embryo TCB. Needs `WRITE` on both capabilities.
@@ -7,6 +9,8 @@
 /// - **A process capability with [`rights::BIND`](super::rights::BIND)** instead joins that process,
 ///   unconsumed; `OutOfMemory` when it already has as many threads as a current-CPU page admits.
 /// - Word 5 (the sixth) is the first thread pointer: zero or a user address, else `BadPointer`.
+///
+/// Name: provisional.
 pub const CONFIGURE: u64 = 0;
 
 /// `invoke(capability, CAPABILITY_INSERT, capability_slot, rights, target)` -> `child_slot`. Copy the capability in
@@ -30,6 +34,8 @@ pub const CAPABILITY_INSERT: u64 = 1;
 /// through unconditionally, which is how a builder hands a worker its input. A caller with nothing to pass sends
 /// zeros. **Refuses a half-built thread** (no bound address space, or no entry): a TCB must be
 /// whole before it runs. Needs `WRITE`.
+///
+/// Name: provisional.
 pub const START: u64 = 2;
 
 /// `invoke(capability, SET_THREAD_POINTER, value, _, _)` -> 0 (seL4's `SetTLSBase`). **Change the thread pointer of the thread this TCB
@@ -41,6 +47,8 @@ pub const START: u64 = 2;
 ///   per thread; a program writing its own register is outside this contract.
 ///
 /// *(Name and number provisional.)*
+///
+/// Name: provisional.
 pub const SET_THREAD_POINTER: u64 = 3;
 
 /// `invoke(capability, SUSPEND, _, _, _)` -> 0 (seL4's `TCB_Suspend`). **Stop the thread this TCB names until a [`RESUME`]**, keeping its

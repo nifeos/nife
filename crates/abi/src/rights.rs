@@ -1,18 +1,30 @@
+//! Name: provisional.
+
 /// Read the object's contents.
+///
+/// Name: provisional.
 pub const READ: u64 = 1 << 0;
 /// Modify the object's contents.
+///
+/// Name: provisional.
 pub const WRITE: u64 = 1 << 1;
 /// Delegate a (possibly narrowed) copy of this capability to another capability table.
+///
+/// Name: provisional.
 pub const GRANT: u64 = 1 << 2;
 
 /// **Learn what exists, without acting on it**. The kernel-level twin of a filesystem
 /// directory's `ENUMERATE`: it lists what an object holds and acts on none of it.
+///
+/// Name: provisional.
 pub const ENUMERATE: u64 = 1 << 3;
 
 /// **Add a thread to a process**.
 /// See [`super::process`]. A joined thread runs
 /// at an entry its builder chose, inside the process's table and space, so `BIND` is full control
 /// of the process: delegate it as carefully as `GRANT`.
+///
+/// Name: provisional.
 pub const BIND: u64 = 1 << 4;
 
 /// **Every right defined above.** The kernel keeps a twin of this mask and
