@@ -149,7 +149,7 @@ impl<'a> Path<'a> {
     }
 }
 
-/// Parse a token into a [`Path`], with no IO and no capability consulted.
+/// Parse a token into a [`Path`], with no input or output and no capability consulted.
 ///
 /// Empty components are skipped, so `a//b` and `deeper/` mean what they do everywhere else; that is
 /// Unix's behavior and there is no divergence to earn. A leading `/` sets [`Path::is_from_root`],

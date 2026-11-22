@@ -88,8 +88,8 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
 ## BUGS
 
 - A shell holds at most two directory grants, and a pattern expands to at most eight names in one
-  grant. A larger match is refused or batched, never truncated.
-- The name and set bounds are spelled as this crate's own constants, so the planner does not link a
+  grant. The planner refuses or batches a larger match, and never truncates it.
+- This crate states the name and set bounds as its own constants, so the planner does not link a
   filesystem contract. A consumer that links both pins the two together in its own tests.
 
 ## Minimum Rust version

@@ -74,7 +74,7 @@ fn deplete_needs_its_grant() {
 }
 
 #[test]
-fn deplete_with_mem_plans_the_grant() {
+fn deplete_with_memory_plans_the_grant() {
     let CommandLine::Run(r) = parse(b"deplete --mem 16") else {
         panic!()
     };
@@ -85,7 +85,7 @@ fn deplete_with_mem_plans_the_grant() {
 }
 
 #[test]
-fn deplete_mem_out_of_range() {
+fn deplete_memory_out_of_range() {
     let CommandLine::Run(r) = parse(b"deplete --mem 999") else {
         panic!()
     };

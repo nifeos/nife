@@ -117,7 +117,7 @@ fn a_misquoted_line_is_refused_ahead_of_everything_else() {
 /// `--mem` at the very end of the line reads no value, and reads no memory past the token
 /// array either; the missing value stays `None` for the plan to refuse.
 #[test]
-fn a_trailing_mem_flag_is_a_missing_value_not_a_read_past_the_line() {
+fn a_trailing_memory_flag_is_a_missing_value_not_a_read_past_the_line() {
     let r = parse_invocation(b"deplete --mem");
     assert_eq!(r.program, b"deplete");
     assert_eq!(r.memory_grant, None);
@@ -127,7 +127,7 @@ fn a_trailing_mem_flag_is_a_missing_value_not_a_read_past_the_line() {
 /// as an operand. The cursor step is the code under test, so the flag sits at index 1, where
 /// stepping by the wrong arithmetic visibly lands somewhere else.
 #[test]
-fn a_mem_flag_consumes_its_value_and_nothing_after_it() {
+fn a_memory_flag_consumes_its_value_and_nothing_after_it() {
     let r = parse_invocation(b"deplete --mem 4");
     assert_eq!(r.memory_grant, Some(4));
     assert!(r.positionals().is_empty(), "the value became an operand");
@@ -361,7 +361,7 @@ fn a_second_integer_is_unexpected_not_ignored() {
 }
 
 #[test]
-fn mem_flag_must_have_a_numeric_value() {
+fn memory_flag_must_have_a_numeric_value() {
     // `--mem twelve` is a missing grant, not a silent zero: parse_u64 rejects it, so deplete
     // sees "no --mem given" and refuses.
     let CommandLine::Run(r) = parse(b"deplete --mem twelve") else {
