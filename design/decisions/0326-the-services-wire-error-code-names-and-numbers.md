@@ -13,9 +13,9 @@ Counts are from `nifeos/nife@c9d63ae99`.
 
 ## Background
 
-The ruling of 2026-11-22 (UTC) on §325 (the services' wire error vocabulary, #3918): the services
-stop sending negated Linux `errno` and send nife's own codes in `-256..=-4095`, the kernel keeps
-`-1..=-255`, and each server translates once at its boundary. It left the names and the numbers to
+The ruling of 2026-11-22 (UTC) on §325 (the error vocabulary the services speak on the wire,
+#3918): the services stop sending negated Linux `errno` and send nife's own codes in
+`-256..=-4095`, the kernel keeps `-1..=-255`, and each server translates once at its boundary. It left the names and the numbers to
 a follow-on ruling, which comes before any code changes. This is that ruling.
 
 §325's table lists 27 `errno` numbers found in the source. Not all of them can reach a reply, and a
