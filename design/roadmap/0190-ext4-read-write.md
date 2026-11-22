@@ -252,7 +252,7 @@ it. That ruling is not the adoption ruling above, which stays open.
 
 - **Done.** The plan: this block and its survey appendix name the crate, the measurements, the
   upstream work, our own tests and the conditions above.
-- **Outstanding.** The upstream round: [the truncate fix](0190-ext4-read-write/upstream/2-truncate-fix.md)
+- **Outstanding.** The upstream round: [the two truncate fixes](0190-ext4-read-write/upstream/README.md)
   (drafted), the safety arguments, the cast replacement, the fuzz targets, the Kani harnesses, the
   mount's error report and whole times in `InodeInfo`. Each text goes to the architect before
   anyone files it. `rcore-os/tgoskits@dde4020be` fixes bug 1 and the recovery-flag order.
