@@ -61,9 +61,10 @@ milestone reaches delivery.
   the architect's clearance of `notes/crate-reviews/line-editor.md` and
   `notes/crate-reviews/terminal-contract.md`.
 
-- The move: Done. The crate lives in [nifeos/line_editor](https://github.com/nifeos/line_editor),
-  and nife depends on it by git and `rev`, a commit on its `main`, with `version = "0.1.0"`. It keeps
-  `publish = false`; no tag exists, and crates.io holds no release.
+- The move: Done, [#4001](https://github.com/nifeos/nife/pull/4001). The crate lives in
+  [nifeos/line_editor](https://github.com/nifeos/line_editor), and nife depends on it by git and
+  `rev`, a commit on its `main`, with `version = "0.1.0"`. It keeps `publish = false`; no tag
+  exists, and crates.io holds no release.
 
 ## Open decisions
 
