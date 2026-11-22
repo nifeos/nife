@@ -22,7 +22,6 @@
 //! - A stopped durable session is retired only at its identity's next login.
 //! - Ending a durable session waits for a running job (§222), and `SUSPEND` waits on the terminal.
 //! - A `user_timetable_keeper` that fails half way leaves its splits in the user's budget.
-//! - Identities over `grant::MAXIMUM_WORDS_NAME_BYTES` (16 bytes) get no subtree: [`mint`] refuses to truncate.
 //! - A holder that never sends `LOGOUT` wedges the terminal until this process restarts.
 //! - The measured-boot decision is spelled here rather than through `measured_boot::verdict`.
 //! - The audit endpoint proves establishment, not per-request attribution.
@@ -852,9 +851,9 @@ fn rederive(
             record(RederiveSkip::TableFull);
             break;
         };
-        // `Durable` keeps a name of at most `grant::MAXIMUM_WORDS_NAME_BYTES` bytes, the bound `mint` holds a
-        // login to; the manifest's own bound is wider.
-        if !file_system_contract::grant::fits_words(identity) || durables.find(identity).is_some() {
+        // `Durable` keeps a name of at most `login_contract::MAXIMUM_IDENTITY` bytes, the bound a
+        // login is held to; the manifest's own bound is wider.
+        if identity.len() > login_contract::MAXIMUM_IDENTITY || durables.find(identity).is_some() {
             record(RederiveSkip::Identity);
             continue;
         }
@@ -886,7 +885,7 @@ fn rederive(
 /// belongs to, and the four capabilities that let this process hand it back and, later, take it
 /// down. Four slots each, which is what bounds [`DURABLE_SESSIONS`].
 struct Durable {
-    identity: [u8; file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES],
+    identity: [u8; login_contract::MAXIMUM_IDENTITY],
     len: usize,
     /// The user's budget. `user_timetable_keeper` and its timetable are built from regions split off
     /// it, so it refuses `DESTROY` for as long as either lives (DECISIONS §16 (object revocation)).
@@ -917,7 +916,7 @@ impl Durable {
     ) -> Option<Self> {
         let va = DURABLE_PAGE_VA + k as u64 * DURABLE_PAGE_STRIDE;
         let (keeper, page, ready) = open_schedule(own_ut, budget, images, va)?;
-        let mut id = [0u8; file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES];
+        let mut id = [0u8; login_contract::MAXIMUM_IDENTITY];
         id[..identity.len()].copy_from_slice(identity);
         Some(Durable {
             identity: id,
@@ -1319,19 +1318,13 @@ fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
 /// `identity`'s own home subtree (DECISIONS §117 (a principal's subtree is named by its identity
 /// string), used directly) and the construction region itself, the caretaker's logout ticket
 /// (notes/login.md, "Reclaiming a session: the design argument"), both held with full rights for
-/// [`delegate`] to narrow. `None` on any failure, answered [`login_contract::DENIED`]: a spent
-/// budget, an identity too long to grant, no provisioned subtree, or `care` being `None` because
-/// `_start`'s measurement refused the caretaker. `identity_provisioner` creates the subtree; this
-/// process never does (§117).
+/// [`delegate`] to narrow. The identity, up to `login_contract::MAXIMUM_IDENTITY` bytes, travels
+/// whole on the caretaker's grant page. `None` on any failure, answered [`login_contract::DENIED`]:
+/// a spent budget, no provisioned subtree, or `care` being `None` because `_start`'s measurement
+/// refused the caretaker. `identity_provisioner` creates the subtree; this process never does
+/// (§117).
 fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<(u64, u64)> {
     let care = care?;
-
-    // The identity is capped at `grant::MAXIMUM_WORDS_NAME_BYTES` (16 bytes), below
-    // `login_contract::MAXIMUM_IDENTITY` (64), and refused above it before anything is built: a
-    // truncated name is one two identities could share.
-    if !file_system_contract::grant::fits_words(identity) {
-        return None;
-    }
 
     let region = memory_region_split(CONSTRUCTION_UT, CARETAKER_REGION_PAGES).ok()?;
     // As in [`connect`]: an abandoned step gives back its capability slots as well as its memory
