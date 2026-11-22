@@ -279,7 +279,6 @@ dependencies = [
  "grant_contract",
  "http_response",
  "libfuzzer-sys",
- "line_editor",
  "machine_discovery",
  "nifefs",
  "package_archive",
@@ -446,10 +445,6 @@ dependencies = [
  "plain",
  "redox_syscall",
 ]
-
-[[package]]
-name = "line_editor"
-version = "0.1.0"
 
 [[package]]
 name = "lock_api"

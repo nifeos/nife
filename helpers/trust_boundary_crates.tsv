@@ -120,7 +120,7 @@ jh7110_pci_express	shared	components,kernel,uefi_loader
 jh7110_trng	shared	retired
 jh7110_watchdog	kernel	kernel
 job_mix	shared	fixtures,kernel
-line_editor	userspace	components
+line_editor	userspace	retired
 line_editor_component	userspace	components,fixtures
 loaded_image_check	userspace	fixtures
 login_contract	shared	components,fixtures,kernel
