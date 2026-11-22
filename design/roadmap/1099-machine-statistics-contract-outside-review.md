@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -54,12 +55,8 @@ No new tool.
 - P2-13, end-to-end test note: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The README says the test lives with the kernel.
 - P2-14, unconditional `no_std`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-15, `Snapshot` size: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Decision 1, identity with the line count inside it: Done (option A, 2026-11-14 UTC),
-  [#3582](https://github.com/nifeos/nife/pull/3582).
-- Review package: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The review clearance: Done (ruled 2026-11-20 UTC, option A;
-  `nifeos/machine_statistics_contract` approved with `publish = false`, no tag, no publish). The
-  move stays Open and waits for `address_space_layout` and `current_cpu_contract` to leave first
-  (milestone 1017 step 6).
+- Decision 1, identity with the line count inside it: Done,
+  [#3582](https://github.com/nifeos/nife/pull/3582), ruled 2026-11-14 (UTC), option A.
 
 ## Open decisions
 
@@ -177,7 +174,9 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 
 ## Follow-on
 
-- **Outstanding.** The move, after `address_space_layout` and `current_cpu_contract` leave.
+- **Milestone 1017.** The move, at step 6, after `address_space_layout` and
+  `current_cpu_contract` leave. Every finding is Done, so the milestone is built; the review
+  package is cleared and `nifeos/machine_statistics_contract` is approved.
 
 ## Decisions for the architect
 
