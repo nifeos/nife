@@ -5712,14 +5712,6 @@ crates/static_elf/src/machine.rs::NATIVE_MACHINE
 
 crates/static_elf/src/note.rs
 
-crates/static_elf/src/note.rs::NoteError
-
-crates/static_elf/src/note.rs::NoteSearch
-
-crates/static_elf/src/note.rs::NoteSegment
-
-crates/static_elf/src/note.rs::NoteSegments
-
 crates/static_elf/src/note.rs::from_head
 
 crates/static_elf/src/note.rs::new
