@@ -1,117 +1,7 @@
-From 9df283fad34ea04d5937c14fe6a6d31c7133b527 Mon Sep 17 00:00:00 2001
-From: Chris Alef <chris@crickertech.com>
-Date: Sun, 22 Nov 2026 19:19:01 +0000
-Subject: [PATCH 1/2] fix(rsext4): free an emptied extent index node instead of
- writing it back
-
-When a removal deletes every leaf under an external index node, the
-index step wrote that node back with no entries before its parent freed
-it. write_node_to_block validates the node and refuses an index node
-with no entries, so the removal failed with extent:empty_index. A
-truncate of a depth-2 tree fails this way whenever the new end of file
-lies before the first block of a level-1 index node.
-
-The parent already removes and frees a child it sees as empty, so the
-emptied node is no longer written. The root has no block of its own and
-keeps its existing handling.
-
-The test shrinks a depth-2 tree, whose root holds two level-1 index
-nodes, to one block and remounts it.
----
- fs/rsext4/src/extents_tree/remove.rs |  9 ++++-
- fs/rsext4/tests/file_operations.rs   | 51 ++++++++++++++++++++++++++++
- 2 files changed, 59 insertions(+), 1 deletion(-)
-
-diff --git a/fs/rsext4/src/extents_tree/remove.rs b/fs/rsext4/src/extents_tree/remove.rs
-index 40c54e2e7..2b7a23d4e 100644
---- a/fs/rsext4/src/extents_tree/remove.rs
-+++ b/fs/rsext4/src/extents_tree/remove.rs
-@@ -423,7 +423,14 @@ impl<'a> ExtentTree<'a> {
-                                 entries.sort_unstable_by_key(|e| e.ei_block);
-                                 header.eh_entries = entries.len() as u16;
- 
--                                if let Some(block_id) = phy_block {
-+                                // An external index node whose last child was just removed is
-+                                // not written back: an index node with no entries is invalid on
-+                                // disk, and the parent removes and frees this block as soon as
-+                                // it sees `empty`. The root has no block here; phase 3 turns an
-+                                // empty root into an empty leaf.
-+                                if let Some(block_id) = phy_block
-+                                    && !entries.is_empty()
-+                                {
-                                     let disk_node = ExtentNode::Index {
-                                         header: *header,
-                                         entries: entries.clone(),
-diff --git a/fs/rsext4/tests/file_operations.rs b/fs/rsext4/tests/file_operations.rs
-index 1575fc513..aa1043dbf 100644
---- a/fs/rsext4/tests/file_operations.rs
-+++ b/fs/rsext4/tests/file_operations.rs
-@@ -2016,6 +2016,57 @@ mod file_functional_tests {
-         assert!(data.iter().all(|&byte| byte == 0));
-     }
- 
-+    /// Writing every other block makes one single-block extent per block, so
-+    /// 1,500 of them need a depth-2 tree whose root holds two level-1 index
-+    /// nodes. Shrinking to one block removes every leaf under the second
-+    /// index node, which must then be freed rather than written back empty.
-+    #[test]
-+    fn shrinking_extent_inode_past_a_whole_index_node_frees_that_node() {
-+        const EXTENTS: u64 = 1500;
-+        let device = MockBlockDevice::new(100 * 1024 * 1024);
-+        let mut jbd2_dev = Jbd2Dev::initial_jbd2dev(0, device, true);
-+
-+        mkfs(&mut jbd2_dev).expect("mkfs failed");
-+        let mut fs = Ext4FileSystem::mount(&mut jbd2_dev).expect("mount failed");
-+        mkfile(&mut jbd2_dev, &mut fs, "/extent-depth-two", None, None)
-+            .expect("file creation failed");
-+        for index in 0..EXTENTS {
-+            let block = vec![(index % 251) as u8 + 1; BLOCK_SIZE];
-+            write_file(
-+                &mut jbd2_dev,
-+                &mut fs,
-+                "/extent-depth-two",
-+                2 * index * BLOCK_SIZE as u64,
-+                &block,
-+            )
-+            .unwrap();
-+        }
-+        let (inode_number, inode) =
-+            dir::get_inode_with_num(&mut fs, &mut jbd2_dev, "/extent-depth-two")
-+                .unwrap()
-+                .unwrap();
-+        // The inline root header is eh_magic, eh_entries, eh_max, eh_depth.
-+        let root_entries = inode.i_block[0] >> 16;
-+        let root_depth = inode.i_block[1] >> 16;
-+        assert_eq!(root_depth, 2, "the fixture must build a depth-2 tree");
-+        assert!(root_entries >= 2, "the root must hold two index nodes");
-+        let free_blocks_before = fs.superblock.free_blocks_count();
-+
-+        truncate_inode(&mut jbd2_dev, &mut fs, inode_number, 100)
-+            .expect("shrinking a depth-2 tree must succeed");
-+
-+        let data = read_file(&mut jbd2_dev, &mut fs, "/extent-depth-two").unwrap();
-+        assert_eq!(data, vec![1u8; 100]);
-+        // 1,499 data blocks and at least the second index node and its
-+        // leaves are free again.
-+        assert!(fs.superblock.free_blocks_count() > free_blocks_before + EXTENTS);
-+
-+        umount(fs, &mut jbd2_dev).expect("unmount failed");
-+        let mut fs = Ext4FileSystem::mount(&mut jbd2_dev).expect("remount failed");
-+        let data = read_file(&mut jbd2_dev, &mut fs, "/extent-depth-two").unwrap();
-+        assert_eq!(data, vec![1u8; 100]);
-+    }
-+
-     #[test]
-     fn deleting_fast_symlink_does_not_treat_inline_bytes_as_indirect_blocks() {
-         let device = MockBlockDevice::new(100 * 1024 * 1024);
--- 
-2.53.0
-
-
-From cc66f1115220ac25311fdd389a4c5f11286cf950 Mon Sep 17 00:00:00 2001
-From: Chris Alef <chris@crickertech.com>
-Date: Sun, 22 Nov 2026 19:19:02 +0000
-Subject: [PATCH 2/2] fix(rsext4): restore the zeroed EOF tail when a
+From cc8b0ca9702f8d3e27e9c2aee69d4479e6e007fc Mon Sep 17 00:00:00 2001
+From: Chris Alef <476570+calef@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 22:31:02 +0000
+Subject: [PATCH] fix(rsext4): restore the zeroed EOF tail when a
  single-transaction truncate fails
 
 A shrink zeroes the tail of the block it keeps before it changes any
@@ -303,11 +193,11 @@ index 348472067..6217118ce 100644
 +    result
  }
 diff --git a/fs/rsext4/tests/file_operations.rs b/fs/rsext4/tests/file_operations.rs
-index aa1043dbf..5c3c00b85 100644
+index 1575fc513..0290ff921 100644
 --- a/fs/rsext4/tests/file_operations.rs
 +++ b/fs/rsext4/tests/file_operations.rs
-@@ -2067,6 +2067,43 @@ mod file_functional_tests {
-         assert_eq!(data, vec![1u8; 100]);
+@@ -2016,6 +2016,43 @@ mod file_functional_tests {
+         assert!(data.iter().all(|&byte| byte == 0));
      }
  
 +    #[test]
