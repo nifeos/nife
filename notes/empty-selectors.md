@@ -131,7 +131,7 @@ Confirm the replay of the historical check for yourself, which is the measuremen
 correction rests on:
 
 ```console
-$ mkdir -p /tmp/replay/script /tmp/replay/crates/filesystem_contract
+$ mkdir -p /tmp/replay/script /tmp/replay/crates/file_system_contract
 $ printf '#!/bin/sh\n' > /tmp/replay/script/lint
 $ git show 51fee8248^:script/lint | sed -n '1856,1862p' >> /tmp/replay/script/lint
 $ /bin/sh /tmp/replay/script/lint; echo "exit=$?"

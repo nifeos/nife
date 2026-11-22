@@ -110,7 +110,7 @@ pub(super) fn words_grant(
     };
     // **A directory in the mounted tree is named through the mount** (milestone 834 (ioping on nife and Linux)): the
     // progenitor builds the caretaker against the tree `spawn_protocol::in_mounted_tree` says.
-    let mut routed = [0u8; filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES + 1];
+    let mut routed = [0u8; file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES + 1];
     let dir = match g.side {
         grant_navigation::GrantSide::First => dir,
         grant_navigation::GrantSide::Second => {
@@ -127,7 +127,7 @@ pub(super) fn words_grant(
             &routed[..n]
         }
     };
-    let Some((dir_lo, dir_hi)) = filesystem_contract::grant::pack_name(dir) else {
+    let Some((dir_lo, dir_hi)) = file_system_contract::grant::pack_name(dir) else {
         return Err(Some(
             b"  that name does not fit in a grant's two argument words\n",
         ));
@@ -136,7 +136,7 @@ pub(super) fn words_grant(
         caretaker: (
             dir_lo,
             dir_hi,
-            filesystem_contract::grant::specification(dir.len(), grant.rights()),
+            file_system_contract::grant::specification(dir.len(), grant.rights()),
         ),
         child: (0, 0, 0),
     };
@@ -150,13 +150,13 @@ pub(super) fn words_grant(
 }
 
 /// **Write a grant's names onto a fresh page**, through set window `stage`, in
-/// `filesystem_contract::nameset`'s encoding: what the progenitor maps into `fs_nameset_caretaker`.
+/// `file_system_contract::nameset`'s encoding: what the progenitor maps into `fs_nameset_caretaker`.
 /// `Err(Some(sentence))` is a set the encoding refuses, which the planner's own bounds make
 /// unexpected, and `Err(None)` the budget.
 fn set_page(g: &GrantDir, stage: usize) -> Result<Argv, Option<&'static [u8]>> {
     let va = SET_VA + stage as u64 * spawn_protocol::IMAGE_PAGE;
     let page = fresh_page(va).ok_or(None)?;
-    let mut list = [(&b""[..], false); filesystem_contract::nameset::MAXIMUM_NAMES];
+    let mut list = [(&b""[..], false); file_system_contract::nameset::MAXIMUM_NAMES];
     let mut n = 0;
     for (name, is_dir) in g.names.iter() {
         list[n] = (name, is_dir);
@@ -165,7 +165,7 @@ fn set_page(g: &GrantDir, stage: usize) -> Result<Argv, Option<&'static [u8]>> {
     // SAFETY: `va` is one page this shell just mapped read/write, fresh, and nothing else reaches
     // it until the frame is sent; the borrow ends before this function returns.
     let out = unsafe { &mut *(va as *mut [u8; spawn_protocol::IMAGE_PAGE as usize]) };
-    match filesystem_contract::nameset::encode(&list[..n], out) {
+    match file_system_contract::nameset::encode(&list[..n], out) {
         Some(_) => Ok(page),
         None => {
             release_argv(page, true);
@@ -548,9 +548,10 @@ fn carve_image_grants(
 /// The first page of a file whose manifest note is being read, and the note segment it points at.
 /// Statics rather than locals for [`GENERATION_TABLE`]'s reason: two pages on the stack would take
 /// the frame past the guard page `script/stack-frame-check` holds every frame to.
-static mut NOTE_HEAD: [u8; filesystem_contract::PAGE_BYTES] = [0; filesystem_contract::PAGE_BYTES];
-static mut NOTE_SEGMENT: [u8; filesystem_contract::PAGE_BYTES] =
-    [0; filesystem_contract::PAGE_BYTES];
+static mut NOTE_HEAD: [u8; file_system_contract::PAGE_BYTES] =
+    [0; file_system_contract::PAGE_BYTES];
+static mut NOTE_SEGMENT: [u8; file_system_contract::PAGE_BYTES] =
+    [0; file_system_contract::PAGE_BYTES];
 
 /// **The manifest the open file `handle` carries in its own bytes** (milestone 597 (a program
 /// carries its manifest in an ELF note)), read the way the progenitor reads its copy: `PT_NOTE`
@@ -607,7 +608,7 @@ fn read_at(dir: u64, handle: u64, offset: u64, out: &mut [u8]) -> Option<()> {
         let want = (out.len() - done).min(PAGE as usize) as u64;
         let n = call(
             dir,
-            fs::request(fs::READ, handle, want),
+            file_system::request(file_system::READ, handle, want),
             offset + done as u64,
         )
         .0 as i64;
@@ -652,14 +653,19 @@ pub(super) fn open_for_bytes(nav: &mut Nav, path: &[u8]) -> Option<(Tree, u64, u
         }
     };
     let t = w.tree;
-    let opened = nav.name_call_in(t, fs::OPEN, w.handle, name, 0);
+    let opened = nav.name_call_in(t, file_system::OPEN, w.handle, name, 0);
     nav.unwind(&w);
     if opened < 0 {
         say(Say::Failed(-opened as i32));
         return None;
     }
     let handle = opened as u64;
-    let size = call(t.slot, fs::request(fs::FSTAT, handle, 0), 0).0 as i64;
+    let size = call(
+        t.slot,
+        file_system::request(file_system::FSTAT, handle, 0),
+        0,
+    )
+    .0 as i64;
     if size <= 0 || spawn_protocol::image_pages(size as u64) > spawn_protocol::IMAGE_MAXIMUM_PAGES {
         nav.close_in(t, handle);
         refused();
@@ -708,7 +714,12 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
         if map_window_frame(frame, va) {
             // SAFETY: `va` was just mapped read/write, one page.
             let window = unsafe { MappedWindow::new(va, PAGE) };
-            let n = call(dir, fs::request(fs::READ, handle, PAGE), i * PAGE).0 as i64;
+            let n = call(
+                dir,
+                file_system::request(file_system::READ, handle, PAGE),
+                i * PAGE,
+            )
+            .0 as i64;
             if n < 0 {
                 read_ok = false;
             } else {
@@ -767,7 +778,7 @@ pub(super) fn vouch(nav: &mut Nav, path: Option<&[u8]>) {
     nav.close_in(t, handle);
     // `vouched_name` held the name to `grant::MAXIMUM_WORDS_NAME_BYTES`, so it packs; the frames are already
     // sent, so the name message goes whatever happens, and empty words are a name nothing holds.
-    let (lo, hi) = filesystem_contract::grant::pack_name(name).unwrap_or((0, 0));
+    let (lo, hi) = file_system_contract::grant::pack_name(name).unwrap_or((0, 0));
     send(SPAWN, lo, hi, name.len() as u64);
     let (r0, r1, _) = receive(RESULT);
     user_mode_runtime::destroy_memory_region(staging);
@@ -792,7 +803,7 @@ pub(super) fn refuse(spec: ParsedInvocation, refusal: Refusal) {
 }
 
 /// One process's three `START` argument words, packed by this shell and forwarded by the progenitor without
-/// being read. `filesystem_contract::grant`'s layout: two words of name, and a spec carrying the length plus
+/// being read. `file_system_contract::grant`'s layout: two words of name, and a spec carrying the length plus
 /// either a rights mask (a caretaker's) or an option mask (a program's).
 type StartWords = (u64, u64, u64);
 
@@ -815,7 +826,7 @@ pub(super) struct DirWords {
 /// authorization) phase 3).
 ///
 /// `Ok` is `(the caretaker's START words, the program's)`: the directory and the
-/// `filesystem_contract::directory` rights (`REMOVE`, or `REMOVE_TREE` with `-r`), then the operand and
+/// `file_system_contract::directory` rights (`REMOVE`, or `REMOVE_TREE` with `-r`), then the operand and
 /// `flags`, plus whether the operand rides a name set rather than the words. A name longer than
 /// two words hold (`grant::MAXIMUM_WORDS_NAME_BYTES`, milestone 946 (a granted file name can be longer than sixteen bytes)) does: the program is told
 /// `grant::WHOLE_NAMESPACE` and the grant becomes a set of that one name, which
@@ -857,7 +868,7 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
     let (dir_lo, dir_hi) = if dir.is_empty() {
         (0, 0)
     } else {
-        let Some(words) = filesystem_contract::grant::pack_name(dir) else {
+        let Some(words) = file_system_contract::grant::pack_name(dir) else {
             return Err(b"  that name does not fit in a grant's two argument words\n");
         };
         words
@@ -865,23 +876,23 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
     // What `-r` buys, stated as the difference between two capabilities rather than as a branch in
     // the program: REMOVE alone cannot even look at what is under the directory.
     let rights = if g.subtree {
-        filesystem_contract::directory::REMOVE_TREE
+        file_system_contract::directory::rights::REMOVE_TREE
     } else {
-        filesystem_contract::directory::REMOVE
+        file_system_contract::directory::rights::REMOVE
     };
     // `fs_subtree_caretaker::_start(name_lo, name_hi, spec)`, or `fs_nameset_caretaker`'s, which
     // takes the same words.
     let caretaker = (
         dir_lo,
         dir_hi,
-        filesystem_contract::grant::specification(dir.len(), rights),
+        file_system_contract::grant::specification(dir.len(), rights),
     );
     // `rm::_start(spec, name_lo, name_hi)`, whose spec carries the options where a caretaker's
     // carries rights: both are "what this process was started with".
-    let (child, set) = match filesystem_contract::grant::pack_name(name) {
+    let (child, set) = match file_system_contract::grant::pack_name(name) {
         Some((name_lo, name_hi)) => (
             (
-                filesystem_contract::grant::specification(name.len(), flags),
+                file_system_contract::grant::specification(name.len(), flags),
                 name_lo,
                 name_hi,
             ),
@@ -889,8 +900,8 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
         ),
         None => (
             (
-                filesystem_contract::grant::specification(
-                    filesystem_contract::grant::WHOLE_NAMESPACE,
+                file_system_contract::grant::specification(
+                    file_system_contract::grant::WHOLE_NAMESPACE,
                     flags,
                 ),
                 0,

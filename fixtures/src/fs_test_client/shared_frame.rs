@@ -8,8 +8,8 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::fs;
-use filesystem_fixture as fixture;
+use file_system_contract::file_system;
+use file_system_fixture as fixture;
 use user_mode_runtime::{call, exit, receive, send};
 
 use crate::channel::{FILE, REPORT, get_page, put_page};
@@ -49,13 +49,17 @@ pub(crate) fn share_victim(window: u64) -> ! {
     let _ = receive(SYNC);
     // The length travels in the register (we choose our own name's length); the name bytes travel
     // in our window, which only we and the server map.
-    let (r0, _) = call(ep, fs::request(fs::OPEN, 0, victim.len() as u64), 0);
+    let (r0, _) = call(
+        ep,
+        file_system::request(file_system::OPEN, 0, victim.len() as u64),
+        0,
+    );
     if (r0 as i64) < 0 {
         send(REPORT, fixture::SHARED_UNEXPECTED, (-(r0 as i64)) as u64, 0);
         exit();
     }
     let handle = r0;
-    let (n, _) = call(ep, fs::request(fs::READ, handle, 8), 0);
+    let (n, _) = call(ep, file_system::request(file_system::READ, handle, 8), 0);
     if (n as i64) < 0 {
         send(REPORT, fixture::SHARED_UNEXPECTED, (-(n as i64)) as u64, 0);
         exit();

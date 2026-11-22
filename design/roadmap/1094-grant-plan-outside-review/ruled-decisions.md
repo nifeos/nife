@@ -81,7 +81,7 @@ Rule, ruled 2026-11-19 (UTC) by the maintainer, provisional: a two-way door unti
 `MAXIMUM_FILE_NAME_BYTES`; `MAXIMUM_NAME_BYTES` in `expand` and in `nav`;
 `MAXIMUM_DIRECTORY_NAME_BYTES`; `MAXIMUM_RENDERED_PATH_BYTES`; `MAXIMUM_HOLDER_NAME_BYTES`;
 `MAXIMUM_VERB_BYTES`; `MAXIMUM_WORDS_NAME_BYTES` kept as built; the four fields become
-`length_bytes`. `filesystem_contract::grant::MAXIMUM_NAME`, which two of these mirror, moves in the
+`length_bytes`. `file_system_contract::grant::MAXIMUM_NAME`, which two of these mirror, moves in the
 same lane. A rename lane does the work, not the pull request that records the rule.
 
 Prior art. This tree's `program_argument_contract::PAGE_BYTES` and `expansion::NAME_BYTES` carry their

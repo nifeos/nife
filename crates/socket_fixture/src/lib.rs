@@ -10,7 +10,7 @@
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope; the crate holds what
 //! `socket_contract` held as its `fixture` module. Considered `socket_test_fixture`, which repeats
-//! what `fixture` already says, and followed `filesystem_fixture`. Calef names crates.
+//! what `fixture` already says, and followed `file_system_fixture`. Calef names crates.
 
 /// The port the inbound gate listens on, and the guest side of the runners' `hostfwd`. Both
 /// architecture legs use the same number because they run one after the other and never hold it at once.

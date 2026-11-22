@@ -66,7 +66,7 @@ fn transfer_first_sector_refuses_a_request_past_the_end_of_the_disk() {
     assert_eq!(transfer_first_sector(1, 1, 2 * sectors_per_block - 1), None);
 }
 
-/// `block::SIZE` never answers a negative number, which a client would read as an error.
+/// `block::GET_SIZE_BYTES` never answers a negative number, which a client would read as an error.
 #[test]
 fn disk_size_bytes_saturates_rather_than_turn_negative() {
     assert_eq!(disk_size_bytes(0), 0);

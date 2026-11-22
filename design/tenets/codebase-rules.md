@@ -61,7 +61,7 @@ requirements are known.
       And it makes location self-enforcing for free. Once shared definitions live in `crates/`,
    everything in `components/src/` is a program, with no files moved and nothing to remember.
 
-   This was already the tree's practice for seven crates (`filesystem_contract`,
+   This was already the tree's practice for seven crates (`file_system_contract`,
    `byte_sink_contract`, `credential_contract`, `clock_contract`, `entropy_contract`,
    `network_time_protocol`, `graphics_contract`); `cseam.rs`, now the `c_seam` crate, never
    justified the `#[path]` mechanism.

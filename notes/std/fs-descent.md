@@ -39,7 +39,7 @@ is one place to be wrong.
 
 The rights it asks for are the design, and they look like a widening until you do the arithmetic.
 Each hop asks for `DESCEND | needs`, where `needs` is what the *final* verb requires on the
-directory it lands in (`filesystem_contract::verb::TABLE` is the list; `OPEN`'s "READ or WRITE" is
+directory it lands in (`file_system_contract::verb::TABLE` is the list; `OPEN`'s "READ or WRITE" is
 the one row a caller has to resolve from its own `OpenOptions`). Carrying `needs` down the whole
 chain rather than asking for it only at the end costs nothing that was ever available, because a
 child's rights are its parent's *intersected* with the request. A right an ancestor lacks is a right

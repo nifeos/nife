@@ -142,7 +142,7 @@ pub(crate) fn install_boot() -> bool {
         SHELL_UP.as_str(),
         // The file `mkfs` wrote before the reboot, listed and then read.
         "made-on-target",
-        // `wc`'s answer for `filesystem_fixture::blank::MADE_BODY`: one line, ten words,
+        // `wc`'s answer for `file_system_fixture::blank::MADE_BODY`: one line, ten words,
         // fifty-seven bytes. Written out rather than derived, because a gate that computed the
         // number from the same constant the program wrote would be checking its own arithmetic.
         "1 10 57",

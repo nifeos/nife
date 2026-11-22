@@ -146,11 +146,11 @@ primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }
 nifefs = { version = "0.1.0", path = "../crates/nifefs" }
 direct_memory_access_validator = { version = "0.1.0", path = "../crates/direct_memory_access_validator" }
-filesystem_contract = { version = "0.1.0", path = "../crates/filesystem_contract" }
+file_system_contract = { version = "0.1.0", path = "../crates/file_system_contract" }
 # Optional, and only for the `bench` feature's filesystem benchmark (see the feature below):
 # the throughput and walk shapes are test data since milestone 886 (the filesystem test fixture
 # moves to its own crate), and nothing that boots links them.
-filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture", optional = true }
+file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture", optional = true }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The entropy contract (milestone 56, DECISIONS §44). The kernel wires the entropy service and its
 # tests are its clients, speaking the same request/reply the std PAL does, so no party has its own
@@ -297,10 +297,10 @@ board = []
 # without MAEE, and one built without it refuses a hart with it. riscv64 only. Name provisional.
 board_th1520 = ["board"]
 # The benchmark boot (milestone 21): run the microbenchmarks and halt. See script/bench.
-# `filesystem_fixture` joins it optional (milestone 886 (the filesystem test fixture moves to its
+# `file_system_fixture` joins it optional (milestone 886 (the filesystem test fixture moves to its
 # own crate)): the filesystem bench speaks the
 # throughput benchmark's shape, which is test data, so the booting kernel never links it.
-bench = ["dep:coremark", "dep:byte_sink_contract", "dep:primitive_benchmark_contract", "dep:filesystem_fixture"]
+bench = ["dep:coremark", "dep:byte_sink_contract", "dep:primitive_benchmark_contract", "dep:file_system_fixture"]
 # The instruction-count instrument (milestone 78): boot under `-icount shift=0,sleep=off`, where
 # virtual time is a deterministic function of instructions retired, and assert the two timing claims
 # no wall-clock test can make. See script/icount and kernel/src/icount.rs. Name provisional.

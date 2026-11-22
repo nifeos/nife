@@ -273,7 +273,7 @@ pub const SLOT_MAGIC: [u8; 8] = *b"NIFESLOT";
 pub const SLOT_VERSION: u32 = 1;
 
 /// **Bytes of a slot partition reserved for [`SlotHeader`] before the image begins**: 4096, one
-/// whole transfer block of `filesystem_contract::block`.
+/// whole transfer block of `file_system_contract::block`.
 ///
 /// Only the first [`SLOT_HEADER_BYTES`] carry anything. The rest is padding, and it is padding
 /// rather than a smaller reservation so that **the image starts on a transfer-block boundary**.

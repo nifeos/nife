@@ -9,12 +9,12 @@
 name = "fixtures"
 kind = "test"
 home = { repo = "fixtures", status = "provisional" }
-# filesystem_fixture is an interface, not an internal crate, on purpose: the crash injector's word
+# file_system_fixture is an interface, not an internal crate, on purpose: the crash injector's word
 # and the throughput shapes are test hooks compiled into shipping programs (redoxfs_server links
 # it), which is exactly what milestone 886's ruling ordered them to be.
 # domain_name_resolution_fixture is one for the same reason a different way: the kernel's own test
 # (system_tests, a kernel package crate) links it beside the test client.
-interfaces = ["filesystem_fixture", "socket_fixture", "domain_name_resolution_fixture", "byte_sink_fixture"]
+interfaces = ["file_system_fixture", "socket_fixture", "domain_name_resolution_fixture", "byte_sink_fixture"]
 crates = [
     "fixtures",
     # Milestone 886 (the filesystem test fixture moves to its own crate) moved the filesystem test

@@ -38,7 +38,7 @@
 //! (`block_driver`) and says what it holds. The name `virtio` stays reserved for a library cut later
 //! from what the six copies of the virtio-mmio handshake share.
 
-use filesystem_contract::block;
+use file_system_contract::block;
 use user_mode_runtime::virtual_io::{read_register, virtual_io_ring_barrier, write_register};
 use user_mode_runtime::{
     exit, interrupt_acknowledge, interrupt_wait, receive_request, reply, send,
@@ -1241,9 +1241,9 @@ pub fn run_block_server(direct_memory_access_phys: u64) -> ! {
     let capacity_sectors = capacity_sectors();
     // The device is up: signal readiness, so a hang here (bring-up) is distinct from a hang in the
     // first read completion. SEND rendezvous, so this also paces the test past bring-up.
-    send(BLK_READY, filesystem_contract::READY, 0, 0);
+    send(BLK_READY, file_system_contract::READY, 0, 0);
     // How many device flushes have completed. Answered back on every successful `block::FLUSH`, so a
-    // client can tell a real round trip from a constant yes: see `filesystem_contract::block::FLUSH`.
+    // client can tell a real round trip from a constant yes: see `file_system_contract::block::FLUSH`.
     let mut flushes: i64 = 0;
     loop {
         // RECEIVE_CAPABILITY: (first word, the Reply, second word = the starting block index). The Reply is
@@ -1256,12 +1256,12 @@ pub fn run_block_server(direct_memory_access_phys: u64) -> ! {
         // Clamp, as `fs_service.rs` does for the file channel: a request is never trusted to stay
         // inside the shared region just because its packing could spell a larger count.
         let count = block::request_block_count(w0).min(block::TRANSFER_BLOCKS) as u64;
-        let operation = filesystem_contract::operation(w0);
+        let operation = file_system_contract::operation(w0);
         let r0: i64 = match operation {
             block::READ | block::WRITE => {
                 match transfer_first_sector(block, count, capacity_sectors) {
                     // EINVAL: some block of the request lies past the end of the disk.
-                    None => filesystem_contract::reply_err(22),
+                    None => file_system_contract::reply_err(22),
                     Some(sector) => {
                         let done = if operation == block::READ {
                             block_read(direct_memory_access_phys, sector, count)
@@ -1272,15 +1272,15 @@ pub fn run_block_server(direct_memory_access_phys: u64) -> ! {
                         if done {
                             0
                         } else {
-                            filesystem_contract::reply_err(5)
+                            file_system_contract::reply_err(5)
                         }
                     }
                 }
             }
-            block::SIZE => disk_size_bytes(capacity_sectors),
+            block::GET_SIZE_BYTES => disk_size_bytes(capacity_sectors),
             // The one verb that can refuse for a reason outside this program. A device that never
             // offered the feature gets EOPNOTSUPP rather than a zero, because a zero here is a lie
-            // about somebody's data; see `filesystem_contract::block::FLUSH`.
+            // about somebody's data; see `file_system_contract::block::FLUSH`.
             block::FLUSH => {
                 if !can_flush {
                     -95 // EOPNOTSUPP: this device has no flush, and pretending otherwise is the bug
@@ -1430,7 +1430,7 @@ fn capacity_sectors() -> u64 {
     .expect("the disk's configuration generation never held still across a capacity read")
 }
 
-/// The disk's size in bytes (sectors * 512), for `block::SIZE`. RedoxFS asks for this once, at open,
+/// The disk's size in bytes (sectors * 512), for `block::GET_SIZE_BYTES`. RedoxFS asks for this once, at open,
 /// to size its allocator; the value is the whole extent the image lives in. A capacity too large to
 /// state in a non-negative `i64` answers `i64::MAX` rather than overflow or turn negative, which a
 /// client would read as an error.

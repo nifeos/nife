@@ -31,7 +31,7 @@ pub(super) fn build_grant(
 ) -> Option<u64> {
     let words = match manifest.map(|m| m.program_argument) {
         Some(grant_contract::ProgramArgumentDeclaration::Words(g)) => {
-            use filesystem_contract::grant as gr;
+            use file_system_contract::grant as gr;
             let rights = gr::specification_rights(care_words.2) & g.rights();
             (
                 care_words.0,
@@ -117,7 +117,7 @@ pub(super) fn build_caretaker(
     // The one bounded wait: the caretaker answers `READY` or `DESCENT_REFUSED`, never nothing.
     let (verdict, _, _) = receive(ready);
     capability_delete(ready);
-    if verdict == filesystem_contract::READY {
+    if verdict == file_system_contract::READY {
         Some(narrow_ep)
     } else {
         // A refused descent; the caretaker has already exited.

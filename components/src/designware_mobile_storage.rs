@@ -1,4 +1,4 @@
-//! radon's SD/MMC block server: `filesystem_contract::block` over the JH7110's `DesignWare` Mobile
+//! radon's SD/MMC block server: `file_system_contract::block` over the JH7110's `DesignWare` Mobile
 //! Storage Host Controller, from EL0 (milestone 53 (the board's own peripherals: network and
 //! storage on real silicon); notes/designware-mobile-storage.md). The driver is the crate of the
 //! same name; this file is its register window and serve loop. It holds only what
@@ -33,7 +33,7 @@ use designware_mobile_storage::host_controller::{HostController, RegisterWindowA
 use designware_mobile_storage::sd::{self, Card};
 use designware_mobile_storage::{command as c, registers};
 use driver_process_contract::designware_mobile_storage::Handoff;
-use filesystem_contract::block;
+use file_system_contract::block;
 use startup_page_contract::StartupWindow;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{exit, receive_request, reply, send};
@@ -43,7 +43,7 @@ const REQ: u64 = 0;
 /// The readiness endpoint, sent on once.
 const READY: u64 = 1;
 
-/// Readiness words that are not [`filesystem_contract::READY`]: which step failed.
+/// Readiness words that are not [`file_system_contract::READY`]: which step failed.
 const STEP_BAD_HANDOFF: u64 = 1;
 const STEP_CONTROLLER: u64 = 2;
 const STEP_IDENTIFY: u64 = 3;
@@ -134,7 +134,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     // discipline: ready means a client that asks will be answered.
     let first = transfer_blocks(&mut host, &card, &h, 0, 1, false);
     let report = if first >= 0 {
-        filesystem_contract::READY
+        file_system_contract::READY
     } else {
         STEP_FIRST_READ
     };
@@ -158,10 +158,10 @@ fn transfer_blocks(
     write: bool,
 ) -> i64 {
     let Some(lba) = h.window.translate(block, count as u64) else {
-        return filesystem_contract::reply_err(EINVAL);
+        return file_system_contract::reply_err(EINVAL);
     };
     if write && !h.window.writable {
-        return filesystem_contract::reply_err(EROFS);
+        return file_system_contract::reply_err(EROFS);
     }
     let buf = &mut transfer()[..count * block::BLOCK_BYTES];
     let r = if write {
@@ -171,7 +171,7 @@ fn transfer_blocks(
     };
     match r {
         Ok(()) => count as i64,
-        Err(_) => filesystem_contract::reply_err(EIO),
+        Err(_) => file_system_contract::reply_err(EIO),
     }
 }
 
@@ -186,10 +186,10 @@ fn serve(mut host: HostController<Page>, card: Card, h: Handoff) -> ! {
         };
         // Clamped, as every block server here clamps: the packing could spell more.
         let count = block::request_block_count(w0).min(block::TRANSFER_BLOCKS);
-        let r0 = match filesystem_contract::operation(w0) {
+        let r0 = match file_system_contract::operation(w0) {
             block::READ => transfer_blocks(&mut host, &card, &h, block, count, false),
             block::WRITE => transfer_blocks(&mut host, &card, &h, block, count, true),
-            block::SIZE => (h.window.sectors * sd::BLOCK_BYTES as u64) as i64,
+            block::GET_SIZE_BYTES => (h.window.sectors * sd::BLOCK_BYTES as u64) as i64,
             block::FLUSH => {
                 let status = host.send_command(&c::Command::new(
                     c::SEND_STATUS,
@@ -201,10 +201,10 @@ fn serve(mut host: HostController<Page>, card: Card, h: Handoff) -> ! {
                         flushes += 1;
                         flushes
                     }
-                    _ => filesystem_contract::reply_err(EIO),
+                    _ => file_system_contract::reply_err(EIO),
                 }
             }
-            _ => filesystem_contract::reply_err(EINVAL),
+            _ => file_system_contract::reply_err(EINVAL),
         };
         reply(reply_capability, r0 as u64, 0);
     }

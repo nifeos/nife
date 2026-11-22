@@ -6,7 +6,7 @@ This note is the design that splits that into separable rights, the verb that ha
 back rather than bytes, and the process that makes a subtree grant checkable from outside the
 program being confined.
 
-The contract lives with its code in `crates/filesystem_contract` (the `dir` and `dirent` modules, and the
+The contract lives with its code in `crates/file_system_contract` (the `dir` and `dirent` modules, and the
 `OPENDIR`/`READDIR`/`MKDIR`/`RENAME` verbs in `fs`). The engine-side implementation is
 `redoxfs_server/src/lib.rs`; the caretaker is `components/src/fs_subtree_caretaker.rs`; the wiring and the
 attacks are `kernel/src/user/fs_service/directory_grant.rs`'s `start_granted_dir` and
@@ -34,7 +34,7 @@ The roadmap named five separable rights. There are six.
 `ALL` is every rung together, and it is what the mount binds its root with. Nothing below the root
 can ever be constructed with more.
 
-A seventh rung, `SETTIME`, arrived on 2026-08-24 with `touch -t` under §112 (`touch`'s two behaviors
+A seventh rung, `SET_MODIFICATION_TIME_AT`, arrived on 2026-08-24 with `touch -t` under §112 (`touch`'s two behaviors
 need two rights): setting a name's mtime to an instant the caller asserts ([touch.md](touch.md)). It
 splits off a power none of the six carried, so the case for six stands.
 
@@ -137,7 +137,7 @@ endpoints, which this kernel does not offer. Adding it means giving endpoint cap
 sends exactly one `OPENDIR` for the granted name with the granted rights, and everything the client
 reaches afterwards goes through the handle that request minted. It only translates handle numbers.
 Since milestone 61 (the caretakers: one verb table) its dispatch is
-`filesystem_contract::verb::of(op)`, so a verb with no row is a
+`file_system_contract::verb::of(op)`, so a verb with no row is a
 compile error, and the table shares the dispatch and never the attenuation. One frame is shared by
 all three processes; at startup that needed an ordering fix, because the caretaker's name and the
 client's first name shared the page. The detail is in
@@ -190,7 +190,7 @@ Known limitations, next to the feature rather than only in a tracker. Each is in
 - A missing directory reads as "the progenitor is out of memory" at the prompt.
 - A grant more than one level down is not delivered: nothing builds a chain of caretakers.
 - `caps` does not print the rights as bits.
-- A wrong row in `filesystem_contract::verb` is wrong in three programs at once.
+- A wrong row in `file_system_contract::verb` is wrong in three programs at once.
 - No verb reports what rights a handle carries.
 - Closed: `std::fs::rename` is bound, `UNLINK` and `RMDIR` exist, and the caretakers forward the
   extended-attribute verbs.
@@ -207,7 +207,7 @@ let report = fs_service::start_granted_dir(
     program("fs_subtree_caretaker").unwrap(),
     program("fs_test_client").unwrap(),
     fs_service::DirectoryGrant {
-        name: filesystem_contract::fixture::tree::SUB,
+        name: file_system_contract::fixture::tree::SUB,
         rights: dir::DESCEND | dir::READ | dir::ENUMERATE,
         role: 5,  // ROLE_DIR_ATTACKER
         arg: 1,   // the run index
@@ -243,7 +243,7 @@ Run the whole thing:
 
 ```sh
 script/test                         # both ISAs, plus the post-run host confinement check
-cargo test -p filesystem_contract   # the contract and the ladder's arithmetic
+cargo test -p file_system_contract   # the contract and the ladder's arithmetic
 cargo test --manifest-path redoxfs_server/Cargo.toml   # the engine side, and the crash sweep
-cargo kani -p filesystem_contract   # attenuation never widens, at any depth
+cargo kani -p file_system_contract   # attenuation never widens, at any depth
 ```

@@ -20,8 +20,8 @@
 
 use alloc::vec::Vec;
 
-use filesystem_contract::directory;
-use filesystem_fixture::walk as tree;
+use file_system_contract::directory;
+use file_system_fixture::walk as tree;
 use redoxfs::Disk;
 use syscall::error::Result;
 
@@ -105,7 +105,7 @@ pub struct Walked {
 /// **Build [`tree`] under `parent`**, named [`tree::ROOT`], through the server's own verbs, and
 /// return nothing: a walk opens it the way the caretaker does, by name.
 pub fn stage<D: Disk>(srv: &mut Server<D>, parent: u32) -> Result<()> {
-    let root = srv.make_dir(parent, &copy(tree::ROOT)?, directory::ALL)?;
+    let root = srv.make_dir(parent, &copy(tree::ROOT)?, directory::rights::ALL)?;
     let file = |srv: &mut Server<D>, at: u32, name: &str, body: &[u8]| -> Result<()> {
         let h = srv.create_file_at(at, &copy(name)?)?;
         let mut off = 0;
@@ -116,11 +116,11 @@ pub fn stage<D: Disk>(srv: &mut Server<D>, parent: u32) -> Result<()> {
         }
         srv.close(h)
     };
-    let chain = srv.make_dir(root, &copy(tree::CHAIN)?, directory::ALL)?;
+    let chain = srv.make_dir(root, &copy(tree::CHAIN)?, directory::rights::ALL)?;
     let mut level = chain;
     for i in 0..=tree::DEPTH {
         if i > 0 {
-            let next = srv.make_dir(level, &copy(tree::LEVEL)?, directory::ALL)?;
+            let next = srv.make_dir(level, &copy(tree::LEVEL)?, directory::rights::ALL)?;
             if level != chain {
                 srv.close(level)?;
             }
@@ -132,7 +132,7 @@ pub fn stage<D: Disk>(srv: &mut Server<D>, parent: u32) -> Result<()> {
     if level != chain {
         srv.close(chain)?;
     }
-    let wide = srv.make_dir(root, &copy(tree::WIDE)?, directory::ALL)?;
+    let wide = srv.make_dir(root, &copy(tree::WIDE)?, directory::rights::ALL)?;
     for i in 0..tree::WIDE_FILES {
         let name = tree::wide_name(i);
         file(
@@ -143,7 +143,7 @@ pub fn stage<D: Disk>(srv: &mut Server<D>, parent: u32) -> Result<()> {
         )?;
     }
     srv.close(wide)?;
-    let narrow = srv.make_dir(root, &copy(tree::NARROW)?, directory::ALL)?;
+    let narrow = srv.make_dir(root, &copy(tree::NARROW)?, directory::rights::ALL)?;
     let first = tree::wide_name(0);
     file(
         srv,
@@ -152,7 +152,7 @@ pub fn stage<D: Disk>(srv: &mut Server<D>, parent: u32) -> Result<()> {
         tree::SMALL_BODY,
     )?;
     srv.close(narrow)?;
-    let sizes = srv.make_dir(root, &copy(tree::BYTE_REGION)?, directory::ALL)?;
+    let sizes = srv.make_dir(root, &copy(tree::BYTE_REGION)?, directory::rights::ALL)?;
     for (name, len) in tree::BYTE_REGION_FILES {
         let body: Vec<u8> = (0..len).map(tree::sized_byte).collect();
         file(srv, sizes, name, &body)?;
@@ -163,8 +163,8 @@ pub fn stage<D: Disk>(srv: &mut Server<D>, parent: u32) -> Result<()> {
 
 /// The rights the PAL asks for: `ENUMERATE` on a directory it lists, `READ` in an `OPEN`'s second
 /// word. The server adds `DESCEND` for every step on the way (ruling A).
-const LIST: u64 = directory::ENUMERATE;
-const OPEN: u64 = directory::READ;
+const LIST: u64 = directory::rights::ENUMERATE;
+const OPEN: u64 = directory::rights::READ;
 
 /// **Replay `walk_pricing::walk` over the tree at `root`**, a directory handle holding at least
 /// `ENUMERATE | READ | DESCEND`, as the PAL would send it through a caretaker bound there.
@@ -213,14 +213,14 @@ fn walk_from<D: Disk>(
     // `readdir`: the whole listing drained up front, then the handle closed.
     let at = descend(srv, root, path, LIST, &mut w.requests)?;
     let mut entries: Vec<(Vec<u8>, bool)> = Vec::new();
-    let mut page = [0u8; filesystem_contract::PAGE_BYTES];
+    let mut page = [0u8; file_system_contract::PAGE_BYTES];
     loop {
         w.requests.readdir += 1;
         let n = srv.read_dir(at, entries.len() as u32, &mut page)?;
         if n == 0 {
             break;
         }
-        for (name, is_dir) in filesystem_contract::directory_entry::iter(&page[..n]) {
+        for (name, is_dir) in file_system_contract::directory_entry::iter(&page[..n]) {
             entries.push((name.to_vec(), is_dir));
         }
     }

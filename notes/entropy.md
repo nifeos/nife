@@ -101,7 +101,7 @@ trips. `bench/` prices a round trip; nothing about this is free.
 The reply's first word is a byte count in `0..=8`. Every failure the kernel can return from a `CALL`
 is one of its small negatives (-1..-8), which read as enormous `u64`s. So "there is no entropy
 service" and "the service has no entropy" are distinguishable with no probe request and no ambiguity
-to reason about. `filesystem_contract` could not manage that (its errno space collides with the kernel's, a
+to reason about. `file_system_contract` could not manage that (its errno space collides with the kernel's, a
 wart notes/std.md records), and a contract this new had no excuse to inherit the collision.
 
 ## What `std::random` does

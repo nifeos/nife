@@ -17,7 +17,7 @@ Name: provisional. `request` is the spelling `entropy_contract` took on 2026-11-
 
 ## The problem
 
-`req` abbreviates "request". Six crates still define a `req` function that packs an operation and its operands into the request word. They are `byte_sink_contract` (`src/lib.rs`), `clock_contract` (`src/lib.rs`, an associated function), `credential_contract` (`src/lib.rs`), `filesystem_contract` (a `req` in each of `src/lib.rs`, `src/fs.rs` and `src/blk.rs`), `graphics_contract` (`src/lib.rs`) and `line_editor` (`src/proto.rs`). design/naming.md says a name this tree authors spells its words out. The renames are two-way doors, since no release holds the crates and only this tree links them.
+`req` abbreviates "request". Six crates still define a `req` function that packs an operation and its operands into the request word. They are `byte_sink_contract` (`src/lib.rs`), `clock_contract` (`src/lib.rs`, an associated function), `credential_contract` (`src/lib.rs`), `file_system_contract` (a `req` in each of `src/lib.rs`, `src/fs.rs` and `src/blk.rs`), `graphics_contract` (`src/lib.rs`) and `line_editor` (`src/proto.rs`). design/naming.md says a name this tree authors spells its words out. The renames are two-way doors, since no release holds the crates and only this tree links them.
 
 ## The work
 

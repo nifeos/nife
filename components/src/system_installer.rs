@@ -1,6 +1,6 @@
 //! **`system_installer`**: what a booted stick runs to put this system on the machine's own disk.
 //! It is the most destructive program in the tree, so what stands between a stranger and a wiped
-//! disk is its authority, not its judgement: one disk as a `filesystem_contract::block` endpoint,
+//! disk is its authority, not its judgement: one disk as a `file_system_contract::block` endpoint,
 //! with no path to type, and an entropy endpoint so GPT ids are drawn (no entropy, no write). It is
 //! spawned only after a person answers a question naming the disk, asked by
 //! `kernel/src/user/install_service.rs`, because a confirmation it printed itself could be skipped.
@@ -31,7 +31,7 @@
 
 use boot_slot::{SlotHeader, State};
 use file_allocation_table as fat;
-use filesystem_contract::{block, request};
+use file_system_contract::{block, request};
 use globally_unique_identifier_partition_table::entry::Entry;
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
@@ -202,7 +202,7 @@ fn start(role: u64, a1: u64, _a2: u64) -> ! {
 /// A disk this cannot read, or one with no table, is [`R_EMPTY`]: "there is no nife here" is the
 /// honest answer to both, and the caller's next step after either is to ask a person.
 fn survey() -> ! {
-    let size = call(BLK, request(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
     if size <= 0 {
         send(REPORT, R_EMPTY, 0, 0);
         user_mode_runtime::exit()
@@ -271,7 +271,7 @@ const MAXIMUM_PARTITIONS: usize = 16;
 /// complete before the primary is touched. See notes/installing/system-installer.md; nothing yet
 /// reads the backup when the primary fails to parse (`uefi_loader::chooser`'s `BUGS`).
 fn confirm(slot: u64) -> ! {
-    let size = call(BLK, request(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, R_DISK_FAILED, 1, size as u64);
         user_mode_runtime::exit()
@@ -386,7 +386,7 @@ fn confirm(slot: u64) -> ! {
 /// The whole of it, in the order that makes a refusal cheap: ask the disk its size, lay the
 /// arithmetic out, draw the randomness, and only then write.
 fn install(boot_file_len: u64) -> ! {
-    let size = call(BLK, request(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, R_DISK_FAILED, 1, size as u64);
         user_mode_runtime::exit()

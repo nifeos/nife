@@ -513,7 +513,7 @@ direct_memory_access_validator	122	the DMA-confinement validator, no descriptor 
 network_time_protocol	19	the 1900-epoch era pivot, and no hostile packet moves the clock
 globally_unique_identifier_partition_table	176	the partition table's CRC-32, its round trips, and partitions that overlap
 master_boot_record	7	the MBR parse reads each entry from its own bytes, and the scratch range never touches a partition or sector 0
-filesystem_contract	4	a directory capability's child never exceeds its parent, at any depth
+file_system_contract	4	a directory capability's child never exceeds its parent, at any depth
 subtree_scope	238	a subtree grant reaches only its own root and what it minted, never goes up, never follows a link, never crosses a mount
 current_cpu_contract	2	the current-CPU page: a reader answers only what the page holds, and a built page reads back its words
 credential_contract	2	no request word reads outside the page; nothing but MATCH authenticates

@@ -1,6 +1,6 @@
 //! What the kernel and the EL0 SD/MMC block server agree on: where the spawner maps the server's
 //! two windows (the server reads them from the startup page), the part of the card it may serve, and the three spawn words that say so. The server
-//! (`components/src/designware_mobile_storage.rs`) answers `filesystem_contract::block`, the four
+//! (`components/src/designware_mobile_storage.rs`) answers `file_system_contract::block`, the four
 //! verbs the virtio and NVMe block servers answer, so the FS server cannot tell which disk it has.
 //! Its blocks are 4096 bytes; the card's are 512. A request names blocks inside a window the kernel
 //! chose at spawn, never a card address, and [`Window::translate`] is the one place a block becomes
@@ -13,7 +13,7 @@
 //! serves; the module was `designware_mobile_storage::serve` until the process layout left that
 //! crate.
 
-use filesystem_contract::block;
+use file_system_contract::block;
 use startup_page_contract::WindowKind;
 
 /// Where the spawner maps the controller's first page, device-typed, and lists it on the startup

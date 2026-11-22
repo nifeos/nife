@@ -53,7 +53,7 @@ of the walk fixture then went to the device 372 times at 64 slots, 212 at 128, 7
 256. The tree's metadata working set is 207 blocks. A larger tree wants more.
 
 `block.rs` also holds `const` assertions tying the wire to the store, because it is the one place that
-sees both: `filesystem_contract` depends on nothing and the engine has never heard of it. They are
+sees both: `file_system_contract` depends on nothing and the engine has never heard of it. They are
 `const` so that they fire in the EL0 build, where no test runs. They check that the transfer block is
 the store's block, that the throughput fixture's `RECORD` is a record boundary, that the created
 record level is readable, and that the file channel is a whole number of blocks. A channel ending part

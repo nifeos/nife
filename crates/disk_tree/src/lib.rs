@@ -1,9 +1,9 @@
 //! **The disk tree: a read-only view of a whole disk as one file, served without a cache**
 //! (milestone 834 (ioping on nife and Linux)). The pure half of `components/src/disk_tree.rs`.
 //!
-//! A `filesystem_contract::fs` namespace of exactly two names: [`DIRECTORY`] under the root, and
+//! A `file_system_contract::file_system` namespace of exactly two names: [`DIRECTORY`] under the root, and
 //! [`FILE`] in it, whose bytes are the disk's bytes from block 0 and whose size is the disk's. Every
-//! [`fs::READ`] this answers becomes exactly one device read ([`Answer::Read`]), with no buffer to
+//! [`file_system::READ`] this answers becomes exactly one device read ([`Answer::Read`]), with no buffer to
 //! answer from, and no mutating verb is answered (each is [`directory::EROFS`]). The shell mounts it as
 //! its second tree. See notes/block-devices.md, "The disk tree: a whole disk as one file, with no
 //! cache".
@@ -18,8 +18,8 @@
 
 #![no_std]
 
-use filesystem_contract::{
-    block, directory, directory_entry, extended_attribute, fs, operation, reply_err, verb,
+use file_system_contract::{
+    block, directory, directory_entry, extended_attribute, file_system, operation, reply_err, verb,
 };
 
 /// The one directory under the root: the controller, as Linux's `nvme0`.
@@ -36,7 +36,8 @@ pub const FILE: &[u8] = b"n1";
 /// widen).
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
-pub const ROOT_RIGHTS: u64 = directory::ENUMERATE | directory::READ | directory::DESCEND;
+pub const ROOT_RIGHTS: u64 =
+    directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND;
 
 /// Open handles across every client, the root included. The table is per server, as
 /// `redoxfs_server`'s is, because a caretaker translates its client's numbers into these.
@@ -115,12 +116,13 @@ pub struct Tree {
 }
 
 impl Tree {
-    /// A tree over a disk of `size` bytes, with the root installed at [`fs::ROOT`].
+    /// A tree over a disk of `size` bytes, with the root installed at [`file_system::ROOT`].
     ///
     /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
     pub fn new(size: u64) -> Self {
         let mut handles = [None; HANDLES];
-        handles[fs::ROOT as usize] = Some((Node::Root, directory::Rights::root(ROOT_RIGHTS)));
+        handles[file_system::ROOT as usize] =
+            Some((Node::Root, directory::Rights::root(ROOT_RIGHTS)));
         Tree { size, handles }
     }
 
@@ -140,7 +142,7 @@ impl Tree {
 
     /// **Answer one request.** `w0` and `w1` are the request's two words; `page` is the client's
     /// shared page, holding the name for a verb that takes one and receiving a listing for
-    /// [`fs::READDIR`].
+    /// [`file_system::READDIR`].
     ///
     /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
     pub fn handle(&mut self, w0: u64, w1: u64, page: &mut [u8]) -> Answer {
@@ -148,13 +150,13 @@ impl Tree {
         let Some(v) = verb::of(code) else {
             return err(directory::EINVAL);
         };
-        let Some((node, rights)) = self.get(fs::request_handle(w0)) else {
+        let Some((node, rights)) = self.get(file_system::request_handle(w0)) else {
             return err(EBADF);
         };
         // A copy, because a listing is written into the page the name arrived in.
         let mut name = [0u8; 256];
-        let n = fs::request_length_bytes(w0);
-        if v.carries_len() && code != fs::READ && code != fs::WRITE {
+        let n = file_system::request_length_bytes(w0);
+        if v.carries_len() && code != file_system::READ && code != file_system::WRITE {
             if n > name.len() || n > page.len() {
                 return err(directory::EINVAL);
             }
@@ -162,32 +164,34 @@ impl Tree {
         }
         let name = &name[..n.min(name.len())];
         match code {
-            fs::OPENDIR => self.open_directory(node, rights, name, w1),
-            fs::OPEN => self.open_file(node, rights, name, w1),
-            fs::READ => self.read(node, n.min(page.len()), w1),
-            fs::FSTAT => match node {
+            file_system::OPENDIR => self.open_directory(node, rights, name, w1),
+            file_system::OPEN => self.open_file(node, rights, name, w1),
+            file_system::READ => self.read(node, n.min(page.len()), w1),
+            file_system::FSTAT => match node {
                 Node::Namespace => Answer::Reply(self.size as i64, 0),
                 _ => Answer::Reply(0, 0),
             },
-            fs::CLOSE if fs::request_handle(w0) == fs::ROOT => err(directory::EINVAL),
-            fs::CLOSE => {
-                self.handles[fs::request_handle(w0) as usize] = None;
+            file_system::CLOSE if file_system::request_handle(w0) == file_system::ROOT => {
+                err(directory::EINVAL)
+            }
+            file_system::CLOSE => {
+                self.handles[file_system::request_handle(w0) as usize] = None;
                 Answer::Reply(0, 0)
             }
-            fs::READDIR => list(node, rights, w1, page),
+            file_system::READDIR => list(node, rights, w1, page),
             // Nothing here was ever written, so there is nothing to make durable.
-            fs::SYNC => Answer::Reply(0, 0),
-            fs::LISTXATTR => Answer::Reply(0, 0),
-            fs::GETXATTR => err(extended_attribute::ENODATA),
+            file_system::SYNC => Answer::Reply(0, 0),
+            file_system::LISTXATTR => Answer::Reply(0, 0),
+            file_system::GETXATTR => err(extended_attribute::ENODATA),
             _ if v.mutates() => err(directory::EROFS),
-            // GET_MODIFICATION_TIME, STATFS and the binding verbs: a disk has no modification time or free
+            // GET_MODIFICATION_TIME_UNIX_SECONDS, STATFS and the binding verbs: a disk has no modification time or free
             // count this server could truthfully give, and it enforces no bound subtree.
             _ => err(EOPNOTSUPP),
         }
     }
 
     /// Walk `name` from `(node, rights)`: every component but the last is a descent asking
-    /// `DESCEND | step`, as [`fs::OPEN`] and [`fs::OPENDIR`] both define a path.
+    /// `DESCEND | step`, as [`file_system::OPEN`] and [`file_system::OPENDIR`] both define a path.
     fn walk(
         node: Node,
         rights: directory::Rights,
@@ -198,7 +202,7 @@ impl Tree {
         let mut last = parts.next().unwrap_or_default();
         let (mut node, mut rights) = (node, rights);
         for next in parts {
-            (node, rights) = descend(node, rights, last, directory::DESCEND | step)?;
+            (node, rights) = descend(node, rights, last, directory::rights::DESCEND | step)?;
             last = next;
         }
         if last.is_empty() || last == b"." || last == b".." {
@@ -235,7 +239,7 @@ impl Tree {
         };
         // The contract asks for `READ` or `WRITE`; no handle here carries `WRITE`
         // ([`ROOT_RIGHTS`]), so `READ` is the whole test, and every file handle can read.
-        if !rights.allows(directory::READ) {
+        if !rights.allows(directory::rights::READ) {
             return err(ENOENT);
         }
         match parent.child(last) {
@@ -270,7 +274,7 @@ impl Tree {
     }
 }
 
-/// One step down, as [`fs::OPENDIR`] defines it: `DESCEND` on the parent or the name is not there,
+/// One step down, as [`file_system::OPENDIR`] defines it: `DESCEND` on the parent or the name is not there,
 /// a directory or `ENOTDIR`, and exactly the rights asked for or `EPERM`.
 fn descend(
     node: Node,
@@ -281,7 +285,7 @@ fn descend(
     if name.is_empty() || name == b"." || name == b".." {
         return Err(directory::EINVAL);
     }
-    if !rights.allows(directory::DESCEND) {
+    if !rights.allows(directory::rights::DESCEND) {
         return Err(ENOENT);
     }
     match node.child(name) {
@@ -301,7 +305,7 @@ fn list(node: Node, rights: directory::Rights, cursor: u64, page: &mut [u8]) -> 
     if node == Node::Namespace {
         return err(directory::ENOTDIR);
     }
-    if !rights.allows(directory::ENUMERATE) {
+    if !rights.allows(directory::rights::ENUMERATE) {
         return err(directory::EPERM);
     }
     let mut at = 0;

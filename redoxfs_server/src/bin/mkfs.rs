@@ -1,7 +1,7 @@
 //! `mkfs`: `mkfs` on the target (milestone 57's write half, notes/nifefs.md).
 //!
 //! Creates a filesystem with two capabilities and no more: a block-service endpoint for one disk
-//! (`filesystem_contract::block`), the power to destroy that disk, and an entropy endpoint
+//! (`file_system_contract::block`), the power to destroy that disk, and an entropy endpoint
 //! (`entropy_contract`), the power to obtain random bytes. Neither suffices alone: a filesystem
 //! carries a unique id, and the vendored RedoxFS has no `no_std` randomness, so the engine takes
 //! the uuid as an argument (`vendor/README.md` divergence 4,
@@ -43,8 +43,8 @@
 
 extern crate alloc;
 
-use filesystem_contract::{block, request};
-use filesystem_fixture::blank;
+use file_system_contract::{block, request};
+use file_system_fixture::blank;
 use globally_unique_identifier_partition_table::PartitionTable;
 use nife_partition_types::NIFE_DATA;
 use redoxfs::{BLOCK_SIZE, Disk, FileSystem};
@@ -187,7 +187,9 @@ fn start(role: u64, _a1: u64, _a2: u64) -> ! {
         }
     };
     let made = NameCopy::copy_in(blank::MADE_NAME.as_bytes())
-        .and_then(|name| server.create_file_at(filesystem_contract::fs::ROOT as u32, &name))
+        .and_then(|name| {
+            server.create_file_at(file_system_contract::file_system::ROOT as u32, &name)
+        })
         .and_then(|h| server.write(h, 0, blank::MADE_BODY).map(|n| (h, n)));
     match made {
         Ok((h, n)) if n == blank::MADE_BODY.len() => {
@@ -243,7 +245,7 @@ fn check(first_block: u64, blocks: u64) -> ! {
     };
     let mut buf = [0u8; 128];
     let read = NameCopy::copy_in(blank::MADE_NAME.as_bytes())
-        .and_then(|name| server.open_file_at(filesystem_contract::fs::ROOT as u32, &name))
+        .and_then(|name| server.open_file_at(file_system_contract::file_system::ROOT as u32, &name))
         .and_then(|h| server.read(h, 0, &mut buf[..blank::MADE_BODY.len()]));
     match read {
         Ok(n) if n == blank::MADE_BODY.len() && buf[..n] == *blank::MADE_BODY => {
@@ -263,7 +265,7 @@ fn check(first_block: u64, blocks: u64) -> ! {
 /// `diskutil` wrote. **The partition is found by type GUID**, never by name: macOS writes no GPT
 /// partition names at all (notes/globally-unique-identifier-partition-table.md).
 fn data_partition() -> Option<(u64, u64)> {
-    let size = blk_call(block::SIZE, 0);
+    let size = blk_call(block::GET_SIZE_BYTES, 0);
     if size <= 0 {
         return None; // no endpoint in slot BLK, or a device that cannot say how big it is
     }

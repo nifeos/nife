@@ -3,7 +3,7 @@
 //!
 //! It holds a `READ`-only `PageFrame` capability on the roster page (`block_roster_contract`), so no
 //! writable mapping of the listing can be obtained (see [`probe`]), and a block-service endpoint
-//! for one device (`filesystem_contract::block`). It was handed one disk: no path to type, and
+//! for one device (`file_system_contract::block`). It was handed one disk: no path to type, and
 //! nothing in the roster turns into a handle. It reads LBA 1, parses the GUID Partition Table,
 //! checks the backup at the far end against it, and reports. Every byte of judging is
 //! `crates/globally_unique_identifier_partition_table`; this file is the I/O.
@@ -24,7 +24,7 @@
 //! - **The logical block size is assumed to be 512.** The block service does not carry the
 //!   device's logical block size on the wire, so a 4Kn disk would be read as though its LBA 1 were
 //!   at byte 512: a wrong answer rather than an error. The fix is a field in
-//!   `filesystem_contract::block`, not a change here.
+//!   `file_system_contract::block`, not a change here.
 //! - **It does not write.** Writing the table is `components/src/disk_partitioner.rs`.
 //! - **No hot plug.** The roster is written once at wiring time and never again.
 //! - **The table is not checked against the disk's size.** `check_disk_size` is never called, so a
@@ -45,7 +45,7 @@ use block_roster_contract::{
     Roster, TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS, TRANSPORT_VIRTIO_MEMORY_MAPPED_IO,
     TRANSPORT_VIRTIO_PCI,
 };
-use filesystem_contract::{block, request};
+use file_system_contract::{block, request};
 use globally_unique_identifier_partition_table::PartitionTable;
 use globally_unique_identifier_partition_table::entry::NAME_UNITS;
 use globally_unique_identifier_partition_table::span::Span;
@@ -103,7 +103,7 @@ const ROLE_HOLDER: u64 = 2;
 // system_tests/src/user/disk_tests.rs.
 /// The roster page read as a roster (right magic, believable count).
 pub const F_ROSTER: u64 = 1 << 0;
-/// The block service answered `SIZE` with a size that is a whole number of logical blocks.
+/// The block service answered `GET_SIZE_BYTES` with a size that is a whole number of logical blocks.
 pub const F_SIZE: u64 = 1 << 1;
 /// LBA 0 holds a well-formed protective MBR covering the whole disk.
 pub const F_MBR: u64 = 1 << 2;
@@ -162,8 +162,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::DeclaredInterface {
-        id: filesystem_contract::block::INTERFACE_ID,
-        version: filesystem_contract::block::VERSION
+        id: file_system_contract::block::INTERFACE_ID,
+        version: file_system_contract::block::VERSION
     },
     interfaces_note::DeclaredInterface {
         id: socket_contract::INTERFACE_ID,
@@ -203,7 +203,7 @@ fn holder() -> ! {
     // SAFETY: ROSTER_VA is mapped read-only from the frame in slot 4, on the line above: the
     // program's own `PageFrame::MAP` succeeded first, which is exactly the case
     // `user_mode_runtime::mapped_window::MappedWindow::new`'s own doc names (milestone 139 round 3).
-    let roster = unsafe { MappedWindow::new(ROSTER_VA, filesystem_contract::PAGE_BYTES as u64) };
+    let roster = unsafe { MappedWindow::new(ROSTER_VA, file_system_contract::PAGE_BYTES as u64) };
     let word = roster.read_volatile::<u64>(0);
     send(REPORT, R_HOLDING, word, 0);
 
@@ -261,7 +261,7 @@ fn survey() -> ! {
     // How big is the disk? This is the question only a *holder* can ask: the roster deliberately
     // carries no capacity, because a size is a fact about the device rather than about the machine
     // having one (`block_roster_contract`).
-    let size = call(BLK, request(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
     if size > 0 && (size as u64).is_multiple_of(LBA) {
         flags |= F_SIZE;
         let block_count = size as u64 / LBA;
@@ -397,7 +397,7 @@ fn probe() -> ! {
     // `PageFrame::MAP` succeeded). Not safe to write through, and that is the test: as in `holder`'s
     // second read, `MappedWindow`'s bounds check passes (offset 0 is inside the window) and the
     // kernel refuses the write itself, at the same volatile access the hand-written version made.
-    let roster = unsafe { MappedWindow::new(ROSTER_VA, filesystem_contract::PAGE_BYTES as u64) };
+    let roster = unsafe { MappedWindow::new(ROSTER_VA, file_system_contract::PAGE_BYTES as u64) };
     roster.write_volatile(0u64, 0u64);
     // Unreachable in a working kernel; if we get here the write was allowed and the test's
     // fault-count assertion is what says so.
@@ -408,9 +408,9 @@ fn probe() -> ! {
 /// refuses a page nobody wrote and a count larger than the page can hold.
 fn roster_page() -> &'static [u8] {
     // SAFETY: a page this program mapped read-only from a frame it holds `READ` on, of exactly
-    // `filesystem_contract::PAGE_BYTES` bytes, and never written by anybody after that (the roster is built once at
+    // `file_system_contract::PAGE_BYTES` bytes, and never written by anybody after that (the roster is built once at
     // wiring time).
-    unsafe { core::slice::from_raw_parts(ROSTER_VA as *const u8, filesystem_contract::PAGE_BYTES) }
+    unsafe { core::slice::from_raw_parts(ROSTER_VA as *const u8, file_system_contract::PAGE_BYTES) }
 }
 
 /// The primary table buffer.

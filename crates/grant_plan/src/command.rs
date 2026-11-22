@@ -66,7 +66,7 @@ pub enum CommandLine<'a> {
     /// to hold the power to read everything it lists.
     Ls(&'a [u8]),
     /// `mkdir <path>`: make a directory and, in the same verb, obtain a capability to it
-    /// (`filesystem_contract::fs::MKDIR` is descend-with-creation). Needs `CREATE` **and** `DESCEND`.
+    /// (`file_system_contract::file_system::MKDIR` is descend-with-creation). Needs `CREATE` **and** `DESCEND`.
     Mkdir(&'a [u8]),
     /// `touch <path>` or `touch -t <RFC-3339-instant> <path>`: create an empty file if the name is
     /// not there (a no-op if it already is), then set its modification time to now, or with `-t` to
@@ -74,7 +74,7 @@ pub enum CommandLine<'a> {
     /// ability to *lie about history*).
     ///
     /// A builtin in [`Mkdir`](CommandLine::Mkdir)'s category: both forms take only the shell's own
-    /// directory capability (`directory::WRITE`, and `directory::SETTIME` for `-t`). [`TouchOperands::at`]
+    /// directory capability (`directory::rights::WRITE`, and `directory::rights::SET_MODIFICATION_TIME_AT` for `-t`). [`TouchOperands::at`]
     /// carries the `-t` text unparsed; it is read where the grant is made (`Nav::touch` in
     /// `components/src/swish/navigation.rs`). See notes/touch.md.
     Touch(TouchOperands<'a>),
@@ -231,7 +231,7 @@ pub struct Endowment {
 
 /// One resolved per-file grant: the directory it was resolved against, the name the command
 /// designated, and the direction the program's manifest declared. Those three are the whole
-/// authority; `filesystem_contract::grant` packs the name and the direction into the file caretaker's start
+/// authority; `file_system_contract::grant` packs the name and the direction into the file caretaker's start
 /// arguments, and the directory is which capability the caretaker is handed to narrow.
 ///
 /// [`directory`](FileGrant::directory) is where [`plan_against`](crate::plan_against) resolved

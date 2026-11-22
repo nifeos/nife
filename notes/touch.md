@@ -1,7 +1,7 @@
 # `touch`: create if absent, and now the mtime half
 
 Milestone 47. The create half built 2026-08-22; the mtime half built 2026-08-24 (DECISIONS §112).
-The contract side is `filesystem_contract::fs::CREATE` (milestone 31 (a capability shell: designation is authorization) phase 2), `GETMTIME`, `SETMTIME`
+The contract side is `file_system_contract::file_system::CREATE` (milestone 31 (a capability shell: designation is authorization) phase 2), `GETMTIME`, `SETMTIME`
 and `SETMTIME_AT`. The mtime verbs come from the mtime lane of milestone 47 (navigation and naming: `cd`, `pwd`, `ls`, `mkdir`, `rm`, paths, and environment), and all four names are provisional except `CREATE`. The
 builtin is `Nav::touch` in `components/src/swish/navigation.rs`, parsed by `grant_plan::CommandLine::Touch` into a
 `TouchOperands`.
@@ -17,9 +17,9 @@ report.txt` backdates or postdates the name, deliberately, which is the ability 
 calls "the ability to lie about history."
 
 A builtin, in `mkdir`'s category rather than `rm`'s, for both halves. Even `-t` takes no more than a
-directory capability (`dir::WRITE` for the bare form, `dir::WRITE | dir::SETTIME` for `-t`). So
+directory capability (`dir::WRITE` for the bare form, `dir::WRITE | dir::SET_MODIFICATION_TIME_AT` for `-t`). So
 there is nothing to attenuate and nothing gained by confining it to a program with its own grant.
-`mkdir` already established the shape (`fs::MKDIR` mints a name and hands the capability
+`mkdir` already established the shape (`file_system::MKDIR` mints a name and hands the capability
 straight back); the create half is the same call with the handle closed instead of kept. There is
 nothing useful to do with a handle to an empty file the moment after making it. Setting the time is
 a second, separate wire request. It is resolved directly under the directory handle exactly as
@@ -38,9 +38,9 @@ So:
 
 - **Bare `touch`** needs `dir::WRITE`, the same right `mkdir`'s create half already uses. No new
   grant is needed for a shell that could already write into the directory.
-- **`touch -t`** needs `dir::WRITE` and `dir::SETTIME`, a seventh rung added to the directory
+- **`touch -t`** needs `dir::WRITE` and `dir::SET_MODIFICATION_TIME_AT`, a seventh rung added to the directory
   rights ladder (DECISIONS §47 extended by §112) alongside `ENUMERATE`/`READ`/`WRITE`/`CREATE`/
-  `REMOVE`/`DESCEND`. A shell holding `WRITE` but not `SETTIME` can `touch` a name to now and cannot
+  `REMOVE`/`DESCEND`. A shell holding `WRITE` but not `SET_MODIFICATION_TIME_AT` can `touch` a name to now and cannot
   `touch -t` it to anything else; see `kernel::user::shell_navigation_tests`'s
   `TOUCH_NOW_NEEDS_ONLY_WRITE` / `TOUCH_AT_REFUSED_WITHOUT_SETTIME` pair for the proof against a
   real, narrower-than-`dir::ALL` grant over the real wire.
@@ -64,19 +64,19 @@ below). It is not a difference in what `SETMTIME` promises today.
 
 ## The wire: three verbs, and why not one
 
-`filesystem_contract::fs`:
+`file_system_contract::file_system`:
 
 - `GETMTIME` (name-taking, needs `dir::READ`): reads a name's mtime in Unix seconds. Resolved
   directly under a directory handle, like `UNLINK`, because `touch` never opens what it acts on and
   a getter that needed a handle when the setters do not would be an asymmetry nothing forces.
 - `SETMTIME` (name-taking, needs `dir::WRITE`): sets it to now. No payload beyond the name; there is
   nothing for the caller to supply, because "now" is not the caller's to assert.
-- `SETMTIME_AT` (name-taking, needs `dir::WRITE | dir::SETTIME`): sets it to a caller-supplied
+- `SETMTIME_AT` (name-taking, needs `dir::WRITE | dir::SET_MODIFICATION_TIME_AT`): sets it to a caller-supplied
   Unix-seconds value carried in the request's second word, `TRUNCATE`'s reason for using `w1` rather
   than the length field for an offset-shaped quantity.
 
 Three verbs rather than one with a "now or arbitrary" flag, because the rights differ per verb and
-`filesystem_contract::verb::TABLE` (the table every caretaker's dispatch is built from) encodes one
+`file_system_contract::verb::TABLE` (the table every caretaker's dispatch is built from) encodes one
 fixed `needs_all` per opcode. A single opcode would need dynamic, per-call rights outside that
 table's model. This is the same reasoning that gave `rm` (`UNLINK`) and the structural bound
 (`RMDIR`) two verbs instead of one that tries to do both.
@@ -145,7 +145,7 @@ appear in `help`.
 `redoxfs_server`'s host suite (`cargo test --manifest-path redoxfs_server/Cargo.toml --features hosttest`)
 covers the rights logic directly against the in-process `Server`, no emulator. `each_rung_of_the_
 ladder_gates_exactly_its_own_verb` isolates `dir::READ` (`GETMTIME`), `dir::WRITE` (`SETMTIME`) and
-`dir::SETTIME` (`SETMTIME_AT`, alongside `WRITE`) each against a handle that lacks only that one
+`dir::SET_MODIFICATION_TIME_AT` (`SETMTIME_AT`, alongside `WRITE`) each against a handle that lacks only that one
 bit. `setting_mtime_to_now_twice_observes_two_different_times_and_neither_is_the_callers_choice`
 proves two bare touches in sequence never read back equal. `setting_an_arbitrary_mtime_round_
 trips_exactly_and_is_not_now` proves the caller's value comes back byte-for-byte and that a
@@ -164,10 +164,10 @@ a real `fs_subtree_caretaker` in front of a real `redoxfs_server`):
   check, not merely "later", is what makes this bit mean the caller's assertion moved rather than
   the server's own clock falling back to "now".
 - `TOUCH_NOW_NEEDS_ONLY_WRITE` / `TOUCH_AT_REFUSED_WITHOUT_SETTIME`: a fresh directory this shell
-  mints with a raw `MKDIR` carrying `dir::ALL & !dir::SETTIME` (deliberately narrower than every
+  mints with a raw `MKDIR` carrying `dir::ALL & !dir::SET_MODIFICATION_TIME_AT` (deliberately narrower than every
   other grant this script runs under), against which a bare `SETMTIME` succeeds and `SETMTIME_AT`
   is refused. This is what makes the split in DECISIONS §112 (`touch`'s two behaviors need two rights) provable over the real wire rather than only
-  in `redoxfs_server`'s in-process host tests. A wrong row in `filesystem_contract::verb::TABLE`, or a
+  in `redoxfs_server`'s in-process host tests. A wrong row in `file_system_contract::verb::TABLE`, or a
   caretaker that forwarded rights incorrectly, would not be caught by a test that calls
   `Server::set_mtime_at` directly.
 

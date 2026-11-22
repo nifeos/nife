@@ -39,7 +39,7 @@ lane re-measured on 2026-10-28:
 
 - Five protocol crates carry a numbered magic on a shared-page layout: `TIMEBAS1`, `CURRCPU1`,
   `ENVCONF1`, `MACHSTA1`, `CLOCKv01`. Two carry an unnumbered one: `nifeargv`, `nifeklog`.
-- No IPC operation set carries a version a peer could check: `filesystem_contract` packs the
+- No IPC operation set carries a version a peer could check: `file_system_contract` packs the
   opcode into the first word's high byte, `socket_contract` and `login_contract` hold none, and
   in `hot_swap_contract` `STATE_MAGIC` carries no number.
 
@@ -61,10 +61,10 @@ Options: (a) one constant per crate; (b) one per operation set, module-scoped in
 
 **Ruled (calef, 2026-10-29 UTC, PR #2852): (c), one version constant per wire format, in the
 crate that owns the format (AGENTS.md rule 7), module-scoped where a crate holds several;
-`filesystem_contract` scopes block and file.** Per-crate scope and an external registry stay
+`file_system_contract` scopes block and file.** Per-crate scope and an external registry stay
 refused. `capability_manifest_note` already carries three version constants, one per format.
 
-The check is per bind, so the scope is per bind. `filesystem_contract` holds the block and
+The check is per bind, so the scope is per bind. `file_system_contract` holds the block and
 file protocols; a per-crate constant would re-version file clients for a block-only break. The
 first cut's four interfaces do not share one kind. The rule: an interface with a peer or a layout
 carries a version constant per wire format; a pure library is named by its crate version.

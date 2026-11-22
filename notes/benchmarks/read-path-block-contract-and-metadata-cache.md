@@ -9,10 +9,10 @@ record](README.md) says why.*
 ## Step 4 taken: the blk contract carries 16 blocks, and the win is smaller than the block count predicts (milestone 138, 2026-08-19)
 
 Step 3's own residual pointed here ([steps 1 and 3](read-path-record-and-request-size.md)). After it,
-`fs_seq_read` was 74% single-block trips through `filesystem_contract::blk`, one per filesystem
+`fs_seq_read` was 74% single-block trips through `file_system_contract::blk`, one per filesystem
 block, against a ~100 MiB/s ceiling notes/fs-server.md's `BUGS` section had already named.
 
-`filesystem_contract::blk::TRANSFER_BLOCKS` goes from an unwritten 1 to 16. The region the FS server
+`file_system_contract::blk::TRANSFER_BLOCKS` goes from an unwritten 1 to 16. The region the FS server
 and the block server share is 64 KiB of contiguous pages. `IpcDisk` batches contiguous whole-block
 runs into one blk `CALL` (up to 16 blocks), and the block server issues one virtio descriptor for the
 whole batch instead of one per block. The crash injector and the write-verify diagnostic keep the

@@ -12,7 +12,7 @@ use super::*;
 pub(crate) enum Entry {
     /// A directory. Its rights are the full ladder.
     Dir(TreePtr<Node>, Rights),
-    /// A file, carrying the [`directory::READ`]/[`directory::WRITE`] bits of the directory it was opened under.
+    /// A file, carrying the [`directory::rights::READ`]/[`directory::rights::WRITE`] bits of the directory it was opened under.
     /// The other rungs are meaningless on a file and are simply never asked about.
     File(TreePtr<Node>, Rights),
 }
@@ -24,7 +24,7 @@ pub struct Server<D: Disk> {
     pub(crate) fs: FileSystem<D>,
     /// The open-handle table: `handles[h]` is what handle `h` names, or `None` for a freed slot. A
     /// capability the server issues and checks, never trusts. Slot 0 is the bound directory
-    /// ([`filesystem_contract::fs::ROOT`]), installed by [`Server::open`] and never closeable, so
+    /// ([`file_system_contract::file_system::ROOT`]), installed by [`Server::open`] and never closeable, so
     /// every name resolves under a handle.
     handles: Vec<Option<Entry>>,
     /// A monotonically increasing stand-in for wall-clock seconds, so a write advances the node's
@@ -39,7 +39,7 @@ pub struct Server<D: Disk> {
     /// 0 for a handle no bound badge minted (milestone 606, ruling D).
     owners: Vec<u64>,
     /// Which badges are scoped to a subtree grant (ruling D, `subtree_scope`).
-    bindings: subtree_scope::Bindings<{ filesystem_contract::fs::CLIENT_WINDOWS }>,
+    bindings: subtree_scope::Bindings<{ file_system_contract::file_system::CLIENT_WINDOWS }>,
 }
 
 impl<D: Disk> Server<D> {
@@ -61,7 +61,7 @@ impl<D: Disk> Server<D> {
             // This is `Rights::root`'s only caller.
             handles: alloc::vec![Some(Entry::Dir(
                 TreePtr::root(),
-                Rights::root(directory::ALL)
+                Rights::root(directory::rights::ALL)
             ))],
             clock: 1,
             memo: Memo::default(),
@@ -71,17 +71,17 @@ impl<D: Disk> Server<D> {
     }
 
     /// Resolve `name` under the **bound directory** and return a handle for it: the shorthand for
-    /// [`Server::open_file_at`] with [`filesystem_contract::fs::ROOT`], which is what every caller that predates
+    /// [`Server::open_file_at`] with [`file_system_contract::file_system::ROOT`], which is what every caller that predates
     /// directory handles means.
     pub fn open_file(&mut self, name: &NameCopy) -> Result<u32> {
-        self.open_file_at(filesystem_contract::fs::ROOT as u32, name)
+        self.open_file_at(file_system_contract::file_system::ROOT as u32, name)
     }
 
     /// Resolve `name` under the directory `handle` names and return a file handle for it.
     ///
     /// `name` is a single component, never a path. `EINVAL` for anything that is not one component,
     /// [`directory::EISDIR`] for a directory ([`Server::open_dir`] is that verb), and `ENOENT` if there is
-    /// no such entry or the directory carries neither [`directory::READ`] nor [`directory::WRITE`]: a holder
+    /// no such entry or the directory carries neither [`directory::rights::READ`] nor [`directory::rights::WRITE`]: a holder
     /// that may not reach a name must not learn it is there. The file handle inherits the
     /// directory's read and write bits and cannot widen them (milestone 47 (navigation and naming)).
     pub fn open_file_at(&mut self, handle: u32, name: &NameCopy) -> Result<u32> {
@@ -98,7 +98,7 @@ impl<D: Disk> Server<D> {
     /// `OPEN`'s second word; a single-component name ignores it, as `OPEN` always has.
     pub fn open_file_path(&mut self, handle: u32, name: &NameCopy, requested: u64) -> Result<u32> {
         let (parent, rights, name) = self.walk_prefix(handle, name, requested)?;
-        if rights.denies_all(directory::READ | directory::WRITE) {
+        if rights.denies_all(directory::rights::READ | directory::rights::WRITE) {
             return Err(Error::new(syscall::error::ENOENT));
         }
         let (ptr, kind) = self.lookup(parent, name)?;
@@ -112,7 +112,7 @@ impl<D: Disk> Server<D> {
         *uses = uses.checked_add(1).ok_or(Error::new(EINVAL))?;
         Ok(self.install(Entry::File(
             ptr,
-            rights.attenuate(directory::READ | directory::WRITE),
+            rights.attenuate(directory::rights::READ | directory::rights::WRITE),
         )))
     }
 
@@ -122,17 +122,17 @@ impl<D: Disk> Server<D> {
     /// The child's rights are `parent & requested`, and [`Rights::attenuate`] is the only way this
     /// crate makes a non-root rights set, so no descendant carries a right its parent lacked.
     /// `EPERM` if the grant would be smaller than the request (DECISIONS §42 (a filesystem declares
-    /// what it offers and must be truthful): no silent degradation). Needs [`directory::DESCEND`] on the
+    /// what it offers and must be truthful): no silent degradation). Needs [`directory::rights::DESCEND`] on the
     /// parent, whose absence answers `ENOENT`, so a holder that may not walk in cannot map what is
     /// there.
     pub fn open_dir(&mut self, handle: u32, name: &NameCopy, requested: u64) -> Result<u32> {
         // The sentinel means the rights of the directory this request is made on (§98 (`OPENDIR` cannot be asked to attenuate)); every hop
         // of a path then asks for that, and the result is `parent & parent`.
-        let requested = self.dir_at(handle)?.1.resolve(requested);
+        let requested = self.dir_at(handle)?.1.substitute_parent_rights(requested);
         // A relative path (milestone 606, ruling A): every directory before the last is a descent
         // asking for `DESCEND | requested`, the shape the hop-by-hop walk sends.
         let (parent, rights, name) = self.walk_prefix(handle, name, requested)?;
-        let (ptr, rights) = self.child_dir(parent, rights, name, directory::DESCEND)?;
+        let (ptr, rights) = self.child_dir(parent, rights, name, directory::rights::DESCEND)?;
         let granted = rights.attenuate(requested);
         if granted != Rights::root(requested) {
             return Err(Error::new(EPERM));
@@ -140,7 +140,7 @@ impl<D: Disk> Server<D> {
         Ok(self.install(Entry::Dir(ptr, granted)))
     }
 
-    /// **Narrow a directory handle already held** (`fs::NARROW`, §173 (narrowing the root of the shell's namespace)): hand back a second handle
+    /// **Narrow a directory handle already held** (`file_system::NARROW`, §173 (narrowing the root of the shell's namespace)): hand back a second handle
     /// to the same directory carrying `requested` rights, resolving no name.
     ///
     /// The rights are [`Rights::attenuate`] of the held handle's, the function [`Server::open_dir`]
@@ -161,19 +161,19 @@ impl<D: Disk> Server<D> {
     /// Make a child directory and hand back a capability to it: `mkdir` as descend-with-creation,
     /// sharing [`Server::open_dir`]'s rights arithmetic exactly.
     ///
-    /// Needs [`directory::CREATE`] (else [`directory::EROFS`]) and [`directory::DESCEND`] (else `EPERM`) on the
+    /// Needs [`directory::rights::CREATE`] (else [`directory::EROFS`]) and [`directory::rights::DESCEND`] (else `EPERM`) on the
     /// parent: a directory you could not walk into would mint a capability from a withheld right.
     /// `EEXIST` if the name is already there, and nothing is modified.
     pub fn make_dir(&mut self, handle: u32, name: &NameCopy, requested: u64) -> Result<u32> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
-        if !rights.allows(directory::CREATE) {
+        if !rights.allows(directory::rights::CREATE) {
             return Err(Error::new(EROFS));
         }
-        if !rights.allows(directory::DESCEND) {
+        if !rights.allows(directory::rights::DESCEND) {
             return Err(Error::new(EPERM));
         }
-        let requested = rights.resolve(requested);
+        let requested = rights.substitute_parent_rights(requested);
         let granted = rights.attenuate(requested);
         if granted != Rights::root(requested) {
             return Err(Error::new(EPERM));
@@ -189,9 +189,9 @@ impl<D: Disk> Server<D> {
         Ok(self.install(Entry::Dir(node.ptr(), granted)))
     }
 
-    /// Enumerate the directory `handle` names into `out` as [`filesystem_contract::directory_entry`] records
+    /// Enumerate the directory `handle` names into `out` as [`file_system_contract::directory_entry`] records
     /// from index `cursor` on, returning the bytes used (0 past the end). [`directory::EPERM`] without
-    /// [`directory::ENUMERATE`], never an empty listing (DECISIONS §42). Sorted by name so a cursor means
+    /// [`directory::rights::ENUMERATE`], never an empty listing (DECISIONS §42). Sorted by name so a cursor means
     /// the same thing across calls, and memoized until the next namespace change.
     ///
     /// # BUGS
@@ -200,7 +200,7 @@ impl<D: Disk> Server<D> {
     /// - The first listing of a directory costs a node read per entry; `list` says why.
     pub fn read_dir(&mut self, handle: u32, cursor: u32, out: &mut [u8]) -> Result<usize> {
         let (ptr, rights) = self.dir_at(handle)?;
-        if !rights.allows(directory::ENUMERATE) {
+        if !rights.allows(directory::rights::ENUMERATE) {
             return Err(Error::new(EPERM));
         }
         if let Some(listing) = self.memo.listing(ptr) {
@@ -219,7 +219,7 @@ impl<D: Disk> Server<D> {
     /// `EBADF` if the handle was not opened for reading, which is POSIX's own answer for reading a
     /// write-only descriptor and is a fact about the handle rather than a policy about the file.
     pub fn read(&mut self, handle: u32, offset: u64, buf: &mut [u8]) -> Result<usize> {
-        let ptr = self.file_at(handle, directory::READ, EBADF)?;
+        let ptr = self.file_at(handle, directory::rights::READ, EBADF)?;
         if self.memo.file(ptr).is_none() && !self.memo.is_large(ptr) {
             // First read of this file since anything changed: a small one is read whole, once.
             let body = self.look(|transaction| {
@@ -249,11 +249,11 @@ impl<D: Disk> Server<D> {
     /// Write `data` to `handle` at `offset`, returning the count, and advance the logical clock so
     /// the node's mtime moves forward.
     ///
-    /// [`directory::EROFS`] without [`directory::WRITE`]. `EFBIG` when `offset + data.len()` overflows or passes
+    /// [`directory::EROFS`] without [`directory::rights::WRITE`]. `EFBIG` when `offset + data.len()` overflows or passes
     /// [`MAXIMUM_FILE_END`], checked before the engine, which adds the two unchecked (found by the
     /// `redoxfs_server_session` fuzz target; notes/fs-server/the-core.md).
     pub fn write(&mut self, handle: u32, offset: u64, data: &[u8]) -> Result<usize> {
-        let ptr = self.file_at(handle, directory::WRITE, EROFS)?;
+        let ptr = self.file_at(handle, directory::rights::WRITE, EROFS)?;
         match offset.checked_add(data.len() as u64) {
             Some(end) if end <= MAXIMUM_FILE_END => {}
             _ => return Err(Error::new(EFBIG)),
@@ -282,16 +282,16 @@ impl<D: Disk> Server<D> {
     /// one (§27 (the filesystem service: a capability-shaped contract)). `check_component` rejects
     /// a path rather than walking one.
     pub fn create_file(&mut self, name: &NameCopy) -> Result<u32> {
-        self.create_file_at(filesystem_contract::fs::ROOT as u32, name)
+        self.create_file_at(file_system_contract::file_system::ROOT as u32, name)
     }
 
-    /// [`Server::create_file`], under the directory `handle` names. Needs [`directory::CREATE`] on it;
+    /// [`Server::create_file`], under the directory `handle` names. Needs [`directory::rights::CREATE`] on it;
     /// without it the answer is [`directory::EROFS`], because through this capability that directory takes
     /// no new names.
     pub fn create_file_at(&mut self, handle: u32, name: &NameCopy) -> Result<u32> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
-        if !rights.allows(directory::CREATE) {
+        if !rights.allows(directory::rights::CREATE) {
             return Err(Error::new(EROFS));
         }
         // Existence is checked inside the same transaction as the create, so two clients racing on
@@ -310,13 +310,13 @@ impl<D: Disk> Server<D> {
         })?;
         Ok(self.install(Entry::File(
             ptr,
-            rights.attenuate(directory::READ | directory::WRITE),
+            rights.attenuate(directory::rights::READ | directory::rights::WRITE),
         )))
     }
 
     /// Set the size of the file a handle names to exactly `size` bytes (milestone 31 phase 2).
     /// Shrinking discards the tail and growing extends with zeroes, POSIX `ftruncate`, so a shorter
-    /// write can replace a file's contents (§27). [`directory::EROFS`] without [`directory::WRITE`], `EFBIG`
+    /// write can replace a file's contents (§27). [`directory::EROFS`] without [`directory::rights::WRITE`], `EFBIG`
     /// past [`MAXIMUM_FILE_END`].
     ///
     /// # BUGS
@@ -326,7 +326,7 @@ impl<D: Disk> Server<D> {
     ///   `design/roadmap/0772-a-client-cannot-stall-the-file-server-with-a-sparse-file.md`.
     pub fn truncate(&mut self, handle: u32, size: u64) -> Result<()> {
         // A truncate destroys a file as thoroughly as a write, so it takes the same right and word.
-        let ptr = self.file_at(handle, directory::WRITE, EROFS)?;
+        let ptr = self.file_at(handle, directory::rights::WRITE, EROFS)?;
         // A file grown past the tree reads past it later; [`MAXIMUM_FILE_END`] has the defect.
         if size > MAXIMUM_FILE_END {
             return Err(Error::new(EFBIG));
@@ -341,9 +341,9 @@ impl<D: Disk> Server<D> {
     /// Move `src` under the directory `src_dir` names to `dst` under the directory `dst_dir` names
     /// (milestone 47): `mv`'s verb, concurrency-atomic and crash-atomic (DECISIONS §42).
     ///
-    /// Needs [`directory::REMOVE`] on the source and [`directory::CREATE`] on the destination, each refused
+    /// Needs [`directory::rights::REMOVE`] on the source and [`directory::rights::CREATE`] on the destination, each refused
     /// with [`directory::EROFS`] before anything is resolved. `EINVAL` for a directory moved between
-    /// directories ([`filesystem_contract::fs::RENAME`]) or a name that is not one component.
+    /// directories ([`file_system_contract::file_system::RENAME`]) or a name that is not one component.
     /// `EISDIR` or `ENOTDIR` for replacing a destination of the other kind, a check the engine does
     /// not make; `ENOTEMPTY` from the engine. See notes/fs-server/the-core.md.
     pub fn rename(
@@ -357,7 +357,9 @@ impl<D: Disk> Server<D> {
         let dst = dst.component()?;
         let (src_parent, src_rights) = self.dir_at(src_dir)?;
         let (dst_parent, dst_rights) = self.dir_at(dst_dir)?;
-        if !src_rights.allows(directory::REMOVE) || !dst_rights.allows(directory::CREATE) {
+        if !src_rights.allows(directory::rights::REMOVE)
+            || !dst_rights.allows(directory::rights::CREATE)
+        {
             return Err(Error::new(EROFS));
         }
         let same_dir = src_parent.id() == dst_parent.id();
@@ -398,9 +400,9 @@ impl<D: Disk> Server<D> {
 
     /// Remove `name` from the directory `handle` names: `rm`'s verb, an unlink and not a revoke.
     ///
-    /// Needs [`directory::REMOVE`], refused with [`directory::EROFS`] before the name is resolved. `ENOENT` if
+    /// Needs [`directory::rights::REMOVE`], refused with [`directory::EROFS`] before the name is resolved. `ENOENT` if
     /// there is no such entry, `EINVAL` if it is not one component, [`directory::EISDIR`] for a directory
-    /// ([`filesystem_contract::fs::UNLINK`]). A file still open survives until its last
+    /// ([`file_system_contract::file_system::UNLINK`]). A file still open survives until its last
     /// [`Server::close`] (milestone 47; notes/fs-server/the-core.md).
     ///
     /// # BUGS
@@ -409,7 +411,7 @@ impl<D: Disk> Server<D> {
     pub fn unlink(&mut self, handle: u32, name: &NameCopy) -> Result<()> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
-        if !rights.allows(directory::REMOVE) {
+        if !rights.allows(directory::rights::REMOVE) {
             return Err(Error::new(EROFS));
         }
         // `remove_node` checks the kind against the mode, so `EISDIR` is the engine's. It answers
@@ -425,7 +427,7 @@ impl<D: Disk> Server<D> {
 
     /// Remove the empty directory `name` from the directory `handle` names: `rmdir(2)`, and
     /// empty-only is the safety property (milestone 47's `rm -r`, which recurses in userspace).
-    /// Needs [`directory::REMOVE`], refused with [`directory::EROFS`] before the name is resolved. `ENOTEMPTY`,
+    /// Needs [`directory::rights::REMOVE`], refused with [`directory::EROFS`] before the name is resolved. `ENOTEMPTY`,
     /// `ENOTDIR` for a file, `EINVAL` if not one component, `ENOENT` if there is no such name.
     ///
     /// # BUGS
@@ -436,7 +438,7 @@ impl<D: Disk> Server<D> {
     pub fn rmdir(&mut self, handle: u32, name: &NameCopy) -> Result<()> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
-        if !rights.allows(directory::REMOVE) {
+        if !rights.allows(directory::rights::REMOVE) {
             return Err(Error::new(EROFS));
         }
         // `remove_node` answers `ENOTDIR` and `ENOTEMPTY` itself, inside this transaction; a check
@@ -453,35 +455,35 @@ impl<D: Disk> Server<D> {
     // --- mtime (milestone 47's `touch`, DECISIONS §112) ---
     //
     // All three resolve `name` under a directory handle and check the parent's rights: a file
-    // handle's rights are attenuated to `directory::READ | directory::WRITE`, so `directory::SETTIME` could never be
+    // handle's rights are attenuated to `directory::rights::READ | directory::rights::WRITE`, so `directory::rights::SET_MODIFICATION_TIME_AT` could never be
     // checked against one.
 
-    /// **The modification time of `name`, in Unix seconds** (`filesystem_contract::fs::GET_MODIFICATION_TIME`).
+    /// **The modification time of `name`, in Unix seconds** (`file_system_contract::file_system::GET_MODIFICATION_TIME_UNIX_SECONDS`).
     ///
-    /// Needs [`directory::READ`], and its absence is `ENOENT` rather than a mutating-right's `EROFS`:
+    /// Needs [`directory::rights::READ`], and its absence is `ENOENT` rather than a mutating-right's `EROFS`:
     /// this is a naming right, [`Server::open_file_at`]'s own rule, checked before the name is
     /// resolved so a holder that may not read a time cannot use this to learn whether a name is
     /// there. Works on a directory exactly as on a file, [`Server::get_xattr`]'s reason.
     pub fn mtime(&mut self, handle: u32, name: &NameCopy) -> Result<u64> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
-        if !rights.allows(directory::READ) {
+        if !rights.allows(directory::rights::READ) {
             return Err(Error::new(ENOENT));
         }
         let node = self.look(|transaction| transaction.find_node(parent, name))?;
         Ok(node.data().mtime().0)
     }
 
-    /// Set `name`'s modification time to now (`filesystem_contract::fs::SET_MODIFICATION_TIME`, bare `touch`).
+    /// Set `name`'s modification time to now (`file_system_contract::file_system::SET_MODIFICATION_TIME`, bare `touch`).
     ///
     /// "Now" is this server's advancing logical clock, not a wall clock (it has no RTC): two touches
-    /// in sequence observe increasing times. Needs [`directory::WRITE`], refused with [`directory::EROFS`]
+    /// in sequence observe increasing times. Needs [`directory::rights::WRITE`], refused with [`directory::EROFS`]
     /// before the name is resolved, and no more, because the server observed the value (DECISIONS
-    /// §112). See `filesystem_contract::fs::SET_MODIFICATION_TIME` and notes/touch.md's `BUGS`.
+    /// §112). See `file_system_contract::file_system::SET_MODIFICATION_TIME` and notes/touch.md's `BUGS`.
     pub fn set_mtime_now(&mut self, handle: u32, name: &NameCopy) -> Result<()> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
-        if !rights.allows(directory::WRITE) {
+        if !rights.allows(directory::rights::WRITE) {
             return Err(Error::new(EROFS));
         }
         self.clock += 1;
@@ -494,15 +496,15 @@ impl<D: Disk> Server<D> {
     }
 
     /// Set `name`'s modification time to a caller-supplied Unix-seconds value
-    /// (`filesystem_contract::fs::SET_MODIFICATION_TIME_AT`, `touch -t`): the ability to lie about history.
+    /// (`file_system_contract::file_system::SET_MODIFICATION_TIME_AT_UNIX_SECONDS`, `touch -t`): the ability to lie about history.
     ///
-    /// Needs [`directory::WRITE`] and [`directory::SETTIME`] (DECISIONS §112 (`touch`'s two behaviors need two
+    /// Needs [`directory::rights::WRITE`] and [`directory::rights::SET_MODIFICATION_TIME_AT`] (DECISIONS §112 (`touch`'s two behaviors need two
     /// rights: write covers "now", a separate right covers "arbitrary")), refused with
     /// [`directory::EROFS`] before the name is resolved. Any `seconds` is accepted.
     pub fn set_mtime_at(&mut self, handle: u32, name: &NameCopy, seconds: u64) -> Result<()> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
-        if !rights.allows(directory::WRITE | directory::SETTIME) {
+        if !rights.allows(directory::rights::WRITE | directory::rights::SET_MODIFICATION_TIME_AT) {
             return Err(Error::new(EROFS));
         }
         self.change(|transaction| {
@@ -515,13 +517,13 @@ impl<D: Disk> Server<D> {
     // --- Extended attributes (milestone 57, DECISIONS §34's 2026-07-31 amendment) ---
     //
     // A layer the engine knows nothing of: a store in the image keyed on the node's `TreePtr` id
-    // (`filesystem_contract::extended_attribute::store`), which nothing can bypass because every path to these
-    // bytes goes through `filesystem_contract`. See notes/xattr.md.
+    // (`file_system_contract::extended_attribute::store`), which nothing can bypass because every path to these
+    // bytes goes through `file_system_contract`. See notes/xattr.md.
 
     /// Read one extended attribute of the node `handle` names, returning its type code and the
     /// number of bytes written into `out`.
     ///
-    /// `EBADF` without [`directory::READ`], as [`Server::read`] answers. `ENODATA` if the attribute is
+    /// `EBADF` without [`directory::rights::READ`], as [`Server::read`] answers. `ENODATA` if the attribute is
     /// not set, the only error that means absence (notes/fs-server.md). `ERANGE` if `out` is
     /// shorter than the value, never a short read (DECISIONS §42); on the wire `out` is the shared
     /// page, larger than [`extended_attribute::MAXIMUM_VALUE_BYTES`], so it cannot fire there.
@@ -529,7 +531,7 @@ impl<D: Disk> Server<D> {
         if !extended_attribute::is_valid_name(name) {
             return Err(Error::new(extended_attribute::ERANGE));
         }
-        let ptr = self.node_at(handle, directory::READ, EBADF)?;
+        let ptr = self.node_at(handle, directory::rights::READ, EBADF)?;
         self.look(|transaction| {
             let blob = read_attrs(transaction, ptr.id())?;
             let (kind, value) = extended_attribute::store::get(&blob, name)
@@ -543,9 +545,9 @@ impl<D: Disk> Server<D> {
     }
 
     /// Set one extended attribute on the node `handle` names; creating and replacing are one
-    /// operation ([`filesystem_contract::fs::SETXATTR`]).
+    /// operation ([`file_system_contract::file_system::SETXATTR`]).
     ///
-    /// [`directory::EROFS`] without [`directory::WRITE`]. The three ceilings answer [`extended_attribute::ERANGE`],
+    /// [`directory::EROFS`] without [`directory::rights::WRITE`]. The three ceilings answer [`extended_attribute::ERANGE`],
     /// [`extended_attribute::E2BIG`] and [`extended_attribute::ENOSPC`], so a caller can tell which it hit. Crash-atomic with
     /// the file's bytes: the read, rewrite and store write are one transaction (DECISIONS §34).
     pub fn set_xattr(&mut self, handle: u32, name: &[u8], kind: u32, value: &[u8]) -> Result<()> {
@@ -558,7 +560,7 @@ impl<D: Disk> Server<D> {
         if value.len() > extended_attribute::MAXIMUM_VALUE_BYTES {
             return Err(Error::new(extended_attribute::E2BIG));
         }
-        let ptr = self.node_at(handle, directory::WRITE, EROFS)?;
+        let ptr = self.node_at(handle, directory::rights::WRITE, EROFS)?;
         self.clock += 1;
         let now = self.clock;
         self.change(|transaction| {
@@ -573,14 +575,14 @@ impl<D: Disk> Server<D> {
     }
 
     /// **List the attribute names on the node `handle` names**, filling `out` with
-    /// [`extended_attribute::list`] records and returning the bytes used. Needs [`directory::READ`], refused with
+    /// [`extended_attribute::list`] records and returning the bytes used. Needs [`directory::rights::READ`], refused with
     /// `EBADF`.
     ///
     /// No cursor, unlike [`Server::read_dir`]: a complete listing fits one page by construction
     /// ([`extended_attribute::MAXIMUM_ATTRIBUTES`]), so it cannot be observed half-changed the way a cursored
     /// directory walk can.
     pub fn list_xattr(&mut self, handle: u32, out: &mut [u8]) -> Result<usize> {
-        let ptr = self.node_at(handle, directory::READ, EBADF)?;
+        let ptr = self.node_at(handle, directory::rights::READ, EBADF)?;
         self.fs.tx(|transaction| {
             Ok(extended_attribute::store::list(
                 &read_attrs(transaction, ptr.id())?,
@@ -589,14 +591,14 @@ impl<D: Disk> Server<D> {
         })
     }
 
-    /// **Remove one extended attribute from the node `handle` names.** Needs [`directory::WRITE`],
+    /// **Remove one extended attribute from the node `handle` names.** Needs [`directory::rights::WRITE`],
     /// refused with [`directory::EROFS`]. `ENODATA` if it was not set, rather than a quiet success: the
     /// caller asked about one specific thing.
     pub fn remove_xattr(&mut self, handle: u32, name: &[u8]) -> Result<()> {
         if !extended_attribute::is_valid_name(name) {
             return Err(Error::new(extended_attribute::ERANGE));
         }
-        let ptr = self.node_at(handle, directory::WRITE, EROFS)?;
+        let ptr = self.node_at(handle, directory::rights::WRITE, EROFS)?;
         self.clock += 1;
         let now = self.clock;
         self.change(|transaction| {
@@ -630,7 +632,7 @@ impl<D: Disk> Server<D> {
     /// fuzz target, 2026-10-04 UTC). Closing a file handle also frees a node unlinked while it was
     /// open. See notes/fs-server/the-core.md.
     pub fn close(&mut self, handle: u32) -> Result<()> {
-        if handle as u64 == filesystem_contract::fs::ROOT || self.is_grant_root(handle) {
+        if handle as u64 == file_system_contract::file_system::ROOT || self.is_grant_root(handle) {
             return Err(Error::new(EINVAL));
         }
         let entry = self.entry(handle)?;
@@ -651,7 +653,7 @@ impl<D: Disk> Server<D> {
         Ok(())
     }
 
-    /// How much room the image has ([`filesystem_contract::fs::STATFS`], milestone 54 (a network file service a Mac can actually mount)), as
+    /// How much room the image has ([`file_system_contract::file_system::STATFS`], milestone 54 (a network file service a Mac can actually mount)), as
     /// `(block_size, total_blocks, free_blocks)`.
     ///
     /// The handle is validated and not used: holding any minted handle entitles a caller to ask, so
@@ -673,14 +675,15 @@ impl<D: Disk> Server<D> {
     /// May this handle ask for the storage to be made durable? (milestone 55). `Ok(())` when it
     /// may; the caller then does the IO.
     ///
-    /// The permission half of `filesystem_contract::fs::SYNC`, and it performs no flush: RedoxFS's
-    /// `Disk` has no sync method, so the flush is a `filesystem_contract::block::FLUSH` in the binary.
-    /// Takes a handle of either kind and needs [`directory::WRITE`], refused with [`directory::EROFS`];
-    /// `filesystem_contract::fs::SYNC` has the rights argument.
+    /// The permission half of `file_system_contract::file_system::SYNC`, and it performs no flush: RedoxFS's
+    /// `Disk` has no sync method, so the flush is a `file_system_contract::block::FLUSH` in the binary.
+    /// Takes a handle of either kind and needs [`directory::rights::WRITE`], refused with [`directory::EROFS`];
+    /// `file_system_contract::file_system::SYNC` has the rights argument.
     ///
     /// Name: provisional, minted by milestone 55's durability lane on 2026-08-18.
     pub fn sync_permitted(&self, handle: u32) -> Result<()> {
-        self.node_at(handle, directory::WRITE, EROFS).map(|_| ())
+        self.node_at(handle, directory::rights::WRITE, EROFS)
+            .map(|_| ())
     }
 
     /// Install an entry in the handle table, reusing a freed slot before growing. Returns the
@@ -719,7 +722,7 @@ impl<D: Disk> Server<D> {
 
     /// Whether some badge's grant is rooted at `handle` (see [`Server::close`]).
     fn is_grant_root(&self, handle: u32) -> bool {
-        (1..filesystem_contract::fs::CLIENT_WINDOWS as u64).any(|b| {
+        (1..file_system_contract::file_system::CLIENT_WINDOWS as u64).any(|b| {
             self.bindings.binding(b)
                 == subtree_scope::Binding::Bound {
                     root: handle as u64,
@@ -785,7 +788,7 @@ impl<D: Disk> Server<D> {
             let _ = self.close(h);
         }
         // Handle 0 is never closed, even when a badge was bound to it.
-        if let Some(root) = held.filter(|&r| r != filesystem_contract::fs::ROOT) {
+        if let Some(root) = held.filter(|&r| r != file_system_contract::file_system::ROOT) {
             let _ = self.close(root as u32);
         }
         Ok(())

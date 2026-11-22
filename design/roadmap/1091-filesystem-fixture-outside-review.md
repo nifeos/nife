@@ -7,23 +7,23 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# 1091. `filesystem_fixture`: what an outside maintainer would fix before it leaves
+# 1091. `file_system_fixture`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only review of `crates/filesystem_fixture` as a stranger would meet it, on a fresh
+Raised by a read-only review of `crates/file_system_fixture` as a stranger would meet it, on a fresh
 clone of `nifeos/nife` at `137639a3a`. It changes nothing; it lists what the lanes that move the
 crate change, and the two decisions only an architect can take.
 
 This review respects the rulings recorded in the tree and no earlier package; the crate's review
 package is [`filesystem-fixture.md`](../../notes/crate-reviews/filesystem-fixture.md). Milestone 886 (the filesystem test fixture
-moves to its own crate) ruled where the line between this crate and `filesystem_contract` sits and
+moves to its own crate) ruled where the line between this crate and `file_system_contract` sits and
 which protocol words stay behind. Milestone 956 (the linked interfaces carry checkable versions)
 assigned interface id 16 at version 1. Milestone 1017 (the contract crates leave in this order)
 placed the crate in step 2. None of those is reopened here.
 
 The crate is on `crates/externalization-list.txt`. Milestone 1017's table pairs it with
-`filesystem_contract` ("the two leave together") because the contract had a dev-dependency on the
+`file_system_contract` ("the two leave together") because the contract had a dev-dependency on the
 fixture. That dev-dependency is gone: commit `ce4ea2015` (pull request #3042) moved the tests that
-needed the fixture into the fixture's own test file, and `crates/filesystem_contract/Cargo.toml`
+needed the fixture into the fixture's own test file, and `crates/file_system_contract/Cargo.toml`
 now has no dependency table of any kind. The dependency runs one way, fixture to contract. The two
 still leave together, for a different reason: Decision 1 puts them in one repository as a two-crate
 workspace, where the fixture links the contract by path. The README and crate-root `BUGS` that say
@@ -46,7 +46,7 @@ then the decisions and the release step.
   organization, and [crate-workflows#64](https://github.com/nifeos/crate-workflows/pull/64) supports
   a repository of several crates.
 - Item 2 (P0), the order and pairing are stale: Done. The crate's README and root `BUGS` say the
-  crate depends on `filesystem_contract` by path inside one workspace. Milestone 1017's step 2 row
+  crate depends on `file_system_contract` by path inside one workspace. Milestone 1017's step 2 row
   still gives the removed dev-dependency as the reason for the pairing, and its owner corrects it.
 - Item 3 (P0), acronyms and British spelling: Done. [#3566](https://github.com/nifeos/nife/pull/3566) read the doc comments in full, and the `MOTD` literal now says
   "an unprivileged client" where it said `EL0`, in the crate and in the test that compares it.
@@ -86,7 +86,7 @@ then the decisions and the release step.
 - Item 18 (P2), outsiders get nothing to run: Open. An outsider-runnable harness is outside this
   milestone's scope and has no owner; this line is its record.
 - Decision 1, the repository: Ruled (2026-11-14 UTC): one workspace repository shared with
-  `filesystem_contract`. Not built: the crate text (item 2), and the move at milestone 1017's
+  `file_system_contract`. Not built: the crate text (item 2), and the move at milestone 1017's
   step 2, after items 1 to 5.
 - Decision 2, the names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: item 4 is the
   work.
@@ -101,7 +101,7 @@ the architect's.
 
 ## Goal
 
-A stranger who opens `nifeos/filesystem_fixture` can tell in one screen what it holds and which
+A stranger who opens `nifeos/file_system_fixture` can tell in one screen what it holds and which
 programs read it. The stranger can build and test it from the README alone on stable Rust. Every
 gate of the shared template is green for the crate's own reasons. The crate names no program of this tree,
 describes no internals of it, and carries no history. Nothing in it goes to crates.io, by design, and the manifest says so in words a stranger can act on.
@@ -119,7 +119,7 @@ The comparison with nearby work is in [the appendix](1091-filesystem-fixture-out
 Effort: XS is under an hour for a lane, S half a day, M a day or two. A door is one-way when
 somebody outside this repository acts on it after the move (a repository created, a published name
 a pin reaches, a layout another repository reads); everything else is two-way and the maintainer
-decides it. Line numbers are in `crates/filesystem_fixture/src/lib.rs` unless a path says otherwise.
+decides it. Line numbers are in `crates/file_system_fixture/src/lib.rs` unless a path says otherwise.
 
 ### P0: blocks the move
 
@@ -138,10 +138,10 @@ The P1 items are in [the appendix](1091-filesystem-fixture-outside-review/before
 All three decisions are ruled. Decision 1 was a one-way door; Decisions 2 and 3 are the maintainer's
 provisional rulings on two-way doors. Everything else above is the maintainer's.
 
-### Decision 1: the fixture shares one repository with `filesystem_contract`
+### Decision 1: the fixture shares one repository with `file_system_contract`
 
-Ruled 2026-11-14 (UTC): `filesystem_fixture` gets no repository of its own. It shares one
-repository with `filesystem_contract`, as two crates in one Cargo workspace, and keeps
+Ruled 2026-11-14 (UTC): `file_system_fixture` gets no repository of its own. It shares one
+repository with `file_system_contract`, as two crates in one Cargo workspace, and keeps
 `publish = false`. The two move together at milestone 1017's step 2, after items 1 to 5 have
 landed. Before the move a lane checks that the template handles a two-crate workspace, which
 [crate-workflows#64](https://github.com/nifeos/crate-workflows/pull/64) added.
@@ -232,7 +232,7 @@ In force: one review package covers both crates of the shared repository. A lane
 other items land, and the move is not held for it. The package step is the maintainer's provisional
 ruling on a two-way door. Ratifying the 244 names after Decision 2's renames, and clearing the review,
 which is also the go to create the repository as `publish = false`, stay the architect's and are asked
-from the package. This is one decision with the one in milestone 1090 (`filesystem_contract`: what an
+from the package. This is one decision with the one in milestone 1090 (`file_system_contract`: what an
 outside maintainer would fix before it leaves), Decision E there.
 
 Prior art: `jh7110_clock_and_reset` and `designware_ethernet` each had a review package cleared
@@ -268,8 +268,8 @@ The checks are in [the appendix](1091-filesystem-fixture-outside-review/done-whe
 
 ## Index row
 
-`filesystem_fixture` is 1,178 lines of test vocabulary with no `unsafe`, no proof and sixteen
-passing tests, green on stable 1.88 and the pinned nightly. It leaves with `filesystem_contract`, as
+`file_system_fixture` is 1,178 lines of test vocabulary with no `unsafe`, no proof and sixteen
+passing tests, green on stable 1.88 and the pinned nightly. It leaves with `file_system_contract`, as
 the second crate of one workspace repository (ruled 2026-11-14 UTC), and never publishes. The
 template now allows git sources from the organization and several crates per repository. Four things
 come before the move. The crate's text states the shared workspace. A lane renames the names the

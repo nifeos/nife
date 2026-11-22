@@ -1,7 +1,7 @@
 # The file and block protocols, verb by verb
 
 An appendix to [notes/fs-server.md](../fs-server.md). The doc comments in
-`crates/filesystem_contract` give each verb's wire, its rights and its refusals. This page carries
+`crates/file_system_contract` give each verb's wire, its rights and its refusals. This page carries
 why each verb is shaped the way it is. The directory rights and their errnos are in
 [notes/dir-capability.md](../dir-capability.md), `RENAME` is in
 [dir-capability/rename.md](../dir-capability/rename.md), `UNLINK` and `RMDIR` are in
@@ -65,7 +65,7 @@ The handle field is a directory the caller holds,
 caretaker binds to, and lets `rm gate.txt` at the top prompt receive `REMOVE` alone. A short
 intersection is `EPERM`, as for `OPENDIR`, and a file handle is `ENOTDIR`. It demands no right,
 because it cannot widen. A name filter refuses it at the directory it filters
-(`Verb::reissues_handle`), since the new handle would carry no filter.
+(`Verb::mints_handle_without_name`), since the new handle would carry no filter.
 
 ## UNLINK and RMDIR, and why neither revokes
 

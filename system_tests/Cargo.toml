@@ -77,8 +77,8 @@ environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/env
 # The C programs' directory in the test image and their command lines (milestone 835 (a C library,
 # stage 1: files, clock and memory)).
 c_program_fixture = { path = "../crates/c_program_fixture" }
-filesystem_contract = { version = "0.1.0", path = "../crates/filesystem_contract" }
-filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" }
+file_system_contract = { version = "0.1.0", path = "../crates/file_system_contract" }
+file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture" }
 grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }

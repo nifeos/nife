@@ -8,8 +8,8 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{directory, extended_attribute, fs};
-use filesystem_fixture as fixture;
+use file_system_contract::{directory, extended_attribute, file_system};
+use file_system_fixture as fixture;
 use fixture::attributes;
 use user_mode_runtime::call;
 
@@ -33,7 +33,7 @@ fn xattr_set(handle: u64, name: &[u8], kind: u32, value: &[u8]) -> i64 {
     put_page_at(name.len(), value);
     call(
         FILE,
-        fs::request(fs::SETXATTR, handle, name.len() as u64),
+        file_system::request(file_system::SETXATTR, handle, name.len() as u64),
         extended_attribute::specification(kind, value.len() as u64),
     )
     .0 as i64
@@ -45,7 +45,7 @@ fn xattr_get(handle: u64, name: &[u8]) -> i64 {
     put_page(name);
     call(
         FILE,
-        fs::request(fs::GETXATTR, handle, name.len() as u64),
+        file_system::request(file_system::GETXATTR, handle, name.len() as u64),
         0,
     )
     .0 as i64
@@ -53,7 +53,12 @@ fn xattr_get(handle: u64, name: &[u8]) -> i64 {
 
 /// `LISTXATTR`: no name, no cursor. The reply is how many bytes of records landed in the page.
 fn xattr_list(handle: u64) -> i64 {
-    call(FILE, fs::request(fs::LISTXATTR, handle, 0), 0).0 as i64
+    call(
+        FILE,
+        file_system::request(file_system::LISTXATTR, handle, 0),
+        0,
+    )
+    .0 as i64
 }
 
 /// `REMOVEXATTR`: [`xattr_get`]'s shape, and the reply is 0 or an error.
@@ -61,7 +66,7 @@ fn xattr_remove(handle: u64, name: &[u8]) -> i64 {
     put_page(name);
     call(
         FILE,
-        fs::request(fs::REMOVEXATTR, handle, name.len() as u64),
+        file_system::request(file_system::REMOVEXATTR, handle, name.len() as u64),
         0,
     )
     .0 as i64
@@ -127,21 +132,21 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     fill_page(big.len(), extended_attribute::MAXIMUM_VALUE_BYTES + 1, b'Z');
     let r = call(
         FILE,
-        fs::request(fs::SETXATTR, scratch, big.len() as u64),
+        file_system::request(file_system::SETXATTR, scratch, big.len() as u64),
         extended_attribute::specification(
             extended_attribute::RAW,
             (extended_attribute::MAXIMUM_VALUE_BYTES + 1) as u64,
         ),
     )
     .0 as i64;
-    if filesystem_contract::reply_errno(r) == Some(extended_attribute::E2BIG) {
+    if file_system_contract::reply_errno(r) == Some(extended_attribute::E2BIG) {
         v |= attributes::OVERSIZE_REFUSED;
     }
 
     // 4. Removing it takes it away, and reading it afterwards is ENODATA. Without this the round
     //    trip above is equally true of a store that never forgets anything.
     if xattr_remove(scratch, attributes::NAME) >= 0
-        && filesystem_contract::reply_errno(xattr_get(scratch, attributes::NAME))
+        && file_system_contract::reply_errno(xattr_get(scratch, attributes::NAME))
             == Some(extended_attribute::ENODATA)
     {
         v |= attributes::GONE_AFTER_REMOVE;
@@ -152,21 +157,21 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     // 6. And the file's death takes its attributes with it: unlink the name, make it again, and the
     //    new file has nothing on it. The node id is very likely reused, which is the case that makes
     //    a leaked blob a correctness bug rather than wasted space.
-    if dir_unlink(fs::ROOT, attributes::PROBE_MOVED) >= 0 {
-        let fresh = dir_create(fs::ROOT, attributes::PROBE_MOVED);
+    if dir_unlink(file_system::ROOT, attributes::PROBE_MOVED) >= 0 {
+        let fresh = dir_create(file_system::ROOT, attributes::PROBE_MOVED);
         if fresh >= 0 && xattr_list(fresh as u64) == 0 {
             v |= attributes::GONE_AFTER_UNLINK;
         }
-        let _ = dir_unlink(fs::ROOT, attributes::PROBE_MOVED);
+        let _ = dir_unlink(file_system::ROOT, attributes::PROBE_MOVED);
     }
 
     // 7. The store is not in the namespace: it cannot be opened, created, or descended into.
-    if dir_open(fs::ROOT, extended_attribute::STORE_DIRECTORY) < 0
-        && dir_create(fs::ROOT, extended_attribute::STORE_DIRECTORY) < 0
+    if dir_open(file_system::ROOT, extended_attribute::STORE_DIRECTORY) < 0
+        && dir_create(file_system::ROOT, extended_attribute::STORE_DIRECTORY) < 0
         && dir_descend(
-            fs::ROOT,
+            file_system::ROOT,
             extended_attribute::STORE_DIRECTORY,
-            directory::ALL,
+            directory::rights::ALL,
         ) < 0
     {
         v |= attributes::STORE_UNNAMEABLE;
@@ -184,9 +189,9 @@ fn an_attribute_follows_its_file_across_a_rename() -> u64 {
     // 5. **The headline: an attribute follows its file across a rename.** The two names are unlinked
     //    first, because `NIFE_KEEP_REDOXFS` makes a second boot meet the first boot's leftovers
     //    and an `EEXIST` here would read as a broken layer.
-    let _ = dir_unlink(fs::ROOT, attributes::PROBE);
-    let _ = dir_unlink(fs::ROOT, attributes::PROBE_MOVED);
-    let probe = dir_create(fs::ROOT, attributes::PROBE);
+    let _ = dir_unlink(file_system::ROOT, attributes::PROBE);
+    let _ = dir_unlink(file_system::ROOT, attributes::PROBE_MOVED);
+    let probe = dir_create(file_system::ROOT, attributes::PROBE);
     if probe >= 0
         && xattr_set(
             probe as u64,
@@ -195,15 +200,15 @@ fn an_attribute_follows_its_file_across_a_rename() -> u64 {
             attributes::VALUE,
         ) >= 0
         && dir_rename(
-            fs::ROOT,
+            file_system::ROOT,
             attributes::PROBE,
-            fs::ROOT,
+            file_system::ROOT,
             attributes::PROBE_MOVED,
         ) >= 0
     {
         // Opened at its NEW name, through a handle minted after the rename, so nothing carried over
         // from the handle that set it.
-        let moved = dir_open(fs::ROOT, attributes::PROBE_MOVED);
+        let moved = dir_open(file_system::ROOT, attributes::PROBE_MOVED);
         let r = if moved >= 0 {
             xattr_get(moved as u64, attributes::NAME)
         } else {
@@ -229,7 +234,12 @@ fn a_full_enumeration_does_not_name_the_store() -> u64 {
     //    that stopped early would be a clean report about the part it happened to read.
     let (mut cursor, mut entries, mut clean, mut finished) = (0u64, 0u64, true, false);
     for _ in 0..64 {
-        let n = call(FILE, fs::request(fs::READDIR, fs::ROOT, 0), cursor).0 as i64;
+        let n = call(
+            FILE,
+            file_system::request(file_system::READDIR, file_system::ROOT, 0),
+            cursor,
+        )
+        .0 as i64;
         if n <= 0 {
             finished = n == 0;
             break;
@@ -237,7 +247,7 @@ fn a_full_enumeration_does_not_name_the_store() -> u64 {
         get_page(n as usize, &mut buf);
         let mut seen = 0u64;
         for (name, _) in
-            filesystem_contract::directory_entry::iter(&buf[..(n as usize).min(buf.len())])
+            file_system_contract::directory_entry::iter(&buf[..(n as usize).min(buf.len())])
         {
             if name == extended_attribute::STORE_DIRECTORY.as_bytes() {
                 clean = false;

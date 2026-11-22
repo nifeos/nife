@@ -33,7 +33,7 @@ so. That is the exact failure the milestone was built against, living in the mil
 blind spot.
 
 The tree has already paid for this class of gap once, and the block records the bill. When five
-crates went missing from the host selection by milestone 51 (wall-clock time, the `date` command, and an NTP service), `filesystem_contract`, `compositor`,
+crates went missing from the host selection by milestone 51 (wall-clock time, the `date` command, and an NTP service), `file_system_contract`, `compositor`,
 `video_terminal`, `bitmap_font` and `grant_plan` carried **82 host tests the gate never ran**. All
 82 passed when they were finally run, which is the point: nothing failed, so nobody noticed, and a
 gate that quietly covers less than it claims is worse than no gate because it is trusted.

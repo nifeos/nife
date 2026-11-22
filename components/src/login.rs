@@ -796,10 +796,10 @@ fn rederive(
         let c = &mut skips[reason as usize];
         *c = c.saturating_add(1);
     };
-    use filesystem_contract::fs;
+    use file_system_contract::file_system;
     let mut manifest = [0u8; login_contract::PAGE];
     let Some(n) = read_file(
-        fs::ROOT,
+        file_system::ROOT,
         timetable_store::MANIFEST_FILE_NAME.as_bytes(),
         &mut manifest,
     ) else {
@@ -815,7 +815,7 @@ fn rederive(
     // direction, the same one [`is_suspended`] takes at a login.
     let mut suspended = [0u8; login_contract::PAGE];
     let s = read_file(
-        fs::ROOT,
+        file_system::ROOT,
         login_contract::SUSPENDED_LIST.as_bytes(),
         &mut suspended,
     )
@@ -827,7 +827,7 @@ fn rederive(
         };
         // `Durable` keeps a name of at most `grant::MAXIMUM_WORDS_NAME_BYTES` bytes, the bound `mint` holds a
         // login to; the manifest's own bound is wider.
-        if !filesystem_contract::grant::fits_words(identity) || durables.find(identity).is_some() {
+        if !file_system_contract::grant::fits_words(identity) || durables.find(identity).is_some() {
             record(RederiveSkip::Identity);
             continue;
         }
@@ -859,7 +859,7 @@ fn rederive(
 /// belongs to, and the four capabilities that let this process hand it back and, later, take it
 /// down. Four slots each, which is what bounds [`DURABLE_SESSIONS`].
 struct Durable {
-    identity: [u8; filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES],
+    identity: [u8; file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES],
     len: usize,
     /// The user's budget. `user_timetable_keeper` and its timetable are built from regions split off
     /// it, so it refuses `DESTROY` for as long as either lives (DECISIONS §16 (object revocation)).
@@ -890,7 +890,7 @@ impl Durable {
     ) -> Option<Self> {
         let va = DURABLE_PAGE_VA + k as u64 * DURABLE_PAGE_STRIDE;
         let (keeper, page, ready) = open_schedule(own_ut, budget, images, va)?;
-        let mut id = [0u8; filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES];
+        let mut id = [0u8; file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES];
         id[..identity.len()].copy_from_slice(identity);
         Some(Durable {
             identity: id,
@@ -1171,15 +1171,16 @@ fn store_caretaker(
     name: &str,
 ) -> Option<u64> {
     let name = name.as_bytes();
-    let (lo, hi) = filesystem_contract::grant::pack_name(name)?;
+    let (lo, hi) = file_system_contract::grant::pack_name(name)?;
     let narrow_ep = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()?;
     let Ok(ready) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
         capability_delete(narrow_ep);
         return None;
     };
-    let spec = filesystem_contract::grant::specification(
+    let spec = file_system_contract::grant::specification(
         name.len(),
-        filesystem_contract::directory::READ | filesystem_contract::directory::DESCEND,
+        file_system_contract::directory::rights::READ
+            | file_system_contract::directory::rights::DESCEND,
     );
     let started = build_child(
         own_ut,
@@ -1203,7 +1204,7 @@ fn store_caretaker(
     .is_ok_and(|child| start_child(child, lo, hi, spec));
     let verdict = if started { receive(ready).0 } else { 0 };
     capability_delete(ready);
-    if verdict != filesystem_contract::READY {
+    if verdict != file_system_contract::READY {
         capability_delete(narrow_ep);
         return None;
     }
@@ -1295,7 +1296,7 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
     // `grant::MAXIMUM_WORDS_NAME_BYTES` (16 bytes), below `login_contract::MAXIMUM_IDENTITY` (64). A truncated
     // name is one two identities could share, so `pack_name` refuses a longer one, and that refusal
     // is taken before anything is built.
-    let (lo, hi) = filesystem_contract::grant::pack_name(identity)?;
+    let (lo, hi) = file_system_contract::grant::pack_name(identity)?;
 
     let region = memory_region_split(CONSTRUCTION_UT, CARETAKER_REGION_PAGES).ok()?;
     // As in [`connect`]: an abandoned step gives back its capability slots as well as its memory
@@ -1310,9 +1311,9 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
         return None;
     };
 
-    let spec = filesystem_contract::grant::specification(
+    let spec = file_system_contract::grant::specification(
         identity.len(),
-        filesystem_contract::directory::ALL,
+        file_system_contract::directory::rights::ALL,
     );
 
     // Its whole authority: the file service to attenuate, the endpoint it will serve, one place to
@@ -1359,11 +1360,11 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
     // The one bounded wait: the caretaker's descent against the file service, exactly the
     // handshake `crates/system_initializer::build_caretaker` performs. An identity with no
     // provisioned subtree is answered here with no special case: the caretaker's `OPENDIR` comes
-    // back `ENOENT`, it reports [`filesystem_contract::DESCENT_REFUSED`], and the caller folds that
+    // back `ENOENT`, it reports [`file_system_contract::DESCENT_REFUSED`], and the caller folds that
     // into `DENIED`, like a wrong password (notes/login.md says why that fold is meant).
     let (verdict, _, _) = receive(ready);
     capability_delete(ready);
-    if verdict != filesystem_contract::READY {
+    if verdict != file_system_contract::READY {
         capability_delete(narrow_ep);
         // The caretaker's `OPENDIR` was refused, so it has already exited and nothing runs in
         // `region`: case (a) or a plain corpse in notes/hung-component.md's taxonomy, never (c), so
@@ -1431,8 +1432,12 @@ fn is_suspended(identity: &[u8]) -> bool {
 fn on_list(file: &str, identity: &[u8]) -> bool {
     let mut list = [0u8; login_contract::PAGE];
     // A short read lists by what arrived, which can only be fewer names.
-    read_file(filesystem_contract::fs::ROOT, file.as_bytes(), &mut list)
-        .is_some_and(|n| login_contract::lists(&list[..n], identity))
+    read_file(
+        file_system_contract::file_system::ROOT,
+        file.as_bytes(),
+        &mut list,
+    )
+    .is_some_and(|n| login_contract::lists(&list[..n], identity))
 }
 
 /// **Read `name` under directory handle `at` into `out`**, through the file page at [`LIST_VA`]:
@@ -1440,21 +1445,40 @@ fn on_list(file: &str, identity: &[u8]) -> bool {
 /// way this program reads a file, for the owner's lists, the durable-session manifest and an
 /// identity's stored schedule alike.
 fn read_file(at: u64, name: &[u8], out: &mut [u8]) -> Option<usize> {
-    use filesystem_contract::fs;
+    use file_system_contract::file_system;
     let page = file_page()?;
     page[..name.len()].copy_from_slice(name);
-    let opened = call(FS_EP, fs::request(fs::OPEN, at, name.len() as u64), 0).0 as i64;
+    let opened = call(
+        FS_EP,
+        file_system::request(file_system::OPEN, at, name.len() as u64),
+        0,
+    )
+    .0 as i64;
     if opened < 0 {
         return None;
     }
     let handle = opened as u64;
-    let size = call(FS_EP, fs::request(fs::FSTAT, handle, 0), 0).0 as i64;
+    let size = call(
+        FS_EP,
+        file_system::request(file_system::FSTAT, handle, 0),
+        0,
+    )
+    .0 as i64;
     let read = if (0..=out.len().min(login_contract::PAGE) as i64).contains(&size) {
-        call(FS_EP, fs::request(fs::READ, handle, size as u64), 0).0 as i64
+        call(
+            FS_EP,
+            file_system::request(file_system::READ, handle, size as u64),
+            0,
+        )
+        .0 as i64
     } else {
         -1
     };
-    call(FS_EP, fs::request(fs::CLOSE, handle, 0), 0);
+    call(
+        FS_EP,
+        file_system::request(file_system::CLOSE, handle, 0),
+        0,
+    );
     let n = usize::try_from(read).ok()?.min(out.len());
     out[..n].copy_from_slice(&page[..n]);
     Some(n)
@@ -1463,28 +1487,46 @@ fn read_file(at: u64, name: &[u8], out: &mut [u8]) -> Option<usize> {
 /// **Replace `name` at the file service's root with `bytes`**, creating it if absent. `true` when
 /// every byte landed.
 fn write_root_file(name: &[u8], bytes: &[u8]) -> bool {
-    use filesystem_contract::fs;
+    use file_system_contract::file_system;
     let Some(page) = file_page() else {
         return false;
     };
     page[..name.len()].copy_from_slice(name);
     let mut h = call(
         FS_EP,
-        fs::request(fs::CREATE, fs::ROOT, name.len() as u64),
+        file_system::request(file_system::CREATE, file_system::ROOT, name.len() as u64),
         0,
     )
     .0 as i64;
     if h < 0 {
         page[..name.len()].copy_from_slice(name);
-        h = call(FS_EP, fs::request(fs::OPEN, fs::ROOT, name.len() as u64), 0).0 as i64;
-        if h < 0 || (call(FS_EP, fs::request(fs::TRUNCATE, h as u64, 0), 0).0 as i64) < 0 {
+        h = call(
+            FS_EP,
+            file_system::request(file_system::OPEN, file_system::ROOT, name.len() as u64),
+            0,
+        )
+        .0 as i64;
+        if h < 0
+            || (call(
+                FS_EP,
+                file_system::request(file_system::TRUNCATE, h as u64, 0),
+                0,
+            )
+            .0 as i64)
+                < 0
+        {
             return false;
         }
     }
     let h = h as u64;
     page[..bytes.len()].copy_from_slice(bytes);
-    let wrote = call(FS_EP, fs::request(fs::WRITE, h, bytes.len() as u64), 0).0 as i64;
-    call(FS_EP, fs::request(fs::CLOSE, h, 0), 0);
+    let wrote = call(
+        FS_EP,
+        file_system::request(file_system::WRITE, h, bytes.len() as u64),
+        0,
+    )
+    .0 as i64;
+    call(FS_EP, file_system::request(file_system::CLOSE, h, 0), 0);
     wrote == bytes.len() as i64
 }
 
@@ -1492,13 +1534,17 @@ fn write_root_file(name: &[u8], bytes: &[u8]) -> bool {
 /// schedule store)) into `out`: the byte count, or `None` when there is none. Descends by name, as
 /// [`rederive`] and the file service's other clients do, and never enumerates.
 fn read_stored_schedule(identity: &[u8], out: &mut [u8]) -> Option<usize> {
-    use filesystem_contract::{directory, fs};
+    use file_system_contract::{directory, file_system};
     let page = file_page()?;
     page[..identity.len()].copy_from_slice(identity);
     let d = call(
         FS_EP,
-        fs::request(fs::OPENDIR, fs::ROOT, identity.len() as u64),
-        directory::READ | directory::DESCEND,
+        file_system::request(
+            file_system::OPENDIR,
+            file_system::ROOT,
+            identity.len() as u64,
+        ),
+        directory::rights::READ | directory::rights::DESCEND,
     )
     .0 as i64;
     if d < 0 {
@@ -1509,7 +1555,11 @@ fn read_stored_schedule(identity: &[u8], out: &mut [u8]) -> Option<usize> {
         timetable_store::SCHEDULE_FILE_NAME.as_bytes(),
         out,
     );
-    call(FS_EP, fs::request(fs::CLOSE, d as u64, 0), 0);
+    call(
+        FS_EP,
+        file_system::request(file_system::CLOSE, d as u64, 0),
+        0,
+    );
     n
 }
 
@@ -1519,7 +1569,7 @@ fn read_stored_schedule(identity: &[u8], out: &mut [u8]) -> Option<usize> {
 fn record_in_manifest(identity: &[u8], present: bool) {
     let name = timetable_store::MANIFEST_FILE_NAME.as_bytes();
     let mut now = [0u8; login_contract::PAGE];
-    let had = read_file(filesystem_contract::fs::ROOT, name, &mut now).unwrap_or(0);
+    let had = read_file(file_system_contract::file_system::ROOT, name, &mut now).unwrap_or(0);
     let mut next = [0u8; login_contract::PAGE];
     let n = if present {
         login_contract::with_listed(&now[..had], identity, &mut next)

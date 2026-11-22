@@ -426,7 +426,7 @@ enum El0 {
 /// A read-only build serves the first partition and checks block 0, `EROFS` and `EINVAL`; a
 /// `write` build serves the scratch range and round-trips one block. See notes/bench-boots.md.
 fn through_el0(slot: &Slot, r: &ReadOnlyProbeReport, write: bool) -> El0 {
-    use filesystem_contract::block;
+    use file_system_contract::block;
 
     use crate::user::designware_mobile_storage_service as service;
 
@@ -448,7 +448,7 @@ fn through_el0(slot: &Slot, r: &ReadOnlyProbeReport, write: bool) -> El0 {
         return El0::NotStarted;
     };
     let ready = crate::sched::ipc_receive(w.ready);
-    if ready[0] != filesystem_contract::READY {
+    if ready[0] != file_system_contract::READY {
         return El0::NotReady(ready[0], ready[1], ready[2]);
     }
     let call =
@@ -461,12 +461,12 @@ fn through_el0(slot: &Slot, r: &ReadOnlyProbeReport, write: bool) -> El0 {
             block::BLOCK_BYTES,
         )
     };
-    if call(block::SIZE, 0) != (window.sectors * BLOCK_BYTES as u64) as i64 {
-        return El0::Wrong("SIZE", call(block::SIZE, 0));
+    if call(block::GET_SIZE_BYTES, 0) != (window.sectors * BLOCK_BYTES as u64) as i64 {
+        return El0::Wrong("GET_SIZE_BYTES", call(block::GET_SIZE_BYTES, 0));
     }
     let past = window.sectors / 8;
     let got = call(block::READ, past);
-    if got != filesystem_contract::reply_err(22) {
+    if got != file_system_contract::reply_err(22) {
         return El0::Wrong("READ past the window is EINVAL", got);
     }
     let got = call(block::READ, 0);
@@ -513,13 +513,13 @@ fn read_only_checks(
     shared: &[u8],
     r: &ReadOnlyProbeReport,
 ) -> El0 {
-    use filesystem_contract::block;
+    use file_system_contract::block;
 
     if shared[510..512] != [0x55, 0xaa] || shared[82..90] != r.file_system_type {
         return El0::Wrong("block 0 is the boot sector the kernel read", 0);
     }
     let got = call(block::WRITE, 0);
-    if got != filesystem_contract::reply_err(30) {
+    if got != file_system_contract::reply_err(30) {
         return El0::Wrong("WRITE to a read-only window is EROFS", got);
     }
     El0::Served
@@ -532,7 +532,7 @@ fn write_cycle_checks(
     shared: &mut [u8],
     window: driver_process_contract::designware_mobile_storage::Window,
 ) -> El0 {
-    use filesystem_contract::block;
+    use file_system_contract::block;
 
     let mut original = [0u8; block::BLOCK_BYTES];
     original.copy_from_slice(shared);

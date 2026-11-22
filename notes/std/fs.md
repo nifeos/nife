@@ -21,9 +21,9 @@ The records this file cites by number:
 ## `std::fs` over the FS-service contract (milestone 27 phase two)
 
 `sys/fs/nife.rs` binds std's `File` to the FS server's file contract (DECISIONS §27,
-notes/fs-server.md, `crates/filesystem_contract`). Like the net PAL it is a client of a frozen
+notes/fs-server.md, `crates/file_system_contract`). Like the net PAL it is a client of a frozen
 contract and nothing more, and like the net PAL its wire constants are generated verbatim
-(`filesystem_contract` becomes `sys/pal/nife/fsproto.rs` by `std-src`), so the PAL's numbers cannot
+(`file_system_contract` becomes `sys/pal/nife/fsproto.rs` by `std-src`), so the PAL's numbers cannot
 drift from the server's.
 
 ### The interesting part: `File::open` takes a path, and there is no global namespace
@@ -94,7 +94,7 @@ choice is that a revoked FS endpoint now reads as `PermissionDenied` rather than
 which is a trade made deliberately, because `EPERM` is reachable every day and revoking the FS
 endpoint is milestone 108's open question. `-3` still reads as the kernel's, because `ESRCH` really
 is not in the server's vocabulary. The clean fix is a tag or an offset in the reply word, which is a
-contract change (`filesystem_contract`, the FS server, and `fs_test_client`), reported up rather
+contract change (`file_system_contract`, the FS server, and `fs_test_client`), reported up rather
 than papered over here.
 
 ### What binds, and what stays Unsupported

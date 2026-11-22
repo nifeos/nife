@@ -91,7 +91,7 @@ ratification. Found, with the rule each breaks:
 - `blk` in `run_blk_server`, `blk_read`, `blk_write`, `blk_flush`, `submit_blk`, `complete_blk`,
   `BLK_REQ`, `BLK_READY`, `BLK_OFF_DATA`: the acronyms appendix names `blk` as a failing
   abbreviation, and the maintainers renamed the binary that carried it to `block_driver` on that
-  ground. (The `filesystem_contract::blk` module it mirrors sits outside this crate.)
+  ground. (The `file_system_contract::blk` module it mirrors sits outside this crate.)
 - `mr`, `mw` (`:109`, `:114`), `wr_be16`, `wr_be32`, `rd_be16`, `rd_be32` (`:583-602`),
   `write_desc`, `desc_base`, `avail_idx`, `QSIZE`, `OFF_*`, `csum`, `istatus`, `dev_lo`,
   `dev_hi`, `ack_hi`, `req_type`, `req`, `w0`, `st`, `ihl`: abbreviations a reader decodes.

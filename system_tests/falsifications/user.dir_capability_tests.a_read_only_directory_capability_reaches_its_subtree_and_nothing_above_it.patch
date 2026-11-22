@@ -24,8 +24,8 @@ serves every leg.
 
 Re-cut 2026-10-15 (UTC) by the milestone 886 (the filesystem test fixture moves to its own crate)
 lane: the
-hunk's context line names the readiness word, which moved from `filesystem_contract::fixture::READY`
-to `filesystem_contract::READY`. The mutation is unchanged. Replayed red on aarch64
+hunk's context line names the readiness word, which moved from `file_system_contract::fixture::READY`
+to `file_system_contract::READY`. The mutation is unchanged. Replayed red on aarch64
 the same day, at exactly the assertion quoted above, then reverted.
 
 What it does not reach: `redoxfs_server::check_component`, the refusal of `..` and of names carrying
@@ -37,7 +37,7 @@ diff --git a/components/src/fs_subtree_caretaker.rs b/components/src/fs_subtree_
 @@ -287,7 +287,7 @@ pub extern "C" fn _start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
      }
  
-     send(REPORT, filesystem_contract::READY, 0, 0);
+     send(REPORT, file_system_contract::READY, 0, 0);
 -    serve(r0);
 +    serve(fs::ROOT);
  }

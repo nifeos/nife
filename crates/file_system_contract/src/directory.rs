@@ -1,0 +1,294 @@
+/// **The permission bits of a directory capability**, and the combinations the contract names: `ENUMERATE`, `READ`, `WRITE`,
+/// `CREATE`, `REMOVE`, `DESCEND` and `SET_MODIFICATION_TIME_AT`, then `ALL`, `PARENT_RIGHTS` and `REMOVE_TREE`. Paths read `directory::rights::READ`.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by the file-system-contract-rename lane (ruled 2026-11-22).
+pub mod rights {
+    /// List the names in it ([`super::super::file_system::READDIR`]). Separable because enumeration is the right
+    /// globbing and tab completion consume, and "you may open the file I named" should not imply
+    /// "you may find out what else is in there".
+    pub const ENUMERATE: u64 = 1 << 0;
+    /// Open a name in it for reading, and read a file handle obtained through it.
+    pub const READ: u64 = 1 << 1;
+    /// Open a name in it for writing, and write or truncate a file handle obtained through it.
+    /// Separate from [`READ`] because the motivating case is a directory a program may
+    /// append to and not read.
+    pub const WRITE: u64 = 1 << 2;
+    /// Make a new name in it ([`super::super::file_system::CREATE`]).
+    pub const CREATE: u64 = 1 << 3;
+    /// Take a name out of it. This is the right the log-writing case exists to withhold: [`WRITE`]
+    /// and [`CREATE`] without [`REMOVE`] is "add to this, destroy nothing", which is the
+    /// motivating sentence. Three verbs consult it: [`super::super::file_system::RENAME`], whose source name goes
+    /// away, [`super::super::file_system::UNLINK`], which is `rm`'s, and [`super::super::file_system::RMDIR`], which takes an empty
+    /// directory's name out of its parent.
+    pub const REMOVE: u64 = 1 << 4;
+    /// Walk into a child directory ([`super::super::file_system::OPENDIR`]).
+    ///
+    /// **Separate from [`READ`] on purpose**, and this is the rung the first design did not name. If
+    /// descending came with reading, then granting a directory would silently grant its whole
+    /// subtree, transitively and to any depth, and how much authority a grant carried would be
+    /// decided by the shape of the tree rather than by the grant. That is ambient authority
+    /// reintroduced by recursion, which is the thing this design exists to refuse.
+    pub const DESCEND: u64 = 1 << 5;
+    /// **Assert an arbitrary modification time** ([`super::super::file_system::SET_MODIFICATION_TIME_AT_UNIX_SECONDS`], `touch -t`). Every other mutating right bounds what the caller may do to the bytes or names in a
+    /// directory; this one bounds what it may claim about when it did. Plain `touch`
+    /// ([`super::super::file_system::SET_MODIFICATION_TIME`]) needs only [`WRITE`], because the server observed that value. POSIX's
+    /// `utime()` draws the same line, and the wall clock draws it between reading the clock and setting it.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by the file-system-contract-rename lane (ruled 2026-11-22: no unit, because the right guards
+    /// [`super::super::file_system::SET_MODIFICATION_TIME_AT_UNIX_SECONDS`] only). Written module-qualified, as `directory::rights::SET_MODIFICATION_TIME_AT`.
+    pub const SET_MODIFICATION_TIME_AT: u64 = 1 << 6;
+
+    /// Every right this contract defines. The mount binds its root with exactly this; nothing below
+    /// the root can ever be constructed with more.
+    pub const ALL: u64 =
+        ENUMERATE | READ | WRITE | CREATE | REMOVE | DESCEND | SET_MODIFICATION_TIME_AT;
+
+    /// **"The parent's rights, whatever they are"**, spelled as `1 << 63` in the rights word of
+    /// [`super::super::file_system::OPENDIR`] and [`super::super::file_system::MKDIR`].
+    ///
+    /// A client cannot read its own capability, so a directory it holds for later use has no minimum to
+    /// ask for, and asking for [`ALL`] is `EPERM` under every narrowed grant. This value says "whatever
+    /// the parent carries": the server resolves it with [`super::Rights::substitute_parent_rights`] and the result is `parent &
+    /// parent`, so it cannot widen anything.
+    ///
+    /// **It cannot collide with a rights mask.** A mask is a subset of [`ALL`], the seven low bits, and
+    /// this value has none of them set; a compile-time assertion below fails the build if a right is ever
+    /// added at bit 63. It is compared by equality, so a word that merely has bit 63 set among others is
+    /// not the sentinel and keeps the meaning it had before: the server ignores bits outside [`ALL`].
+    ///
+    /// Name: provisional (lane opendir-rights-sentinel, 2026-10-27 UTC); an architect's to ratify. The
+    /// value is the lowest bit no right can reach that also cannot be mistaken for "all ones", which a
+    /// careless caller passes when it means everything.
+    pub const PARENT_RIGHTS: u64 = 1 << 63;
+
+    const _: () = assert!(
+        PARENT_RIGHTS & ALL == 0 && PARENT_RIGHTS != 0,
+        "the parent-rights sentinel must not be a rights mask: a right was added at bit 63"
+    );
+
+    /// **What a recursive removal needs, at every level**: [`ENUMERATE`] to
+    /// see what is there, [`DESCEND`] to walk into it, [`REMOVE`] to take names out. Named here
+    /// because the `rm` program asks for exactly this on every descent and the wiring that grants it
+    /// hands over exactly this, so the two cannot drift into a capability nobody meant.
+    ///
+    /// **It carries no [`READ`] and no [`WRITE`]**, which is not an oversight but the interesting
+    /// part: a program handed this can destroy the subtree and cannot read one byte of it. On Unix
+    /// the same `rm` could read every file it is about to unlink, because the authority came from
+    /// the process rather than from the command.
+    pub const REMOVE_TREE: u64 = ENUMERATE | DESCEND | REMOVE;
+}
+
+/// `EROFS`: a mutating right the capability does not carry. The same number and the same
+/// argument as [`super::grant::EROFS`].
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "read-only file system")]
+pub const EROFS: i32 = 30;
+/// `EPERM`: [`rights::ENUMERATE`] withheld. The only refusal here that must be loud rather than
+/// concealing, because concealment would mean lying about the directory.
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "operation not permitted")]
+pub const EPERM: i32 = 1;
+/// `EISDIR`: [`super::file_system::OPEN`] of a name that is a directory. [`super::file_system::OPENDIR`] is the
+/// verb, and answering with a useless file handle instead is how a caller ends up reading a
+/// directory's raw bytes and believing them.
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "is a directory")]
+pub const EISDIR: i32 = 21;
+/// `ENOTDIR`: [`super::file_system::OPENDIR`] of a name that is a file, or a directory verb aimed at a
+/// file handle. Same number and same argument as [`super::grant::ENOTDIR`].
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "not a directory")]
+pub const ENOTDIR: i32 = 20;
+/// `EINVAL`: a name that is not a single component, and [`super::file_system::RENAME`]'s refusal to move
+/// a **directory** between two directories (the verb's own doc gives the cycle argument).
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "invalid argument")]
+pub const EINVAL: i32 = 22;
+/// `ENOTEMPTY`: [`super::file_system::RENAME`] over a destination directory that still has entries in it,
+/// and [`super::file_system::RMDIR`] of one. On `RMDIR` it is the safety property rather than an
+/// inconvenience: a verb that emptied what it found would put a whole subtree behind one call.
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "directory not empty")]
+pub const ENOTEMPTY: i32 = 39;
+
+/// **What a refusal from this contract means, in one sentence a shell can print.**
+///
+/// The errno a verb answers is part of this module's design rather than an implementation
+/// detail, because it decides what the holder *learns* (see this module's header). So the
+/// sentence that renders it belongs here too, next to the decision, instead of in each program
+/// that has to explain itself to a human. Every line is a statement about **the capability or
+/// the thing**, never about a policy: there is no policy here to have said yes.
+///
+/// `EACCES` is deliberately absent: nothing in this contract answers it.
+pub const fn explain(errno: i32) -> &'static str {
+    match errno {
+        // ENOENT. Two very different situations, one sentence, and that is the point: a holder
+        // that may not reach a name must not be able to tell "it is not there" from "you may
+        // not name it". The sentence is true either way.
+        2 => "no such name in this directory",
+        EPERM => "this capability does not carry that right",
+        EROFS => "through this capability that directory is read-only",
+        EISDIR => "that is a directory",
+        ENOTDIR => "that is not a directory",
+        // EEXIST. Create is create, not create-or-open, so this is a fact about the directory.
+        17 => "that name is already there",
+        ENOTEMPTY => "that directory is not empty",
+        // EBADF, EMFILE: facts about a handle rather than about a capability.
+        9 => "no such handle",
+        24 => "too many handles open at once",
+        EINVAL => "that is not a name this contract can resolve",
+        // The extended-attribute vocabulary, rendered here beside the rest for this function's
+        // reason.
+        super::extended_attribute::ENODATA => "that attribute is not set",
+        super::extended_attribute::ERANGE => "that is not a name an attribute can have",
+        super::extended_attribute::E2BIG => "that attribute value is too large to store",
+        super::extended_attribute::ENOSPC => "that already holds as many attributes as it can",
+        super::extended_attribute::ENOTSUP => "this capability does not carry extended attributes",
+        _ => "the filesystem refused",
+    }
+}
+
+/// **A rights set on one directory or file handle.** Opaque on purpose: the only ways to make
+/// one are [`Rights::root`], which the mount calls once for the directory the endpoint is bound
+/// to, and [`Rights::attenuate`], which cannot widen.
+///
+/// # Examples
+///
+/// Attenuation is a bitwise AND, so no chain of calls widens a child past its parent.
+///
+/// ```
+/// use file_system_contract::directory::{self, Rights};
+///
+/// // What a shell holds over the user's home directory.
+/// let home = Rights::root(directory::rights::ALL);
+///
+/// // What it hands a log writer: somewhere to write, and no power to delete what is there.
+/// let logs = home.attenuate(directory::rights::READ | directory::rights::WRITE | directory::rights::CREATE);
+/// assert!(logs.allows(directory::rights::WRITE));
+/// assert!(logs.denies_all(directory::rights::REMOVE));
+///
+/// // The log writer passing its authority on cannot widen it back, however it asks.
+/// let narrower = logs.attenuate(directory::rights::ALL);
+/// assert_eq!(narrower.bits(), logs.bits());
+/// assert!(narrower.denies_all(directory::rights::REMOVE));
+/// ```
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Rights(u64);
+
+impl Rights {
+    /// The rights the endpoint's bound directory carries. This is the only place a rights set is
+    /// made out of thin air, and the only caller is the code that binds a server to a directory.
+    pub const fn root(mask: u64) -> Self {
+        Rights(mask & rights::ALL)
+    }
+
+    /// **The child's rights: what the parent has, intersected with what was asked for.**
+    ///
+    /// The whole of the monotonicity property is this one `&`. It is a total
+    /// function with no failure mode, which is the point: a caller cannot ask for a right the
+    /// parent lacks and receive it, because there is no branch here to get wrong. The server
+    /// separately *refuses* a request whose intersection came up short, so a caller is never
+    /// silently given less than it asked for, but that refusal is about telling the truth and
+    /// this line is about the property.
+    pub const fn attenuate(self, requested: u64) -> Self {
+        Rights(self.0 & requested)
+    }
+
+    /// Whether this set carries **every** right in `needed`. Written as "all of", not "any of",
+    /// because an operation that needs two rights and is allowed by either is a hole.
+    pub const fn allows(self, needed: u64) -> bool {
+        self.0 & needed == needed
+    }
+
+    /// Whether it carries none of `any`. The negative form, for the "neither read nor write"
+    /// test [`super::file_system::OPEN`] makes.
+    pub const fn denies_all(self, any: u64) -> bool {
+        self.0 & any == 0
+    }
+
+    /// The raw mask, for reporting it (a test's verdict, or what `caps` would print). Not a way
+    /// back into a [`Rights`]: there is no constructor that takes this.
+    pub const fn bits(self) -> u64 {
+        self.0
+    }
+
+    /// **The rights word a request means**, given the rights of the directory it is made on:
+    /// [`rights::PARENT_RIGHTS`] becomes this set's own bits, and any other word is returned as it is.
+    ///
+    /// It only picks which mask [`Rights::attenuate`] is then given, so the intersection stays that
+    /// one `&`. With the sentinel the result is `self & self`.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by the file-system-contract-rename lane (ruled 2026-11-22).
+    pub const fn substitute_parent_rights(self, requested: u64) -> u64 {
+        if requested == rights::PARENT_RIGHTS {
+            self.0
+        } else {
+            requested
+        }
+    }
+}
+
+/// Machine-checked, because "a child can never exceed its parent" is the claim this whole module
+/// exists to make and a test can only try the masks somebody thought of.
+#[cfg(kani)]
+mod proofs {
+    use super::*;
+
+    /// **Attenuation never widens, for every parent and every request.** `allows` is the only
+    /// question the server asks a rights set, so the property is stated in its terms: anything
+    /// the child permits, the parent permitted.
+    /// Falsification: replayable `crates/file_system_contract/falsifications/directory.proofs.attenuate_never_widens.patch`
+    #[kani::proof]
+    fn attenuate_never_widens() {
+        let parent = Rights(kani::any());
+        let requested: u64 = kani::any();
+        let needed: u64 = kani::any();
+        let child = parent.attenuate(requested);
+        // Raw bits beside the `allows` phrasing: a claim about subsets reads plainer as
+        // `x & !y == 0` than as a double negation over a predicate.
+        assert_eq!(
+            child.bits() & !parent.bits(),
+            0,
+            "a child carries a bit the parent did not",
+        );
+        assert!(!child.allows(needed) || parent.allows(needed));
+    }
+
+    /// And it never widens **at any depth**, which is the property a tree walk depends on: two
+    /// descents are still bounded by the root. `attenuate` is idempotent-shaped rather than
+    /// merely monotone, and a proof is cheaper than trusting that AND is associative in code
+    /// somebody may later rewrite.
+    /// Falsification: replayable `crates/file_system_contract/falsifications/directory.proofs.a_grandchild_is_bounded_by_the_root.patch`
+    #[kani::proof]
+    fn a_grandchild_is_bounded_by_the_root() {
+        let root = Rights(kani::any());
+        let a: u64 = kani::any();
+        let b: u64 = kani::any();
+        let needed: u64 = kani::any();
+        let grandchild = root.attenuate(a).attenuate(b);
+        assert_eq!(
+            grandchild.bits() & !root.bits(),
+            0,
+            "a grandchild carries a bit the root did not",
+        );
+        assert!(!grandchild.allows(needed) || root.allows(needed));
+    }
+
+    /// A root is bounded by [`rights::ALL`], so a caller that invents a mask with unknown bits set
+    /// cannot smuggle one in and have some later version of this module give it a meaning.
+    /// Falsification: replayable `crates/file_system_contract/falsifications/directory.proofs.a_root_carries_nothing_undefined.patch`
+    #[kani::proof]
+    fn a_root_carries_nothing_undefined() {
+        let mask: u64 = kani::any();
+        assert!(Rights::root(mask).bits() & !rights::ALL == 0);
+    }
+}
+
+#[cfg(test)]
+mod tests;

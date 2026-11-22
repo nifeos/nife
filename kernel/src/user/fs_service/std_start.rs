@@ -190,7 +190,11 @@ impl BoundStd {
         let unbound = crate::sched::ipc_call(
             self.file_ep,
             [
-                filesystem_contract::fs::request(filesystem_contract::fs::UNBIND, 0, 0),
+                file_system_contract::file_system::request(
+                    file_system_contract::file_system::UNBIND,
+                    0,
+                    0,
+                ),
                 self.window,
             ],
         )[0] == 0;
@@ -262,7 +266,7 @@ pub fn bind_subtree(
     name: &'static str,
     rights: u64,
 ) -> Option<BoundGrant> {
-    use filesystem_contract::fs;
+    use file_system_contract::file_system;
     let (file_ep, shared, readiness) = ensure(blk_image, fs_server_image)?;
     wait_for_service(readiness);
     let (window, phys) = claim_window().expect("no free client window for a bound grant");
@@ -281,7 +285,7 @@ pub fn bind_subtree(
     let opened = crate::sched::ipc_call(
         file_ep,
         [
-            fs::request(fs::OPENDIR, fs::ROOT, name.len() as u64),
+            file_system::request(file_system::OPENDIR, file_system::ROOT, name.len() as u64),
             rights,
         ],
     )[0] as i64;
@@ -289,8 +293,13 @@ pub fn bind_subtree(
         opened >= 0,
         "the FS server would not open {name:?} to bind: {opened}"
     );
-    let bound = crate::sched::ipc_call(file_ep, [fs::request(fs::BIND, opened as u64, 0), window])
-        [0] as i64;
+    let bound = crate::sched::ipc_call(
+        file_ep,
+        [
+            file_system::request(file_system::BIND, opened as u64, 0),
+            window,
+        ],
+    )[0] as i64;
     assert_eq!(bound, 0, "the FS server refused to bind {name:?}");
     Some(BoundGrant {
         file_ep,

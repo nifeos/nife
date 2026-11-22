@@ -2,12 +2,12 @@
 //! (notes/globally-unique-identifier-partition-table.md, "Writing a table on the target").
 //!
 //! The destructive half of the pair, and its endowment is the point: a block-service endpoint for
-//! one disk (`filesystem_contract::block`), the authority to destroy that disk and no other, and an
+//! one disk (`file_system_contract::block`), the authority to destroy that disk and no other, and an
 //! entropy endpoint (`entropy_contract`), which reaches random bytes and not the device. Both are
 //! required: a GPT's unique ids must be random, so without entropy it writes nothing rather than
 //! fall back to a counter. `a0` is [`ROLE_PARTITION`] (draw four GUIDs, lay out a table, write
 //! both copies over blocks read first) or [`ROLE_VERIFY`] (a separate process with no entropy that
-//! reads the disk back). The layout, `filesystem_fixture::blank`, is 2048-block aligned.
+//! reads the disk back). The layout, `file_system_fixture::blank`, is 2048-block aligned.
 
 //! # BUGS
 //!
@@ -27,8 +27,8 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use filesystem_contract::{block, request};
-use filesystem_fixture::blank;
+use file_system_contract::{block, request};
+use file_system_fixture::blank;
 use globally_unique_identifier_partition_table::entry::{Entry, NAME_UNITS};
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::span::Span;
@@ -126,12 +126,12 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::DeclaredInterface {
-        id: filesystem_contract::block::INTERFACE_ID,
-        version: filesystem_contract::block::VERSION
+        id: file_system_contract::block::INTERFACE_ID,
+        version: file_system_contract::block::VERSION
     },
     interfaces_note::DeclaredInterface {
-        id: filesystem_fixture::INTERFACE_ID,
-        version: filesystem_fixture::VERSION
+        id: file_system_fixture::INTERFACE_ID,
+        version: file_system_fixture::VERSION
     },
     interfaces_note::DeclaredInterface {
         id: socket_contract::INTERFACE_ID,
@@ -201,7 +201,7 @@ fn partition() -> ! {
 
     // The disk's own size, asked of the disk rather than assumed. A layout that does not fit is a
     // refusal from `PartitionTable::create`, not a truncated table.
-    let size = call(BLK, request(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, R_DISK_FAILED, 2, size as u64);
         user_mode_runtime::exit()
@@ -267,7 +267,7 @@ fn verify() -> ! {
     let mut partitions = 0u64;
     let mut data_first_lba = 0u64;
 
-    let size = call(BLK, request(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, 0, 0, 0);
         user_mode_runtime::exit()

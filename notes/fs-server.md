@@ -6,7 +6,7 @@ story the prior-art survey predicted (notes/prior-art.md, notes/redoxfs-audit.md
 confines a serious component it knows nothing about, and the thing milestone 31's per-file grants
 point at (they now exist; see the caretaker section below).
 
-The written contract lives with its code in `crates/filesystem_contract`, the way the terminal contract lives
+The written contract lives with its code in `crates/file_system_contract`, the way the terminal contract lives
 in `terminal_contract` (notes/terminal-contract.md). This note is the design around it.
 
 The evidence behind several sections is in [`fs-server/`](fs-server/README.md), one appendix per
@@ -62,8 +62,8 @@ data.
 RedoxFS speaks its own error type everywhere (`syscall::error::Error`, redox_syscall's errno). The
 sans-IO core (`redoxfs_server::Server`) and the `Disk` impl both return `system_call::error::Result`,
 unmapped. The translation to the wire happens in one place, the FS server's serve loop
-(`redoxfs_server.rs::serve`), via `filesystem_contract::reply_err`, which is just the negated errno. The client
-inverts it with `filesystem_contract::reply_errno`. Keeping the core in RedoxFS's vocabulary is what makes the
+(`redoxfs_server.rs::serve`), via `file_system_contract::reply_err`, which is just the negated errno. The client
+inverts it with `file_system_contract::reply_errno`. Keeping the core in RedoxFS's vocabulary is what makes the
 rule enforceable: there is no ABI type below the boundary to leak. The blk IPC has the same
 convention (a negative reply is a negated errno), and the `Disk` impl maps a negative blk reply to
 `Error::new(EIO)`, which is the trait's own vocabulary, not an ABI leak.
@@ -200,7 +200,7 @@ the *other* side: the caretaker binds nothing new here, it just never asks for m
 
 ## The verb table (milestone 61 (the caretakers: one verb table))
 
-`filesystem_contract::verb::TABLE` holds one row per opcode, and a `const assert!` makes adding an
+`file_system_contract::verb::TABLE` holds one row per opcode, and a `const assert!` makes adding an
 opcode without a row a compile error. So a new verb reaches the three caretakers or fails the build.
 The four extended-attribute verbs had silently been missing from all three before it. The table
 shares the dispatch, never the attenuation. Its `Operand::Name` versus `Operand::Payload` split is

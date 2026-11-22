@@ -82,7 +82,7 @@
 #
 #     crate                        viable          killed        survivors   points
 #     timetable               182 ->   146   73.6% -> 100.0%   48 ->    0      0.51
-#     filesystem_contract     598 ->   598   90.1% ->  93.3%   59 ->   40      0.21
+#     file_system_contract     598 ->   598   90.1% ->  93.3%   59 ->   40      0.21
 #     machine_discovery       615 ->   622   88.1% ->  87.6%   73 ->   77     -0.04
 #     multicast_dns_protocol  362 ->     -   77.3% ->      -   82 ->    -   (gone)
 #     ...

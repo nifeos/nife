@@ -94,7 +94,7 @@ strip = "debuginfo"
 
 [dependencies]
 # Ruling D's one shared scope crate: every path this server resolves, and every handle a bound
-# badge presents, goes through it. `no_std`, depends only on `filesystem_contract`.
+# badge presents, goes through it. `no_std`, depends only on `file_system_contract`.
 subtree_scope = { version = "0.1.0", path = "../crates/subtree_scope" }
 # Ruling T1 (2026-09-27): the note that tells the progenitor this server enforces subtree grants
 # itself, carried in the EL0 binary (`carry_subtree_grants!`).
@@ -108,11 +108,11 @@ redoxfs = { path = "../vendor/redoxfs", default-features = false }
 redox_syscall = { version = "0.9.0", default-features = false }
 
 # The wire protocols. NOT optional since milestone 47: the rights ladder a directory capability
-# carries (`filesystem_contract::dir`) is the sans-IO core's own vocabulary rather than something the serve loop
+# carries (`file_system_contract::dir`) is the sans-IO core's own vocabulary rather than something the serve loop
 # bolts on at the boundary, which is what makes the attenuation impossible to forget. Pure no_std
 # logic with no dependencies of its own, so it costs the host build nothing.
-filesystem_contract = { version = "0.1.0", path = "../crates/filesystem_contract" }
-filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" }
+file_system_contract = { version = "0.1.0", path = "../crates/file_system_contract" }
+file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture" }
 
 # The partition table (milestone 57): `mkfs` finds the partition it is to format by reading the
 # GPT off the disk it holds, with the same parser `disk_surveyor` uses. Pure no_std logic with no

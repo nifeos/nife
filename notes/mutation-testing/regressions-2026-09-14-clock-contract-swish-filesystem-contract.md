@@ -1,4 +1,4 @@
-# The 2026-09-14 regressions: `clock_contract`, `swish`, `filesystem_contract`
+# The 2026-09-14 regressions: `clock_contract`, `swish`, `file_system_contract`
 
 The second half of milestone 326 (nobody has been assigned to turn a mutation score upward)'s
 triage of the crates that regressed at the 2026-09-14 census. It verifies three of the per-crate
@@ -101,7 +101,7 @@ The 11 timeouts are hangs, the same loop-control family as `dtb` and `clock_cont
 `echo`'s word cursor under `-=` and `*=`, `write_found`'s digit loop under `>=`, `pad`'s
 `left -= take` under `/=`, and `split`'s segment cursor under `*=`. Each stops the loop advancing.
 
-### `filesystem_contract`: 59 survivors, 19 killed, 38 equivalent, 2 recorded gaps
+### `file_system_contract`: 59 survivors, 19 killed, 38 equivalent, 2 recorded gaps
 
 Before: 529 caught, 59 missed, 10 timeouts, 47 unviable (90.1% of viable). After: 548 caught, 40
 missed (93.3%). The baseline already found this crate dominated by equivalents (36 of 46 under its
@@ -126,10 +126,10 @@ packing, and most mutants a tool can make there cannot change a value.
   names beside the numbers, so two phases sharing one make two rows a reader cannot tell apart.
   Closed by `every_throughput_phase_tag_has_its_own_name`, which also pins the count against
   `PHASES`.
-- `statfs::free_bytes` replaced by `0` (1). Its only assertion was `free_bytes(4096, 0) == 0`,
+- `file_system_statistics::free_bytes` replaced by `0` (1). Its only assertion was `free_bytes(4096, 0) == 0`,
   which the mutant satisfies. A volume with room would have reported itself full to everything that
   asks before it writes.
-- `statfs::encode`'s `out.len() < LEN` under `<=` (1). The tests covered `LEN - 1` and 64 and
+- `file_system_statistics::encode`'s `out.len() < LEN` under `<=` (1). The tests covered `LEN - 1` and 64 and
   never `LEN` itself. That is the one size a caller sizing its page from the constant would hand it.
 
 #### The thirty-eight equivalents, in four groups
@@ -152,7 +152,7 @@ Grouped so a later reader can re-check them by group rather than one at a time.
   `dir` being a caught mutant.
 - The attrs witness union (7). `fixture::attrs::EXPECTED` is the eight distinct bits of its own
   module ored together. `the_attribute_bits_are_distinct` is what makes the disjointness a fact.
-- `1 << 0` under `>>` (9). `dir::ENUMERATE`, `dirent::IS_DIR`, `grant::READ`, and the first bit
+- `1 << 0` under `>>` (9). `dir::ENUMERATE`, `dirent::IS_DIR`, `grant::rights::READ`, and the first bit
   of six fixture witness sets. Both sides are 1. This is the degenerate case
   [the recurring patterns](baseline-2026-08-03.md#patterns-that-recur-named-once) name, recorded
   rather than excluded so it stays visible if a constant ever moves off zero.

@@ -8,7 +8,7 @@
 //! Not published: nothing outside this tree has a reason to read it.
 //!
 //! Name: provisional. It holds what `byte_sink_contract` held as its `fixture` module, and follows
-//! `socket_fixture` and `filesystem_fixture`. Considered `byte_sink_test_fixture`, which repeats
+//! `socket_fixture` and `file_system_fixture`. Considered `byte_sink_test_fixture`, which repeats
 //! what `fixture` already says.
 
 use byte_sink_contract::Sent;
@@ -29,7 +29,7 @@ pub const SINK_NAME: &str = "sinkout";
 
 /// A sink reports this once its destination is open and before it takes a byte, so a hang in
 /// opening the file is distinguishable from a hang in the serve path. Same discipline as
-/// `filesystem_contract::READY`.
+/// `file_system_contract::READY`.
 ///
 /// Name: provisional, minted 2026-11-21 (UTC) by lane lane/byte-sink-contract-in-tree-work.
 pub const READY: u64 = 0x5142_0000_0000_0001;

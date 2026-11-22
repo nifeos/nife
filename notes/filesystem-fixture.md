@@ -2,7 +2,7 @@
 
 *Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-16, for the crate it describes.*
 
-`crates/filesystem_fixture` holds the names and contents of the files the test image ships, the
+`crates/file_system_fixture` holds the names and contents of the files the test image ships, the
 witnesses' verdict words, and the shapes of the `walk` and `throughput` benchmarks. Three programs
 read it and must agree: the host build that writes the RedoxFS image, the client that reads and
 writes through the FS server, and the kernel test that asserts the client's report. This page
@@ -11,10 +11,10 @@ holds the reasons behind each shape, which the crate's doc comments link.
 ## Where the line sits
 
 Milestone 886 (the filesystem test fixture moves to its own crate) ruled where the line between
-this crate and `filesystem_contract` sits. The protocol words shipping programs send each other
-(`READY`, `DESCENT_REFUSED`, and `rm`'s status convention) stay in `filesystem_contract`.
+this crate and `file_system_contract` sits. The protocol words shipping programs send each other
+(`READY`, `DESCENT_REFUSED`, and `rm`'s status convention) stay in `file_system_contract`.
 Everything here is test data or a test hook, and nothing that boots depends on this crate. It is
-`no_std` and depends on `filesystem_contract` alone.
+`no_std` and depends on `file_system_contract` alone.
 
 ## The shared-frame witness
 
@@ -33,7 +33,7 @@ control's verdict on one shared window, and `SHARED_UNEXPECTED` is a wiring faul
 
 ## The durability witness
 
-A witness would ask `filesystem_contract::fs::SYNC` twice and read the count each answer carries.
+A witness would ask `file_system_contract::file_system::SYNC` twice and read the count each answer carries.
 Two independent things are checked, which is why one verdict is not enough:
 
 1. The count was already non-zero when the witness first asked. Nothing in this process had
@@ -56,7 +56,7 @@ network adds the verdict words to the fixture with it.
 
 ## The throughput shape
 
-The transfer unit is `filesystem_contract::fs::TRANSFER_MAXIMUM`, so the phase measures the
+The transfer unit is `file_system_contract::file_system::TRANSFER_MAXIMUM`, so the phase measures the
 protocol's own ceiling. A comparison against a system whose client may pass a differently sized
 buffer compares two different things, however large the unit is ([benchmarks.md](benchmarks.md)).
 
@@ -94,7 +94,7 @@ Each tree is a sibling of the others in the image root, so a capability to one i
 capability to another. `tree::OTHER` is a real directory that the process one hop up the chain
 really can open, for the same reason the per-file attacker's neighbor is a real file: "it cannot
 reach a sibling" must be a claim about something that exists. `deeper` gives a second descent
-somewhere to go, so `filesystem_contract::dir::DESCEND` has something to withhold.
+somewhere to go, so `file_system_contract::dir::DESCEND` has something to withhold.
 
 The walk tree that milestone 121 (`ripgrep` on nife: enumeration as a capability) prices has one
 region per cost:

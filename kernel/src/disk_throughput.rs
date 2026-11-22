@@ -11,7 +11,7 @@
 //! - Sequential only, one pass, no warm-up and no repeats.
 
 use driver_process_contract::non_volatile_memory_express::BringUpError;
-use filesystem_contract::block;
+use file_system_contract::block;
 
 use crate::non_volatile_memory_express::{Absent, BLOCK_SIZE};
 use crate::user::non_volatile_memory_express_service::{self as service, Wiring};
@@ -26,7 +26,7 @@ const WINDOW_START: u64 = 256;
 /// small enough that TCG finishes it in seconds.
 const WINDOW_BLOCKS: u64 = 16_384;
 
-/// How many `SIZE` round trips the IPC floor is timed over. `SIZE` touches no device, so this is
+/// How many `GET_SIZE_BYTES` round trips the IPC floor is timed over. `GET_SIZE_BYTES` touches no device, so this is
 /// the rendezvous and the two context switches alone.
 const FLOOR_CALLS: u64 = 2_000;
 
@@ -189,7 +189,7 @@ fn bring_up(image: &'static [u8]) -> Result<Wiring, Verdict> {
     #[cfg(target_arch = "x86_64")]
     crate::arch::iommu::print_context(disk.rid);
     if let Some(report) = disk.wait_for_ready()
-        && report[0] != filesystem_contract::READY
+        && report[0] != file_system_contract::READY
     {
         println!(
             "disk-throughput: the server did not come up: step word {:#x}, first-read status {:#x}",
@@ -235,15 +235,15 @@ fn ipc_floor(disk: &Wiring) -> Result<(), Verdict> {
     // The IPC floor: the same path with no device on it.
     let start = arch::timer::now();
     for _ in 0..FLOOR_CALLS {
-        if disk.blk(block::SIZE, 0) as u64 != disk.size_bytes {
+        if disk.blk(block::GET_SIZE_BYTES, 0) as u64 != disk.size_bytes {
             return Err(Verdict::Failed(
-                "SIZE answered the wrong size during the ipc floor",
+                "GET_SIZE_BYTES answered the wrong size during the ipc floor",
             ));
         }
     }
     let floor = arch::timer::now().wrapping_sub(start);
     println!(
-        "disk-throughput: ipc floor   {FLOOR_CALLS} SIZE round trips in {} us ({} ns each, no device)",
+        "disk-throughput: ipc floor   {FLOOR_CALLS} GET_SIZE_BYTES round trips in {} us ({} ns each, no device)",
         microseconds(floor),
         nanoseconds(floor) / FLOOR_CALLS,
     );

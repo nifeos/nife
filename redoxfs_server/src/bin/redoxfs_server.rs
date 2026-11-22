@@ -15,7 +15,7 @@
 //!   nothing.
 //! - **[`BLK_PAGE`]**: the base of the block channel shared with the block server,
 //!   `block::MAXIMUM_TRANSFER_BYTES` bytes of contiguous pages (the block buffer).
-//! - **[`FILE_PAGE`]**: the base of the file channel shared with the client, `fs::MAXIMUM_TRANSFER_BYTES`
+//! - **[`FILE_PAGE`]**: the base of the file channel shared with the client, `file_system::MAXIMUM_TRANSFER_BYTES`
 //!   bytes of contiguous pages (a name on open, file bytes on read/write).
 
 //! # BUGS
@@ -38,7 +38,7 @@ capability_manifest_note::carry_subtree_grants!(capability_manifest_note::Scope:
 
 extern crate alloc;
 
-use filesystem_contract::{block, fs};
+use file_system_contract::{block, file_system};
 use redoxfs::Disk;
 use redoxfs_server::{CachedDisk, ServeEdges, Server};
 use syscall::error::{EIO, Error, Result};
@@ -55,15 +55,15 @@ const READY: u64 = 3;
 /// address-space map (`nifeos/address_space_layout`), above the heap band and below the image band.
 ///
 /// [`BLK_PAGE`] is `block::MAXIMUM_TRANSFER_BYTES` bytes wide rather than one page (milestone 138 step 4)
-/// and [`FILE_PAGE`] is `fs::MAXIMUM_TRANSFER_BYTES` bytes wide rather than one page (step 3);
+/// and [`FILE_PAGE`] is `file_system::MAXIMUM_TRANSFER_BYTES` bytes wide rather than one page (step 3);
 /// [`FILE_PAGE`] sits above [`BLK_PAGE`] by exactly `block::MAXIMUM_TRANSFER_BYTES` so growing either
 /// region stays inside the 8 MiB nothing else this process maps comes within.
 const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 const FILE_PAGE: u64 = BLK_PAGE + block::MAXIMUM_TRANSFER_BYTES as u64;
 
 /// One filesystem block, in bytes: the unit [`BLK_PAGE`] is carved into. The transfer unit for
-/// [`fs::READDIR`] and every other verb whose reply the server itself sizes; a [`fs::READ`] or
-/// [`fs::WRITE`] moves up to `fs::MAXIMUM_TRANSFER_BYTES` of these through [`FILE_PAGE`] instead.
+/// [`file_system::READDIR`] and every other verb whose reply the server itself sizes; a [`file_system::READ`] or
+/// [`file_system::WRITE`] moves up to `file_system::MAXIMUM_TRANSFER_BYTES` of these through [`FILE_PAGE`] instead.
 const BLOCK: usize = block::BLOCK_BYTES;
 
 /// The heap cap. RedoxFS keeps a compress buffer sized by `RECORD_SIZE` (128 KiB, still the ceiling after milestone
@@ -142,7 +142,7 @@ struct IpcDisk;
 
 impl IpcDisk {
     /// One blk `CALL` for `count` contiguous blocks starting at `block` (milestone 138 step 4):
-    /// opcode and count pack into the first word ([`filesystem_contract::block::request`]), the starting block index
+    /// opcode and count pack into the first word ([`file_system_contract::block::request`]), the starting block index
     /// is the second. Returns the reply's first word as a signed result (negative is an error, per
     /// the wire convention). The bulk rides in [`BLK_PAGE`], `count * BLOCK` bytes of it.
     fn blk_n(operation_code: u64, block: u64, count: usize) -> i64 {
@@ -152,7 +152,7 @@ impl IpcDisk {
     }
 
     /// [`Self::blk_n`] for exactly one block: every call this file made before milestone 138 step
-    /// 4, and still the right shape for [`block::SIZE`] and [`block::FLUSH`], which ignore the count.
+    /// 4, and still the right shape for [`block::GET_SIZE_BYTES`] and [`block::FLUSH`], which ignore the count.
     fn blk(operation_code: u64, block: u64) -> i64 {
         Self::blk_n(operation_code, block, 1)
     }
@@ -195,7 +195,7 @@ impl IpcDisk {
                 }
                 // Then die with the commit unwritten, announcing it first on the readiness endpoint
                 // so the waiting test knows the kill was the injector's.
-                send(READY, filesystem_fixture::crash::CUT, 0, 0);
+                send(READY, file_system_fixture::crash::CUT, 0, 0);
                 panic!();
             }
             if chunk.len() < BLOCK {
@@ -294,7 +294,7 @@ impl Disk for IpcDisk {
     }
 
     fn size(&mut self) -> Result<u64> {
-        let n = Self::blk(block::SIZE, 0);
+        let n = Self::blk(block::GET_SIZE_BYTES, 0);
         if n < 0 {
             return Err(Error::new(EIO));
         }
@@ -303,14 +303,14 @@ impl Disk for IpcDisk {
 }
 
 impl IpcDisk {
-    /// Make the device durable (milestone 55 (time Machine: SMB3 with Apple's extensions, and mDNS)): one `filesystem_contract::block::FLUSH`, and the block
+    /// Make the device durable (milestone 55 (time Machine: SMB3 with Apple's extensions, and mDNS)): one `file_system_contract::block::FLUSH`, and the block
     /// server's answer handed back untouched.
     ///
     /// Not part of `Disk`, which has no sync method; the engine's transactions commit before this
     /// server replies, so the flush is a fact about the device. A negative errno is returned
     /// unmapped, the one place a block-protocol errno reaches a file-service client: `EOPNOTSUPP`
     /// (no flush) and `EIO` (a refused one) are different facts. See
-    /// `filesystem_contract::fs::SYNC`.
+    /// `file_system_contract::file_system::SYNC`.
     fn sync() -> i64 {
         Self::blk(block::FLUSH, 0)
     }
@@ -320,7 +320,7 @@ impl IpcDisk {
 /// from [`FILE_PAGE`] and writes read results back into it.
 ///
 /// # Safety
-/// `len` must be at most [`fs::MAXIMUM_TRANSFER_BYTES`]. [`FILE_PAGE`] is the base of that many mapped,
+/// `len` must be at most [`file_system::MAXIMUM_TRANSFER_BYTES`]. [`FILE_PAGE`] is the base of that many mapped,
 /// writable, contiguous bytes shared with the clients bound to this endpoint, and every call site
 /// clamps before this runs. The returned slice is `'static` and aliases that region, so no two live
 /// slices from here may overlap in a way that outlives one request.
@@ -329,19 +329,19 @@ unsafe fn file_page(base: u64, len: usize) -> &'static mut [u8] {
 }
 
 /// The base of the client channel a request's badge names (milestone 599). Window `badge` sits
-/// `badge * fs::MAXIMUM_TRANSFER_BYTES` above [`FILE_PAGE`]; badge 0 is window 0, the unbadged default. A
-/// badge at or past [`fs::CLIENT_WINDOWS`] would point outside the mapped region, so it is clamped
+/// `badge * file_system::MAXIMUM_TRANSFER_BYTES` above [`FILE_PAGE`]; badge 0 is window 0, the unbadged default. A
+/// badge at or past [`file_system::CLIENT_WINDOWS`] would point outside the mapped region, so it is clamped
 /// to window 0 rather than trusted: the kernel only ever delivers a badge this server's own wiring
 /// stamped, so an out-of-range one is a wiring bug, and folding it onto window 0 fails loudly (two
 /// clients would then collide and the witness would catch it) rather than reading unmapped memory. `admit` refuses such a badge before any verb reads the
 /// window (milestone 726 (an unknown badge fails closed in subtree_scope)), so the clamp is only the second line.
 fn window_base(badge: u64) -> u64 {
-    let w = if (badge as usize) < fs::CLIENT_WINDOWS {
+    let w = if (badge as usize) < file_system::CLIENT_WINDOWS {
         badge
     } else {
         0
     };
-    FILE_PAGE + w * fs::MAXIMUM_TRANSFER_BYTES as u64
+    FILE_PAGE + w * file_system::MAXIMUM_TRANSFER_BYTES as u64
 }
 
 /// Answer a caller through its one-shot Reply capability, then return to serving. `None` is a
@@ -355,7 +355,7 @@ fn reply(to: Option<Reply>, r0: i64, r1: u64) {
 }
 
 /// [`redoxfs_server::Server::handle`]'s two IO edges, over block IPC: the device flush behind
-/// `fs::SYNC`, and the crash injector's count of `WRITE` requests (milestone 37 (prove RedoxFS's crash
+/// `file_system::SYNC`, and the crash injector's count of `WRITE` requests (milestone 37 (prove RedoxFS's crash
 /// consistency)).
 struct IpcEdges;
 
@@ -383,9 +383,10 @@ fn serve(server: &mut Server<CachedDisk<IpcDisk>>) -> ! {
         // `CALL` server tells a Reply from a delegation)), so a `SEND_CAPABILITY`'d capability is deleted.
         let req = receive_request(FILE);
         let reply_slot = req.delivered.into_reply();
-        // SAFETY: `fs::MAXIMUM_TRANSFER_BYTES` is exactly the window's mapped length, and this slice is
+        // SAFETY: `file_system::MAXIMUM_TRANSFER_BYTES` is exactly the window's mapped length, and this slice is
         // the only one taken from it until the request is answered.
-        let window = unsafe { file_page(window_base(req.badge), fs::MAXIMUM_TRANSFER_BYTES) };
+        let window =
+            unsafe { file_page(window_base(req.badge), file_system::MAXIMUM_TRANSFER_BYTES) };
         let (r0, r1) = server.handle(req.badge, req.w0, req.w1, window, &mut IpcEdges);
         reply(reply_slot, r0, r1);
     }
@@ -420,7 +421,7 @@ fn start(crash_at_write: u64, crash_after_blocks: u64, crash_tear_bytes: u64) ->
     };
     // The image is open: signal readiness (so the test can tell an open-path hang from a serve-path
     // one), then serve forever.
-    send(READY, filesystem_contract::READY, 0, 0);
+    send(READY, file_system_contract::READY, 0, 0);
     serve(&mut server);
 }
 

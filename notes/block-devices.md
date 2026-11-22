@@ -48,7 +48,7 @@ On the 64 MiB test disk the three reads work out as:
 
 ### The 512 assumption, stated where a reader meets it
 
-The block protocol (`filesystem_contract::blk`) carries no logical block size. There is nowhere for the
+The block protocol (`file_system_contract::blk`) carries no logical block size. There is nowhere for the
 surveyor to read the device's from, so it assumes 512. `crates/globally_unique_identifier_partition_table` handles 4096 and has a test at
 it; a 4Kn disk would be read here as though its LBA 1 were at byte 512, which is a wrong answer
 rather than an error. The fix is a field on the wire, not a change in the program.
@@ -83,7 +83,7 @@ at read time, because the authorization happened when the mapping was made.
 An entry is an ordinal and a transport. That is all. Two reasons, and the first is the interesting
 one:
 
-- A size is a fact about a device you hold. You learn it by asking (`filesystem_contract::blk::SIZE`),
+- A size is a fact about a device you hold. You learn it by asking (`file_system_contract::blk::SIZE`),
   which takes the endpoint. An enumerator that answered "how big" would be answering a question only
   a holder should be able to ask, which quietly makes the listing the more powerful of the two
   authorities.

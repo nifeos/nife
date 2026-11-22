@@ -36,7 +36,7 @@ impl FileAttr {
         FileType { dir: self.dir }
     }
 
-    /// **`Metadata::modified`** (milestone 64, rank 19), from the `GET_MODIFICATION_TIME` [`stat`] issued.
+    /// **`Metadata::modified`** (milestone 64, rank 19), from the `GET_MODIFICATION_TIME_UNIX_SECONDS` [`stat`] issued.
     ///
     /// The value is the contract's, Unix seconds, and it is only as true as the server that stamped
     /// it. **A file written on this system carries the FS server's logical clock, not a wall-clock
@@ -45,7 +45,7 @@ impl FileAttr {
     /// orders correctly against other writes in the same boot, and orders wrongly against a file
     /// the host tool made. That is recorded in notes/std/file-times.md's BUGS and
     /// proposed as its own piece of work; it is not something this function can detect, because
-    /// `SET_MODIFICATION_TIME_AT` may legitimately assert a small number too.
+    /// `SET_MODIFICATION_TIME_AT_UNIX_SECONDS` may legitimately assert a small number too.
     pub fn modified(&self) -> io::Result<SystemTime> {
         match self.mtime {
             Mtime::Seconds(s) => {
@@ -60,7 +60,7 @@ impl FileAttr {
             }
             // `ENOTDIR` is the one refusal that is about the grant's *shape*: a per-file caretaker
             // answers it for all three mtime verbs because it has no directory to resolve a name
-            // under (`filesystem_contract::grant::POLICY`). Reported as what it is rather than as
+            // under (`file_system_contract::grant::POLICY`). Reported as what it is rather than as
             // `NotADirectory`, which would read as a statement about the file.
             Mtime::Refused(r0) if fsproto::reply_errno(r0 as i64) == Some(20) => {
                 Err(io::const_error!(
@@ -99,12 +99,12 @@ impl FileAttr {
 
 /// **What the contract said about a modification time**, kept until `modified()` asks.
 ///
-/// `GET_MODIFICATION_TIME` (milestone 47, DECISIONS §112) resolves a **name under a directory handle** and never
+/// `GET_MODIFICATION_TIME_UNIX_SECONDS` (milestone 47, DECISIONS §112) resolves a **name under a directory handle** and never
 /// takes an open file. `std::fs::metadata(path)` and `DirEntry::metadata` reach a name, so they ask
 /// and keep [`Mtime::Seconds`] or [`Mtime::Refused`]; `File::metadata` and a held `Dir`'s own
 /// metadata have **no name**, so they get [`Mtime::Unnamed`]. Asking by the name a `File` was
 /// opened by would answer for whatever holds that name *now*, the silent degradation DECISIONS §42
-/// forbids. A refused `GET_MODIFICATION_TIME` fails only `modified()`, never `metadata()`. See
+/// forbids. A refused `GET_MODIFICATION_TIME_UNIX_SECONDS` fails only `modified()`, never `metadata()`. See
 /// notes/std/file-times.md; a handle-taking verb is proposed in
 /// design/roadmap/0504-an-mtime-for-an-open-file.md.
 #[derive(Clone, Copy)]
@@ -112,7 +112,7 @@ pub(super) enum Mtime {
     /// Unix seconds, as the server reported them. See `modified()` for what the number means on an
     /// image this system wrote, which is not always a wall-clock time.
     Seconds(u64),
-    /// The server (or a caretaker in front of it) refused `GET_MODIFICATION_TIME`; the reply word, so the error
+    /// The server (or a caretaker in front of it) refused `GET_MODIFICATION_TIME_UNIX_SECONDS`; the reply word, so the error
     /// can be rebuilt with [`reply`] when it is asked for.
     Refused(u64),
     /// Reached through a handle rather than a name, so there was nothing to ask by.
@@ -120,7 +120,7 @@ pub(super) enum Mtime {
 }
 
 /// **The times a `set_times` call asks for** (milestone 64, rank 28). Its own type rather than the
-/// unsupported backend's, because `SET_MODIFICATION_TIME_AT` carries a modification time. The access time is
+/// unsupported backend's, because `SET_MODIFICATION_TIME_AT_UNIX_SECONDS` carries a modification time. The access time is
 /// kept only so [`set_times`] can refuse it loudly: no verb sets one, and dropping it would report
 /// success for half of what the caller asked.
 #[derive(Copy, Clone, Debug, Default)]

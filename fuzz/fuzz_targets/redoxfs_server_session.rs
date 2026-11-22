@@ -26,7 +26,7 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use filesystem_contract::{directory, extended_attribute, fs};
+use file_system_contract::{directory, extended_attribute, file_system};
 use libfuzzer_sys::arbitrary::{Result as ArbResult, Unstructured};
 use libfuzzer_sys::fuzz_target;
 use redoxfs::{BLOCK_SIZE, Disk, FileSystem, Node, TreePtr};
@@ -49,8 +49,8 @@ const SPARSE_LIMIT: u64 = 64 << 20;
 
 fn sparse(code: u64, len: usize, w1: u64) -> u64 {
     let end = match code {
-        fs::WRITE => w1.saturating_add(len as u64),
-        fs::TRUNCATE => w1,
+        file_system::WRITE => w1.saturating_add(len as u64),
+        file_system::TRUNCATE => w1,
         _ => return w1,
     };
     if end > SPARSE_LIMIT && end <= redoxfs_server::MAXIMUM_FILE_END {
@@ -182,11 +182,11 @@ struct Session {
     server: Server<Overlay>,
     window: Vec<u8>,
     /// Badges 1..CLIENT_WINDOWS; badge 0 is always open and any other badge is unknown.
-    badges: [Model; fs::CLIENT_WINDOWS],
+    badges: [Model; file_system::CLIENT_WINDOWS],
     /// Which badge minted each live handle (0 for an open badge's).
     owners: HashMap<u64, u64>,
     /// The markers each prologue-bound badge must never read. Cleared when its grant changes.
-    forbidden: [&'static [&'static [u8]]; fs::CLIENT_WINDOWS],
+    forbidden: [&'static [&'static [u8]]; file_system::CLIENT_WINDOWS],
     /// Whether the content rule still holds (see the module comment).
     content_rule: bool,
 }
@@ -198,38 +198,38 @@ const NAMES: &[&[u8]] = &[
 ];
 
 const VERBS: &[u64] = &[
-    fs::OPEN,
-    fs::READ,
-    fs::WRITE,
-    fs::CLOSE,
-    fs::FSTAT,
-    fs::CREATE,
-    fs::TRUNCATE,
-    fs::OPENDIR,
-    fs::READDIR,
-    fs::MKDIR,
-    fs::RENAME,
-    fs::UNLINK,
-    fs::RMDIR,
-    fs::GETXATTR,
-    fs::SETXATTR,
-    fs::LISTXATTR,
-    fs::REMOVEXATTR,
-    fs::STATFS,
-    fs::SYNC,
-    fs::GET_MODIFICATION_TIME,
-    fs::SET_MODIFICATION_TIME,
-    fs::SET_MODIFICATION_TIME_AT,
-    fs::NARROW,
-    fs::BIND,
-    fs::UNBIND,
+    file_system::OPEN,
+    file_system::READ,
+    file_system::WRITE,
+    file_system::CLOSE,
+    file_system::FSTAT,
+    file_system::CREATE,
+    file_system::TRUNCATE,
+    file_system::OPENDIR,
+    file_system::READDIR,
+    file_system::MKDIR,
+    file_system::RENAME,
+    file_system::UNLINK,
+    file_system::RMDIR,
+    file_system::GETXATTR,
+    file_system::SETXATTR,
+    file_system::LISTXATTR,
+    file_system::REMOVEXATTR,
+    file_system::STATFS,
+    file_system::SYNC,
+    file_system::GET_MODIFICATION_TIME_UNIX_SECONDS,
+    file_system::SET_MODIFICATION_TIME,
+    file_system::SET_MODIFICATION_TIME_AT_UNIX_SECONDS,
+    file_system::NARROW,
+    file_system::BIND,
+    file_system::UNBIND,
 ];
 
 impl Session {
     fn model(&self, badge: u64) -> Model {
         match badge {
             0 => Model::Open,
-            b if b < fs::CLIENT_WINDOWS as u64 => self.badges[b as usize],
+            b if b < file_system::CLIENT_WINDOWS as u64 => self.badges[b as usize],
             _ => Model::Revoked,
         }
     }
@@ -256,11 +256,11 @@ impl Session {
 
     fn rights(u: &mut Unstructured) -> ArbResult<u64> {
         Ok(if u.ratio(1, 8)? {
-            directory::PARENT_RIGHTS
+            directory::rights::PARENT_RIGHTS
         } else if u.ratio(3, 4)? {
-            directory::ALL
+            directory::rights::ALL
         } else {
-            u.int_in_range(0..=directory::ALL)?
+            u.int_in_range(0..=directory::rights::ALL)?
         })
     }
 
@@ -275,42 +275,44 @@ impl Session {
         let handle = u.int_in_range(0u64..=11)?;
         let small = u.int_in_range(0u64..=9000)?;
         let (len, w1) = match code {
-            fs::OPEN | fs::OPENDIR | fs::MKDIR => (self.name(u, 0)?, Self::rights(u)?),
-            fs::CREATE
-            | fs::UNLINK
-            | fs::RMDIR
-            | fs::GET_MODIFICATION_TIME
-            | fs::SET_MODIFICATION_TIME => (self.name(u, 0)?, 0),
-            fs::SET_MODIFICATION_TIME_AT => (self.name(u, 0)?, small),
-            fs::NARROW => (0, Self::rights(u)?),
-            fs::READ => (small as usize, u.int_in_range(0..=600)?),
-            fs::WRITE => {
+            file_system::OPEN | file_system::OPENDIR | file_system::MKDIR => {
+                (self.name(u, 0)?, Self::rights(u)?)
+            }
+            file_system::CREATE
+            | file_system::UNLINK
+            | file_system::RMDIR
+            | file_system::GET_MODIFICATION_TIME_UNIX_SECONDS
+            | file_system::SET_MODIFICATION_TIME => (self.name(u, 0)?, 0),
+            file_system::SET_MODIFICATION_TIME_AT_UNIX_SECONDS => (self.name(u, 0)?, small),
+            file_system::NARROW => (0, Self::rights(u)?),
+            file_system::READ => (small as usize, u.int_in_range(0..=600)?),
+            file_system::WRITE => {
                 let fill = u.arbitrary::<u8>()?;
                 self.window[..small as usize].fill(fill);
                 (small as usize, u.int_in_range(0..=600)?)
             }
-            fs::RENAME => {
+            file_system::RENAME => {
                 let src = self.name(u, 0)?;
                 let dst = self.name(u, src)?;
                 (
                     src,
-                    fs::rename_destination(u.int_in_range(0..=11)?, dst as u64),
+                    file_system::rename_destination(u.int_in_range(0..=11)?, dst as u64),
                 )
             }
-            fs::GETXATTR | fs::REMOVEXATTR => (self.name(u, 0)?, 0),
-            fs::SETXATTR => {
+            file_system::GETXATTR | file_system::REMOVEXATTR => (self.name(u, 0)?, 0),
+            file_system::SETXATTR => {
                 let name = self.name(u, 0)?;
                 let value = u.int_in_range(0usize..=40)?;
                 let kind = u.int_in_range(0u32..=3)?;
                 (name, extended_attribute::specification(kind, value as u64))
             }
-            fs::BIND | fs::UNBIND => (0, Self::badge(u)?),
+            file_system::BIND | file_system::UNBIND => (0, Self::badge(u)?),
             _ => (u.int_in_range(0..=64)?, small),
         };
         let w1 = if u.ratio(1, 64)? { u.arbitrary()? } else { w1 };
         Ok((
             badge,
-            fs::request(code, handle, len as u64),
+            file_system::request(code, handle, len as u64),
             sparse(code, len, w1),
         ))
     }
@@ -320,22 +322,22 @@ impl Session {
         let (r0, _) = self
             .server
             .handle(badge, w0, w1, &mut self.window, &mut HostEdges);
-        let code = filesystem_contract::operation(w0);
-        let raw = fs::request_handle(w0);
+        let code = file_system_contract::operation(w0);
+        let raw = file_system::request_handle(w0);
         let ok = r0 >= 0;
         let model = self.model(badge);
 
         // Rule 1, admission.
-        let mine = |h: u64| h == fs::ROOT || self.owners.get(&h) == Some(&badge);
+        let mine = |h: u64| h == file_system::ROOT || self.owners.get(&h) == Some(&badge);
         let must_fail = match model {
             Model::Open => false,
             Model::Revoked => true,
             Model::Bound => {
-                code == fs::BIND
-                    || code == fs::UNBIND
-                    || (code == fs::CLOSE && raw == fs::ROOT)
+                code == file_system::BIND
+                    || code == file_system::UNBIND
+                    || (code == file_system::CLOSE && raw == file_system::ROOT)
                     || !mine(raw)
-                    || (code == fs::RENAME && !mine(fs::destination_handle(w1)))
+                    || (code == file_system::RENAME && !mine(file_system::destination_handle(w1)))
             }
         };
         assert!(
@@ -344,7 +346,11 @@ impl Session {
         );
 
         // Rule 2, content.
-        if ok && code == fs::READ && self.content_rule && (badge as usize) < fs::CLIENT_WINDOWS {
+        if ok
+            && code == file_system::READ
+            && self.content_rule
+            && (badge as usize) < file_system::CLIENT_WINDOWS
+        {
             let read = &self.window[..r0 as usize];
             for mark in self.forbidden[badge as usize] {
                 assert!(
@@ -359,20 +365,28 @@ impl Session {
             return r0;
         }
         match code {
-            fs::OPEN | fs::OPENDIR | fs::CREATE | fs::MKDIR | fs::NARROW => {
-                assert_ne!(r0 as u64, fs::ROOT, "a minted handle shadowed ROOT");
+            file_system::OPEN
+            | file_system::OPENDIR
+            | file_system::CREATE
+            | file_system::MKDIR
+            | file_system::NARROW => {
+                assert_ne!(
+                    r0 as u64,
+                    file_system::ROOT,
+                    "a minted handle shadowed ROOT"
+                );
                 let owner = if model == Model::Bound { badge } else { 0 };
                 self.owners.insert(r0 as u64, owner);
             }
-            fs::CLOSE => {
+            file_system::CLOSE => {
                 self.owners.remove(&raw);
             }
-            fs::RENAME if model == Model::Open => self.content_rule = false,
-            fs::BIND => {
+            file_system::RENAME if model == Model::Open => self.content_rule = false,
+            file_system::BIND => {
                 self.badges[w1 as usize] = Model::Bound;
                 self.forbidden[w1 as usize] = &[];
             }
-            fs::UNBIND => {
+            file_system::UNBIND => {
                 self.badges[w1 as usize] = Model::Revoked;
                 self.forbidden[w1 as usize] = &[];
                 self.owners.retain(|_, b| *b != w1);
@@ -390,10 +404,10 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
     };
     let mut s = Session {
         server: Server::open(disk).expect("the template opens"),
-        window: vec![0; fs::MAXIMUM_TRANSFER_BYTES],
-        badges: [Model::Open; fs::CLIENT_WINDOWS],
+        window: vec![0; file_system::MAXIMUM_TRANSFER_BYTES],
+        badges: [Model::Open; file_system::CLIENT_WINDOWS],
         owners: HashMap::new(),
-        forbidden: [&[]; fs::CLIENT_WINDOWS],
+        forbidden: [&[]; file_system::CLIENT_WINDOWS],
         content_rule: true,
     };
 
@@ -406,12 +420,16 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
         s.window[..path.len()].copy_from_slice(path);
         let h = s.send(
             0,
-            fs::request(fs::OPENDIR, fs::ROOT, path.len() as u64),
-            directory::ALL,
+            file_system::request(file_system::OPENDIR, file_system::ROOT, path.len() as u64),
+            directory::rights::ALL,
         );
         assert!(h > 0, "the prologue's OPENDIR failed: {h}");
         assert_eq!(
-            s.send(0, fs::request(fs::BIND, h as u64, 0), badge),
+            s.send(
+                0,
+                file_system::request(file_system::BIND, h as u64, 0),
+                badge
+            ),
             0,
             "the prologue's BIND failed"
         );

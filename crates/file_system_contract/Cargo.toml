@@ -1,0 +1,36 @@
+[package]
+name = "file_system_contract"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "The wire protocols of a filesystem stack: the block protocol between a filesystem server and a block server, and the file-service protocol between a client and the filesystem server"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/nifeos/file_system_contract"
+documentation = "https://github.com/nifeos/file_system_contract"
+homepage = "https://github.com/nifeos/file_system_contract"
+keywords = ["no-std", "filesystem", "capabilities", "kani"]
+categories = ["no-std", "embedded", "filesystem"]
+publish = false     # not published yet: the first release to crates.io waits on a review of the crate's names
+
+# The wire protocols of the filesystem stack: the block-IPC protocol (FS server <-> block server)
+# and the file-service protocol (client <-> FS server). Pure logic, host-tested, no_std, no
+# dependency on a filesystem implementation or a kernel: the constants and packers live in ONE
+# place so the block server, the FS server, the client and their tests cannot drift. This crate is
+# the contract's code.
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
+
+[dependencies]

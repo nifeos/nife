@@ -43,7 +43,7 @@ A launch filesystem must do five things here:
 2. Survive a power cut without silently wrong data.
 3. Rename one name over another atomically (the installer flips `activation/current` that way),
    keep a modification time that only advances, and keep names as written. Extended attributes are
-   in `filesystem_contract` with no production caller yet. Permissions, symlinks and hard links have
+   in `file_system_contract` with no production caller yet. Permissions, symlinks and hard links have
    no verb in the contract, since access is a right on a directory capability, so they are habit
    today and become real with the first ported POSIX package that needs one.
 4. Rest on a mature implementation that makes and judges it, so a young nife server has an oracle.

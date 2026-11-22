@@ -95,45 +95,45 @@ driver_process_contract::virtual_io,HandOff::pack,replace | with ^,crates/driver
 driver_process_contract::virtual_io,HandOff::pack,replace | with ^,crates/driver_process_contract/src/virtual_io.rs,440,site,"self.notify_off_multiplier as u64 | (vector as u64) << 32 | (self.role as u64) << 48,"
 entropy_contract,request,replace | with ^,crates/entropy_contract/src/lib.rs,94,site,(operation << OPERATION_SHIFT) | clamped
 entropy_contract,bring_up_failure,replace | with ^,crates/entropy_contract/src/lib.rs,202,site,BRING_UP_FAILED | step
-filesystem_contract,req,replace | with ^,crates/filesystem_contract/src/blk.rs,75,site,(operation << super::OPERATION_SHIFT) | (blocks as u64 - 1)
-filesystem_contract,,replace << with >>,crates/filesystem_contract/src/dir.rs,4,literal,a zero feed or amount: 1 and 0
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,77,const,1 | 32 | 16 are pairwise disjoint
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,77,const,1 | 32 | 16 are pairwise disjoint
-filesystem_contract,,replace << with >>,crates/filesystem_contract/src/dirent.rs,4,literal,a zero feed or amount: 1 and 0
-filesystem_contract,req,replace | with ^,crates/filesystem_contract/src/fs.rs,353,site,| ((handle & MAXIMUM_HANDLE) << 40)
-filesystem_contract,req,replace | with ^,crates/filesystem_contract/src/fs.rs,354,site,| (len & MAXIMUM_LENGTH_OR_OFFSET)
-filesystem_contract,rename_dst,replace | with ^,crates/filesystem_contract/src/fs.rs,369,site,((handle & MAXIMUM_HANDLE) << 40) | (len & MAXIMUM_LENGTH_OR_OFFSET)
-filesystem_contract,,replace << with >>,crates/filesystem_contract/src/grant.rs,4,literal,a zero feed or amount: 1 and 0
-filesystem_contract,spec,replace | with ^,crates/filesystem_contract/src/grant.rs,117,site,((len as u64) & 0xff) | (rights << 8)
-filesystem_contract,,replace << with >>,crates/filesystem_contract/src/nameset.rs,33,literal,a zero feed or amount: 1 and 0
-filesystem_contract,Verb::mutates,replace | with ^,crates/filesystem_contract/src/verb.rs,86,site,self.needs_all & (dir::WRITE | dir::CREATE | dir::REMOVE) != 0
-filesystem_contract,Verb::mutates,replace | with ^,crates/filesystem_contract/src/verb.rs,86,site,self.needs_all & (dir::WRITE | dir::CREATE | dir::REMOVE) != 0
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/verb.rs,133,site,"needs_any: dir::READ | dir::WRITE,"
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/verb.rs,188,site,"dir::CREATE | dir::DESCEND,"
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/verb.rs,198,site,"dir::REMOVE | dir::CREATE,"
-filesystem_contract,,replace | with ^,crates/filesystem_contract/src/verb.rs,284,site,"dir::WRITE | dir::SETTIME,"
-filesystem_contract,spec,replace | with ^,crates/filesystem_contract/src/xattr.rs,83,site,((kind as u64) << 32) | (value_len & 0xffff_ffff)
-filesystem_contract,reply,replace | with ^,crates/filesystem_contract/src/xattr.rs,101,site,(((kind & MAXIMUM_KIND) as i64) << 32) | (value_len as i64 & 0xffff_ffff)
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,236,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,714,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,793,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,827,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,882,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,1016,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,1049,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1080,site,| LISTED
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1081,site,| SURVIVED_RENAME
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1082,site,| GONE_AFTER_REMOVE
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1083,site,| GONE_AFTER_UNLINK
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1084,site,| OVERSIZE_REFUSED
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1085,site,| STORE_UNNAMEABLE
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1086,site,| STORE_UNLISTED;
+file_system_contract,req,replace | with ^,crates/file_system_contract/src/blk.rs,75,site,(operation << super::OPERATION_SHIFT) | (blocks as u64 - 1)
+file_system_contract,,replace << with >>,crates/file_system_contract/src/dir.rs,4,literal,a zero feed or amount: 1 and 0
+file_system_contract,,replace | with ^,crates/file_system_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+file_system_contract,,replace | with ^,crates/file_system_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+file_system_contract,,replace | with ^,crates/file_system_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+file_system_contract,,replace | with ^,crates/file_system_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+file_system_contract,,replace | with ^,crates/file_system_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+file_system_contract,,replace | with ^,crates/file_system_contract/src/dir.rs,43,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+file_system_contract,,replace | with ^,crates/file_system_contract/src/dir.rs,77,const,1 | 32 | 16 are pairwise disjoint
+file_system_contract,,replace | with ^,crates/file_system_contract/src/dir.rs,77,const,1 | 32 | 16 are pairwise disjoint
+file_system_contract,,replace << with >>,crates/file_system_contract/src/dirent.rs,4,literal,a zero feed or amount: 1 and 0
+file_system_contract,req,replace | with ^,crates/file_system_contract/src/fs.rs,353,site,| ((handle & MAXIMUM_HANDLE) << 40)
+file_system_contract,req,replace | with ^,crates/file_system_contract/src/fs.rs,354,site,| (len & MAXIMUM_LENGTH_OR_OFFSET)
+file_system_contract,rename_dst,replace | with ^,crates/file_system_contract/src/fs.rs,369,site,((handle & MAXIMUM_HANDLE) << 40) | (len & MAXIMUM_LENGTH_OR_OFFSET)
+file_system_contract,,replace << with >>,crates/file_system_contract/src/grant.rs,4,literal,a zero feed or amount: 1 and 0
+file_system_contract,spec,replace | with ^,crates/file_system_contract/src/grant.rs,117,site,((len as u64) & 0xff) | (rights << 8)
+file_system_contract,,replace << with >>,crates/file_system_contract/src/nameset.rs,33,literal,a zero feed or amount: 1 and 0
+file_system_contract,Verb::mutates,replace | with ^,crates/file_system_contract/src/verb.rs,86,site,self.needs_all & (dir::WRITE | dir::CREATE | dir::REMOVE) != 0
+file_system_contract,Verb::mutates,replace | with ^,crates/file_system_contract/src/verb.rs,86,site,self.needs_all & (dir::WRITE | dir::CREATE | dir::REMOVE) != 0
+file_system_contract,,replace | with ^,crates/file_system_contract/src/verb.rs,133,site,"needs_any: dir::READ | dir::WRITE,"
+file_system_contract,,replace | with ^,crates/file_system_contract/src/verb.rs,188,site,"dir::CREATE | dir::DESCEND,"
+file_system_contract,,replace | with ^,crates/file_system_contract/src/verb.rs,198,site,"dir::REMOVE | dir::CREATE,"
+file_system_contract,,replace | with ^,crates/file_system_contract/src/verb.rs,284,site,"dir::WRITE | dir::SET_MODIFICATION_TIME_AT,"
+file_system_contract,spec,replace | with ^,crates/file_system_contract/src/xattr.rs,83,site,((kind as u64) << 32) | (value_len & 0xffff_ffff)
+file_system_contract,reply,replace | with ^,crates/file_system_contract/src/xattr.rs,101,site,(((kind & MAXIMUM_KIND) as i64) << 32) | (value_len as i64 & 0xffff_ffff)
+file_system_fixture,,replace << with >>,crates/file_system_fixture/src/lib.rs,236,literal,a zero feed or amount: 1 and 0
+file_system_fixture,,replace << with >>,crates/file_system_fixture/src/lib.rs,714,literal,a zero feed or amount: 1 and 0
+file_system_fixture,,replace << with >>,crates/file_system_fixture/src/lib.rs,793,literal,a zero feed or amount: 1 and 0
+file_system_fixture,,replace << with >>,crates/file_system_fixture/src/lib.rs,827,literal,a zero feed or amount: 1 and 0
+file_system_fixture,,replace << with >>,crates/file_system_fixture/src/lib.rs,882,literal,a zero feed or amount: 1 and 0
+file_system_fixture,,replace << with >>,crates/file_system_fixture/src/lib.rs,1016,literal,a zero feed or amount: 1 and 0
+file_system_fixture,,replace << with >>,crates/file_system_fixture/src/lib.rs,1049,literal,a zero feed or amount: 1 and 0
+file_system_fixture,,replace | with ^,crates/file_system_fixture/src/lib.rs,1080,site,| LISTED
+file_system_fixture,,replace | with ^,crates/file_system_fixture/src/lib.rs,1081,site,| SURVIVED_RENAME
+file_system_fixture,,replace | with ^,crates/file_system_fixture/src/lib.rs,1082,site,| GONE_AFTER_REMOVE
+file_system_fixture,,replace | with ^,crates/file_system_fixture/src/lib.rs,1083,site,| GONE_AFTER_UNLINK
+file_system_fixture,,replace | with ^,crates/file_system_fixture/src/lib.rs,1084,site,| OVERSIZE_REFUSED
+file_system_fixture,,replace | with ^,crates/file_system_fixture/src/lib.rs,1085,site,| STORE_UNNAMEABLE
+file_system_fixture,,replace | with ^,crates/file_system_fixture/src/lib.rs,1086,site,| STORE_UNLISTED;
 firmware_configuration,DmaCommand::read,replace | with ^,crates/firmware_configuration/src/lib.rs,82,site,"control: ((key as u32) << 16) | control::SELECT | control::READ,"
 firmware_configuration,DmaCommand::read,replace | with ^,crates/firmware_configuration/src/lib.rs,82,site,"control: ((key as u32) << 16) | control::SELECT | control::READ,"
 firmware_configuration,DmaCommand::write,replace | with ^,crates/firmware_configuration/src/lib.rs,106,site,"control: ((key as u32) << 16) | control::SELECT | control::WRITE,"

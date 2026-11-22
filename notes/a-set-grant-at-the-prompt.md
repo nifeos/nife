@@ -44,7 +44,7 @@ the same reason: every batch is a set.
 
 `fs_nameset_caretaker` starts with the directory's name and rights in its three start words (the
 subtree caretaker's shape) plus a read-only frame at `SET_VA` holding the encoded set
-(`filesystem_contract::nameset`, `BYTES` = 137 for eight names of up to sixteen bytes). It copies the
+(`file_system_contract::nameset`, `BYTES` = 137 for eight names of up to sixteen bytes). It copies the
 set into a local at startup and never reads the frame again.
 
 The progenitor must therefore receive up to 137 bytes of set per spawn, and build that frame.

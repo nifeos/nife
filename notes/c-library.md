@@ -115,7 +115,7 @@ Neither "adapt" (track upstream with a platform layer added) nor a clean-room re
 2. Leave behind `redox-rt`, `platform/redox`, `platform/linux`, `ld_so`, dlmalloc and every
    dependency a stage does not use.
 3. Write the nife platform layer in Rust against the protocol crates `std` already speaks
-   (`filesystem_contract`, `socket_contract`, `clock_contract`, `std_runtime_contract`), and on
+   (`file_system_contract`, `socket_contract`, `clock_contract`, `std_runtime_contract`), and on
    `std`'s allocator, so the C library and `std` cannot disagree about a wire format.
 4. Rewrite `popen`, `system` and `forkpty` on `posix_spawn`, or refuse them; `fork`
    returns `ENOSYS` and says why in `BUGS`.

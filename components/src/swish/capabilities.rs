@@ -166,7 +166,12 @@ pub(super) fn file_digest(t: Tree, handle: u64, size: u64) -> Option<measured_bo
     let mut chunk = [0u8; 256];
     let mut at = 0u64;
     while at < size {
-        let n = call(t.slot, fs::request(fs::READ, handle, PAGE), at).0 as i64;
+        let n = call(
+            t.slot,
+            file_system::request(file_system::READ, handle, PAGE),
+            at,
+        )
+        .0 as i64;
         if n <= 0 {
             return None;
         }
@@ -185,13 +190,13 @@ pub(super) fn file_digest(t: Tree, handle: u64, size: u64) -> Option<measured_bo
 /// One page of a generation table, read by [`live_generation_listing`]. A static rather than a
 /// local because a page on the stack would take `caps`'s frame over the 4 KiB guard page
 /// `script/stack-frame-check` holds every frame to; [`RANKED`] is here for the same reason.
-pub(super) static mut GENERATION_TABLE: [u8; filesystem_contract::PAGE_BYTES] =
-    [0; filesystem_contract::PAGE_BYTES];
+pub(super) static mut GENERATION_TABLE: [u8; file_system_contract::PAGE_BYTES] =
+    [0; file_system_contract::PAGE_BYTES];
 
 /// One page for the nearest version set, a static for [`GENERATION_TABLE`]'s reason. Provisional;
 /// the file it holds (`.jig-versions`) was ratified 2026-10-07, and this static's name was not.
-static mut VERSION_SET: [u8; filesystem_contract::PAGE_BYTES] =
-    [0; filesystem_contract::PAGE_BYTES];
+static mut VERSION_SET: [u8; file_system_contract::PAGE_BYTES] =
+    [0; file_system_contract::PAGE_BYTES];
 
 /// **The nearest version set at or above where this shell stands** (milestone 614 (two installed
 /// versions of one program, each runnable, and a caller granted the one it needs), ruling 4):
@@ -252,10 +257,10 @@ pub(super) fn with_live_table<R>(nav: &Nav, f: impl FnOnce(&str, u32) -> Option<
     let t = nav.first();
     let act = nav.name_call_in(
         t,
-        fs::OPENDIR,
-        fs::ROOT,
+        file_system::OPENDIR,
+        file_system::ROOT,
         installed_programs::DIRECTORY.as_bytes(),
-        filesystem_contract::directory::READ,
+        file_system_contract::directory::rights::READ,
     );
     if act < 0 {
         return None;
@@ -316,12 +321,17 @@ pub(super) fn read_named(
     name: &[u8],
     out: &mut [u8],
 ) -> Option<usize> {
-    let h = nav.name_call_in(t, fs::OPEN, at, name, 0);
+    let h = nav.name_call_in(t, file_system::OPEN, at, name, 0);
     if h < 0 {
         return None;
     }
     let want = (out.len() as u64).min(PAGE);
-    let n = call(t.slot, fs::request(fs::READ, h as u64, want), 0).0 as i64;
+    let n = call(
+        t.slot,
+        file_system::request(file_system::READ, h as u64, want),
+        0,
+    )
+    .0 as i64;
     nav.close_in(t, h as u64);
     let n = usize::try_from(n).ok()?.min(out.len());
     get_page_at(0, &mut out[..n]);
