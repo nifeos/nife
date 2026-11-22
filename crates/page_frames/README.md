@@ -98,7 +98,8 @@ The tests run on the host and need no emulator.
 ### Running the proofs
 
 Install Kani first: `cargo install --locked
-kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model checker, so it needs network access.
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access.
 
 `cargo kani` runs all nine harnesses. On a shared build machine it took about 75 seconds, the first
 build included, with a peak of about 500 megabytes. One harness runs alone with its full path:
