@@ -99,25 +99,25 @@ fn destroy_force_kills_a_runaway_and_reclaims_its_region() {
 #[cfg(target_arch = "aarch64")]
 const RECEIVE_STUB: &[u32] = &[
     0xD280_0000, // movz x0, #0            (slot 0)
-    0xD280_0000 | ((abi::rendezvous::RECEIVE as u32) << 5) | 1, // movz x1, #RECEIVE
+    0xD280_0000 | ((moho_abi::rendezvous::RECEIVE as u32) << 5) | 1, // movz x1, #RECEIVE
     0xD280_0002, // movz x2, #0
     0xD280_0003, // movz x3, #0
     0xD280_0004, // movz x4, #0
-    0xD280_0000 | ((abi::SYSTEM_CALL_INVOKE as u32) << 5) | 8, // movz x8, #SYSTEM_CALL_INVOKE
+    0xD280_0000 | ((moho_abi::SYSTEM_CALL_INVOKE as u32) << 5) | 8, // movz x8, #SYSTEM_CALL_INVOKE
     0xD400_0001, // svc #0                 (RECEIVE: blocks)
     0xD280_0008, // movz x8, #SYSTEM_CALL_EXIT
     0xD400_0001, // svc #0                 (exit)
 ];
 #[cfg(target_arch = "riscv64")]
 const RECEIVE_STUB: &[u32] = &[
-    0x0000_0513,                                             // li a0, 0            (slot 0)
-    0x0000_0593 | ((abi::rendezvous::RECEIVE as u32) << 20), // li a1, RECEIVE
-    0x0000_0613,                                             // li a2, 0
-    0x0000_0693,                                             // li a3, 0
-    0x0000_0713,                                             // li a4, 0
-    0x0000_0893 | ((abi::SYSTEM_CALL_INVOKE as u32) << 20),  // li a7, SYSTEM_CALL_INVOKE
+    0x0000_0513, // li a0, 0            (slot 0)
+    0x0000_0593 | ((moho_abi::rendezvous::RECEIVE as u32) << 20), // li a1, RECEIVE
+    0x0000_0613, // li a2, 0
+    0x0000_0693, // li a3, 0
+    0x0000_0713, // li a4, 0
+    0x0000_0893 | ((moho_abi::SYSTEM_CALL_INVOKE as u32) << 20), // li a7, SYSTEM_CALL_INVOKE
     0x0000_0073, // ecall               (RECEIVE: blocks)
-    0x0000_0893 | ((abi::SYSTEM_CALL_EXIT as u32) << 20), // li a7, SYSTEM_CALL_EXIT
+    0x0000_0893 | ((moho_abi::SYSTEM_CALL_EXIT as u32) << 20), // li a7, SYSTEM_CALL_EXIT
     0x0000_0073, // ecall               (exit)
 ];
 /// `x86_64`'s is in `user::x86_programs`; see [`SPIN_STUB`].
@@ -130,26 +130,26 @@ const RECEIVE_STUB: &[u32] = &super::x86_programs::receive();
 #[cfg(target_arch = "aarch64")]
 const CALL_STUB: &[u32] = &[
     0xD280_0000, // movz x0, #0            (slot 0)
-    0xD280_0000 | ((abi::rendezvous::CALL as u32) << 5) | 1, // movz x1, #CALL
+    0xD280_0000 | ((moho_abi::rendezvous::CALL as u32) << 5) | 1, // movz x1, #CALL
     0xD280_0002, // movz x2, #0
     0xD280_0003, // movz x3, #0
     0xD280_0004, // movz x4, #0
-    0xD280_0000 | ((abi::SYSTEM_CALL_INVOKE as u32) << 5) | 8, // movz x8, #SYSTEM_CALL_INVOKE
+    0xD280_0000 | ((moho_abi::SYSTEM_CALL_INVOKE as u32) << 5) | 8, // movz x8, #SYSTEM_CALL_INVOKE
     0xD400_0001, // svc #0                 (CALL: blocks until replied)
     0xD280_0008, // movz x8, #SYSTEM_CALL_EXIT
     0xD400_0001, // svc #0                 (exit)
 ];
 #[cfg(target_arch = "riscv64")]
 const CALL_STUB: &[u32] = &[
-    0x0000_0513,                                            // li a0, 0            (slot 0)
-    0x0000_0593 | ((abi::rendezvous::CALL as u32) << 20),   // li a1, CALL
-    0x0000_0613,                                            // li a2, 0
-    0x0000_0693,                                            // li a3, 0
-    0x0000_0713,                                            // li a4, 0
-    0x0000_0893 | ((abi::SYSTEM_CALL_INVOKE as u32) << 20), // li a7, SYSTEM_CALL_INVOKE
-    0x0000_0073,                                            // ecall               (CALL: blocks)
-    0x0000_0893 | ((abi::SYSTEM_CALL_EXIT as u32) << 20),   // li a7, SYSTEM_CALL_EXIT
-    0x0000_0073,                                            // ecall               (exit)
+    0x0000_0513,                                               // li a0, 0            (slot 0)
+    0x0000_0593 | ((moho_abi::rendezvous::CALL as u32) << 20), // li a1, CALL
+    0x0000_0613,                                               // li a2, 0
+    0x0000_0693,                                               // li a3, 0
+    0x0000_0713,                                               // li a4, 0
+    0x0000_0893 | ((moho_abi::SYSTEM_CALL_INVOKE as u32) << 20), // li a7, SYSTEM_CALL_INVOKE
+    0x0000_0073,                                               // ecall               (CALL: blocks)
+    0x0000_0893 | ((moho_abi::SYSTEM_CALL_EXIT as u32) << 20), // li a7, SYSTEM_CALL_EXIT
+    0x0000_0073,                                               // ecall               (exit)
 ];
 /// `x86_64`'s is in `user::x86_programs`; see [`SPIN_STUB`].
 #[cfg(target_arch = "x86_64")]
@@ -389,7 +389,7 @@ fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
     let [_word, slot, _w1, _badge, ..] = sched::inter_process_communication_receive_capability(ep);
     assert_ne!(
         slot,
-        abi::rendezvous::NO_CAPABILITY,
+        moho_abi::rendezvous::NO_CAPABILITY,
         "the CALL carried no reply capability"
     );
     assert!(

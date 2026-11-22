@@ -2,7 +2,7 @@
 //! **The wire contract between a client and the login service**: on success it
 //! delegates capabilities back rather than changing anything ambient. See notes/login.md.
 //!
-//! Not a `CALL`: a reply carries two words, and only `abi::rendezvous::SEND_CAPABILITY` hands back
+//! Not a `CALL`: a reply carries two words, and only `moho_abi::rendezvous::SEND_CAPABILITY` hands back
 //! capabilities. `REQUEST`/`RESULT` are a front door shared by every client, carrying only a bare
 //! [`CONNECT`] (answered with a private [`CONNECTED`] channel), [`LOGOUT`] and the other bare
 //! words. Neither carries a page or a secret, so the identity and secret travel only on the
@@ -115,7 +115,7 @@ pub const CONNECTED: u64 = 4;
 ///    hops, which is sound because every request on both is a blocking `CALL`;
 /// 3. the budget: a freshly split `MemoryRegion`, `WRITE | GRANT`, the client's own;
 /// 4. the logout ticket: the caretaker's construction region, `WRITE`, whose one use is
-///    `abi::memory_region::DESTROY`; retry a refused `DESTROY` a bounded few times, since the
+///    `moho_abi::memory_region::DESTROY`; retry a refused `DESTROY` a bounded few times, since the
 ///    caretaker can be mid-request to the file service but never blocks permanently;
 /// 5. the terminal, `WRITE`; always present, since login answers [`NO_TERMINAL`] before
 ///    authenticating while another session holds it;

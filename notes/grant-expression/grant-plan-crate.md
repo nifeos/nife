@@ -77,7 +77,7 @@ program is told what to do) gave a `std` program its words and not a budget.
 A program that declares `installer` gets one package's worth more (`named_std_region_pages`). A
 package manager reads a whole package before it sends it, because it checks the digest first. What
 it sends are frames of its own: it maps one run of pages, reads the package into it, and hands the
-progenitor a page of that run at a time (`abi::page_frame::SLICE`). So the run is both its buffer and
+progenitor a page of that run at a time (`moho_abi::page_frame::SLICE`). So the run is both its buffer and
 its frames. It lives in the program's own region, built from the progenitor's image pool rather than
 the job pool, because what it holds is a package's bytes, exactly what that pool is sized for. The
 progenitor's copy of the same package is carved beside it. The shell's own staging pages are left for

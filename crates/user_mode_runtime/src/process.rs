@@ -18,7 +18,7 @@ use crate::system_call::trap6;
 pub fn yield_now() {
     // SAFETY: SYSTEM_CALL_YIELD gives up the CPU and comes back; it reads no argument and touches no
     // memory of this thread's own.
-    let _ = unsafe { trap6(abi::SYSTEM_CALL_YIELD, [0; 6]) };
+    let _ = unsafe { trap6(moho_abi::SYSTEM_CALL_YIELD, [0; 6]) };
 }
 
 /// Terminate this process. The kernel reaps the thread and frees its whole address space. Never
@@ -28,7 +28,7 @@ pub fn yield_now() {
 /// `SYSTEM_CALL_EXIT_THREAD` directly, and no `no_std` program needs a wrapper.
 pub fn exit() -> ! {
     // SAFETY: the system call never returns; the trailing spin only satisfies the `-> !` type.
-    let _ = unsafe { trap6(abi::SYSTEM_CALL_EXIT, [0; 6]) };
+    let _ = unsafe { trap6(moho_abi::SYSTEM_CALL_EXIT, [0; 6]) };
     loop {
         core::hint::spin_loop();
     }

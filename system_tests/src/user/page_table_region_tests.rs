@@ -11,7 +11,7 @@
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Rights, page_frame_run_capability, page_frame_run_len};
@@ -147,8 +147,8 @@ fn a_destroyed_region_takes_no_live_spaces_page_tables_with_it() {
                 .expect("grant f2");
 
             let map = |frame: u64, region: u64, va: u64| match path {
-                Path::PageFrame => call(frame, abi::page_frame::MAP, va, 1, region),
-                Path::MemoryRegion => call(region, abi::memory_region::MAP, va, 0, 0),
+                Path::PageFrame => call(frame, moho_abi::page_frame::MAP, va, 1, region),
+                Path::MemoryRegion => call(region, moho_abi::memory_region::MAP, va, 0, 0),
             };
 
             REPORT
@@ -158,7 +158,7 @@ fn a_destroyed_region_takes_no_live_spaces_page_tables_with_it() {
                 .tables_from_r
                 .store(spent(r) - path.leaves(), Ordering::SeqCst);
 
-            let destroyed = call(r_slot, abi::memory_region::DESTROY, 0, 0, 0);
+            let destroyed = call(r_slot, moho_abi::memory_region::DESTROY, 0, 0, 0);
             REPORT.destroyed.store(encode(destroyed), Ordering::SeqCst);
             REPORT.mapped_after.store(
                 crate::arch::mmu::translate_at(root, VA).is_some(),

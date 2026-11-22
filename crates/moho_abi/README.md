@@ -1,4 +1,4 @@
-# abi
+# moho_abi
 
 The application binary interface (ABI) between a program and a capability kernel. It holds the
 five system call numbers, the method number of every operation on every kind of capability, the error
@@ -48,7 +48,7 @@ sides of the system call boundary.
 ## EXAMPLES
 
 ```rust
-use abi::{Error, SYSTEM_CALL_EXIT, SYSTEM_CALL_INVOKE, SYSTEM_CALL_YIELD, rendezvous};
+use moho_abi::{Error, SYSTEM_CALL_EXIT, SYSTEM_CALL_INVOKE, SYSTEM_CALL_YIELD, rendezvous};
 
 assert_eq!([SYSTEM_CALL_EXIT, SYSTEM_CALL_YIELD, SYSTEM_CALL_INVOKE], [0, 1, 2]);
 // Sending on a rendezvous is a method number, not a system call number.

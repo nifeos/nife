@@ -207,7 +207,7 @@ pub const SHELL_GPU_SLOT: u64 = 22;
 
 // The seven graphical slots are one contiguous block fenced by two named ones, and these two
 // assertions are the fence: above the shell's configuration page, below the run-unvouched slot
-// (and so below the kernel's fault slot, which each binary asserts against `abi` itself, for the
+// (and so below the kernel's fault slot, which each binary asserts against `moho_abi` itself, for the
 // reason `RUN_UNVOUCHED_SLOT`'s own doc gives). A slot outside the fence would be one a runtime
 // allocation could land in, and a probe there would be sound only in a table that is almost full.
 const _: () = assert!(SHELL_GPU_SLOT > MACHINE_PAGE_SLOT);
@@ -280,8 +280,8 @@ const NAMESET_BIT: u64 = 1 << 43;
 /// progenitor places it in, `WRITE` only, in the boot shell and in `login`, and the slot `login`
 /// delegates it from.
 ///
-/// The highest slot below the kernel's reserved fault slot (`abi::fault::FAULT_RENDEZVOUS_SLOT`, 63);
-/// `program_table` does not depend on `abi`, so each binary that reads this asserts the relation. A
+/// The highest slot below the kernel's reserved fault slot (`moho_abi::fault::FAULT_RENDEZVOUS_SLOT`, 63);
+/// `program_table` does not depend on `moho_abi`, so each binary that reads this asserts the relation. A
 /// named slot, as [`crate::NETWORK_SLOT`] is: the holder probes it at `_start`, before it has
 /// allocated anything, which is the only time a probe is sound.
 ///

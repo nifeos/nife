@@ -229,7 +229,7 @@ replayable falsification is an ACK that forgets its claim.
 The JH7110's UART registers are four bytes apart with 32-bit access (`reg-shift = <2>`,
 `reg-io-width = <4>`); QEMU's are one byte apart. The kernel passes the tree's shape as the
 progenitor's first start word, and the progenitor passes it to `console` and `input`
-(`abi::uart::RegisterShape`). The console's wait for THRE is bounded at one second, so a wrong shape
+(`moho_abi::uart::RegisterShape`). The console's wait for THRE is bounded at one second, so a wrong shape
 kills it with a load fault at the LSR offset it polled (`stval` `0x14` or `0x5`). The timer tick
 tests for a stalled log drainer once a second (`kernel_log::stall_tick`), so that kill report
 reaches the wire.

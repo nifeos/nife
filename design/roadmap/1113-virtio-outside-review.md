@@ -40,7 +40,7 @@ logic is testable on the host, and its names pass `design/naming.md`.
 - P1-3, the ring layout is an unchecked copy of the proved layout: Waiting on milestone 1075 item 11
   (the version gate), which is Open. Decision 2 ruled the move (maintainer, provisional, 2026-11-14
   UTC), and it is not built: `QUEUE_ENTRIES` and the ring offsets are literals under a BUGS entry in
-  `block_driver_roles.rs`, and `abi::virtual_io` holds no ring constant. The `abi` review has not
+  `block_driver_roles.rs`, and `moho_abi::virtual_io` holds no ring constant. The `moho_abi` review has not
   settled how a change to a pinned value meets an `ABI_VERSION` bump once the crate leaves nife.
   New public constants would join a surface whose gate is not ready.
 - P1-4, a client-caused device error kills the block server: Done, [#3520](https://github.com/nifeos/nife/pull/3520).
@@ -64,7 +64,7 @@ logic is testable on the host, and its names pass `design/naming.md`.
 - P2-15, an unused parameter of `run_attack`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P2-16, an unbounded `complete_block`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - Decision 1, fold the roles into `block_driver`: Done, [#3662](https://github.com/nifeos/nife/pull/3662) (ruled 2026-11-16 UTC, A).
-- Decision 2, the ring layout moves to `abi::virtual_io`: Waiting on milestone 1075 item 11. Ruled
+- Decision 2, the ring layout moves to `moho_abi::virtual_io`: Waiting on milestone 1075 item 11. Ruled
   (maintainer, provisional, 2026-11-14 UTC) and not built; P1-3 is the work.
 - Decision 3, the kernel checks `Version` and the driver does not: Done, [#3628](https://github.com/nifeos/nife/pull/3628) (maintainer,
   provisional, 2026-11-15 UTC).
@@ -178,10 +178,10 @@ proves (`LAYOUT_QSIZE`, `DESC_OFF`, `AVAIL_OFF`, `USED_OFF`, `RING_BLOCK`). The 
 the validator's constants so the layout it runs is the proved one. Every userspace driver spells
 the same numbers as literals. §46 (thin primitives or whole subsystems; we write everything in between) priced the edge from `components` to the validator, and the
 tree did not take it (milestone 410 (six copies of the shared-frame accessors), per `notes/net/the-driver-and-dhcp.md` lines 130 to 137). The
-validator has no dependencies. `abi::virtual_io` already carries one DMA-layout fact for drivers, the
+validator has no dependencies. `moho_abi::virtual_io` already carries one DMA-layout fact for drivers, the
 word offset at which the kernel writes the region's physical base.
 
-Recommendation. The five layout constants move to `abi::virtual_io`, which is the contract the driver
+Recommendation. The five layout constants move to `moho_abi::virtual_io`, which is the contract the driver
 already speaks (`SETUP_QUEUE`'s documentation there already describes "the fixed offsets of that
 queue's ring block"). The validator and the kernel alias them from there, so the proof still runs on
 the layout the kernel runs. Every driver then imports what it already depends on through
@@ -192,12 +192,12 @@ copy, which is what `virtual_io_net_transport` has today and this crate lacks.
 
 Prior art. Linux puts the ring layout in a UAPI header (`include/uapi/linux/virtio_ring.h`) that
 both the kernel's ring code and every userspace consumer (QEMU, rust-vmm's `virtio-bindings`)
-compile against; the layout is a contract, and the contract has one home. Nife's own `abi` crate
+compile against; the layout is a contract, and the contract has one home. Nife's own `moho_abi` crate
 is the same thing for the system call boundary.
 
 Concrete example. `kernel/src/virtual_io.rs` lines 497 to 513 alias the validator;
 `components/src/block_driver_roles.rs` lines 93 and 127 to 129 and `components/src/virtual_io_net_transport.rs` lines 73 to 87 spell `8`, `0x000`, `0x080`,
-`0x100`, `0x200`. After the move, each of those is `abi::virtual_io::RING_...` and a change to the
+`0x100`, `0x200`. After the move, each of those is `moho_abi::virtual_io::RING_...` and a change to the
 proved layout is a compile error in every driver.
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
@@ -205,12 +205,12 @@ revisit. The layout values are already the agreement between kernel and driver a
 only the home of their names moves, inside unreleased crates. They stay relevant after the virtio
 default ruling of 2026-11-11, because every mediated grant still uses `SETUP_QUEUE` at the
 validator's layout. The five constants (`crates/direct_memory_access_validator/src/lib.rs` lines
-294 to 304) move to `abi::virtual_io`, beside the DMA-layout fact already there
-(`crates/abi/src/virtual_io.rs` line 38), with `RING_END`, which the validator derives from them and
+294 to 304) move to `moho_abi::virtual_io`, beside the DMA-layout fact already there
+(`crates/moho_abi/src/virtual_io.rs` line 38), with `RING_END`, which the validator derives from them and
 the kernel also aliases. The validator and the kernel alias them from there. The present names fail
 the spelled-out rule (`QSIZE`, `DESC`, `OFF`), so the lane that moves them proposes spelled-out
-names in `abi`, provisional. They join the pinned-value list and version gate of milestone 1075 (what an outside
-maintainer would fix in `abi` before the move), its item 11. Item 3 is the work.
+names in `moho_abi`, provisional. They join the pinned-value list and version gate of milestone 1075 (what an outside
+maintainer would fix in `moho_abi` before the move), its item 11. Item 3 is the work.
 
 ### Decision 3. The driver does not check `Version`; the kernel does
 

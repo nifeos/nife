@@ -123,7 +123,7 @@ shell holds, exactly as if it had been typed alone.
 
 The concrete thing that could have gone wrong is the pipeline region. Each line splits a region off
 the shell's budget, mints its endpoints in it, and `DESTROY`s it when the line is over, and that
-destroy is what turns a stalled writer's next `SEND` into `abi::Error::Gone` (notes/pipes.md). A
+destroy is what turns a stalled writer's next `SEND` into `moho_abi::Error::Gone` (notes/pipes.md). A
 chain that reused one region across its segments would keep every earlier segment's endpoints alive
 for the whole chain, and a writer parked on the first would never be told.
 

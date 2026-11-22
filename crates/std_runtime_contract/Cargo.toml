@@ -19,7 +19,7 @@ workspace = true
 [dependencies]
 
 # The address-space map (milestone 206 (a program image has under 896 KiB)) is a DEV-dependency on purpose, for the reason
-# `byte_sink_contract` gives for `abi`: this file is copied verbatim into std's PAL, where there is no
+# `byte_sink_contract` gives for `moho_abi`: this file is copied verbatim into std's PAL, where there is no
 # crate to name, so the numbers are restated and the test that pins them to the map never travels.
 [dev-dependencies]
 # The terminal's opcode encoding, which `STDIN_READ_REQUEST` restates for the PAL.

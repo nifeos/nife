@@ -181,7 +181,7 @@ impl ShortOptions {
 ///
 /// One constant every declarer shares: the manifest declares whether there is a second stream, and
 /// a program that declares none has no slot. Eight, above every ordinary grant, placed by
-/// `abi::thread_control_block::CAPABILITY_INSERT`'s explicit target. See notes/program-manifest.md ("The
+/// `moho_abi::thread_control_block::CAPABILITY_INSERT`'s explicit target. See notes/program-manifest.md ("The
 /// named slots").
 ///
 /// Name: ratified 2026-11-20 (UTC).
@@ -202,7 +202,7 @@ pub const DOMAIN_SLOT: u64 = 7;
 ///
 /// Nine, one past [`DIAGNOSTICS_SLOT`], placed for that constant's reason and above the shell's own
 /// seven positional capabilities. A program spawned without the declaration holds an empty slot
-/// here: its first `CALL` answers `abi::Error::NoSuchSlot`, which `entropy_contract::delivered_bytes`
+/// here: its first `CALL` answers `moho_abi::Error::NoSuchSlot`, which `entropy_contract::delivered_bytes`
 /// reads as `None`. See notes/program-manifest.md ("The named slots").
 ///
 /// Name: ratified 2026-11-20 (UTC).
@@ -213,8 +213,8 @@ pub const ENTROPY_SLOT: u64 = 9;
 ///
 /// Ten, one past [`ENTROPY_SLOT`], for that constant's reasons: a named slot rather than the next
 /// free one, above the shell's own seven positional capabilities, and far below
-/// `abi::fault::FAULT_RENDEZVOUS_SLOT`. A program spawned without the declaration holds an empty slot here,
-/// and its first `CALL` answers `abi::Error::NoSuchSlot`; `unreachable_network_witness` is the
+/// `moho_abi::fault::FAULT_RENDEZVOUS_SLOT`. A program spawned without the declaration holds an empty slot here,
+/// and its first `CALL` answers `moho_abi::Error::NoSuchSlot`; `unreachable_network_witness` is the
 /// program that shows it at the prompt.
 ///
 /// Name: ratified 2026-11-20 (UTC).
@@ -295,7 +295,7 @@ pub const SHARE_SLOT: u64 = 12;
 
 /// **Where a program that declares [`Manifest::reboot`] finds the reboot object** (milestone 805,
 /// DECISIONS §251). Thirteen, one past [`SHARE_SLOT`], for [`ENTROPY_SLOT`]'s reasons: a named slot
-/// rather than the next free one, and far below `abi::fault::FAULT_RENDEZVOUS_SLOT`. `WRITE` alone, so the
+/// rather than the next free one, and far below `moho_abi::fault::FAULT_RENDEZVOUS_SLOT`. `WRITE` alone, so the
 /// holder can invoke it and cannot hand it on.
 ///
 /// Name: ratified 2026-11-20 (UTC).
@@ -555,7 +555,7 @@ pub struct Manifest {
     /// notes/process-view.md).
     ///
     /// [`clock`](Manifest::clock)'s family. It lands in [`DOMAIN_SLOT`] carrying `READ`, which is
-    /// what `abi::rendezvous::SURVEY` takes; without it the kernel refuses the survey, and `ps`
+    /// what `moho_abi::rendezvous::SURVEY` takes; without it the kernel refuses the survey, and `ps`
     /// prints that apart from an empty domain.
     pub domain: bool,
     /// **Endowed a read-only mapping of the inert-configuration page** (milestone 47's
@@ -601,7 +601,7 @@ pub struct Manifest {
     pub machine: bool,
     /// **Endowed a view of this prompt's job budget, narrowed to `ENUMERATE`** (milestone 126,
     /// DECISIONS §225 part 1), at [`SHARE_SLOT`]: the region every job this shell runs is carved
-    /// from, which `abi::memory_region::USAGE` can ask what was spent from and on what, and which
+    /// from, which `moho_abi::memory_region::USAGE` can ask what was spent from and on what, and which
     /// the holder cannot spend, split or destroy. `free`'s "yours" line and `slabtop`'s table.
     ///
     /// **Provisional field name.**
@@ -611,7 +611,7 @@ pub struct Manifest {
     /// the board's PMIC route at [`POWER_MANAGEMENT_CHIP_ROUTE_SLOT`] on a board that has one.
     ///
     /// The authority to restart the machine: the kernel grants the progenitor the one there is.
-    /// Without the declaration the kernel refuses the invoke with `abi::Error::NoSuchSlot`. It syncs
+    /// Without the declaration the kernel refuses the invoke with `moho_abi::Error::NoSuchSlot`. It syncs
     /// nothing (§251); the program syncs through [`Manifest::sync`]. Exactly one program declares
     /// it, and no image can (`image_can_carry`). See
     /// notes/program-manifest.md ("What the line cannot name").

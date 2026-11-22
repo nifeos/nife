@@ -117,10 +117,10 @@ mod uart {
 mod uart {
     use core::sync::atomic::{AtomicU64, Ordering};
 
-    use abi::uart::RegisterShape;
+    use moho_abi::uart::RegisterShape;
 
     use super::UART_VA;
-    // Register indices; the byte offset is the index at the kernel's stride (`abi::uart`).
+    // Register indices; the byte offset is the index at the kernel's stride (`moho_abi::uart`).
     const RBR: u64 = 0; // receive buffer (read)
     const IER: u64 = 1; // interrupt enable
     const LSR: u64 = 5; // line status
@@ -130,7 +130,7 @@ mod uart {
     /// The first start word, set before the first register access.
     static SHAPE: AtomicU64 = AtomicU64::new(0);
 
-    /// Adopt the register shape the progenitor passed (`abi::uart`), before the first access.
+    /// Adopt the register shape the progenitor passed (`moho_abi::uart`), before the first access.
     ///
     /// Name: provisional, minted 2026-10-20 (UTC) by milestone/890-radon-console-shape.
     pub fn set_shape(word: u64) {
@@ -246,7 +246,7 @@ user_mode_runtime::program_entry!(start);
 
 /// Forward wire bytes forever, interrupt-driven on all three architectures: wait on the receive
 /// interrupt, clear it at the device, drain the FIFO, hand the bytes on, acknowledge. `uart_shape`
-/// is riscv64's register shape (`abi::uart`); the other arguments are unused. A polled loop would
+/// is riscv64's register shape (`moho_abi::uart`); the other arguments are unused. A polled loop would
 /// never let the core idle; the measurement is in notes/uart.md.
 fn start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
     #[cfg(target_arch = "riscv64")]

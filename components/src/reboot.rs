@@ -133,15 +133,17 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // **Why not, in words** (calef's ruling on §251's amendment, item 3): the kernel answers one
     // of four portable reasons, and the firmware's raw code is on the kernel console above.
     let answer = user_mode_runtime::reboot(REBOOT_SLOT);
-    let reason: &[u8] = match abi::Error::try_from(answer).ok() {
-        Some(abi::Error::NoResetMechanism) => {
+    let reason: &[u8] = match moho_abi::Error::try_from(answer).ok() {
+        Some(moho_abi::Error::NoResetMechanism) => {
             b"reboot: not restarted: this machine has no reset route the kernel can ask\n"
         }
-        Some(abi::Error::ResetNotSupported) => {
+        Some(moho_abi::Error::ResetNotSupported) => {
             b"reboot: not restarted: the firmware does not offer a reset\n"
         }
-        Some(abi::Error::ResetDenied) => b"reboot: not restarted: the firmware refused the reset\n",
-        Some(abi::Error::ResetDidNotHappen) => {
+        Some(moho_abi::Error::ResetDenied) => {
+            b"reboot: not restarted: the firmware refused the reset\n"
+        }
+        Some(moho_abi::Error::ResetDidNotHappen) => {
             b"reboot: not restarted: the reset was asked for and the machine is still running\n"
         }
         _ => {

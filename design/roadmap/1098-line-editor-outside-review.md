@@ -107,7 +107,7 @@ or identity, a dependency); everything else is two-way and the maintainer decide
 2. The cut the disposition requires is not made: `component`, `proto` and the `capability_plan`
    dependency are nife's terminal contract, not a line editor.
    Finding: `component` declares slot orders, virtual addresses, page budgets and a supervisor
-   protocol for one nife program, and pulls `capability_plan` (which pulls `abi`) into a crate
+   protocol for one nife program, and pulls `capability_plan` (which pulls `moho_abi`) into a crate
    whose engine needs neither. `proto` is the IPC framing of the terminal contract: opcodes,
    badges, a quiesce handshake and a swap protocol that only nife programs speak. 32 of the 38
    caller files reach only these two modules; the kernel links the crate for `proto` alone. The "nothing that leaves references back" rule of milestone 1017 (the contract crates leave in this order) cannot hold while `component` names `terminal_supervisor`, `system_initializer`

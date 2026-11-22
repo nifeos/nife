@@ -32,7 +32,7 @@ across a yield.
 loop {
     let r = user_mode_runtime::destroy_region(child);
     if r == 0 { break; }
-    if r != abi::Error::NotPermitted as i64 { return Err(r); }
+    if r != moho_abi::Error::NotPermitted as i64 { return Err(r); }
     yield_now();
 }
 ```

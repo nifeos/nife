@@ -239,7 +239,7 @@ The options table, the authority each holder has, the prior art and the measured
 [the fork 7 appendix](durable-delegation/boot-rederivation-in-login.md). In short: `login` already
 holds every capability the separate re-deriver of §123 would, so deleting the re-deriver's copies
 after one use leaves the machine where `login` already stands. `login`'s 24-slot table holds one durable session (19 + 4N at an ordinary login's peak), so that
-is also the start-up pass's limit. The built limit derives from `abi::CAPABILITY_TABLE_SLOTS`
+is also the start-up pass's limit. The built limit derives from `moho_abi::CAPABILITY_TABLE_SLOTS`
 rather than being written as one. It also derives from the memory `login` sets aside for durable
 budgets, which is one budget, so a wider table (PR #1360 proposes 32 slots, room for three) moves
 only the first. `login.rs`'s BUGS says what raising the second takes.

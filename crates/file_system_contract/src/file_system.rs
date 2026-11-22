@@ -363,7 +363,7 @@ pub const TRANSFER_PAGES: usize = 16;
 pub const MAXIMUM_TRANSFER_BYTES: usize = TRANSFER_PAGES * super::PAGE_BYTES;
 
 /// **How many client channels one file service keeps side by side**. Each is its own [`MAXIMUM_TRANSFER_BYTES`]-byte window backed by its own
-/// frame, and the server picks window `badge` for each request (`abi::rendezvous::BADGE`); window 0
+/// frame, and the server picks window `badge` for each request (`moho_abi::rendezvous::BADGE`); window 0
 /// is the unbadged default. It bounds how many file clients a boot runs at once, and costs the
 /// server `CLIENT_WINDOWS * MAXIMUM_TRANSFER_BYTES` = 512 KiB of mapped frames. Eight is provisional, a
 /// capacity decision not yet made.

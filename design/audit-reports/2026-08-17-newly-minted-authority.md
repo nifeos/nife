@@ -262,7 +262,7 @@ worth less. But the effort is in the argument and a reader should see it.
 ### 2. FIXED: nothing checked that the kernel's rights and the ABI's rights agree
 
 `abi::rights` is what userspace **names** a right with: it travels in a system call register at 79 call
-sites outside `crates/abi` as this report lands, from `system_initializer`'s grant tables through
+sites outside `crates/moho_abi` as this report lands, from `system_initializer`'s grant tables through
 every `SEND_CAP` and `CAP_INSERT` in `user/src/`. `capability_table::Rights` is what the kernel **means** by
 one. Both crates are
 dependency-free and cannot see each other, so the two are two independent arrays of magic numbers,

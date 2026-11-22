@@ -187,7 +187,7 @@ fn grant_page(
 
 /// Send a directory grant's page, `READ` only (`spawn_protocol::DIRECTORY_GRANT_BIT`), after the argv's.
 pub(super) fn send_grant_page(w: &WordsGrant) {
-    user_mode_runtime::send_capability(SPAWN, w.page.frame, abi::rights::READ, 0);
+    user_mode_runtime::send_capability(SPAWN, w.page.frame, moho_abi::rights::READ, 0);
     capability_delete(w.page.frame);
 }
 
@@ -301,7 +301,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
     nav.close_in(t, handle);
     // The argv's frame follows the image's, before every other capability (`spawn_protocol::PROGRAM_ARGUMENTS_BIT`).
     if let Some(a) = argv {
-        user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
+        user_mode_runtime::send_capability(SPAWN, a.frame, moho_abi::rights::READ, 0);
         capability_delete(a.frame);
     }
     if let Some(w) = &set_grant {
@@ -310,7 +310,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
     if let Some(slot) = mem_slot {
         // Every right: the progenitor builds the child from it, and since milestone 824 (a retype
         // mints no right its budget lacks) what it builds carries the budget's rights.
-        delegate(slot, abi::rights::ALL);
+        delegate(slot, moho_abi::rights::ALL);
         capability_delete(slot);
     }
     // **The presentation, last** (`spawn_protocol::RUN_UNVOUCHED_BIT`): one word on the endpoint only a
@@ -735,7 +735,7 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
         } else {
             read_ok = false;
         }
-        user_mode_runtime::send_capability(SPAWN, frame, abi::rights::READ, i);
+        user_mode_runtime::send_capability(SPAWN, frame, moho_abi::rights::READ, i);
         capability_delete(frame);
     }
     read_ok
@@ -1022,7 +1022,7 @@ pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Op
     // (`spawn_protocol::PROGRAM_ARGUMENTS_BIT`), `READ` only: the progenitor copies it and can neither write it nor
     // pass it on. The slot goes now; the region waits for the child's answer.
     if let Some(a) = argv {
-        user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
+        user_mode_runtime::send_capability(SPAWN, a.frame, moho_abi::rights::READ, 0);
         capability_delete(a.frame);
     }
     // The grant page's frame follows the argv's (`spawn_protocol::DIRECTORY_GRANT_BIT`).
@@ -1036,17 +1036,23 @@ pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Op
     // rights. The exit goes `READ` for the supervision slot, `WRITE` for an answer, and `GRANT` so
     // the progenitor can badge a copy with the job's label.
     if let Some(m) = &held {
-        delegate(m.region, abi::rights::ALL);
+        delegate(m.region, moho_abi::rights::ALL);
         // `ENUMERATE` too, for a program that declares a process domain (`ps`): its domain is this
         // shell's, the threads of the jobs it holds.
         delegate(
             m.exit,
-            abi::rights::READ | abi::rights::WRITE | abi::rights::GRANT | abi::rights::ENUMERATE,
+            moho_abi::rights::READ
+                | moho_abi::rights::WRITE
+                | moho_abi::rights::GRANT
+                | moho_abi::rights::ENUMERATE,
         );
         // And, for a program that declares a share view, this shell's budget narrowed to the right
         // to enumerate it: `free` and `slabtop` then describe where the job's memory is.
         if spawn_protocol::held_shares(program) {
-            delegate(BUDGET, abi::rights::ENUMERATE | abi::rights::GRANT);
+            delegate(
+                BUDGET,
+                moho_abi::rights::ENUMERATE | moho_abi::rights::GRANT,
+            );
         }
     }
 
@@ -1054,7 +1060,7 @@ pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Op
     if let Some(slot) = mem_slot {
         // Every right: the progenitor builds the child from it, and since milestone 824 (a retype
         // mints no right its budget lacks) what it builds carries the budget's rights.
-        delegate(slot, abi::rights::ALL);
+        delegate(slot, moho_abi::rights::ALL);
         // Our copy is delegated, so free the slot; a held job's budget is kept instead, because
         // this shell destroys it with the job's region and gets the pages back (milestone 933).
         if held.is_none() {

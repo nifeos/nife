@@ -688,15 +688,15 @@ def main_merge_group(base, keep_for_comments):
 
 def selftest():
     base_tree = {
-        "Cargo.toml": '[workspace]\nmembers = [\n    "kernel",\n    "xtask",\n    "crates/abi",\n'
+        "Cargo.toml": '[workspace]\nmembers = [\n    "kernel",\n    "xtask",\n    "crates/moho_abi",\n'
                       '    "crates/documentation",\n]\n',
         "vendor/x/Cargo.toml": '[package]\nname = "x"\n',
         "tools/host/Cargo.toml": '[package]\nname = "host"\n',
         "crates/documentation/Cargo.toml": '[package]\nname = "documentation"\nversion = "0.1.0"\n',
         "crates/documentation/tests/render.rs":
             '// walks the corpus\nfor dir in ["notes", "design/decisions"] {}\n',
-        "crates/abi/Cargo.toml": '[package]\nname = "abi"\n',
-        "crates/abi/src/lib.rs": '//! see notes/commented.md\npub fn f() {}\n',
+        "crates/moho_abi/Cargo.toml": '[package]\nname = "abi"\n',
+        "crates/moho_abi/src/lib.rs": '//! see notes/commented.md\npub fn f() {}\n',
         "xtask/Cargo.toml": '[package]\nname = "xtask"\n',
         "xtask/src/manual.rs": 'const B: &[&str] = &["notes/pipes.md"];\n',
         "script/lint": '# reads notes/lint-comment.md\nls "notes"\n',
@@ -725,11 +725,11 @@ def selftest():
     # line-citation: exception. Reason: the fixture expects the census's own path:line report form
     cases.append(("named .md", p is False and "xtask/src/manual.rs:1" in r[0]))
     # include_str! relative to the source file, added in the same diff.
-    p, t, r = run(["notes/plain.md", "crates/abi/src/lib.rs"],
-                  {"crates/abi/src/lib.rs": 'pub const S: &str = include_str!("../../../notes/plain.md");\n'})
+    p, t, r = run(["notes/plain.md", "crates/moho_abi/src/lib.rs"],
+                  {"crates/moho_abi/src/lib.rs": 'pub const S: &str = include_str!("../../../notes/plain.md");\n'})
     cases.append(("included .md", p is False and any("named by code" in x for x in r)))
     p, t, r = run(["notes/plain.md"],
-                  {"crates/abi/src/lib.rs": '#![doc = include_str!("../../../notes/plain.md")]\n'})
+                  {"crates/moho_abi/src/lib.rs": '#![doc = include_str!("../../../notes/plain.md")]\n'})
     cases.append(("doc attribute include", p is False))
     # A comment naming a note does not make it an input, in Rust or in a script.
     p, t, r = run(["notes/commented.md", "notes/lint-comment.md"])
@@ -738,7 +738,7 @@ def selftest():
     p, t, r = run(["design/roadmap/0001-x.md", "Cargo.lock"])
     cases.append(("mixed", p is False and t == []))
     # Markdown outside the prose directories (a crate README) is not prose.
-    p, t, r = run(["crates/abi/README.md"])
+    p, t, r = run(["crates/moho_abi/README.md"])
     cases.append(("crate README", p is False))
     # A top-level .md is prose; a non-.md under notes/ is not (outside the metrics records).
     cases.append(("root md", run(["ARCHITECTS.md"])[0] is True))
@@ -751,14 +751,14 @@ def selftest():
 
     # A path mentioned in a sentence is a message, not a read; the same path alone is data.
     p, t, r = run(["notes/plain.md"],
-                  {"crates/abi/src/lib.rs": 'panic!("the guard was hit; see notes/plain.md");\n'})
+                  {"crates/moho_abi/src/lib.rs": 'panic!("the guard was hit; see notes/plain.md");\n'})
     cases.append(("message is not a read", p is True))
     p, t, r = run(["notes/plain.md"], {"script/x": 'cat "$root/notes/plain.md"\n'})
     cases.append(("bare path in a script", p is False))
     # A glob over a prose directory is a directory read.
     p, t, r = run(["design/roadmap/0001-x.md"],
-                  {"crates/abi/src/lib.rs": 'let g = glob("design/roadmap/*.md");\n'})
-    cases.append(("glob reader", p is True and "abi" in t))
+                  {"crates/moho_abi/src/lib.rs": 'let g = glob("design/roadmap/*.md");\n'})
+    cases.append(("glob reader", p is True and "moho_abi" in t))
 
     # A package name that is not a plain name is never handed to the CI shell.
     p, t, r = run(["notes/plain.md"], {"evil/Cargo.toml": '[package]\nname = "x; curl y"\n',

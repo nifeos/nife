@@ -39,7 +39,7 @@ cost.
 | A package format exists | milestone 198 (a package manager) | yes | §197 (a package is one archive file)'s archive (`crates/package_archive`), `cargo xtask package` from a reviewed recipe, and `package install`, `remove` and `rollback` at the prompt on all three architectures (milestone 198, rung 3a, built 2026-09-26). |
 | A per-package co-change column, which informs how packages group and holds no move | §235 "How big a repository is" | yes | Milestone 610 carries it. Section 2 below is a one-off reading at one commit, not the column. |
 | The image is assembled from base packages by digest | §235 P1, milestone 607 (nife is built and updated from packages) item 1 | no | Not started. `xtask/src/archive.rs` packs ELFs out of `target/`, not packages by digest. This is the thing `basalt` would assemble from. |
-| An SDK archive (S2) | §235 Fork 4, milestone 607 item 4 | no | No `xtask` command builds one. A program outside the tree has no way to get `abi` and its protocols except a clone. |
+| An SDK archive (S2) | §235 Fork 4, milestone 607 item 4 | no | No `xtask` command builds one. A program outside the tree has no way to get `moho_abi` and its protocols except a clone. |
 | A contract never links the runtime | §235 P3, milestone 607 item 3 | yes | No contract crate depends on `user_mode_runtime`. The two that did now split into `crates/process_builder` (the loader) and `crates/hot_swap_server` (the serving loop); `counter_frequency_contract` and `current_cpu_contract` only named it in prose. |
 | `components` split into one crate per package | milestone 691 (packages move out, one per pull request) | no | One crate, `components`, holds 56 binaries from 18 packages. A crate cannot live in two repositories, so no package with a program in it can move. |
 | A ratified home | milestone 611 (every program and crate belongs to a package), §235 Fork 3 | no | 0 of 29 packages ratified; 29 provisional, none undecided. |
@@ -57,7 +57,7 @@ merged 2026-10-04T05:32Z) is broken out because the brief named it. It touched 1
 
 | crate | commits | #1599 | sweeps | alone | breaking, 4 weeks |
 |---|---|---|---|---|---|
-| `abi` | 29 | 0 | 6 | 1 | 4 |
+| `moho_abi` | 29 | 0 | 6 | 1 | 4 |
 | `file_system_contract` | 23 | 1 | 6 | 1 | 10 |
 | `login_contract` | 15 | 1 | 5 | 0 | 1 |
 | `hot_swap_contract` | 14 | 1 | 7 | 0 | 10 |
@@ -66,7 +66,7 @@ merged 2026-10-04T05:32Z) is broken out because the brief named it. It touched 1
 | `byte_sink_contract`, `credential_contract`, `std_runtime_contract` | 6 each | 1, 1, 0 | 4, 3, 2 | 0 | 5, 4, 0 |
 | the other ten | 2 to 5 each | | | 0 to 2 | 0 to 5 |
 
-Even net of sweeps and `#1599`, `abi` moved 23 times and `file_system_contract` 17 times in thirty
+Even net of sweeps and `#1599`, `moho_abi` moved 23 times and `file_system_contract` 17 times in thirty
 days, and **six commits in thirty days changed a protocol crate and nothing else**. A protocol here
 changes together with its server and its client, which is what a monorepo is good at and a split
 makes into two or three pull requests.

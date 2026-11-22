@@ -71,10 +71,10 @@ import service_model  # noqa: E402  (vendored)
 # lane that fixes it decides: a register, bit or specification name copied from a datasheet is
 # excused through `KEPT`, and a renamed item carries `#[doc(alias = "...")]` but an attribute is not
 # a name, so an alias never counts.
-# Packages two programs agree through: `abi`, the wire-contract crates (`helpers/vendored_name_gates.py`
+# Packages two programs agree through: `moho_abi`, the wire-contract crates (`helpers/vendored_name_gates.py`
 # `service` holds their spelling, `network_time_protocol` its one exception), and the on-disk formats §307 (how long a name may be) lists. Something else another program parses is
 # missed; the BUGS below say so.
-WIRE = {"abi", "network_time_protocol", "nifefs", "package_archive",
+WIRE = {"moho_abi", "network_time_protocol", "nifefs", "package_archive",
         "documentation"}
 _CAP = set(vendored_name_gates.CAP_WORDS)
 # Names a check refuses and a rule of design/naming.md exempts, keyed by `path::name`, each with the

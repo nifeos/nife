@@ -513,4 +513,4 @@ fn give_back(
 
 // The contract restates the kernel's "object no longer exists" return so a writer needs no second
 // crate; this crate links both, so the two numbers are pinned here, at compile time.
-const _: () = assert!(byte_sink_contract::GONE == abi::Error::Gone as i64);
+const _: () = assert!(byte_sink_contract::GONE == moho_abi::Error::Gone as i64);

@@ -15,7 +15,7 @@ that decision was made against, kept as written.
 nife's capability model gives every `Thread` (TCB) its own private `AddressSpace`, and that
 space is consumed at bind time and owned outright for automatic teardown. Nothing lets
 two TCBs point at the same address space today, and that is not an oversight: it is exactly
-what `ThreadControlBlock::CONFIGURE`'s own contract says (`crates/abi/src/lib.rs`): the `aspace_slot` capability
+what `ThreadControlBlock::CONFIGURE`'s own contract says (`crates/moho_abi/src/lib.rs`): the `aspace_slot` capability
 "is **consumed**: it becomes the thread's, and dies with it." `kernel/src/thread.rs` mirrors it
 on the `Thread` struct: `space: Option<AddressSpace>` is "owned, so the reaper's `drop` unmaps
 and frees the entire address space when the thread dies."
@@ -78,7 +78,7 @@ replicate a whole, dynamically growing heap, not one fixed buffer, which is the 
 
 ## 3. Prior art outside the tree
 
-**seL4 explicitly supports Option A, and it is nife's own stated lineage.** `crates/abi/src/lib.rs`'s
+**seL4 explicitly supports Option A, and it is nife's own stated lineage.** `crates/moho_abi/src/lib.rs`'s
 `objtype::ASPACE` comment already cites "the seL4 principle" for how this kernel's address-space
 budget model works. seL4's own `TCB_Configure`/`TCB_SetSpace` binds a VSpace capability to a TCB
 without uniquely consuming it. A VSpace capability can be copied like any other capability. Multiple
@@ -142,7 +142,7 @@ against the actual probe output, but it does not change this fork.)
 change is *who owns the `AddressSpace` object and when it is freed*, not new machinery from
 scratch:
 
-- `crates/abi/src/lib.rs`: `tcb::CONFIGURE`'s contract changes from "the aspace cap is consumed"
+- `crates/moho_abi/src/lib.rs`: `tcb::CONFIGURE`'s contract changes from "the aspace cap is consumed"
   to "the aspace cap may be bound without consuming it" (or a `SHARE`-shaped rights bit
   distinguishes the two calls). This is the system-call-surface line: every existing caller of
   `CONFIGURE` (the progenitor, every service spawn) is written against the consuming contract, and

@@ -190,7 +190,7 @@ const FEATURE_BLOCK_FLUSH_LOW_WORD: u32 = 1 << 9;
 // layout the kernel builds and `direct_memory_access_validator` proves (`LAYOUT_QSIZE`,
 // `DESC_OFF`, `AVAIL_OFF`, `USED_OFF`, `RING_BLOCK`) as literals, and nothing checks the copy: a
 // change to the proved layout would leave this driver on the wrong offsets until a QEMU test
-// failed. The fix is to move the constants to `abi::virtual_io`, where this crate, the kernel and the
+// failed. The fix is to move the constants to `moho_abi::virtual_io`, where this crate, the kernel and the
 // validator all name them, as Decision 2 of milestone 1113 (what an outside maintainer would fix
 // before it leaves this tree) decides.
 const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000; // 16 * QUEUE_ENTRIES = 128 bytes

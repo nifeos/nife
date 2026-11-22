@@ -45,7 +45,7 @@ is never published, so the public API holds the wire and nothing else.
 | prose and tables | `crates/externalization-list.txt`, `packages/contracts.package.toml`, `helpers/trust_boundary_crates.tsv`, `helpers/interface_stability.py`, the comments in `uefi_loader/Cargo.toml`, `system_tests/Cargo.toml` and `crates/std_runtime_contract/Cargo.toml` |
 | users of `byte_sink_fixture` | `fixtures/src/sink_transcript_writer.rs`, `file_sink.rs`, `file_source.rs`, and the kernel-side `system_tests/src/user/sink_tests.rs` and `system_log_tests.rs`; `fixtures` and `system_tests` depend on it in their manifests |
 
-Milestone 1017's table still lists a development dependency on `abi` for this crate. The crate has
+Milestone 1017's table still lists a development dependency on `moho_abi` for this crate. The crate has
 no dependency now (P1-4 landed), so the row no longer matches the tree; this package leaves it alone.
 
 ## What was run
@@ -110,7 +110,7 @@ The other P1 and P2 items:
 |---|---|
 | P0-1, the crate stands alone | done; the move commit in nifeos/byte_sink_contract carries the README, both licenses, literal `license`, `lints` and `rust-version`, and the scaffold, with no `Name:` block ([#3900](https://github.com/nifeos/nife/pull/3900)) |
 | P0-2, `VERSION` text | done |
-| P1-4, `abi` dev-dependency | done; the crate has no dependency |
+| P1-4, `moho_abi` dev-dependency | done; the crate has no dependency |
 | P1-5, proofs | done, six harnesses each with a patch that fails it |
 | P1-6, `kind` refused | done |
 | P1-7, British spellings | done |

@@ -45,7 +45,7 @@ This matched `Endpoint`'s own scope call.
 - Informal lowercase "tcb"/"TCB" prose describing the concept in English rather than naming the
   identifier. `fixtures/src/hello.rs`'s "(endpoint | aspace | tcb)" list stayed lowercase, matching
   how "endpoint" stayed lowercase there after that rename.
-- One historical citation in `crates/abi/src/lib.rs`'s own crate-naming rationale, which names
+- One historical citation in `crates/moho_abi/src/lib.rs`'s own crate-naming rationale, which names
   `Tcb`/`Aspace`/`Untyped` as the abbreviations a naming review "sank". Renaming that citation to
   `ThreadControlBlock` would have made the sentence describe the winning name as the one that lost.
   So it was reverted to the old name it is actually citing.

@@ -171,7 +171,7 @@ Raise `CAPABILITY_TABLE_SLOTS` from 24 to 32 and hold the seven window capabilit
 - Cost: every thread's table is inline in its control block, at 32 bytes a slot. Eight slots are
   256 bytes a thread, 256 KiB across `MAXIMUM_THREADS` (1,024). Computed from the constants `cap.rs`
   pins.
-- It moves `abi::fault::FAULT_EP_SLOT` (always `CAPABILITY_TABLE_SLOTS - 1`) from 23 to 31, which
+- It moves `moho_abi::fault::FAULT_EP_SLOT` (always `CAPABILITY_TABLE_SLOTS - 1`) from 23 to 31, which
   every supervised program agrees on. It has moved three times already (16, 17, 24), each a
   one-number change with the tree rebuilt around it.
 - §102 (a Frame names a run of pages) considered this for a different consumer and called it brute force: it "buys room for

@@ -299,7 +299,7 @@ pub struct Thread {
     pub last_cpu: u8,
 
     /// Which core this thread was placed on when it started, or [`u8::MAX`] if it has not started:
-    /// the fact `abi::survey::record::PLACEMENT` reports. Written once, at
+    /// the fact `moho_abi::survey::record::PLACEMENT` reports. Written once, at
     /// [`crate::sched::spawn_on`] and [`crate::sched::start_thread_control_block`], never on the
     /// IPC path, so unlike `last_cpu` it is unconditional. Placement, not location: a stolen or
     /// woken thread still reports where it was placed. A cpu id, not an index into a range
@@ -343,7 +343,7 @@ pub struct Thread {
     /// The IPC message this thread most recently sent or received: five words. A sender parks its
     /// message here before blocking and the receiver collects it later, so it cannot be a stack
     /// local. Ordinary IPC uses three words; the top two carry the five-word fault/exit message a
-    /// corpse delivers to its supervisor (§26 (the fault endpoint), abi's `fault` module).
+    /// corpse delivers to its supervisor (§26 (the fault endpoint), moho_abi's `fault` module).
     pub mailbox: [u64; 5],
 
     /// **A slot in a spawner's quota, or `None` for a thread nobody bounded.** Reaped with the
@@ -499,7 +499,7 @@ pub struct Thread {
     /// the reaper can free it. Name: provisional (lane/frame-ledger-overrun, 2026-10-22 UTC).
     pub(crate) kill_deferred: bool,
     /// **Where this thread's fault/exit is reported** (milestone 22, DECISIONS §26), or `None` for
-    /// an unsupervised thread. Set once at `START` from the child's reserved fault slot (abi's
+    /// an unsupervised thread. Set once at `START` from the child's reserved fault slot (moho_abi's
     /// `FAULT_RENDEZVOUS_SLOT`) and never afterward: supervision is granted at spawn only, so the
     /// relationship is fixed and visible in how the thread was built (§26.2). When the thread
     /// faults or exits, the kernel delivers a five-word message here and the corpse goes `Dead`

@@ -66,7 +66,7 @@ const SHAPES: [Requirements; 4] = [
 
 /// **A slot a supervisor could route, bounded to the capability table that exists.**
 ///
-/// A slot number at or past `abi::CAPABILITY_TABLE_SLOTS` (sixty-four since 2026-10-04, thirty-two before) is not
+/// A slot number at or past `moho_abi::CAPABILITY_TABLE_SLOTS` (sixty-four since 2026-10-04, thirty-two before) is not
 /// a routing a supervisor could make: the kernel refuses it. Raising the table from twenty-four
 /// did not move these harnesses' times past their noise (measured by milestone 126 (the `procps` package), in
 /// notes/process-view/the-machine-and-your-share.md). Bounding it here is not a weakening of the property, which
@@ -75,7 +75,7 @@ const SHAPES: [Requirements; 4] = [
 /// thousand verification conditions for a fact about copying two integers through.
 fn any_slot() -> u64 {
     let s: u64 = kani::any();
-    kani::assume(s < abi::CAPABILITY_TABLE_SLOTS);
+    kani::assume(s < moho_abi::CAPABILITY_TABLE_SLOTS);
     s
 }
 
@@ -104,8 +104,8 @@ fn a_plan_never_grants_a_right_the_declaration_did_not_ask_for() {
             // first one independent too, so the harness states the whole claim rather than
             // two thirds of it.
             let expected = match reqs.capabilities[i].direction {
-                Direction::Serve => abi::rights::READ,
-                Direction::Use => abi::rights::WRITE,
+                Direction::Serve => moho_abi::rights::READ,
+                Direction::Use => moho_abi::rights::WRITE,
             };
             assert!(
                 p.capabilities()[i].1 == expected,
@@ -250,12 +250,16 @@ fn the_device_split_partitions_the_mappings() {
         // one constant for both kinds would satisfy an assertion phrased through it while
         // the operator mapped a device register page writable.
         for m in late {
-            assert!(m.2 == abi::address_space::MAP_READ_ONLY);
+            assert!(m.2 == moho_abi::address_space::MAP_READ_ONLY);
         }
         for m in early {
-            assert!(m.2 == abi::address_space::MAP_READ_WRITE);
+            assert!(m.2 == moho_abi::address_space::MAP_READ_WRITE);
         }
-        const { assert!(abi::address_space::MAP_READ_ONLY != abi::address_space::MAP_READ_WRITE) };
+        const {
+            assert!(
+                moho_abi::address_space::MAP_READ_ONLY != moho_abi::address_space::MAP_READ_WRITE
+            )
+        };
     }
 }
 

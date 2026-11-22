@@ -414,7 +414,7 @@ fn ask(
         for i in 0..spawn_protocol::image_pages(st.len) {
             match u64::try_from(rt::slice_page_frame(st.run, i, 1)) {
                 Ok(page) => {
-                    rt::send_capability(INSTALLER_SLOT, page, abi::rights::READ, i);
+                    rt::send_capability(INSTALLER_SLOT, page, moho_abi::rights::READ, i);
                     rt::capability_delete(page);
                 }
                 // A plain message where a frame was promised keeps both sides in step: the

@@ -19,7 +19,7 @@
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::arch::mmu;
@@ -45,7 +45,7 @@ fn flags_at(name: u64, va: u64) -> Option<page_tables::Flags> {
 
 /// Map one page at `va` shaped by `shape` through the dispatcher.
 fn map_one_page(space: u64, frame: u64, va: u64, shape: u64) -> Result<(), Error> {
-    call(space, abi::address_space::MAP_INTO, va, frame, shape).map(|_| ())
+    call(space, moho_abi::address_space::MAP_INTO, va, frame, shape).map(|_| ())
 }
 
 /// **`MAP_INTO` admits the last user page and refuses the kernel half, a straddling run and a
@@ -63,9 +63,9 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
     let budget = sched::grant(region_capability_rights(frame_region, Rights::WRITE))
         .expect("grant the frame budget");
     let one_page =
-        call(budget, abi::memory_region::RETYPE, 0, 0, 0).expect("no one-page frame") as u64;
+        call(budget, moho_abi::memory_region::RETYPE, 0, 0, 0).expect("no one-page frame") as u64;
     let two_pages =
-        call(budget, abi::memory_region::RETYPE, 2, 0, 0).expect("no two-page frame") as u64;
+        call(budget, moho_abi::memory_region::RETYPE, 2, 0, 0).expect("no two-page frame") as u64;
 
     let space_region = crate::memory_region::create(8).expect("no space region");
     let space_name = crate::user::user_address_space_create(space_region).expect("no space");
@@ -81,8 +81,13 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
     // A one-page control at the last-but-one user page (writable), leaving the last user page
     // free so the straddling run below starts on an unmapped address.
     let below = last_user_page - page;
-    map_one_page(space, one_page, below, abi::address_space::MAP_READ_WRITE)
-        .expect("MAP_INTO refused the last-but-one user page");
+    map_one_page(
+        space,
+        one_page,
+        below,
+        moho_abi::address_space::MAP_READ_WRITE,
+    )
+    .expect("MAP_INTO refused the last-but-one user page");
     assert!(
         flags_at(space_name, below).is_some_and(|f| f.is_writable()),
         "the control page did not land writable",
@@ -93,10 +98,10 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
     assert_eq!(
         call(
             space,
-            abi::address_space::MAP_INTO,
+            moho_abi::address_space::MAP_INTO,
             last_user_page,
             two_pages,
-            abi::address_space::MAP_READ_WRITE
+            moho_abi::address_space::MAP_READ_WRITE
         ),
         Err(Error::BadPointer),
         "a run whose second page lands in the kernel half was mapped (claim 10)",
@@ -112,7 +117,7 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
         space,
         one_page,
         last_user_page,
-        abi::address_space::MAP_READ_WRITE,
+        moho_abi::address_space::MAP_READ_WRITE,
     )
     .expect("MAP_INTO refused the last user page itself");
 
@@ -120,10 +125,10 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
     assert_eq!(
         call(
             space,
-            abi::address_space::MAP_INTO,
+            moho_abi::address_space::MAP_INTO,
             mmu::KERNEL_VA_BASE,
             one_page,
-            abi::address_space::MAP_READ_WRITE
+            moho_abi::address_space::MAP_READ_WRITE
         ),
         Err(Error::BadPointer),
         "MAP_INTO mapped a page at the kernel half's base (claim 10)",
@@ -133,10 +138,10 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
     assert_eq!(
         call(
             space,
-            abi::address_space::MAP_INTO,
+            moho_abi::address_space::MAP_INTO,
             below + 8,
             one_page,
-            abi::address_space::MAP_READ_WRITE
+            moho_abi::address_space::MAP_READ_WRITE
         ),
         Err(Error::BadPointer),
         "MAP_INTO mapped an unaligned page (claim 10)",
@@ -148,10 +153,10 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
     assert_eq!(
         call(
             space,
-            abi::address_space::MAP_INTO,
+            moho_abi::address_space::MAP_INTO,
             top,
             two_pages,
-            abi::address_space::MAP_READ_WRITE
+            moho_abi::address_space::MAP_READ_WRITE
         ),
         Err(Error::BadPointer),
         "a run at the very top of the address space was mapped (claim 10)",
@@ -160,7 +165,7 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
     // Teardown: unmap what mapped, then the two regions come back.
     for va in [below, last_user_page] {
         assert_eq!(
-            call(space, abi::address_space::UNMAP, va, 0, 0),
+            call(space, moho_abi::address_space::UNMAP, va, 0, 0),
             Ok(0),
             "UNMAP refused a page this test mapped",
         );
@@ -199,7 +204,7 @@ fn a_refused_overlay_leaves_the_code_page_exactly_executable() {
         Rights::READ.union(Rights::WRITE),
     ))
     .expect("grant the frame budget");
-    let frame = call(budget, abi::memory_region::RETYPE, 0, 0, 0).expect("no frame") as u64;
+    let frame = call(budget, moho_abi::memory_region::RETYPE, 0, 0, 0).expect("no frame") as u64;
 
     let space_region = crate::memory_region::create(8).expect("no space region");
     let space_name = crate::user::user_address_space_create(space_region).expect("no space");
@@ -211,15 +216,15 @@ fn a_refused_overlay_leaves_the_code_page_exactly_executable() {
     let page = page_tables::PAGE_SIZE;
     let split = 1u64 << <crate::arch::mmu::Format as page_tables::PageFormat>::SPLIT_SHIFT;
     let overlay_va = split - page;
-    map_one_page(space, frame, overlay_va, abi::address_space::MAP_CODE)
+    map_one_page(space, frame, overlay_va, moho_abi::address_space::MAP_CODE)
         .expect("MAP_INTO refused the code mapping of a READ|WRITE frame");
     assert_eq!(
         call(
             space,
-            abi::address_space::MAP_INTO,
+            moho_abi::address_space::MAP_INTO,
             overlay_va,
             frame,
-            abi::address_space::MAP_READ_WRITE
+            moho_abi::address_space::MAP_READ_WRITE
         ),
         Err(Error::NotPermitted),
         "MAP_INTO overlaid a writable mapping on a live code page, or refused it as something \
@@ -235,10 +240,10 @@ fn a_refused_overlay_leaves_the_code_page_exactly_executable() {
     assert_eq!(
         call(
             space,
-            abi::address_space::MAP_INTO,
+            moho_abi::address_space::MAP_INTO,
             overlay_va,
             frame,
-            abi::address_space::MAP_CODE
+            moho_abi::address_space::MAP_CODE
         ),
         Err(Error::BadPointer),
         "MAP_INTO mapped code twice at one address",
@@ -247,12 +252,12 @@ fn a_refused_overlay_leaves_the_code_page_exactly_executable() {
     // Teardown: unmap what mapped, then the regions come back. The second `UNMAP` finds neither a
     // leaf nor a record, which is what shows the refused duplicate took its record back.
     assert_eq!(
-        call(space, abi::address_space::UNMAP, overlay_va, 0, 0),
+        call(space, moho_abi::address_space::UNMAP, overlay_va, 0, 0),
         Ok(0),
         "UNMAP refused a page this test mapped",
     );
     assert_eq!(
-        call(space, abi::address_space::UNMAP, overlay_va, 0, 0),
+        call(space, moho_abi::address_space::UNMAP, overlay_va, 0, 0),
         Err(Error::BadPointer),
         "a second UNMAP found a record the refused duplicate mapping left behind",
     );
@@ -286,7 +291,7 @@ fn one_physical_page_is_never_writable_here_and_executable_there() {
         Rights::READ.union(Rights::WRITE),
     ))
     .expect("grant the frame budget");
-    let frame = call(budget, abi::memory_region::RETYPE, 0, 0, 0).expect("no frame") as u64;
+    let frame = call(budget, moho_abi::memory_region::RETYPE, 0, 0, 0).expect("no frame") as u64;
 
     let space_region = crate::memory_region::create(8).expect("no space region");
     let space_name = crate::user::user_address_space_create(space_region).expect("no space");
@@ -301,11 +306,16 @@ fn one_physical_page_is_never_writable_here_and_executable_there() {
         space,
         frame,
         writable_va,
-        abi::address_space::MAP_READ_WRITE,
+        moho_abi::address_space::MAP_READ_WRITE,
     )
     .expect("MAP_INTO refused the writable mapping of a READ|WRITE frame");
     assert_eq!(
-        map_one_page(space, frame, executable_va, abi::address_space::MAP_CODE),
+        map_one_page(
+            space,
+            frame,
+            executable_va,
+            moho_abi::address_space::MAP_CODE
+        ),
         Err(Error::NotPermitted),
         "MAP_INTO mapped as code a frame the space maps writable at {writable_va:#x}, or refused \
          it as something other than the writable-and-executable pair (claim 11)",
@@ -317,7 +327,7 @@ fn one_physical_page_is_never_writable_here_and_executable_there() {
     );
 
     assert_eq!(
-        call(space, abi::address_space::UNMAP, writable_va, 0, 0),
+        call(space, moho_abi::address_space::UNMAP, writable_va, 0, 0),
         Ok(0),
         "UNMAP refused a page this test mapped",
     );
@@ -394,14 +404,20 @@ fn the_pair_is_refused_through_page_frame_map_in_either_order() {
         // Code through MAP_INTO, then writable through PageFrame::MAP.
         call(
             own,
-            abi::address_space::MAP_INTO,
+            moho_abi::address_space::MAP_INTO,
             base,
             f1,
-            abi::address_space::MAP_CODE,
+            moho_abi::address_space::MAP_CODE,
         )
         .expect("MAP_INTO refused the code mapping");
         WRITABLE_AFTER_CODE.store(
-            encode(call(f1, abi::page_frame::MAP, base + page, 1, tables_slot)),
+            encode(call(
+                f1,
+                moho_abi::page_frame::MAP,
+                base + page,
+                1,
+                tables_slot,
+            )),
             Ordering::SeqCst,
         );
         WRITABLE_LANDED.store(
@@ -410,15 +426,21 @@ fn the_pair_is_refused_through_page_frame_map_in_either_order() {
         );
 
         // Writable through PageFrame::MAP, then code through MAP_INTO.
-        call(f2, abi::page_frame::MAP, base + 2 * page, 1, tables_slot)
-            .expect("PageFrame::MAP refused the writable mapping");
+        call(
+            f2,
+            moho_abi::page_frame::MAP,
+            base + 2 * page,
+            1,
+            tables_slot,
+        )
+        .expect("PageFrame::MAP refused the writable mapping");
         CODE_AFTER_WRITABLE.store(
             encode(call(
                 own,
-                abi::address_space::MAP_INTO,
+                moho_abi::address_space::MAP_INTO,
                 base + 3 * page,
                 f2,
-                abi::address_space::MAP_CODE,
+                moho_abi::address_space::MAP_CODE,
             )),
             Ordering::SeqCst,
         );
@@ -486,8 +508,9 @@ fn the_narrow_rule_admits_every_other_pair_and_every_other_space() {
         Rights::READ.union(Rights::WRITE),
     ))
     .expect("grant the frame budget");
-    let read_only = call(budget, abi::memory_region::RETYPE, 0, 0, 0).expect("no frame") as u64;
-    let shared = call(budget, abi::memory_region::RETYPE, 0, 0, 0).expect("no frame") as u64;
+    let read_only =
+        call(budget, moho_abi::memory_region::RETYPE, 0, 0, 0).expect("no frame") as u64;
+    let shared = call(budget, moho_abi::memory_region::RETYPE, 0, 0, 0).expect("no frame") as u64;
 
     let space_regions = [
         crate::memory_region::create(8).expect("no space region"),
@@ -505,49 +528,49 @@ fn the_narrow_rule_admits_every_other_pair_and_every_other_space() {
             here,
             read_only,
             base,
-            abi::address_space::MAP_READ_ONLY,
+            moho_abi::address_space::MAP_READ_ONLY,
             "read-only",
         ),
         (
             here,
             read_only,
             base + page,
-            abi::address_space::MAP_READ_ONLY,
+            moho_abi::address_space::MAP_READ_ONLY,
             "read-only twice",
         ),
         (
             here,
             read_only,
             base + 2 * page,
-            abi::address_space::MAP_READ_WRITE,
+            moho_abi::address_space::MAP_READ_WRITE,
             "writable beside read-only",
         ),
         (
             here,
             shared,
             base + 3 * page,
-            abi::address_space::MAP_CODE,
+            moho_abi::address_space::MAP_CODE,
             "code",
         ),
         (
             here,
             shared,
             base + 4 * page,
-            abi::address_space::MAP_READ_ONLY,
+            moho_abi::address_space::MAP_READ_ONLY,
             "read-only beside code",
         ),
         (
             there,
             shared,
             base,
-            abi::address_space::MAP_READ_WRITE,
+            moho_abi::address_space::MAP_READ_WRITE,
             "writable in another space",
         ),
         (
             there,
             shared,
             base + page,
-            abi::address_space::MAP_READ_WRITE,
+            moho_abi::address_space::MAP_READ_WRITE,
             "writable twice there",
         ),
     ];
@@ -567,7 +590,7 @@ fn the_narrow_rule_admits_every_other_pair_and_every_other_space() {
 
     for (space, _, va, _, _) in admitted {
         assert_eq!(
-            call(space, abi::address_space::UNMAP, va, 0, 0),
+            call(space, moho_abi::address_space::UNMAP, va, 0, 0),
             Ok(0),
             "UNMAP refused a page this test mapped",
         );

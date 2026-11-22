@@ -14,9 +14,9 @@
 //!   mechanism, so these tests wait for members to go rather than asserting they are gone the
 //!   instant a process ends. `notes/processes.md` records it.
 
-use abi::Error;
-use abi::address_wait::{PRIVATE, WIDTH_32_BITS};
-use abi::fault::{EVENT_EXIT, FAULT_RENDEZVOUS_SLOT};
+use moho_abi::Error;
+use moho_abi::address_wait::{PRIVATE, WIDTH_32_BITS};
+use moho_abi::fault::{EVENT_EXIT, FAULT_RENDEZVOUS_SLOT};
 
 use super::*;
 use crate::capability_object::{Object, Rights};
@@ -175,8 +175,8 @@ pub(super) fn create_process(region: u64, space: u64) -> (u64, sched::ProcessId)
     .expect("grant");
     let slot = call(
         untyped,
-        abi::memory_region::RETYPE_OBJECT,
-        abi::object_type::PROCESS,
+        moho_abi::memory_region::RETYPE_OBJECT,
+        moho_abi::object_type::PROCESS,
         given,
         0,
     )
@@ -229,7 +229,7 @@ fn try_join(
     .expect("grant");
     let page = call(
         tcb,
-        abi::thread_control_block::CONFIGURE,
+        moho_abi::thread_control_block::CONFIGURE,
         CODE_VA + index * page_frames::FRAME_BYTES,
         stack + page_frames::FRAME_BYTES,
         process_slot,
@@ -271,7 +271,7 @@ fn two_threads_of_one_process_share_its_space_its_table_and_an_address_wait() {
     assert_eq!(
         call(
             waiter_tcb,
-            abi::thread_control_block::CAPABILITY_INSERT,
+            moho_abi::thread_control_block::CAPABILITY_INSERT,
             reader,
             Rights::READ.bits() as u64,
             1, // slot 0
@@ -319,7 +319,7 @@ fn two_threads_of_one_process_share_its_space_its_table_and_an_address_wait() {
     );
 
     assert_eq!(
-        call(process, abi::process::DESTROY, 0, 0, 0),
+        call(process, moho_abi::process::DESTROY, 0, 0, 0),
         Ok(0),
         "DESTROY refused"
     );
@@ -523,7 +523,7 @@ fn each_member_of_a_process_has_its_own_current_cpu_page() {
         "a process took more threads than it has current-CPU page slots, or fewer",
     );
 
-    assert_eq!(call(process, abi::process::DESTROY, 0, 0, 0), Ok(0));
+    assert_eq!(call(process, moho_abi::process::DESTROY, 0, 0, 0), Ok(0));
     assert!(
         wait_for(5, || !sched::is_thread_present(a)
             && !sched::is_thread_present(b)),
@@ -560,7 +560,7 @@ fn a_process_refuses_what_its_contract_refuses() {
     let configure = |tcb, through| {
         call(
             tcb,
-            abi::thread_control_block::CONFIGURE,
+            moho_abi::thread_control_block::CONFIGURE,
             CODE_VA,
             STACK_VA + page_frames::FRAME_BYTES,
             through,
@@ -590,8 +590,8 @@ fn a_process_refuses_what_its_contract_refuses() {
     assert_eq!(
         call(
             untyped,
-            abi::memory_region::RETYPE_OBJECT,
-            abi::object_type::PROCESS,
+            moho_abi::memory_region::RETYPE_OBJECT,
+            moho_abi::object_type::PROCESS,
             again,
             0
         ),
@@ -626,7 +626,7 @@ fn a_process_refuses_what_its_contract_refuses() {
         "an embryo joined a process whose table already held a slot it carries",
     );
     assert_eq!(
-        call(process, abi::process::DESTROY, 0, 0, 0),
+        call(process, moho_abi::process::DESTROY, 0, 0, 0),
         Ok(0),
         "DESTROY refused"
     );
@@ -716,7 +716,7 @@ fn a_member_stranded_killed_on_an_address_wait_is_finished_and_reaped() {
     assert_eq!(
         call(
             waiter_tcb,
-            abi::thread_control_block::CAPABILITY_INSERT,
+            moho_abi::thread_control_block::CAPABILITY_INSERT,
             reader,
             Rights::READ.bits() as u64,
             1, // slot 0

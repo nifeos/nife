@@ -13,7 +13,7 @@
 //! | slot | constant | rights | what |
 //! |---|---|---|---|
 //! | 0 | [`OUT_SLOT`] | `WRITE` | the plan and the summary, `byte_sink_contract` bytes; compiled-in mode only |
-//! | 1 | [`BUDGET_SLOT`] | `abi::rights::SPEND_ONLY` (since milestone 824 (a retype mints no right its budget lacks)) | the untyped every instance is split from |
+//! | 1 | [`BUDGET_SLOT`] | `moho_abi::rights::SPEND_ONLY` (since milestone 824 (a retype mints no right its budget lacks)) | the untyped every instance is split from |
 //! | 2 | [`CHILD_REPORT_SLOT`] | `WRITE`, `GRANT` | handed to each job as its slot 0, when placed; a durable session places none |
 //! | 3 | [`DEATHS_SLOT`] | `READ`, `GRANT` | each job's supervision endpoint, and what corpses are reaped through |
 //! | 4 | [`CLOCK_SLOT`] | `READ`, `GRANT`, optional | the clock page (§43 (reading the clock is a page)), also mapped read-only at [`CLOCK_VA`] |

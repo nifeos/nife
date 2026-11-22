@@ -28,7 +28,7 @@ user_mode_runtime::program_entry!(start);
 
 fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Delegate RESOURCE, narrowed to WRITE (dropping GRANT), over CHANNEL.
-    user_mode_runtime::send_capability(CHANNEL, RESOURCE, abi::rights::WRITE, 0);
+    user_mode_runtime::send_capability(CHANNEL, RESOURCE, moho_abi::rights::WRITE, 0);
 
     user_mode_runtime::exit() // one-shot: our authority is passed on, so we leave and the kernel reaps us
 }

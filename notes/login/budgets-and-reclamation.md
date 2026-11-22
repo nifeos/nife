@@ -92,7 +92,7 @@ At a login's peak the process holds its resting slots, the channel's three, and 
 `channel.request` as soon as its one message arrives and `channel.page` as soon as it is read and
 wiped, before `mint` runs. A durable session's two store caretakers are built first, while the
 process holds as little as it can, and the ordinary login's peak comes after.
-`login_contract::durable` counts it against `abi::CAPABILITY_TABLE_SLOTS`.
+`login_contract::durable` counts it against `moho_abi::CAPABILITY_TABLE_SLOTS`.
 
 ## Two blobs rather than the archive
 

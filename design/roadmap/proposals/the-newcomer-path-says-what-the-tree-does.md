@@ -24,11 +24,11 @@ stopped being true at merge; whether that counts as bookkeeping is the integrato
 ## The work
 
 1. `script/apropos` keeps the promise it opens with. Its header and `CONTRIBUTING.md` give
-   `script/apropos system call` as the way to find `crates/abi/src/lib.rs`. The search now returns 16
-   pages of 520 matches and `crates/abi` is not among them. Either the ranking puts a crate's own
+   `script/apropos system call` as the way to find `crates/moho_abi/src/lib.rs`. The search now returns 16
+   pages of 520 matches and `crates/moho_abi` is not among them. Either the ranking puts a crate's own
    `lib.rs` above prose that mentions the word, or both documents name an example that works. The
    header's figures (512 pages, five megabytes, four system call numbers) become a sentence with no
-   count, or a count a test checks: the corpus is 2040 pages and 16.6 MB, and `crates/abi` declares
+   count, or a count a test checks: the corpus is 2040 pages and 16.6 MB, and `crates/moho_abi` declares
    five calls.
 2. `notes/adding-a-program.md` points at the file a newcomer edits. Step 1 says the
    `programs!` row goes in `crates/program_table/src/program.rs`. The macro and its 28 rows are in

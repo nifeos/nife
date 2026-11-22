@@ -23,7 +23,7 @@ pub(super) static INTERRUPT_ROUTES: [AtomicU64; MAXIMUM_INTID] =
 /// From then on `ep` refuses every send (§101 (notification objects), ruling B), because an
 /// interrupt arrives as `w0 = 1`, a word any sender could forge. The rendezvous refuses
 /// (`Rendezvous::bind_to_interrupt`), so it holds however the endpoint was created; `SEND`,
-/// `SEND_CAPABILITY` and `CALL` answer [`abi::Error::NotPermitted`]. Marked before the route is published,
+/// `SEND_CAPABILITY` and `CALL` answer [`moho_abi::Error::NotPermitted`]. Marked before the route is published,
 /// so no instant exists where the line is live and the endpoint accepts a send.
 ///
 /// A sender already parked on `ep` is refused the same way, under the same hold: it wakes and its

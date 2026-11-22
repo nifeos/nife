@@ -17,7 +17,7 @@
 //! - **Nothing pins the spinners to one core.** More spinners than cores means at least two share
 //!   one, but which two is the scheduler's choice, and a one-core boot puts them all together.
 
-use abi::Error;
+use moho_abi::Error;
 
 use super::*;
 use crate::capability_object::Rights;
@@ -168,7 +168,7 @@ fn each_thread_reads_through_its_own_thread_pointer() {
         assert_eq!(
             call6(
                 tcb,
-                abi::thread_control_block::CONFIGURE,
+                moho_abi::thread_control_block::CONFIGURE,
                 [CODE_VA, STACK_VA + page_frames::FRAME_BYTES, given],
                 first,
             ),
@@ -208,7 +208,7 @@ fn each_thread_reads_through_its_own_thread_pointer() {
     assert_eq!(
         call6(
             other,
-            abi::thread_control_block::SET_THREAD_POINTER,
+            moho_abi::thread_control_block::SET_THREAD_POINTER,
             [VA, 0, 0],
             0
         ),
@@ -272,7 +272,7 @@ fn a_thread_pointer_outside_the_user_half_is_refused_and_changes_nothing() {
     let configure = |tp| {
         call6(
             tcb,
-            abi::thread_control_block::CONFIGURE,
+            moho_abi::thread_control_block::CONFIGURE,
             [CODE_VA, STACK_VA + page_frames::FRAME_BYTES, given],
             tp,
         )
@@ -290,7 +290,7 @@ fn a_thread_pointer_outside_the_user_half_is_refused_and_changes_nothing() {
     assert_eq!(
         call6(
             tcb,
-            abi::thread_control_block::SET_THREAD_POINTER,
+            moho_abi::thread_control_block::SET_THREAD_POINTER,
             [kernel_half, 0, 0],
             0
         ),
@@ -305,7 +305,7 @@ fn a_thread_pointer_outside_the_user_half_is_refused_and_changes_nothing() {
     assert_eq!(
         call6(
             tcb,
-            abi::thread_control_block::SET_THREAD_POINTER,
+            moho_abi::thread_control_block::SET_THREAD_POINTER,
             [VA + 8, 0, 0],
             0
         ),

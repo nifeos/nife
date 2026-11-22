@@ -112,7 +112,7 @@ megahertz or millihertz. The IEC binary prefixes (`kib`, `mib`, `gib`) are symbo
   `FileGrant`). A contract is an agreement between two programs.
 - A letter or word after a command is an option, never a flag; a flag is a bit.
 - A `right` is a permission carried on a capability: held, delegated, and only ever narrowed
-  (`abi::rights`, a directory's rights, a grant). A `permission` belongs to an object, a page
+  (`moho_abi::rights`, a directory's rights, a grant). A `permission` belongs to an object, a page
   or a file mode (page-table bits, a Unix mode, `PermissionDenied`). Ruled 2026-11-22 (UTC).
 - `nife` is lowercase everywhere, prose included.
 - Avoid a word whose kernel meaning differs from yours (`schedule`, `swap`, `map`, `tick`, `probe`,
@@ -162,7 +162,7 @@ The `jig` verbs, their prior art and the builtins:
 - A crate takes `snake_case`: one word where one will do, an underscore where the name qualifies a
   thing. Programs follow the same rule, with no short tier for programs a person types.
 - A nife wire-contract crate ends in `_contract`; an external standard keeps its word
-  (`network_time_protocol`); `abi` takes no suffix.
+  (`network_time_protocol`); `moho_abi` takes no suffix.
 - A crate that holds a component's logic takes the component's name (`line_editor`); where the two
   are different things they take different names (`video_terminal`, `display_terminal`).
 - A network card transport is `<device family>_transport`, with no vendor prefix.

@@ -56,10 +56,10 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
     let outcome = invoke(
         &mut trap,
         space_slot,
-        abi::address_space::MAP_INTO,
+        moho_abi::address_space::MAP_INTO,
         va,
         frame_slot,
-        abi::address_space::MAP_READ_WRITE,
+        moho_abi::address_space::MAP_READ_WRITE,
     );
     assert_eq!(
         outcome,
@@ -106,14 +106,21 @@ fn a_slice_maps_only_its_window() {
         frame_region,
     ))
     .expect("grant");
-    let pool = invoke(&mut trap, region_slot, abi::memory_region::RETYPE, 4, 0, 0)
-        .expect("a four-page pool") as u64;
+    let pool = invoke(
+        &mut trap,
+        region_slot,
+        moho_abi::memory_region::RETYPE,
+        4,
+        0,
+        0,
+    )
+    .expect("a four-page pool") as u64;
     let Object::PageFrame(base, _) = sched::current_capability(pool).expect("the pool").object
     else {
         panic!("RETYPE must mint a PageFrame");
     };
 
-    let slice = invoke(&mut trap, pool, abi::page_frame::SLICE, 2, 1, 0)
+    let slice = invoke(&mut trap, pool, moho_abi::page_frame::SLICE, 2, 1, 0)
         .expect("page 2 of four is inside the pool") as u64;
     let capability = sched::current_capability(slice).expect("the slice");
     assert_eq!(
@@ -130,10 +137,10 @@ fn a_slice_maps_only_its_window() {
     invoke(
         &mut trap,
         space_slot,
-        abi::address_space::MAP_INTO,
+        moho_abi::address_space::MAP_INTO,
         va,
         slice,
-        abi::address_space::MAP_READ_WRITE,
+        moho_abi::address_space::MAP_READ_WRITE,
     )
     .expect("the slice maps");
     assert_eq!(
@@ -151,7 +158,7 @@ fn a_slice_maps_only_its_window() {
     // Refusals: past the end, empty, overflowing, and a source without GRANT.
     for (first, len) in [(3, 2), (4, 1), (1, 0), (u64::MAX, 2)] {
         assert_eq!(
-            invoke(&mut trap, pool, abi::page_frame::SLICE, first, len, 0),
+            invoke(&mut trap, pool, moho_abi::page_frame::SLICE, first, len, 0),
             Err(Error::BadPointer),
             "slice ({first}, {len}) of a four-page pool",
         );
@@ -163,7 +170,7 @@ fn a_slice_maps_only_its_window() {
     ))
     .expect("a pool without GRANT");
     assert_eq!(
-        invoke(&mut trap, narrow, abi::page_frame::SLICE, 0, 1, 0),
+        invoke(&mut trap, narrow, moho_abi::page_frame::SLICE, 0, 1, 0),
         Err(Error::NotPermitted),
         "slicing without GRANT",
     );
@@ -188,7 +195,7 @@ fn retype_mints_a_run_and_a_refused_run_moves_nothing() {
     ))
     .expect("grant it");
 
-    let run = invoke(&mut trap, slot, abi::memory_region::RETYPE, 3, 0, 0)
+    let run = invoke(&mut trap, slot, moho_abi::memory_region::RETYPE, 3, 0, 0)
         .expect("three pages fit in four") as u64;
     let Object::PageFrame(phys, count) = sched::current_capability(run)
         .expect("the run's cap")
@@ -211,7 +218,7 @@ fn retype_mints_a_run_and_a_refused_run_moves_nothing() {
     assert_eq!(crate::memory_region::usage(region), Some((3, 4)));
 
     assert_eq!(
-        invoke(&mut trap, slot, abi::memory_region::RETYPE, 2, 0, 0),
+        invoke(&mut trap, slot, moho_abi::memory_region::RETYPE, 2, 0, 0),
         Err(Error::OutOfMemory),
         "two pages do not fit in one",
     );
@@ -221,7 +228,7 @@ fn retype_mints_a_run_and_a_refused_run_moves_nothing() {
         "a refused run moved the region's watermark",
     );
 
-    let one = invoke(&mut trap, slot, abi::memory_region::RETYPE, 0, 0, 0)
+    let one = invoke(&mut trap, slot, moho_abi::memory_region::RETYPE, 0, 0, 0)
         .expect("the last page, asked for the way every existing caller asks") as u64;
     let Object::PageFrame(last, one_count) = sched::current_capability(one).expect("cap").object
     else {
@@ -269,7 +276,7 @@ fn split_inherits_the_parent_capabilitys_rights_never_widening() {
     );
 
     // SPLIT through the real handler. WRITE permits it; the child must inherit WRITE only.
-    let child_slot = invoke(&mut frame, parent, abi::memory_region::SPLIT, 2, 0, 0)
+    let child_slot = invoke(&mut frame, parent, moho_abi::memory_region::SPLIT, 2, 0, 0)
         .expect("split succeeds: the parent holds WRITE") as u64;
     let child = sched::current_capability(child_slot).expect("the child capability exists");
     assert!(
@@ -292,7 +299,7 @@ fn split_inherits_the_parent_capabilitys_rights_never_widening() {
         root_region,
     ))
     .expect("grant root");
-    let root_child_slot = invoke(&mut frame, root, abi::memory_region::SPLIT, 2, 0, 0)
+    let root_child_slot = invoke(&mut frame, root, moho_abi::memory_region::SPLIT, 2, 0, 0)
         .expect("split the root") as u64;
     let root_child = sched::current_capability(root_child_slot).expect("root child exists");
     assert!(
@@ -338,7 +345,7 @@ fn split_refused_for_a_full_capability_table_orphans_no_child() {
         filled += 1;
     }
 
-    let refused = invoke(&mut frame, parent, abi::memory_region::SPLIT, 2, 0, 0);
+    let refused = invoke(&mut frame, parent, moho_abi::memory_region::SPLIT, 2, 0, 0);
     assert_eq!(
         refused,
         Err(Error::OutOfMemory),

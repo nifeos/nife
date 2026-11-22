@@ -28,7 +28,7 @@ use crate::ptr;
 use crate::sync::atomic::Ordering::{Acquire, Relaxed, Release};
 use crate::sync::atomic::{Atomic, AtomicBool, AtomicPtr, AtomicUsize};
 use crate::sys::alloc::nife::allocation_cache::Cache;
-use crate::sys::pal::nife::{abi, currentcpuproto, rt, runtimeproto};
+use crate::sys::pal::nife::{moho_abi, currentcpuproto, rt, runtimeproto};
 
 pub type Key = usize;
 pub type Dtor = unsafe extern "C" fn(*mut u8);
@@ -148,7 +148,7 @@ fn main_block() -> *mut Block {
     let set = unsafe {
         rt::invoke(
             runtimeproto::THREAD_SLOT,
-            abi::thread_control_block::SET_THREAD_POINTER,
+            moho_abi::thread_control_block::SET_THREAD_POINTER,
             block as u64,
             0,
             0,
@@ -207,15 +207,15 @@ pub fn sleep_objects() -> Option<(u64, u64)> {
         unsafe {
             rt::invoke(
                 runtimeproto::MEMORY_REGION_SLOT,
-                abi::memory_region::RETYPE_OBJECT,
+                moho_abi::memory_region::RETYPE_OBJECT,
                 object_type,
                 0,
                 runtimeproto::SLOTS, // above every fixed slot (`RETYPE_OBJECT`'s floor)
             )
         }
     };
-    let n = retype(abi::object_type::NOTIFICATION);
-    let t = if n >= 0 { retype(abi::object_type::TIMER) } else { n };
+    let n = retype(moho_abi::object_type::NOTIFICATION);
+    let t = if n >= 0 { retype(moho_abi::object_type::TIMER) } else { n };
     // SAFETY: as above.
     unsafe {
         if n < 0 || t < 0 {

@@ -102,10 +102,10 @@ headroom are left.
    space and one range in the IOMMU domain. It collapses 469 capabilities, 469 system calls and 469
    mapping records into one of each. It is a change to the meaning of a system call method, which is a
    boundary rather than a habit (`AGENTS.md`, DECISIONS §10 (process model) and §16 (object revocation)).
-2. Grow `CAPABILITY_TABLE_SLOTS`. One number in `kernel/src/capability_object.rs` and its twin in `crates/abi`,
+2. Grow `CAPABILITY_TABLE_SLOTS`. One number in `kernel/src/capability_object.rs` and its twin in `crates/moho_abi`,
    paid in TCB size. `Option<Cap<Object>>` is 24 bytes, so 512 slots is 12 KiB of capability table
    per thread against today's 384 bytes, and `MAXIMUM_THREADS` is 128. It moves
-   `abi::fault::FAULT_EP_SLOT`, which is defined as `CAPABILITY_TABLE_SLOTS - 1` and which every
+   `moho_abi::fault::FAULT_EP_SLOT`, which is defined as `CAPABILITY_TABLE_SLOTS - 1` and which every
    supervised program agrees on. It leaves 469 `MAP` calls and 469 mapping records in place, so it
    buys the pixels without buying any of the elegance.
 3. Map the run into the client's space without giving it capabilities, which

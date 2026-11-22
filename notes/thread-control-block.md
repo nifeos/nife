@@ -152,7 +152,7 @@ destroyed.
 ### CPU time, per slot
 
 `CPU_TICKS` holds each thread's scheduled ticks in an array beside the table, keyed by slot.
-`abi::survey::record::CPU_TIME` reads it (§150 (how does a thread's CPU time reach userspace?)).
+`moho_abi::survey::record::CPU_TIME` reads it (§150 (how does a thread's CPU time reach userspace?)).
 
 It is not a `u64` on `Thread`. The increment happens in `on_tick`, in interrupt context, where a core
 knows its running thread only as a tid. Reaching the `Thread` would take `IPC_TABLES`, a lock wait

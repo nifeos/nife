@@ -27,7 +27,7 @@ that audit confirmed. In that escape a bound client's plain `SEND` arrived as ba
 
 So the semantics of a system call method changed and every program is now written against the new
 meaning. The only records are a PR comment, two roadmap blocks and a doc comment in
-`crates/abi`. CLAUDE.md's rule for the system call surface is that each method's semantics are recorded
+`crates/moho_abi`. CLAUDE.md's rule for the system call surface is that each method's semantics are recorded
 in `design/decisions/`, not just in code. §230 is where a reader of the badge contract looks.
 `grep -n '613\|plain SEND' design/decisions/0230-*.md design/decisions/0242-*.md` finds nothing.
 

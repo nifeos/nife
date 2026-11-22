@@ -8,7 +8,7 @@ the method.
 
 calef ruled on 2026-09-21 that observing another thread is a selector. The argument to `SURVEY`
 that was always a zero now names which per-thread record the caller wants, and that record's word
-comes back in x2. A new fact becomes a new `abi::survey::record` value; it never becomes a fourth
+comes back in x2. A new fact becomes a new `moho_abi::survey::record` value; it never becomes a fourth
 return register.
 
 The deciding input was a forecast rather than an argument about elegance. A register row holds a
@@ -47,7 +47,7 @@ record it names. A selector is never a way to probe which records exist.
 
 | record | value | x2 |
 |---|---|---|
-| `record::STATE` | 0 | one of `abi::survey`'s four state codes |
+| `record::STATE` | 0 | one of `moho_abi::survey`'s four state codes |
 | `record::PLACEMENT` | 1 | the cpu the thread was **placed on** when it started, or `record::NO_CPU` |
 
 Milestone 282 (a thread's CPU time, and the `top` it makes possible) is NOT-STARTED and is the next

@@ -644,7 +644,7 @@ mod timer_tests;
 mod survey_tests;
 
 /// **The other axis of a survey: which per-thread fact it asks for** (calef's 2026-09-21 selector
-/// ruling, `abi::survey::record`).
+/// ruling, `moho_abi::survey::record`).
 ///
 /// `survey_tests` proves the walk (what a domain contains, who may look); this proves the selector
 /// (which record a walk returns). A broken walk reports the wrong threads, where a broken selector

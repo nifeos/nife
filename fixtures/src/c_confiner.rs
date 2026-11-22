@@ -101,7 +101,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     // Our children's deaths arrive here. We are the only holder with READ, and the kernel is the only
     // sender (§26.5), so both the tid and the fault address are trustworthy without a badge.
     let Ok(faultep) =
-        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::object_type::RENDEZVOUS)
+        process_builder::retype_into_kernel_object_from(ROOT_UT, moho_abi::object_type::RENDEZVOUS)
     else {
         bail(7)
     };
@@ -127,18 +127,22 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
                 // (which is what pays for `malloc`). No GRANT on either, so it can neither lend the
                 // report endpoint on nor hand its budget to anyone.
                 capabilities: &[
-                    (REPORT, abi::rights::WRITE),
-                    (region, abi::rights::SPEND_ONLY),
+                    (REPORT, moho_abi::rights::WRITE),
+                    (region, moho_abi::rights::SPEND_ONLY),
                 ],
                 // The grant is read/write, which is the authority the C code abuses. The witness page
                 // right behind it is read-only, which is what turns an off-by-one into a fault
                 // instead of a corruption. Nothing maps WITNESS_FAR here, deliberately.
                 maps: &[
-                    (c_seam::GRANT_VA, grant, abi::address_space::MAP_READ_WRITE),
+                    (
+                        c_seam::GRANT_VA,
+                        grant,
+                        moho_abi::address_space::MAP_READ_WRITE,
+                    ),
                     (
                         c_seam::WITNESS_RO_VA,
                         wit_ro,
-                        abi::address_space::MAP_READ_ONLY,
+                        moho_abi::address_space::MAP_READ_ONLY,
                     ),
                 ],
                 blobs: &[],
@@ -236,10 +240,10 @@ fn verdict(attempt: u64, event: u64, pc: u64, addr: u64) -> u64 {
         _ => None,
     };
     let site_ok = match expect_addr {
-        Some(want) => event == abi::fault::EVENT_FAULT && addr == want && pc != 0,
+        Some(want) => event == moho_abi::fault::EVENT_FAULT && addr == want && pc != 0,
         // A clean exit reports no site at all, and §26 says both words are zero. Asserting that is
         // asserting the kernel does not leak a stale register into an EXIT message.
-        None => event == abi::fault::EVENT_EXIT && addr == 0 && pc == 0,
+        None => event == moho_abi::fault::EVENT_EXIT && addr == 0 && pc == 0,
     };
     if site_ok {
         bits |= checks::FAULT_ADDR_AS_EXPECTED;

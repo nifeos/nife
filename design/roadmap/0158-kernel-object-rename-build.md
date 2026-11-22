@@ -124,7 +124,7 @@ contraction or borrowed abbreviation from this list anywhere in the tree anymore
   The exception was "aspace", swept to "address space" wherever the rename touched, because it is
   not standard English and leaving it would have parked the exact contraction §113 retires next to
   its own renamed identifier.
-- **Refused.** Historical citations keep the old spelling on purpose: `crates/abi/src/lib.rs`'s
+- **Refused.** Historical citations keep the old spelling on purpose: `crates/moho_abi/src/lib.rs`'s
   naming rationale names `Tcb`/`Aspace`/`Untyped` as the abbreviations a review sank, and renaming
   them would make the sentence describe the winning name as the one that lost.
   `design/decisions/0114-aspace-enumerate.md` was left as the point-in-time record it is.

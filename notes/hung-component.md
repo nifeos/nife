@@ -8,7 +8,7 @@ without dying. The swap itself is DECISIONS §41 and notes/live-replacement.md. 
 Case (c) and question 3's stranded caller are partly resolved in the kernel. Milestone 133 (ending
 a permanently blocked thread, and deciding who may), ruled by calef on 2026-09-03, makes the region
 holder's `DESTROY` finish a `Blocked` resident in place. Milestone 254 (a caller stranded by a
-server that died) wakes its stranded callers with `abi::Error::Gone`.
+server that died) wakes its stranded callers with `moho_abi::Error::Gone`.
 Only a holder of the supervision endpoint alone still cannot end a child (133's refused proposal B).
 The hung test runs the two together: the operator destroys the hung incumbent's region, and the
 caller it stranded gets `Gone`. notes/blocked-thread-teardown.md has the decision.
@@ -47,7 +47,7 @@ what makes "add a watchdog" sound like a single task.
 | shape | what `SURVEY` sees | can the kernel tear it down today? |
 |---|---|---|
 | (a) livelocked, spinning in userspace | `READY` / `RUNNING`, always | yes. `MemoryRegion::DESTROY` arms §16's kill and the scheduler converts the thread to a corpse at its next preemption |
-| (b) blocked on an endpoint whose region the supervisor can destroy | `BLOCKED` | yes, with collateral. Destroying that region drains the endpoint's wait queues, aborts the blocked IPC with `abi::Error::Gone`, and the armed kill then lands |
+| (b) blocked on an endpoint whose region the supervisor can destroy | `BLOCKED` | yes, with collateral. Destroying that region drains the endpoint's wait queues, aborts the blocked IPC with `moho_abi::Error::Gone`, and the armed kill then lands |
 | (c) blocked on an endpoint the supervisor cannot reach | `BLOCKED` | no, when written. Yes since 2026-09-04: the region holder's `DESTROY` finishes it in place (milestone 133) |
 
 Case (c) is in `reap_region_objects`'s comment of 2026-08-16, and its mechanism is the
@@ -63,7 +63,7 @@ the mechanism step by step are in [`hung-component/the-armed-kill.md`](hung-comp
 A watchdog holds `ENUMERATE` and nothing else, and there is no hole in the names-not-acts rule
 because noticing and acting are separated into two processes rather than two rights in one.
 
-`abi::endpoint::SURVEY` (milestone 126) is the whole view: a cursor walk over the supervision
+`moho_abi::endpoint::SURVEY` (milestone 126) is the whole view: a cursor walk over the supervision
 subtree, returning `(tid, state)` per member, gated on `Rights::ENUMERATE` and pointedly not `READ`,
 because `READ` is what `RECEIVE` and `REAP` take. calef's ruling on 2026-08-17 is that a domain names
 its members and does not act on them.
@@ -124,7 +124,7 @@ Nothing but the server can answer a caller whose server hangs mid-`CALL`: the on
 capability is minted without `GRANT` and lives in the hung component's table, so the operator cannot
 answer for it. What the operator can do is end the server. Destroying the hung component's region
 finishes it in place (milestone 133), and the reclaim answers every caller it held a `Reply` for
-with `abi::Error::Gone` (milestone 254). The hung test runs exactly that, and the client asks the
+with `moho_abi::Error::Gone` (milestone 254). The hung test runs exactly that, and the client asks the
 replacement again. A server that is hung and alive, and that nobody ends, still strands its caller.
 
 The path through the code, the operator's position and the test's evidence are in
@@ -193,7 +193,7 @@ Read what a supervisor can see about a hung child. The whole view, and its limit
 declaration:
 
 ```sh
-grep -B4 -A30 'pub const SURVEY' crates/abi/src/lib.rs
+grep -B4 -A30 'pub const SURVEY' crates/moho_abi/src/lib.rs
 ```
 
 Run the case on one architecture, or all three.
@@ -279,7 +279,7 @@ non-cooperative fallback, which is not built. See
 - notes/live-replacement.md for the swap itself and its two witnesses; notes/component-manifest.md for
   why a deadline is not a manifest field; notes/process-view.md for `SURVEY` and `ENUMERATE`
 - notes/deadlock.md for the four Coffman conditions and why detection means killing somebody;
-  notes/supervision.md, notes/teardown.md, notes/sink-protocol.md (`abi::Error::Gone`)
+  notes/supervision.md, notes/teardown.md, notes/sink-protocol.md (`moho_abi::Error::Gone`)
 - design/roadmap/0106-deadline-wait.md for the timed wait the operator's bounded quiesce uses.
 - design/roadmap/0062-time-sensitive-tests/the-problem.md for the progress-versus-duration argument this note
   borrows, and 78 for the assertions it is currently removing

@@ -73,7 +73,7 @@ fn a_capability_revoked_while_it_is_in_flight_does_not_reach_the_receiver() {
 
     let [_word, slot, _second, _badge, ..] =
         sched::inter_process_communication_receive_capability(ep);
-    let delivered = if slot == abi::rendezvous::NO_CAPABILITY {
+    let delivered = if slot == moho_abi::rendezvous::NO_CAPABILITY {
         None
     } else {
         sched::current_capability(slot).ok()

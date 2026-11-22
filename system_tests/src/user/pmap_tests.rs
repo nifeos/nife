@@ -1,8 +1,8 @@
-//! `pmap_tests`: `abi::address_space::LIST` proved against a real `Object::AddressSpace`, driven by
+//! `pmap_tests`: `moho_abi::address_space::LIST` proved against a real `Object::AddressSpace`, driven by
 //! `pmap::collect`, the real program's real loop. `survey_tests`'s shape, one object type over;
 //! see that module's header for the discipline this one repeats rather than restates.
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::Rights;
@@ -76,7 +76,7 @@ fn map_into(aspace_slot: u64, va: u64, frame_slot: u64, mode: u64) -> Result<i64
     invoke(
         &mut fr,
         aspace_slot,
-        abi::address_space::MAP_INTO,
+        moho_abi::address_space::MAP_INTO,
         va,
         frame_slot,
         mode,
@@ -87,7 +87,14 @@ fn map_into(aspace_slot: u64, va: u64, frame_slot: u64, mode: u64) -> Result<i64
 /// userspace caller would read out of its registers.
 fn list(slot: u64, cursor: u64) -> (i64, u64, u64) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    match invoke(&mut frame, slot, abi::address_space::LIST, cursor, 0, 0) {
+    match invoke(
+        &mut frame,
+        slot,
+        moho_abi::address_space::LIST,
+        cursor,
+        0,
+        0,
+    ) {
         Ok(next) => (next, frame.arg(1), frame.arg(2)),
         Err(e) => (e as i64, 0, 0),
     }
@@ -124,17 +131,32 @@ fn a_viewer_sees_every_mapping_and_can_touch_none_of_it() {
 
     let (code_frame, code_region) = page_frame(Rights::READ);
     assert_eq!(
-        map_into(builder, CODE_VA, code_frame, abi::address_space::MAP_CODE),
+        map_into(
+            builder,
+            CODE_VA,
+            code_frame,
+            moho_abi::address_space::MAP_CODE
+        ),
         Ok(0)
     );
     let (rw_frame, rw_region) = page_frame(Rights::WRITE);
     assert_eq!(
-        map_into(builder, RW_VA, rw_frame, abi::address_space::MAP_READ_WRITE),
+        map_into(
+            builder,
+            RW_VA,
+            rw_frame,
+            moho_abi::address_space::MAP_READ_WRITE
+        ),
         Ok(0)
     );
     let (ro_frame, ro_region) = page_frame(Rights::READ);
     assert_eq!(
-        map_into(builder, RO_VA, ro_frame, abi::address_space::MAP_READ_ONLY),
+        map_into(
+            builder,
+            RO_VA,
+            ro_frame,
+            moho_abi::address_space::MAP_READ_ONLY
+        ),
         Ok(0)
     );
 
@@ -145,7 +167,7 @@ fn a_viewer_sees_every_mapping_and_can_touch_none_of_it() {
     assert!(
         l.rows().contains(&pmap::Row {
             va: CODE_VA,
-            kind: abi::address_space::MAP_CODE
+            kind: moho_abi::address_space::MAP_CODE
         }),
         "{:?}",
         l.rows()
@@ -153,7 +175,7 @@ fn a_viewer_sees_every_mapping_and_can_touch_none_of_it() {
     assert!(
         l.rows().contains(&pmap::Row {
             va: RW_VA,
-            kind: abi::address_space::MAP_READ_WRITE
+            kind: moho_abi::address_space::MAP_READ_WRITE
         }),
         "{:?}",
         l.rows()
@@ -161,7 +183,7 @@ fn a_viewer_sees_every_mapping_and_can_touch_none_of_it() {
     assert!(
         l.rows().contains(&pmap::Row {
             va: RO_VA,
-            kind: abi::address_space::MAP_READ_ONLY
+            kind: moho_abi::address_space::MAP_READ_ONLY
         }),
         "{:?}",
         l.rows()
@@ -175,7 +197,7 @@ fn a_viewer_sees_every_mapping_and_can_touch_none_of_it() {
             viewer,
             0x0070_0000,
             spare,
-            abi::address_space::MAP_READ_ONLY
+            moho_abi::address_space::MAP_READ_ONLY
         ),
         Err(Error::NotPermitted),
         "ENUMERATE let a viewer map a page; that is the exact power SURVEY's split exists to deny",
@@ -227,12 +249,12 @@ fn an_empty_space_is_a_real_answer_not_a_refusal() {
 #[test_case]
 fn an_empty_slot_holds_no_capability_at_all() {
     // A slot nothing has ever granted into: `sched::current_capability` finds nothing there, the same
-    // fact `abi::address_space::LIST`'s dispatch checks before it ever looks at rights. Nothing to tidy:
+    // fact `moho_abi::address_space::LIST`'s dispatch checks before it ever looks at rights. Nothing to tidy:
     // this test grants nothing and carves no region.
     let mut fr = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     let empty_slot = 15; // the highest capability table slot; nothing in this test has granted into it
     assert_eq!(
-        invoke(&mut fr, empty_slot, abi::address_space::LIST, 0, 0, 0),
+        invoke(&mut fr, empty_slot, moho_abi::address_space::LIST, 0, 0, 0),
         Err(Error::NoSuchSlot),
     );
 }
@@ -255,7 +277,12 @@ fn a_capability_outliving_its_space_reads_as_empty() {
     let builder = hold_builder(name);
     let (f, frame_region) = page_frame(Rights::READ);
     assert_eq!(
-        map_into(builder, 0x0040_0000, f, abi::address_space::MAP_READ_ONLY),
+        map_into(
+            builder,
+            0x0040_0000,
+            f,
+            moho_abi::address_space::MAP_READ_ONLY
+        ),
         Ok(0)
     );
 
@@ -268,7 +295,7 @@ fn a_capability_outliving_its_space_reads_as_empty() {
     let space = crate::user::take_user_address_space(name).expect("the space was still registered");
     drop(space);
 
-    assert_eq!(list(viewer, 0), (abi::survey::DONE as i64, 0, 0));
+    assert_eq!(list(viewer, 0), (moho_abi::survey::DONE as i64, 0, 0));
 
     tidy(&[viewer, builder, f], &[space_region, frame_region]);
 }

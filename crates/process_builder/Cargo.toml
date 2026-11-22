@@ -9,7 +9,7 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-abi = { version = "0.1.0", path = "../abi" }
+moho_abi = { version = "0.1.0", path = "../moho_abi" }
 static_elf = { version = "0.1.0", path = "../static_elf" }
 user_mode_runtime = { version = "0.1.0", path = "../user_mode_runtime" }
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): where a child's

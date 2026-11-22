@@ -8,7 +8,7 @@
 //! the same refusal, or liveness leaks (claim 7). Nothing blocks. Cross-ISA (DECISIONS §19
 //! (architectural parity is a tenet)). See notes/confinement-claims/the-eighth-pass-tests.md.
 
-use abi::Error;
+use moho_abi::Error;
 
 use super::supervision_tests::{FAULT_STUB, REPORT_STUB};
 use super::survey_tests::{
@@ -20,7 +20,7 @@ use crate::sched;
 /// `invoke(capability, REAP, tid, _, _)`, through the real dispatcher.
 fn reap(slot: u64, tid: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    crate::system_call::invoke(&mut frame, slot, abi::rendezvous::REAP, tid, 0, 0)
+    crate::system_call::invoke(&mut frame, slot, moho_abi::rendezvous::REAP, tid, 0, 0)
 }
 
 /// `invoke(capability, SURVEY, cursor, STATE, _)`, through the real dispatcher, returning the three words
@@ -30,9 +30,9 @@ fn survey(slot: u64, cursor: u64) -> (i64, u64, u64) {
     match crate::system_call::invoke(
         &mut frame,
         slot,
-        abi::rendezvous::SURVEY,
+        moho_abi::rendezvous::SURVEY,
         cursor,
-        abi::survey::record::STATE,
+        moho_abi::survey::record::STATE,
         0,
     ) {
         Ok(next) => (next, frame.arg(1), frame.arg(2)),
@@ -156,7 +156,7 @@ fn the_view_and_the_reap_are_one_domain_dead_members_included() {
         .expect("the dead member was reported but then lost");
     assert_eq!(
         dead_row.state,
-        abi::survey::DEAD,
+        moho_abi::survey::DEAD,
         "the corpse's state was misreported as a live one",
     );
 

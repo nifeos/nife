@@ -409,17 +409,17 @@ const fn survey_includes(
 /// notes/region-reaping.md ("The supervised reap").
 ///
 /// Context: takes and releases `IPC_TABLES`, yielding while the corpse is still on its core.
-pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error> {
+pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), moho_abi::Error> {
     let region = loop {
         let guard = IPC_TABLES.lock();
-        let sched = guard.as_ref().ok_or(abi::Error::NotSupervised)?;
+        let sched = guard.as_ref().ok_or(moho_abi::Error::NotSupervised)?;
         // A stale or recycled tid resolves to `None`, so it reads as unsupervised.
         let t = sched.threads.get(tid);
         let fault_ep = t.and_then(|t| t.fault_ep);
         let dead = t.is_some_and(|t| t.handshake.state == State::Dead);
         match reap_decision(fault_ep, ep, dead) {
-            Reap::NotSupervised => return Err(abi::Error::NotSupervised),
-            Reap::StillAlive => return Err(abi::Error::StillAlive),
+            Reap::NotSupervised => return Err(moho_abi::Error::NotSupervised),
+            Reap::StillAlive => return Err(moho_abi::Error::StillAlive),
             Reap::Permitted => {}
         }
         // A corpse whose core still stands on its stack clears at that core's next
@@ -433,17 +433,17 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error
         // A supervised thread is always retyped from a region, so this is `Some`.
         break t
             .and_then(|t| t.thread_control_block_region)
-            .ok_or(abi::Error::NotSupervised)?;
+            .ok_or(moho_abi::Error::NotSupervised)?;
     };
     // A restart policy reads `NotPermitted` as "not yet".
-    reclaim_region(region).map_err(|_| abi::Error::NotPermitted)
+    reclaim_region(region).map_err(|_| moho_abi::Error::NotPermitted)
 }
 
 /// Read one entry of the domain a supervision rendezvous supervises (`rendezvous::SURVEY`).
 ///
 /// `ep` is the invoked rendezvous, `cursor` the value the last call returned (0 to start) and
-/// `record` an `abi::survey::record` selector. Returns `(next_cursor, tid, word)`, where `word` is
-/// the selected fact; a `next_cursor` of `abi::survey::DONE` ends the walk and the other words are
+/// `record` a `moho_abi::survey::record` selector. Returns `(next_cursor, tid, word)`, where `word` is
+/// the selected fact; a `next_cursor` of `moho_abi::survey::DONE` ends the walk and the other words are
 /// 0. A thread is in the domain when its `fault_ep` is `ep` (`survey_includes`). An
 /// unknown `record` is `BadMethod`, before the walk. See notes/process-view.md and
 /// notes/region-reaping.md ("The survey").
@@ -453,37 +453,37 @@ pub fn survey_supervised(
     ep: RendezvousId,
     cursor: u64,
     record: u64,
-) -> Result<(u64, u64, u64), abi::Error> {
+) -> Result<(u64, u64, u64), moho_abi::Error> {
     // Before the lock, so the refusal does not depend on whether the domain has a member.
-    if !abi::survey::record::is_known(record) {
-        return Err(abi::Error::BadMethod);
+    if !moho_abi::survey::record::is_known(record) {
+        return Err(moho_abi::Error::BadMethod);
     }
     let guard = IPC_TABLES.lock();
     // No scheduler means no domain: "nothing here", not a refusal.
     let Some(sched) = guard.as_ref() else {
-        return Ok((abi::survey::DONE, 0, 0));
+        return Ok((moho_abi::survey::DONE, 0, 0));
     };
     // A cursor past the table is empty, not an error (`iter_from`'s contract).
     let from = usize::try_from(cursor).unwrap_or(usize::MAX);
     for (slot, t) in sched.threads.iter_from(from) {
         if survey_includes(t.fault_ep, ep) {
             let word = match record {
-                abi::survey::record::STATE => survey_state(t.handshake.state),
-                abi::survey::record::PLACEMENT => survey_placement(t.placement),
-                abi::survey::record::CPU_TIME => survey_cpu_time(slot),
-                abi::survey::record::PROCESS => survey_process(&sched.threads, ep, t),
+                moho_abi::survey::record::STATE => survey_state(t.handshake.state),
+                moho_abi::survey::record::PLACEMENT => survey_placement(t.placement),
+                moho_abi::survey::record::CPU_TIME => survey_cpu_time(slot),
+                moho_abi::survey::record::PROCESS => survey_process(&sched.threads, ep, t),
                 // Refused by `is_known` above. Kept so a record added there without an arm
                 // here fails loudly instead of reporting zero.
-                _ => return Err(abi::Error::BadMethod),
+                _ => return Err(moho_abi::Error::BadMethod),
             };
             return Ok((slot as u64 + 1, t.id, word));
         }
     }
-    Ok((abi::survey::DONE, 0, 0))
+    Ok((moho_abi::survey::DONE, 0, 0))
 }
 
 /// The CPU time a survey reports for the thread in `slot`, as an
-/// `abi::survey::record::CPU_TIME` word in milliseconds.
+/// `moho_abi::survey::record::CPU_TIME` word in milliseconds.
 ///
 /// The slot is the walk's own and equals the tid's low word. Milliseconds keep `TICK_HERTZ` out of
 /// the ABI; at 100 Hz the value moves in steps of ten.
@@ -506,7 +506,7 @@ fn process_key(t: &Thread) -> (bool, u64) {
     }
 }
 
-/// The process label a survey reports for `of`, as an `abi::survey::record::PROCESS` word: the
+/// The process label a survey reports for `of`, as a `moho_abi::survey::record::PROCESS` word: the
 /// ordinal, from 1, of its process among the processes the domain `ep` holds, counted in the order
 /// the walk meets each one's first thread.
 ///
@@ -540,28 +540,28 @@ fn survey_process(threads: &Threads, ep: RendezvousId, of: &Thread) -> u64 {
     0
 }
 
-/// The placement a survey reports, as an `abi::survey::record::PLACEMENT` word.
+/// The placement a survey reports, as a `moho_abi::survey::record::PLACEMENT` word.
 ///
 /// Widens a CPU id, and maps the kernel's `u8::MAX` "not placed" to `record::NO_CPU`
 /// (`u64::MAX`), because 255 is a plausible CPU id for a reader to tally.
 pub(super) const fn survey_placement(placement: u8) -> u64 {
     if placement == u8::MAX {
-        abi::survey::record::NO_CPU
+        moho_abi::survey::record::NO_CPU
     } else {
         placement as u64
     }
 }
 
-/// The run state a survey reports, as an `abi::survey` code.
+/// The run state a survey reports, as a `moho_abi::survey` code.
 ///
 /// `Embryo` and `Finished` cannot be supervised (supervision is recorded at `START`, and a
 /// supervised death is `Dead`); they map to their nearest neighbors, `READY` and `DEAD`.
 pub(super) const fn survey_state(state: State) -> u64 {
     match state {
-        State::Embryo | State::Ready => abi::survey::READY,
-        State::Running => abi::survey::RUNNING,
-        State::Blocked => abi::survey::BLOCKED,
-        State::Finished | State::Dead => abi::survey::DEAD,
+        State::Embryo | State::Ready => moho_abi::survey::READY,
+        State::Running => moho_abi::survey::RUNNING,
+        State::Blocked => moho_abi::survey::BLOCKED,
+        State::Finished | State::Dead => moho_abi::survey::DEAD,
     }
 }
 

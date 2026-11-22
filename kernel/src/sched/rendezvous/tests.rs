@@ -99,7 +99,7 @@ fn outstanding_reply_capabilities(caller: super::ThreadId) -> usize {
 /// The server has collected the request, so the caller is on no wait queue; that one collected
 /// message is the difference from the revoked-waiter test. The second assertion matters most: a
 /// woken caller with a live Reply still naming it could be answered in its next conversation.
-/// `current_capability` is the lookup `abi::reply::REPLY` makes, so a capability gone here cannot reply.
+/// `current_capability` is the lookup `moho_abi::reply::REPLY` makes, so a capability gone here cannot reply.
 #[test_case]
 fn a_reply_parked_caller_wakes_with_an_error_when_its_rendezvous_is_reclaimed() {
     static COLLECTED: AtomicBool = AtomicBool::new(false);

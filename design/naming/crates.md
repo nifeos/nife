@@ -32,7 +32,7 @@ standard terms is the acronym test's call:
 
 - A nife wire-contract crate ends in `_contract`: `file_system_contract`, `socket_contract`,
   `supervision_contract`. An external standard keeps its own word (`network_time_protocol`), which
-  is why nife's suffix is not `_protocol`. `abi` is the system call boundary and takes no suffix.
+  is why nife's suffix is not `_protocol`. `moho_abi` is the system call boundary and takes no suffix.
   `script/lint` check 3 holds the spelling and names `network_time_protocol` as its one exception.
 - `compositor` and `line_editor` hold a protocol module and are logic crates, not contracts. A
   `_contract` name would promise a wire definition and deliver an algorithm.
@@ -86,7 +86,7 @@ gap, not a design.
   `memory_regions`, `generational_table`, `address_space_identifier`, `intrusive_queue`,
   `inter_process_communication`, `direct_memory_access_validator`, `measured_boot`,
   `user_mode_heap`.
-- Wire contracts: the `_contract` crates, `network_time_protocol` and `abi`.
+- Wire contracts: the `_contract` crates, `network_time_protocol` and `moho_abi`.
 - Format and hardware parsers: `elf`, `device_tree_blob`, `pci`,
   `globally_unique_identifier_partition_table`, `nifefs`.
 - Userspace libraries: `user_mode_runtime`, `grant_plan`, `video_terminal`,

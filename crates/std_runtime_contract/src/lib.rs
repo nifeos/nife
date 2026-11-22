@@ -32,12 +32,12 @@
 //! catalog and the index sources at 15 to 18 for `jig`, and the shell's configuration at 21.
 
 //! **Generated verbatim into the PAL** by `cargo xtask std-src` (as `sys/pal/nife/runtimeproto.rs`),
-//! like `abi` and every contract the PAL reads, so this file stays a valid non-root module: no
+//! like `moho_abi` and every contract the PAL reads, so this file stays a valid non-root module: no
 //! crate attributes survive the copy, nor does the test module. Every address below is a row of
 //! `nifeos/address_space_layout` (milestone 206 (a program image has under 896 KiB),
 //! DECISIONS §171 (where a program image starts) option D), restated as a number because the PAL
 //! has no crate to name; the test module pins each to its band, the shape `byte_sink_contract`
-//! uses for `abi`. A std program is linked at the map's `IMAGE_BASE_VIRTUAL_ADDRESS` and its stack grows down from
+//! uses for `moho_abi`. A std program is linked at the map's `IMAGE_BASE_VIRTUAL_ADDRESS` and its stack grows down from
 //! `STACK_TOP_PAGE_VIRTUAL_ADDRESS`.
 
 //! # BUGS

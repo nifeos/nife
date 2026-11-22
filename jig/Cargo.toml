@@ -26,9 +26,9 @@ publish = false
 # HTTP reader the progenitor used to run (`http_response`, which left the progenitor's graph in the
 # same change), where the package source answers (`socket_fixture`), the `std` layout's
 # pages (`std_runtime_contract`), and the system calls a `std` program has no binding for
-# (`user_mode_runtime`, `abi`, `address_space_layout`).
+# (`user_mode_runtime`, `moho_abi`, `address_space_layout`).
 [dependencies]
-abi = { path = "../crates/abi" }
+moho_abi = { path = "../crates/moho_abi" }
 address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
 file_system_contract = { path = "../crates/file_system_contract" }
 grant_contract = { path = "../crates/grant_contract" }

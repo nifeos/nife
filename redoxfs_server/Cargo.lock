@@ -3,10 +3,6 @@
 version = 4
 
 [[package]]
-name = "abi"
-version = "0.1.0"
-
-[[package]]
 name = "address_space_layout"
 version = "0.1.0"
 source = "git+https://github.com/nifeos/address_space_layout?rev=02d497b62915c1fb133ef1de6e76598fa51e67fe#02d497b62915c1fb133ef1de6e76598fa51e67fe"
@@ -383,11 +379,15 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 name = "memory_region_heap"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
+ "moho_abi",
  "talc",
  "user_mode_runtime",
 ]
+
+[[package]]
+name = "moho_abi"
+version = "0.1.0"
 
 [[package]]
 name = "nife_partition_types"
@@ -735,12 +735,12 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",
+ "moho_abi",
  "socket_contract",
 ]
 

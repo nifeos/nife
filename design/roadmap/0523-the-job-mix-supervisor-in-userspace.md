@@ -42,7 +42,7 @@ already self-times with it today.
 
 The cycle counter is the *other* counter: `PMCCNTR_EL0` and the `cycle` CSR, which milestone 228 (the cycle counters are closed by assumption, and on two architectures the assumption is a comment)
 deliberately closed and which only `fixtures/src/cycle_counter_reader.rs` reads. Nothing in this
-instrument wants it. So there is no system call to invent here and `abi::thread_control_block`'s
+instrument wants it. So there is no system call to invent here and `moho_abi::thread_control_block`'s
 deliberate absence of a grant method stays undisturbed.
 
 **A tick is a tick across the move**, on aarch64 and x86_64. The one architecture where it is not is
@@ -56,7 +56,7 @@ list is short and it is what makes the blockers concrete:
 1. **Find `job_mix_task`'s ELF in the initrd archive.** `nifefs::Fs::parse(archive).read(..)` plus
    `elf::Elf::parse`, the shape `components/src/root_supervisor.rs::start` already uses.
 2. **Create 67 rendezvous objects** out of its own budget: one report, 32 go, 32 child-done, 2 echo.
-   `retype_into_kernel_object(budget, abi::object_type::RENDEZVOUS)`, which
+   `retype_into_kernel_object(budget, moho_abi::object_type::RENDEZVOUS)`, which
    `fixtures/src/rendezvous_minter.rs` proves works from EL0.
 3. Build and start 34 processes with a per-child grant set, each carrying its own rights.
    `supervision_contract::build_child` and `start_child`.
@@ -76,7 +76,7 @@ may do 2, 4 and the building half of 3, and that is the shape of what follows.
 
 Every spending method of a memory region asks for `WRITE` alone (`memory_region_invoke`), and
 `RETYPE_OBJECT` makes spaces, threads, processes and rendezvous (`memory_region_retype_object`). A `--mem`
-grant arrives as `abi::rights::SPEND_ONLY`, every right but `GRANT` (`native_endowment` in
+grant arrives as `moho_abi::rights::SPEND_ONLY`, every right but `GRANT` (`native_endowment` in
 `crates/system_initializer`), so its holder can build a process and start it.
 
 The mechanism withholds three things:
@@ -147,14 +147,14 @@ draw, and `notes/job-mix.md` step 3 tells the operator to read them before readi
 
 There is no userspace path to that fact, and it is not a gap in one place:
 
-- No system call. `crates/abi` mentions a CPU only in prose.
-- `abi::rendezvous::SURVEY` returns `(next_cursor, tid, state)`
+- No system call. `crates/moho_abi` mentions a CPU only in prose.
+- `moho_abi::rendezvous::SURVEY` returns `(next_cursor, tid, state)`
   (`kernel/src/system_call/rendezvous.rs::rendezvous_survey`), and `state` is one of `READY`, `RUNNING`, `BLOCKED`, `DEAD`.
   `RUNNING` means *on a CPU right now*; it does not say which.
 - `crates/ps` has no CPU column, by construction (`crates/ps/src/lib.rs::write_report`).
 - `crates/cpu_set` is kernel-internal mask arithmetic and exports nothing to EL0.
 - No mapped page carries it: the only pages a job can be endowed are the clock and config pages.
-- `abi::thread_control_block::START` returns `Ok(0)` (`kernel/src/system_call/thread_control_block.rs::START`). Returning
+- `moho_abi::thread_control_block::START` returns `Ok(0)` (`kernel/src/system_call/thread_control_block.rs::START`). Returning
   the placed core instead would be `spawn_reporting_placement` exactly, available to any builder,
   and it is one line of kernel -- and it changes a system call's return contract, which existing
   callers test for equality with zero (`fixtures/src/os_primitives_benchmarker.rs`).

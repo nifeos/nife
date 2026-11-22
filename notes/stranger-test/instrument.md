@@ -63,7 +63,7 @@ reading it. In the tree's own words the idea is `swish`'s banner, *"naming a res
 IS granting it"*, and `grant_plan`'s `Refusal::NoSuchProgram`. A rubric row that quotes a phrase the
 tree never wrote tests whether the stranger already knew the field, which is the opposite of its
 purpose. The amended row asks the question without importing anyone's vocabulary. A stranger can
-answer it from `crates/abi`, from `notes/capabilities.md`, or from `swish`'s banner.
+answer it from `crates/moho_abi`, from `notes/capabilities.md`, or from `swish`'s banner.
 
 ## The cadence: monthly, decided 2026-08-18
 

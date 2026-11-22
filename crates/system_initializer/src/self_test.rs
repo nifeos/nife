@@ -154,7 +154,7 @@ fn run_measured(
     let budget = must(memory_region_split(memory_region, budget_pages));
     let report = must(retype_into_kernel_object_from(
         memory_region,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let frame = must(retype_page_frame(memory_region));
     must_ok(map_page_frame(
@@ -176,23 +176,26 @@ fn run_measured(
         built,
         &elf,
         &ChildEndowment {
-            capabilities: &[(budget, abi::rights::ALL), (report, abi::rights::WRITE)],
+            capabilities: &[
+                (budget, moho_abi::rights::ALL),
+                (report, moho_abi::rights::WRITE),
+            ],
             placed: &placed[..n],
             maps: &[
                 (
                     address_space_layout::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS),
                     g.self_test_page,
-                    abi::address_space::MAP_READ_ONLY,
+                    moho_abi::address_space::MAP_READ_ONLY,
                 ),
                 (
                     machine_statistics_contract::PAGE_VIRTUAL_ADDRESS,
                     g.machine_page,
-                    abi::address_space::MAP_READ_ONLY,
+                    moho_abi::address_space::MAP_READ_ONLY,
                 ),
                 (
                     address_space_layout::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS),
                     frame,
-                    abi::address_space::MAP_READ_WRITE,
+                    moho_abi::address_space::MAP_READ_WRITE,
                 ),
             ],
             blobs: &blobs,
@@ -276,16 +279,16 @@ fn placements(
     place(
         slot::OWN_THREAD,
         supervision_contract::CHILDS_OWN_THREAD,
-        abi::rights::WRITE,
+        moho_abi::rights::WRITE,
     );
     if let Some(client) = entropy.client {
-        place(slot::ENTROPY, client, abi::rights::WRITE);
+        place(slot::ENTROPY, client, moho_abi::rights::WRITE);
     }
     if grants.random_number_generator {
         place(
             slot::TRUE_RANDOM_NUMBER_GENERATOR,
             g.self_test_random_number_generator,
-            abi::rights::WRITE,
+            moho_abi::rights::WRITE,
         );
     }
     if grants.disk {
@@ -295,17 +298,17 @@ fn placements(
         place(
             slot::DISK_TRANSPORT,
             transport,
-            abi::rights::WRITE | abi::rights::GRANT,
+            moho_abi::rights::WRITE | moho_abi::rights::GRANT,
         );
         place(
             slot::DISK_INTERRUPT,
             interrupt,
-            abi::rights::READ | abi::rights::GRANT,
+            moho_abi::rights::READ | moho_abi::rights::GRANT,
         );
         place(
             slot::DISK_DIRECT_MEMORY_ACCESS,
             direct_memory_access,
-            abi::rights::READ | abi::rights::WRITE,
+            moho_abi::rights::READ | moho_abi::rights::WRITE,
         );
     }
     (placed, n)

@@ -105,11 +105,12 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
     };
 
     // The one endpoint this process ever waits on, and the timetable's supervision endpoint.
-    let Ok(e) = retype_into_kernel_object_from(BUDGET, abi::object_type::RENDEZVOUS) else {
+    let Ok(e) = retype_into_kernel_object_from(BUDGET, moho_abi::object_type::RENDEZVOUS) else {
         fail(4)
     };
     // The endpoint the timetable reaps its own jobs through. Not read here.
-    let Ok(deaths) = retype_into_kernel_object_from(BUDGET, abi::object_type::RENDEZVOUS) else {
+    let Ok(deaths) = retype_into_kernel_object_from(BUDGET, moho_abi::object_type::RENDEZVOUS)
+    else {
         fail(5)
     };
     let Ok(jobs) = memory_region_split(BUDGET, JOB_BUDGET_PAGES) else {
@@ -125,21 +126,25 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
         &elf,
         &ChildEndowment {
             placed: &[
-                (tt::BUDGET_SLOT, jobs, abi::rights::SPEND_ONLY),
+                (tt::BUDGET_SLOT, jobs, moho_abi::rights::SPEND_ONLY),
                 (
                     tt::DEATHS_SLOT,
                     deaths,
-                    abi::rights::READ | abi::rights::GRANT,
+                    moho_abi::rights::READ | moho_abi::rights::GRANT,
                 ),
-                (tt::ACTIVATION_SLOT, ACTIVATION, abi::rights::WRITE),
-                (tt::PACKAGES_SLOT, PACKAGES, abi::rights::WRITE),
+                (tt::ACTIVATION_SLOT, ACTIVATION, moho_abi::rights::WRITE),
+                (tt::PACKAGES_SLOT, PACKAGES, moho_abi::rights::WRITE),
             ],
             maps: &[
-                (TIMETABLE_PAGE_VA, PAGE, abi::address_space::MAP_READ_WRITE),
+                (
+                    TIMETABLE_PAGE_VA,
+                    PAGE,
+                    moho_abi::address_space::MAP_READ_WRITE,
+                ),
                 (
                     tt::STORE_PAGE_VA,
                     STORE_PAGE,
-                    abi::address_space::MAP_READ_WRITE,
+                    moho_abi::address_space::MAP_READ_WRITE,
                 ),
             ],
             fault: Some(e),
@@ -170,7 +175,7 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
         let Message {
             w0: event, w1: tid, ..
         } = receive_message(e).into_message();
-        let death = event == abi::fault::EVENT_EXIT || event == abi::fault::EVENT_FAULT;
+        let death = event == moho_abi::fault::EVENT_EXIT || event == moho_abi::fault::EVENT_FAULT;
         if death && reaped(e, tid) {
             break;
         }
@@ -197,7 +202,7 @@ fn reaped(e: u64, tid: u64) -> bool {
         if r == 0 {
             return true;
         }
-        if r == abi::Error::NotSupervised as i64 || r == abi::Error::StillAlive as i64 {
+        if r == moho_abi::Error::NotSupervised as i64 || r == moho_abi::Error::StillAlive as i64 {
             return false;
         }
         yield_now();

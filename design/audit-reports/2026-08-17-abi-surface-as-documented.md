@@ -16,7 +16,7 @@ the lenses not yet taken as supply chain, userspace confinement, and **the syste
 and the previous sweep's "what was deliberately not examined" does not mention the ABI at all.
 
 **The seven, re-derived rather than taken on trust**, by diffing the `pub const NAME: u64` surface of
-`crates/abi` against the commit that landed the last report (`e4d76715`):
+`crates/moho_abi` against the commit that landed the last report (`e4d76715`):
 
 ```
 SURVEY  ENUMERATE  DONE  READY  RUNNING  BLOCKED  DEAD
@@ -24,7 +24,7 @@ SURVEY  ENUMERATE  DONE  READY  RUNNING  BLOCKED  DEAD
 
 All seven are milestone 126's, `endpoint::SURVEY` plus `rights::ENUMERATE` plus the five `survey`
 state codes. **This lane was briefed that the seven also included `fs_proto::fs::STATFS` and
-milestone 40's manual-index constants, and they are not in it**: the baseline counts `crates/abi`
+milestone 40's manual-index constants, and they are not in it**: the baseline counts `crates/moho_abi`
 only, and both of those live in other crates (and are not `u64`). Recorded because it changed where
 the sharpest read was: the trigger is entirely about **supervision, enumeration, and a new right**,
 not about the filesystem protocol. Both of the constants named in error were checked anyway and are
@@ -39,7 +39,7 @@ the trigger instead, and the scope was chosen by asking which files describe the
 
 | document | why it is in scope |
 |---|---|
-| `crates/abi/src/lib.rs` | the boundary artifact itself, and the thing the trigger counted |
+| `crates/moho_abi/src/lib.rs` | the boundary artifact itself, and the thing the trigger counted |
 | `kernel/src/system_call.rs` | the kernel's half of the same boundary |
 | `notes/capabilities.md` | the note that explains the surface to a newcomer |
 | `notes/capability-lifecycle.md` | the note that explains rights, which is what `ENUMERATE` changed |
@@ -93,8 +93,8 @@ claim had spread to five sites:
 
 | site | said |
 |---|---|
-| `crates/abi/src/lib.rs` (the module documentation's heading) | "# The surface is three calls, and that is deliberate", and a `text` block omitting `cap_delete` |
-| `crates/abi/src/lib.rs` (`Error::BadSystemCall`) | "The system call number is not one of the three" |
+| `crates/moho_abi/src/lib.rs` (the module documentation's heading) | "# The surface is three calls, and that is deliberate", and a `text` block omitting `cap_delete` |
+| `crates/moho_abi/src/lib.rs` (`Error::BadSystemCall`) | "The system call number is not one of the three" |
 | `kernel/src/system_call.rs` (the module documentation's first line) | "The system call boundary. **Three calls.**", same omission in its block |
 | `kernel/src/arch/aarch64/exceptions.rs` (`exception_body`, the `svc` arm) | "It is three calls. See system_call.rs." |
 | `notes/capabilities.md` | "## The surface is three calls" |
@@ -115,7 +115,7 @@ first sweep's finding 5). The heading was retitled to say so and a dated paragra
 surface is today, so the number stays true as history and a reader cannot leave with a wrong
 present-tense belief.
 
-**Left as history, deliberately:** `crates/abi/src/lib.rs` (the `Name:` paragraph of its module
+**Left as history, deliberately:** `crates/moho_abi/src/lib.rs` (the `Name:` paragraph of its module
 documentation, written for milestone 7d (User mode: EL0, capabilities, the ELF loader, and IPC):
 "milestone 7d's first three system calls", correct), `design/roadmap/0007-user-mode.md`'s `ec6f1b5`
 entry and `notes/README.md`'s "Rust" section, as it read then (both "**7d**: three system calls",
@@ -253,7 +253,7 @@ What landed in `script/lint`'s `==> counted claims` block:
   is recorded as a limitation because the fenced-block exemption is implemented for `.md` only.
 
 The gate went from 4 counts to 8 and from 12 markers to 20. **It was verified by breaking it**: with
-the ABI header put back to "three calls" it fails with `crates/abi/src/lib.rs` (the module documentation's heading): says 3,
+the ABI header put back to "three calls" it fails with `crates/moho_abi/src/lib.rs` (the module documentation's heading): says 3,
 the tree says 4, naming the file, the claim and the question the derivation answers.
 
 Why this rather than a bespoke ABI check: the elegant option is the one with fewer moving parts, and
@@ -273,7 +273,7 @@ on.
 1. **The staleness worklist could not have found this sweep's findings, and a lens taken from the
    trigger could.** Not one ABI document appeared in the worklist's top twenty. The reason is
    structural rather than a bug: the worklist ranks a document by how much of the code it *cites* has
-   moved, and `crates/abi/src/lib.rs` is not a document that cites code, it **is** the code. Its doc
+   moved, and `crates/moho_abi/src/lib.rs` is not a document that cites code, it **is** the code. Its doc
    comments are the most-depended-on prose in the tree and they are invisible to the heuristic
    entirely, along with every other doc comment. The procedure currently presents the worklist as
    "the lens question's starting answer"; on this evidence it is the starting answer for a sweep of

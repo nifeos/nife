@@ -18,7 +18,7 @@
 //! 4. A holder that takes the range back from everyone else keeps its own bitmap:
 //!    [`a_take_back_leaves_the_invokers_own_bitmap_installed`].
 
-use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
+use moho_abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
 
 use super::*;
 use crate::sched;

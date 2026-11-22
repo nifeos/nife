@@ -39,7 +39,7 @@ pub(crate) fn is_reachable() -> bool {
 
 /// Whether a reply word is the *kernel* refusing the invoke rather than the server answering.
 ///
-/// The kernel's own errors are -1..-8 (`abi::Error`); the server's are negated errnos, and the two
+/// The kernel's own errors are -1..-8 (`moho_abi::Error`); the server's are negated errnos, and the two
 /// spaces overlap (a wart of the contract, notes/std/fs.md). Only -3 reads as the kernel's: `ESRCH`
 /// is not in the FS server's vocabulary, and `NotPermitted` is what a WRITE-less endpoint answers.
 /// -1 is the server's `dir::EPERM` (milestone 122): every entry point checks [`is_reachable`]

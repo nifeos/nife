@@ -77,7 +77,7 @@ are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `b
   ([#3566](https://github.com/nifeos/nife/pull/3566)); the new repository's
   `prose_acronyms.toml` carries the universally known ones.
 - Item 12 (P1), `rm` is not filesystem protocol: Open. `src/rm.rs` is still in the crate, and
-  `CLIENT_WINDOWS` is still documented as provisional with a citation of `abi::rendezvous::BADGE`;
+  `CLIENT_WINDOWS` is still documented as provisional with a citation of `moho_abi::rendezvous::BADGE`;
   where `rm` lands (the program or `byte_sink_contract`) and whether the window count is a contract
   fact are placement calls the maintainer makes.
 - Item 13 (P1), dates and British spellings: Done,

@@ -265,7 +265,7 @@ fn a_process_calls_a_server_and_the_reply_is_one_shot() {
     sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
 
-/// **A reply carries a capability** (`abi::reply::REPLY_CAPABILITY`, §255 (each socket is its own
+/// **A reply carries a capability** (`moho_abi::reply::REPLY_CAPABILITY`, §255 (each socket is its own
 /// capability), milestone 649 (every client of a network stack shares its socket numbers)). A
 /// server answers a `CALL` with a copy of an endpoint capability; the client finds it in a slot of
 /// its own and sends on it, and the word arrives at the server.

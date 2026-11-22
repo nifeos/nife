@@ -72,7 +72,7 @@ const WLIST_VA: u64 = address_space_layout::pair_page(0x0000_0000_0c00_0000);
 
 /// Roles, as a bitmask in `arg0`. A plain window is 0.
 const ROLE_INPUT: u64 = 1 << 0;
-/// Receive on the input slot it was **not** granted. The refusal is `abi::Error::NoSuchSlot` (-1),
+/// Receive on the input slot it was **not** granted. The refusal is `moho_abi::Error::NoSuchSlot` (-1),
 /// "there is nothing there", which is what no-ambient-authority reads like from the inside: not a
 /// permission error from a server that consulted a list.
 const ROLE_PROBE_INPUT: u64 = 1 << 1;
@@ -275,11 +275,11 @@ fn start(role: u64, neighbour_va: u64, _arg2: u64) -> ! {
     if role & ROLE_PROBE_INPUT != 0 {
         // SAFETY: `svc`/`ecall`. The slot is empty, so the kernel refuses; nothing happens. Left as
         // a raw `invoke` (milestone 139 round 7's own survey of the whole `invoke` cluster): this is
-        // the one call site of its kind, deliberately probing the raw negative `abi::Error` a RECEIVE
+        // the one call site of its kind, deliberately probing the raw negative `moho_abi::Error` a RECEIVE
         // against an empty slot returns, which `user_mode_runtime::receive`'s own contract discards (it assumes
         // success and returns the three data words, not the system call's own return code). A wrapper
         // exposing the raw code would be a second `receive` for one caller, not a real reduction.
-        let r = unsafe { invoke(INPUT, abi::rendezvous::RECEIVE, 0, 0, 0) };
+        let r = unsafe { invoke(INPUT, moho_abi::rendezvous::RECEIVE, 0, 0, 0) };
         send(REPORT, status::WIN_REFUSED, r as u64, WHAT_INPUT);
     }
 

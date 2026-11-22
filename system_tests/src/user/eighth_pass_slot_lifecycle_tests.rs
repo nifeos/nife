@@ -8,7 +8,7 @@
 //! flat. Cross-ISA (DECISIONS §19 (architectural parity is a tenet)). See
 //! notes/confinement-claims/the-eighth-pass-tests.md.
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Rights, rendezvous_capability};
@@ -53,7 +53,7 @@ fn a_consumed_capability_cannot_be_used_again_even_by_number() {
 
     delete_current_capability(writer).expect("delete the WRITE cap");
     assert_eq!(
-        call(writer, abi::rendezvous::SEND, 1, 0, 0),
+        call(writer, moho_abi::rendezvous::SEND, 1, 0, 0),
         Err(Error::NoSuchSlot),
         "a deleted capability's slot number still invoked an object: a consumed capability was \
          used again",
@@ -66,7 +66,7 @@ fn a_consumed_capability_cannot_be_used_again_even_by_number() {
     assert_eq!(
         call(
             crate::capability_object::CAPABILITY_TABLE_SLOTS as u64,
-            abi::rendezvous::SEND,
+            moho_abi::rendezvous::SEND,
             1,
             0,
             0
@@ -75,7 +75,7 @@ fn a_consumed_capability_cannot_be_used_again_even_by_number() {
         "an index past the whole table named an object: authority out of a register",
     );
     assert_eq!(
-        call(u64::MAX, abi::rendezvous::SEND, 1, 0, 0),
+        call(u64::MAX, moho_abi::rendezvous::SEND, 1, 0, 0),
         Err(Error::NoSuchSlot),
         "the widest slot index a register can hold named an object",
     );
@@ -112,7 +112,7 @@ fn a_consumed_capability_cannot_be_used_again_even_by_number() {
         "the sender never parked, so the READ cap's receive would hang rather than answer",
     );
     assert_eq!(
-        call(reader, abi::rendezvous::RECEIVE, 0, 0, 0),
+        call(reader, moho_abi::rendezvous::RECEIVE, 0, 0, 0),
         Ok(7),
         "a READ holder could not receive after a neighbor's capability was deleted: deletion \
          disturbed more than its own slot",
@@ -172,7 +172,7 @@ fn deleting_one_capability_leaves_its_neighbors_alone_and_mints_nothing_stale() 
         "the sender never parked, so the survivor's receive would hang rather than answer",
     );
     assert_eq!(
-        call(first, abi::rendezvous::RECEIVE, 0, 0, 0),
+        call(first, moho_abi::rendezvous::RECEIVE, 0, 0, 0),
         Ok(9),
         "a capability neighboring a deleted one no longer works through the dispatcher",
     );

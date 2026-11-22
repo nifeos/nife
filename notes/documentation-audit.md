@@ -188,7 +188,7 @@ $ script/audits --baseline     # the counts to paste into both index tables
   which took its lens from the trigger instead and found five stale claims about the width of the
   system call surface. Not one ABI document was in the worklist's top twenty, and the reason is
   structural: the ranking asks how much of the code a document *cites* has moved, and
-  `crates/abi/src/lib.rs` does not cite code, it is the code. Its doc comments are the
+  `crates/moho_abi/src/lib.rs` does not cite code, it is the code. Its doc comments are the
   most-depended-on prose in the tree and they are invisible to the heuristic, along with every other
   doc comment. When the trigger is an event, the trigger is the better starting answer than the
   worklist: part 1 above still reads as though the worklist were the default, and for a sweep of
@@ -201,8 +201,8 @@ $ script/audits --baseline     # the counts to paste into both index tables
   clearly enough, and a reader who scoped a sweep to `notes/` would be following it correctly.
 
 - **Read what a doc comment is attached to, not only what it says.** The 2026-08-17 sweep's second
-  finding was three lines of correct prose bound to the wrong item since milestone 19a: `abi::rights`
-  had no documentation and `abi::objtype`'s opened by declaring itself the rights bits. Every line
+  finding was three lines of correct prose bound to the wrong item since milestone 19a: `moho_abi::rights`
+  had no documentation and `moho_abi::objtype`'s opened by declaring itself the rights bits. Every line
   parses, every sentence is true of *something*, and no structural gate can see it. It is also
   invisible to the author, because rustdoc renders prose about rights immediately above the rights
   constants; only a reader who asks which item owns a comment will catch it.

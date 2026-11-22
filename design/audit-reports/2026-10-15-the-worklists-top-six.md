@@ -127,7 +127,7 @@ mechanism working on its author.
 ### 9. FIXED: the ABI-constants trigger had gone blind to most of the ABI
 
 The drop that fired this sweep's trigger, 76 to 6, is not the surface shrinking. `script/audits`
-counted `pub const NAME: u64` in `crates/abi/src/lib.rs` only, and the ABI crate grew per-object
+counted `pub const NAME: u64` in `crates/moho_abi/src/lib.rs` only, and the ABI crate grew per-object
 modules (`rendezvous.rs`, `usage.rs`, `rights.rs`, `survey.rs`, and more); the crate holds 95 such
 constants today, 6 of them in `lib.rs`. A new system call number landing in its own module would have
 fired nothing. The derivation now walks the crate's `src/`, and this audit's baseline row is the

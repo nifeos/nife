@@ -724,7 +724,7 @@ pub(crate) fn cut_user_table(root: u64, va: u64, table: u64, asid: u16) -> Optio
 
 /// Ask the user page tables rooted at `root` what `va` maps to. Like [`translate_user`], but for an
 /// arbitrary root rather than the installed one, so revocation (and its tests) can inspect another
-/// address space, and (milestone 126, `pmap`, DECISIONS §114) so `abi::address_space::LIST` can turn a
+/// address space, and (milestone 126, `pmap`, DECISIONS §114) so `moho_abi::address_space::LIST` can turn a
 /// `va` `revoke::list_mapping` names into the permission bits a listing prints. Reads the tables
 /// in memory; touches no register.
 pub fn translate_at(root: u64, va: u64) -> Option<(u64, Flags)> {

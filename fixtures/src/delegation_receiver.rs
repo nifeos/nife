@@ -17,7 +17,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use abi::rendezvous;
+use moho_abi::rendezvous;
 use user_mode_runtime::{exit, receive_capability, send, send_capability};
 
 const CHANNEL: u64 = 0;
@@ -41,7 +41,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
 
     // Try to pass it on. We hold it WITHOUT grant, so the kernel refuses before any rendezvous, and
     // the invoke returns an error. LOOPBACK needs no receiver: the refusal happens at the check.
-    let redelegate = send_capability(LOOPBACK, got, abi::rights::WRITE, 0);
+    let redelegate = send_capability(LOOPBACK, got, moho_abi::rights::WRITE, 0);
     let refused = redelegate < 0;
 
     // Verdict: bit 0 we received a capability, bit 1 re-delegation was refused. 0b11 is the story.

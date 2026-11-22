@@ -61,7 +61,7 @@ The allocator already grows lazily. `user_mode_runtime::heap` and `std`'s restat
 Missing is a second source of pages once the first region is spent.
 
 `memory_region` has `MAP`, `RETYPE`, `RETYPE_OBJECT`, `SPLIT`, `DESTROY` and `USAGE`. Nothing grows or
-shrinks a region (`crates/abi`). A process can hold several regions, and `MAP` takes any of them.
+shrinks a region (`crates/moho_abi`). A process can hold several regions, and `MAP` takes any of them.
 
 The kernel has no demand paging: a fault is a death on the fault endpoint (§26 (the fault
 endpoint)).
@@ -72,7 +72,7 @@ returns once nothing above it is held, and not before.
 `MAX_REGIONS` is 256, machine-wide; the suite peaks at 242 on aarch64 (fork 7). A process's
 capability table has 64 slots.
 
-A reply carries two words and no capability (`abi::reply`). `login_contract` sends its capabilities
+A reply carries two words and no capability (`moho_abi::reply`). `login_contract` sends its capabilities
 over a private result endpoint for that reason, and a broker grant must do the same.
 
 There is no pool for a broker yet. The kernel hands the progenitor 12,288 pages (48 MiB of QEMU's
@@ -196,7 +196,7 @@ whole and released at `free`.
 Reserving costs nothing and the kernel never learns of it, so it needs no bound beyond the
 address space (256 GiB on riscv64's Sv39, the smallest). Page tables are paid at commit, from one
 long-lived table region per program, because `DESTROY` cuts the tables a region paid for and
-everything beneath them (`abi::page_frame::MAP`). That binds today's band trimming too. The
+everything beneath them (`moho_abi::page_frame::MAP`). That binds today's band trimming too. The
 appendix has the cost and the bound.
 
 ### Fork 5. How this meets #1769's caps and reserve

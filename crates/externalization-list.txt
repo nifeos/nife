@@ -6,7 +6,7 @@
 # no nife dependency. `helpers/lint_externalized_crates.py` reads this file: a crate named here may
 # not mention nife, a nife program or a nife package. A crate that has already left is removed from
 # this file by the pull request that moves it.
-abi
+moho_abi
 capability_manifest_note
 current_cpu_contract
 domain_name_resolution_contract

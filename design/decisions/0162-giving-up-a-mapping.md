@@ -43,7 +43,7 @@ third can make the first two moot:
 
 ## The finding, re-measured 2026-09-19 and unchanged
 
-There is no unmap in the ABI. `crates/abi` gives an address space `MAP_INTO` (with `MAP_RO`,
+There is no unmap in the ABI. `crates/moho_abi` gives an address space `MAP_INTO` (with `MAP_RO`,
 `MAP_RW`, `MAP_CODE`) and a listing method, and a frame `MAP`; nothing removes a mapping. So the
 progenitor maps each page it lays down for a child in order to write it and never lets go, which
 `notes/trusted-init.md`'s honest-limits section states in its own words:

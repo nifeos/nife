@@ -275,7 +275,7 @@ fn the_declared_slot_is_out_of_reach_of_the_ordinary_grants() {
         .expect("date declares a second stream");
     assert_eq!(slot, DIAGNOSTICS_SLOT);
     // Four is the most ordinary grants any manifest here asks for (output, clock, input,
-    // budget). The upper bound of fifteen is arbitrary; `abi::fault::FAULT_RENDEZVOUS_SLOT` is 63.
+    // budget). The upper bound of fifteen is arbitrary; `moho_abi::fault::FAULT_RENDEZVOUS_SLOT` is 63.
     assert!(slot > 4 && slot < 15, "slot {slot} is not out of the way");
 }
 

@@ -77,7 +77,7 @@ pub const OPERATION_READRAW: u64 = 7;
 ///
 /// The terminal serves a badge by its value: on this one only [`OPERATION_RAWMODE`] and
 /// [`OPERATION_READRAW`], refusing the rest with [`BAD_REQUEST`], and on an unknown one nothing.
-/// The spawn service mints it (`abi::rendezvous::BADGE`) for a keyboardless `graphical_terminal`
+/// The spawn service mints it (`moho_abi::rendezvous::BADGE`) for a keyboardless `graphical_terminal`
 /// session. A badged copy cannot be re-badged (§230 (badged endpoint capabilities)), so its holder
 /// cannot widen it back (notes/terminal-contract.md, "Badged copies").
 ///

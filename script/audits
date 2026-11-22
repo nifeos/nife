@@ -41,7 +41,7 @@
 #
 #   milestones built     BUILT rows from `script/roadmap --index`, generated from the blocks
 #   components           crates/*/ plus [[bin]] targets in components/Cargo.toml and fixtures/Cargo.toml
-#   ABI constants        the `pub const NAME: u64` surface of crates/abi (see BUGS)
+#   ABI constants        the `pub const NAME: u64` surface of crates/moho_abi (see BUGS)
 #   external packages    distinct registry packages across every committed Cargo.lock but vendor's
 #
 # ABI constants are milestone 92's system call event trigger made countable: a new method arrives as a new
@@ -60,7 +60,7 @@
 # - **The ABI-constant count is a superset of "a new system call method".** It counts the rights bits,
 #   the object types and the sentinels alongside the methods, so a new error sentinel fires the
 #   trigger too. That is the tolerable direction for an audit signal, and separating them would mean
-#   teaching this script the shape of every module in crates/abi, which is a copy of a fact that
+#   teaching this script the shape of every module in crates/moho_abi, which is a copy of a fact that
 #   already lives there.
 # - **A change that lands as neither a milestone nor a component moves no number here.** A
 #   substantial rewrite inside an existing crate is invisible to every count; only the calendar
@@ -301,7 +301,7 @@ def current():
     # blind whenever a constant landed outside lib.rs. Found by milestone 427 (the documentation
     # sweep the worklist already ranks) from its own baseline row's 76 -> 6 drop.
     abi = 0
-    for dirpath, _, names in os.walk(os.path.join(root, "crates", "abi", "src")):
+    for dirpath, _, names in os.walk(os.path.join(root, "crates", "moho_abi", "src")):
         for name in names:
             if name.endswith(".rs"):
                 with open(os.path.join(dirpath, name), errors="replace") as f:

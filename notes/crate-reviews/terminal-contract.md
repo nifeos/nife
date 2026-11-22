@@ -86,7 +86,7 @@ No nife type appears in a signature. What a stranger may find surprising:
   A client that sets a reserved bit today works, so a later version cannot give those bits a
   meaning without breaking it.
 - The documentation of several opcodes names programs a stranger does not have (`program_table`,
-  `terminal_supervisor`, `login`) and types from other nife crates (`abi::rendezvous::BADGE`,
+  `terminal_supervisor`, `login`) and types from other nife crates (`moho_abi::rendezvous::BADGE`,
   `grant_contract::Manifest::console_input`, `std_runtime_contract::STDIN_SLOT`,
   `line_editor_component::HANDOFF_VA`). None appears in a signature.
 - `START_HANDOFF` and `START_ABSORB` are bits of `line_editor`'s third start argument, and

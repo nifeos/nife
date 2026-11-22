@@ -108,8 +108,8 @@ fn supervise(mode: u64, lengths: u64, swap: u64) -> ! {
         (0, _) => None,
         (_, Some(own)) => Some(Deadline {
             own,
-            wake: obj(abi::object_type::NOTIFICATION),
-            timer: obj(abi::object_type::TIMER),
+            wake: obj(moho_abi::object_type::NOTIFICATION),
+            timer: obj(moho_abi::object_type::TIMER),
             bay: bay(s::STAND_IN_PAGES),
         }),
         (_, None) => fail(),
@@ -275,12 +275,12 @@ impl<'a> Child<'a> {
             image,
             kind,
             served,
-            faultep: obj(abi::object_type::RENDEZVOUS),
+            faultep: obj(moho_abi::object_type::RENDEZVOUS),
             controls: [
-                obj(abi::object_type::RENDEZVOUS),
-                obj(abi::object_type::RENDEZVOUS),
+                obj(moho_abi::object_type::RENDEZVOUS),
+                obj(moho_abi::object_type::RENDEZVOUS),
             ],
-            notify: obj(abi::object_type::RENDEZVOUS),
+            notify: obj(moho_abi::object_type::RENDEZVOUS),
             // Bays, one per instance, split once and reused: a region split straight from the
             // budget leaves a hole when the incumbent under it dies, and the second swap fails
             // for want of budget (notes/hung-component/terminal-supervisor-bound.md).
@@ -321,17 +321,17 @@ impl<'a> Child<'a> {
                     .map(|(child, aspace)| (child, aspace, region))
             }
             Kind::DisplayTerminal => {
-                let rw = abi::rights::READ | abi::rights::WRITE;
+                let rw = moho_abi::rights::READ | moho_abi::rights::WRITE;
                 // `video_terminal::component`'s slots, in order.
                 let capabilities = [
-                    (self.notify, abi::rights::WRITE),
-                    (s::PRESENT, abi::rights::WRITE),
-                    (self.served, abi::rights::READ),
-                    (budget, abi::rights::SPEND_ONLY),
+                    (self.notify, moho_abi::rights::WRITE),
+                    (s::PRESENT, moho_abi::rights::WRITE),
+                    (self.served, moho_abi::rights::READ),
+                    (budget, moho_abi::rights::SPEND_ONLY),
                     (s::SURFACE, rw),
                     (s::SINK_PAGE, rw),
-                    (self.controls[p], abi::rights::READ),
-                    (self.notify, abi::rights::WRITE),
+                    (self.controls[p], moho_abi::rights::READ),
+                    (self.notify, moho_abi::rights::WRITE),
                 ];
                 let endow = ChildEndowment {
                     capabilities: &capabilities,
@@ -456,7 +456,7 @@ impl<'a> Child<'a> {
             send_capability(
                 self.controls[p],
                 self.run,
-                abi::rights::READ | abi::rights::WRITE,
+                moho_abi::rights::READ | moho_abi::rights::WRITE,
                 proto::CTL_HANDOFF,
             )
         };
@@ -653,7 +653,10 @@ impl Supervisor<'_> {
             slot if slot >= 0 => slot as u64,
             _ => fail(),
         };
-        let granted = [(badged, abi::rights::WRITE), (d.wake, abi::rights::WRITE)];
+        let granted = [
+            (badged, moho_abi::rights::WRITE),
+            (d.wake, moho_abi::rights::WRITE),
+        ];
         let built = process_builder::build_child(
             s::BUDGET,
             region,
