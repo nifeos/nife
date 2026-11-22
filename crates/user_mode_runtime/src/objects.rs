@@ -12,9 +12,9 @@ use crate::system_call::{invoke, trap6};
 /// **Map the `PageFrame` capability in `frame_slot` at `virtual_address`**, drawing the page tables from the untyped
 /// in `memory_region_slot`. `true` if the page is now there.
 ///
-/// The verb a process that holds a page uses to put it in its own address space (milestone 108
-/// (the drivers move onto frame capabilities)). Unlike a page wired in at spawn, the mapping is in
-/// the revocation database, so `PageFrame::REVOKE` can take it back. See notes/frames.md.
+/// The verb a process that holds a page uses to put it in its own address space. Unlike a page
+/// wired in at spawn, the mapping is in the revocation database, so `PageFrame::REVOKE` can take it
+/// back.
 ///
 /// `writable` needs `WRITE` on the frame; a read-only mapping needs `READ`. A caller handed a
 /// narrowed view that asks for more than it holds gets `false` and no mapping, which is the rights
@@ -38,15 +38,13 @@ pub fn map_page_frame(
     }
 }
 
-/// Whether a capability is in `slot`, without touching whatever it names (milestone 139 round 7).
+/// Whether a capability is in `slot`, without touching whatever it names.
 /// Invoke a method number no object type defines, so the call can only be refused, and read
 /// *which* refusal came back: an empty slot answers `NoSuchSlot`, and a real object answers
 /// `BadMethod`, a refusal from something that exists.
 ///
-/// Lifted out of `date.rs`'s `clock_page` probe, which four more programs (`pgrep`, `pmap`, `ps`,
-/// `watch`) had each copied verbatim, one of them naming the duplication out loud in its own doc
-/// comment without anyone lifting it. The exact §94 (what may live in a userspace library) shape
-/// the crate-level docs in `lib.rs` describe.
+/// One copy for every program that probes a slot before it uses it, rather than one per program:
+/// a pure wrapper over a system call, the shape the crate root describes.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2). His words: "Ratify ... `is_granted`." Refused `holds_capability` (the
@@ -74,13 +72,12 @@ pub fn retype_into_page_frame(memory_region_slot: u64) -> i64 {
     unsafe { invoke(memory_region_slot, abi::memory_region::RETYPE, 0, 0, 0) }
 }
 
-/// `RETYPE` a run of `pages` contiguous pages into one `PageFrame` capability, per §102 (a Frame
-/// names a run of pages), `0` meaning one. Returns the slot, or a negative `abi::Error`: `OutOfMemory` when the run does not
+/// `RETYPE` a run of `pages` contiguous pages into one `PageFrame` capability (a frame names a run
+/// of pages), `0` meaning one. Returns the slot, or a negative `abi::Error`: `OutOfMemory` when the run does not
 /// fit, in which case the region's budget is untouched.
 ///
-/// **The one call site in the tree that passes a count other than `0`**, and `script/lint` holds
-/// it to that ("every RETYPE outside the run wrapper passes 0"), so a caller cannot ask for a run
-/// by accident through a raw `invoke`.
+/// **The one call site in this crate that passes a count other than `0`**: every other `RETYPE`
+/// passes `0`, so a caller cannot ask for a run by accident through a raw `invoke`.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted (the lane for milestone 23 (a capability-routed component OS with live
 /// replacement), 2026-09-26).
@@ -90,10 +87,9 @@ pub fn retype_page_frame_run(memory_region_slot: u64, pages: u64) -> i64 {
 }
 
 /// **`page_frame::SLICE`: a capability naming `count` pages of the run in `frame_slot`, from page
-/// `first`**, with that capability's rights (milestone 599 (a frame per filesystem client channel)).
-/// The new slot, or a negative `abi::Error`. Needs `GRANT`. `jig` reads a package into one run and
-/// hands the installer a page of it at a time (milestone 809 (the package client becomes a
-/// program)). Name follows the method.
+/// `first`**, with that capability's rights. The new slot, or a negative `abi::Error`. Needs
+/// `GRANT`. A loader that reads a package into one run hands the installer a page of it at a time
+/// this way. Name follows the method.
 pub fn slice_page_frame(frame_slot: u64, first: u64, count: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the capability, the range and the right.
     unsafe { invoke(frame_slot, abi::page_frame::SLICE, first, count, 0) }
@@ -202,7 +198,7 @@ pub fn revoke_page_frame(frame_slot: u64) -> i64 {
 /// Safe for the reason [`map_page_frame`] is: the kernel checks the address-space capability's
 /// `WRITE`, the frame's rights against `mode`, and the address before it touches a page table. A
 /// caller racing what this changes has a bug in its own code, not a Rust-safety obligation. See
-/// notes/user-mode-runtime.md.
+/// `docs/design.md`.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2). His words: "Ratify `retype_kernel_object` `address_space_layout_into`." Refused
@@ -258,9 +254,8 @@ pub fn thread_control_block_capability_insert(
 /// `CONFIGURE`: bind the address space in `virtual_address_space_slot` to the (embryo) TCB in `thread_control_block_slot`, and set
 /// where EL0 execution begins (`entry`) and on what user stack (`user_stack_pointer`). The capability in
 /// `virtual_address_space_slot` is consumed; the space keeps its name, so a copy made first still names it while
-/// the thread runs (§249 (a running address space stays nameable)). On success, the address of the
-/// child's current-CPU page (milestone 812 (`std::thread::spawn` runs real threads in one address
-/// space)), never negative; a negative `abi::Error` otherwise, `WrongObject` for a space already
+/// the thread runs. On success, the address of the child's current-CPU page, which lets several
+/// threads share one address space, never negative; a negative `abi::Error` otherwise, `WrongObject` for a space already
 /// bound.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
@@ -287,9 +282,7 @@ pub fn thread_control_block_configure(
 
 /// `START`: make the TCB in `thread_control_block_slot` runnable. `argument_zero`, `argument_one` and `argument_two` seed the child's first three argument registers (`x0`/`x1`/`x2` on
 /// aarch64, `a0`/`a1`/`a2` on RISC-V) on its first instruction, the kernel-side spelling of "this
-/// thread's input" (`abi::thread_control_block::START`'s own doc comment says `_, _, _`, which is
-/// stale: `kernel/src/system_call.rs`'s `START` arm forwards all three to `sched::start_thread_control_block`
-/// unconditionally). Refuses a half-built thread (no bound address space, or no entry). `0` on
+/// thread's input"; the kernel forwards all three unconditionally. Refuses a half-built thread (no bound address space, or no entry). `0` on
 /// success; a negative `abi::Error`.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
@@ -316,7 +309,7 @@ pub fn thread_control_block_start(
 }
 
 /// `SUSPEND`: stop the thread whose TCB is in `thread_control_block_slot` until a [`thread_control_block_resume`],
-/// keeping its registers (DECISIONS §300 (the paused state, a TCB verb, silent)). Silent: nobody is told. When this returns 0 the thread
+/// keeping its registers. Silent: nobody is told. When this returns 0 the thread
 /// is off every core. `0` on success; a negative `abi::Error`.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
@@ -334,7 +327,7 @@ pub fn thread_control_block_suspend(thread_control_block_slot: u64) -> i64 {
 }
 
 /// `RESUME`: let the thread whose TCB is in `thread_control_block_slot` run on from where it was suspended
-/// (DECISIONS §300). `0` on success, also when it was not suspended; a negative `abi::Error`.
+/// `0` on success, also when it was not suspended; a negative `abi::Error`.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
 pub fn thread_control_block_resume(thread_control_block_slot: u64) -> i64 {

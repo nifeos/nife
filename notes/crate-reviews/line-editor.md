@@ -6,7 +6,8 @@ together outgrow the page. Its twin is [`terminal_contract`](terminal-contract.m
 the cut took out of this crate.*
 
 The architect reads this to clear the crate for its move to its own repository. It describes the
-crate as `main` leaves it at `97d16ae8b`. The findings and their statuses are in
+crate as `main` holds it once [#3965](https://github.com/nifeos/nife/pull/3965) lands; the checks under
+"What was run" ran at `97d16ae8b`, before the renames. The findings and their statuses are in
 [milestone 1098 (`line_editor`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1098-line-editor-outside-review.md);
 this package does not restate them, and checks which have landed.
 
@@ -72,10 +73,10 @@ repository exists, so the template's `check`, `proofs` and `weekly` workflows di
 
 | kind | items |
 |---|---|
-| the engine | `LineDisc` with `new`, `start_line`, `resume_line`, `feed`, `line`, `pending`, `insert_text`, `repaint`, `abandon`, `save`, `restore`; `Event::{None, Line, Eof, Interrupt, Suspend, Tab}` |
-| limits | `LINE_MAXIMUM` (256), `PROMPT_MAXIMUM` (64), `HIST` (8), `RAW_QUEUE_MAXIMUM` (64) |
-| output | the trait `Sink` (one method, `put`), `expand_output(src, out)` |
-| raw mode | `RawQueue` with `new`, `is_empty`, `push`, `pop8`, `save`, `restore` |
+| the engine | `LineEditor` with `new`, `start_line`, `resume_line`, `feed`, `line`, `pending`, `insert_text`, `repaint`, `abandon`, `save`, `restore`; `Event::{None, Line, Eof, Interrupt, Suspend, Tab}` |
+| limits | `MAXIMUM_LINE_BYTES` (256), `MAXIMUM_PROMPT_BYTES` (64), `HISTORY_LINES` (8), `MAXIMUM_RAW_QUEUE_BYTES` (64) |
+| output | the trait `Sink` (one method, `put`), `expand_output(source, out)` |
+| raw mode | `RawQueue` with `new`, `is_empty`, `push`, `pop_up_to_eight`, `save`, `restore` |
 | `handoff` | `MAGIC`, `LAYOUT`, `Writer` (`new`, `bytes`, `u32`, `field`, `finish`), `Reader` (`new`, `bytes`, `u32`, `field`), `Refusal::{NoBlob, Layout, Malformed}` |
 
 No nife type appears in a signature. What a stranger may find surprising:
@@ -86,7 +87,7 @@ No nife type appears in a signature. What a stranger may find surprising:
   terminal that never answers would block it.
 - `restore` on a refused blob may leave the editor half written, and the documentation tells the
   caller to discard it.
-- `pop8` returns a count and up to eight bytes packed little-endian in a `u64`, the shape the
+- `pop_up_to_eight` returns a count and up to eight bytes packed little-endian in a `u64`, the shape the
   terminal protocol's register-only replies use. A Rust reader outside nife meets a wire shape in
   an editor's API.
 
@@ -103,44 +104,38 @@ Checked against the source on `main`:
 | Item 8, one `QUIESCED` | landed | `components/src/line_editor.rs` line 85 asserts `terminal_contract::QUIESCED == hot_swap_contract::QUIESCED` at compile time |
 | Items 9 to 14 | landed ([#3566](https://github.com/nifeos/nife/pull/3566)) | as milestone 1098's finding status records |
 
+| Items 3 and 4, the engine's names | landed ([#3965](https://github.com/nifeos/nife/pull/3965)) | `LineEditor`, `HISTORY_LINES`, `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES`, `MAXIMUM_RAW_QUEUE_BYTES` and `pop_up_to_eight`; the private fields and locals spelled out, and the length fields end in `_bytes`. The template's `spelled_out` and `register_names` refuse none of 561 names |
+
 What has not landed:
 
 | item | state |
 |---|---|
-| Item 1, the crate stands alone | open; the move carries it. The README exists, so what remains is both licenses, literal `license`, `lints` and `rust-version`, the manifest's `description`, `repository` and `readme`, the `Name:` strip, and the citations of this tree |
-| Item 3, `LineDisc` to `LineEditor` and `HIST` to `HISTORY_LINES` (decision 2) | ruled, not built. `main` still holds `struct LineDisc` and `HIST`, and no open pull request or pushed branch carries the rename |
-| Item 3, the three limits to `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES` and `MAXIMUM_RAW_QUEUE_BYTES` (decision 3) | ruled, not built, for the same reason |
-| Item 3, `pop8` | open; the maintainer rules its new name, and the rename lane builds it |
-| Item 4, the engine's fields | open; `buf`, `cur`, `hist`, `esc` and `params` keep their names, and the template's `spelled_out` and `register_names` gates refuse six names today (What was run) |
-
-The rename lane for item 3 has not landed: nothing on `main`, in an open pull request or on a
-pushed branch renames any of the five names decisions 2 and 3 cover.
+| Item 1, the crate stands alone | the move carries it. The README exists, so what remains is both licenses, literal `license`, `lints` and `rust-version`, the manifest's `description`, `repository` and `readme`, the `Name:` strip, and the citations of this tree |
 
 ## Names
 
-The architect ratified the crate and program names. `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and
-`RAW_QUEUE_MAXIMUM` carry a ratification from before the units rule, and decision 3 of milestone
-1098 replaces them provisionally. Everything else is provisional or has no block. This lane
+The architect ratified the crate and program names. Decisions 2 and 3 of milestone 1098 gave the
+engine's type, its history depth and its three limits new names, provisionally, and they are
+built. Everything else is provisional or has no block. This lane
 ratifies nothing; the architect ratifies, changes or refuses each row.
 
 | item | status | rule or reason |
 |---|---|---|
-| `LineDisc` | no block; ruled provisionally to become `LineEditor` (decision 2) | an abbreviation of a word the crate-name ruling refused |
-| `HIST` | no block; ruled provisionally to become `HISTORY_LINES` (decision 2) | a count names the things it counts |
-| `LINE_MAXIMUM`, `PROMPT_MAXIMUM`, `RAW_QUEUE_MAXIMUM` | ratified before the units rule; ruled provisionally to become `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES`, `MAXIMUM_RAW_QUEUE_BYTES` (decision 3) | a limit opens `MAXIMUM_` and ends with its unit |
-| `pop8` | no block; open | the maintainer's to rule before the tag (item 3) |
+| `LineEditor` | provisional (decision 2) | the type takes the crate's name, as `rustyline::Editor` and `noline::Editor` do |
+| `HISTORY_LINES` | provisional (decision 2) | a count names the things it counts |
+| `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES`, `MAXIMUM_RAW_QUEUE_BYTES` | provisional (decision 3) | a limit opens `MAXIMUM_` and ends with its unit |
+| `pop_up_to_eight` | provisional, the maintainer's | the eight spelled out, where `pop8` carried a digit |
 | `Event::Suspend` | provisional | the `^Z` event, beside `Interrupt` |
 | `Event::Eof` | no block; kept by decision 2 | the standard library's spelling (`UnexpectedEof`) |
 | `handoff` (module) | provisional | the blob a replacement reads |
-| `line_disc`, `output`, `raw_queue`, `test_support` (private modules) | provisional | `line_disc` renames with its type under decision 2 |
+| `line_disc`, `output`, `raw_queue`, `test_support` (private modules) | provisional | private, so no reader outside the crate meets them; `line_disc` keeps the file name the Kani harness paths and falsification patches use |
 | `Sink`, `expand_output`, `RawQueue`, `Writer`, `Reader`, `Refusal`, `MAGIC`, `LAYOUT` and the methods | no block | plain words; `is_empty`, `new`, `push` and `u32` are standard library spellings |
-| the private fields and locals the gates and the report list | no block | item 4's worklist |
+| the private fields and locals | no block | spelled out under item 4; the abbreviations report still lists the control-character names `BS`, `BEL`, `ESC`, `CSI`, `SS3` and `CR`, which are ASCII's and ECMA-48's own |
 
 ## What still blocks the move
 
 | item | owner |
 |---|---|
-| The rename lane for item 3 (decisions 2 and 3 and `pop8`) and item 4's fields, so the template's `check` job passes in the new repository from its first run. | rename lane |
 | Item 1: both licenses, the manifest rows, the `Name:` strip and the citations of this tree. | move lane |
 | Convert `components`, `fuzz` and `crates/video_terminal` to `git` and `rev` with `version = "0.1.0"`, and read every file `script/crate-move --dry-run` lists. The two fuzz targets either move with the crate or stay in nife's `fuzz/` against the pinned revision. | move lane |
 | Run the stranger test and the template's workflows in the new repository. | move lane |
@@ -149,17 +144,10 @@ ratifies nothing; the architect ratifies, changes or refuses each row.
 
 Ready for review. The cut landed, the engine depends on nothing and carries no nife type, two
 proofs each have a falsifying patch, and every item milestone 1098 lists as needing no ruling has
-landed. What remains is the ruled rename, which has not landed, and the move's own work. The
-template's `check` job would fail today on six names, so the move waits for the rename lane even if
-the architect clears the review now.
+landed. What remains is the move's own work.
 
 ## Open questions
 
-- `pop8`'s new name is the maintainer's to rule as a two-way door. One candidate is `pop_packed`,
-  which says what the `u64` holds without naming the count.
-- `register_names` refuses a field called `len`. The rename lane either spells the unit
-  (`length_bytes`) or keeps `len` in the kept form the template allows for a standard library
-  spelling. Both are two-way until the first tag.
 - The `handoff` blob is a format two separately built `line_editor` binaries exchange during a
   replacement. Milestone 956 (the linked interfaces carry checkable versions) gives an interface id
   only to a format exchanged between separately released parts; whether a replacement from a newer
@@ -169,9 +157,9 @@ the architect clears the review now.
 
 1. Clear the review, which is the go to create `nifeos/line_editor` and move the crate (one-way:
    the template's workflows and nife's pin act on the repository from its first day). Recommended: A.
-   - A. Clear it now; the move waits for the item 3 rename lane, as for `designware_ethernet`.
-   - B. Hold the clearance until the rename lane lands, and review the names as built.
-2. Ratify the Names table once the rename lands, including the three limits as the re-ratification
+   - A. Clear it now; the move follows.
+   - B. Hold the clearance for a reason this package does not see.
+2. Ratify the Names table, including the three limits as the re-ratification
    of the names #2797 ratified. Two-way before the first tag; one-way after it.
 3. Freeze the `handoff` identity, `MAGIC` "LEDT" and `LAYOUT` 1, as the first published layout.
    Recommended: yes, since a replacement from a later release reads it.

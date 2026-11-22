@@ -15,7 +15,7 @@ fn a_grant_name_limit_matches_the_file_system_contract() {
         MAXIMUM_WORDS_NAME_BYTES,
         file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES
     );
-    assert!(is_valid_file_name(b"least_authority_demo"));
+    assert!(is_valid_file_name(b"count"));
     assert!(is_valid_file_name(&[b'n'; MAXIMUM_FILE_NAME_BYTES]));
     assert!(!is_valid_file_name(&[b'n'; MAXIMUM_FILE_NAME_BYTES + 1]));
     assert!(!is_valid_file_name(b""));

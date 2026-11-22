@@ -2,7 +2,7 @@
 
 Milestone 47 (navigation and naming) built this on 2026-09-26 (UTC), under calef's ruling on
 DECISIONS §227 (how Tab reaches the shell): option D. The shell turns the terminal's raw mode on
-and runs the same `line_editor::LineDisc` engine in its own process, the way bash runs readline.
+and runs the same `line_editor::LineEditor` engine in its own process, the way bash runs readline.
 So a Tab reaches the process that holds the authority completion needs, and no new message
 crosses the terminal wire. The note's name is provisional.
 

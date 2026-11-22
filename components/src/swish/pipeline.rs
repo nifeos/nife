@@ -23,14 +23,14 @@ const PIPE_REGION_PAGES: u64 = 8;
 pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
     // The names on the ends, resolved against where we stand now, exactly as an operand is.
     let out = match l.output {
-        Some(t) => match grant_plan::output_file_grant(t, holdings(nav)) {
+        Some(t) => match grant_plan::output_file_grant(t, &holdings(nav)) {
             Ok(g) => Some(g),
             Err(r) => return say(Say::Cannot(r)),
         },
         None => None,
     };
     let inp = match l.input {
-        Some(t) => match grant_plan::input_file_grant(t, holdings(nav)) {
+        Some(t) => match grant_plan::input_file_grant(t, &holdings(nav)) {
             Ok(g) => Some(g),
             Err(r) => return say(Say::Cannot(r)),
         },
@@ -38,7 +38,7 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
     };
     // `2>` names one destination for the line: one diagnostic rendezvous serves every declarer.
     let diag_file = match l.diagnostics {
-        Some(t) => match grant_plan::output_file_grant(t, holdings(nav)) {
+        Some(t) => match grant_plan::output_file_grant(t, &holdings(nav)) {
             Ok(g) => Some((g, l.diagnostics_mode())),
             Err(r) => return say(Say::Cannot(r)),
         },
@@ -74,7 +74,7 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
                     source: l.stage_source(i, inp),
                     diagnostics: diag_file,
                 };
-                match program_table::plan_stage(&spec, holdings(nav), expanded, streams) {
+                match program_table::plan_stage(&spec, &holdings(nav), &expanded, &streams) {
                     Ok((program, e)) => {
                         plans[i] = Some(e);
                         rows[i] = Some(program);

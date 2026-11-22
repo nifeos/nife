@@ -9,11 +9,11 @@ goes red because `signal` panics in debug builds and wraps the count to zero in 
 which loses every counted signal.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index cfd015317..bfe0cf56b 100644
+index 0dcb87d6d..17754f6df 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -325,7 +325,7 @@ impl<T: Node> Rendezvous<T> {
-         if let Some(receiver) = self.receivers.pop_front() {
+@@ -450,7 +450,7 @@ impl<T: Node> Rendezvous<T> {
+         if let Some(receiver) = self.take_receiver() {
              Some(receiver)
          } else {
 -            self.pending = self.pending.saturating_add(1);

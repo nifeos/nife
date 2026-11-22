@@ -43,7 +43,7 @@ or broken PCI function can answer the closures with anything.
 |---|---|
 | `ecam_offset_stays_inside_the_window` | any BDF's config page lies inside the 256-bus ECAM window, so the kernel's volatile accessors cannot escape a correctly-sized mapping |
 | `intx_interrupt_number_is_total_and_bounded` | the swizzle is total (the pin-0 underflow that panicked debug builds is gone, hardened with saturating arithmetic) and lands within `base..=base+3` |
-| `read_bars_is_total_for_any_device` | the BAR size probe never panics on garbage device answers (`!mask + 1` cannot overflow: the type bits are masked first) |
+| `read_bars_is_total_for_any_device` | the BAR size probe never panics on garbage device answers, and every BAR it returns has a power-of-two size of at least 16 whose end does not pass the top of the address space |
 | `the_capability_walk_terminates_on_any_device` | a capability list forming ANY graph, cycles included, is walked at most 64 hops; the bounded-walk discipline proved rather than argued |
 | `a_bar_size_is_where_the_writable_bits_begin` | a decoded BAR size is exactly the boundary between the bits a device ignores and the bits it decodes |
 | `the_msix_walk_terminates_and_bounds_its_table_size` | the MSI-X walk terminates on any device and the table size it reports is in `1..=2048` |

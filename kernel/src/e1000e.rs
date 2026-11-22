@@ -336,11 +336,10 @@ fn region_for(rid: u32) -> Result<u64, crate::iommu::AttachError> {
             }],
         );
         if let Err(e) = confined {
-            for page in 0..layout::DIRECT_MEMORY_ACCESS_REGION_PAGES {
-                crate::memory::free(page_frames::PageFrame::from_physical_address(
-                    base + page * page_frames::FRAME_BYTES,
-                ));
-            }
+            crate::memory::free_contiguous(
+                page_frames::PageFrame::from_physical_address(base),
+                layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize,
+            );
             return Err(e);
         }
     }

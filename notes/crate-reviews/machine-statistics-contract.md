@@ -144,7 +144,7 @@ them. The architect clears the package, and that clearance covers these two modu
 
 | item | owner |
 |---|---|
-| `address_space_layout` and `current_cpu_contract` leave first (milestone 1017 step 6 follows their steps), and this crate then depends on both by `git` and `rev` with `version = "0.1.0"`. Until then the standalone build cannot resolve them | their moves, then this move |
+| `current_cpu_contract` leaves first (milestone 1017 step 6 follows its step), and this crate then depends on it by `git` and `rev` with `version = "0.1.0"`, as it already depends on `address_space_layout`. Until then the standalone build cannot resolve it | its move, then this move |
 | Add `repository` to the manifest | the move lane |
 | Convert the seven manifests to `git` and `rev`, drop the workspace member and the mutation baseline row, and read `script/verify`, `helpers/interface_stability.py`, `helpers/trust_boundary_crates.tsv` and `packages/contracts.package.toml`, which name the crate | the move lane's nife-side pull request, as the dry run lists it |
 | Lower or delete the crate's rows in `helpers/lint_externalized_crates.py` and `helpers/template_report_baseline.txt` | the move lane's nife-side pull request |
@@ -155,5 +155,5 @@ them. The architect clears the package, and that clearance covers these two modu
 Cleared to move (2026-11-20 UTC, no tag, no publish). The names are ratified, every finding of the
 outside review has landed or is work the move does, and the crate's own tests, clippy, docs, Miri,
 Kani harnesses and falsification patches pass. The clearance is the go to create
-`nifeos/machine_statistics_contract` with `publish = false`, which then waits for the two crates it
-depends on, `address_space_layout` and `current_cpu_contract`, to leave first.
+`nifeos/machine_statistics_contract` with `publish = false`, which then waits for `current_cpu_contract`
+to leave first.

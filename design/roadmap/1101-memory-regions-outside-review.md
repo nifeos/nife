@@ -53,9 +53,11 @@ for the crate's own reasons.
   loom models when its manifest depends on loom, from
   [v8](https://github.com/nifeos/crate-workflows/pull/65); the README's split of what loom checks
   and what Kani proves is written with the README.
-- P1-6, gates of the template: Open. (b) and (c) landed in [#3567](https://github.com/nifeos/nife/pull/3567), and (d) in [#3521](https://github.com/nifeos/nife/pull/3521). (a) is
-  open: the template's address rule still refuses `ObjectKind::AddressSpace`. (e) is the move's,
-  which pins the template at `v8`.
+- P1-6, gates of the template: At the move. (a) landed in the template in
+  [nifeos/crate-workflows#80](https://github.com/nifeos/crate-workflows/pull/80), (b) and (c) in
+  [#3567](https://github.com/nifeos/nife/pull/3567), and (d) in
+  [#3521](https://github.com/nifeos/nife/pull/3521). (e) is the move's, which pins the template at
+  `v9` or later.
 - P1-7, documentation the code contradicts: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P1-8, manifest metadata and the dependency line: At the move. The manifest has `description`,
   `keywords` and `categories`; `documentation`, `readme`, `repository` and `rust-version` come with
@@ -63,15 +65,16 @@ for the crate's own reasons.
 - P1-9, public names for the naming pass: Waiting on Decision 1's trigger, a second consumer or
   object kinds the caller defines. The name ratification under "Held decision" is asked then.
 - P2-10, a root ceiling under sixteen: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-11, the cost of `spent` and of the return: Open. The doc comments state the cost
-  ([#3567](https://github.com/nifeos/nife/pull/3567)); a per-parent page count in place of the scan is a two-way door the maintainer rules.
+- P2-11, the cost of `spent` and of the return: Done,
+  [#3567](https://github.com/nifeos/nife/pull/3567). Both doc comments state the cost, and
+  `Children` reads the per-parent count without a scan.
 - P2-12, `ObjectKind::ALL`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-13, `forbid(unsafe_code)`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-14, a table-level invariant harness: Done, [#3567](https://github.com/nifeos/nife/pull/3567), with its shard times in [#3647](https://github.com/nifeos/nife/pull/3647).
 - P2-15, direct tests of the pure functions: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-16, a dropped claim: Open. The type's documentation says a dropped claim leaks;
-  `return_to_parent` still takes `&DestroyClaim`, and `DestroyClaim` has no `Drop`. The signature
-  is a two-way door until the first publish, and the maintainer rules it.
+- P2-16, a dropped claim: Done, [#3969](https://github.com/nifeos/nife/pull/3969), ruled by the
+  maintainer, provisional. `return_to_parent` consumes its claim, so a second return of one claim
+  does not compile, and the type's documentation says a dropped claim leaks and does not panic.
 - Decision 1, whether the crate leaves nife: Done, [#3803](https://github.com/nifeos/nife/pull/3803), ruled 2026-11-19 (UTC), option A.
   The crate stays in the kernel base package, and the move waits until the crate has a second
   consumer or its object kinds are the caller's to define, whichever comes first.

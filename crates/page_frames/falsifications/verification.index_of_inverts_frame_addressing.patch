@@ -12,7 +12,7 @@ a frame is filed under somebody else's bit.
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -369,3 +369,3 @@
+@@ -404,3 +404,3 @@
          }
 -        let i = ((physical_address - self.base) / FRAME_BYTES) as usize;
 +        let i = (physical_address / FRAME_BYTES) as usize;

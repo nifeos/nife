@@ -19,8 +19,8 @@ inside the process, and why it fails the way it does.
   under it.
 - A 16-byte-aligned local is 16-byte aligned, so the program entered with the stack its ABI
   promises. On `x86_64` a plain `extern "C" fn _start` fails this, which is why every program
-  enters through `user_mode_runtime::program_entry!` (notes/user-mode-runtime.md, "Entering a
-  process").
+  enters through `user_mode_runtime::program_entry!` (crates/user_mode_runtime/docs/design.md,
+  "Entering a process").
 
 None of this needs a capability. Every byte it reads belongs to the process already, which is why
 the milestone-7 test spawns the self-checker with no authority at all.

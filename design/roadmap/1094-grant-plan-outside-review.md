@@ -31,16 +31,13 @@ own `test_support::plan_line`. No new tool.
 Every item not Done blocks the first crates.io publish, which waits until every outside-review
 milestone reaches delivery.
 
-- P0-1, split the catalog from the planner: Done,
-  [#3584](https://github.com/nifeos/nife/pull/3584).
-- P0-2, the documentation does not build with warnings denied: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566).
-- P0-3, the manifest and the repository root are the workspace's: Open. The move writes a
-  manifest of the crate's own (no `license.workspace`, no allowlist comment), a README and a
-  LICENSE. It also moves the tests off the `program_table` dev-dependency and makes
-  `ISOLATION_WORD` (`src/planning.rs` line 42) a value the caller passes, as BUGS records.
-- P1-4, the tokenizer drops a seventeenth token: Done,
-  [#3559](https://github.com/nifeos/nife/pull/3559).
+- P0-1, split the catalog from the planner: Done, [#3584](https://github.com/nifeos/nife/pull/3584).
+- P0-2, the documentation does not build with warnings denied: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P0-3, the manifest and the repository root are the workspace's: At the move. The tests plan
+  against rows of their own and the `program_table` dev-dependency is gone ([#3961](https://github.com/nifeos/nife/pull/3961)); `ISOLATION_WORD`
+  lives in `program_table`. `Cargo.toml` still inherits `license` and `[lints]`, and the move
+  writes the crate's own manifest, a README and a LICENSE.
+- P1-4, the tokenizer drops a seventeenth token: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
 - P1-5, no proof: Open. Neither `grant_plan` nor `grant_contract` has a Kani harness; a lane writes
   one per claim, and the two `job_windows` patches in `program_table` replay host tests.
 - P1-6, limits carry their unit, and four fields named `len`: Done (ruled by the maintainer,
@@ -54,43 +51,40 @@ milestone reaches delivery.
   `COOPERATIVE_GRACE_POLLS`, `RIGHTS_BITS_DO_NOT_OVERLAP` and `program_id` follow. The names are
   provisional until the architect ratifies them from the review packages.
 - P1-8, British spellings: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-9, documentation for a stranger: Open.
-  [#3566](https://github.com/nifeos/nife/pull/3566) closes `grant_plan`'s `missing_docs` worklist;
-  the move strips the citations, the quotations
-  and the 74 `Name:` lines.
-- P1-9b, `missing_docs` in the split crates: Open. `grant_contract/src/lib.rs` line 21 and
-  `program_table/src/lib.rs` line 16 carry `#![allow(missing_docs)]`; a lane documents the items
-  and removes both.
+- P1-9, documentation for a stranger: At the move. [#3566](https://github.com/nifeos/nife/pull/3566) and [#3961](https://github.com/nifeos/nife/pull/3961) close the `missing_docs`
+  worklists of all three crates; the move strips the citations, the quotations and the `Name:`
+  lines.
+- P1-9b, `missing_docs` in the split crates: Done, [#3961](https://github.com/nifeos/nife/pull/3961). Neither `grant_contract`
+  nor `program_table` allows `missing_docs`.
 - P1-10, numbers in refusal sentences: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-11, two-kilobyte values by value: Open. The size test is in
-  [#3566](https://github.com/nifeos/nife/pull/3566); taking `&Holdings`, `&Expansion` and
-  `&Streams` (`src/planning.rs` lines 60 to 73, `program_table/src/planning.rs` lines 14 to 31) is
-  two-way, and the maintainer rules it provisionally.
+- P1-11, two-kilobyte values by value: Done, [#3566](https://github.com/nifeos/nife/pull/3566) and [#3961](https://github.com/nifeos/nife/pull/3961). The planning functions take
+  `&ShellHoldings`, `&Expansion` and `&Streams`, provisional until the release review; the move
+  writes the sizes into the README.
 - P1-12, narrow length fields: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-13, an undeclared widening option: Open. `Manifest::is_well_formed` is in
-  [#3566](https://github.com/nifeos/nife/pull/3566); the `programs!` assertion and the note
-  decoder's call are not written.
-- P1-14, the mutation record predates the split: Open. A full run on the three crates gives the
-  figure the release gate asks for.
+- P1-13, an undeclared widening option: Done, [#3566](https://github.com/nifeos/nife/pull/3566) and [#3961](https://github.com/nifeos/nife/pull/3961). A `const` assertion in
+  `program_table` checks every row with `Manifest::is_well_formed`, and the note decoder already
+  refuses an undeclared subtree letter.
+- P1-14, the mutation record predates the split: Waiting on a full mutation run of the three
+  crates, which gives the figure the release gate asks for.
 - P2-15, `NameSet`'s `Debug`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-16, `Result<_, ()>` operands: Open. `kill_operands` in `src/parsing.rs` allows
-  `clippy::result_unit_err`; a lane names the error.
+- P2-16, `Result<_, ()>` operands: Done, [#3961](https://github.com/nifeos/nife/pull/3961). `job_operand` and `kill_operands` return the
+  error `NoJobNamed`, provisional.
 - P2-17, an unchecked window shift: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-18, tests pin thirteen of twenty-eight wire ids: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-19, no runnable example: Open. The crate has no `examples/` directory; one shows a manifest
-  and a planned line.
-- Decision, where the crate boundary falls: Done (ruled 2026-11-14 UTC),
-  [#3584](https://github.com/nifeos/nife/pull/3584).
-- Decision, the names of the split crates: Done (ruled 2026-11-19 UTC). `grant_contract` and
-  `program_table` stand as built.
-- Follow-on, a review package: Done. `notes/crate-reviews/grant-plan.md` and
-  `notes/crate-reviews/grant-contract.md` are ready for review and clear nothing.
-- Follow-on, the externalization list: Open. `crates/externalization-list.txt` names `grant_plan`
-  and not `grant_contract`, which leaves too; `program_table` stays in nife and needs no row.
-- Follow-on, review clearance and the repositories: Ruled (maintainer, provisional, 2026-11-19
-  UTC). The two review packages come first; the architect then ratifies any provisional names from
-  them and clears `grant_plan` and `grant_contract` together, with no tag and no publication.
+- P2-18, tests pin thirteen of twenty-eight wire ids: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-19, no runnable example: Done, [#3961](https://github.com/nifeos/nife/pull/3961). `examples/plan_a_line.rs` plans a pipeline against a
+  caller's manifest; the move adds the README's examples section.
+- Decision, where the crate boundary falls: Done, [#3584](https://github.com/nifeos/nife/pull/3584), ruled 2026-11-14 (UTC).
+- Decision, public names that need a decoder: Done, [#3589](https://github.com/nifeos/nife/pull/3589), maintainer provisional 2026-11-14
+  (UTC).
+- Decision, limits carry their unit: Done, [#3822](https://github.com/nifeos/nife/pull/3822), maintainer provisional 2026-11-19 (UTC).
+- Decision, the names `grant_contract` and `program_table`: Done, [#3822](https://github.com/nifeos/nife/pull/3822), ruled 2026-11-19
+  (UTC), both as built.
+- Decision, review clearance and the repositories: Waiting on a ruling ([#3977](https://github.com/nifeos/nife/pull/3977)). The packages
+  `notes/crate-reviews/grant-plan.md` and `notes/crate-reviews/grant-contract.md` are written
+  ([#3822](https://github.com/nifeos/nife/pull/3822)) and read ready for review; the architect clears both crates together, with no tag and
+  no publication.
+- Decision, the names of both crates: Done, [#3868](https://github.com/nifeos/nife/pull/3868), ruled 2026-11-20 (UTC). Names with no block
+  wait on rulings by family.
 
 ## Open decisions
 
@@ -225,9 +219,6 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
   across files, so the first run after it is the one that counts.
 - The prior-art table's rows for POSIX, zsh, Plan 9, Shill and Plash come from memory, not a re-read; the
   download figures come from crates.io.
-- `grant_plan`'s tests plan against `program_table`'s catalog through a dev-dependency, so the
-  crate cannot run its tests outside this tree until they plan against manifests of their own. The
-  move lane writes those before 1017 step 6.
 - `ISOLATION_WORD` (`b"swish"`) is in `program_table`, so the catalog can refuse the word before
   resolving it. It names nife's shell and stays in nife.
 - The review measured the sizes with the tree's nightly on one 64-bit host. They match on every
@@ -237,12 +228,13 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
 
 - **Done.** P0 item 1, the split, in #3584: `grant_plan`, `crates/grant_contract` and
   `crates/program_table` build and test on their own.
-- **Done.** The limits rule (P1-6), the eight renames (P1-7) and the 2026-11-20 name rulings are
-  built, and the review packages are written. The review packages carry the clearance, after which the repositories follow with no tag and no publish.
-- **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
-  the three crates' sources on main.
-- **Recorded.** `grant_plan`'s tests plan against the catalog, and `ISOLATION_WORD` names the
-  shell; both are in this block's BUGS.
+- **Done.** The tree builds the limits rule (P1-6), the eight renames (P1-7) and the 2026-11-20
+  name rulings, and the two review packages carry the clearance; the repositories follow it with
+  no tag and no publish.
+- **Outstanding.** Every finding marked Open or Waiting on under "Finding status", each checked
+  against the three crates' sources on main.
+- **Done.** `crates/externalization-list.txt` names both crates that leave ([#3961](https://github.com/nifeos/nife/pull/3961));
+  `program_table` stays in nife and needs no row.
 
 ## Index row
 

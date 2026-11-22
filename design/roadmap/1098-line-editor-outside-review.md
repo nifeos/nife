@@ -31,17 +31,14 @@ Reuse: the template `nifeos/crate-workflows` and its helpers (`spelled_out.py`,
 Every finding not Done blocks the first crates.io publish, which waits until every outside-review
 milestone reaches delivery.
 
-- Item 1 (P0), the crate does not stand alone: Open. `Cargo.toml` still inherits `license` and
-  carries the allowlist comment; the move commit writes the manifest rows and the license files and
-  rewrites the citations.
+- Item 1 (P0), the crate does not stand alone: At the move. `Cargo.toml` still inherits `license`
+  and carries the allowlist comment; the move commit writes the manifest rows and the license files
+  and rewrites the citations.
 - Item 2 (P0), the cut: Done, [#3587](https://github.com/nifeos/nife/pull/3587).
-- Item 3 (P1), public names the naming rules refuse: Open. Decisions 2 and 3 rule the engine's
-  names and the three limits, and neither is built: `struct LineDisc` (`src/line_disc.rs` line 142)
-  and `HIST` (line 23) keep their names. `pop8` (`src/raw_queue.rs` line 65) is two-way before the
-  tag, so the maintainer rules its new name provisionally and a lane renames it with decision 2.
-- Item 4 (P1), names the template's gates refuse: Open. The engine's fields (`buf`, `cur`, `hist`,
-  `esc`, `params`, `src/line_disc.rs` lines 143 to 159) rename with item 3; `terminal_contract` and
-  `line_editor_component` keep their own worklists, and `proto` joins the template's word list.
+- Item 3 (P1), public names the naming rules refuse: Done, [#3965](https://github.com/nifeos/nife/pull/3965).
+- Item 4 (P1), names the template's gates refuse: Done, [#3965](https://github.com/nifeos/nife/pull/3965).
+  `terminal_contract` and `line_editor_component` keep their own worklists, and `proto` is no
+  longer a module of this crate.
 - Item 5 (P1), bindings and limits a stranger can read: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 6 (P1), `forbid(unsafe_code)`, fuzz targets and Kani harnesses: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 7 (P1), the handoff layout's version policy: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -53,21 +50,22 @@ milestone reaches delivery.
 - Item 13 (P2), the test terminal's row: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 14 (P2), `Writer::field` width: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Decision 1, where the cut falls: Done, [#3587](https://github.com/nifeos/nife/pull/3587), ruled 2026-11-14 (UTC).
-- Decision 2, `LineEditor` and `HISTORY_LINES`: Open. Ruled by the maintainer, provisional,
-  2026-11-14 (UTC), in [#3589](https://github.com/nifeos/nife/pull/3589); the rename lane builds it.
-- Decision 3, the three limits take their unit: Open. Ruled by the maintainer, provisional,
-  2026-11-19 (UTC); the rename lane builds it with decision 2.
-- Decision 4, an interface identity for `terminal_contract`: Waiting on the interface number the
-  architect mints when freezing the crate's identity. Ruled 2026-11-19 (UTC), A: an interface
+- Decision 2, `LineEditor` and `HISTORY_LINES`: Done, [#3965](https://github.com/nifeos/nife/pull/3965),
+  ruled 2026-11-14 (UTC) by the maintainer, provisional.
+- Decision 3, the three limits take their unit: Done, [#3965](https://github.com/nifeos/nife/pull/3965),
+  ruled 2026-11-19 (UTC) by the maintainer, provisional.
+- Decision 4, an interface identity for `terminal_contract`: Waiting on a ruling ([#3972](https://github.com/nifeos/nife/pull/3972)),
+  the architect's freeze of interface 25 at version 1. Ruled 2026-11-19 (UTC), A: an interface
   number and version 1, with no magic.
-- Decision 5, the name `terminal_contract`: Open. Ruled 2026-11-19 (UTC), A, in [#3796](https://github.com/nifeos/nife/pull/3796); the
-  crate's `Name:` block still reads provisional.
-- Decision 6, review clearance and the repositories: Waiting on a ruling, the architect's
-  clearance of `notes/crate-reviews/line-editor.md` and `notes/crate-reviews/terminal-contract.md`.
+- Decision 5, the name `terminal_contract`: Done, [#3965](https://github.com/nifeos/nife/pull/3965),
+  ruled 2026-11-19 (UTC), A, in [#3796](https://github.com/nifeos/nife/pull/3796).
+- Decision 6, review clearance and the repositories: Waiting on a ruling ([#3972](https://github.com/nifeos/nife/pull/3972)),
+  the architect's clearance of `notes/crate-reviews/line-editor.md` and
+  `notes/crate-reviews/terminal-contract.md`.
 
 ## Open decisions
 
-None. The rename lane carries item 3's limits, and the review package carries the go for both crates.
+Decisions 4 and 6 wait on the architect in [#3972](https://github.com/nifeos/nife/pull/3972).
 
 ## Goal
 
@@ -134,7 +132,8 @@ The P2 items are in [the appendix](1098-line-editor-outside-review/later-items.m
 
 - **Done.** Item 2, as decision 1 rules: `terminal_contract` and `line_editor_component` carry
   the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
-  program holds the two `QUIESCED` values equal.
+  program holds the two `QUIESCED` values equal. Items 3 and 4 and decisions 2, 3 and 5: the
+  engine's names and the crate root's ratification are built.
 - **Outstanding.** Every finding marked Open or Waiting on under "Finding status", each checked
   against the crates' sources on main.
 - **Outstanding.** The externalization list: `crates/externalization-list.txt` names
@@ -217,7 +216,7 @@ linenoise has `LINENOISE_MAX_LINE`. The tree's own `MAXIMUM_SURFACE_BYTES` and
 
 Decided by the maintainer on 2026-11-19 (UTC), provisional: a two-way door until the first tag.
 Rule A: `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES` and `MAXIMUM_RAW_QUEUE_BYTES`, with no alias.
-A rename lane builds it with item 3, not this milestone's pull request.
+[#3965](https://github.com/nifeos/nife/pull/3965) builds it with item 3.
 
 ### An interface identity for `terminal_contract`
 
@@ -296,7 +295,6 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 ## Index row
 
 An outside review of `line_editor` before it leaves. The cut has landed: `terminal_contract` and
-`line_editor_component` hold the contract, and the engine depends on nothing. Twelve findings have
-landed. The engine's renames and the move's own work remain. The limits' rename, the interface
-number for `terminal_contract` and the architect's clearance of the review package remain; the
-rulings cover the names and the clearance route.
+`line_editor_component` hold the contract, and the engine depends on nothing. Thirteen of the
+fourteen items have landed, the engine's renames among them. The move's own work, the interface
+number for `terminal_contract` and the architect's clearance of the review packages remain.

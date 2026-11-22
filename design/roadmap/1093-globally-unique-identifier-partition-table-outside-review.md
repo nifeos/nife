@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: 1017
 decision_dependencies: none
 machine_requirements: none
@@ -31,8 +32,8 @@ is this tree's own `master_boot_record`, which holds the protective-MBR code.
 Every item not Done blocks the first crates.io publish, which waits until every outside-review
 milestone reaches delivery.
 
-- P0-1, nife vocabulary in the sources: Open. The move commit strips the twelve `Name:` blocks and
-  rewrites the comment on `Cargo.toml` line 11.
+- P0-1, nife vocabulary in the sources: At the move. The move commit strips the `Name:` blocks
+  (seven source files still carry them) and rewrites the comment on `Cargo.toml` line 11.
 - P1-2, `Entry::blocks` panics on a hand-built entry: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-3, no way in through the backup table: Done. `parse_backup` and its host tests are in
@@ -40,35 +41,43 @@ milestone reaches delivery.
   `write_backup_header`, with its patch, is in [#3837](https://github.com/nifeos/nife/pull/3837).
 - P1-4, nothing compares the header with the device: Done for this crate. `check_disk_size` is in
   [#3566](https://github.com/nifeos/nife/pull/3566). No nife caller calls it, and each caller's
-  `BUGS` section says so ([#3837](https://github.com/nifeos/nife/pull/3837)); wiring the check in is each program's own change.
-- P1-5, `parse` cannot tell where the array came from: Open. The cheap form (documentation and the
-  README example) is in [#3566](https://github.com/nifeos/nife/pull/3566); the firm form, a
-  `parse` that takes the block it read the array from, is two-way before the tag and the
-  maintainer rules it provisionally.
+  `BUGS` section says so ([#3837](https://github.com/nifeos/nife/pull/3837)); wiring the check in
+  is each program's own change.
+- P1-5, `parse` cannot tell where the array came from: Will not fix in the firm form (ruled
+  2026-11-22 UTC, provisional, a two-way door before the tag). The cheap form, the two-step read in
+  the `parse` documentation and the README example, is in
+  [#3566](https://github.com/nifeos/nife/pull/3566). An array read from the wrong block already
+  fails its CRC and never parses, so the firm form changes the message and not the outcome, at
+  the price of a parameter on every call. A caller that wants the precise refusal can have it
+  later from an added function, which breaks no caller; a parameter removed after the tag would.
 - P1-6, "no `unsafe`" is only prose: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-7, twenty-three undocumented public items: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-8, the error type is not an `Error`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-9, the name gates refuse ten register names and one test name: Done. Decisions 2 and 5 built
-  the names in [#3821](https://github.com/nifeos/nife/pull/3821). The architect ratified them
-  and the seven that the decisions did not reach on 2026-11-20 UTC (`ATTRIBUTE_*`,
+  the names in [#3821](https://github.com/nifeos/nife/pull/3821). The architect ratified them and
+  the seven that the decisions did not reach on 2026-11-20 UTC (`ATTRIBUTE_*`,
   `Error::EntryBytes`, `BackupMismatch::EntryBytes`, the `transfer_bytes` parameters,
   `PartitionsOverlap { first, second }`, `get`, the two entry-array readers), built in
   [#3864](https://github.com/nifeos/nife/pull/3864).
-- P1-10, the prose gate refuses nineteen acronyms: Done, [#3837](https://github.com/nifeos/nife/pull/3837). Each is expanded at first use or
-  reworded. The gate still refuses `GPT` and `RFC` beside their expansions, a false positive of
-  the template's (see `BUGS`).
-- P1-11, the mutation verdict needs the recorded equivalents: Open. The move lane carries the six
-  equivalents into `.github/mutants-exempts` after the first full run in the new repository.
-- P1-12, the README is not the template's: Open. The badge row, the measured Kani figures and a
-  stranger run need the new repository.
+- P1-10, the prose gate refuses nineteen acronyms: Done,
+  [#3837](https://github.com/nifeos/nife/pull/3837). Each is expanded at first use or reworded.
+  The gate still refuses `GPT` and `RFC` beside their expansions, a false positive of the
+  template's (see `BUGS`).
+- P1-11, the mutation verdict needs the recorded equivalents: At the move. The move lane carries
+  the six equivalents into `.github/mutants-exempts` after the first full run in the new
+  repository.
+- P1-12, the README is not the template's: At the move. The badge row, the measured Kani figures
+  and a stranger run need the new repository.
 - P2-13, `check_backup` is stricter than the specification: Done (documented, strictness kept),
   [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-14, the proofs stop short of the hostile-input surface: Open for the fuzz target only, which
-  is in nife's `fuzz/fuzz_targets/` and moves with the crate. The `blocks` harness is in
-  [#3566](https://github.com/nifeos/nife/pull/3566). The harnesses for the protective MBR check,
-  `Span::covering`, `name_utf8` and the two stages of `Header::decode`, each with its patch, are in
-  [#3837](https://github.com/nifeos/nife/pull/3837); the protective MBR harness lives in `master_boot_record`.
+- P2-14, the proofs stop short of the hostile-input surface: At the move, for the fuzz target
+  only, which is in nife's `fuzz/fuzz_targets/` and moves with the crate. The `blocks` harness is
+  in [#3566](https://github.com/nifeos/nife/pull/3566). The harnesses for the protective MBR
+  check, `Span::covering`, `name_utf8` and the two stages of `Header::decode`, each with its patch,
+  are in [#3837](https://github.com/nifeos/nife/pull/3837); the protective MBR harness lives in
+  `master_boot_record`. The three that make `parse` total on a bounded input are in
+  [#3959](https://github.com/nifeos/nife/pull/3959).
 - P2-15, `Debug` prints the entry array: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-16, two casts narrow on a 32-bit host: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -79,34 +88,33 @@ milestone reaches delivery.
 - P2-19, callers add `uuid` themselves: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-20, a dead MBR record reads as a hybrid: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
-- Decision 1, the type name `PartitionTable`: Ruled (maintainer, provisional, 2026-11-14 UTC,
-  [#3589](https://github.com/nifeos/nife/pull/3589)). Built
-  ([#3821](https://github.com/nifeos/nife/pull/3821)), with no alias; ratified 2026-11-20 UTC with
-  the name table.
-- Decision 2, the size constants take their unit: Ruled (maintainer, provisional, 2026-11-19 UTC).
-  Built ([#3821](https://github.com/nifeos/nife/pull/3821)); the architect ratified the names 2026-11-20 UTC.
-- Decision 3, `uuid` stays in the public API: Ruled (architect, 2026-11-19 UTC). The crate documentation
+- Decision 1, the type name `PartitionTable`: Done, ruled by the maintainer, provisional,
+  2026-11-14 UTC ([#3589](https://github.com/nifeos/nife/pull/3589)), and ratified 2026-11-20 UTC
+  with the name table. Built in [#3821](https://github.com/nifeos/nife/pull/3821), with no alias.
+- Decision 2, the size constants take their unit: Done, ruled by the maintainer, provisional,
+  2026-11-19 UTC, and the names ratified 2026-11-20 UTC. Built in
+  [#3821](https://github.com/nifeos/nife/pull/3821).
+- Decision 3, `uuid` stays in the public API: Done, ruled 2026-11-19 UTC. The crate documentation
   carries the item ([#3821](https://github.com/nifeos/nife/pull/3821)); the dependency was already
   `1.28.0` with default features off.
-- Decision 4, where the nife type GUIDs live: Ruled (architect, 2026-11-19 UTC). Built
-  ([#3821](https://github.com/nifeos/nife/pull/3821)): `NIFE_DATA` and `NIFE_BOOT` live in the
+- Decision 4, where the nife type GUIDs live: Done, ruled 2026-11-19 UTC. Built in
+  [#3821](https://github.com/nifeos/nife/pull/3821): `NIFE_DATA` and `NIFE_BOOT` live in the
   crate `nife_partition_types` (provisional name), values unchanged, and `uefi_loader` and every
   reader use it.
-- Decision 5, spelling out `lba` and `mbr`: Ruled (architect, 2026-11-19 UTC). Built as
-  ratified names ([#3821](https://github.com/nifeos/nife/pull/3821)); the spelling-out reaches
-  every `lba` component and the `mbr` module, with the specification's spellings as
-  `#[doc(alias)]`.
-- Decision 6, review clearance and repository go: Ruled (architect, 2026-11-20 UTC). The architect
-  ratified the names and cleared the repository as `publish = false`, with no tag and no publication.
-- Package question, a totality harness for `parse`: Ruled (architect, 2026-11-20 UTC). The condition
-  is on the first tag and not on the repository. Before the tag, a bounded harness (a 512-byte block
-  and a one-entry array) exists, or the package records why it cannot finish. Today the fuzz target
-  is the only machine check on `parse`; the eight Kani harnesses do not cover it.
-- Package question, whether `VERSION` stays: Open, two-way; the maintainer rules it provisionally.
-- Follow-on, the protective-MBR code moves to `master_boot_record`: Ruled (maintainer, provisional,
-  2026-11-19 UTC). Built, [#3837](https://github.com/nifeos/nife/pull/3837): the record's write and check are `master_boot_record::protective`
-  (provisional names), and this crate depends on it. `master_boot_record::write`, `validate` and
-  `MasterBootRecordProblem` stay this crate's entry points, fitted to any accepted block size.
+- Decision 5, spelling out `lba` and `mbr`: Done, ruled 2026-11-19 UTC. Built as ratified names in
+  [#3821](https://github.com/nifeos/nife/pull/3821); the spelling-out reaches every `lba`
+  component and the `mbr` module, with the specification's spellings as `#[doc(alias)]`.
+- Decision 6, review clearance and repository go: At the move. Ruled 2026-11-20 UTC: the names are
+  ratified and the repository is cleared as `publish = false`, with no tag and no publication.
+- Package question, a totality harness for `parse`: Done,
+  [#3959](https://github.com/nifeos/nife/pull/3959). The ruling of 2026-11-20 UTC put it on the
+  first tag. `the_entry_array_check_is_total`, `the_table_checks_are_total_on_one_entry` and
+  `the_partition_checks_are_total_on_one_entry`, with the two `Header::decode` harnesses, prove
+  `parse` total on a 512-byte block and a one-entry array; each has its patch.
+- Package question, whether `VERSION` stays: Done, removed in
+  [#3959](https://github.com/nifeos/nife/pull/3959) (ruled 2026-11-22 UTC, provisional, a two-way
+  door before the tag). The crate owns no format, like `master_boot_record` and
+  `nife_partition_types`, which declare none; adding a version later breaks no caller.
 
 ## Open decisions
 
@@ -281,10 +289,9 @@ The checks are in [the appendix](1093-globally-unique-identifier-partition-table
 
 ## Follow-on
 
-- **Outstanding.** The move lane: P0-1, P1-11, P1-12 and the fuzz target of P2-14, which need the
-  new repository. Before the first tag, the bounded `parse` totality harness or the recorded reason
-  it cannot finish. The maintainer rules P1-5's firm form and the `VERSION` question provisionally. The template fixes its
-  `prose_acronyms` false positives.
+- **Recorded.** The move lane: P0-1, P1-11, P1-12 and the fuzz target of P2-14, which need the
+  new repository. The new repository's `proofs.yml` passes `kani-args: -Z stubbing`, which the
+  `parse` totality harnesses need. The template fixes its `prose_acronyms` false positives.
 
 ## Index row
 

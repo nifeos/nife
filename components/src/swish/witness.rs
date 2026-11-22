@@ -677,7 +677,7 @@ fn two_tree_grants(nav: &mut Nav) -> u64 {
     use file_system_fixture::{mounted_tree as tt, tree};
     let mut v = 0u64;
 
-    if let Ok(g) = grant_plan::input_file_grant(b"/second/secret", holdings(nav))
+    if let Ok(g) = grant_plan::input_file_grant(b"/second/secret", &holdings(nav))
         && g.side == grant_navigation::GrantSide::Second
         && let Ok(f) = open_source(nav, g)
     {
@@ -701,7 +701,7 @@ fn two_tree_grants(nav: &mut Nav) -> u64 {
         );
     }
     // And the same name outside the mount opens nothing, because the first tree has no `secret`.
-    if let Ok(g) = grant_plan::input_file_grant(b"/secret", holdings(nav))
+    if let Ok(g) = grant_plan::input_file_grant(b"/secret", &holdings(nav))
         && let Ok(f) = open_source(nav, g)
     {
         v |= tt::REACHED_ACROSS;
@@ -721,8 +721,8 @@ fn two_tree_rm(nav: &mut Nav) -> u64 {
     if let CommandLine::Run(rspec) = grant_plan::parse(b"rm /second/secret")
         && let Ok((_, e)) = program_table::plan(
             &rspec,
-            holdings(nav),
-            grant_plan::expansion::Expansion::none(),
+            &holdings(nav),
+            &grant_plan::expansion::Expansion::none(),
         )
         && let Some(g) = e.directory
         && g.side == grant_navigation::GrantSide::Second
@@ -808,7 +808,7 @@ pub(super) fn globbing(spec: u64) -> ! {
     let mut granted = Text::new();
     if let CommandLine::Run(rspec) = grant_plan::parse(line) {
         match expansion(&mut nav, &rspec) {
-            Ok(e) => match program_table::plan(&rspec, holdings(&nav), e) {
+            Ok(e) => match program_table::plan(&rspec, &holdings(&nav), &e) {
                 Ok((_, endow)) => match endow.directory {
                     Some(g) => swish::write_set(&g.names, &mut |b| granted.push(b)),
                     None => v |= globbing::GLOB_FAILED,

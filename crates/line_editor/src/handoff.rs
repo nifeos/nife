@@ -1,6 +1,6 @@
 // This module's docs are on its `pub mod` line in `lib.rs`.
 
-use super::{HIST, LineDisc, PROMPT_MAXIMUM, RAW_QUEUE_MAXIMUM, RawQueue};
+use super::{HISTORY_LINES, LineEditor, MAXIMUM_PROMPT_BYTES, MAXIMUM_RAW_QUEUE_BYTES, RawQueue};
 
 /// "LEDT", then the layout, in the blob's first eight bytes.
 pub const MAGIC: u32 = 0x5444_454c;
@@ -10,16 +10,16 @@ pub const LAYOUT: u32 = 1;
 /// A cursor writing into a blob. Refuses to run past its end rather than truncating, because a
 /// truncated blob that parsed would be state silently lost.
 pub struct Writer<'a> {
-    buf: &'a mut [u8],
+    buffer: &'a mut [u8],
     at: usize,
     full: bool,
 }
 
 impl<'a> Writer<'a> {
     /// Start a blob: the magic and layout go in first.
-    pub fn new(buf: &'a mut [u8]) -> Self {
+    pub fn new(buffer: &'a mut [u8]) -> Self {
         let mut w = Writer {
-            buf,
+            buffer,
             at: 0,
             full: false,
         };
@@ -29,11 +29,11 @@ impl<'a> Writer<'a> {
     }
     /// Append bytes.
     pub fn bytes(&mut self, b: &[u8]) {
-        if self.at + b.len() > self.buf.len() {
+        if self.at + b.len() > self.buffer.len() {
             self.full = true;
             return;
         }
-        self.buf[self.at..self.at + b.len()].copy_from_slice(b);
+        self.buffer[self.at..self.at + b.len()].copy_from_slice(b);
         self.at += b.len();
     }
     /// Append a little-endian word.
@@ -59,7 +59,7 @@ impl<'a> Writer<'a> {
 
 /// A cursor reading a blob.
 pub struct Reader<'a> {
-    buf: &'a [u8],
+    buffer: &'a [u8],
     at: usize,
 }
 
@@ -76,8 +76,8 @@ pub enum Refusal {
 
 impl<'a> Reader<'a> {
     /// Open a blob, checking the magic and the layout.
-    pub fn new(buf: &'a [u8]) -> Result<Self, Refusal> {
-        let mut r = Reader { buf, at: 0 };
+    pub fn new(buffer: &'a [u8]) -> Result<Self, Refusal> {
+        let mut r = Reader { buffer, at: 0 };
         if r.u32().ok_or(Refusal::NoBlob)? != MAGIC {
             return Err(Refusal::NoBlob);
         }
@@ -89,7 +89,7 @@ impl<'a> Reader<'a> {
     }
     /// Read `n` bytes.
     pub fn bytes(&mut self, n: usize) -> Option<&'a [u8]> {
-        let out = self.buf.get(self.at..self.at.checked_add(n)?)?;
+        let out = self.buffer.get(self.at..self.at.checked_add(n)?)?;
         self.at += n;
         Some(out)
     }
@@ -110,16 +110,16 @@ impl<'a> Reader<'a> {
     }
 }
 
-impl LineDisc {
+impl LineEditor {
     /// Write this discipline's carried state (see the module docs) into `w`.
     pub fn save(&self, w: &mut Writer<'_>) {
-        w.field(&self.buf[..self.len]);
-        w.u32(self.cur as u32);
-        w.field(&self.kill[..self.kill_len]);
-        w.field(&self.prompt[..self.prompt_len]);
-        w.u32(self.hist_count as u32);
-        w.u32(self.hist_next as u32);
-        for (line, n) in &self.hist {
+        w.field(&self.buffer[..self.length_bytes]);
+        w.u32(self.cursor as u32);
+        w.field(&self.kill[..self.kill_length_bytes]);
+        w.field(&self.prompt[..self.prompt_length_bytes]);
+        w.u32(self.history_count as u32);
+        w.u32(self.history_next as u32);
+        for (line, n) in &self.history {
             w.field(&line[..*n]);
         }
     }
@@ -127,17 +127,17 @@ impl LineDisc {
     /// Replace this discipline's carried state with what `r` holds. On `None` the discipline
     /// may be half written, and the caller refuses the whole blob rather than serve from it.
     pub fn restore(&mut self, r: &mut Reader<'_>) -> Option<()> {
-        self.len = r.field(&mut self.buf)?;
-        let cur = r.u32()? as usize;
-        if cur > self.len {
+        self.length_bytes = r.field(&mut self.buffer)?;
+        let cursor = r.u32()? as usize;
+        if cursor > self.length_bytes {
             return None;
         }
-        self.cur = cur;
-        self.kill_len = r.field(&mut self.kill)?;
-        self.prompt_len = r.field(&mut self.prompt[..PROMPT_MAXIMUM])?;
-        self.hist_count = (r.u32()? as usize).min(HIST);
-        self.hist_next = (r.u32()? as usize) % HIST;
-        for entry in &mut self.hist {
+        self.cursor = cursor;
+        self.kill_length_bytes = r.field(&mut self.kill)?;
+        self.prompt_length_bytes = r.field(&mut self.prompt[..MAXIMUM_PROMPT_BYTES])?;
+        self.history_count = (r.u32()? as usize).min(HISTORY_LINES);
+        self.history_next = (r.u32()? as usize) % HISTORY_LINES;
+        for entry in &mut self.history {
             entry.1 = r.field(&mut entry.0)?;
         }
         self.browse = None;
@@ -150,18 +150,18 @@ impl RawQueue {
     pub fn save(&self, w: &mut Writer<'_>) {
         // A length word, then the ring read out in order: the run up to the end of the buffer,
         // then the wrapped run from its start.
-        w.u32(self.len as u32);
-        let first = self.len.min(RAW_QUEUE_MAXIMUM - self.head);
-        w.bytes(&self.buf[self.head..self.head + first]);
-        w.bytes(&self.buf[..self.len - first]);
+        w.u32(self.length_bytes as u32);
+        let first = self.length_bytes.min(MAXIMUM_RAW_QUEUE_BYTES - self.head);
+        w.bytes(&self.buffer[self.head..self.head + first]);
+        w.bytes(&self.buffer[..self.length_bytes - first]);
     }
 
     /// Replace the queue with what `r` holds.
     pub fn restore(&mut self, r: &mut Reader<'_>) -> Option<()> {
-        let mut buf = [0u8; RAW_QUEUE_MAXIMUM];
-        let n = r.field(&mut buf)?;
+        let mut buffer = [0u8; MAXIMUM_RAW_QUEUE_BYTES];
+        let n = r.field(&mut buffer)?;
         *self = RawQueue::new();
-        self.push(&buf[..n]);
+        self.push(&buffer[..n]);
         Some(())
     }
 }

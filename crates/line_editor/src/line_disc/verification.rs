@@ -1,7 +1,7 @@
 //! Machine-checked proofs, which §14 (the project's direction) asks of the kernel's neighbours, for
 //! the two pieces of the engine that do index arithmetic on input nobody here chose: the escape
 //! parser and the range delete. The editor's
-//! invariant is `cursor <= length <= LINE_MAXIMUM`, and every edit has to keep it.
+//! invariant is `cursor <= length <= MAXIMUM_LINE_BYTES`, and every edit has to keep it.
 //!
 //! Name: provisional, for the module and the file.
 
@@ -17,17 +17,17 @@ impl Sink for Discard {
 /// The longest line a harness starts from. The arithmetic under proof moves bytes by offsets and
 /// lengths and does not depend on the capacity, and a solver over a symbolic 256-byte move does
 /// not finish; the bound keeps the move small and the offsets fully symbolic below it.
-const LONGEST: usize = LINE_MAXIMUM;
+const LONGEST: usize = MAXIMUM_LINE_BYTES;
 
 /// An editor holding any line up to [`LONGEST`] bytes with the cursor anywhere in it, and no
 /// history.
-fn any_editor() -> LineDisc {
-    let mut editor = LineDisc::new();
+fn any_editor() -> LineEditor {
+    let mut editor = LineEditor::new();
     let length: usize = kani::any();
     let cursor: usize = kani::any();
     kani::assume(length <= LONGEST && cursor <= length);
-    editor.len = length;
-    editor.cur = cursor;
+    editor.length_bytes = length;
+    editor.cursor = cursor;
     editor
 }
 
@@ -41,14 +41,14 @@ fn any_editor() -> LineDisc {
 #[kani::solver(minisat)]
 fn a_control_sequence_leaves_the_cursor_inside_the_line() {
     let mut editor = any_editor();
-    let state = EscState::Csi {
-        params: [kani::any(), kani::any()],
+    let state = EscapeState::Csi {
+        parameters: [kani::any(), kani::any()],
         n: kani::any(),
     };
     let byte: u8 = kani::any();
     let _ = editor.continue_escape(state, byte, &mut Discard);
-    assert!(editor.cur <= editor.len);
-    assert!(editor.len <= LONGEST);
+    assert!(editor.cursor <= editor.length_bytes);
+    assert!(editor.length_bytes <= LONGEST);
 }
 
 /// **A range delete removes exactly its range.** From any line and any cursor at or after `a`,
@@ -62,27 +62,27 @@ fn a_control_sequence_leaves_the_cursor_inside_the_line() {
 fn a_range_delete_removes_exactly_its_range() {
     let mut editor = any_editor();
     let (a, b): (usize, usize) = (kani::any(), kani::any());
-    kani::assume(a <= b && b <= editor.len && a <= editor.cur);
-    let (length, cursor) = (editor.len, editor.cur);
+    kani::assume(a <= b && b <= editor.length_bytes && a <= editor.cursor);
+    let (length, cursor) = (editor.length_bytes, editor.cursor);
     // Two marked bytes: one before the range and one after it.
     if a > 0 {
-        editor.buf[a - 1] = 0xa1;
+        editor.buffer[a - 1] = 0xa1;
     }
     if b < length {
-        editor.buf[b] = 0xb2;
+        editor.buffer[b] = 0xb2;
     }
     editor.delete_range(a, b, &mut Discard);
-    assert_eq!(editor.len, length - (b - a));
+    assert_eq!(editor.length_bytes, length - (b - a));
     if cursor >= b {
-        assert_eq!(editor.cur, cursor - (b - a));
+        assert_eq!(editor.cursor, cursor - (b - a));
     } else {
-        assert_eq!(editor.cur, a);
+        assert_eq!(editor.cursor, a);
     }
-    assert!(editor.cur <= editor.len);
+    assert!(editor.cursor <= editor.length_bytes);
     if a > 0 {
-        assert_eq!(editor.buf[a - 1], 0xa1);
+        assert_eq!(editor.buffer[a - 1], 0xa1);
     }
     if b < length {
-        assert_eq!(editor.buf[a], 0xb2);
+        assert_eq!(editor.buffer[a], 0xb2);
     }
 }

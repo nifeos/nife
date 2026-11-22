@@ -344,7 +344,7 @@ impl<'a> PageFrameAllocator<'a> {
     /// kernel that keeps running after one is a kernel that corrupts memory somewhere
     /// far away and blames innocent code. Fail loudly and immediately.
     pub fn free(&mut self, frame: PageFrame) {
-        let i = self.index_of(frame).expect("freeing a frame we don't own");
+        let i = self.index_of(frame).expect("freeing a frame we do not own");
         assert!(
             self.is_index_used(i),
             "double free of frame {:#x}",
@@ -354,6 +354,41 @@ impl<'a> PageFrameAllocator<'a> {
         self.set(i, false);
         self.used -= 1;
         self.hint = self.hint.min(i);
+    }
+
+    /// Return `count` frames from `first`, the run an [`alloc_contiguous`](Self::alloc_contiguous)
+    /// of `count` handed out. A `count` of zero frees nothing.
+    ///
+    /// Every frame of the run is checked before any is freed, so a bad call panics with the
+    /// bitmap unchanged.
+    ///
+    /// # Panics
+    /// When the run reaches past the frames the allocator owns, and when any frame of it is
+    /// already free. Both are the same kernel bugs [`free`](Self::free) refuses.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1103-finish-review. The partner of
+    /// `alloc_contiguous`, as `free` is of `alloc`.
+    pub fn free_contiguous(&mut self, first: PageFrame, count: usize) {
+        if count == 0 {
+            return;
+        }
+        let start = self.index_of(first).expect("freeing a run we do not own");
+        let end = start
+            .checked_add(count)
+            .filter(|&end| end <= self.total)
+            .expect("freeing a run that reaches past the frames we own");
+        if let Some(i) = (start..end).find(|&i| !self.is_index_used(i)) {
+            panic!(
+                "double free of frame {:#x} in a run",
+                self.base + i as u64 * FRAME_BYTES
+            );
+        }
+
+        for i in start..end {
+            self.set(i, false);
+        }
+        self.used -= count;
+        self.hint = self.hint.min(start);
     }
 
     /// Is this frame currently allocated? Test-support, and useful in assertions.

@@ -1,8 +1,8 @@
 //! The line discipline engine: a sans-IO editor for a serial terminal.
 //!
-//! [`LineDisc`] takes one byte at a time and emits echo bytes and completed lines; it does no IO,
+//! [`LineEditor`] takes one byte at a time and emits echo bytes and completed lines; it does no IO,
 //! IPC, UART or endpoint work, so the `line_editor` component only wires it up. It edits at a
-//! cursor, moves by control characters and ANSI sequences, kills and yanks, keeps [`HIST`] lines of
+//! cursor, moves by control characters and ANSI sequences, kills and yanks, keeps [`HISTORY_LINES`] lines of
 //! history, ends a line on CR, LF or CRLF, and reports ^C, ^D, ^Z and Tab as an [`Event`]. Output
 //! newline translation is the free function [`expand_output`], and [`handoff`] carries the editor's
 //! state across a replacement. See notes/line-discipline.md for the bindings and what it leaves
@@ -41,17 +41,17 @@
 //!
 //! | Constant | Value | What it bounds |
 //! |---|---|---|
-//! | [`LINE_MAXIMUM`] | 256 | bytes in a line; the next printable byte is refused with a bell |
-//! | [`PROMPT_MAXIMUM`] | 64 | bytes of prompt repainted; a longer prompt is truncated |
-//! | [`HIST`] | 8 | history lines held; the oldest is overwritten |
-//! | [`RAW_QUEUE_MAXIMUM`] | 64 | bytes a [`RawQueue`] holds; a burst past it is dropped |
+//! | [`MAXIMUM_LINE_BYTES`] | 256 | bytes in a line; the next printable byte is refused with a bell |
+//! | [`MAXIMUM_PROMPT_BYTES`] | 64 | bytes of prompt repainted; a longer prompt is truncated |
+//! | [`HISTORY_LINES`] | 8 | history lines held; the oldest is overwritten |
+//! | [`MAXIMUM_RAW_QUEUE_BYTES`] | 64 | bytes a [`RawQueue`] holds; a burst past it is dropped |
 //!
 //! # Example
 //!
 //! The engine does no IO. Bytes go in one at a time, and echo comes out through a [`Sink`].
 //!
 //! ```
-//! use line_editor::{Event, LineDisc, Sink};
+//! use line_editor::{Event, LineEditor, Sink};
 //!
 //! struct Echo(Vec<u8>);
 //! impl Sink for Echo {
@@ -61,7 +61,7 @@
 //! }
 //!
 //! let mut out = Echo(Vec::new());
-//! let mut editor = LineDisc::new();
+//! let mut editor = LineEditor::new();
 //! editor.start_line(b"> ", &mut out);
 //! for byte in b"hello" {
 //!     editor.feed(*byte, &mut out);
@@ -75,12 +75,12 @@
 //! - Input is ASCII only. A byte at or above 0x80 is dropped without echo, so UTF-8 text typed
 //!   into the line vanishes silently.
 //! - The redraw math assumes one row, so a line that wraps past the margin redraws wrongly;
-//!   [`LINE_MAXIMUM`] keeps that rare. The editor tracks no terminal size, because asking for it
+//!   [`MAXIMUM_LINE_BYTES`] keeps that rare. The editor tracks no terminal size, because asking for it
 //!   would block on a terminal that never answers.
-//! - History is [`HIST`] lines, fixed, and a line equal to the newest entry is not recorded again;
+//! - History is [`HISTORY_LINES`] lines, fixed, and a line equal to the newest entry is not recorded again;
 //!   an equal line further back is. The kill buffer holds one entry.
 //! - A Meta-prefixed key (`ESC` then a key other than `[` or `O`) drops the introducer and the key.
-//! - A prompt past [`PROMPT_MAXIMUM`] is truncated, as the limit says.
+//! - A prompt past [`MAXIMUM_PROMPT_BYTES`] is truncated, as the limit says.
 
 #![no_std]
 #![forbid(unsafe_code)]
@@ -93,9 +93,9 @@ mod line_disc;
 mod output;
 mod raw_queue;
 
-pub use line_disc::{Event, HIST, LINE_MAXIMUM, LineDisc, PROMPT_MAXIMUM};
+pub use line_disc::{Event, HISTORY_LINES, LineEditor, MAXIMUM_LINE_BYTES, MAXIMUM_PROMPT_BYTES};
 pub use output::{Sink, expand_output};
-pub use raw_queue::{RAW_QUEUE_MAXIMUM, RawQueue};
+pub use raw_queue::{MAXIMUM_RAW_QUEUE_BYTES, RawQueue};
 
 /// The line editor's state as a handoff blob (milestone 23 (a capability-routed component OS
 /// with live replacement); §209 (state handoff is an opaque blob over a granted frame, and it is

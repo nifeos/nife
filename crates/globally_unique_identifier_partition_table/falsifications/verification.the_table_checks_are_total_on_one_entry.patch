@@ -1,0 +1,18 @@
+Falsifies `globally_unique_identifier_partition_table::verification::the_table_checks_are_total_on_one_entry`.
+
+The defect: the check that the primary entry array ends before the first usable block is
+dropped, so a header whose usable range starts inside its own array is accepted, and a partition
+written there would overwrite the table.
+
+Expected to fail: the assertion that the primary array ends at or before the first usable block.
+diff --git a/crates/globally_unique_identifier_partition_table/src/table.rs b/crates/globally_unique_identifier_partition_table/src/table.rs
+--- a/crates/globally_unique_identifier_partition_table/src/table.rs
++++ b/crates/globally_unique_identifier_partition_table/src/table.rs
+@@ -171,7 +171,6 @@
+         // `>=`, not `>`: `block_count - backup_reserved` IS the backup array's first block (what
+         // `backup_entry_array_logical_block_address` computes), so equality puts a usable block inside the backup array.
+         if header.entry_array_logical_block_address <= PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS
+-            || primary_end > header.first_usable_logical_block_address
+             || block_count < backup_reserved
+             || header.last_usable_logical_block_address >= block_count - backup_reserved
+         {
