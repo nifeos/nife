@@ -1,0 +1,12 @@
+#!/bin/sh
+# script/review-status: the crates' outside reviews, one row per crate, read from each review
+# milestone's `## Finding status` section. Read-only; prints and writes nothing.
+#
+#     script/review-status          done, open, waiting, at-move and at-release counts, and the open P0s
+#     script/review-status --open   every finding that is not Done, with its milestone and severity
+#     script/review-status --check  refuse a status line outside the closed set (script/lint runs it)
+#
+# The closed set of states and the line shape are in helpers/review_status.py.
+#
+# Name: provisional, minted 2026-11-22 (UTC) by review-finding-status.
+exec python3 -I "$(dirname "$0")/../helpers/review_status.py" "$@"
