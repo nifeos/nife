@@ -1471,6 +1471,16 @@ echo "==> roadmap status"
 # cannot know whether the pull request is a draft. Its fixtures can still prove it fails.
 "$(dirname "$0")/roadmap" --selftest >/dev/null
 
+# Every crate review's `## Finding status` keeps one closed set of states, so that
+# script/review-status can derive the inventory and no document carries a total that goes stale
+# (ruled 2026-11-03 UTC). A Done line cites its pull request, a Will not fix line its ruling date,
+# and a review whose every finding is settled is BUILT. The selftest plants each refusal.
+echo "==> crate reviews keep one closed set of finding states"
+# lint-scope: both
+# lint-quick
+# lint-id: review-status
+"$(dirname "$0")/review-status" --selftest >/dev/null
+"$(dirname "$0")/review-status" --check
 
 # Intra-doc links, denied when broken. This codebase leans unusually hard on `[`Item`]` links to
 # stitch the code to itself and to the notes, which is deliberate (see CLAUDE.md on commenting) and
