@@ -235,7 +235,7 @@ unit's user. It prints the tag and the assets and publishes nothing.
   move held rows' seeds under the held directory.
 - Each move to a newer main idles every slot until the slowest current window ends, and the first
   window after it rebuilds. Nobody has measured what that costs at main's rate of merges.
-- Nothing frees the host's disk. The toolchain step installs each newly pinned nightly and removes
+- Nothing frees the host's disk. The toolchain step installs each pinned nightly and removes
   none, each slot's `target/` keeps the artifacts of every compiler it used, and the held
   directory only grows. No check warns before the disk fills.
 - An unfinished run of any required check name keeps the current commit, even the skipped duplicate
