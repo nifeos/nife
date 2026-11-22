@@ -57,9 +57,8 @@ section number, a milestone or a person in another repository.
 - P1-7, the `unsafe` reader has no test: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P1-8, the mutation exemption and the coverage figure: Done at the move,
   [#4007](https://github.com/nifeos/nife/pull/4007). The new repository's
-  `.github/mutants-exempts` lists the one survivor, `<` against `<=` in the header check, which
-  reads a page of exactly the header as no arguments either way. The tests reach every line and
-  98 percent of regions.
+  `.github/mutants-exempts` lists the one survivor, an equivalent `<` against `<=` in the header
+  check. The tests reach every line and 98 percent of regions.
 - P1-9, the all-or-nothing claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-10, the address truncates on narrow targets: Done,
   [#3978](https://github.com/nifeos/nife/pull/3978) (maintainer, provisional, 2026-11-22 UTC). The
