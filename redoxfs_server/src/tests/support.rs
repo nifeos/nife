@@ -44,7 +44,7 @@ pub(super) fn image_with(files: &[(&str, &[u8])]) -> DiskMemory {
 }
 
 /// Build an image with a subtree: files in the root, then `sub/` holding `inner` and `deeper/`,
-/// and a sibling `other/` holding `secret`. The same shape `filesystem_fixture::tree` describes
+/// and a sibling `other/` holding `secret`. The same shape `file_system_fixture::tree` describes
 /// and the device fixture carries, so the host tests and the guest tests attack one geometry.
 pub(super) fn image_with_tree() -> DiskMemory {
     let disk = DiskMemory::new(16 * 1024 * 1024);
@@ -95,7 +95,7 @@ pub(super) fn list(
         if n == 0 {
             return Ok(out);
         }
-        for (name, is_dir) in filesystem_contract::directory_entry::iter(&buf[..n]) {
+        for (name, is_dir) in file_system_contract::directory_entry::iter(&buf[..n]) {
             out.push((String::from_utf8(name.to_vec()).unwrap(), is_dir));
             cursor += 1;
         }

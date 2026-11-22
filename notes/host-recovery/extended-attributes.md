@@ -16,7 +16,7 @@ That the store is *visible* here is deliberate rather than a leak, and both halv
   descend into it, in any directory. The confinement is the *contract's*, and a recovery host is not
   a client of the contract; it holds the image file.
 - And a backup that carries the store carries the metadata. The format is written down in
-  `filesystem_contract::xattr::store` precisely so a person holding a damaged image can read it: a record is a
+  `file_system_contract::xattr::store` precisely so a person holding a damaged image can read it: a record is a
   name length, a `u32` type code, a `u16` value length, then the name and the value, little-endian.
 
 But a blob called `0000002a` is not a recovery. The tool now puts the attributes back on the
@@ -100,7 +100,7 @@ is the Mac's own addition to a freshly written file, not something out of the im
 ## BUGS
 
 - A Linux host refuses a name with no `user.` prefix. The store holds bytes and requires no
-  namespace (`filesystem_contract::xattr::is_valid_name` refuses only NUL and over-length), because
+  namespace (`file_system_contract::xattr::is_valid_name` refuses only NUL and over-length), because
   there is no privilege here for a namespace to mean. Linux does have one, and `lsetxattr` answers
   `EPERM` for a name outside it. The tool reports the errno rather than rewriting the name: silently
   turning `foo` into `user.foo` would hand back a file whose metadata does not say what the backup

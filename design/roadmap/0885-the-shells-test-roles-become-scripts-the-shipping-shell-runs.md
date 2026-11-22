@@ -125,7 +125,7 @@ each other's control, and the harness puts the run index into the names it hands
 
 Several steps never were the shell. `CREATE` with a body, `UNLINK` while a handle is held,
 `UNLINK` of a directory, `RMDIR` of a non-empty directory, `GETMTIME`, and `MKDIR` narrowed to drop
-`SETTIME` all go straight down the contract through `Nav::name_call`. The code says why: `rm` is a
+`SET_MODIFICATION_TIME_AT` all go straight down the contract through `Nav::name_call`. The code says why: `rm` is a
 program, and the witness holds no spawn channel. Those assertions move to
 `fs_test_client`, which already carries `ROLE_DIR_ATTACKER` for exactly this kind of probe behind
 the same caretaker, or to the harness reading the tree after the script. The mtime checks become

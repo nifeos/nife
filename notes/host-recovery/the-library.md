@@ -75,8 +75,8 @@ The import is incomplete, and the tool says so and exits non-zero.
 ## Attributes, read and put back
 
 `.extended-attributes` holds one file per node with extended attributes, named for the node's `TreePtr` id
-in hex, in the records `filesystem_contract::xattr::store` defines. The FS server writes it and
-nothing else does. The tool reads the layout through `filesystem_contract`, a dependency rather
+in hex, in the records `file_system_contract::xattr::store` defines. The FS server writes it and
+nothing else does. The tool reads the layout through `file_system_contract`, a dependency rather
 than a comment describing it (CLAUDE.md rule 7). Nothing in the read path may fail an extraction.
 A recovery that abandoned a hundred thousand files over one damaged blob would be worse than
 useless, so every problem is a skip that the caller counts and walks past.
@@ -95,7 +95,7 @@ refuses on a platform nobody has taught it. Three properties are decisions:
   somewhere else. `EPERM` on Linux means the name has no `user.` prefix. `E2BIG` means the value is
   over that filesystem's ceiling.
 - Names are bytes. The store refuses only NUL and over-length names
-  (`filesystem_contract::xattr::is_valid_name`), and both platform calls take a NUL-terminated C
+  (`file_system_contract::xattr::is_valid_name`), and both platform calls take a NUL-terminated C
   string, so the only conversion is the terminator. Nothing invents a namespace prefix: rewriting
   `foo` to `user.foo` would hand back a file whose metadata does not say what the backup said.
 

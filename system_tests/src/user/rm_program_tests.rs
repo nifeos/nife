@@ -1,5 +1,5 @@
-use filesystem_contract::{directory, rm as rr};
-use filesystem_fixture::tree;
+use file_system_contract::{directory, rm as rr};
+use file_system_fixture::tree;
 use grant_plan::rm_options;
 
 use super::*;
@@ -11,7 +11,7 @@ const MAXIMUM_MESSAGES: usize = 64;
 
 /// What one run of the program reported.
 struct Outcome {
-    /// Its exit status: 0, or the errno of the first failure (`filesystem_contract::rm`).
+    /// Its exit status: 0, or the errno of the first failure (`file_system_contract::rm`).
     status: u64,
     /// How many names it removed.
     removed: u64,
@@ -26,7 +26,7 @@ struct Outcome {
 ///
 /// `None` when no RedoxFS disk is attached (nothing to test; do not fail).
 fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
-    let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes())
+    let (lo, hi) = file_system_contract::grant::pack_name(name.as_bytes())
         .expect("the operand rides in two argument words");
     let (report, verdict, held) = fs_service::start_granted_dir(
         dir_capability_tests::blk_server_image(),
@@ -40,7 +40,7 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
             // `rm` is started with a **grant's** three words rather than a role and a number:
             // the spec (the operand's length, and the options where a caretaker's rights ride),
             // then the two words of name.
-            role: filesystem_contract::grant::specification(name.len(), flags),
+            role: file_system_contract::grant::specification(name.len(), flags),
             arg: lo,
             arg2: hi,
             // Measured the way `spawn_fs_client` asks for: the recursion is real stack, each
@@ -65,7 +65,7 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
         ) {
             byte_sink_contract::Message::Bytes(_) => {}
             byte_sink_contract::Message::EndOfStream => {
-                // The verdict comes after the end, on its own endpoint (`filesystem_contract::rm`).
+                // The verdict comes after the end, on its own endpoint (`file_system_contract::rm`).
                 // Receiving it only now is what keeps it from overtaking the text.
                 let [status, removed, zero, _, _] = sched::ipc_receive(verdict);
                 assert_eq!(zero, 0, "rm's verdict has a third word, and it is zero");
@@ -98,7 +98,7 @@ fn rm_r_takes_the_subtree_it_was_granted_and_a_narrower_grant_cannot_begin() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(refused) = run_rm(directory::REMOVE_TREE, tree::RM_DOOMED, 0) else {
+    let Some(refused) = run_rm(directory::rights::REMOVE_TREE, tree::RM_DOOMED, 0) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_eq!(
@@ -113,8 +113,12 @@ fn rm_r_takes_the_subtree_it_was_granted_and_a_narrower_grant_cannot_begin() {
     );
 
     // The narrow grant: it may take names out of `rmtree` and may not walk into anything.
-    let blind = run_rm(directory::REMOVE, tree::RM_DOOMED, rm_options::RECURSIVE)
-        .expect("the service was wired by the first run");
+    let blind = run_rm(
+        directory::rights::REMOVE,
+        tree::RM_DOOMED,
+        rm_options::RECURSIVE,
+    )
+    .expect("the service was wired by the first run");
     assert_eq!(
         blind.status,
         rr::status(2), // ENOENT
@@ -127,7 +131,7 @@ fn rm_r_takes_the_subtree_it_was_granted_and_a_narrower_grant_cannot_begin() {
 
     // And the same line through the grant that carries the walk.
     let done = run_rm(
-        directory::REMOVE_TREE,
+        directory::rights::REMOVE_TREE,
         tree::RM_DOOMED,
         rm_options::RECURSIVE | rm_options::VERBOSE,
     )
@@ -155,14 +159,18 @@ fn rm_f_ignores_a_name_that_is_not_there_and_success_says_nothing() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(loud) = run_rm(directory::REMOVE_TREE, tree::RM_MISSING, 0) else {
+    let Some(loud) = run_rm(directory::rights::REMOVE_TREE, tree::RM_MISSING, 0) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_eq!(loud.status, rr::status(2), "a missing name is ENOENT");
     assert!(loud.printed > 0, "and it says so");
 
-    let quiet = run_rm(directory::REMOVE_TREE, tree::RM_MISSING, rm_options::FORCE)
-        .expect("the service was wired by the first run");
+    let quiet = run_rm(
+        directory::rights::REMOVE_TREE,
+        tree::RM_MISSING,
+        rm_options::FORCE,
+    )
+    .expect("the service was wired by the first run");
     assert_eq!(
         quiet.status,
         rr::OK,
@@ -171,7 +179,7 @@ fn rm_f_ignores_a_name_that_is_not_there_and_success_says_nothing() {
     assert_eq!(quiet.printed, 0, "`-f` suppresses the diagnostic too");
     assert_eq!(quiet.removed, 0, "there was nothing to remove");
 
-    let did = run_rm(directory::REMOVE_TREE, tree::RM_SOLO, 0)
+    let did = run_rm(directory::rights::REMOVE_TREE, tree::RM_SOLO, 0)
         .expect("the service was wired by the first run");
     assert_eq!(did.status, rr::OK);
     assert_eq!(did.removed, 1);

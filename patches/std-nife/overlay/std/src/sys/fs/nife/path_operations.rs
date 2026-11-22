@@ -8,15 +8,15 @@
 
 use super::*;
 
-/// A name's metadata: open, `FSTAT`, close, then `GET_MODIFICATION_TIME`. Four messages instead of one, because
+/// A name's metadata: open, `FSTAT`, close, then `GET_MODIFICATION_TIME_UNIX_SECONDS`. Four messages instead of one, because
 /// the contract has no stat-by-name verb; the authority is identical (the name still resolves only
-/// under the granted directory, and all four need the `directory::READ` the walk asks for).
+/// under the granted directory, and all four need the `directory::rights::READ` the walk asks for).
 ///
 /// **A directory answers too** (milestone 64): `OPEN`'s `EISDIR` *is* the answer to "what kind of
 /// thing is this name", so `Path::is_dir()` and `create_dir_all`'s recovery from `AlreadyExists`
-/// work. `GET_MODIFICATION_TIME` goes last, so every error this returns comes from the walk, `OPEN` or `FSTAT`;
+/// work. `GET_MODIFICATION_TIME_UNIX_SECONDS` goes last, so every error this returns comes from the walk, `OPEN` or `FSTAT`;
 /// a refused one surfaces from `modified()` (see [`Mtime`]). The four are not atomic: a name
-/// replaced between `OPEN` and `GET_MODIFICATION_TIME` reports the new node's time with the old node's size, the
+/// replaced between `OPEN` and `GET_MODIFICATION_TIME_UNIX_SECONDS` reports the new node's time with the old node's size, the
 /// window a Unix program calling `stat` twice has. A directory's size is a placeholder 0.
 pub fn stat(path: &Path) -> io::Result<FileAttr> {
     if !is_reachable() {
@@ -38,7 +38,7 @@ pub fn stat(path: &Path) -> io::Result<FileAttr> {
 /// learn that `EISDIR` is an answer.
 pub(super) fn stat_under(at: u64, path: &Path) -> io::Result<FileAttr> {
     let mut p = page();
-    let (at, name) = walk(&mut p, at, path, fsproto::directory::READ)?;
+    let (at, name) = walk(&mut p, at, path, fsproto::directory::rights::READ)?;
     p.put(name.as_bytes());
     let (size, dir) = match request(proto::request(proto::OPEN, at.0, name.len() as u64), 0) {
         Ok(handle) => {
@@ -52,8 +52,8 @@ pub(super) fn stat_under(at: u64, path: &Path) -> io::Result<FileAttr> {
     };
     // The name again: nothing promises `OPEN`'s reply left the page as it found it.
     p.put(name.as_bytes());
-    let (r0, _) = rt::call(FS, proto::request(proto::GET_MODIFICATION_TIME, at.0, name.len() as u64), 0);
-    let mtime = match fsproto::reply_errno(r0 as i64) {
+    let (r0, _) = rt::call(FS, proto::request(proto::GET_MODIFICATION_TIME_UNIX_SECONDS, at.0, name.len() as u64), 0);
+    let mtime = match fsproto::error::code(r0 as i64) {
         None => Mtime::Seconds(r0),
         Some(_) => Mtime::Refused(r0),
     };
@@ -77,7 +77,7 @@ pub fn exists(path: &Path) -> io::Result<bool> {
 /// ([`ReadDir`] says why).
 ///
 /// - `read_dir(".")` (or `read_dir("")`) lists **the granted directory itself**, which is handle
-///   `fs::ROOT` and costs no `OPENDIR`.
+///   `file_system::ROOT` and costs no `OPENDIR`.
 /// - `read_dir("sub")` asks the server for a capability to `sub` first, lists through it, and
 ///   closes it. That is descend-then-enumerate, and it is the only way to reach `sub`: this
 ///   process holds no name for it other than through its parent.
@@ -91,10 +91,10 @@ pub fn readdir(p: &Path) -> io::Result<ReadDir> {
     let mut page = page();
 
     // `ENUMERATE` and nothing more, for the reason `DirBuilder::mkdir` spells out: over-asking is
-    // `EPERM`, not attenuation, so a PAL that asked for `directory::ALL` here would work through the
+    // `EPERM`, not attenuation, so a PAL that asked for `directory::rights::ALL` here would work through the
     // test's full-rights grant and fail through every narrowed one. Every hop on the way to a
     // nested path asks for `DESCEND | ENUMERATE`, which is the same minimum one level up.
-    let at = dir_at(&mut page, p, fsproto::directory::ENUMERATE)?;
+    let at = dir_at(&mut page, p, fsproto::directory::rights::ENUMERATE)?;
     let handle = at.0;
 
     let mut entries: Vec<(OsString, bool)> = Vec::new();
@@ -143,14 +143,14 @@ pub fn readdir(p: &Path) -> io::Result<ReadDir> {
 }
 
 /// **Remove a name** (`UNLINK`, milestone 64). Not revocation: a handle already open on the file
-/// keeps reading, exactly as POSIX promises, and `filesystem_contract::fs::UNLINK` records why the contract
+/// keeps reading, exactly as POSIX promises, and `file_system_contract::file_system::UNLINK` records why the contract
 /// draws that line. A directory is refused (`IsADirectory`); [`rmdir`] is its verb.
 pub fn unlink(p: &Path) -> io::Result<()> {
     if !is_reachable() {
         return Err(unsupported_err());
     }
     let mut page = page();
-    let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::directory::REMOVE)?;
+    let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::directory::rights::REMOVE)?;
     page.put(name.as_bytes());
     request(proto::request(proto::UNLINK, at.0, name.len() as u64), 0)?;
     Ok(())
@@ -165,14 +165,14 @@ pub fn rmdir(p: &Path) -> io::Result<()> {
         return Err(unsupported_err());
     }
     let mut page = page();
-    let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::directory::REMOVE)?;
+    let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::directory::rights::REMOVE)?;
     page.put(name.as_bytes());
     request(proto::request(proto::RMDIR, at.0, name.len() as u64), 0)?;
     Ok(())
 }
 
 /// **Move a name** (`RENAME`, milestone 64): write-a-temp-then-rename is how a careful program
-/// replaces a file, and `filesystem_contract::fs::RENAME` is concurrency-atomic and crash-atomic.
+/// replaces a file, and `file_system_contract::file_system::RENAME` is concurrency-atomic and crash-atomic.
 ///
 /// Each side is walked separately (milestone 122) and both handles go in one request, so
 /// `rename("a/tmp", "b/final")` is a single atomic message. The source directory loses a name
@@ -184,8 +184,8 @@ pub fn rename(old: &Path, new: &Path) -> io::Result<()> {
         return Err(unsupported_err());
     }
     let mut page = page();
-    let (src_at, src) = walk(&mut page, proto::ROOT, old, fsproto::directory::REMOVE)?;
-    let (dst_at, dst) = walk(&mut page, proto::ROOT, new, fsproto::directory::CREATE)?;
+    let (src_at, src) = walk(&mut page, proto::ROOT, old, fsproto::directory::rights::REMOVE)?;
+    let (dst_at, dst) = walk(&mut page, proto::ROOT, new, fsproto::directory::rights::CREATE)?;
     if src.len() + dst.len() > PAGE {
         return Err(io::const_error!(
             io::ErrorKind::InvalidFilename,
@@ -261,13 +261,13 @@ pub fn set_perm_nofollow(_p: &Path, _perm: FilePermissions) -> io::Result<()> {
     unsupported()
 }
 
-/// **`std::fs::set_times`** (milestone 64, rank 28): `SET_MODIFICATION_TIME_AT`, the caller's time, by name.
+/// **`std::fs::set_times`** (milestone 64, rank 28): `SET_MODIFICATION_TIME_AT_UNIX_SECONDS`, the caller's time, by name.
 ///
 /// Never `SET_MODIFICATION_TIME`: a caller's `SystemTime` asserts history, which DECISIONS §112 puts behind
-/// `directory::SETTIME`, so the walk asks for `WRITE | SETTIME` and a grant without it answers
+/// `directory::rights::SET_MODIFICATION_TIME_AT`, so the walk asks for `WRITE | SET_MODIFICATION_TIME_AT` and a grant without it answers
 /// `ReadOnlyFilesystem`. Falling back would write the server's logical "now" and report success.
 /// Refused before any message, so nothing is half done: an access time (no verb sets one), a time
-/// past `i64::MAX` seconds (`GET_MODIFICATION_TIME`'s signed reply could never read it back), and the granted
+/// past `i64::MAX` seconds (`GET_MODIFICATION_TIME_UNIX_SECONDS`'s signed reply could never read it back), and the granted
 /// directory itself (``, `.`, `/`), which has no name. A sub-second part is truncated, as on a
 /// second-granularity Unix filesystem. An empty `FileTimes` still resolves the name, so a missing
 /// file is `NotFound`. See notes/std/file-times.md.
@@ -304,9 +304,9 @@ pub fn set_times(p: &Path, times: FileTimes) -> io::Result<()> {
     }
     let mut page = page();
     let (at, name) =
-        walk(&mut page, proto::ROOT, p, fsproto::directory::WRITE | fsproto::directory::SETTIME)?;
+        walk(&mut page, proto::ROOT, p, fsproto::directory::rights::WRITE | fsproto::directory::rights::SET_MODIFICATION_TIME_AT)?;
     page.put(name.as_bytes());
-    request(proto::request(proto::SET_MODIFICATION_TIME_AT, at.0, name.len() as u64), secs)?;
+    request(proto::request(proto::SET_MODIFICATION_TIME_AT_UNIX_SECONDS, at.0, name.len() as u64), secs)?;
     Ok(())
 }
 
@@ -334,11 +334,11 @@ impl DirBuilder {
             return Err(unsupported_err());
         }
         let mut page = page();
-        let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::directory::CREATE | fsproto::directory::DESCEND)?;
+        let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::directory::rights::CREATE | fsproto::directory::rights::DESCEND)?;
         page.put(name.as_bytes());
         // The second word asks for rights on the child. `create_dir` needs nothing from the handle
         // it gets back, because it closes it, so it asks for none. A caller that kept the handle
-        // would send `fsproto::directory::PARENT_RIGHTS` (§98) rather than guess a mask.
+        // would send `fsproto::directory::rights::PARENT_RIGHTS` (§98) rather than guess a mask.
         let handle = request(proto::request(proto::MKDIR, at.0, name.len() as u64), 0)?;
         let _ = request(proto::request(proto::CLOSE, handle, 0), 0);
         Ok(())

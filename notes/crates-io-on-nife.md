@@ -154,7 +154,7 @@ least one call site.
 | 25 | `fs::rename` | CLOSED, milestone 64 | 2 | 2 | bound on `RENAME`; undercounted, see BUGS |
 | 26 | `fs::copy` | CLOSED 2026-08-17 | 2 | 2 | needs no verb: an open, a read/write loop, two closes |
 | 27 | `fs::canonicalize` | `Unsupported` | 2 | 1 | |
-| 28 | `File::set_times` | `fs::set_times` CLOSED 2026-09-19; `File::set_times` still `Unsupported` | 2 | 1 | `SETMTIME_AT` sets by name, needing `dir::WRITE` and `dir::SETTIME` (§112 (touch's two behaviors need two rights)); a handle has no name, so the `File` form is design/roadmap/0504-an-mtime-for-an-open-file.md |
+| 28 | `File::set_times` | `fs::set_times` CLOSED 2026-09-19; `File::set_times` still `Unsupported` | 2 | 1 | `SETMTIME_AT` sets by name, needing `dir::WRITE` and `dir::SET_MODIFICATION_TIME_AT` (§112 (touch's two behaviors need two rights)); a handle has no name, so the `File` form is design/roadmap/0504-an-mtime-for-an-open-file.md |
 | 29 | `File::try_clone` | `Unsupported` | 2 | 1 | a handle is one session's token (§27) |
 | 30 | `File::lock`/`try_lock` | `Unsupported` | 2 | 1 | `gix-tempfile` |
 | 31 | read/write timeouts | `Unsupported` | 1 | 1 | |

@@ -73,7 +73,7 @@ The twenty over 2,000, largest first:
 | `crates/grant_plan/src/lib.rs` | 7,080 |
 | `crates/system_initializer/src/lib.rs` | 6,358 |
 | `components/src/swish.rs` | 5,980 |
-| `crates/filesystem_contract/src/lib.rs` | 5,744 |
+| `crates/file_system_contract/src/lib.rs` | 5,744 |
 | `redoxfs_server/src/lib.rs` | 4,785 |
 | `xtask/src/swish_check.rs` | 4,576 |
 | `crates/swish/src/lib.rs` | 3,885 |

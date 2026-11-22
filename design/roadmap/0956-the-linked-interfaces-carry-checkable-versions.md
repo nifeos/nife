@@ -113,9 +113,9 @@ table. No registry outside it exists.
 | 11 | `domain_name_resolution_contract` |
 | 12 | `entropy_contract` |
 | 13 | `environment_contract` |
-| 14 | `filesystem_contract::block` |
-| 15 | `filesystem_contract::fs` |
-| 16 | `filesystem_fixture` |
+| 14 | `file_system_contract::block` |
+| 15 | `file_system_contract::file_system` |
+| 16 | `file_system_fixture` |
 | 17 | `grant_contract` |
 | 18 | `program_argument_contract` |
 | 19 | `socket_contract` |
@@ -126,7 +126,7 @@ table. No registry outside it exists.
 | 24 | `jh7110_clock_and_reset_contract` |
 
 A reserved row holds a number for a ruled wire whose crate has not landed; the crate's pull request
-replaces it with the crate's row. An interface is the module that holds the id, so `filesystem_contract` carries one in `blk` and
+replaces it with the crate's row. An interface is the module that holds the id, so `file_system_contract` carries one in `blk` and
 one in `fs`. The check also classifies every crate the cut links. Five define no run-time format
 and stay Rust APIs: `calendar`, `domain_name_system`, `byte_glob`, `grant_plan` and
 `globally_unique_identifier_partition_table`. Its `NOT_A_FORMAT` table gives each reason.
@@ -143,7 +143,7 @@ The bind-time check in message contracts, the one-generation dual path, retiring
 generation and the swap-test invariants are a separate proposal,
 [the message contracts carry bind-time version checks](1000-message-contracts-carry-bind-time-version-checks.md).
 The first cut links message contracts (`byte_sink_contract`, `entropy_contract`,
-`filesystem_contract`, `socket_contract`, the resolver's); condition 4 asks each for a checkable
+`file_system_contract`, `socket_contract`, the resolver's); condition 4 asks each for a checkable
 version, which a constant and an id give, and leaves the run-time check at bind to that proposal. The macro takes its interface list by hand. Deriving the list from the dependency graph at package
 build waits for the first package that leaves the tree.
 
@@ -164,7 +164,7 @@ build waits for the first package that leaves the tree.
 - The declaration check reads source text and the dependency graph, not the linked bytes. A crate
   a program reaches only through another crate's macro counts as that other crate's.
 - In a crate with an interface per module, a program declares the modules its source names. A
-  program that names only a module without an id, such as `filesystem_contract::dir`, declares
+  program that names only a module without an id, such as `file_system_contract::dir`, declares
   every interface of the crate.
 
 ## Index row

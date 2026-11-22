@@ -3,13 +3,13 @@
 # (milestone 138 step 4).
 #
 # WHY THIS EXISTS. Step 3 grew the file channel and found the residual moved rather than shrank:
-# after it, a 4 KiB read is dominated by sixteen single-block trips through filesystem_contract::block, and
+# after it, a 4 KiB read is dominated by sixteen single-block trips through file_system_contract::block, and
 # fs_seq_read measures 80.30 MiB/s against the ~100 MiB/s ceiling one blk round trip per block
 # imposes. Step 4 is the change that grows the blk contract to carry more than one block per
 # request, and this is the measurement that says by how much. It is the sibling of
 # bench/transfer-size-sweep.sh and bench/record-level-sweep.sh in shape on purpose.
 #
-# WHAT IT DOES. `filesystem_contract::block::TRANSFER_BLOCKS` is how many contiguous pages the FS server and the
+# WHAT IT DOES. `file_system_contract::block::TRANSFER_BLOCKS` is how many contiguous pages the FS server and the
 # block server share, and therefore the most one blk request can carry. Every party's mapping, the
 # block server's clamp and `IpcDisk`'s batching all derive from it, so setting it to 1 reproduces
 # the contract exactly as it stood before step 4. This script therefore EDITS THAT CONSTANT IN
@@ -57,7 +57,7 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
-LIB=crates/filesystem_contract/src/blk.rs
+LIB=crates/file_system_contract/src/blk.rs
 SAVED=$(mktemp -t blk-transfer-sweep)
 
 restore() {

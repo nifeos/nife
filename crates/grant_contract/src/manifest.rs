@@ -383,9 +383,9 @@ pub enum WordGrant {
 pub const RIGHTS_BITS_DO_NOT_OVERLAP: () = assert!((1u64 | 2 | 32) + 4 + 8 == 1 | 2 | 4 | 8 | 32);
 
 impl WordGrant {
-    /// The rights a caretaker asks the file service for, as `filesystem_contract::directory`'s bits. Spelled
+    /// The rights a caretaker asks the file service for, as `file_system_contract::directory`'s bits. Spelled
     /// as numbers here because this crate does not link the filesystem contract (see its
-    /// `Cargo.toml`); `word_rights_are_the_filesystem_contracts` pins them to its constants.
+    /// `Cargo.toml`); `word_rights_are_the_file_system_contracts` pins them to its constants.
     ///
     /// Name: ratified 2026-11-20 (UTC).
     pub const fn rights(self) -> u64 {
@@ -620,7 +620,7 @@ pub struct Manifest {
     pub reboot: bool,
     /// **Endowed a sync-only capability to the file server** (milestone 805, the 2026-10-06
     /// amendment to §251), at [`SYNC_SLOT`]: an endpoint badged and bound by
-    /// `filesystem_contract::fs::BIND_SYNC`, so it answers `fs::SYNC` and refuses every other
+    /// `file_system_contract::file_system::BIND_SYNC`, so it answers `file_system::SYNC` and refuses every other
     /// verb. It names no directory and reaches no file. The progenitor makes one for the job from
     /// a client window the job holds until it is reaped, places it, and keeps no copy.
     ///
@@ -712,7 +712,7 @@ pub enum IndexStoreDeclaration {
 }
 
 impl IndexStoreDeclaration {
-    /// The rights the store's directory is opened with, as `filesystem_contract::directory`'s bits:
+    /// The rights the store's directory is opened with, as `file_system_contract::directory`'s bits:
     /// [`WordGrant::ReadOnly`]'s for reading, and [`WordGrant::Create`]'s for writing, since the
     /// first `update` creates the copy. `None` for [`IndexStoreDeclaration::Forbidden`].
     pub const fn rights(self) -> Option<u64> {

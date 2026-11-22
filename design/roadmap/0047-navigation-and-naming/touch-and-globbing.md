@@ -22,15 +22,15 @@ ability to lie about history, which matters for anything reasoning from mtime, b
 That is the asymmetry of §43 (reading the clock is a page) one level down: reading is harmless,
 setting is an authority. POSIX's `utime()` draws the same line, requiring only write permission to
 set the current time but ownership to set an arbitrary one. Plain `WRITE` covers "now". A separate
-right, `dir::SETTIME` (provisional), covers "arbitrary". It is the seventh rung of the directory
+right, `dir::SET_MODIFICATION_TIME_AT` (provisional), covers "arbitrary". It is the seventh rung of the directory
 rights ladder of DECISIONS §47 (a directory capability carries six rights), as extended by §112.
 
 RedoxFS tracks the mtime, and `fs_proto` exposes it as three verbs: `fs::GETMTIME`, `fs::SETMTIME`
 and `fs::SETMTIME_AT` (all three provisional names). They are three verbs rather than one with a
-flag, because `filesystem_contract::verb::TABLE` encodes one fixed rights requirement per opcode.
+flag, because `file_system_contract::verb::TABLE` encodes one fixed rights requirement per opcode.
 `GETMTIME` and `SETMTIME` need `dir::READ` and `dir::WRITE` respectively, resolved directly under a
 directory handle like `UNLINK` (neither opens what it acts on). `SETMTIME_AT` needs
-`dir::WRITE | dir::SETTIME`, with the caller's asserted seconds riding in the second word, for
+`dir::WRITE | dir::SET_MODIFICATION_TIME_AT`, with the caller's asserted seconds riding in the second word, for
 `TRUNCATE`'s reason for using `w1` over the length field. `SYNC` also has a row in that table, so a
 program confined to a subtree can `SYNC` through its caretaker.
 

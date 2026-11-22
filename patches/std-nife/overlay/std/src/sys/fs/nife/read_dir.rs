@@ -15,7 +15,7 @@ use super::*;
 /// what it listed. Fetching per `next()` would hold the lock across user code, or reacquire it with
 /// the directory moved under its cursor. The cost: a huge directory is a `Vec` of every name, and
 /// an entry removed before the caller reaches it opens as `NotFound`, the ordinary readdir caveat
-/// (`filesystem_contract::fs::READDIR` records the same one for its cursor).
+/// (`file_system_contract::file_system::READDIR` records the same one for its cursor).
 pub struct ReadDir {
     /// The path the caller passed, so `DirEntry::path()` can rebuild what they would expect.
     pub(super) root: PathBuf,
@@ -84,7 +84,7 @@ impl DirEntry {
     /// the entry is a directory, so `file_type` is free and costs no message. Metadata is not on the
     /// listing, so it is [`stat`] of the entry's path, for a directory as for a file: a
     /// directory's size is still the placeholder [`FileAttr`] describes, but its mtime is real, and
-    /// `GET_MODIFICATION_TIME` answers for a directory exactly as for a file. That made a directory entry's
+    /// `GET_MODIFICATION_TIME_UNIX_SECONDS` answers for a directory exactly as for a file. That made a directory entry's
     /// metadata cost a walk where it used to cost nothing, which is the price of a `modified()`
     /// that answers; a caller that only wants the kind should ask `file_type`, as it would anywhere.
     pub fn metadata(&self) -> io::Result<FileAttr> {

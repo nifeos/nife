@@ -8,7 +8,7 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
    Finding: `pub mod fixture` exports `TRANSCRIPT`, `SINK_NAME` (the name of a file on a nife test
    image, `"sinkout"`), `READY`, `DONE`, `BAD` and `code`, documented against
    `fixtures/src/file_sink.rs`, `fixtures/src/sink_transcript_writer.rs`,
-   `filesystem_contract::READY` and `filesystem_fixture`. Its consumers are three fixture programs
+   `file_system_contract::READY` and `file_system_fixture`. Its consumers are three fixture programs
    and the kernel-side `sink_tests`, all in this tree. On docs.rs every reader meets them beside the
    wire; an alternative implementer has no use for them; and they are the only items in the crate
    that name nife files.
@@ -16,7 +16,7 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
    `fixtures/src/file_sink.rs`, `fixtures/src/file_source.rs`, `system_tests/src/user/sink_tests.rs`
    lines 137 to 181.
    Change: move the module to a crate of its own in this tree, `byte_sink_fixture` (provisional),
-   depending on `byte_sink_contract`, the shape `filesystem_fixture` already has; the four
+   depending on `byte_sink_contract`, the shape `file_system_fixture` already has; the four
    consumers change one `use`. The alternative, a cargo feature `fixture` defaulting off, keeps the
    code in the published crate and the nife file names in its documentation. The fixture crate stays
    in this tree: it is neither publishable nor used by a second repository.
@@ -76,7 +76,7 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
    message, and `rm`'s status and count need somewhere to go that is not the stream.
    Change: `unpack` refuses any end of stream but `(eof(), 0, 0)` as malformed, with a test and a
    Kani harness, and `rm` sends its verdict on an endpoint of its own after its report ends
-   (`filesystem_contract::rm`). Every other writer in the tree already sent zero.
+   (`file_system_contract::rm`). Every other writer in the tree already sent zero.
    Door: one-way (wire format), decision C, ruled. Effort: S.
 
 9. Names that a later rule reopens at release review.

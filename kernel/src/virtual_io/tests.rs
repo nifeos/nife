@@ -219,7 +219,7 @@ fn feature_negotiation_strips_indirect_and_packed() {
 }
 
 /// `VIRTIO_BLK_F_FLUSH` (bit 9) survives negotiation. Its loss would be silent: the block server
-/// would see no flush, `filesystem_contract::fs::SYNC` would answer `EOPNOTSUPP`, and no server
+/// would see no flush, `file_system_contract::file_system::SYNC` would answer `EOPNOTSUPP`, and no server
 /// could back the `VOLUME_FULL_SYNC` bit it advertises to macOS.
 #[test_case]
 fn feature_negotiation_leaves_the_blk_flush_bit_alone() {

@@ -1,7 +1,7 @@
 //! **What a directory walk costs, separated into the parts that cost it** (milestone 121 (`ripgrep` on
 //! nife: enumeration as a capability), and what the walk costs).
 //!
-//! [`price`] times slopes over [`filesystem_fixture::walk`]'s tree, each over one variable: per
+//! [`price`] times slopes over [`file_system_fixture::walk`]'s tree, each over one variable: per
 //! path component, per directory entry and per byte read, and the whole walk split by call
 //! ([`Split`]) to check them against. Points are medians of [`REPS`] or [`WHOLE_REPS`] warm runs.
 //! Plain `std::fs`, so nife and a host run the same code; see notes/walk-pricing.md.
@@ -24,7 +24,7 @@ use std::path::Path;
 use std::time::Instant;
 use std::{fs, io};
 
-use filesystem_fixture::walk as tree;
+use file_system_fixture::walk as tree;
 
 /// Timed runs per slope point. Odd, so the median is a run rather than an average of two. Three
 /// rather than five because the kernel suite runs this under TCG on three architectures inside a

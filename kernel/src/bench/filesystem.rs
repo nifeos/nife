@@ -69,7 +69,7 @@ pub(super) fn fs_throughput() {
         blk_image,
         redoxfs_server,
         fs_test_client,
-        filesystem_fixture::throughput::ROLE,
+        file_system_fixture::throughput::ROLE,
     ) else {
         return; // no RedoxFS disk on this run
     };
@@ -81,15 +81,15 @@ pub(super) fn fs_throughput() {
         let _ = sched::ipc_receive(ready);
     }
     let hertz = crate::arch::timer::frequency();
-    for _ in 0..filesystem_fixture::throughput::PHASES {
+    for _ in 0..file_system_fixture::throughput::PHASES {
         let [ticks, transfers, phase, ..] = sched::ipc_receive(report);
-        let Some(name) = filesystem_fixture::throughput::name(phase) else {
+        let Some(name) = file_system_fixture::throughput::name(phase) else {
             println!("bench-probe: fs_throughput unknown phase {phase}");
             continue;
         };
         println!("bench: {name} {ticks} {transfers}");
         // Hundredths of MiB/s. Zero ticks is a broken run, reported as zero rather than divided.
-        let bytes = transfers * filesystem_fixture::throughput::UNIT_BYTES as u64;
+        let bytes = transfers * file_system_fixture::throughput::UNIT_BYTES as u64;
         let hundredths = bytes
             .checked_mul(hertz)
             .and_then(|v| v.checked_mul(100))
@@ -127,14 +127,14 @@ pub(super) fn fs_walk() {
         println!("bench-probe: fs_walk skipped (a program is missing from the archive)");
         return;
     };
-    use filesystem_contract::directory;
+    use file_system_contract::directory;
     let Some(spawned) = crate::user::fs_service::start_std_narrowed(
         blk,
         server,
         caretaker,
         walker,
-        filesystem_fixture::walk::ROOT,
-        directory::ENUMERATE | directory::READ | directory::DESCEND,
+        file_system_fixture::walk::ROOT,
+        directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
         None,
     ) else {
         return; // no RedoxFS disk on this run
@@ -155,13 +155,13 @@ pub(super) fn fs_walk_bound() {
     ) else {
         return;
     };
-    use filesystem_contract::directory;
+    use file_system_contract::directory;
     let Some(spawned) = crate::user::fs_service::start_std_bound(
         blk,
         server,
         walker,
-        filesystem_fixture::walk::ROOT,
-        directory::ENUMERATE | directory::READ | directory::DESCEND,
+        file_system_fixture::walk::ROOT,
+        directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
     ) else {
         return;
     };
@@ -200,8 +200,8 @@ pub(super) fn rg_search() {
         println!("bench-probe: rg_search skipped (no rg in the archive; cargo xtask basalt-fetch)");
         return;
     };
-    use filesystem_contract::directory;
-    use filesystem_fixture::walk as tree;
+    use file_system_contract::directory;
+    use file_system_fixture::walk as tree;
     let hertz = crate::arch::timer::frequency();
     let mut searched = [0u64; RG_SEARCH_RUNS];
     let mut whole = [0u64; RG_SEARCH_RUNS];
@@ -213,7 +213,7 @@ pub(super) fn rg_search() {
             caretaker,
             rg,
             tree::ROOT,
-            directory::ENUMERATE | directory::READ | directory::DESCEND,
+            directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
             Some(tree::RG_SEARCH.as_bytes()),
         ) else {
             return; // no RedoxFS disk on this run

@@ -73,7 +73,7 @@ Declined, and each for a reason rather than for time:
 - Rank 28, `File::set_times`, is the same shape as rank 19 and was never named as a decision by an
   earlier pass (found on milestone 64's next lane, 2026-08-22, while checking the list for anything
   still genuinely buildable). Setting an mtime needs a verb no less than reading one does; there is
-  no `SET_TIME` (or equivalent) in `filesystem_contract`'s verb table today. It is a second wire-format row
+  no `SET_TIME` (or equivalent) in `file_system_contract`'s verb table today. It is a second wire-format row
   behind the same open decision, not a second question.
 - Ranks 16, 18 and 27 (`env::temp_dir`, `env::current_dir`, `fs::canonicalize`) and everything
   else that needs to resolve a path against something. These are the `File::open` resolution fork,

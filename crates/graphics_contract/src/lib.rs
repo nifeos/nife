@@ -157,7 +157,7 @@ pub const NO_MISMATCH: u64 = PIXELS as u64;
 // ================================================================================================
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
-/// `filesystem_contract` and `terminal_contract` use, so all three contracts read alike.
+/// `file_system_contract` and `terminal_contract` use, so all three contracts read alike.
 pub const OPERATION_SHIFT: u32 = 56;
 
 /// Build a request's first word from an opcode and a 56-bit operand.
@@ -236,7 +236,7 @@ pub const fn rect_in_surface(x: u32, y: u32, w: u32, h: u32) -> bool {
 }
 
 /// The errno a refused request replies with (`-EINVAL`), the same negative-is-an-error convention
-/// `filesystem_contract` sets.
+/// `file_system_contract` sets.
 pub const EINVAL: i64 = -22;
 
 // ================================================================================================

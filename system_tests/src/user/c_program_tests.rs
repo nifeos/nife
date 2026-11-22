@@ -79,7 +79,7 @@ fn run(name: &str, line: &str, out: &mut [u8]) -> Option<usize> {
         program("fs_subtree_caretaker").expect("no fs_subtree_caretaker in the initial ramdisk"),
         image,
         c_program_fixture::ROOT,
-        filesystem_contract::directory::ALL,
+        file_system_contract::directory::rights::ALL,
         Some(line.as_bytes()),
         Some(clock.page_phys),
     ) else {

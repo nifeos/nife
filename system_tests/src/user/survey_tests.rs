@@ -260,7 +260,7 @@ fn a_domain_is_exactly_the_children_of_the_rendezvous_that_was_granted() {
 /// Through the real dispatcher: a send-only holder gets `NotPermitted`; a holder of nothing gets
 /// `NoSuchSlot`, there being nothing to name; a `READ` holder of a genuinely empty domain gets
 /// `DONE`, an answer, since its authority was never in question. A monitor that reported nothing
-/// because it could not look would read like a quiet machine; `filesystem_contract` chose `EPERM`
+/// because it could not look would read like a quiet machine; `file_system_contract` chose `EPERM`
 /// over an empty listing for the same reason.
 #[test_case]
 fn a_viewer_without_the_domain_is_refused_rather_than_shown_an_empty_list() {

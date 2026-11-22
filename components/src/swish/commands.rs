@@ -261,7 +261,7 @@ pub(super) fn user(nav: &mut Nav, verb: grant_plan::UserVerb<'_>) {
     let t = nav.first();
     let file = login_contract::SUSPENDED_LIST.as_bytes();
     let mut list = [0u8; USER_LIST_MAXIMUM];
-    let had = read_named(nav, t, fs::ROOT, file, &mut list).unwrap_or(0);
+    let had = read_named(nav, t, file_system::ROOT, file, &mut list).unwrap_or(0);
     let mut edited = [0u8; USER_LIST_MAXIMUM];
     let n = if suspend {
         login_contract::with_listed(&list[..had], name, &mut edited)
@@ -273,17 +273,22 @@ pub(super) fn user(nav: &mut Nav, verb: grant_plan::UserVerb<'_>) {
         print(b"  user: the suspended list is full\n");
         return;
     };
-    let mut h = nav.name_call_in(t, fs::CREATE, fs::ROOT, file, 0);
+    let mut h = nav.name_call_in(t, file_system::CREATE, file_system::ROOT, file, 0);
     if h < 0 {
-        h = nav.name_call_in(t, fs::OPEN, fs::ROOT, file, 0);
+        h = nav.name_call_in(t, file_system::OPEN, file_system::ROOT, file, 0);
     }
     if h < 0 {
         return say(Say::Failed(-h as i32));
     }
     let h = h as u64;
-    let truncated = call(t.slot, fs::request(fs::TRUNCATE, h, 0), 0).0 as i64;
+    let truncated = call(t.slot, file_system::request(file_system::TRUNCATE, h, 0), 0).0 as i64;
     put_page(&edited[..n]);
-    let wrote = call(t.slot, fs::request(fs::WRITE, h, n as u64), 0).0 as i64;
+    let wrote = call(
+        t.slot,
+        file_system::request(file_system::WRITE, h, n as u64),
+        0,
+    )
+    .0 as i64;
     nav.close_in(t, h);
     if truncated < 0 || wrote != n as i64 {
         return say(Say::Failed(

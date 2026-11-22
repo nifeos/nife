@@ -18,7 +18,7 @@ The 22 are the set pull request #3022 derives for milestone 956 (the linked inte
 checkable versions): `abi address_space_layout block_roster_contract byte_sink_contract calendar
 capability_manifest_note clock_contract counter_frequency_contract current_cpu_contract
 domain_name_resolution_contract domain_name_system entropy_contract environment_contract
-filesystem_contract filesystem_fixture glob globally_unique_identifier_partition_table grant_plan
+file_system_contract file_system_fixture glob globally_unique_identifier_partition_table grant_plan
 machine_statistics_contract program_argument_contract socket_contract user_mode_runtime`.
 
 What each column means:
@@ -50,14 +50,14 @@ What each column means:
 | `domain_name_system` | 0 | 1 | 1 | 1 | 17 | 16 | 17 | 16 | 0 | - | - |
 | `entropy_contract` | 0 | 1 | 4 | 1 | 17 | 16 | 32 | 30 | 0 | 2 | 5 |
 | `environment_contract` | 0 | 0 | 3 | 1 | 14 | 12 | 23 | 21 | 0 | 7 | 8 |
-| `filesystem_contract` | 0 | 1 | 10 | 1 | 52 | 45 | 118 | 105 | 0 | 263 | 305 |
+| `file_system_contract` | 0 | 1 | 10 | 1 | 52 | 45 | 118 | 105 | 0 | 263 | 305 |
 | `byte_glob` | 0 | 1 | 2 | 0 | 10 | 9 | 24 | 22 | 0 | 0 | 0 |
 | `globally_unique_identifier_partition_table` | 0 | 0 | 4 | 0 | 31 | 27 | 59 | 50 | 0 | 75 | 103 |
 | `program_argument_contract` | 0 | 1 | 0 | 0 | 11 | 9 | 12 | 10 | 2 | 1 | 1 |
 | `socket_contract` | 0 | 1 | 4 | 1 | 28 | 26 | 49 | 45 | 0 | 6 | 21 |
 | `current_cpu_contract` | 1 | 2 | 2 | 1 | 23 | 16 | 26 | 18 | 2 | 6 | 6 |
 | `domain_name_resolution_contract` | 1 | 1 | 5 | 1 | 30 | 27 | 30 | 27 | 0 | - | - |
-| `filesystem_fixture` | 1 | 0 | 5 | 1 | 14 | 13 | 14 | 13 | 0 | - | - |
+| `file_system_fixture` | 1 | 0 | 5 | 1 | 14 | 13 | 14 | 13 | 0 | - | - |
 | `grant_plan` | 1 | 1 | 7 | 3 | 151 | 120 | 255 | 212 | 0 | 227 | 312 |
 | `capability_manifest_note` | 2 | 0 | 5 | 0 | 48 | 42 | 57 | 49 | 0 | 8 | 8 |
 | `machine_statistics_contract` | 2 | 0 | 6 | 1 | 12 | 9 | 14 | 11 | 0 | 0 | 0 |
@@ -88,9 +88,9 @@ pull request #3022's `carry_interfaces!` brings into every program.
 
 | package | crates of the 22 it reaches | with the note macro |
 |---|---|---|
-| `disk-tools` | 12: `abi`, `address_space_layout`, `block_roster_contract`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `filesystem_contract`, `filesystem_fixture`, `globally_unique_identifier_partition_table`, `socket_contract`, `user_mode_runtime` | 18 |
+| `disk-tools` | 12: `abi`, `address_space_layout`, `block_roster_contract`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `file_system_contract`, `file_system_fixture`, `globally_unique_identifier_partition_table`, `socket_contract`, `user_mode_runtime` | 18 |
 | `process-tools` | 13: `abi`, `address_space_layout`, `byte_sink_contract`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `byte_glob`, `grant_plan`, `machine_statistics_contract`, `program_argument_contract`, `socket_contract`, `user_mode_runtime` | 16 |
-| `core-tools` | 15: the 13 of `process-tools` less `machine_statistics_contract`, plus `calendar`, `environment_contract` and `filesystem_contract` | 18 |
+| `core-tools` | 15: the 13 of `process-tools` less `machine_statistics_contract`, plus `calendar`, `environment_contract` and `file_system_contract` | 18 |
 
 The macro has lived in the leaf crate `interfaces_note` since 2026-11-01 (UTC), so "with the note
 macro" now means the column's crates plus that one: 13, 14 and 16.
@@ -113,7 +113,7 @@ done
 Results: every crate inherits `license` and `lints`. No crate has a `build.rs`. The five blocking
 references are in the proposal's table. `grant_plan`'s `../../..` strings are path arguments in its
 own tests, not files. Fuzz targets build `byte_sink_contract`, `capability_manifest_note`,
-`domain_name_resolution_contract`, `domain_name_system`, `filesystem_contract`,
+`domain_name_resolution_contract`, `domain_name_system`, `file_system_contract`,
 `globally_unique_identifier_partition_table` and `grant_plan`. Files in nife that name a crate's
 path range from 5 (`byte_glob`) to 36 (`user_mode_runtime`).
 

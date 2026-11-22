@@ -9,7 +9,7 @@ needs_person: no
 ---
 # 329. The 5.13x record-level number was measured against a request size nothing ships
 
-Premise re-checked 2026-09-19 and it holds. `bench/record-level-sweep.sh` is still in the tree, `filesystem_contract::fs::TRANSFER_PAGES`
+Premise re-checked 2026-09-19 and it holds. `bench/record-level-sweep.sh` is still in the tree, `file_system_contract::file_system::TRANSFER_PAGES`
 is still 16 (64 KiB). Milestone 138 (close the read gap)'s block still publishes 5.13x as its headline read ratio
 in its opening paragraph and at four more sites, every one of them taken at 4 KiB. Nothing has re-run
 the sweep at the shipped size.

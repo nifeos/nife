@@ -35,7 +35,7 @@ The new file names ship provisional until a name-ratification pass.
 
 ## What the file was
 
-`crates/filesystem_contract/src/lib.rs` was 5,744 lines on main at `396187b0b`. Every seam was
+`crates/file_system_contract/src/lib.rs` was 5,744 lines on main at `396187b0b`. Every seam was
 already an inline `pub mod`. Bodies with their four-space indent removed: `blk` 103, `fs` 663, `dir`
 228, `verb` 431, `dirent` 49, `statfs` 43, `grant` 87, `nameset` 91, `xattr` 425, `fixture` 1,239.
 `mod tests` was 1,937 lines, 66 tests. The 234 lines between modules are their `///` docs.
@@ -82,7 +82,7 @@ and rustfmt reflowing four lines that wrapped because of the indent (a `use supe
 
 ## What the move cost beyond moving code
 
-- The three falsification patches under `crates/filesystem_contract/falsifications/` patch the
+- The three falsification patches under `crates/file_system_contract/falsifications/` patch the
   proofs in `dir`. Each was regenerated against `src/dir.rs`; their names and the `Falsification:`
   lines did not change.
 - `bench/blk-transfer-sweep.sh` and `bench/transfer-size-sweep.sh` now edit `blk.rs` and `fs.rs`,

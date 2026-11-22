@@ -14,7 +14,7 @@ numbered 2026-09-19 by milestone 433. **Premise re-checked item by item on 2026-
 ten still stand, one is closed, and one could not be confirmed.** Still wrong today:
 `crates/capability_table/src/lib.rs` (the `ENUMERATE` rustdoc's "when `pmap` is built", and `crates/pmap`
 and `components/src/pmap.rs` both exist). `notes/crates-io-on-nife.md` rows 19 and 28 (against
-`filesystem_contract`'s `GETMTIME`, `SETMTIME` and `SETMTIME_AT`, opcodes 20 to 22).
+`file_system_contract`'s `GETMTIME`, `SETMTIME` and `SETMTIME_AT`, opcodes 20 to 22).
 `design/decisions/0102-frame-names-a-run.md` line 7 ("this decision is still unbuilt").
 `notes/live-replacement.md` line 261. `notes/register-of-measures.md` line 253.
 `close_cycle_counter_to_el0` in `kernel/src/arch/aarch64/timer.rs`. `components/src/session_reviver.rs` (eight surviving mentions
@@ -43,7 +43,7 @@ This is the list, so that fixing the roadmap does not leave the tree quietly dis
 - `notes/process-view.md` still records the display-name authority question as undecided, which
   milestone 126's block answered on 2026-08-26.
 - `notes/crates-io-on-nife.md` rows 19 and 28 still say no verb reports or sets an mtime.
-  `crates/filesystem_contract` has carried all three verbs since §112 (`touch`'s two behaviors need two rights: write covers "now", a separate right covers "arbitrary") was decided on 2026-08-23, and the
+  `crates/file_system_contract` has carried all three verbs since §112 (`touch`'s two behaviors need two rights: write covers "now", a separate right covers "arbitrary") was decided on 2026-08-23, and the
   PAL's own comments under `patches/std-nife/overlay/` repeat the dead claim a third time.
 - `crates/abi`'s start invocation is documented as ignoring its three arguments, which both the
   kernel's own arm and the builder's call contradict. Found by milestone 139's round 7 and left for

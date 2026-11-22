@@ -65,7 +65,7 @@ segment larger than one page is refused for the same fail-closed reason.
 ## The directory grant
 
 `dir_grant` builds the two `START` triples for a program like `rm`: the caretaker's, then the
-program's. The caretaker is told the directory and the `filesystem_contract::dir` rights to ask for.
+program's. The caretaker is told the directory and the `file_system_contract::dir` rights to ask for.
 The program is told the operand and the options that were typed. Nothing between the shell and the
 process decodes either triple, so `spawn_protocol` carries them without linking the filesystem contract.
 The order is the wire's. Backwards, it would start `rm` with a directory's name and a caretaker with
@@ -87,7 +87,7 @@ shapes cannot be delivered, and each is refused with nothing spawned rather than
 - A set of more than one name. That grant is a `fs_nameset_caretaker`, and the progenitor builds the
   subtree one for this path. `rm *.txt` is planned, previewed by `caps`, and refused at delivery.
 - A directory name that does not fit in a grant's two argument words
-  (`filesystem_contract::grant::WORDS_NAME`, which `pack_name` refuses past), because the caretaker
+  (`file_system_contract::grant::WORDS_NAME`, which `pack_name` refuses past), because the caretaker
   is told its directory packed into two words.
 
 A file name that does not fit those two words is delivered, not refused (milestone 946 (a granted file name can be longer than sixteen bytes)). `dir_grant`

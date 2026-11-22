@@ -72,7 +72,7 @@ const _: () = assert!(OUT_PAGE_FRAME == SURFACE_FRAME + 1);
 /// (`display_service::MAP_BUDGET_PAGES`'s comment has the arithmetic).
 const SURFACE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// The page an application writes the bytes of an `OPERATION_WRITE` into. The terminal contract's
-/// "control by message, bulk by shared page" split (DECISIONS §10 (process model: capability-based, microkernel. Untyped memory deferred.)), the same one `filesystem_contract` makes.
+/// "control by message, bulk by shared page" split (DECISIONS §10 (process model: capability-based, microkernel. Untyped memory deferred.)), the same one `file_system_contract` makes.
 const OUT_VA: u64 = address_space_layout::pair_page(0x0000_0000_0a00_0000);
 /// The compositor's per-client control page. [`MODE_WINDOW`] only.
 const CTL_VA: u64 = address_space_layout::pair_page(0x0000_0000_0a01_0000);

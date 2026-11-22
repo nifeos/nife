@@ -17,7 +17,7 @@ failed. It took a reader asking why there were three of these to find it.
 
 ## The table
 
-`filesystem_contract::verb::TABLE` is one row per opcode:
+`file_system_contract::verb::TABLE` is one row per opcode:
 
 | field | what it answers |
 |---|---|
