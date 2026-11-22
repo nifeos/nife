@@ -272,8 +272,10 @@ The review claims none of the hardware checks.
 
 ## Follow-on
 
-- **Outstanding.** Items 1 to 3, on the publishing hold.
-- **Outstanding.** Two questions on a board run, under *Finding status*.
+- **Outstanding.** Items 1 to 3, on the publishing hold; checked on the crate's `main`, where
+  `Cargo.toml` still carries `publish = false` and crates.io has no such crate.
+- **Outstanding.** Two questions on a board run, under *Finding status*; checked against both
+  board runs, which saw no lockup and read only the state the bootloader leaves.
 
 ## Index row
 
