@@ -9,7 +9,7 @@ pub const WIDTH_8_BITS: u64 = 0;
 ///
 /// Name: ratified 2026-11-22 (UTC), with [`WIDTH_8_BITS`]. Refused `SIZE_U16`.
 pub const WIDTH_16_BITS: u64 = 1;
-/// The word is 32 bits: the one width admitted, and the one `std`'s address wait locks use.
+/// The word is 32 bits: the one size admitted, and the one `std`'s address wait locks use.
 ///
 /// Name: ratified 2026-11-22 (UTC), with [`WIDTH_8_BITS`]. Refused `SIZE_U32`.
 pub const WIDTH_32_BITS: u64 = 2;
@@ -17,7 +17,7 @@ pub const WIDTH_32_BITS: u64 = 2;
 ///
 /// Name: ratified 2026-11-22 (UTC), with [`WIDTH_8_BITS`]. Refused `SIZE_U64`.
 pub const WIDTH_64_BITS: u64 = 3;
-/// The two bits that hold the width.
+/// Where the size lives.
 ///
 /// Name: ratified 2026-11-22 (UTC), with [`WIDTH_8_BITS`]. Refused `SIZE_MASK`.
 pub const WIDTH_MASK: u64 = 3;
