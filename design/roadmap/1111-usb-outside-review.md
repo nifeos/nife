@@ -49,7 +49,7 @@ US one gives. The template's gates are green for the crate's own reasons.
 
 ## Finding status
 
-Every finding is Done, so the review is built.
+With every finding Done, the review counts as built.
 
 
 - P0-1, manifest that cannot stand alone: Done, [#3828](https://github.com/nifeos/nife/pull/3828). The manifest carries the literal license and lint
@@ -82,12 +82,13 @@ Every finding is Done, so the review is built.
   README half is P1-4's.
 - P2-14, private names the report-only gate lists: Done,
   [#3614](https://github.com/nifeos/nife/pull/3614).
-- Decision 1, the public names the template's gates refuse: Done.
-  [#3614](https://github.com/nifeos/nife/pull/3614) built the rename table (maintainer,
-  provisional, 2026-11-14 UTC), and [#3814](https://github.com/nifeos/nife/pull/3814) recorded the
-  ratification (2026-11-19 UTC, option A): every public name of
-  [the package](../../notes/crate-reviews/universal-serial-bus.md) as built, with the aliases
-  `bMaxPacketSize0`, `wTotalLength`, `wLength`, `ErrorRollOver` and `bcdUSB`. `MODIFIER_CODES`
+- Decision 1, the public names the template's gates refuse: Done,
+  [#3614](https://github.com/nifeos/nife/pull/3614) and
+  [#3814](https://github.com/nifeos/nife/pull/3814). The first built the rename table as the
+  maintainer's provisional ruling of 2026-11-14 UTC. The second recorded the ratification of
+  2026-11-19 UTC, option A: every public name of
+  [the package](../../notes/crate-reviews/universal-serial-bus.md) stands as built. The aliases are
+  `bMaxPacketSize0`, `wTotalLength`, `wLength`, `ErrorRollOver` and `bcdUSB`, and `MODIFIER_CODES`
   stays private.
 - Decision 2, `changes` emits HID usages: Done, [#3814](https://github.com/nifeos/nife/pull/3814)
   (maintainer, provisional, 2026-11-14 UTC). `changes` emits usages, modifiers as 0xe0 to 0xe7;

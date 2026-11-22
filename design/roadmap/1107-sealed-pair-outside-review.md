@@ -33,8 +33,8 @@ build and test from.
 
 
 - P0-1, it cannot leave before `nifefs` and `measured_boot`: Waiting on repositories for `nifefs`
-  and `measured_boot`. Decision A ruled the order on 2026-11-16 UTC, and nothing is left to do in
-  the crate.
+  and `measured_boot`. Decision A ruled the order on 2026-11-16 UTC, and the crate needs nothing
+  more.
 - P1-2, the loader's digest words and the three-file card set: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-3, a bad table line reported as an unreadable table: Done,

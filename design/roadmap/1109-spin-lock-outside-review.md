@@ -255,7 +255,8 @@ The checks are in [the appendix](1109-spin-lock-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Milestone 1017.** The crate moves in its order; the move lane takes the items marked At the move.
+- **Milestone 1017.** The crate moves in the order of milestone 1017 (the contract crates leave in
+  this order); the move lane takes the items marked At the move.
 - **Outstanding.** Item 7: the template's falsify gate cannot replay a loom patch, checked
   against nifeos/crate-workflows' `falsify.py`.
 - **Refused.** Item 16: `try_lock` already answers `is_locked`, and a `lock_api` impl is a new

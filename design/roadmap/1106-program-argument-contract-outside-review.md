@@ -278,8 +278,7 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 
 - **Done.** Two milestones meet the layout ruling's condition (maintainer's reading, provisional,
   2026-11-19 UTC): 1115 (the gate builds basalt's delivered programs from the candidate tree) in
-  every merge group, and 994 (the cross-repository pair is tested where the pin is) in basalt. The
-  numbered magic lands in one nife pull request, a lane of its own.
+  every merge group, and 994 in basalt. The numbered magic lands in one nife pull request, a lane of its own.
 - **Outstanding.** Every finding marked Open or Waiting under "Finding status" above, each with
   what remains, checked against `crates/program_argument_contract` and `crates/grant_plan`.
 - **Outstanding.** The numbered magic, then the repository (ruled 2026-11-14 UTC): a lane creates
