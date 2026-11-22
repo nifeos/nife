@@ -222,62 +222,61 @@ As set out under the recommendation. Where an array fits badly:
 
 ## The follow-on: a check that refuses spelled numbers and ordinals
 
-The ruling says the tree must not permit these spellings, so the naming check gains a rule: refuse
-any identifier with a segment that is a spelled number (`zero` to `twelve`) or an ordinal (`first`
-to `tenth`). Measured on Rust code outside `vendor/`, comments and strings blanked, on `main` at
-`08d17a3b0`, by a script posted on the pull request:
+The ruling says the tree must not permit these spellings, so the naming check gains a rule. Two
+further rulings of 2026-11-22 set its scope:
+
+- `first` and `last` are allowed only as a range or sequence boundary, the meaning of std's
+  `slice::first` and `split_first` and of UEFI's `FirstLBA`. Every position sense is refused: the
+  check refuses `first_` or `last_` before a position noun (`word`, `register`, `argument`,
+  `parameter`, `result`, `field`, `operand`), and any ordinal past `first`. `second` after `per`,
+  the unit of time, stays allowed. Where the check cannot tell the sense, the name carries a
+  reviewed exemption.
+- Ordinals that tell instances of one kind apart are refused everywhere, tests and locals
+  included: `second_region`, `second_mount`, `second_directory_grant`, `second_boot`,
+  `first_ethernet_port_transmit_parent`. The replacement names the role (`remounted`,
+  `after_reboot`, `narrowed_grant`, `parent` and `child`); where no role exists, `_0` and `_1`.
+
+Measured on Rust code outside `vendor/`, comments and strings blanked, on `main` at `08d17a3b0`,
+by a script posted on the pull request:
 
 | Hit | Names | Uses |
 |---|---:|---:|
 | A segment is a spelled number | 708 | 1231 |
 | ... and it ends the name | 132 | 378 |
-| A segment is an ordinal | 283 | 885 |
-| ... and the only ordinal is `first` | 167 | 595 |
+| An ordinal past `first`, `per_second` excepted | 109 | 177 |
+| `first_` or `last_` before a position noun | 8 | 43 |
+| `first` or `last` otherwise, allowed as a boundary | 283 | 993 |
+| `second` after `per` (`NANOSECONDS_PER_SECOND`), allowed | 7 | 113 |
 
 - **Positions.** Beyond the `word_*`, `argument_*` and `result_word_*` names this decision replaces,
-  the hits include `domain_one` and `domain_two`, `view_one`, `slot_one`, `rows_two`,
-  `window_zero`, `fs_window_zero`, `wire_disk_zero`, `bus_device_function_zero` and
-  `double_word_three`. They also include the fixture constants `GLOB_ONE`, `RM_ONE`,
-  `REDIRECTION_ONE` and `LABEL_ONE` with their `_TWO` partners, and `mainline_port_one` inside a
-  test name. Ordinals
-  include `first_partition`, `second_region`, `second_directory_grant`,
-  `first_ethernet_port_transmit_parent`, both `first_word` and `second_word` families, the
-  kernel's `HolderWiring::first_word` and a `first_word` in `xtask`'s swish check.
-- **Test names written as sentences.** 544 of the 708 spelled-number names, and 125 ordinal names,
-  have six or more segments (`a_serviced_note_names_its_exact_length_and_pads_to_four`).
-- **Quantities.** Predicates and amounts number nothing: `is_power_of_two`, `ONE_GIBIBYTE`,
-  `spawn_one` (spawn a single one). A pattern for predicates and units covers 11 of the 132
-  ending names; once the sentence-style test names are set aside, 52 names (279 uses) remain to
-  judge one at a time.
-- **`second` the unit of time.** 7 names (113 uses) say `NANOSECONDS_PER_SECOND` and the like.
-  That is not an ordinal, so the rule allows `second` after `per`, and only there. `one_second`,
-  a unit too, goes with the quantities.
-
-The ruling refuses ordinals, so the rule refuses `first_` everywhere, including the 167 names where
-it marks the start of a range or the earliest event (`first_logical_block_address`,
-`first_error`). Permitting that sense would narrow the ruling, and that is calef's to decide, as a
-question of its own. Two scope questions also stay open, each separate: whether the rule covers
-instance names (`domain_one`, `first_partition`, `second_region`, `second_directory_grant`,
-`first_ethernet_port_transmit_parent`), and whether it covers test names written as sentences.
-The size of the quantity allowance follows from those answers.
+  the spelled hits include `domain_one`, `slot_one`, `rows_two`, `window_zero`,
+  `bus_device_function_zero`, the fixture constants
+  `GLOB_ONE`, `RM_ONE`, `REDIRECTION_ONE` and `LABEL_ONE`, and `mainline_port_one` in a test name.
+- **The position-noun pattern.** Its 8 hits include `first_word` (the resolver's word 0) and
+  `HolderWiring::first_word`, refused, and `split_first_word` and `paint_last_word` in the line
+  editor, where `word` is a word of text and the sense is a boundary: those take exemptions.
+- **Instances.** The 109 later ordinals are the instance sweep; 61 are test names written as
+  sentences (`a_second_bind_of_a_bound_space_is_refused`). `first` in an instance sense
+  (`first_partition`) hides among the 283 boundary names, so the sweep reads those by hand.
+- **Quantities, an open question.** 106 names (289 uses) use a number as an amount:
+  `is_power_of_two`, `ONE_GIBIBYTE`, `split_once`, `draw_twice`. They stay until that separate
+  question is ruled.
 
 ## Prior art
 
-Read for this decision unless marked otherwise.
+I read each source below for this decision.
 
 - seL4 (`libsel4`, `shared_types.h` and `functions.h`): the IPC buffer holds
   `seL4_Word msg[seL4_MsgMaxLength]`, and `seL4_GetMR(int i)` returns `seL4_GetIPCBuffer()->msg[i]`.
-  Message words are an indexed array. I recall, and did not read, that the seL4 manual writes a
-  message register as `MR0` onward.
+  Message words are an indexed array.
 - Linux (`include/asm-generic/syscall.h` and `arch/arm64/include/asm/syscall.h`):
   `syscall_get_arguments(task, regs, args)` fills `args`, an "array filled with argument values",
   six long. The arm64 version reads `args[0]` from `regs->orig_x0`, because the return value has
   overwritten `x0`. That is (g)'s risk in one line: index 0 can hide that position 0 is special.
-  The `syscall(2)` man page names the same positions `arg1` to `arg7`, one-based.
 - RISC-V SBI (`binary-encoding.adoc`): arguments by register, `a0` to `a5`; results a struct named
   by meaning, `struct sbiret { long error; union { long value; unsigned long uvalue; }; }`. That is
   the model for (g)'s typed results.
-- Redox (`redox_syscall` 0.9.5, read from the local cargo registry): the scheme protocol's `Sqe`
+- Redox (`redox_syscall` 0.9.5): the scheme protocol's `Sqe`
   holds `opcode`, `tag`, `args: [u64; 6]` and `caller`; `Cqe` holds a `result`. An array for the
   words beside names by meaning, the shape (g) gives `Message`.
 
@@ -314,7 +313,9 @@ shape, and every caller of `send`, `call` and `receive` changes. The typed first
 names by meaning, chosen one at a time. Under both, `byte_sink_contract` changes first in its own
 repository and nife bumps its pin, and the lane regenerates and replays the 16 falsification patches.
 The Kani harnesses and mutation baselines name functions, not parameters; the lane checks that.
-One lane, in commits by area, after the in-flight renames of the same files land.
+One lane, in commits by area, after the in-flight renames of the same files land. The naming
+check's instance sweep is a second lane under either option: 109 names (177 uses), and a reading
+of the 283 `first` and `last` names.
 
 ## How reversible it is
 
@@ -326,6 +327,6 @@ not change under any option.
 ## What waits on this
 
 - The rename lane for (a) or (g).
-- The naming check above, and its separate question on instance names.
+- The naming check above, and its separate question on quantity words.
 - The name reviews of every contract that still writes `w0` (`filesystem_contract`,
   `credential_contract`, `terminal_contract`, `program_table`'s spawn protocol and the rest).
