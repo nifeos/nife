@@ -55,7 +55,8 @@ prose, across nife, its `std` overlay and the kernel.
 
 The reason is consistency with the analogous case the tree has already ruled. The tree's ratified
 names for numbered slots and instances use a digit: `RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK`
-(milestone 1074, ruled 2026-11-14), the `receive_descriptor_word_3` parameter beside it,
+(milestone 1074 (`designware_ethernet`: what an outside maintainer would fix before the move),
+ruled 2026-11-14), the `receive_descriptor_word_3` parameter beside it,
 `phase_locked_loop_0` and `post_divider_1`. A descriptor word and a message word are the same kind
 of thing: a word whose position a table defines and whose meaning the table gives per position.
 
@@ -171,7 +172,7 @@ a few uses. It also counts the excluded paths as foreign, so its rows add up to 
 
 ## The options
 
-What each option changes, counted from the table above. All of them start from zero.
+Counted from the table above. All of them start from zero.
 
 ### (a) Digit: `word_0`, `result_word_0`, `argument_0` (recommended)
 
@@ -186,7 +187,7 @@ As set out under the recommendation.
 
 ### (b) Spelled number: `word_zero`, `result_word_zero`, `argument_zero`
 
-The first draft's recommendation, and the spelling two packages carry now.
+The spelling two packages carry now.
 
 - Changes: 1588 code uses in 148 files, 602 prose uses in 131 files, 16 falsification patches
   regenerated, and `first_word` and `second_word` in `domain_name_resolution_contract` (about 30
@@ -213,7 +214,6 @@ The spelling `domain_name_resolution_contract` ratified for itself.
   `user_mode_runtime`'s `send(slot, word_zero, word_one, word_two)` carry words with no meaning of
   their own, and a word such as `READ`'s first one packs three values, so no single meaning can
   name it.
-- It is a judgment at each of 593 declaration sites.
 - Where the code has decoded a value, (d) is already the rule, and (a) and (b) keep it.
 
 ### (e) Keep `w0`..`w5`, `r0`..`r2` and define them in design/naming.md
