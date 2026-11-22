@@ -100,9 +100,10 @@ pub(super) const CARETAKER_STACK_PAGES: u64 = 4;
 /// through the same frame.
 pub(super) const FS_CLIENT_PAGE_VA: u64 = address_space_layout::pair_page(0x0060_0000);
 
-/// Where `fs_nameset_caretaker` reads its name set, read-only (milestone 205). Must match that
-/// program's `SET_VA`, as [`FS_CLIENT_PAGE_VA`] matches its `PAGE_VA`.
-pub(super) const NAMESET_PAGE_VA: u64 = address_space_layout::pair_page(0x0070_0000);
+/// **Where a caretaker reads its grant page, read-only**: the granted directory's name and, for
+/// `fs_nameset_caretaker`, the name set (`file_system_contract::grant::write_page`).
+pub(super) const GRANT_PAGE_VA: u64 =
+    address_space_layout::pair_page(file_system_contract::grant::PAGE_VIRTUAL_ADDRESS);
 
 /// **The job pool**: six live native jobs and one `std` program's region
 /// ([`program_table::STD_REGION_PAGES`]). Small on purpose: `script/swish-check` runs more jobs
