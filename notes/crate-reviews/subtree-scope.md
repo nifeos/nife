@@ -16,9 +16,9 @@ What a subtree grant can reach, decided in one place a file server links and a p
 resolves a path one name at a time and refuses `.`, `..`, a link, a mount point and any step that
 would widen the grant. `admit` decides whether a request may touch a handle, and `Bindings` keeps
 which badge may use which root, failing closed for a badge it never bound. The crate is `no_std`,
-has no `unsafe`, and has one dependency, `file_system_contract`, for the rights arithmetic. Five Kani
-harnesses prove that a step is one name, that a walk never widens, follows a link or crosses a
-mount, and that a bound badge reaches only its own root and the handles it minted. Its one consumer
+has no `unsafe`, and has one dependency, `file_system_contract`, for the rights arithmetic. Six Kani
+harnesses prove that a step is one name, that a walk asks for every component before the last `/`
+in order and never widens, follows a link or crosses a mount, and that a bound badge reaches only its own root and the handles it minted. Its one consumer
 is `redoxfs_server`. The crate refers to nife by milestone number in its documentation; the move
 lane rewrites that text (P0-2 of the milestone).
 
@@ -33,7 +33,7 @@ lane rewrites that text (P0-2 of the milestone).
 | license | `license.workspace = true` today; the move lane inlines `MIT OR Apache-2.0` and copies both texts (P0-1) |
 | `publish` | `false`; milestone 1017 keeps moved crates unpublished under §305 (git dependencies on `nifeos/*` only, pinned to a landed commit) until their own release milestone |
 | dependencies | `file_system_contract` only |
-| size | one `src/lib.rs` of about 800 lines: the library, 12 host tests, 2 doctests and 5 Kani harnesses |
+| size | one `src/lib.rs` of about 860 lines: the library, 12 host tests, 2 doctests and 6 Kani harnesses |
 
 ## Who in nife depends on it
 
@@ -117,11 +117,13 @@ What a stranger may find surprising:
 
 ## Proofs
 
-Five Kani harnesses, each with a falsification patch under
+Six Kani harnesses, each with a falsification patch under
 `crates/subtree_scope/falsifications/`:
-`a_step_is_one_name`, `a_walk_never_widens_follows_or_crosses`, `a_badge_with_no_window_is_never_open`,
+`a_step_is_one_name`, `a_walk_never_widens_follows_or_crosses`,
+`a_walk_asks_for_every_component_in_order`, `a_badge_with_no_window_is_never_open`,
 `a_badge_once_bound_is_never_open_again` and `a_bound_badge_reaches_only_its_own`. The
-falsification times on file are 212.2 s and 110.9 s for the first two and under 8 s for the rest.
+falsification times on file are 212.2 s and 110.9 s for the first two, none yet for the third, and
+under 8 s for the rest.
 The proof is bounded: a path of `PROOF_PATH_BYTES` bytes at unwind 7, three badges and four
 operations. The crate documentation says that no loop behaves differently past the bounds is an
 argument, not a proof.
@@ -133,25 +135,24 @@ order; a `walk` that skipped a component passes both, and the unit tests catch i
 asked for one harness, `a_walk_asks_for_every_component_in_order`, whose `lookup` records the steps
 and compares them with the components of the path.
 
-The lane wrote it twice and measured both. It is not in the tree.
+Three shapes were measured. The third is in the tree.
 
 | version | what it did | result |
 |---|---|---|
 | 1 | copied each component's bytes into the record | killed after 18.8 minutes of wall time and 17.8 minutes of CPU at about 5.2 GiB, with no verdict |
 | 2 | recorded each step's offset and length against the path's own start, with the same bounds | verified in 11 minutes 10 seconds of wall time (546 s user, 112 s system) at a peak of 4.6 GiB |
+| 3 | kept one running offset: each step begins where the last ended and ends at a `/`, and a walk that succeeds has reached the last `/` | verified in 7 minutes 42 seconds of wall time (360 s user, 97 s system) at a peak of 3.0 GiB, the solver itself 10 s |
 
-The second verifies, and its shape is the one to keep: a `walk::<u8, Refusal>` over a path of
-`PROOF_PATH_BYTES` arbitrary bytes and a record of `(offset, length)` pairs bounded by the path
-length. After the walk, the pairs equal the components that end at or before the last slash, in
-order, whenever every component is a name. When one is not, `lookup` was never asked. Its falsification makes `walk` skip the first component.
+The third needs no record of the steps. Each step must begin at the offset where the one before it
+ended, one byte past a `/`, and must end at a `/`; after a successful walk the offset stands one
+byte past the path's last `/`. With `a_step_is_one_name`, which holds every step to a name, the
+steps are the components before the last `/`, in order. Its falsification makes `walk` skip the
+first component. The rights are the widest and every node a directory, so no refusal cuts the
+walk short; the other walk harness covers those.
 
-It stays out for cost. The crate's whole row in `script/verify` is 234 seconds. A prove job has a
-20-minute budget that every crate in its shard shares. 658 seconds of CPU for one harness would
-more than triple the row and move the shard balance. The host was loaded, so the wall figure
-is high, but the CPU figure is not a load artifact. The limit is the walk's path-length bound: the
-cost grows with the product of the bound and the loop's unwind. A lane that adds it either makes
-room in the shards (a row of about 900 and a rebalance), shortens the path bound for this harness
-alone, or splits the property in two (order, then count).
+The host was loaded for all three, so the wall figures run high; symbolic execution, not the
+solver, takes most of the time. The first CI `prove` run of the crate's row gives the figure the
+verify table carries.
 
 Open: whether `walk` should answer `NotFound` and `Narrowed` where the harnesses do not state it.
 The README the move lane writes says the unit tests cover those two refusals and the proofs do not.
@@ -202,9 +203,8 @@ and it copies no Linux or `cap-std` text.
 1. Clearing the move: answered. The architect cleared this package on 2026-11-20 (UTC) and approved
    the repository `nifeos/subtree_scope` with `publish = false`, no tag and no publish. The move
    waits on `file_system_contract`'s repository for the `git` pin of P0-3.
-2. Whether to spend a prove shard's room on the completeness harness of P1-9. Recommendation: not
-   before the move; add it in the new repository, where the crate's own proofs job has the
-   budget to itself, and the measurement above sets its cost.
+2. Whether to spend a prove shard's room on the completeness harness of P1-9: answered. The
+   running-offset shape costs less than the measured record, and it is in the tree.
 
 ## Recommendation
 
