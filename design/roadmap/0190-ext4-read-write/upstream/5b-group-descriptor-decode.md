@@ -21,8 +21,8 @@ The fix changes public API, so the commit carries the breaking marker (`fix(rsex
 `BlockGroupDescIter` yields values, and `BlockGroupDescTableMut::get_desc_mut` gives way to
 `get_desc` and `set_desc`. A reference into the table cannot be sound for a 32-byte record, since
 `Ext4GroupDesc` is 64 bytes and a reference to it covers 64 bytes. So the only change that keeps a
-reference-returning signature is one that refuses 32-byte tables, which would lose a format Linux
-writes.
+reference-returning signature is one that refuses 32-byte tables, which would drop the layout that the ext4 format documentation (3.2 Block
+Group Descriptors) gives a filesystem without the `64bit` feature.
 
 The defect does not reach a mounted filesystem. The mount path in `fs/rsext4/src/ext4/mount.rs`
 decodes each descriptor with `Ext4GroupDesc::decode_checked` and never builds these views; only the
@@ -47,8 +47,8 @@ fix(rsext4): BlockGroupDescTable casts unaligned table bytes to &Ext4GroupDesc
 `BlockGroupDescTable::get_desc` 和 `BlockGroupDescTableMut::get_desc_mut`（`fs/rsext4/src/blockgroup_description/table.rs:36` 和 `:158`）把表中某个字节偏移直接转换为 `&Ext4GroupDesc` / `&mut Ext4GroupDesc`。这有三个问题：
 
 - `Ext4GroupDesc` 要求 4 字节对齐，而表字节（例如 `Vec<u8>` 的某个切片）不保证对齐。未对齐时构造引用本身就是未定义行为；debug 构建下 Rust 的对齐检查会直接中止进程（`misaligned pointer dereference`）。
-- 转换按本机字节序读取字段，而磁盘格式是小端序。
-- 引用总是覆盖 64 字节。描述符大小为 32 字节时（未启用 `64bit` 特性的文件系统，例如 `mke2fs -O ^64bit` 或由 ext3 转换而来的文件系统），读取会把下一条记录当作 `_hi` 高半部分；对恰好按大小分配的表，最后一条记录返回 `None`；通过可变视图做的每一次更新都会把高半部分写进下一条记录。
+- 转换按本机字节序读取字段，而磁盘格式是小端序（ext4 格式文档，2 High Level Design：“All fields in ext4 are written to disk in little-endian order”）。
+- 引用总是覆盖 64 字节。未启用 `64bit` 特性时描述符只有 32 字节，`_hi` 字段只在启用 `64bit` 且 `s_desc_size > 32` 时存在（ext4 格式文档，3.2 Block Group Descriptors）。描述符大小为 32 字节时（例如 `mke2fs -O ^64bit` 或由 ext3 转换而来的文件系统），读取会把下一条记录当作 `_hi` 高半部分；对恰好按大小分配的表，最后一条记录返回 `None`；通过可变视图做的每一次更新都会把高半部分写进下一条记录。
 
 影响范围：挂载路径（`fs/rsext4/src/ext4/mount.rs`）直接用 `Ext4GroupDesc::decode_checked` 解码描述符，不使用这两个视图；仓库中只有 crate 自己的测试使用它们。受影响的是通过 crates.io 发布版的公共接口使用这两个类型的代码。
 
@@ -56,7 +56,7 @@ fix(rsext4): BlockGroupDescTable casts unaligned table bytes to &Ext4GroupDesc
 
 两个视图都用 `Ext4GroupDesc::decode_checked` 解码该记录自己的 `desc_size` 字节，可变视图用 `encode_checked` 写回，去掉两处 `unsafe` 转换。
 
-兼容性：这是破坏性修改。`get_desc` 改为按值返回 `Option<Ext4GroupDesc>`，`BlockGroupDescIter` 产出 `Ext4GroupDesc`，`BlockGroupDescTableMut` 的 `get_desc_mut` 改为 `get_desc` 和 `set_desc`。`Ext4GroupDesc` 是 64 字节，32 字节记录不可能安全地借出 64 字节的引用，所以保留引用签名的唯一办法是拒绝 32 字节的表，而那会失去 Linux 写出的格式。如果希望先经过一个弃用版本，可以保留旧名字并标记 `#[deprecated]`。
+兼容性：这是破坏性修改。`get_desc` 改为按值返回 `Option<Ext4GroupDesc>`，`BlockGroupDescIter` 产出 `Ext4GroupDesc`，`BlockGroupDescTableMut` 的 `get_desc_mut` 改为 `get_desc` 和 `set_desc`。`Ext4GroupDesc` 是 64 字节，32 字节记录不可能安全地借出 64 字节的引用，所以保留引用签名的唯一办法是拒绝 32 字节的表，而那会丢掉 ext4 格式文档（3.2 Block Group Descriptors）为未启用 `64bit` 特性的文件系统规定的布局。如果希望先经过一个弃用版本，可以保留旧名字并标记 `#[deprecated]`。
 
 不包含：CRC32C 路径的安全性注释（另开 Issue）。
 
@@ -73,8 +73,8 @@ fix(rsext4): BlockGroupDescTable casts unaligned table bytes to &Ext4GroupDesc
 `BlockGroupDescTable::get_desc` and `BlockGroupDescTableMut::get_desc_mut` (`fs/rsext4/src/blockgroup_description/table.rs:36` and `:158`) cast a byte offset in the table straight to `&Ext4GroupDesc` / `&mut Ext4GroupDesc`. That has three problems:
 
 - `Ext4GroupDesc` needs 4-byte alignment, and the table bytes (a slice of a `Vec<u8>`, say) do not guarantee it. Making the reference when they are not aligned is undefined behavior in itself; a debug build's alignment check aborts the process (`misaligned pointer dereference`).
-- The cast reads the fields in native byte order, and the on-disk format is little-endian.
-- The reference always spans 64 bytes. With 32-byte descriptors (a filesystem without the `64bit` feature, such as one made with `mke2fs -O ^64bit` or converted from ext3), a read takes the next record as the `_hi` halves, the last record of an exactly sized table returns `None`, and every update through the mutable view writes high halves into the next record.
+- The cast reads the fields in native byte order, and the on-disk format is little-endian (ext4 format documentation, 2 High Level Design: "All fields in ext4 are written to disk in little-endian order").
+- The reference always spans 64 bytes. Without the `64bit` feature a descriptor is 32 bytes, and the `_hi` fields exist only with `64bit` and `s_desc_size > 32` (ext4 format documentation, 3.2 Block Group Descriptors). With 32-byte descriptors (such as a filesystem made with `mke2fs -O ^64bit` or converted from ext3), a read takes the next record as the `_hi` halves, the last record of an exactly sized table returns `None`, and every update through the mutable view writes high halves into the next record.
 
 Scope: the mount path (`fs/rsext4/src/ext4/mount.rs`) decodes descriptors directly with `Ext4GroupDesc::decode_checked` and does not use these two views; in this repository only the crate's own tests use them. The code affected is code that uses these two types through the public API of the crates.io release.
 
@@ -82,7 +82,7 @@ Scope: the mount path (`fs/rsext4/src/ext4/mount.rs`) decodes descriptors direct
 
 Both views decode the record's own `desc_size` bytes with `Ext4GroupDesc::decode_checked`, and the mutable view writes them back with `encode_checked`, removing the two `unsafe` casts.
 
-Compatibility: this is a breaking change. `get_desc` returns `Option<Ext4GroupDesc>` by value, `BlockGroupDescIter` yields `Ext4GroupDesc`, and on `BlockGroupDescTableMut`, `get_desc_mut` becomes `get_desc` and `set_desc`. `Ext4GroupDesc` is 64 bytes, and a 32-byte record cannot soundly lend a 64-byte reference, so the only way to keep a reference-returning signature is to refuse 32-byte tables, which would lose a format Linux writes. If a deprecation release is wanted first, the old names can stay under `#[deprecated]`.
+Compatibility: this is a breaking change. `get_desc` returns `Option<Ext4GroupDesc>` by value, `BlockGroupDescIter` yields `Ext4GroupDesc`, and on `BlockGroupDescTableMut`, `get_desc_mut` becomes `get_desc` and `set_desc`. `Ext4GroupDesc` is 64 bytes, and a 32-byte record cannot soundly lend a 64-byte reference, so the only way to keep a reference-returning signature is to refuse 32-byte tables, which would drop the layout that the ext4 format documentation (3.2 Block Group Descriptors) gives a filesystem without the `64bit` feature. If a deprecation release is wanted first, the old names can stay under `#[deprecated]`.
 
 Not included: the safety comments on the CRC32C paths (a separate issue).
 
@@ -104,12 +104,12 @@ fix(rsext4)!: decode group descriptors instead of casting
 
 关联 Issue：#<to be filled>
 
-`BlockGroupDescTable::get_desc` 和 `BlockGroupDescTableMut::get_desc_mut` 把表中某个字节偏移直接转换为 `&Ext4GroupDesc` / `&mut Ext4GroupDesc`：未对齐时这是未定义行为，字段按本机字节序读取，而且引用总是覆盖 64 字节，所以 32 字节描述符的读取会把下一条记录当作高半部分，更新会写进下一条记录。挂载路径直接用 `Ext4GroupDesc::decode_checked` 解码描述符，不使用这两个视图；仓库中只有 crate 自己的测试使用它们，受影响的是 crates.io 发布版公共接口的使用者。
+`BlockGroupDescTable::get_desc` 和 `BlockGroupDescTableMut::get_desc_mut` 把表中某个字节偏移直接转换为 `&Ext4GroupDesc` / `&mut Ext4GroupDesc`：未对齐时这是未定义行为，字段按本机字节序读取而磁盘格式是小端序（ext4 格式文档，2 High Level Design），而且引用总是覆盖 64 字节，所以 32 字节描述符（ext4 格式文档，3.2 Block Group Descriptors：未启用 `64bit` 时描述符为 32 字节）的读取会把下一条记录当作高半部分，更新会写进下一条记录。挂载路径直接用 `Ext4GroupDesc::decode_checked` 解码描述符，不使用这两个视图；仓库中只有 crate 自己的测试使用它们，受影响的是 crates.io 发布版公共接口的使用者。
 
 ## 修改方案
 
 - 两个视图都用 `Ext4GroupDesc::decode_checked` 解码该记录自己的 `desc_size` 字节，可变视图用 `encode_checked` 写回，因此 32 字节、64 字节（及更大）的描述符都只触及自己的记录。理由：crate 中已有这两个函数，按记录大小逐字段小端解码和编码，并拒绝不支持的记录大小，不需要新的解码代码。
-- `get_desc` 按值返回 `Option<Ext4GroupDesc>`，`BlockGroupDescIter` 产出 `Ext4GroupDesc`；`BlockGroupDescTableMut` 的 `get_desc_mut` 改为 `get_desc` 和 `set_desc`。`update_free_blocks` 等更新方法改为读取、修改、写回。理由：`Ext4GroupDesc` 是 64 字节，32 字节记录不可能安全地借出 64 字节的引用。保留引用签名的唯一办法是拒绝 32 字节的表，而那会失去 Linux 写出的格式。
+- `get_desc` 按值返回 `Option<Ext4GroupDesc>`，`BlockGroupDescIter` 产出 `Ext4GroupDesc`；`BlockGroupDescTableMut` 的 `get_desc_mut` 改为 `get_desc` 和 `set_desc`。`update_free_blocks` 等更新方法改为读取、修改、写回。理由：`Ext4GroupDesc` 是 64 字节，32 字节记录不可能安全地借出 64 字节的引用。保留引用签名的唯一办法是拒绝 32 字节的表，而那会丢掉 ext4 格式文档（3.2 Block Group Descriptors）为未启用 `64bit` 特性的文件系统规定的布局。
 - 新增两个测试：`descriptor_table_reads_and_updates_32_byte_records_in_place` 和 `descriptor_table_reads_and_updates_64_byte_records_in_place`。它们把表放在故意不对齐的缓冲区中，按小端序写入每条记录，读取每条记录、更新一条记录，并检查相邻记录的字节没有改变。
 
 兼容性：公共签名改变，所以这是破坏性修改。本仓库中除 crate 自己的测试外没有代码调用这些类型。如果希望先经过一个弃用版本，可以保留旧名字并标记 `#[deprecated]`，只把删除 `get_desc_mut` 推迟。
@@ -131,12 +131,12 @@ fix(rsext4)!: decode group descriptors instead of casting
 
 Linked issue: #<to be filled>
 
-`BlockGroupDescTable::get_desc` and `BlockGroupDescTableMut::get_desc_mut` cast a byte offset in the table straight to `&Ext4GroupDesc` / `&mut Ext4GroupDesc`: that is undefined behavior when the bytes are not aligned, it reads the fields in native byte order, and the reference always spans 64 bytes, so a read of a 32-byte descriptor takes the next record as the high halves and an update writes into the next record. The mount path decodes descriptors directly with `Ext4GroupDesc::decode_checked` and does not use these two views; in this repository only the crate's own tests use them, and the code affected is code that uses the crates.io release's public API.
+`BlockGroupDescTable::get_desc` and `BlockGroupDescTableMut::get_desc_mut` cast a byte offset in the table straight to `&Ext4GroupDesc` / `&mut Ext4GroupDesc`: that is undefined behavior when the bytes are not aligned, it reads the fields in native byte order where the format is little-endian (ext4 format documentation, 2 High Level Design), and the reference always spans 64 bytes, so a read of a 32-byte descriptor (ext4 format documentation, 3.2 Block Group Descriptors: 32 bytes without the `64bit` feature) takes the next record as the high halves and an update writes into the next record. The mount path decodes descriptors directly with `Ext4GroupDesc::decode_checked` and does not use these two views; in this repository only the crate's own tests use them, and the code affected is code that uses the crates.io release's public API.
 
 ## Change
 
 - Both views decode the record's own `desc_size` bytes with `Ext4GroupDesc::decode_checked`, and the mutable view writes them back with `encode_checked`, so 32-byte and 64-byte (and larger) descriptors each touch only their own record. Why: the crate already has both functions. They decode and encode field by field, little-endian, by record size, and refuse an unsupported record size, so no new decoding code is needed.
-- `get_desc` returns `Option<Ext4GroupDesc>` by value and `BlockGroupDescIter` yields `Ext4GroupDesc`; on `BlockGroupDescTableMut`, `get_desc_mut` becomes `get_desc` and `set_desc`. The update methods such as `update_free_blocks` now read, change and write back. Why: `Ext4GroupDesc` is 64 bytes, and a 32-byte record cannot soundly lend a 64-byte reference. The only way to keep a reference-returning signature is to refuse 32-byte tables, which would lose a format Linux writes.
+- `get_desc` returns `Option<Ext4GroupDesc>` by value and `BlockGroupDescIter` yields `Ext4GroupDesc`; on `BlockGroupDescTableMut`, `get_desc_mut` becomes `get_desc` and `set_desc`. The update methods such as `update_free_blocks` now read, change and write back. Why: `Ext4GroupDesc` is 64 bytes, and a 32-byte record cannot soundly lend a 64-byte reference. The only way to keep a reference-returning signature is to refuse 32-byte tables, which would drop the layout that the ext4 format documentation (3.2 Block Group Descriptors) gives a filesystem without the `64bit` feature.
 - Two new tests, `descriptor_table_reads_and_updates_32_byte_records_in_place` and `descriptor_table_reads_and_updates_64_byte_records_in_place`, put the table in a deliberately unaligned buffer, write each record little-endian, read every record, update one, and check that the bytes of its neighbors did not change.
 
 Compatibility: the public signatures change, so this is a breaking change. Nothing in this repository outside the crate's own tests calls these types. If a deprecation release is wanted first, the old names can stay under `#[deprecated]`, and only the removal of `get_desc_mut` waits.

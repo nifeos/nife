@@ -1,6 +1,6 @@
-From 61f93d4e9523b143595eab9560cd9f306791fb3e Mon Sep 17 00:00:00 2001
+From aaf13ff63564749bdfc3b9243fa755196bd65c15 Mon Sep 17 00:00:00 2001
 From: Chris Alef <476570+calef@users.noreply.github.com>
-Date: Sun, 22 Nov 2026 22:31:01 +0000
+Date: Sun, 22 Nov 2026 22:38:11 +0000
 Subject: [PATCH] fix(rsext4)!: decode group descriptors instead of casting
 
 BlockGroupDescTable::get_desc and BlockGroupDescTableMut::get_desc_mut
@@ -11,6 +11,11 @@ the fields in native byte order, and always spans 64 bytes. With
 returns None for the last record of an exactly sized table, and every
 update through the mutable view writes high halves into the next
 record.
+
+The ext4 format documentation states both rules the cast breaks: all
+fields are little-endian (2 High Level Design), and a descriptor is 32
+bytes without the 64bit feature, with the _hi fields present only when
+64bit is set and s_desc_size > 32 (3.2 Block Group Descriptors).
 
 Both views now decode the record's own desc_size bytes with
 Ext4GroupDesc::decode_checked and the mutable view writes them back
