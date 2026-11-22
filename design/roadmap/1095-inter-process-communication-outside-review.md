@@ -57,12 +57,16 @@ milestone reaches delivery.
   survivors triaged.
 - P2-10, a timer and a futex table in a crate named for inter-process communication: At the move.
   The README's first line, which states the shared reason (D2), comes with the move.
-- P2-11, the one-queue invariant could hold by construction: Open. Two-way, and the maintainer
-  rules it after the move; it changes the proofs.
+- P2-11, the one-queue invariant could hold by construction: Waiting on the maintainer's ruling,
+  a two-way door: take the one-tag layout before the move, or decline it. Taking it rewrites
+  `seed`, four invariant harnesses and their falsification patches, and leaves
+  `one_queue_invariant_holds` true by construction.
 - P2-12a, `Futexes<T, 0>` panics: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-12b, `Futexes` as a stranger reads it: Open. [#3824](https://github.com/nifeos/nife/pull/3824) built the names (D5) and [#3883](https://github.com/nifeos/nife/pull/3883) ratified
-  them; the `Queue::iter` that would make the count read-only is not in
-  `nifeos/intrusive_queue`, and `waiter_count` still takes `&mut self`.
+- P2-12b, `Futexes` as a stranger reads it: Waiting on nifeos/intrusive_queue#2, which adds the
+  read-only `Queue::iter` that lets `AddressWaitTable::waiter_count` take `&self`.
+  [#3824](https://github.com/nifeos/nife/pull/3824) built the names (D5),
+  [#3874](https://github.com/nifeos/nife/pull/3874) spelled the type out as `AddressWaitTable`,
+  and [#3883](https://github.com/nifeos/nife/pull/3883) ratified them.
 - P2-13, `Timer::deadline` answers with a sentinel: Done, [#3842](https://github.com/nifeos/nife/pull/3842). `Timer::deadline` and
   `earliest` answer `Option<u64>` (D7).
 - P2-14, the pending count's saturation has no host test: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -173,8 +177,9 @@ The rules in force, with their background and prior art, are in
   leaves first, then this crate pins it by git revision on that repository's `main`.
 - D4, two names the gates refuse: the maintainer's provisional ruling of 2026-11-19 (UTC).
   `one_queue_invariant_holds` and `Key::virtual_address`.
-- D5, the futex table's names: the maintainer's provisional ruling of 2026-11-19 (UTC).
-  `FutexTable<T, const BUCKETS: usize>`, `len()` and `Key::address_space`.
+- D5, the futex table's names: the maintainer's provisional ruling of 2026-11-19 (UTC), with the
+  type spelled out by the ruling of 2026-11-21 (UTC) that spells futex out as address wait.
+  `AddressWaitTable<T, const BUCKETS: usize>`, `len()` and `Key::address_space`.
 - D6, review clearance: the maintainer's provisional ruling of 2026-11-19 (UTC). The package is
   written now; no tag and no publication.
 - D7, the timer's deadline type: the maintainer's provisional ruling of 2026-11-20 (UTC).
