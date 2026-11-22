@@ -162,9 +162,9 @@ Read against nifeos/boot_ladder `main` at `ed23542` and nife `main`.
   move ([#3894](https://github.com/nifeos/nife/pull/3894)). `license`, `rust-version`,
   `description`, `repository`, `readme` and the template's lints are literals, and the `publish`
   line carries the one-sentence comment.
-- P0-2, the files a stranger needs: Open. The README, both licenses, `CHANGELOG.md`, `_typos.toml`
-  and `docs/stranger-test.md` exist in nifeos/boot_ladder, and nifeos/boot_ladder#1 gave the README
-  its proof steps. No stranger run is on record yet.
+- P0-2, the files a stranger needs: Waiting on nifeos/boot_ladder#2, which records a passing
+  stranger run in `docs/stranger-test.md`. The README, both licenses, `CHANGELOG.md` and
+  `_typos.toml` exist, and nifeos/boot_ladder#1 gave the README its proof steps.
 - P0-3, shipped text points into this tree: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
   [#3655](https://github.com/nifeos/nife/pull/3655) and the move
   ([#3894](https://github.com/nifeos/nife/pull/3894)). No doc comment in nifeos/boot_ladder names a
@@ -209,7 +209,7 @@ None. The publishing hold stands.
 
 ## Follow-on
 
-- **Outstanding.** P0-2, a stranger run on record in nifeos/boot_ladder.
+- **Outstanding.** P0-2 reads Done once nifeos/boot_ladder#2 merges, and the milestone is then BUILT.
 
 ## BUGS
 
