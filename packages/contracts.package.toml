@@ -8,7 +8,7 @@ name = "contracts"
 kind = "sdk"
 home = { repo = "contracts", status = "provisional" }
 interfaces = [
-    "abi",
+    "moho_abi",
     "primitive_benchmark_contract",
     "capability_witness_contract",
     "confined_system_call_fuzzer_contract",

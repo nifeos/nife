@@ -13,7 +13,7 @@ is the same shape, built again on purpose, and the numbers in the milestone bloc
 
 ### The object
 
-`object_type::TIMER` and `Timer::{ARM, CANCEL}` live in `crates/abi`, and their numbers are provisional.
+`object_type::TIMER` and `Timer::{ARM, CANCEL}` live in `crates/moho_abi`, and their numbers are provisional.
 `ARM(deadline, notification_slot, bits)` replaces any pending deadline. A deadline already reached
 signals before `ARM` returns. `CANCEL` returns `1` if it stopped a pending deadline and `0`
 otherwise, so a `0` tells the caller any signal has already happened.
@@ -23,7 +23,7 @@ section 2 is churn: an ACK arrives and the retransmit timer is thrown away. With
 consumer would re-arm to a far deadline instead, which is a cancel spelled worse.
 
 Deadlines are absolute counter ticks. That is the counter a program already reads without a system call,
-so nothing converts between clocks. `abi::timer::counter_ticks_for` turns a duration into ticks,
+so nothing converts between clocks. `moho_abi::timer::counter_ticks_for` turns a duration into ticks,
 rounded up so a sleep is never short.
 
 ### The tick
@@ -89,7 +89,7 @@ Nothing in milestone 106 waits on the answer. Each of those has a spawner that h
 
 ### What the tree already does
 
-`SYSTEM_CALL_EXIT` and `SYSTEM_CALL_YIELD` are authority over yourself with no capability. `abi::rendezvous::NO_CAPABILITY`
+`SYSTEM_CALL_EXIT` and `SYSTEM_CALL_YIELD` are authority over yourself with no capability. `moho_abi::rendezvous::NO_CAPABILITY`
 is a sentinel in a slot argument. Every capability a process holds arrived from its spawner, and
 `kernel/src/user/virtual_io_service.rs` now binds `net_stack`'s notification that way.
 

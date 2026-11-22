@@ -31,7 +31,7 @@ The tree already has the other shape. A note type is per owner, and `capability_
 
 Where does the (interface, version) list live?
 
-**Recommended: a fourth note type, provisionally `INTERFACES = 4`, with `INTERFACES_VERSION = 1`.** Its descriptor is a count, then that many records of `INTERFACE_ID: u64` and `version: u32`, little-endian, in id order with no duplicates. The decode refuses anything else, which keeps one encoding. The ABI is one entry of the list, so step 3 reads the entry whose id is `abi`'s. A program with no such note declares nothing. What the progenitor does then (accept, as for every program today, or refuse once packages carry the stamp) is a second small ruling the lane asks for here.
+**Recommended: a fourth note type, provisionally `INTERFACES = 4`, with `INTERFACES_VERSION = 1`.** Its descriptor is a count, then that many records of `INTERFACE_ID: u64` and `version: u32`, little-endian, in id order with no duplicates. The decode refuses anything else, which keeps one encoding. The ABI is one entry of the list, so step 3 reads the entry whose id is `moho_abi`'s. A program with no such note declares nothing. What the progenitor does then (accept, as for every program today, or refuse once packages carry the stamp) is a second small ruling the lane asks for here.
 
 Options:
 

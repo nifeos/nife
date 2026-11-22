@@ -37,8 +37,9 @@ pub(super) static CLOCK_SLOT: core::sync::atomic::AtomicU64 =
 pub(super) static HOLDS_RUN_UNVOUCHED: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
-// `grant_plan` states the slot without depending on `abi`; the relation is held by each reader.
-const _: () = assert!(spawn_protocol::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
+// `grant_plan` states the slot without depending on `moho_abi`; the relation is held by each reader.
+const _: () =
+    assert!(spawn_protocol::RUN_UNVOUCHED_SLOT == moho_abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 
 /// **Whether this shell holds a read-only view of the inert-configuration page**
 /// ([`grant_contract::SHELL_CONFIGURATION_SLOT`], mapped at [`grant_contract::SHELL_CONFIGURATION_VIRTUAL_ADDRESS`]; milestone 47
@@ -57,7 +58,7 @@ pub(super) static HOLDS_CONFIG: core::sync::atomic::AtomicBool =
 pub(super) static HOLDS_MOUNTED_TREE: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
-const _: () = assert!(spawn_protocol::MOUNTED_TREE_SLOT < abi::fault::FAULT_RENDEZVOUS_SLOT);
+const _: () = assert!(spawn_protocol::MOUNTED_TREE_SLOT < moho_abi::fault::FAULT_RENDEZVOUS_SLOT);
 
 // The named slot sits under the run-unvouched one and so under the kernel's fault slot.
 const _: () =
@@ -86,7 +87,7 @@ pub(super) fn delegate_machine_page(wired: bool) {
     if wired {
         delegate(
             spawn_protocol::MACHINE_PAGE_SLOT,
-            abi::rights::READ | abi::rights::GRANT,
+            moho_abi::rights::READ | moho_abi::rights::GRANT,
         );
     }
 }
@@ -146,7 +147,7 @@ const _: () = {
 /// Delegate the capability in `slot` to the progenitor over the spawn rendezvous, narrowed to WRITE|GRANT (the progenitor
 /// builds from an untyped or maps a frame, and narrows further from there). We keep our own copy.
 pub(super) fn send_capability(slot: u64) {
-    delegate(slot, abi::rights::WRITE | abi::rights::GRANT);
+    delegate(slot, moho_abi::rights::WRITE | moho_abi::rights::GRANT);
 }
 
 /// **Delegate one capability to the progenitor, with exactly the rights it should travel with.**

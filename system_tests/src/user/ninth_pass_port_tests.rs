@@ -13,7 +13,7 @@
 //! architectures.
 #![cfg(target_arch = "x86_64")]
 
-use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
+use moho_abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
 
 use super::*;
 use crate::capability_object::Rights;

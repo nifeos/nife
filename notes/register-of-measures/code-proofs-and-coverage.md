@@ -171,7 +171,7 @@ Hold these caveats against the numbers:
   `_proto` names do not matter. The earlier objection, that a minimum taken today covers a
   population that week's gate did not have, therefore does not apply to these eight weeks.
 - 2026W30 stays empty. Its commit predates the floor, which arrived on 2026-07-27. The pass reads
-  `crates/abi/src/lib.rs` at 0% in its lcov and would print 0.0 for a gate nobody ran. That is the
+  `crates/moho_abi/src/lib.rs` at 0% in its lcov and would print 0.0 for a gate nobody ran. That is the
   reasoning that leaves 2026W29's aggregate empty.
 
 ### Where the number comes from

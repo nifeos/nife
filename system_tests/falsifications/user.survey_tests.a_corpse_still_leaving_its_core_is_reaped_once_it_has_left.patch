@@ -16,7 +16,7 @@ diff --git a/kernel/src/sched/region_reaping.rs b/kernel/src/sched/region_reapin
 index 30185504c..c2052aa5a 100644
 --- a/kernel/src/sched/region_reaping.rs
 +++ b/kernel/src/sched/region_reaping.rs
-@@ -374,7 +374,7 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error
+@@ -374,7 +374,7 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), moho_abi::Error
          // A corpse whose core still stands on its stack clears at that core's next
          // `finish_switch`; refusing would reach userspace as `NotPermitted`. Yield the lock and
          // look again.

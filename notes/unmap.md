@@ -35,20 +35,20 @@ A builder that mapped the wrong page into a child before starting it:
 
 ```rust
 // SAFETY: invoke is the system call; the kernel validates the capability, method and address.
-unsafe { invoke(aspace, abi::address_space::MAP_INTO, va, frame, abi::address_space::MAP_READ_WRITE) };
+unsafe { invoke(aspace, moho_abi::address_space::MAP_INTO, va, frame, moho_abi::address_space::MAP_READ_WRITE) };
 // ... wrong frame. Give the page up and map the right one at the same address.
-let r = unsafe { invoke(aspace, abi::address_space::UNMAP, va, 0, 0) };
+let r = unsafe { invoke(aspace, moho_abi::address_space::UNMAP, va, 0, 0) };
 assert_eq!(r, 0);
-unsafe { invoke(aspace, abi::address_space::MAP_INTO, va, right_frame, abi::address_space::MAP_READ_WRITE) };
+unsafe { invoke(aspace, moho_abi::address_space::MAP_INTO, va, right_frame, moho_abi::address_space::MAP_READ_WRITE) };
 ```
 
 Asking twice is an error the second time:
 
 ```rust
-assert_eq!(unsafe { invoke(aspace, abi::address_space::UNMAP, va, 0, 0) }, 0);
+assert_eq!(unsafe { invoke(aspace, moho_abi::address_space::UNMAP, va, 0, 0) }, 0);
 assert_eq!(
-    unsafe { invoke(aspace, abi::address_space::UNMAP, va, 0, 0) },
-    abi::Error::BadPointer as i64,
+    unsafe { invoke(aspace, moho_abi::address_space::UNMAP, va, 0, 0) },
+    moho_abi::Error::BadPointer as i64,
 );
 ```
 
@@ -64,7 +64,7 @@ misaligned or kernel-half `va`, and a page already given up.
    the method is for. A program calls `UNMAP` to close a window. If it passes the wrong address,
    an idempotent answer says the window is shut while it is still open, and nothing tells the
    program otherwise. A new error code (`NotMapped`) was also considered. It loses because adding a
-   code to `abi::Error` is a wire change of its own, and `BadPointer` already means "not memory you
+   code to `moho_abi::Error` is a wire change of its own, and `BadPointer` already means "not memory you
    could have touched yourself", which an unmapped page is.
 2. What the tree does in the analogous case. `MAP_INTO` of an address already mapped answers
    `BadPointer` rather than succeeding or replacing, and `supervision_contract::map_scratch` relies

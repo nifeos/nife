@@ -121,7 +121,7 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
     crate::sched::configure_thread_control_block(tid, elf.entry(), USER_STACK_TOP, aspace_name)
         .expect("configure");
     // x0 = the console UART's register shape, which the progenitor hands its console and input
-    // drivers (`abi::uart`); x1 = the archive length; x2 = the file-service rights.
+    // drivers (`moho_abi::uart`); x1 = the archive length; x2 = the file-service rights.
     crate::sched::start_thread_control_block(tid, [uart_shape.to_word(), ramdisk_len, fs_rights])
         .expect("start");
 
@@ -282,7 +282,7 @@ fn grant_boot_slots(tid: crate::thread::ThreadId, build_region: u64, uart_interr
 /// (milestone 50 (pipes and redirection)).
 ///
 /// Both carry `GRANT`: the progenitor narrows the endpoint into the shell, and slices one window
-/// per client out of the pool with `abi::page_frame::SLICE` (milestone 599 (a frame per filesystem
+/// per client out of the pool with `moho_abi::page_frame::SLICE` (milestone 599 (a frame per filesystem
 /// client channel)). Returns the endpoint's rights, which `a2` tells the progenitor (0 for no file
 /// service, the ordinary case with no RedoxFS disk attached), and the pool's physical base.
 fn grant_file_service(tid: crate::thread::ThreadId) -> (u64, Option<u64>) {

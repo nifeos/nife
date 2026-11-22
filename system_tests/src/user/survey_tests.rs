@@ -1,6 +1,6 @@
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use abi::Error;
+use moho_abi::Error;
 
 use super::supervision_tests::{FAULT_STUB, REPORT_STUB, build_child_in};
 use crate::arch::exceptions::TrapFrame;
@@ -82,7 +82,7 @@ pub(super) fn hold_write(ep: sched::RendezvousId) -> u64 {
 /// userspace caller would read out of its registers.
 fn survey(slot: u64, cursor: u64) -> (i64, u64, u64) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    match invoke(&mut frame, slot, abi::rendezvous::SURVEY, cursor, 0, 0) {
+    match invoke(&mut frame, slot, moho_abi::rendezvous::SURVEY, cursor, 0, 0) {
         Ok(next) => (next, frame.arg(1), frame.arg(2)),
         Err(e) => (e as i64, 0, 0),
     }
@@ -112,7 +112,7 @@ fn walk(slot: u64, rows: &mut [ps::Row; TEST_ROWS]) -> ps::Survey<'_> {
 /// `invoke(capability, REAP, tid, _, _)`, through the real dispatcher.
 fn reap(slot: u64, tid: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    invoke(&mut frame, slot, abi::rendezvous::REAP, tid, 0, 0)
+    invoke(&mut frame, slot, moho_abi::rendezvous::REAP, tid, 0, 0)
 }
 
 /// **Let every parked child finish.** Each `REPORT_STUB` member is blocked in a send on the shared
@@ -286,7 +286,7 @@ fn a_viewer_without_the_domain_is_refused_rather_than_shown_an_empty_list() {
     assert_eq!(refused.rows().len(), 0);
 
     // Nothing at all in the slot: a different refusal, and a louder one.
-    let empty_slot = abi::CAPABILITY_TABLE_SLOTS - 1;
+    let empty_slot = moho_abi::CAPABILITY_TABLE_SLOTS - 1;
     assert!(
         sched::current_capability(empty_slot).is_err(),
         "pick an empty slot"
@@ -303,7 +303,7 @@ fn a_viewer_without_the_domain_is_refused_rather_than_shown_an_empty_list() {
     let held = hold_view(vacant);
     assert_eq!(
         survey(held, 0),
-        (abi::survey::DONE as i64, 0, 0),
+        (moho_abi::survey::DONE as i64, 0, 0),
         "an empty domain must answer, not refuse",
     );
     let mut buf = [ps::Row::default(); TEST_ROWS];
@@ -389,19 +389,34 @@ fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
     assert_eq!(seen.rows()[0].tid, child);
     assert_eq!(
         seen.rows()[0].state,
-        abi::survey::DEAD,
+        moho_abi::survey::DEAD,
         "a corpse was reported as something other than dead",
     );
 
     // Collect it through the rendezvous the survey named it on, then the domain is empty and says so
     // rather than refusing.
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    invoke(&mut frame, capability, abi::rendezvous::RECEIVE, 0, 0, 0).expect("RECEIVE refused");
+    invoke(
+        &mut frame,
+        capability,
+        moho_abi::rendezvous::RECEIVE,
+        0,
+        0,
+        0,
+    )
+    .expect("RECEIVE refused");
     // A refusal reaches userspace as one `NotPermitted` whatever stopped it, so the message names
     // the check that refused and the state it saw (milestone 321 (a corpse that did not park, on
     // four real cores)): a rare failure here has to be diagnosable from the log of a run nobody can
     // repeat on demand.
-    let reaped = invoke(&mut frame, capability, abi::rendezvous::REAP, child, 0, 0);
+    let reaped = invoke(
+        &mut frame,
+        capability,
+        moho_abi::rendezvous::REAP,
+        child,
+        0,
+        0,
+    );
     assert_eq!(
         reaped,
         Ok(0),
@@ -462,13 +477,28 @@ fn a_corpse_still_leaving_its_core_is_reaped_once_it_has_left() {
     });
 
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    invoke(&mut frame, supervisor, abi::rendezvous::RECEIVE, 0, 0, 0).expect("RECEIVE refused");
+    invoke(
+        &mut frame,
+        supervisor,
+        moho_abi::rendezvous::RECEIVE,
+        0,
+        0,
+        0,
+    )
+    .expect("RECEIVE refused");
     assert!(
         !LEFT.load(Ordering::SeqCst),
         "the helper let the corpse go before the reap, so this run proves nothing",
     );
     assert_eq!(
-        invoke(&mut frame, supervisor, abi::rendezvous::REAP, child, 0, 0),
+        invoke(
+            &mut frame,
+            supervisor,
+            moho_abi::rendezvous::REAP,
+            child,
+            0,
+            0
+        ),
         Ok(0),
         "a corpse still leaving its core was refused rather than waited for; the reclaim refused \
          because {:?}",
@@ -527,7 +557,7 @@ fn a_resumed_walk_reports_every_member_exactly_once() {
     // look".
     assert_eq!(
         survey(capability, u64::MAX),
-        (abi::survey::DONE as i64, 0, 0)
+        (moho_abi::survey::DONE as i64, 0, 0)
     );
 
     drain(parking, 3);
@@ -575,7 +605,7 @@ fn the_survey_cursor_counts_threads_the_viewer_cannot_name() {
     );
     assert_eq!(
         survey(capability, c2 as u64),
-        (abi::survey::DONE as i64, 0, 0),
+        (moho_abi::survey::DONE as i64, 0, 0),
         "a third entry appeared in a domain of two",
     );
     assert!(
@@ -759,7 +789,7 @@ fn a_filter_names_members_and_tells_its_four_answers_apart() {
     drain(parking, 2);
     let sup = hold_supervisor(ep);
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    invoke(&mut frame, sup, abi::rendezvous::RECEIVE, 0, 0, 0)
+    invoke(&mut frame, sup, moho_abi::rendezvous::RECEIVE, 0, 0, 0)
         .expect("the death message never arrived");
     collect_all(sup, &[corpse, live_a, live_b]);
     tidy(budget, rendezvous_region, &[viewer, vacant, peer, sup]);

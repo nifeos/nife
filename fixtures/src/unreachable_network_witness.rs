@@ -88,10 +88,10 @@ const _: () = assert!(grant_contract::REBOOT_SLOT == 13);
 user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
-    // A kernel refusal comes back in the first word as a negative `abi::Error`; a service's reply
+    // A kernel refusal comes back in the first word as a negative `moho_abi::Error`; a service's reply
     // is non-negative. So the sign alone says whether something answered, and anything answering
     // is the failure this program exists to catch.
-    let no_slot = abi::Error::NoSuchSlot as i64;
+    let no_slot = moho_abi::Error::NoSuchSlot as i64;
     // The census is taken first and printed last: it reports the slots this program was endowed
     // with, and a stack that answers the network probe files the socket it opened in our table
     // (§255 (each socket is its own capability)), which is the probe's doing and not the spawner's.
@@ -151,7 +151,7 @@ fn census(line: &mut [u8; 96]) -> usize {
     let head = b"slots held:";
     line[..head.len()].copy_from_slice(head);
     let mut n = head.len();
-    for slot in 0..abi::fault::FAULT_RENDEZVOUS_SLOT {
+    for slot in 0..moho_abi::fault::FAULT_RENDEZVOUS_SLOT {
         if is_granted(slot) {
             line[n] = b' ';
             n += 1;

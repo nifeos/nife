@@ -407,11 +407,11 @@ fn start_virtual_io_entropy(
             process_builder::give_up_own_page(RNG_DMA_PEEK_VA);
             let request = must(retype_into_kernel_object_from(
                 ut,
-                abi::object_type::RENDEZVOUS,
+                moho_abi::object_type::RENDEZVOUS,
             ));
             let ready = must(retype_into_kernel_object_from(
                 ut,
-                abi::object_type::RENDEZVOUS,
+                moho_abi::object_type::RENDEZVOUS,
             ));
             let entropy = must(build_child(
                 ut,
@@ -419,15 +419,15 @@ fn start_virtual_io_entropy(
                 ent_program,
                 &ChildEndowment {
                     capabilities: &[
-                        (request, abi::rights::READ),
-                        (g.virtual_io_rng_interrupt, abi::rights::READ),
-                        (g.virtual_io_rng, abi::rights::WRITE),
-                        (ready, abi::rights::WRITE),
+                        (request, moho_abi::rights::READ),
+                        (g.virtual_io_rng_interrupt, moho_abi::rights::READ),
+                        (g.virtual_io_rng, moho_abi::rights::WRITE),
+                        (ready, moho_abi::rights::WRITE),
                     ],
                     maps: &[(
                         RNG_DMA_VA,
                         g.virtual_io_rng_dma,
-                        abi::address_space::MAP_READ_WRITE,
+                        moho_abi::address_space::MAP_READ_WRITE,
                     )],
                     stack_pages: CHILD_STACK_PAGES,
                     ..ChildEndowment::new(Retention::Nothing)
@@ -495,7 +495,7 @@ fn start_network(
 
 /// Retype the terminal plumbing and build what prints: the console, the system log service and
 /// the line discipline. The pair is the console's two device facts: whether the kernel wired a
-/// screen, and the UART's register shape (`abi::uart`). Returns the terminal endpoint, which the
+/// screen, and the UART's register shape (`moho_abi::uart`). Returns the terminal endpoint, which the
 /// line discipline serves and every keystroke source and the shell hold `WRITE` on
 /// (notes/terminal-contract.md), and the shell's two pages.
 #[inline(never)]
@@ -514,17 +514,17 @@ pub(super) fn start_terminal_stack(
 
     let term_ep = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
 
     {
         let request = must(retype_into_kernel_object_from(
             ut,
-            abi::object_type::RENDEZVOUS,
+            moho_abi::object_type::RENDEZVOUS,
         ));
         let reply = must(retype_into_kernel_object_from(
             ut,
-            abi::object_type::RENDEZVOUS,
+            moho_abi::object_type::RENDEZVOUS,
         ));
         let con_shared = must(retype_page_frame(ut)); // line_editor -> console text
 
@@ -548,13 +548,13 @@ pub(super) fn start_terminal_stack(
             &[
                 (
                     term_ep,
-                    abi::rights::READ | abi::rights::WRITE | abi::rights::GRANT,
+                    moho_abi::rights::READ | moho_abi::rights::WRITE | moho_abi::rights::GRANT,
                 ),
-                (request, abi::rights::WRITE | abi::rights::GRANT),
-                (con_shared, abi::rights::READ | abi::rights::WRITE), // it fills what the console reads
-                (term_out, abi::rights::READ),
-                (term_in, abi::rights::READ | abi::rights::WRITE),
-                (reply, abi::rights::READ | abi::rights::GRANT),
+                (request, moho_abi::rights::WRITE | moho_abi::rights::GRANT),
+                (con_shared, moho_abi::rights::READ | moho_abi::rights::WRITE), // it fills what the console reads
+                (term_out, moho_abi::rights::READ),
+                (term_in, moho_abi::rights::READ | moho_abi::rights::WRITE),
+                (reply, moho_abi::rights::READ | moho_abi::rights::GRANT),
             ],
         );
 
@@ -589,45 +589,62 @@ fn start_console(
     if has_screen {
         let notified = must(retype_into_kernel_object_from(
             ut,
-            abi::object_type::NOTIFICATION,
+            moho_abi::object_type::NOTIFICATION,
         ));
-        let timer = must(retype_into_kernel_object_from(ut, abi::object_type::TIMER));
+        let timer = must(retype_into_kernel_object_from(
+            ut,
+            moho_abi::object_type::TIMER,
+        ));
         con_batch = (notified, timer);
     }
     let mut con_capabilities = [(0, 0); 6];
     let mut con_maps = [(0, 0, 0); 3];
     let (mut capability_count, mut nmaps) = (0, 0);
-    for capability in [(request, abi::rights::READ), (reply, abi::rights::WRITE)] {
+    for capability in [
+        (request, moho_abi::rights::READ),
+        (reply, moho_abi::rights::WRITE),
+    ] {
         con_capabilities[capability_count] = capability;
         capability_count += 1;
     }
-    con_maps[nmaps] = (CON_SHARED_VA, con_shared, abi::address_space::MAP_READ_ONLY);
+    con_maps[nmaps] = (
+        CON_SHARED_VA,
+        con_shared,
+        moho_abi::address_space::MAP_READ_ONLY,
+    );
     nmaps += 1;
     if has_screen {
-        con_capabilities[capability_count] = (g.disp_term_ep, abi::rights::WRITE);
+        con_capabilities[capability_count] = (g.disp_term_ep, moho_abi::rights::WRITE);
         capability_count += 1;
         // `READ | WRITE` on the notification: WAIT/POLL and the SIGNAL an armed timer makes of
         // it. `WRITE` on the timer: ARM and CANCEL.
-        con_capabilities[capability_count] = (con_batch.0, abi::rights::READ | abi::rights::WRITE);
+        con_capabilities[capability_count] = (
+            con_batch.0,
+            moho_abi::rights::READ | moho_abi::rights::WRITE,
+        );
         capability_count += 1;
-        con_capabilities[capability_count] = (con_batch.1, abi::rights::WRITE);
+        con_capabilities[capability_count] = (con_batch.1, moho_abi::rights::WRITE);
         capability_count += 1;
         con_maps[nmaps] = (
             CON_SCREEN_OUT_VA,
             g.disp_term_page,
-            abi::address_space::MAP_READ_WRITE,
+            moho_abi::address_space::MAP_READ_WRITE,
         );
         nmaps += 1;
     }
     #[cfg(not(target_arch = "x86_64"))]
     {
         // mode ignored for a DeviceFrame
-        con_maps[nmaps] = (CON_UART_VA, g.uart_dev, abi::address_space::MAP_READ_ONLY);
+        con_maps[nmaps] = (
+            CON_UART_VA,
+            g.uart_dev,
+            moho_abi::address_space::MAP_READ_ONLY,
+        );
         nmaps += 1;
     }
     #[cfg(target_arch = "x86_64")]
     {
-        con_capabilities[capability_count] = (g.uart_dev, abi::rights::WRITE); // COM1's port range, held not mapped
+        con_capabilities[capability_count] = (g.uart_dev, moho_abi::rights::WRITE); // COM1's port range, held not mapped
         capability_count += 1;
     }
     let con = must(build_child(
@@ -646,7 +663,7 @@ fn start_console(
     if has_screen {
         must_ok(user_mode_runtime::notification_bind(con_batch.0, con.tcb) >= 0);
     }
-    // The second word is the UART's register shape (`abi::uart`), which the console needs before
+    // The second word is the UART's register shape (`moho_abi::uart`), which the console needs before
     // its first byte: with the wrong stride it waits on a status bit at the wrong address.
     must_ok(start_child(
         con,
@@ -682,33 +699,36 @@ fn start_system_log(
     {
         let intake = must(retype_into_kernel_object_from(
             ut,
-            abi::object_type::RENDEZVOUS,
+            moho_abi::object_type::RENDEZVOUS,
         ));
-        let timer = must(retype_into_kernel_object_from(ut, abi::object_type::TIMER));
+        let timer = must(retype_into_kernel_object_from(
+            ut,
+            moho_abi::object_type::TIMER,
+        ));
         let log = must(build_child(
             ut,
             ut,
             log_program,
             &ChildEndowment {
                 capabilities: &[
-                    (intake, abi::rights::READ),
+                    (intake, moho_abi::rights::READ),
                     (
                         g.kernel_ring_notification,
-                        abi::rights::READ | abi::rights::WRITE,
+                        moho_abi::rights::READ | moho_abi::rights::WRITE,
                     ),
-                    (timer, abi::rights::WRITE),
-                    (request, abi::rights::WRITE),
+                    (timer, moho_abi::rights::WRITE),
+                    (request, moho_abi::rights::WRITE),
                 ],
                 maps: &[
                     (
                         LOG_RING_VA,
                         g.kernel_ring,
-                        abi::address_space::MAP_READ_ONLY,
+                        moho_abi::address_space::MAP_READ_ONLY,
                     ),
                     (
                         LOG_CURSOR_VA,
                         g.kernel_ring_cursor,
-                        abi::address_space::MAP_READ_WRITE,
+                        moho_abi::address_space::MAP_READ_WRITE,
                     ),
                 ],
                 stack_pages: CHILD_STACK_PAGES,
@@ -782,17 +802,21 @@ pub(super) fn start_keystroke_sources(
     #[cfg(not(target_arch = "x86_64"))]
     let (in_capabilities, in_maps): EndowmentSlices = (
         &[
-            (term_ep, abi::rights::WRITE),
-            (g.uart_interrupt, abi::rights::READ),
+            (term_ep, moho_abi::rights::WRITE),
+            (g.uart_interrupt, moho_abi::rights::READ),
         ],
-        &[(IN_UART_VA, g.uart_dev, abi::address_space::MAP_READ_ONLY)],
+        &[(
+            IN_UART_VA,
+            g.uart_dev,
+            moho_abi::address_space::MAP_READ_ONLY,
+        )],
     );
     #[cfg(target_arch = "x86_64")]
     let (in_capabilities, in_maps): EndowmentSlices = (
         &[
-            (term_ep, abi::rights::WRITE),
-            (g.uart_interrupt, abi::rights::READ),
-            (g.uart_dev, abi::rights::WRITE), // COM1's port range, read by the TSS I/O bitmap
+            (term_ep, moho_abi::rights::WRITE),
+            (g.uart_interrupt, moho_abi::rights::READ),
+            (g.uart_dev, moho_abi::rights::WRITE), // COM1's port range, read by the TSS I/O bitmap
         ],
         &[],
     );
@@ -807,11 +831,11 @@ pub(super) fn start_keystroke_sources(
             ..ChildEndowment::new(Retention::Nothing)
         },
     ));
-    must_ok(start_child(input, uart_shape, 0, 0)); // the console's register shape, `abi::uart`
+    must_ok(start_child(input, uart_shape, 0, 0)); // the console's register shape, `moho_abi::uart`
 
     // The driver receives on its attach endpoint before anything else, so this send cannot hang.
     if is_granted(g.usb_keyboard_attach) {
-        must_ok(send_capability(g.usb_keyboard_attach, term_ep, abi::rights::WRITE, 0) >= 0);
+        must_ok(send_capability(g.usb_keyboard_attach, term_ep, moho_abi::rights::WRITE, 0) >= 0);
         capability_delete(g.usb_keyboard_attach);
     }
 
@@ -828,15 +852,15 @@ pub(super) fn start_keystroke_sources(
 pub(super) fn retype_spawn_channel(ut: u64) -> SpawnChannel {
     let spawn_ep = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let result_ep = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let deaths = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     SpawnChannel {
         spawn_ep,
@@ -863,18 +887,26 @@ pub(super) fn build_shell(
     let mut sh_maps = [(0u64, 0u64, 0u64); 5];
     let mut capability_count = 0usize;
     let mut n_maps = 0usize;
-    sh_capabilities[capability_count] = (w.term.ep, abi::rights::WRITE);
+    sh_capabilities[capability_count] = (w.term.ep, moho_abi::rights::WRITE);
     capability_count += 1;
-    sh_capabilities[capability_count] = (chan.spawn_ep, abi::rights::WRITE);
+    sh_capabilities[capability_count] = (chan.spawn_ep, moho_abi::rights::WRITE);
     capability_count += 1;
-    sh_capabilities[capability_count] = (chan.result_ep, abi::rights::READ);
+    sh_capabilities[capability_count] = (chan.result_ep, moho_abi::rights::READ);
     capability_count += 1;
     // Every right: what the shell retypes carries its budget's rights, and it lends them on.
-    sh_capabilities[capability_count] = (sh_budget, abi::rights::ALL);
+    sh_capabilities[capability_count] = (sh_budget, moho_abi::rights::ALL);
     capability_count += 1;
-    sh_maps[n_maps] = (SH_OUT_VA, w.term.out, abi::address_space::MAP_READ_WRITE); // text and prompts
+    sh_maps[n_maps] = (
+        SH_OUT_VA,
+        w.term.out,
+        moho_abi::address_space::MAP_READ_WRITE,
+    ); // text and prompts
     n_maps += 1;
-    sh_maps[n_maps] = (LINE_VA, w.term.input, abi::address_space::MAP_READ_ONLY); // completed lines
+    sh_maps[n_maps] = (
+        LINE_VA,
+        w.term.input,
+        moho_abi::address_space::MAP_READ_ONLY,
+    ); // completed lines
     n_maps += 1;
     // A slice of window 0, never the pool, which would hand the shell every client's window.
     let sh_window = if with_fs {
@@ -886,21 +918,25 @@ pub(super) fn build_shell(
         None
     };
     if let Some(zero) = sh_window {
-        sh_capabilities[capability_count] = (zero.ep, abi::rights::WRITE);
+        sh_capabilities[capability_count] = (zero.ep, moho_abi::rights::WRITE);
         capability_count += 1;
-        sh_maps[n_maps] = (SH_FS_VA, zero.page, abi::address_space::MAP_READ_WRITE);
+        sh_maps[n_maps] = (SH_FS_VA, zero.page, moho_abi::address_space::MAP_READ_WRITE);
         n_maps += 1;
     }
-    sh_capabilities[capability_count] = (g.clock_page, abi::rights::READ);
+    sh_capabilities[capability_count] = (g.clock_page, moho_abi::rights::READ);
     capability_count += 1;
-    sh_maps[n_maps] = (SH_CLOCK_VA, g.clock_page, abi::address_space::MAP_READ_ONLY);
+    sh_maps[n_maps] = (
+        SH_CLOCK_VA,
+        g.clock_page,
+        moho_abi::address_space::MAP_READ_ONLY,
+    );
     n_maps += 1;
     // Mapped for `capabilities` to read; its capability goes at a named slot after the build, because the
     // list's slots move with what the boot granted.
     sh_maps[n_maps] = (
         grant_contract::SHELL_CONFIGURATION_VIRTUAL_ADDRESS,
         g.config_page,
-        abi::address_space::MAP_READ_ONLY,
+        moho_abi::address_space::MAP_READ_ONLY,
     );
     n_maps += 1;
     // `build_child` fills the table from zero, so the clock's slot is the count before it.
@@ -925,7 +961,7 @@ pub(super) fn build_shell(
     must_ok(place_at(
         shell.tcb,
         g.config_page,
-        abi::rights::READ,
+        moho_abi::rights::READ,
         grant_contract::SHELL_CONFIGURATION_SLOT,
     ));
     (shell, sh_clock_slot)
@@ -946,7 +982,7 @@ pub(super) fn finish_shell_endowment(
         must_ok(place_at(
             shell_tcb,
             g.machine_page,
-            abi::rights::READ | abi::rights::GRANT,
+            moho_abi::rights::READ | moho_abi::rights::GRANT,
             spawn_protocol::MACHINE_PAGE_SLOT,
         ));
     }
@@ -957,7 +993,7 @@ pub(super) fn finish_shell_endowment(
         must_ok(place_at(
             shell_tcb,
             t.ep,
-            abi::rights::WRITE,
+            moho_abi::rights::WRITE,
             spawn_protocol::MOUNTED_TREE_SLOT,
         ));
     }
@@ -973,7 +1009,7 @@ pub(super) fn start_sink_adapter(w: &Wiring, sink_elf: Option<&static_elf::Elf<'
     let (ut, term_ep) = (w.ut, w.term.ep);
     let term_sink = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     if let Some(elf) = sink_elf {
         let adapter = must(build_child(
@@ -982,8 +1018,8 @@ pub(super) fn start_sink_adapter(w: &Wiring, sink_elf: Option<&static_elf::Elf<'
             elf,
             &ChildEndowment {
                 capabilities: &[
-                    (term_sink, abi::rights::READ),
-                    (term_ep, abi::rights::WRITE),
+                    (term_sink, moho_abi::rights::READ),
+                    (term_ep, moho_abi::rights::WRITE),
                 ],
                 stack_pages: CHILD_STACK_PAGES,
                 ..ChildEndowment::new(Retention::Nothing)
@@ -1059,15 +1095,15 @@ fn start_credential_services(
     let ut = w.ut;
     let prov = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let verify = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let cred_ready = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let prov_page = must(retype_page_frame(ut));
     let verify_page = must(retype_page_frame(ut));
@@ -1079,22 +1115,22 @@ fn start_credential_services(
         cred_program,
         &ChildEndowment {
             capabilities: &[
-                (prov, abi::rights::READ),
-                (verify, abi::rights::READ),
-                (request, abi::rights::WRITE),
-                (cred_budget, abi::rights::SPEND_ONLY),
-                (cred_ready, abi::rights::WRITE),
+                (prov, moho_abi::rights::READ),
+                (verify, moho_abi::rights::READ),
+                (request, moho_abi::rights::WRITE),
+                (cred_budget, moho_abi::rights::SPEND_ONLY),
+                (cred_ready, moho_abi::rights::WRITE),
             ],
             maps: &[
                 (
                     CRED_SVC_PROV_VA,
                     prov_page,
-                    abi::address_space::MAP_READ_WRITE,
+                    moho_abi::address_space::MAP_READ_WRITE,
                 ),
                 (
                     CRED_SVC_VERIFY_VA,
                     verify_page,
-                    abi::address_space::MAP_READ_WRITE,
+                    moho_abi::address_space::MAP_READ_WRITE,
                 ),
             ],
             stack_pages: CRED_STACK_PAGES,
@@ -1203,7 +1239,7 @@ fn start_identity_provisioner(
     let (g, ut) = (w.g, w.ut);
     let idp_report = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let idp_program = p.idp_elf.as_ref().expect("have_login_stack checked this");
     let (idp_child, idp_aspace) = must(process_builder::build_child_space(
@@ -1212,13 +1248,21 @@ fn start_identity_provisioner(
         idp_program,
         &ChildEndowment {
             capabilities: &[
-                (prov, abi::rights::WRITE),
-                (g.fs_ep, abi::rights::WRITE),
-                (idp_report, abi::rights::WRITE),
+                (prov, moho_abi::rights::WRITE),
+                (g.fs_ep, moho_abi::rights::WRITE),
+                (idp_report, moho_abi::rights::WRITE),
             ],
             maps: &[
-                (IDP_REQ_VA, req_frame, abi::address_space::MAP_READ_WRITE),
-                (IDP_PROV_VA, prov_page, abi::address_space::MAP_READ_WRITE),
+                (
+                    IDP_REQ_VA,
+                    req_frame,
+                    moho_abi::address_space::MAP_READ_WRITE,
+                ),
+                (
+                    IDP_PROV_VA,
+                    prov_page,
+                    moho_abi::address_space::MAP_READ_WRITE,
+                ),
             ],
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -1230,7 +1274,7 @@ fn start_identity_provisioner(
         idp_aspace,
         IDP_FS_VA,
         idp_page,
-        abi::address_space::MAP_READ_WRITE,
+        moho_abi::address_space::MAP_READ_WRITE,
     ) == 0;
     capability_delete(idp_page);
     must(mapped.then_some(()).ok_or(()));
@@ -1267,11 +1311,11 @@ fn start_login(
 
     let login_request = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let login_result = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let login_ut = must(memory_region_split(ut, LOGIN_CONSTRUCTION_PAGES));
     let login_program = p.login_elf.as_ref().expect("have_login_stack checked this");
@@ -1283,21 +1327,27 @@ fn start_login(
         login_program,
         &ChildEndowment {
             capabilities: &[
-                (login_request, abi::rights::READ),
-                (login_result, abi::rights::WRITE | abi::rights::GRANT),
-                (verify, abi::rights::WRITE),
-                (g.fs_ep, abi::rights::WRITE | abi::rights::GRANT),
+                (login_request, moho_abi::rights::READ),
+                (
+                    login_result,
+                    moho_abi::rights::WRITE | moho_abi::rights::GRANT,
+                ),
+                (verify, moho_abi::rights::WRITE),
+                (g.fs_ep, moho_abi::rights::WRITE | moho_abi::rights::GRANT),
                 // `WRITE` alone: we hold only `WRITE | GRANT` on this page, and a writable
                 // mapping checks `WRITE`.
-                (login_page, abi::rights::WRITE | abi::rights::GRANT),
-                (login_ut, abi::rights::ALL),
-                (audit, abi::rights::WRITE),
-                (term_ep, abi::rights::WRITE | abi::rights::GRANT),
+                (
+                    login_page,
+                    moho_abi::rights::WRITE | moho_abi::rights::GRANT,
+                ),
+                (login_ut, moho_abi::rights::ALL),
+                (audit, moho_abi::rights::WRITE),
+                (term_ep, moho_abi::rights::WRITE | moho_abi::rights::GRANT),
             ],
             maps: &[(
                 LOGIN_CRED_VA,
                 verify_page,
-                abi::address_space::MAP_READ_WRITE,
+                moho_abi::address_space::MAP_READ_WRITE,
             )],
             // No slot cost: `fill_and_map` holds one frame capability at a time.
             blobs: &[
@@ -1331,7 +1381,7 @@ fn start_login(
 fn start_login_audit(ut: u64, p: &LoginPrograms) -> u64 {
     let audit = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let audit_program = p.audit_elf.as_ref().expect("have_login_stack checked this");
     let audit_child = must(build_child(
@@ -1339,7 +1389,7 @@ fn start_login_audit(ut: u64, p: &LoginPrograms) -> u64 {
         ut,
         audit_program,
         &ChildEndowment {
-            capabilities: &[(audit, abi::rights::READ)],
+            capabilities: &[(audit, moho_abi::rights::READ)],
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },
@@ -1357,13 +1407,13 @@ fn place_login_capabilities(w: &Wiring, login_tcb: u64, run_unvouched: &mut Opti
     let d2 = *run_unvouched.get_or_insert_with(|| {
         must(retype_into_kernel_object_from(
             ut,
-            abi::object_type::RENDEZVOUS,
+            moho_abi::object_type::RENDEZVOUS,
         ))
     });
     must_ok(place_at(
         login_tcb,
         d2,
-        abi::rights::WRITE | abi::rights::GRANT,
+        moho_abi::rights::WRITE | moho_abi::rights::GRANT,
         spawn_protocol::RUN_UNVOUCHED_SLOT,
     ));
     // The durable sessions' own window, apart from window 0; [`Windows`] never hands it to a job.
@@ -1371,7 +1421,7 @@ fn place_login_capabilities(w: &Wiring, login_tcb: u64, run_unvouched: &mut Opti
     must_ok(place_at(
         login_tcb,
         durable_page,
-        abi::rights::WRITE | abi::rights::GRANT,
+        moho_abi::rights::WRITE | moho_abi::rights::GRANT,
         login_contract::DURABLE_WINDOW_SLOT,
     ));
     capability_delete(durable_page);
@@ -1393,13 +1443,13 @@ pub(super) fn give_away_budget(w: &Wiring, shell_tcb: u64, run_unvouched: Option
     let run_unvouched = run_unvouched.unwrap_or_else(|| {
         must(retype_into_kernel_object_from(
             ut,
-            abi::object_type::RENDEZVOUS,
+            moho_abi::object_type::RENDEZVOUS,
         ))
     });
     must_ok(place_at(
         shell_tcb,
         run_unvouched,
-        abi::rights::WRITE,
+        moho_abi::rights::WRITE,
         spawn_protocol::RUN_UNVOUCHED_SLOT,
     ));
 
@@ -1423,7 +1473,7 @@ pub(super) fn give_away_budget(w: &Wiring, shell_tcb: u64, run_unvouched: Option
     // `NoSuchSlot` (-1), not `NotPermitted` (-3): gone, not narrowed. `script/swish-check` reads
     // the sentence.
     let frame = retype_into_page_frame(ut);
-    let object = retype_into_kernel_object(ut, abi::object_type::THREAD_CONTROL_BLOCK);
+    let object = retype_into_kernel_object(ut, moho_abi::object_type::THREAD_CONTROL_BLOCK);
     announce(
         term_ep,
         if frame == -1 && object == -1 {

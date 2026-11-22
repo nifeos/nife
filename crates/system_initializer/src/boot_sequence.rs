@@ -15,7 +15,7 @@ use super::*;
 /// `initial_ramdisk_len` is the archive length the kernel passed at entry; `fs_rights` is the
 /// `file_system_contract::directory` rights the file-service endpoint carries, and 0 means this boot
 /// attached no disk (so `fs_ep` and `fs_page` are empty). `uart_shape` is the console UART's
-/// register shape as the kernel passed it (`abi::uart`), handed on to the console and input
+/// register shape as the kernel passed it (`moho_abi::uart`), handed on to the console and input
 /// drivers. `mounted_tree`, when `Some` and its slots hold something, is the shell's second
 /// mounted tree (see [`MountedTreeGrant`]); the real progenitor passes the disk tree's pair.
 ///
@@ -293,9 +293,9 @@ fn start_undertaker(own_ut: u64, reaper_elf: &static_elf::Elf<'static>, chan: Sp
         reaper_elf,
         &ChildEndowment {
             capabilities: &[
-                (chan.deaths, abi::rights::READ),
-                (chan.result_ep, abi::rights::WRITE),
-                (reaper_spawn, abi::rights::WRITE),
+                (chan.deaths, moho_abi::rights::READ),
+                (chan.result_ep, moho_abi::rights::WRITE),
+                (reaper_spawn, moho_abi::rights::WRITE),
             ],
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)

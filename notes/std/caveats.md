@@ -107,7 +107,7 @@ The records this file cites by number:
   the same `SYSTEM_CALL_EXIT`.
 
   The code is still discarded, and that is the kernel's, not the PAL's. `sched::exit()` is
-  `depart(abi::fault::EVENT_EXIT, 0, 0)`: the §26 message carries the event and the tid, and the
+  `depart(moho_abi::fault::EVENT_EXIT, 0, 0)`: the §26 message carries the event and the tid, and the
   two remaining words are a pc and a fault address that a clean exit has nothing to put in. So a
   supervisor can tell exit from crash and cannot tell `exit(0)` from `exit(1)`. §301 (exit status and output) decided the
   wire: `SYSTEM_CALL_EXIT`'s first word is the status, and the kernel forwards it in the `EVENT_EXIT`

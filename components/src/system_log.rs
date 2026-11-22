@@ -43,7 +43,7 @@ use user_mode_runtime::{
 
 /// Slot 0, the intake endpoint, `READ`: writers, readers and the spawner all `SEND` here. The
 /// spawner holds the only unbadged `WRITE` capability to it and mints a badged copy
-/// (`abi::rendezvous::BADGE`) for each writer and reader. That makes attribution unforgeable: every
+/// (`moho_abi::rendezvous::BADGE`) for each writer and reader. That makes attribution unforgeable: every
 /// writer is somebody's badge, and only badge 0 may say whose.
 const INTAKE: u64 = 0;
 
@@ -123,7 +123,7 @@ fn start(mode: u64, readers: u64, _a2: u64) -> ! {
         // The intake endpoint was destroyed (its owner reclaimed the region it lived in): this
         // service has nothing left to serve. Only badge 0 can mean it, because the kernel writes
         // `Gone` with no badge, while a writer forging the word arrives with its own nonzero one.
-        if badge == 0 && w0 as i64 == abi::Error::Gone as i64 {
+        if badge == 0 && w0 as i64 == moho_abi::Error::Gone as i64 {
             exit();
         }
         let Handled::Read { window, cursor } =
@@ -191,9 +191,12 @@ fn drain(log: &mut Log, flush_armed: &mut bool) {
                 if h.flags & flags::DIRECT == 0 {
                     forward(&text[..n]);
                     if !*flush_armed {
-                        let deadline = counter_ticks().saturating_add(
-                            abi::timer::counter_ticks_for(0, FLUSH_NANOSECONDS, counter_hertz()),
-                        );
+                        let deadline =
+                            counter_ticks().saturating_add(moho_abi::timer::counter_ticks_for(
+                                0,
+                                FLUSH_NANOSECONDS,
+                                counter_hertz(),
+                            ));
                         *flush_armed = timer_arm(TIMER, deadline, KERNEL_NOTIFIED, FLUSH_BIT) >= 0;
                     }
                 }

@@ -1,6 +1,3 @@
-abi abbreviations 18
-abi prose_acronyms 26
-abi register_names 6
 address_space_identifier abbreviations 9
 address_space_identifier prose_acronyms 4
 address_space_identifier readme_acronyms 4
@@ -133,6 +130,9 @@ memory_corruption_canary_gate abbreviations 2
 memory_region_heap abbreviations 2
 memory_regions abbreviations 23
 memory_regions register_names 1
+moho_abi abbreviations 18
+moho_abi prose_acronyms 26
+moho_abi register_names 6
 network_time_protocol abbreviations 13
 nife_partition_types abbreviations 3
 nifefs abbreviations 30

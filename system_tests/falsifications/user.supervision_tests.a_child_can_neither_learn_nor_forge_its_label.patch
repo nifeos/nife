@@ -29,7 +29,7 @@ index a2b41ef76..f266a02ac 100644
      {
          t.fault_ep = Some(ep);
          t.fault_label = label;
--        let _ = table.delete(abi::fault::FAULT_RENDEZVOUS_SLOT);
+-        let _ = table.delete(moho_abi::fault::FAULT_RENDEZVOUS_SLOT);
      }
      drop(table);
  

@@ -19,7 +19,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use abi::rendezvous;
+use moho_abi::rendezvous;
 use user_mode_runtime::{exit, map_page_frame, receive_capability, send};
 
 const CHANNEL: u64 = 0; // RECEIVE_CAPABILITY the frame here

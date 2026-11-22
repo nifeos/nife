@@ -26,10 +26,10 @@ copied-file list (`xtask/src/farm/copied.rs`). No new tool.
 
 - P0-1, names and the missing `Name:` blocks: Done, [#3597](https://github.com/nifeos/nife/pull/3597). The names later items added are
   ratified (ruled 2026-11-19 UTC).
-- P0-2, `talc` and the path dependencies: Waiting on repositories for `abi` and
+- P0-2, `talc` and the path dependencies: Waiting on repositories for `moho_abi` and
   `user_mode_runtime`. The `talc` half follows Decision B, and the README's BUGS section states
   what crates.io's 5.1.1 lacks ([#3840](https://github.com/nifeos/nife/pull/3840)). The manifest pins `address_space_layout` by `git` and `rev`
-  ([#3895](https://github.com/nifeos/nife/pull/3895)); `abi` and `user_mode_runtime` have no repositories yet, so the manifest keeps their
+  ([#3895](https://github.com/nifeos/nife/pull/3895)); `moho_abi` and `user_mode_runtime` have no repositories yet, so the manifest keeps their
   path dependencies, and `script/crate-move --dry-run` fails only on them.
 - P0-3, manifest, README and license files: Done, [#3840](https://github.com/nifeos/nife/pull/3840). The manifest states its license,
   `rust-version`, description, keywords, categories and lints, both license files sit beside it,
@@ -110,7 +110,7 @@ Blocks: nothing until the vendor-watch report passes in silence; after that, the
 ### Clear the review package and approve the repository (ruled)
 
 Ruled 2026-11-20 (UTC), option A: the architect clears the package, and the clearance creates the
-repository, `nifeos/memory_region_heap`, with `publish = false`. No tag and no publish. The move waits for `abi`,
+repository, `nifeos/memory_region_heap`, with `publish = false`. No tag and no publish. The move waits for `moho_abi`,
 `address_space_layout` and `user_mode_runtime` to get repositories. It leaves on its own clearance, as
 one repository with `subtree_scope` or as a repository of its own, decided at the move (ruled
 2026-11-20 UTC), and before `redoxfs`, which keeps its own track.
@@ -184,7 +184,7 @@ dependency). Everything else is two-way and the maintainer decides it.
    only in the root workspace, so a repository of the crate's own, and every workspace that consumes
    it without the patch, silently builds the unpatched package. The pull request has been open for
    seven weeks at the time of the review with no maintainer comment, which is a reliability signal
-   for the upstream. `abi`, `address_space_layout` and `user_mode_runtime` are path dependencies. The
+   for the upstream. `moho_abi`, `address_space_layout` and `user_mode_runtime` are path dependencies. The
    order of milestone 1017 moves them at steps 2 and 3, before this crate at step 9, so their
    repositories will exist, and the lines become `git` and `rev` pins with `version` beside them.
    Evidence: `crates/memory_region_heap/Cargo.toml` lines 19 to 28. `vendor/talc.pin`.
@@ -275,7 +275,7 @@ The evidence, background, prior art and the options not taken are in
 ## Follow-on
 
 - **Outstanding.** The move, which leaves on this crate's own clearance, with `subtree_scope` or
-  alone, and before `redoxfs`. The path dependencies become `git` and `rev` pins once `abi` and
+  alone, and before `redoxfs`. The path dependencies become `git` and `rev` pins once `moho_abi` and
   `user_mode_runtime` have repositories, checked in `crates/memory_region_heap/Cargo.toml`. The move drops the fuzz
   workspace's `[patch.crates-io]` line for the vendored talc, and the template's `coverage` job
   then measures the host tests for the first time.

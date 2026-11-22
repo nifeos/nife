@@ -69,7 +69,7 @@ file protocols; a per-crate constant would re-version file clients for a block-o
 first cut's four interfaces do not share one kind. The rule: an interface with a peer or a layout
 carries a version constant per wire format; a pure library is named by its crate version.
 
-- `abi` is the system call surface. One constant at the crate root, provisionally `ABI_VERSION`; its
+- `moho_abi` is the system call surface. One constant at the crate root, provisionally `ABI_VERSION`; its
   scope is the system call, method and error numbers a program matches.
 - `address_space_layout` is layout constants the loader and the kernel compile in. One constant,
   provisionally `VERSION`; the scope is the bands and the pair-page arithmetic.
@@ -178,13 +178,13 @@ a change is a new version. AGENTS.md already makes a brand-new system call numbe
 question is what catches a violation besides the weekly 610 series, which records a week late and
 refuses nothing.
 
-Options: (a) nothing beyond 610 and review. (b) A pinned-values test in `abi`, plus a lint rule
+Options: (a) nothing beyond 610 and review. (b) A pinned-values test in `moho_abi`, plus a lint rule
 where a pull request changing a `FORMAT_CONST` value must change its crate's version constant.
 (c) A full interface diff at pull time, reusing the helper's rustdoc-JSON extraction against base
 and head.
 
 **Ruled (calef, 2026-10-29 UTC, PR #2852): (b) now; (c) waits for a consumer outside the tree.**
-The `abi` test spells every public number as an expected literal: six system call constants today,
+The `moho_abi` test spells every public number as an expected literal: six system call constants today,
 the object modules' method numbers, the `Error` codes. Updating it is the deliberate act a
 renumber should be; skipping it fails CI. The lint reads a pull request's changed lines and fails
 when a magic or version value moved without its constant.
@@ -256,7 +256,7 @@ survey, the prior art and the costs.
    [the appendix](0979-version-carrying-interfaces/prior-art.md).
 4. The premise, checked: each sub-claim comes from a command run on 2026-10-28, and the survey
    above lists what each returned, including what 756 measured the same on 2026-10-04. The
-   ruling's causal claim matches the tree's words: the `abi` crate exists so a change
+   ruling's causal claim matches the tree's words: the `moho_abi` crate exists so a change
    "fails to compile on both sides at once".
 5. Costs. A version constant is one line per interface and joins the measured series with no
    helper change. The note's version 3 costs encode, decode, and the Kani property. The

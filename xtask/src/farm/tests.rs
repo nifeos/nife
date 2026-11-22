@@ -201,23 +201,30 @@ fn an_out_of_line_module_is_inlined_as_it_was_written_inline() {
 #[test]
 fn a_copied_crate_resolves_through_its_manifest_path() {
     let metadata = r#"{"packages": [
-        {"name": "abi", "version": "0.1.0", "manifest_path": "/w/nife/crates/abi/Cargo.toml",
+        {"name": "moho_abi", "version": "0.1.0", "manifest_path": "/w/nife/crates/moho_abi/Cargo.toml",
          "targets": [{"kind": ["lib"], "edition": "2024"}], "rust_version": null},
         {"name": "counter_frequency_contract", "version": "0.1.0",
          "manifest_path": "/home/u/.cargo/git/checkouts/counter_frequency_contract-1a2b/3c4d5e6/Cargo.toml",
          "description": "a \"quoted\" word, a é and a 😀"},
         {"name": "uuid", "version": "1.28.0", "manifest_path": "/r/uuid-1.28.0/Cargo.toml"}
     ], "workspace_root": "/w/nife", "version": 1}"#;
-    let directories = package_directories(metadata, &["abi", "counter_frequency_contract"])
+    let directories = package_directories(metadata, &["moho_abi", "counter_frequency_contract"])
         .expect("both packages are listed");
-    assert_eq!(directories["abi"], Path::new("/w/nife/crates/abi"));
+    assert_eq!(
+        directories["moho_abi"],
+        Path::new("/w/nife/crates/moho_abi")
+    );
     let checkout =
         Path::new("/home/u/.cargo/git/checkouts/counter_frequency_contract-1a2b/3c4d5e6");
     assert_eq!(directories["counter_frequency_contract"], checkout);
     let root = Path::new("/w/nife");
     assert_eq!(
-        stamp_name(&directories["abi"].join("src/lib.rs"), root, &directories),
-        "crates/abi/src/lib.rs"
+        stamp_name(
+            &directories["moho_abi"].join("src/lib.rs"),
+            root,
+            &directories
+        ),
+        "crates/moho_abi/src/lib.rs"
     );
     assert_eq!(
         stamp_name(&checkout.join("src/lib.rs"), root, &directories),
@@ -229,14 +236,17 @@ fn a_copied_crate_resolves_through_its_manifest_path() {
 /// fails with the name in the message.
 #[test]
 fn a_missing_or_doubled_package_is_refused() {
-    let one = r#"{"packages": [{"name": "abi", "manifest_path": "/a/abi/Cargo.toml"}]}"#;
-    let missing = package_directories(one, &["abi", "clock_contract"]).unwrap_err();
+    let one = r#"{"packages": [{"name": "moho_abi", "manifest_path": "/a/moho_abi/Cargo.toml"}]}"#;
+    let missing = package_directories(one, &["moho_abi", "clock_contract"]).unwrap_err();
     assert!(missing.contains("clock_contract"), "{missing}");
-    let two = r#"{"packages": [{"name": "abi", "manifest_path": "/a/abi/Cargo.toml"},
-                              {"name": "abi", "manifest_path": "/b/abi/Cargo.toml"}]}"#;
-    let doubled = package_directories(two, &["abi"]).unwrap_err();
-    assert!(doubled.contains("two packages are named abi"), "{doubled}");
-    assert!(package_directories("{\"packages\": [", &["abi"]).is_err());
+    let two = r#"{"packages": [{"name": "moho_abi", "manifest_path": "/a/moho_abi/Cargo.toml"},
+                              {"name": "moho_abi", "manifest_path": "/b/moho_abi/Cargo.toml"}]}"#;
+    let doubled = package_directories(two, &["moho_abi"]).unwrap_err();
+    assert!(
+        doubled.contains("two packages are named moho_abi"),
+        "{doubled}"
+    );
+    assert!(package_directories("{\"packages\": [", &["moho_abi"]).is_err());
 }
 
 /// The JSON reader reads what `cargo metadata` prints: nesting, every escape, a surrogate pair,

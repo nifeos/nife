@@ -13,9 +13,9 @@ use std::vec::Vec;
 use super::*;
 use crate::DEFAULT_BASE_VIRTUAL_ADDRESS;
 
-/// `abi::Error::OutOfMemory` and `BadPointer` as the kernel returns them.
-const OUT_OF_MEMORY: i64 = abi::Error::OutOfMemory as i64;
-const BAD_POINTER: i64 = abi::Error::BadPointer as i64;
+/// `moho_abi::Error::OutOfMemory` and `BadPointer` as the kernel returns them.
+const OUT_OF_MEMORY: i64 = moho_abi::Error::OutOfMemory as i64;
+const BAD_POINTER: i64 = moho_abi::Error::BadPointer as i64;
 
 /// A page-aligned block of host memory that stands in for the virtual range a heap maps into:
 /// its address is the heap's base, so what the heap writes through a "mapped" address lands

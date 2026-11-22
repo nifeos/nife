@@ -442,7 +442,7 @@ pub(super) fn package_manager_parts(
     delegated: Option<u64>,
 ) -> (Option<(u64, u64)>, Option<u64>) {
     let endpoints = if installer {
-        let reply = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok();
+        let reply = retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS).ok();
         // **The delegated endpoint is the same object, badged for one job and one approval**
         // (milestone 911 (scripted installs grant only what the owner's approval file allows)),
         // never a second one; §270's amendment records the semantics.

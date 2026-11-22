@@ -59,7 +59,7 @@ the driver transport. Userland-only by reachability, load-bearing by function.
 
 ## What one build buys, which is the part worth defending
 
-`crates/abi` is shared, so the compiler enforces that programs and the kernel agree about the
+`crates/moho_abi` is shared, so the compiler enforces that programs and the kernel agree about the
 system call surface. That is rung one of the ladder: the wrong state is unrepresentable. Split the
 build and that agreement falls to rung three or four, two artifacts asserting a shared layout with
 nothing checking.

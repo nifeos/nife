@@ -12,7 +12,7 @@
 //! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s `EP_MAKER` role.
 //! `ep` is an abbreviation that needs a decoder, which is the first of AGENTS.md's three naming
 //! failure modes, and the object's own name in this tree is `RENDEZVOUS`
-//! (`abi::object_type::RENDEZVOUS`, `rendezvous_capability`). Refused `rendezvous_maker`: "minting" is
+//! (`moho_abi::object_type::RENDEZVOUS`, `rendezvous_capability`). Refused `rendezvous_maker`: "minting" is
 //! the word this tree already uses for creating a capability out of a budget, and it appears in the
 //! kernel test's own sentence.
 
@@ -33,12 +33,12 @@ user_mode_runtime::program_entry!(start);
 fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Retype one page of our budget into a rendezvous; the kernel returns the slot where our
     // full-rights capability to it landed.
-    let rendezvous = retype_into_kernel_object(MEMORY_REGION, abi::object_type::RENDEZVOUS);
+    let rendezvous = retype_into_kernel_object(MEMORY_REGION, moho_abi::object_type::RENDEZVOUS);
     require(rendezvous >= 0);
     let rendezvous = rendezvous as u64;
 
     // Delegate a READ-only view (receive, never send) to whoever is on the channel; we keep WRITE.
-    require(send_capability(CHANNEL, rendezvous, abi::rights::READ, 0) == 0);
+    require(send_capability(CHANNEL, rendezvous, moho_abi::rights::READ, 0) == 0);
 
     // Speak first through our own creation: blocks until the peer receives, which is the proof.
     require(send(rendezvous, 0x77, 0, 0) == 0);

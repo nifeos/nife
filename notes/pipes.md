@@ -137,7 +137,7 @@ in a page of an untyped region, and only reclaiming the region frees it. So a pi
 has finished while its writer is still blocked in a `SEND` would leave that writer blocked forever.
 
 Each pipeline therefore takes its own region, split off the shell's budget, and the shell `DESTROY`s
-it when the line is over. That is what turns a producer's next `SEND` into `abi::Error::Gone`, which
+it when the line is over. That is what turns a producer's next `SEND` into `moho_abi::Error::Gone`, which
 is `SIGPIPE` as a return value. `kernel::user::sink_tests` asserts the classification itself by
 value.
 

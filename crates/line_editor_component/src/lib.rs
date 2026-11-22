@@ -283,7 +283,7 @@ pub mod supervisor {
     pub const ROLLED_BACK: u64 = 0x524f_4c4c;
     /// Supervisor → requester: the incumbent did not answer the quiesce within
     /// [`QUIESCE_BOUND_MILLISECONDS`], so a replacement was started **without its state** and the incumbent's
-    /// region destroyed. Every caller it was holding is answered `abi::Error::Gone`. Second word:
+    /// region destroyed. Every caller it was holding is answered `moho_abi::Error::Gone`. Second word:
     /// how long the supervisor waited, in milliseconds.
     ///
     /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.

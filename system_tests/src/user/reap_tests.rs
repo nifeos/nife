@@ -1,5 +1,5 @@
-use abi::Error;
-use abi::fault::{EVENT_EXIT, EVENT_FAULT};
+use moho_abi::Error;
+use moho_abi::fault::{EVENT_EXIT, EVENT_FAULT};
 
 use super::supervision_tests::{FAULT_STUB, REPORT_STUB, REPORT_WORD, build_child_in};
 use crate::arch::exceptions::TrapFrame;
@@ -57,7 +57,7 @@ fn hold_rendezvous(ep: sched::RendezvousId) -> u64 {
 /// `invoke(capability, REAP, tid, _, _)`, through the real dispatcher.
 fn reap(slot: u64, tid: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    invoke(&mut frame, slot, abi::rendezvous::REAP, tid, 0, 0)
+    invoke(&mut frame, slot, moho_abi::rendezvous::REAP, tid, 0, 0)
 }
 
 /// **`reap`, retried while the corpse is still standing on its own kernel stack.**
@@ -86,7 +86,8 @@ fn reap_when_settled(slot: u64, tid: u64) -> Result<i64, Error> {
 /// a real supervisor would have read out of its registers.
 fn receive_death(slot: u64) -> [u64; 5] {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    let w0 = invoke(&mut frame, slot, abi::rendezvous::RECEIVE, 0, 0, 0).expect("RECEIVE refused");
+    let w0 =
+        invoke(&mut frame, slot, moho_abi::rendezvous::RECEIVE, 0, 0, 0).expect("RECEIVE refused");
     [
         w0 as u64,
         frame.arg(1),
@@ -100,7 +101,7 @@ fn receive_death(slot: u64) -> [u64; 5] {
 /// a reap that handed authority back would have to put it somewhere, and every path that gives a
 /// process a capability lands it in a slot.
 fn occupied_slots() -> usize {
-    (0..abi::CAPABILITY_TABLE_SLOTS)
+    (0..moho_abi::CAPABILITY_TABLE_SLOTS)
         .filter(|&s| sched::current_capability(s).is_ok())
         .count()
 }
@@ -117,18 +118,18 @@ fn occupied_slots() -> usize {
 /// `SEND_CAPABILITY`'s on an rendezvous.
 fn assert_can_only_supervise(expected: &[u64]) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    for slot in 0..abi::CAPABILITY_TABLE_SLOTS {
+    for slot in 0..moho_abi::CAPABILITY_TABLE_SLOTS {
         match sched::current_capability(slot) {
             Err(_) => {
                 for object_type in [
-                    abi::object_type::THREAD_CONTROL_BLOCK,
-                    abi::object_type::ADDRESS_SPACE,
+                    moho_abi::object_type::THREAD_CONTROL_BLOCK,
+                    moho_abi::object_type::ADDRESS_SPACE,
                 ] {
                     assert_eq!(
                         invoke(
                             &mut frame,
                             slot,
-                            abi::memory_region::RETYPE_OBJECT,
+                            moho_abi::memory_region::RETYPE_OBJECT,
                             object_type,
                             0,
                             0

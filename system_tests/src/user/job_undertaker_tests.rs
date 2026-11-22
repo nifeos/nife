@@ -1,5 +1,5 @@
-use abi::Error;
-use abi::fault::EVENT_EXIT;
+use moho_abi::Error;
+use moho_abi::fault::EVENT_EXIT;
 
 use super::supervision_tests::{REPORT_STUB, REPORT_WORD, build_child_in, build_child_with};
 use super::*;
@@ -30,13 +30,14 @@ const YIELDS: u32 = 4000;
 /// `invoke(capability, REAP, tid, _, _)` through the real dispatcher, for the tidy-up in the control.
 fn reap(slot: u64, tid: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    invoke(&mut frame, slot, abi::rendezvous::REAP, tid, 0, 0)
+    invoke(&mut frame, slot, moho_abi::rendezvous::REAP, tid, 0, 0)
 }
 
 /// Receive one five-word death message through the ABI.
 fn receive_death(slot: u64) -> [u64; 5] {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    let w0 = invoke(&mut frame, slot, abi::rendezvous::RECEIVE, 0, 0, 0).expect("RECEIVE refused");
+    let w0 =
+        invoke(&mut frame, slot, moho_abi::rendezvous::RECEIVE, 0, 0, 0).expect("RECEIVE refused");
     [
         w0 as u64,
         frame.arg(1),

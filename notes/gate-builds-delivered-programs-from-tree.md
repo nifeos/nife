@@ -18,7 +18,7 @@ the pinned basalt commit. Four merge-group rows run those programs (`script/ci-b
 Every one of those programs links nife's patched standard library. The C programs also link nife's
 C library (basalt's `helpers/packages.py`, `build_c_shape`, which runs the pinned nife's
 `helpers/build-c-program.sh`). So each program carries a copy of 14 nife crates, which the std farm
-copies into std verbatim (`xtask/src/farm/copied.rs`, `COPIED_FILES`): `abi`, `allocation_cache`
+copies into std verbatim (`xtask/src/farm/copied.rs`, `COPIED_FILES`): `moho_abi`, `allocation_cache`
 and 12 contract crates, `clock_contract` and `program_argument_contract` among them. A program built
 at an older nife commit reads the older wire format.
 

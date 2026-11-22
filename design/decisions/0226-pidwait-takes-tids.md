@@ -72,7 +72,7 @@ These are not part of the ruling. The tree was checked for each on 2026-09-26.
 - `$( … )`. The shell (`crates/swish`) has pipes, where "the pipe is an endpoint", and no command
   substitution. So either the shell grows `$( … )` or `pidwait` reads tids on its input, as
   `pgrep foo | pidwait`. That is a design question for the lane, and the second needs nothing new.
-- Tid reuse, the race between `pgrep` printing a tid and `pidwait` waiting on it. `crates/abi`
+- Tid reuse, the race between `pgrep` printing a tid and `pidwait` waiting on it. `crates/moho_abi`
   describes tids as generational names that go stale, so a reused slot should not alias. Whether the
   tid `pgrep` prints carries the generation is the lane's to check.
 - How `pidwait` observes an exit. Nothing does this today without more authority than the ruling

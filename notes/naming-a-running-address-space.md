@@ -172,8 +172,8 @@ customer asks, then becomes a counted binder on that entry: the space dies with 
 its region. That is seL4's rule written as a count, since nife has no derivation tree to inspect.
 
 **(c) Init's capability.** "The kernel grants init one at boot" is a slot convention, which is a
-wire format. seL4 fixes it at slot 3. nife's precedent is `abi::fault::FAULT_RENDEZVOUS_SLOT`
-(`crates/abi/src/fault.rs`), or a grant through `Spawn::grants` in `boot_progenitor`
+wire format. seL4 fixes it at slot 3. nife's precedent is `moho_abi::fault::FAULT_RENDEZVOUS_SLOT`
+(`crates/moho_abi/src/fault.rs`), or a grant through `Spawn::grants` in `boot_progenitor`
 at a slot the progenitor is told. That needs naming and an architect's ruling; it
 is B's mechanism, applied to one program.
 
@@ -215,7 +215,7 @@ milestone 765's lane as a question, below.
    per thread. B: a slot per thread and a capability minted at every `START`. C: nothing.
 6. Reversibility. All three touch the `CONFIGURE` contract or a slot convention, so all are on the
    irreversible list. Who has acted on today's "consumed, dies with it" wording
-   (`crates/abi/src/thread_control_block.rs`): §105 and `notes/thread-spawn-fork.md`, which A keeps true only with
+   (`crates/moho_abi/src/thread_control_block.rs`): §105 and `notes/thread-spawn-fork.md`, which A keeps true only with
    (b)'s explicit refusal. No program depends on a stale name staying stale.
 7. Equal cost. Yes, A. B is likely less work, which is an effort argument and the only one for it.
 

@@ -13,7 +13,7 @@ use super::*;
 /// Pages the untyped region behind one pipeline holds. The endpoints themselves are page-resident
 /// objects retyped out of it (one page each), and the region exists so the shell can **destroy** it
 /// when the pipeline is over: only that frees the rendezvous, which turns a blocked producer's
-/// `SEND` into `abi::Error::Gone` (notes/pipes.md, "SIGPIPE").
+/// `SEND` into `moho_abi::Error::Gone` (notes/pipes.md, "SIGPIPE").
 const PIPE_REGION_PAGES: u64 = 8;
 
 /// **Run a line that has operators on it.**
@@ -988,7 +988,7 @@ fn spawn_stage(
     // **The argv's frame, then the grant page's, before every other capability**
     // (`spawn_protocol::PROGRAM_ARGUMENTS_BIT`, `DIRECTORY_GRANT_BIT`), as `spawn` sends them.
     if let Some(a) = argv {
-        user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
+        user_mode_runtime::send_capability(SPAWN, a.frame, moho_abi::rights::READ, 0);
         capability_delete(a.frame);
     }
     if let Some(w) = &words {
@@ -997,23 +997,23 @@ fn spawn_stage(
     // In the protocol's order, which both sides read out of the same word. A `SEND_CAPABILITY` nobody
     // expects and a `RECEIVE_CAPABILITY` nobody answers both deadlock, so the order is the contract.
     if let Some(slot) = sink {
-        delegate(slot, abi::rights::WRITE | abi::rights::GRANT);
+        delegate(slot, moho_abi::rights::WRITE | moho_abi::rights::GRANT);
     }
     if let Some(slot) = source {
-        delegate(slot, abi::rights::READ | abi::rights::GRANT);
+        delegate(slot, moho_abi::rights::READ | moho_abi::rights::GRANT);
     }
     if let Some(slot) = diagnostics {
-        delegate(slot, abi::rights::WRITE | abi::rights::GRANT);
+        delegate(slot, moho_abi::rights::WRITE | moho_abi::rights::GRANT);
     }
     if let Some(slot) = screen {
         // READ, not WRITE: this is the child's fault target, and this shell needs `RECEIVE` and
         // `REAP` on it. `process_builder::build_child_space` inserts the child's copy at READ.
-        delegate(slot, abi::rights::READ | abi::rights::GRANT);
+        delegate(slot, moho_abi::rights::READ | moho_abi::rights::GRANT);
     }
     if let Some(slot) = mem_slot {
         // Every right, for `running`'s reason (milestone 824 (a retype mints no right its budget
         // lacks)).
-        delegate(slot, abi::rights::ALL);
+        delegate(slot, moho_abi::rights::ALL);
         capability_delete(slot);
     }
     delegate_machine_page(wiring.machine);
@@ -1040,7 +1040,7 @@ fn spawn_stage(
 
 /// Give the pipeline's memory back.
 ///
-/// The `DESTROY` is what turns a still-writing producer's next `SEND` into `abi::Error::Gone`
+/// The `DESTROY` is what turns a still-writing producer's next `SEND` into `moho_abi::Error::Gone`
 /// (the `yes | head` shape); see [`PIPE_REGION_PAGES`].
 fn release_pipeline(region: u64, pipes: &[u64]) {
     for &p in pipes {
@@ -1057,6 +1057,6 @@ fn release_pipeline(region: u64, pipes: &[u64]) {
 /// every right, and since milestone 824 (a retype mints no right its budget lacks) a retype mints
 /// its budget's rights.
 pub(super) fn retype_rendezvous(region: u64) -> Option<u64> {
-    let r = retype_into_kernel_object(region, abi::object_type::RENDEZVOUS);
+    let r = retype_into_kernel_object(region, moho_abi::object_type::RENDEZVOUS);
     if r < 0 { None } else { Some(r as u64) }
 }

@@ -30,7 +30,7 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Capability, Object, Rights};
@@ -45,7 +45,7 @@ fn wait_for(done: impl FnMut() -> bool) -> bool {
     wait_on_every_core(done).is_ok()
 }
 
-const SLOTS: usize = abi::CAPABILITY_TABLE_SLOTS as usize;
+const SLOTS: usize = moho_abi::CAPABILITY_TABLE_SLOTS as usize;
 /// Six actors that are endowed, and the witness.
 const ACTORS: usize = 7;
 const WITNESS: usize = ACTORS - 1;
@@ -67,7 +67,7 @@ const CORPUS: &[u64] = &[180, 559];
 /// got, so a weekly run with a large count fits under the per-test budget
 /// (`test_times::DEFAULT_BUDGET_SECONDS`, 90 s).
 const SWEEP_SECONDS: u64 = 60;
-const NO_CAPABILITY: u64 = abi::rendezvous::NO_CAPABILITY;
+const NO_CAPABILITY: u64 = moho_abi::rendezvous::NO_CAPABILITY;
 /// A method number no object answers.
 const NO_METHOD: u64 = 99;
 
@@ -100,8 +100,8 @@ impl Rng {
         match self.below(8) {
             0 => NO_CAPABILITY,
             1 => (Error::NoSuchSlot as i64) as u64,
-            2 => abi::notification::BOUND,
-            3 => abi::rendezvous::REPLY_DELIVERED,
+            2 => moho_abi::notification::BOUND,
+            3 => moho_abi::rendezvous::REPLY_DELIVERED,
             4 => self.next(),
             _ => self.below(64),
         }
@@ -363,7 +363,7 @@ impl Model {
                     }
                 };
                 if matches!(capability, Some(c) if matches!(c.obj, Obj::Ep(_)))
-                    && method == abi::rendezvous::SEND_CAPABILITY
+                    && method == moho_abi::rendezvous::SEND_CAPABILITY
                     && !matches!(v.me, Some(Answer { r: Err(_), .. }))
                 {
                     self.census.delegated += 1;
@@ -391,7 +391,7 @@ impl Model {
         match capability.obj {
             Obj::Ep(ep) => self.invoke_endpoint(a, ep, capability, method, [a0, a1, a2], woken),
             Obj::Reply(caller) => match method {
-                abi::reply::REPLY => {
+                moho_abi::reply::REPLY => {
                     if !capability.allows(Rights::WRITE) {
                         return refuse(Error::NotPermitted);
                     }
@@ -403,7 +403,7 @@ impl Model {
                         // returns x2, so the model holds the kernel to it.
                         woken[caller] = Some(Answer {
                             r: Ok(a0 as i64),
-                            regs: [a1, abi::rendezvous::NO_CAPABILITY, 0, 0],
+                            regs: [a1, moho_abi::rendezvous::NO_CAPABILITY, 0, 0],
                             n: 2,
                         });
                     }
@@ -427,7 +427,7 @@ impl Model {
         [a0, a1, a2]: [u64; 3],
         woken: &mut [Option<Answer>; ACTORS],
     ) -> Option<Answer> {
-        use abi::rendezvous as r;
+        use moho_abi::rendezvous as r;
         match method {
             r::SEND => {
                 if !capability.allows(Rights::WRITE) {
@@ -584,7 +584,7 @@ impl Model {
         a0: u64,
         woken: &mut [Option<Answer>; ACTORS],
     ) -> Option<Answer> {
-        use abi::notification as n;
+        use moho_abi::notification as n;
         match method {
             n::SIGNAL => {
                 if !capability.allows(Rights::WRITE) {
@@ -640,7 +640,7 @@ impl Model {
         capability: ModelCapability,
         method: u64,
     ) -> Option<Answer> {
-        use abi::page_frame as f;
+        use moho_abi::page_frame as f;
         match method {
             f::REVOKE => {
                 if !capability.allows(Rights::GRANT) {
@@ -797,7 +797,7 @@ fn reply_tag(slot: u64) -> u64 {
     if slot == NO_CAPABILITY {
         0
     } else {
-        abi::rendezvous::REPLY_DELIVERED
+        moho_abi::rendezvous::REPLY_DELIVERED
     }
 }
 
@@ -1188,7 +1188,7 @@ impl Run<'_> {
 }
 
 fn pick_op(rng: &mut Rng, m: &Model, a: usize) -> Op {
-    use abi::{notification as n, page_frame as f, rendezvous as r};
+    use moho_abi::{notification as n, page_frame as f, rendezvous as r};
     let held: [u64; SLOTS] = core::array::from_fn(|s| s as u64);
     let held_n = m.tables[a].iter().filter(|c| c.is_some()).count();
     let slot = if held_n > 0 && rng.chance(88) {
@@ -1254,7 +1254,7 @@ fn pick_op(rng: &mut Rng, m: &Model, a: usize) -> Op {
                 ],
             ),
         },
-        Some(Obj::Reply(_)) => (abi::reply::REPLY, [rng.word(), rng.word(), 0]),
+        Some(Obj::Reply(_)) => (moho_abi::reply::REPLY, [rng.word(), rng.word(), 0]),
         Some(Obj::Note) => match rng.below(8) {
             0..=2 => (
                 n::SIGNAL,

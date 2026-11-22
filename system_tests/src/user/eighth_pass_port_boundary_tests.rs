@@ -96,7 +96,7 @@ fn a_non_holder_cannot_read_a_port_and_a_read_only_holder_may_not_write_it() {
     let (event, _tid, _pc) = next_death(eps.fault);
     assert_eq!(
         event,
-        abi::fault::EVENT_EXIT,
+        moho_abi::fault::EVENT_EXIT,
         "the holder's own out was refused",
     );
     reap(holder_region);
@@ -111,7 +111,7 @@ fn a_non_holder_cannot_read_a_port_and_a_read_only_holder_may_not_write_it() {
         let (event, _tid, pc) = next_death(eps.fault);
         assert_eq!(
             event,
-            abi::fault::EVENT_FAULT,
+            moho_abi::fault::EVENT_FAULT,
             "a non-holder read a port without holding any capability for it",
         );
         assert_eq!(
@@ -138,7 +138,7 @@ fn a_non_holder_cannot_read_a_port_and_a_read_only_holder_may_not_write_it() {
     let (event, _tid, pc) = next_death(eps.fault);
     assert_eq!(
         event,
-        abi::fault::EVENT_FAULT,
+        moho_abi::fault::EVENT_FAULT,
         "a READ-only port capability let port I/O through",
     );
     assert_eq!(
@@ -162,7 +162,7 @@ fn a_non_holder_cannot_read_a_port_and_a_read_only_holder_may_not_write_it() {
     let (event, _tid, _pc) = next_death(eps.fault);
     assert_eq!(
         event,
-        abi::fault::EVENT_EXIT,
+        moho_abi::fault::EVENT_EXIT,
         "a full-rights holder could not do the port I/O the READ-only holder was refused for",
     );
     reap(full_region);
@@ -207,7 +207,7 @@ fn a_revoked_range_stops_its_holder_and_an_unrelated_revoke_stops_no_one() {
     let (event, _tid, _pc) = next_death(eps.fault);
     assert_eq!(
         event,
-        abi::fault::EVENT_EXIT,
+        moho_abi::fault::EVENT_EXIT,
         "revoking a range nobody held stopped a holder of a different range",
     );
     reap(other_region);
@@ -223,7 +223,7 @@ fn a_revoked_range_stops_its_holder_and_an_unrelated_revoke_stops_no_one() {
     let (event, _tid, pc) = next_death(eps.fault);
     assert_eq!(
         event,
-        abi::fault::EVENT_FAULT,
+        moho_abi::fault::EVENT_FAULT,
         "revoking a holder's whole range did not stop its next `out`",
     );
     assert_eq!(
@@ -265,7 +265,7 @@ fn one_port_in_two_slots_falls_when_one_slot_is_deleted_though_its_twin_survives
     let (event, _tid, pc) = next_death(eps.fault);
     assert_eq!(
         event,
-        abi::fault::EVENT_FAULT,
+        moho_abi::fault::EVENT_FAULT,
         "deleting one of two capabilities for a port range no longer stops the range: the cached \
          grant survived a delete that left a twin, and this characterization is stale (good)",
     );
@@ -285,7 +285,7 @@ fn one_port_in_two_slots_falls_when_one_slot_is_deleted_though_its_twin_survives
     let (event, _tid, pc) = next_death(eps.fault);
     assert_eq!(
         event,
-        abi::fault::EVENT_FAULT,
+        moho_abi::fault::EVENT_FAULT,
         "after deleting every capability for the range, the `out` was still permitted",
     );
     assert_eq!(

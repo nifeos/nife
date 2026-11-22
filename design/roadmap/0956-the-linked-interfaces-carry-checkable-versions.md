@@ -100,7 +100,7 @@ table. No registry outside it exists.
 
 | id | interface |
 |---|---|
-| 1 | `abi` |
+| 1 | `moho_abi` |
 | 2 | `address_space_layout` |
 | 3 | retired, `byte_glob` |
 | 4 | `machine_statistics_contract` |

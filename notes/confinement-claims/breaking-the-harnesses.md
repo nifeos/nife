@@ -42,7 +42,7 @@ missing death report means.
 `component_plan::a_plan_never_grants_a_right_the_declaration_did_not_ask_for` asserted
 `p.caps()[i].1 == reqs.caps[i].direction.rights()`. That is stated *through* `rights()`, so a
 `rights()` that adds `GRANT` to everything satisfies it. Only the explicit
-`& abi::rights::GRANT == 0` beside it caught the defect. That is the same shape milestone 194 (the
+`& moho_abi::rights::GRANT == 0` beside it caught the defect. That is the same shape milestone 194 (the
 falsification record, its lint, and the sweep that replays it) measured in
 `capability_table::derive_never_widens_rights`, one crate over. It was the argument for keeping an
 assertion that looks redundant.

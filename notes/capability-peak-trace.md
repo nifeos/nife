@@ -163,7 +163,7 @@ compile-time probe of `FP_STATE_OFFSET + size_of::<FpState>()` read 1,984 of 4,0
 arithmetic from the table's size, not a second probe. `crate::thread`'s page-fit assertion holds on
 all three.
 
-`abi::fault::FAULT_EP_SLOT` is `CAPABILITY_TABLE_SLOTS - 1`, so it moved from 31 to 63. Every
+`moho_abi::fault::FAULT_EP_SLOT` is `CAPABILITY_TABLE_SLOTS - 1`, so it moved from 31 to 63. Every
 supervisor and every child agrees on it, which makes it an ABI fact. Nothing outside this tree is
 built against it.
 

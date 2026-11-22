@@ -37,7 +37,7 @@ renames (the `_contract` suffix) surfaced only as stale names inside a decision 
 
 ## What came back clean
 
-`crates/abi`'s `SUSPEND = 4` and `RESUME = 5`, `notes/suspend-and-resume.md`, and
+`crates/moho_abi`'s `SUSPEND = 4` and `RESUME = 5`, `notes/suspend-and-resume.md`, and
 `kernel/src/sched/suspension.rs` agree with §300. §301's claims about the exit path
 (`user_mode_runtime`'s `SYS_EXIT` with a zero word, `departure.rs`) are true. §302's wiring bits
 and badges exist as named. §308's supervisor, its four messages, the `terminal` package's five

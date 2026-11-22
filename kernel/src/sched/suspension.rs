@@ -16,12 +16,15 @@ use super::*;
 /// resumed or has ended while this waited. See the ABI constant for the contract.
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/48-tcb-suspend-resume.
-pub fn suspend_thread_control_block(tid: ThreadId) -> Result<(), abi::Error> {
+pub fn suspend_thread_control_block(tid: ThreadId) -> Result<(), moho_abi::Error> {
     let me = current_thread_id();
     let poke = {
         let mut guard = IPC_TABLES.lock();
-        let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
-        let t = sched.threads.get_mut(tid).ok_or(abi::Error::NoSuchSlot)?;
+        let sched = guard.as_mut().ok_or(moho_abi::Error::NoSuchSlot)?;
+        let t = sched
+            .threads
+            .get_mut(tid)
+            .ok_or(moho_abi::Error::NoSuchSlot)?;
         refuse_unstarted_or_ended(t)?;
         if is_suspended(t) {
             return Ok(());
@@ -54,11 +57,14 @@ pub fn suspend_thread_control_block(tid: ThreadId) -> Result<(), abi::Error> {
 /// parked on it, wake it onto a core.
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/48-tcb-suspend-resume.
-pub fn resume_thread_control_block(tid: ThreadId) -> Result<(), abi::Error> {
+pub fn resume_thread_control_block(tid: ThreadId) -> Result<(), moho_abi::Error> {
     let remote = {
         let mut guard = IPC_TABLES.lock();
-        let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
-        let t = sched.threads.get_mut(tid).ok_or(abi::Error::NoSuchSlot)?;
+        let sched = guard.as_mut().ok_or(moho_abi::Error::NoSuchSlot)?;
+        let t = sched
+            .threads
+            .get_mut(tid)
+            .ok_or(moho_abi::Error::NoSuchSlot)?;
         refuse_unstarted_or_ended(t)?;
         // Withdrawn before anything else: a thread that has not parked yet (on a run queue, inside
         // an IPC, or still on its core) now never will.
@@ -129,11 +135,11 @@ fn is_suspended(t: &Thread) -> bool {
 
 /// The refusals both verbs share: an embryo has nothing to stop (`START` it), and a thread that has
 /// exited, died, or been doomed by a `DESTROY` is beyond either verb.
-fn refuse_unstarted_or_ended(t: &Thread) -> Result<(), abi::Error> {
+fn refuse_unstarted_or_ended(t: &Thread) -> Result<(), moho_abi::Error> {
     match t.handshake.state {
-        State::Embryo => Err(abi::Error::WrongObject),
-        State::Finished | State::Dead => Err(abi::Error::Gone),
-        _ if t.killed => Err(abi::Error::Gone),
+        State::Embryo => Err(moho_abi::Error::WrongObject),
+        State::Finished | State::Dead => Err(moho_abi::Error::Gone),
+        _ if t.killed => Err(moho_abi::Error::Gone),
         State::Ready | State::Running | State::Blocked => Ok(()),
     }
 }
@@ -396,11 +402,11 @@ mod tests {
         let embryo = create_thread_control_block(region).expect("no TCB from the region");
         assert_eq!(
             suspend_thread_control_block(embryo),
-            Err(abi::Error::WrongObject)
+            Err(moho_abi::Error::WrongObject)
         );
         assert_eq!(
             resume_thread_control_block(embryo),
-            Err(abi::Error::WrongObject)
+            Err(moho_abi::Error::WrongObject)
         );
         crate::sched::reclaim_region(region).expect("test region would not reclaim");
 
@@ -411,11 +417,11 @@ mod tests {
         );
         assert_eq!(
             suspend_thread_control_block(gone),
-            Err(abi::Error::NoSuchSlot)
+            Err(moho_abi::Error::NoSuchSlot)
         );
         assert_eq!(
             resume_thread_control_block(gone),
-            Err(abi::Error::NoSuchSlot)
+            Err(moho_abi::Error::NoSuchSlot)
         );
     }
 }

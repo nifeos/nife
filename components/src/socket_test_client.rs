@@ -19,8 +19,8 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use abi::rights;
 use domain_name_system::{Query, Reject, TcpReply};
+use moho_abi::rights;
 use socket_contract::*;
 use user_mode_runtime::socket_frame::Frame;
 use user_mode_runtime::{
@@ -226,7 +226,7 @@ fn socket_badge_forge() -> ! {
     // A second badge for a capability the stack minted badged. The badge value is arbitrary; the
     // rule is that no value is accepted.
     let re_badge = user_mode_runtime::badge(socket, 0x7007);
-    if re_badge != abi::Error::NotPermitted as i64 {
+    if re_badge != moho_abi::Error::NotPermitted as i64 {
         done(0xE0D1);
     }
     // The survival probe is a clean `CLOSE`: the stack answering `REPLY_OK` to a close of this
@@ -242,7 +242,7 @@ fn socket_badge_forge() -> ! {
 /// capability reaches nothing. Reports `OK`, or a stage code.
 fn socket_take() -> ! {
     let (_, socket, _) = receive_capability(HANDOFF);
-    if socket == abi::rendezvous::NO_CAPABILITY {
+    if socket == moho_abi::rendezvous::NO_CAPABILITY {
         done(0xE0C0);
     }
     attach_page_frame();

@@ -590,7 +590,7 @@ test = false
 bench = false
 
 # `pmap` (milestone 126, DECISIONS §114): `ps`'s split one object type over, listing an address
-# space's mappings through `abi::aspace::LIST` gated by `ENUMERATE` rather than `WRITE`. Proven
+# space's mappings through `moho_abi::aspace::LIST` gated by `ENUMERATE` rather than `WRITE`. Proven
 # end to end against a real `Object::Aspace` in `kernel::user::pmap_tests`; not reachable from the
 # interactive shell today, because nothing in this tree delegates an address-space capability to a
 # program other than its own builder (see `crates/pmap`'s BUGS). The listing itself is
@@ -683,7 +683,7 @@ machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 boot_ladder = { version = "0.1.0", git = "https://github.com/nifeos/boot_ladder", rev = "ed235428c6551ddcf673bdb140b972535238fe3b" }
 # What `boot_self_test` and the kernel pass between the two halves of the boot self-test.
 self_test_contract = { version = "0.1.0", path = "../crates/self_test_contract" }
-abi = { version = "0.1.0", path = "../crates/abi" }
+moho_abi = { version = "0.1.0", path = "../crates/moho_abi" }
 # Named here so the first cut's `carry_interfaces!` lists can read these interfaces' ids and
 # versions (milestone 956 (the linked interfaces carry checkable versions)); each program already
 # links them through `user_mode_runtime` or `grant_plan`.

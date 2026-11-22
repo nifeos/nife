@@ -80,7 +80,7 @@ fn wait_milliseconds(milliseconds: u64) {
 /// line the transcript never shows.
 ///
 /// Name: provisional (milestone 249): calef names public items.
-pub fn reboot(marker: &str) -> abi::Error {
+pub fn reboot(marker: &str) -> moho_abi::Error {
     let address = FADT_RESET_ADDRESS.load(Ordering::Relaxed);
     let value = FADT_RESET_VALUE.load(Ordering::Relaxed);
     match (address, FADT_RESET_SPACE.load(Ordering::Relaxed)) {
@@ -165,5 +165,5 @@ pub fn reboot(marker: &str) -> abi::Error {
 
     println!("{marker} all three reset routes returned: this machine did not reset");
     // Every route was tried (the fallbacks are never skipped), so this is never "no mechanism".
-    abi::Error::ResetDidNotHappen
+    moho_abi::Error::ResetDidNotHappen
 }

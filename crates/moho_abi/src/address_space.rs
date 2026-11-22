@@ -36,7 +36,7 @@ pub const MAP_CODE: u64 = 2;
 ///
 /// - `next_cursor` returns in x0 (a0 on RISC-V), `va` in x1 and `kind` in x2, one of [`MAP_READ_ONLY`],
 ///   [`MAP_READ_WRITE`] or [`MAP_CODE`]. A `DeviceFrame` mapping reads as `MAP_READ_WRITE`.
-/// - Start with `cursor = 0` and feed each `next_cursor` back; `abi::survey::DONE` means finished.
+/// - Start with `cursor = 0` and feed each `next_cursor` back; `moho_abi::survey::DONE` means finished.
 ///   A cursor this space's log never minted is [`crate::Error::BadPointer`], and any other negative first word is an [`crate::Error`].
 /// - Needs [`rights::ENUMERATE`](super::rights::ENUMERATE), not `WRITE`.
 ///

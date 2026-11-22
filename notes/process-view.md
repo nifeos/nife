@@ -42,7 +42,7 @@ see everything, and a handle to a smaller job to see less.
 
 ## The surface: one new method, no new system call
 
-`abi::endpoint::SURVEY`, method 6 on an endpoint capability. A new method inside the established
+`moho_abi::endpoint::SURVEY`, method 6 on an endpoint capability. A new method inside the established
 capability model, not a new system call number.
 
 ```text
@@ -50,15 +50,15 @@ invoke(cap, SURVEY, cursor, record, 0) -> (next_cursor, tid, word)
 ```
 
 - `next_cursor` returns in x0 (a0 on RISC-V), `tid` in x1, and the selected record's word in x2.
-- Start with `cursor = 0`. Feed each `next_cursor` back. `abi::survey::DONE` (zero) means finished.
-- A negative first word is an `abi::Error`.
+- Start with `cursor = 0`. Feed each `next_cursor` back. `moho_abi::survey::DONE` (zero) means finished.
+- A negative first word is a `moho_abi::Error`.
 - Needs `ENUMERATE`, and pointedly not `READ`. `READ` on a supervision endpoint is what `RECEIVE`
   and `endpoint::REAP` take, so a viewer holding it could reap a child; a domain names its members
   and does not act on them (calef, 2026-08-17). See `capability_table::Rights::ENUMERATE` and the first
   `BUGS` entry in [process-view/limitations.md](process-view/limitations.md), which is the finding
   this right came from.
 
-`state` is one of `abi::survey`'s four codes: `READY`, `RUNNING`, `BLOCKED`, `DEAD`. Only four,
+`state` is one of `moho_abi::survey`'s four codes: `READY`, `RUNNING`, `BLOCKED`, `DEAD`. Only four,
 because a supervised thread cannot be found in the other two. `Embryo` has not run, so it has no
 recorded supervision endpoint yet; `Finished` is what *un*supervised death looks like, and a
 supervised thread dies into `DEAD` and waits for its supervisor.
@@ -198,8 +198,8 @@ From a host test, with no kernel at all:
 
 ```rust
 let mut reader = |cursor: u64| match cursor {
-    0 => (1, 7, abi::survey::RUNNING),
-    _ => (abi::survey::DONE as i64, 0, 0),
+    0 => (1, 7, moho_abi::survey::RUNNING),
+    _ => (moho_abi::survey::DONE as i64, 0, 0),
 };
 // The row buffer is the caller's, because a `[Row; MAXIMUM_ROWS]` local outgrew the guard page; see
 // below. `ps` sizes it at `MAXIMUM_ROWS`, the kernel's tests at eight.
@@ -212,7 +212,7 @@ assert_eq!(survey.rows()[0].tid, 7);
 
 On Unix, anything that can find a process can end it, because `kill(pid)` turns a name into an
 action. Here a domain names its members and does not act on them (calef, 2026-08-17). A survey
-returns a tid, which is a name and not a capability, and `abi::tcb` has no method that takes a tid
+returns a tid, which is a name and not a capability, and `moho_abi::tcb` has no method that takes a tid
 and ends the thread. Killing stays with the shell that spawned the job, which holds the region. So
 `pkill` cannot be assembled out of a view, and `procps` is ported without its signaling stratum.
 A kernel test asserts that the capability that printed a corpse's tid is refused the reap.
@@ -250,7 +250,7 @@ Each entry is in full, with its mechanism and history, in
 
 ## `pmap`, and `ENUMERATE` extended to the address-space object
 
-`pmap` works on both ISAs over `abi::address_space::LIST`, the same split one object type over:
+`pmap` works on both ISAs over `moho_abi::address_space::LIST`, the same split one object type over:
 `MAP_INTO` needs `WRITE`, and `LIST` needs `ENUMERATE`. The listing reads the space's own
 revocation log, so it costs nothing new and cannot disagree with what a revoke would find. But
 `ThreadControlBlock::CONFIGURE` removes a space from the registry the instant it binds to a thread, and nothing

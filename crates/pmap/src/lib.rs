@@ -1,7 +1,7 @@
 //! **`pmap`: what a process's mappings are when there is no `/proc/pid/maps`**
 //! (notes/process-view.md). The program's logic, lifted out to run on the host;
 //! `components/src/pmap.rs` is the system call and the two output streams. It is handed a function that
-//! reads one mapping through `abi::address_space::LIST`, which needs `ENUMERATE` where `MAP_INTO`
+//! reads one mapping through `moho_abi::address_space::LIST`, which needs `ENUMERATE` where `MAP_INTO`
 //! needs `WRITE` (§114 (`pmap` gets its listing)), so it cannot widen the space or learn that
 //! another exists. [`collect`] takes the whole listing before anything prints, and the answers are
 //! `ps`'s three. See notes/process-view/address-space-enumeration.md.
@@ -37,7 +37,7 @@ pub const MAXIMUM_ROWS: usize = 256;
 pub struct Row {
     /// The virtual address this page is mapped at, in the space the capability names.
     pub va: u64,
-    /// One of `abi::address_space`'s `MAP_READ_ONLY`/`MAP_READ_WRITE`/`MAP_CODE` codes.
+    /// One of `moho_abi::address_space`'s `MAP_READ_ONLY`/`MAP_READ_WRITE`/`MAP_CODE` codes.
     pub kind: u64,
 }
 
@@ -54,8 +54,8 @@ pub struct Listing<'a> {
 
 /// **Walk an address space to its end and keep what it says.**
 ///
-/// `read(cursor)` is one `abi::address_space::LIST`: it answers `(next_cursor, va, kind)`, where a negative
-/// first word is a refusal and `abi::survey::DONE` means the walk is over. `ps::collect`'s shape
+/// `read(cursor)` is one `moho_abi::address_space::LIST`: it answers `(next_cursor, va, kind)`, where a negative
+/// first word is a refusal and `moho_abi::survey::DONE` means the walk is over. `ps::collect`'s shape
 /// verbatim, including its termination guarantee for a cursor that does not advance: this function
 /// is total for every reader, which is what makes every case here reachable from a host test.
 ///
@@ -66,8 +66,8 @@ pub struct Listing<'a> {
 ///
 /// // A space of one mapping: cursor 0 yields it, cursor 1 says done.
 /// let mut reader = |cursor: u64| match cursor {
-///     0 => (1, 0x0040_0000, abi::address_space::MAP_CODE),
-///     _ => (abi::survey::DONE as i64, 0, 0),
+///     0 => (1, 0x0040_0000, moho_abi::address_space::MAP_CODE),
+///     _ => (moho_abi::survey::DONE as i64, 0, 0),
 /// };
 /// let mut rows = [Row::default(); MAXIMUM_ROWS];
 /// let listing = collect(&mut rows, &mut reader);
@@ -94,7 +94,7 @@ pub fn collect<'a>(
             break;
         }
         let next = next as u64;
-        if next == abi::survey::DONE {
+        if next == moho_abi::survey::DONE {
             break;
         }
         if next <= cursor {
@@ -179,29 +179,29 @@ impl Listing<'_> {
     }
 }
 
-/// What an `abi::address_space` kind code is called in the listing: the three permission letters a reader
+/// What a `moho_abi::address_space` kind code is called in the listing: the three permission letters a reader
 /// of any Unix `pmap`/`/proc/pid/maps` already knows, `r--`/`rw-`/`r-x`. An unknown code prints as
 /// `???` rather than panicking, the same defensiveness `ps::state_name` has for a kernel newer than
 /// this program.
 pub const fn kind_name(kind: u64) -> &'static str {
     match kind {
-        abi::address_space::MAP_READ_ONLY => "r--",
-        abi::address_space::MAP_READ_WRITE => "rw-",
-        abi::address_space::MAP_CODE => "r-x",
+        moho_abi::address_space::MAP_READ_ONLY => "r--",
+        moho_abi::address_space::MAP_READ_WRITE => "rw-",
+        moho_abi::address_space::MAP_CODE => "r-x",
         _ => "???",
     }
 }
 
-/// What a negated `abi::Error` means to somebody who typed `pmap`. `ps::refusal`'s catalogue, one
+/// What a negated `moho_abi::Error` means to somebody who typed `pmap`. `ps::refusal`'s catalogue, one
 /// object type over.
 pub fn refusal(code: i64) -> &'static str {
-    match abi::Error::try_from(code).ok() {
-        Some(abi::Error::NoSuchSlot) => "this process holds no address-space capability",
-        Some(abi::Error::NotPermitted) => {
+    match moho_abi::Error::try_from(code).ok() {
+        Some(moho_abi::Error::NoSuchSlot) => "this process holds no address-space capability",
+        Some(moho_abi::Error::NotPermitted) => {
             "this address space may be mapped into, but not looked at: no ENUMERATE"
         }
-        Some(abi::Error::WrongObject) => "the capability granted here is not an address space",
-        Some(abi::Error::Gone) => "the address space this named has been destroyed",
+        Some(moho_abi::Error::WrongObject) => "the capability granted here is not an address space",
+        Some(moho_abi::Error::Gone) => "the address space this named has been destroyed",
         _ => "the address space could not be read",
     }
 }
@@ -238,7 +238,7 @@ mod tests {
     fn space(entries: &'static [(u64, u64)]) -> impl FnMut(u64) -> (i64, u64, u64) {
         move |cursor: u64| match entries.get(cursor as usize) {
             Some(&(va, kind)) => (cursor as i64 + 1, va, kind),
-            None => (abi::survey::DONE as i64, 0, 0),
+            None => (moho_abi::survey::DONE as i64, 0, 0),
         }
     }
 
@@ -252,20 +252,20 @@ mod tests {
     /// deleted into `???`.
     #[test]
     fn every_kind_has_its_permission_letters() {
-        assert_eq!(kind_name(abi::address_space::MAP_READ_ONLY), "r--");
-        assert_eq!(kind_name(abi::address_space::MAP_READ_WRITE), "rw-");
-        assert_eq!(kind_name(abi::address_space::MAP_CODE), "r-x");
+        assert_eq!(kind_name(moho_abi::address_space::MAP_READ_ONLY), "r--");
+        assert_eq!(kind_name(moho_abi::address_space::MAP_READ_WRITE), "rw-");
+        assert_eq!(kind_name(moho_abi::address_space::MAP_CODE), "r-x");
         assert_eq!(kind_name(u64::MAX), "???");
     }
 
     /// Each refusal is explained in its own words, not folded into the generic last line.
     #[test]
     fn each_refusal_is_explained_in_its_own_words() {
-        let say = |e: abi::Error| refusal(e as i64);
-        assert!(say(abi::Error::NoSuchSlot).contains("holds no address-space capability"));
-        assert!(say(abi::Error::WrongObject).contains("not an address space"));
-        assert!(say(abi::Error::NotPermitted).contains("no ENUMERATE"));
-        assert!(say(abi::Error::Gone).contains("destroyed"));
+        let say = |e: moho_abi::Error| refusal(e as i64);
+        assert!(say(moho_abi::Error::NoSuchSlot).contains("holds no address-space capability"));
+        assert!(say(moho_abi::Error::WrongObject).contains("not an address space"));
+        assert!(say(moho_abi::Error::NotPermitted).contains("no ENUMERATE"));
+        assert!(say(moho_abi::Error::Gone).contains("destroyed"));
         assert!(refusal(0).contains("could not be read"));
     }
 
@@ -287,9 +287,9 @@ mod tests {
         let l = collect(
             &mut rows,
             &mut space(&[
-                (0x0040_0000, abi::address_space::MAP_CODE),
-                (0x0050_0000, abi::address_space::MAP_READ_WRITE),
-                (0x0060_0000, abi::address_space::MAP_READ_ONLY),
+                (0x0040_0000, moho_abi::address_space::MAP_CODE),
+                (0x0050_0000, moho_abi::address_space::MAP_READ_WRITE),
+                (0x0060_0000, moho_abi::address_space::MAP_READ_ONLY),
             ]),
         );
         assert!(!l.is_refused());
@@ -298,7 +298,7 @@ mod tests {
             l.rows()[2],
             Row {
                 va: 0x0060_0000,
-                kind: abi::address_space::MAP_READ_ONLY
+                kind: moho_abi::address_space::MAP_READ_ONLY
             }
         );
     }
@@ -311,7 +311,7 @@ mod tests {
         let empty = collect(&mut rows_a, &mut space(&[]));
         let mut rows_b = [Row::default(); MAXIMUM_ROWS];
         let refused = collect(&mut rows_b, &mut |_| {
-            (abi::Error::NotPermitted as i64, 0, 0)
+            (moho_abi::Error::NotPermitted as i64, 0, 0)
         });
 
         assert!(!empty.is_refused(), "an empty space is not a refusal");
@@ -331,8 +331,8 @@ mod tests {
     fn a_refusal_halfway_through_discards_the_partial_table() {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let l = collect(&mut rows, &mut |cursor| match cursor {
-            0 => (1, 0x0040_0000, abi::address_space::MAP_CODE),
-            _ => (abi::Error::Gone as i64, 0, 0),
+            0 => (1, 0x0040_0000, moho_abi::address_space::MAP_CODE),
+            _ => (moho_abi::Error::Gone as i64, 0, 0),
         });
         assert!(l.is_refused());
         assert_eq!(l.rows().len(), 1);
@@ -344,7 +344,7 @@ mod tests {
     fn a_cursor_that_does_not_advance_ends_the_walk() {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let l = collect(&mut rows, &mut |_| {
-            (1, 0x0040_0000, abi::address_space::MAP_READ_ONLY)
+            (1, 0x0040_0000, moho_abi::address_space::MAP_READ_ONLY)
         });
         assert!(l.is_refused());
         assert!(shown(|o| l.write_diagnostics(o)).contains("did not advance"));
@@ -357,7 +357,7 @@ mod tests {
             (
                 cursor as i64 + 1,
                 0x0040_0000 + cursor * 0x1000,
-                abi::address_space::MAP_READ_WRITE,
+                moho_abi::address_space::MAP_READ_WRITE,
             )
         });
         assert_eq!(l.rows().len(), 2);
@@ -373,8 +373,8 @@ mod tests {
         let l = collect(
             &mut rows,
             &mut space(&[
-                (0x0040_0000, abi::address_space::MAP_CODE),
-                (0x0050_0000, abi::address_space::MAP_READ_WRITE),
+                (0x0040_0000, moho_abi::address_space::MAP_CODE),
+                (0x0050_0000, moho_abi::address_space::MAP_READ_WRITE),
             ]),
         );
         let out = shown(|o| l.write_report(o));
@@ -397,10 +397,10 @@ mod tests {
     #[test]
     fn every_refusal_names_what_is_not_held() {
         for code in [
-            abi::Error::NoSuchSlot as i64,
-            abi::Error::NotPermitted as i64,
-            abi::Error::WrongObject as i64,
-            abi::Error::Gone as i64,
+            moho_abi::Error::NoSuchSlot as i64,
+            moho_abi::Error::NotPermitted as i64,
+            moho_abi::Error::WrongObject as i64,
+            moho_abi::Error::Gone as i64,
             -99,
         ] {
             let m = refusal(code);
@@ -418,7 +418,10 @@ mod tests {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let l = collect(
             &mut rows,
-            &mut space(&[(0x0000_7fff_ffff_f000, abi::address_space::MAP_READ_WRITE)]),
+            &mut space(&[(
+                0x0000_7fff_ffff_f000,
+                moho_abi::address_space::MAP_READ_WRITE,
+            )]),
         );
         let out = shown(|o| l.write_report(o));
         assert!(out.contains("0x7ffffffff000"), "{out}");

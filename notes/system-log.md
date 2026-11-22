@@ -50,7 +50,7 @@ stored form: the service converts it to one JSON object per line before storing 
 as ruled).
 
 Every field of a record but the text is filled by the service from the badge on the capability the
-writer invoked. The kernel stamps that badge (`abi::rendezvous::BADGE`, §230 (badged endpoint
+writer invoked. The kernel stamps that badge (`moho_abi::rendezvous::BADGE`, §230 (badged endpoint
 capabilities)), and the spawner that minted it registers what it means through `control` (which
 program, which user, which stream). The spawner speaks through the unbadged intake capability, and
 that is what makes it the only one who can say it. A writer holds a badged copy, so it can neither

@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-21
 milestone_dependencies: 1075, 1115
 decision_dependencies: 323
@@ -101,6 +101,8 @@ list after the steps holds the outward ones.
    falsification patches whose context names the crate. Prose moves by status, per the rename
    checklist, and the path changes everywhere, as navigation. Effort: M.
    Lands alone. `needs-architect` follows from rule 1, and the first open decision covers its clearing.
+   Done in [#4013](https://github.com/nifeos/nife/pull/4013): the crate is `crates/moho_abi`, the
+   package and every use are `moho_abi`, and the `std` overlay's generated module is `moho_abi.rs`.
 4. **`target_os` and the `std` port.** One pull request changes the `os` field of the three
    specifications and the patcher's arms and `env_consts` (`xtask/src/farm/patch.rs`, `source.rs`).
    It renames the overlay's directories, the farm's copy destinations, `TALC_IN_STD` and the
@@ -222,6 +224,15 @@ Prior art. On macOS, `uname -s` prints `Darwin`, the kernel, while Rust's `targe
 Hermit and Redox use one name for the kernel and the interface, so they offer no split.
 
 Blocks: step 4 only in which line the C library's platform module keeps.
+
+## Follow-on
+
+- **Done.** Step 3, the crate rename, in [#4013](https://github.com/nifeos/nife/pull/4013).
+- **Outstanding.** Steps 1 and 6, in basalt. Checked by reading basalt's `main`:
+  `helpers/packages.py` names no `*-unknown-moho` triple.
+- **Outstanding.** Step 2, nife's basalt pin, which waits on step 1's Release.
+- **Outstanding.** Steps 4 and 5, `target_os` with the `std` port and then the triples. Checked by
+  reading the three target specifications, whose `os` field is still `nife`.
 
 ## BUGS
 

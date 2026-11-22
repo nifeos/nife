@@ -150,8 +150,8 @@ DESCEND` and nothing else.
 
 ```
 $ rg BUGS crates
-  crates/abi/src/lib.rs:    /// # BUGS
-crates/abi/src/lib.rs:    /// # BUGS
+  crates/moho_abi/src/lib.rs:    /// # BUGS
+crates/moho_abi/src/lib.rs:    /// # BUGS
 ...
 ```
 

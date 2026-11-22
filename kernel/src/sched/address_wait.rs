@@ -1,5 +1,5 @@
 //! Address wait and wake, the scheduler half (§269 (how threads share a process) fork 2). The queues
-//! are `inter_process_communication::address_wait`, the wire contract `abi::address_space::WAIT`, and the
+//! are `inter_process_communication::address_wait`, the wire contract `moho_abi::address_space::WAIT`, and the
 //! argument `notes/address-wait.md`.
 //!
 //! Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. The module and its functions say what the call does, a wait on an address
@@ -57,7 +57,7 @@ pub fn is_current_space(space: u64) -> bool {
 ///
 /// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. Spelled out from the Linux word.
 #[doc(alias = "futex")]
-pub fn address_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error> {
+pub fn address_wait(space: u64, va: u64, expected: u32) -> Result<u64, moho_abi::Error> {
     let key = inter_process_communication::address_wait::Key {
         address_space: space,
         virtual_address: va,
@@ -66,10 +66,10 @@ pub fn address_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Erro
         let mut guard = IPC_TABLES.lock();
         let sched = guard.as_mut().expect("no scheduler");
         let Some((phys, flags)) = crate::arch::mmu::translate_user(va) else {
-            return Err(abi::Error::BadPointer);
+            return Err(moho_abi::Error::BadPointer);
         };
         if !flags.is_user_accessible() {
-            return Err(abi::Error::BadPointer);
+            return Err(moho_abi::Error::BadPointer);
         }
         // SAFETY: `phys` is the frame this space mapped at `va`, user-accessible, and every RAM
         // frame is in the direct map, so the load reads RAM; `va` is 4-aligned, so the word is
@@ -100,7 +100,7 @@ pub fn address_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Erro
         .get_mut(current_thread_id())
         .expect("running thread");
     if t.handshake.take_aborted() {
-        return Err(abi::Error::Gone);
+        return Err(moho_abi::Error::Gone);
     }
     Ok(0)
 }

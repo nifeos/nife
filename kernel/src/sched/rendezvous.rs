@@ -342,7 +342,7 @@ pub fn ipc_receive(ep: RendezvousId) -> [u64; 5] {
 }
 
 /// The x1 value a `RECEIVE_CAPABILITY` returns when no capability accompanied the message. Mirrors
-/// `abi::rendezvous::NO_CAPABILITY`; kept here too so the scheduler names it without reaching into the ABI.
+/// `moho_abi::rendezvous::NO_CAPABILITY`; kept here too so the scheduler names it without reaching into the ABI.
 pub(super) const NO_CAPABILITY: u64 = u64::MAX;
 
 /// **A `CALL` met a receiver parked in plain `RECEIVE`** (§246 (a plain `RECEIVE` never takes a
@@ -422,7 +422,7 @@ pub(super) fn hand_over_label(receiver: &crate::thread::Thread, label: u64) {
 
 /// **The `x4` a receive returns for a `CALL` whose Reply landed at `slot`** (milestone 706 (a
 /// `CALL` server can tell a Reply from a delegation), DECISIONS §245 (a `CALL` server tells a Reply
-/// from a delegation)): `abi::rendezvous::REPLY_DELIVERED` when the Reply was installed, `0` when
+/// from a delegation)): `moho_abi::rendezvous::REPLY_DELIVERED` when the Reply was installed, `0` when
 /// the receiver's table was full and there is no Reply to name. Written only on the two paths a
 /// `CALL` reaches a receiver (`ipc_call_badged`'s rendezvous and `inter_process_communication_receive_capability`'s collect of a
 /// parked caller), so a `SEND_CAPABILITY` delegation, which reaches the same `x1`, never carries it.
@@ -431,7 +431,7 @@ pub(super) fn reply_tag(slot: u64) -> u64 {
     if slot == NO_CAPABILITY {
         0
     } else {
-        abi::rendezvous::REPLY_DELIVERED
+        moho_abi::rendezvous::REPLY_DELIVERED
     }
 }
 
@@ -467,12 +467,12 @@ pub(crate) fn inter_process_communication_delegate_capability(
     data: u64,
     delegation: Delegation,
     badge: u64,
-) -> Result<(), abi::Error> {
+) -> Result<(), moho_abi::Error> {
     inter_process_communication_send_capability_from(ep, data, badge, |sched, current| {
         let table = sched
             .threads
             .capabilities(current)
-            .ok_or(abi::Error::NoSuchSlot)?;
+            .ok_or(moho_abi::Error::NoSuchSlot)?;
         delegation.derive(&table.lock())
     })
 }
@@ -487,8 +487,8 @@ pub(super) fn inter_process_communication_send_capability_from(
     source: impl FnOnce(
         &IpcTables,
         ThreadId,
-    ) -> Result<crate::capability_object::Capability, abi::Error>,
-) -> Result<(), abi::Error> {
+    ) -> Result<crate::capability_object::Capability, moho_abi::Error>,
+) -> Result<(), moho_abi::Error> {
     let block = {
         let mut guard = IPC_TABLES.lock();
         let sched = guard.as_mut().expect("no scheduler");
@@ -678,8 +678,8 @@ pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64;
             // with it there, x86_64's closure went over `script/fastpath-footprint`'s 5% band.
             t.receiving_capability = false;
             // The whole mailbox: RECEIVE_CAPABILITY's three words, the sender's badge at m[3] (milestone 599),
-            // and `w4`, which is `abi::notification::BOUND` when the bound notification ended this
-            // receive, `abi::rendezvous::REPLY_DELIVERED` when a CALL's Reply was installed
+            // and `w4`, which is `moho_abi::notification::BOUND` when the bound notification ended this
+            // receive, `moho_abi::rendezvous::REPLY_DELIVERED` when a CALL's Reply was installed
             // (milestone 706, written by `ipc_call_badged`), and `0` for every other delivery a
             // sender or the kernel's death path makes (milestone 151).
             // **x1 is NO_CAPABILITY unless a capability was installed for this delivery** (milestone 634,
@@ -688,7 +688,7 @@ pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64;
             // slot number where a CALL server reads a reply slot. A bound-notification delivery is
             // exempt: its x4 == BOUND and its m[1] is the notification word, not a sender's choice.
             let m = t.mailbox;
-            if t.capability_delivered || m[4] == abi::notification::BOUND {
+            if t.capability_delivered || m[4] == moho_abi::notification::BOUND {
                 m
             } else {
                 [m[0], NO_CAPABILITY, m[1], m[3], 0]
@@ -852,7 +852,7 @@ pub(crate) fn ipc_reply_capability(
     caller: ThreadId,
     msg: [u64; 2],
     slot: u64,
-) -> Result<bool, abi::Error> {
+) -> Result<bool, moho_abi::Error> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
     let current = current_thread_id();
@@ -860,9 +860,9 @@ pub(crate) fn ipc_reply_capability(
         let ours = sched
             .threads
             .capabilities(current)
-            .ok_or(abi::Error::NoSuchSlot)?;
+            .ok_or(moho_abi::Error::NoSuchSlot)?;
         let table = ours.lock();
-        let src = table.get(slot).map_err(|_| abi::Error::NoSuchSlot)?;
+        let src = table.get(slot).map_err(|_| moho_abi::Error::NoSuchSlot)?;
         Delegation {
             slot,
             rights: src.rights,
@@ -909,7 +909,7 @@ pub(super) fn delete_reply_capabilities_naming(sched: &mut IpcTables, caller: Th
     }
 }
 
-/// **Free one `caller` its server can no longer answer, with `abi::Error::Gone`.**
+/// **Free one `caller` its server can no longer answer, with `moho_abi::Error::Gone`.**
 ///
 /// A `CALL` caller whose request was taken is linked on no wait queue, and only [`ipc_reply`] wakes
 /// it. Every `Reply` naming it is deleted before the wake, or a server holding a stale one could

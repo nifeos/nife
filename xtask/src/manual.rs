@@ -393,7 +393,7 @@ fn tree_sections() -> Vec<Shelf> {
     }
 
     // **And the module documentation, which is the finding this exists for.** A stranger could not
-    // find `crates/abi/src/lib.rs`, and no markdown page is going to fix that, because the document
+    // find `crates/moho_abi/src/lib.rs`, and no markdown page is going to fix that, because the document
     // it wants *is* that file's header. A `//!` block is markdown already, so it indexes as a page
     // with no conversion and no copy: the result names the source file, which is the thing to open.
     for (shard, dir, file) in [
@@ -497,7 +497,7 @@ fn collect_module_docs(
         };
         let rel = rel.display().to_string();
         // **Named for what it is, not for its first heading.** A crate header rarely opens with a
-        // level-one heading, and falling back to the path would print the path twice. `crate abi`
+        // level-one heading, and falling back to the path would print the path twice. `crate moho_abi`
         // is what a reader calls the thing.
         let what = if file.is_empty() { "program" } else { "crate" };
         let name = if program_dir {

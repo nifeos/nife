@@ -122,7 +122,7 @@ with registers.
 
 Nobody has acted on either shape. Both are irreversible once a second program links the result,
 because the ring layout or the method numbers become a wire. F's wire is a layout in one crate the
-kernel and one service share. R's is an object type and a method number in `abi`, which every
+kernel and one service share. R's is an object type and a method number in `moho_abi`, which every
 program can see. F's three slots are a boot-grant ABI between the kernel and the progenitor, the
 same kind `machine_page` added at milestone 126 (the `procps` package).
 
