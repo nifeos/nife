@@ -290,9 +290,9 @@ the low-bit randomizer (line 226) have no caller outside the crate. Item 17 has 
 
 ## Follow-on
 
-- **Recorded.** Every finding is Done or At the move, so the milestone is built. The findings
-  marked At the move are the move lane's, checked against `crates/network_time_protocol` and its
-  manifest. The names are ratified and the review package is cleared.
+- **Recorded.** With every finding Done or At the move, the milestone counts as built. The move
+  lane owns the findings marked At the move, checked against `crates/network_time_protocol` and its
+  manifest. The architect ratified the names and cleared the review package.
 
 ## Done when
 

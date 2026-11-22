@@ -28,7 +28,7 @@ copied-file list (`xtask/src/farm/copied.rs`). No new tool.
   ratified (ruled 2026-11-19 UTC).
 - P0-2, `talc` and the path dependencies: Waiting on repositories for `abi` and
   `user_mode_runtime`. The `talc` half follows Decision B, and the README's BUGS section states
-  what crates.io's 5.1.1 lacks ([#3840](https://github.com/nifeos/nife/pull/3840)). `address_space_layout` is pinned by `git` and `rev`
+  what crates.io's 5.1.1 lacks ([#3840](https://github.com/nifeos/nife/pull/3840)). The manifest pins `address_space_layout` by `git` and `rev`
   ([#3895](https://github.com/nifeos/nife/pull/3895)); `abi` and `user_mode_runtime` have no repositories yet, so the manifest keeps their
   path dependencies, and `script/crate-move --dry-run` fails only on them.
 - P0-3, manifest, README and license files: Done, [#3840](https://github.com/nifeos/nife/pull/3840). The manifest states its license,

@@ -175,8 +175,8 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 ## Follow-on
 
 - **Milestone 1017.** The move, at step 6, after `address_space_layout` and
-  `current_cpu_contract` leave. Every finding is Done, so the milestone is built; the review
-  package is cleared and `nifeos/machine_statistics_contract` is approved.
+  `current_cpu_contract` leave. With every finding Done, the milestone counts as built; the
+  architect cleared the review package and approved `nifeos/machine_statistics_contract`.
 
 ## Decisions for the architect
 

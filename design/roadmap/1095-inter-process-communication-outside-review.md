@@ -60,8 +60,8 @@ milestone reaches delivery.
 - P2-11, the one-queue invariant could hold by construction: Open. Two-way, and the maintainer
   rules it after the move; it changes the proofs.
 - P2-12a, `Futexes<T, 0>` panics: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-12b, `Futexes` as a stranger reads it: Open. The names are built ([#3824](https://github.com/nifeos/nife/pull/3824), D5) and ratified
-  ([#3883](https://github.com/nifeos/nife/pull/3883)); the `Queue::iter` that would make the count read-only is not in
+- P2-12b, `Futexes` as a stranger reads it: Open. [#3824](https://github.com/nifeos/nife/pull/3824) built the names (D5) and [#3883](https://github.com/nifeos/nife/pull/3883) ratified
+  them; the `Queue::iter` that would make the count read-only is not in
   `nifeos/intrusive_queue`, and `waiter_count` still takes `&mut self`.
 - P2-13, `Timer::deadline` answers with a sentinel: Done, [#3842](https://github.com/nifeos/nife/pull/3842). `Timer::deadline` and
   `earliest` answer `Option<u64>` (D7).
@@ -76,8 +76,8 @@ milestone reaches delivery.
 - D3, which crate leaves first: Done, [#3892](https://github.com/nifeos/nife/pull/3892).
 - D4, two public names the gates refuse: Done, [#3824](https://github.com/nifeos/nife/pull/3824), ratified in [#3883](https://github.com/nifeos/nife/pull/3883).
 - D5, the futex table's names: Done, [#3824](https://github.com/nifeos/nife/pull/3824), ratified in [#3883](https://github.com/nifeos/nife/pull/3883).
-- D6, review clearance and the repository: At the move. The package is cleared and the names
-  ratified ([#3883](https://github.com/nifeos/nife/pull/3883)); `nifeos/inter_process_communication` does not exist yet.
+- D6, review clearance and the repository: At the move. [#3883](https://github.com/nifeos/nife/pull/3883) cleared the package and ratified
+  the names; `nifeos/inter_process_communication` does not exist yet.
 - D7, the timer's deadline type: Done, [#3842](https://github.com/nifeos/nife/pull/3842).
 
 ## Open decisions
