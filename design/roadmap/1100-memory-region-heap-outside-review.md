@@ -24,48 +24,40 @@ copied-file list (`xtask/src/farm/copied.rs`). No new tool.
 
 ## Finding status
 
-- P0-1, names and the missing `Name:` blocks: Done, [#3597](https://github.com/nifeos/nife/pull/3597).
-  The names later items added are ratified (ruled 2026-11-19 UTC).
-- P0-2, `talc` and the path dependencies: Ruled (Decision B, option A, 2026-11-14 UTC). The README
-  half is Done, [#3840](https://github.com/nifeos/nife/pull/3840): its BUGS section states what
-  crates.io's 5.1.1 lacks. The pins wait on milestone 1017 steps 2 and 3: `abi`,
-  `address_space_layout` and `user_mode_runtime` have no repositories yet, so the manifest keeps
-  their path dependencies, and `script/crate-move --dry-run` fails only on them.
-- P0-3, manifest, README and license files: Done, [#3840](https://github.com/nifeos/nife/pull/3840).
-  The manifest states its license, `rust-version`, description, keywords, categories and lints,
-  both license files sit beside it, the README's host example runs as a doctest, and the crate's
-  documentation cites nothing outside it.
-- P0-4, the `va` binding and `commit_all`: Done, [#3597](https://github.com/nifeos/nife/pull/3597),
-  and the fuzz workspace's binding in [#3840](https://github.com/nifeos/nife/pull/3840). The
-  coverage half is Open: the template's `coverage` job first measures the host tests after the
-  move.
+- P0-1, names and the missing `Name:` blocks: Done, [#3597](https://github.com/nifeos/nife/pull/3597). The names later items added are
+  ratified (ruled 2026-11-19 UTC).
+- P0-2, `talc` and the path dependencies: Waiting on repositories for `abi` and
+  `user_mode_runtime`. The `talc` half follows Decision B, and the README's BUGS section states
+  what crates.io's 5.1.1 lacks ([#3840](https://github.com/nifeos/nife/pull/3840)). The manifest pins `address_space_layout` by `git` and `rev`
+  ([#3895](https://github.com/nifeos/nife/pull/3895)); `abi` and `user_mode_runtime` have no repositories yet, so the manifest keeps their
+  path dependencies, and `script/crate-move --dry-run` fails only on them.
+- P0-3, manifest, README and license files: Done, [#3840](https://github.com/nifeos/nife/pull/3840). The manifest states its license,
+  `rust-version`, description, keywords, categories and lints, both license files sit beside it,
+  the README's host example runs as a doctest, and the crate's documentation cites nothing outside
+  it.
+- P0-4, the `va` binding and `commit_all`: At the move. The binding and `commit_all` are done in
+  [#3597](https://github.com/nifeos/nife/pull/3597), and the fuzz workspace's binding in [#3840](https://github.com/nifeos/nife/pull/3840). The coverage half is the move's: the
+  template's `coverage` job first measures the host tests after the move.
 - P1-5, a second `initialize`: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
 - P1-6, a grow of zero bytes: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
 - P1-7, kernel refusals read as budget spent: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
-- P1-8, page-source seam, host tests, proofs and one copy of the policy: Done. The seam, host tests
-  and three harnesses landed in [#3609](https://github.com/nifeos/nife/pull/3609). In
-  [#3840](https://github.com/nifeos/nife/pull/3840) the growth arithmetic lives in the core-only
-  `src/growth.rs`, which `cargo xtask std-src` copies into std as `heap_growth.rs`, and
-  `second_mount` runs on `MemoryRegionHeap` over a host page source. The fuzz target keeps a copy,
-  because it reads talc's counters, and its README says so.
-- P1-9, documentation and the minimum cap: Done. The crate documentation landed in
-  [#3609](https://github.com/nifeos/nife/pull/3609), the README in
-  [#3840](https://github.com/nifeos/nife/pull/3840).
+- P1-8, page-source seam, host tests, proofs and one copy of the policy: Done, [#3609](https://github.com/nifeos/nife/pull/3609) and
+  [#3840](https://github.com/nifeos/nife/pull/3840). The seam, host tests and three harnesses landed in the first; in the second the
+  growth arithmetic lives in the core-only `src/growth.rs`, which `cargo xtask std-src` copies
+  into std as `heap_growth.rs`, and `second_mount` runs on `MemoryRegionHeap` over a host page
+  source. The fuzz target keeps a copy, because it reads talc's counters, and its README says so.
+- P1-9, documentation and the minimum cap: Done. The crate documentation landed in [#3609](https://github.com/nifeos/nife/pull/3609), the
+  README in [#3840](https://github.com/nifeos/nife/pull/3840).
 - P2-10, `PAGE_BYTES`: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
 - P2-11, a panic inside the allocator: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
-- P2-12, growth is monotonic: Done. The crate documentation and the README say so, and the README's
-  BUGS section carries the line, [#3840](https://github.com/nifeos/nife/pull/3840).
+- P2-12, growth is monotonic: Done, [#3840](https://github.com/nifeos/nife/pull/3840). The crate documentation and the README say so, and
+  the README's BUGS section carries the line.
 - P2-13, accessors for the cap and the base: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
 - P2-14, the `Sync` argument: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
-- Decision A, the seven names and `commit_all`: Done (option A, 2026-11-14 UTC),
-  [#3597](https://github.com/nifeos/nife/pull/3597).
-- Decision B, which `talc` outside nife: Ruled (option A, 2026-11-14 UTC). It stands where item 2
-  stands; the pins wait on the same steps of milestone 1017.
-- A fork of `talc` if upstream stays silent: Open, and conditional. It is an open decision below.
-- Review package: Done, [memory-region-heap.md](../../notes/crate-reviews/memory-region-heap.md).
-  The review clearance: Done (ruled 2026-11-20 UTC, option A;
-  the architect approved `nifeos/memory_region_heap` with `publish = false`, no tag, no publish). The move stays
-  Open.
+- Decision A, the seven names and `commit_all`: Done, [#3597](https://github.com/nifeos/nife/pull/3597), ruled 2026-11-14 (UTC), option A.
+- Decision B, which `talc` outside nife: Done, [#3840](https://github.com/nifeos/nife/pull/3840), ruled 2026-11-14 (UTC), option A. The
+  crate depends on crates.io's `talc` 5.1.1 with no patch outside nife, and the README says what
+  that release lacks.
 
 ## Open decisions
 
@@ -282,10 +274,14 @@ The evidence, background, prior art and the options not taken are in
 
 ## Follow-on
 
-- **Outstanding.** The move, which leaves on this crate's own clearance, with `subtree_scope` or alone, and before `redoxfs`. The path dependencies become `git` and `rev` pins once milestone 1017 steps 2 and 3
-  give `abi`, `address_space_layout` and `user_mode_runtime` repositories. The move drops the fuzz
+- **Outstanding.** The move, which leaves on this crate's own clearance, with `subtree_scope` or
+  alone, and before `redoxfs`. The path dependencies become `git` and `rev` pins once `abi` and
+  `user_mode_runtime` have repositories, checked in `crates/memory_region_heap/Cargo.toml`. The move drops the fuzz
   workspace's `[patch.crates-io]` line for the vendored talc, and the template's `coverage` job
   then measures the host tests for the first time.
+- **Outstanding.** Whether to fork `talc` if upstream stays silent, the open decision above. It
+  arises only once a monthly `script/vendor-watch` report passes with upstream pull request 57
+  still unanswered, checked in `crates/memory_region_heap/Cargo.toml`.
 
 ## Done when
 
