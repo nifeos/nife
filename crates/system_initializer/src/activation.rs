@@ -126,46 +126,53 @@ pub(super) fn serve_installer(
         let _ = spawn.approval_id_for(answer.holder().as_bytes());
     }
     if !spawn.abandoned {
-        let (r0, r1, r2) =
-            spawn_protocol::activation_reply(answer.status, answer.live, answer.member);
-        send(reply, r0, r1, r2);
-        // A name taken by another package, and a delegated request the approval does not allow,
-        // are refused with the package's name, which `jig` reads after the reply (milestone 919
-        // (a package carries several programs); milestone 911). The owner's own `--approved`
-        // install is refused with the ask that exceeded the entry as the third message
-        // (`refused_ask_words`), which the reply's word 2 counts.
-        if answer.status == spawn_protocol::ActivationStatus::NameTaken
-            || answer.status == spawn_protocol::ActivationStatus::NotApproved
-        {
-            for (a, b, c) in spawn_protocol::holder_words(answer.holder()) {
+        send_reply(reply, verb, &answer, &text);
+    }
+}
+
+/// **The answer to one installer request, sent to the holder's reply endpoint `reply`**: the
+/// status reply, then what a refusal or an `Approve` carries after it. `verb` is the request's
+/// decoded verb, `answer` what [`serve_installer`] decided, and `text` the page an `Approve`'s
+/// stored records were read into. Sends only; nothing is read or written.
+fn send_reply(reply: u64, verb: Option<Option<Activation>>, answer: &Answer, text: &[u8]) {
+    let (r0, r1, r2) = spawn_protocol::activation_reply(answer.status, answer.live, answer.member);
+    send(reply, r0, r1, r2);
+    // A name taken by another package, and a delegated request the approval does not allow,
+    // are refused with the package's name, which `jig` reads after the reply (milestone 919
+    // (a package carries several programs); milestone 911). The owner's own `--approved`
+    // install is refused with the ask that exceeded the entry as the third message
+    // (`refused_ask_words`), which the reply's word 2 counts.
+    if answer.status == spawn_protocol::ActivationStatus::NameTaken
+        || answer.status == spawn_protocol::ActivationStatus::NotApproved
+    {
+        for (a, b, c) in spawn_protocol::holder_words(answer.holder()) {
+            send(reply, a, b, c);
+        }
+        // The ask's name follows its message, three bytes of it a word, so it travels whole
+        // at any length (milestone 1122 (every name travels on a page)).
+        if answer.member == 3 {
+            let ask = &answer.ask;
+            let (a, b, c) =
+                spawn_protocol::refused_ask_words(ask.kind, ask.rights, ask.length_bytes);
+            send(reply, a, b, c);
+            let name = ask.name();
+            for m in 0..spawn_protocol::stored_messages(name.len() as u64) as usize {
+                let (a, b, c) = spawn_protocol::stored_words(name, m * 24);
                 send(reply, a, b, c);
-            }
-            // The ask's name follows its message, three bytes of it a word, so it travels whole
-            // at any length (milestone 1122 (every name travels on a page)).
-            if answer.member == 3 {
-                let ask = &answer.ask;
-                let (a, b, c) =
-                    spawn_protocol::refused_ask_words(ask.kind, ask.rights, ask.length_bytes);
-                send(reply, a, b, c);
-                let name = ask.name();
-                for m in 0..spawn_protocol::stored_messages(name.len() as u64) as usize {
-                    let (a, b, c) = spawn_protocol::stored_words(name, m * 24);
-                    send(reply, a, b, c);
-                }
             }
         }
-        // **An `Approve`'s reply carries the records it replaced** (milestone 911), so the
-        // console's re-approval shows what changed against the store it now holds. The length
-        // is the reply's word 2; the bytes are three words a message, tail padded.
-        if verb == Some(Some(Activation::Approve))
-            && answer.status == spawn_protocol::ActivationStatus::Done
-            && answer.member > 0
-        {
-            let records = &text[..answer.member as usize];
-            for m in 0..spawn_protocol::stored_messages(answer.member) as usize {
-                let (a, b, c) = spawn_protocol::stored_words(records, m * 24);
-                send(reply, a, b, c);
-            }
+    }
+    // **An `Approve`'s reply carries the records it replaced** (milestone 911), so the
+    // console's re-approval shows what changed against the store it now holds. The length
+    // is the reply's word 2; the bytes are three words a message, tail padded.
+    if verb == Some(Some(Activation::Approve))
+        && answer.status == spawn_protocol::ActivationStatus::Done
+        && answer.member > 0
+    {
+        let records = &text[..answer.member as usize];
+        for m in 0..spawn_protocol::stored_messages(answer.member) as usize {
+            let (a, b, c) = spawn_protocol::stored_words(records, m * 24);
+            send(reply, a, b, c);
         }
     }
 }
