@@ -193,7 +193,7 @@ Read what a supervisor can see about a hung child. The whole view, and its limit
 declaration:
 
 ```sh
-grep -B4 -A30 'pub const SURVEY' crates/moho_abi/src/lib.rs
+grep -B4 -A30 'pub const SURVEY' nifeos/moho_abi/src/lib.rs
 ```
 
 Run the case on one architecture, or all three.

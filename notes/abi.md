@@ -1,7 +1,7 @@
 # The native ABI
 
 *(Milestone 19e, "Decision 2". The contract a nife program runs against: how it starts, how
-it makes system calls, and how it meets its capabilities. `crates/moho_abi` is the machine-readable half;
+it makes system calls, and how it meets its capabilities. `nifeos/moho_abi` is the machine-readable half;
 this note is the prose half. See DECISIONS §10 for why the model is capability-based, and §14 for
 why "native ABI" and not Linux-compat.)*
 
@@ -51,7 +51,7 @@ on it.
 integer, like a file descriptor), `method` selects an operation on the object that capability points
 at, and `a0..a2` are the operation's arguments. The kernel checks that the slot holds a capability,
 that its *rights* permit the method, and that the object's type understands it. The method numbers
-live per object type in `crates/moho_abi`:
+live per object type in `nifeos/moho_abi`:
 
 - Rendezvous (`rendezvous::`): `SEND`, `RECEIVE`, `CALL`, and the capability-passing pair `SEND_CAPABILITY` /
   `RECEIVE_CAPABILITY`. The synchronous-IPC primitive the whole system talks over. `WRITE` rights permit
@@ -153,7 +153,7 @@ writing it down (here, and in each program's header comment) is what milestone 1
 A supervised thread's death is delivered to its supervisor as an ordinary endpoint message, so
 restart policy lives in userspace and the kernel never relaunches anything (DECISIONS §26). Two
 conventions make it work, and neither adds a system call or a method: a spawn-slot convention and a
-message-format convention (both in `crates/moho_abi`, module `fault`).
+message-format convention (both in `nifeos/moho_abi`, module `fault`).
 
 The spawn-slot convention. A supervised child is spawned with its supervision endpoint in the
 reserved fault slot, `moho_abi::fault::FAULT_RENDEZVOUS_SLOT` (the last capability table slot, `CAPABILITY_TABLE_SLOTS - 1`, 63 now).

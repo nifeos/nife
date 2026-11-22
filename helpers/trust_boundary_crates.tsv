@@ -138,7 +138,7 @@ measured_boot	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls
 memory_corruption_canary_gate	kernel	kernel
 memory_region_heap	userspace	components,fixtures,redoxfs_server
 memory_regions	kernel	kernel
-moho_abi	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
+moho_abi	shared	retired
 name_resolution_protocol	userspace	retired
 network_stack	userspace	components
 network_time_protocol	userspace	components,fixtures

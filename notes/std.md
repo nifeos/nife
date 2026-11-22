@@ -70,7 +70,7 @@ std by `cargo xtask std-src`. Each file binds one std concept to the ABI:
 | `std::process::id` | `0`, because this system issues no process identifier (`sys/process/nife.rs`); everything else in `std::process` refuses |
 
 The system call glue (`sys/pal/nife/rt.rs`) deliberately twins `crates/user_mode_runtime`'s
-`svc`/`ecall` wrappers, because std cannot depend on the crate. The ABI constants are not restated: `abi.rs` is generated verbatim from `crates/moho_abi` by `std-src`, so the numbers cannot
+`svc`/`ecall` wrappers, because std cannot depend on the crate. The ABI constants are not restated: `abi.rs` is generated verbatim from `nifeos/moho_abi` by `std-src`, so the numbers cannot
 drift. The heap is `talc/`, the core of `vendor/talc`. So too `netproto.rs` from `crates/socket_contract/src/lib.rs`, and `fsproto.rs` from
 `crates/file_system_contract`. Every wire format the PAL speaks has exactly one definition, and it
 lives with the server that answers it.

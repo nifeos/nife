@@ -3,7 +3,7 @@
 //! This is the PAL's twin of `crates/user_mode_runtime`: the same `svc #0` / `ecall` / `system_call`
 //! instructions and register convention, re-stated here because std cannot depend on an
 //! out-of-tree crate. The ABI *constants* are not re-stated: `moho_abi.rs` next door is generated
-//! verbatim from `crates/moho_abi/src/lib.rs` by `cargo xtask std-src`. Only the one trap, `trap6`, is
+//! verbatim from `nifeos/moho_abi/src/lib.rs` by `cargo xtask std-src`. Only the one trap, `trap6`, is
 //! hand-copied; if `user_mode_runtime`'s changes, change this.
 
 //! # The std slot convention

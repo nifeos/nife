@@ -64,7 +64,7 @@ runner = "helpers/qemu-runner-x86_64.sh"
 #
 # BUGS: a typo in the cfg name is silent. `--cfg` on the command line is not checked against
 # `--check-cfg` by `unexpected_cfgs` (measured: `--cfg aes_force_sotf` on a clean rebuild of
-# `crates/moho_abi` warns about nothing), and pairing a `--check-cfg cfg(aes_force_soft)` here does not
+# `nifeos/moho_abi` warns about nothing), and pairing a `--check-cfg cfg(aes_force_soft)` here does not
 # change that, so the pairing was dropped rather than kept as a comment claiming a guard it does
 # not provide. What actually catches a typo is the FS-server build failing with the LLVM error
 # above, which is loud, immediate, and the only consumer there is.

@@ -1,6 +1,6 @@
-# The method contracts: why each `crates/moho_abi` method reads as it does
+# The method contracts: why each `nifeos/moho_abi` method reads as it does
 
-`crates/moho_abi` states each system call and method as a contract: its arguments, what it returns and what
+`nifeos/moho_abi` states each system call and method as a contract: its arguments, what it returns and what
 it refuses. The rulings behind them are in `design/decisions/`, and each doc comment cites its
 section. This page carries the reasoning, the prior art and the standing measurements that the doc
 comments link to rather than repeat. [`notes/abi.md`](../abi.md) carries the convention itself.

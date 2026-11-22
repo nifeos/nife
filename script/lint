@@ -2520,8 +2520,26 @@ def _sh_scripts():
                if p.read_text(errors='replace').split('\n', 1)[0].strip() == '#!/bin/sh')
 
 
+def _moho_abi_source():
+    """The `src` directory of the `moho_abi` the workspace links, wherever cargo put it.
+
+    The crate lives in its own repository (`nifeos/moho_abi`), which the workspace pins by git
+    revision, so its source is in cargo's checkout of that revision and not in this tree. Asking
+    `cargo metadata` for the package's manifest path finds the revision the lockfile names, so the
+    counts below describe the binary interface nife actually builds against.
+    """
+    meta = json.loads(subprocess.run(
+        ['cargo', 'metadata', '--format-version', '1', '--locked'],
+        capture_output=True, text=True, check=True,
+    ).stdout)
+    for pkg in meta['packages']:
+        if pkg['name'] == 'moho_abi':
+            return pathlib.Path(pkg['manifest_path']).parent / 'src'
+    sys.exit('lint: the workspace links no moho_abi, so the system call and rights counts have no source')
+
+
 def _abi_system_calls():
-    """`SYSTEM_CALL_*` u64 constants in crates/moho_abi/src/lib.rs: the width of the system call trap.
+    """`SYSTEM_CALL_*` u64 constants in moho_abi's src/lib.rs: the width of the system call trap.
 
     Assumes the system call numbers are the crate's only `SYSTEM_CALL_`-prefixed u64 constants, which they
     are and which the naming makes self-enforcing: every other constant in the crate is a method, a
@@ -2534,7 +2552,7 @@ def _abi_system_calls():
     kernel's system call module, an `Error` variant's description and two notes all saying the surface
     was **three** calls. `SYS_CAP_DELETE` landed 2026-07-24 and moved none of them.
     """
-    text = pathlib.Path('crates/moho_abi/src/lib.rs').read_text(errors='replace')
+    text = (_moho_abi_source() / 'lib.rs').read_text(errors='replace')
     return len(re.findall(r'^[ \t]*pub const SYSTEM_CALL_[A-Z_0-9]+: u64\b', text, re.M))
 
 
@@ -2549,7 +2567,7 @@ def _rights_bits():
     That `ALL` is exactly the union of these bits is pinned by the kernel's assertion and by tests
     rather than here. This counts; those compare.
     """
-    text = pathlib.Path('crates/moho_abi/src/rights.rs').read_text(errors='replace')
+    text = (_moho_abi_source() / 'rights.rs').read_text(errors='replace')
     return len(re.findall(r'^[ \t]*pub const [A-Z_0-9]+: u64 = 1 << \d', text, re.M))
 
 

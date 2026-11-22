@@ -5,7 +5,7 @@
 `kernel/src/system_call.rs` and its children under `kernel/src/system_call/` are the whole of what a user
 program can ask the kernel for. This note carries the design those files' doc comments link to. The
 semantics of each method are recorded in `design/decisions/`, and the wire contract is in
-`crates/moho_abi`.
+`nifeos/moho_abi`.
 
 ## The surface
 
