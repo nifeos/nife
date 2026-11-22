@@ -32,7 +32,10 @@ fn two_dir_witness() -> Option<u64> {
             b: (file_system_fixture::tree::OTHER, TWO_TREE_RIGHTS),
             role: 10, // ROLE_TWO_DIR
             arg: 0,
-            stack_pages: 0,
+            // In a debug build the chain through `two_dir` and `TwoRoots::resolve_absolute` is
+            // about 5 KiB, because each resolved path is a 512-byte `DirectoryPath` held by value.
+            // The one mapped page faults; three leave about 7 KiB.
+            stack_pages: 2,
         },
     ) else {
         // No print, no skip!() here: this is a helper, and `skip!()` returns from the function it
