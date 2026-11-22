@@ -23,7 +23,7 @@ hold. That test is the one place a head is spelled out, so this check copies not
 
 A head counts when a quote opens on it (`"` or `'`, so an f-string and a raw string count too),
 or opens on it after a `^`, as a regular expression anchors it. The
-check skips Markdown, `design/` and `notes/`, a file named `tests.rs`, anything under a `tests/`
+check skips itself, Markdown, `design/` and `notes/`, a file named `tests.rs`, anything under a `tests/`
 or `fixtures/` directory, comment lines, and everything in a Rust file from its first
 `#[cfg(test)]` on, since a test spells the bytes it expects on purpose. A site that must keep a
 copy, such as a script in a language that cannot link the crate, says so on the line above:
@@ -38,6 +38,7 @@ import subprocess
 import sys
 
 HEADS_FILE = "crates/serial_console/src/heads.rs"
+SELF = "helpers/boot_line_heads.py"
 HEADS_TEST = "fn the_heads_print_the_bytes_the_logs_hold"
 HEAD_COUNT = 7
 EXEMPT = re.compile(r"boot-line-head:\s*copy,\s*\S")
@@ -66,7 +67,7 @@ def heads_from(source):
 def skipped(path):
     parts = path.split("/")
     return (
-        path == HEADS_FILE
+        path in (HEADS_FILE, SELF)
         or path.endswith(".md")
         or parts[0] in ("design", "notes")
         or parts[-1] == "tests.rs"
@@ -162,7 +163,7 @@ def selftest():
         assert refusals(path, text, heads), (path, text)
     for path, text in passed:
         assert not refusals(path, text, heads), (path, text)
-    for path in ("README.md", "notes/x.txt", "crates/a/src/tests.rs", "crates/a/tests/t.rs", "fixtures/src/f.rs", HEADS_FILE):
+    for path in (SELF, "README.md", "notes/x.txt", "crates/a/src/tests.rs", "crates/a/tests/t.rs", "fixtures/src/f.rs", HEADS_FILE):
         assert skipped(path), path
     assert not skipped("xtask/src/stick.rs")
     print("boot_line_heads: selftest ok (%d refusals, %d passes)" % (len(refused), len(passed)))
