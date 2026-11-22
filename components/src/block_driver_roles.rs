@@ -1912,10 +1912,10 @@ pub mod direct {
         let common = u64::from(hand_off().common);
         match offset {
             DEVICE_FEATURES_SELECT_REGISTER => {
-                store::<u32>(common + COMMON_DEVICE_FEATURE_SELECT, value)
+                store::<u32>(common + COMMON_DEVICE_FEATURE_SELECT, value);
             }
             DRIVER_FEATURES_SELECT_REGISTER => {
-                store::<u32>(common + COMMON_DRIVER_FEATURE_SELECT, value)
+                store::<u32>(common + COMMON_DRIVER_FEATURE_SELECT, value);
             }
             DRIVER_FEATURES_REGISTER => store::<u32>(common + COMMON_DRIVER_FEATURE, value),
             STATUS_REGISTER => store::<u8>(common + COMMON_DEVICE_STATUS, value as u8),
