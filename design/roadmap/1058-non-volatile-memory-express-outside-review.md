@@ -29,9 +29,7 @@ what it leaves to them. They can build, test, prove and falsify it from the READ
 a working polled driver against QEMU from its example without first reading the specification. Every name they meet says what it holds, and every claim of the README is a
 harness that fails under its patch.
 
-Publishing stays held. No crate from this organization publishes to crates.io until the
-maintainers have extracted several crates and a review has decided whether any of them combine.
-Nothing in this block lifts that hold, and a green gate here is not permission to publish.
+Publishing stays held, and nothing in this block lifts that hold.
 
 ## What the review covered
 
@@ -245,8 +243,7 @@ answers becomes `None` in an `Option<IdentifyNamespace>`. One-way at the tag. XS
 
 ## Finding status
 
-- P0-1, the publish comment points outside the repository: Done,
-  nifeos/non_volatile_memory_express#15.
+- P0-1, the publish comment: Done, nifeos/non_volatile_memory_express#15.
 - P0-2, four register names: Done, ruled 2026-11-09; `main` already spelled them so.
 - P1-1, `Namespace` carries its unit: Done, nifeos/non_volatile_memory_express#19.
 - P1-2, unit and address names on parameters: Done, nifeos/non_volatile_memory_express#19 and
@@ -314,8 +311,6 @@ answers becomes `None` in an `Option<IdentifyNamespace>`. One-way at the tag. XS
    drive, once milestone 163 (the JH7110 PCIe driver) lands. An emulated NVMe device under QEMU may serve as interim
    evidence and satisfies neither row.
 
-The publishing hold stands.
-
 ## Open decisions
 
 None. The publishing hold stands.
@@ -344,14 +339,12 @@ claims none of the QEMU or hardware steps.
 
 ## Where this stands
 
-Every finding has landed. Two steps need the bench, and they block the first release: the driver
-on a real controller with a non-zero `FLBAS`, and the long ordering run on a weakly ordered host.
-`publish = false` goes, with `v0.1.0`, only when the publishing hold lifts.
+Every finding has landed. The two bench rows of the finding status block the first release.
 
 ## Follow-on
 
-- **Outstanding.** The two bench rows of the finding status. The first publish of every reviewed
-  crate waits for them (decision 6).
+- **Outstanding.** The two bench rows, for which the first publish of every reviewed crate waits
+  (decision 6).
 
 ## Index row
 
