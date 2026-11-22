@@ -566,14 +566,23 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
         // quiesce (`proto::SUPERVISOR_BADGE`): a quiesce from an application would stop this
         // terminal until a supervisor that never asked said `CTL_RESUME`. Other badges are
         // served as unbadged.
+        //
+        // A first word with a reserved bit set is refused before either (`proto::decode`), so a
+        // later version can give the bits a meaning.
+        let Some((operation, _)) = proto::decode(w0) else {
+            if let Some(to) = reply_slot {
+                reply(to, proto::BAD_REQUEST, 0);
+            }
+            continue;
+        };
         let from_supervisor = req.badge == proto::SUPERVISOR_BADGE;
-        if from_supervisor != (proto::operation(w0) == proto::OPERATION_QUIESCE) {
+        if from_supervisor != (operation == proto::OPERATION_QUIESCE) {
             if let Some(to) = reply_slot {
                 reply(to, proto::BAD_REQUEST, 0);
             }
             continue;
         }
-        match proto::operation(w0) {
+        match operation {
             // The application half: print `len` bytes from the shared output page. The terminal
             // performs no newline translation, deliberately: `line_editor::expand_output` already put
             // `\r\n` on the wire for a Unix `\n`, and a second translation here would move the
