@@ -241,7 +241,8 @@ it. That ruling is not the adoption ruling above, which stays open.
 - `rsext4`'s `InodeInfo` reports each time as the 32-bit seconds field alone. A file's nanoseconds,
   a time before 1970 and a time past 2106 read back wrong (upstream item 8), so `ext4_server` cannot
   give a reader the time Linux wrote until that lands.
-- Bug 3 above has no upstream item yet.
+- `write_file` fails with `Corrupted { op: "extent:parent_key" }` when 1,500 single-block extents
+  arrive shuffled, in 0.9.2 and on `dev`; in ascending order the file builds. No upstream draft yet.
 - The read oracle compares against `debugfs`, which is libext2fs, not the Linux kernel; this host
   could not mount a loop device.
 - No phase is priced. The honest estimate comes after the corpus survey and the first upstream
@@ -251,10 +252,12 @@ it. That ruling is not the adoption ruling above, which stays open.
 
 - **Done.** The plan: this block and its survey appendix name the crate, the measurements, the
   upstream work, our own tests and the conditions above.
-- **Outstanding.** The upstream round: the two bug fixes, the recovery-flag order, the safety
-  arguments, the cast replacement, the fuzz targets, the Kani harnesses, the mount's error report
-  and whole times in `InodeInfo`. Each text goes to the
-  architect before anyone files it.
+- **Outstanding.** The upstream round: the safety arguments, the cast replacement, the fuzz
+  targets, the Kani harnesses, the mount's error report and whole times in `InodeInfo`. Each text
+  goes to the architect before anyone files it.
+- **Outstanding.** [The truncate fix's draft](0190-ext4-read-write/upstream/2-truncate-fix.md)
+  (item 2) awaits the architect. Upstream `rcore-os/tgoskits@dde4020be` fixes items 1 and 3 (the
+  `i_blocks` count, the recovery-flag order), in no release yet, so neither needs a draft.
 - **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the

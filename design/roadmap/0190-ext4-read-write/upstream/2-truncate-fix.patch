@@ -1,0 +1,355 @@
+From 9df283fad34ea04d5937c14fe6a6d31c7133b527 Mon Sep 17 00:00:00 2001
+From: Chris Alef <chris@crickertech.com>
+Date: Sun, 22 Nov 2026 19:19:01 +0000
+Subject: [PATCH 1/2] fix(rsext4): free an emptied extent index node instead of
+ writing it back
+
+When a removal deletes every leaf under an external index node, the
+index step wrote that node back with no entries before its parent freed
+it. write_node_to_block validates the node and refuses an index node
+with no entries, so the removal failed with extent:empty_index. A
+truncate of a depth-2 tree fails this way whenever the new end of file
+lies before the first block of a level-1 index node.
+
+The parent already removes and frees a child it sees as empty, so the
+emptied node is no longer written. The root has no block of its own and
+keeps its existing handling.
+
+The test shrinks a depth-2 tree, whose root holds two level-1 index
+nodes, to one block and remounts it.
+---
+ fs/rsext4/src/extents_tree/remove.rs |  9 ++++-
+ fs/rsext4/tests/file_operations.rs   | 51 ++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 1 deletion(-)
+
+diff --git a/fs/rsext4/src/extents_tree/remove.rs b/fs/rsext4/src/extents_tree/remove.rs
+index 40c54e2e7..2b7a23d4e 100644
+--- a/fs/rsext4/src/extents_tree/remove.rs
++++ b/fs/rsext4/src/extents_tree/remove.rs
+@@ -423,7 +423,14 @@ impl<'a> ExtentTree<'a> {
+                                 entries.sort_unstable_by_key(|e| e.ei_block);
+                                 header.eh_entries = entries.len() as u16;
+ 
+-                                if let Some(block_id) = phy_block {
++                                // An external index node whose last child was just removed is
++                                // not written back: an index node with no entries is invalid on
++                                // disk, and the parent removes and frees this block as soon as
++                                // it sees `empty`. The root has no block here; phase 3 turns an
++                                // empty root into an empty leaf.
++                                if let Some(block_id) = phy_block
++                                    && !entries.is_empty()
++                                {
+                                     let disk_node = ExtentNode::Index {
+                                         header: *header,
+                                         entries: entries.clone(),
+diff --git a/fs/rsext4/tests/file_operations.rs b/fs/rsext4/tests/file_operations.rs
+index 1575fc513..aa1043dbf 100644
+--- a/fs/rsext4/tests/file_operations.rs
++++ b/fs/rsext4/tests/file_operations.rs
+@@ -2016,6 +2016,57 @@ mod file_functional_tests {
+         assert!(data.iter().all(|&byte| byte == 0));
+     }
+ 
++    /// Writing every other block makes one single-block extent per block, so
++    /// 1,500 of them need a depth-2 tree whose root holds two level-1 index
++    /// nodes. Shrinking to one block removes every leaf under the second
++    /// index node, which must then be freed rather than written back empty.
++    #[test]
++    fn shrinking_extent_inode_past_a_whole_index_node_frees_that_node() {
++        const EXTENTS: u64 = 1500;
++        let device = MockBlockDevice::new(100 * 1024 * 1024);
++        let mut jbd2_dev = Jbd2Dev::initial_jbd2dev(0, device, true);
++
++        mkfs(&mut jbd2_dev).expect("mkfs failed");
++        let mut fs = Ext4FileSystem::mount(&mut jbd2_dev).expect("mount failed");
++        mkfile(&mut jbd2_dev, &mut fs, "/extent-depth-two", None, None)
++            .expect("file creation failed");
++        for index in 0..EXTENTS {
++            let block = vec![(index % 251) as u8 + 1; BLOCK_SIZE];
++            write_file(
++                &mut jbd2_dev,
++                &mut fs,
++                "/extent-depth-two",
++                2 * index * BLOCK_SIZE as u64,
++                &block,
++            )
++            .unwrap();
++        }
++        let (inode_number, inode) =
++            dir::get_inode_with_num(&mut fs, &mut jbd2_dev, "/extent-depth-two")
++                .unwrap()
++                .unwrap();
++        // The inline root header is eh_magic, eh_entries, eh_max, eh_depth.
++        let root_entries = inode.i_block[0] >> 16;
++        let root_depth = inode.i_block[1] >> 16;
++        assert_eq!(root_depth, 2, "the fixture must build a depth-2 tree");
++        assert!(root_entries >= 2, "the root must hold two index nodes");
++        let free_blocks_before = fs.superblock.free_blocks_count();
++
++        truncate_inode(&mut jbd2_dev, &mut fs, inode_number, 100)
++            .expect("shrinking a depth-2 tree must succeed");
++
++        let data = read_file(&mut jbd2_dev, &mut fs, "/extent-depth-two").unwrap();
++        assert_eq!(data, vec![1u8; 100]);
++        // 1,499 data blocks and at least the second index node and its
++        // leaves are free again.
++        assert!(fs.superblock.free_blocks_count() > free_blocks_before + EXTENTS);
++
++        umount(fs, &mut jbd2_dev).expect("unmount failed");
++        let mut fs = Ext4FileSystem::mount(&mut jbd2_dev).expect("remount failed");
++        let data = read_file(&mut jbd2_dev, &mut fs, "/extent-depth-two").unwrap();
++        assert_eq!(data, vec![1u8; 100]);
++    }
++
+     #[test]
+     fn deleting_fast_symlink_does_not_treat_inline_bytes_as_indirect_blocks() {
+         let device = MockBlockDevice::new(100 * 1024 * 1024);
+-- 
+2.53.0
+
+
+From cc66f1115220ac25311fdd389a4c5f11286cf950 Mon Sep 17 00:00:00 2001
+From: Chris Alef <chris@crickertech.com>
+Date: Sun, 22 Nov 2026 19:19:02 +0000
+Subject: [PATCH 2/2] fix(rsext4): restore the zeroed EOF tail when a
+ single-transaction truncate fails
+
+A shrink zeroes the tail of the block it keeps before it changes any
+mapping, as Linux does. When the metadata transaction that follows
+fails, it rolls back and the file keeps its old size, but the tail
+stayed zeroed, so a failed truncate lost the bytes from the new end of
+file to the end of that block.
+
+The zeroing now returns the bytes it replaced, and the single
+transaction extent and legacy paths write them back when the commit
+fails. A restarted truncate commits in several transactions, an earlier
+one may already be durable, and its tail is left zeroed as before.
+
+The test fails a truncate at its inode write and requires every byte of
+the file to read back unchanged.
+---
+ fs/rsext4/src/file/io/resize.rs    | 24 +++++++---
+ fs/rsext4/src/file/io/zero.rs      | 72 +++++++++++++++++++++++++++---
+ fs/rsext4/tests/file_operations.rs | 37 +++++++++++++++
+ 3 files changed, 122 insertions(+), 11 deletions(-)
+
+diff --git a/fs/rsext4/src/file/io/resize.rs b/fs/rsext4/src/file/io/resize.rs
+index 2cab563d3..40bf3a023 100644
+--- a/fs/rsext4/src/file/io/resize.rs
++++ b/fs/rsext4/src/file/io/resize.rs
+@@ -12,7 +12,7 @@ use super::{
+     transaction::{
+         MetadataTransactionStart, MetadataTransactionStep, finalize_restarted_inode_update,
+     },
+-    zero::zero_mapped_inode_tail,
++    zero::{restore_tail_on_error, zero_mapped_inode_tail, zero_mapped_inode_tail_with_undo},
+     *,
+ };
+ 
+@@ -212,8 +212,13 @@ fn truncate_inode_mapping<B: BlockIo>(
+                 u64::from(u32::MAX) + 1,
+                 &removal,
+             )?;
+-            zero_mapped_inode_tail(device, fs, inode_num, &mut inode, truncate_size)?;
++            let zeroed_tail =
++                zero_mapped_inode_tail_with_undo(device, fs, inode_num, &mut inode, truncate_size)?;
+             if let Some(credit_limit) = restart_limit {
++                // A restarted shrink commits in several transactions, and an
++                // earlier one may already be durable, so its zeroed tail is
++                // not put back.
++                drop(zeroed_tail);
+                 if purpose == TruncatePurpose::UserResize {
+                     begin_restarted_truncate(device, fs, inode_num, &mut inode, truncate_size)?;
+                 }
+@@ -240,7 +245,9 @@ fn truncate_inode_mapping<B: BlockIo>(
+                     )
+                 };
+             } else {
+-                return commit_extent_mapping_removal(
++                // One transaction carries the whole shrink and rolls back on
++                // failure, so the zeroed tail is put back with it.
++                let result = commit_extent_mapping_removal(
+                     device,
+                     fs,
+                     inode_num,
+@@ -252,6 +259,7 @@ fn truncate_inode_mapping<B: BlockIo>(
+                         payload: removal,
+                     },
+                 );
++                return restore_tail_on_error(device, fs, zeroed_tail, result);
+             }
+         }
+ 
+@@ -280,8 +288,11 @@ fn truncate_inode_mapping<B: BlockIo>(
+     // Linux zeros the retained partial EOF block before detaching later
+     // mappings. A corrupt hidden branch therefore still fails during the plan
+     // preflight before any data or metadata is changed.
+-    zero_mapped_inode_tail(device, fs, inode_num, &mut inode, truncate_size)?;
++    let zeroed_tail =
++        zero_mapped_inode_tail_with_undo(device, fs, inode_num, &mut inode, truncate_size)?;
+     if let Some(credit_limit) = restart_limit {
++        // As for extents: a restarted shrink keeps its zeroed tail.
++        drop(zeroed_tail);
+         if purpose == TruncatePurpose::UserResize {
+             begin_restarted_truncate(device, fs, inode_num, &mut inode, truncate_size)?;
+         }
+@@ -308,7 +319,7 @@ fn truncate_inode_mapping<B: BlockIo>(
+             )
+         }
+     } else {
+-        commit_legacy_mapping_removal(
++        let result = commit_legacy_mapping_removal(
+             device,
+             fs,
+             inode_num,
+@@ -319,7 +330,8 @@ fn truncate_inode_mapping<B: BlockIo>(
+                 start: MetadataTransactionStart::Join,
+                 payload: transaction,
+             },
+-        )
++        );
++        restore_tail_on_error(device, fs, zeroed_tail, result)
+     }
+ }
+ 
+diff --git a/fs/rsext4/src/file/io/zero.rs b/fs/rsext4/src/file/io/zero.rs
+index 348472067..6217118ce 100644
+--- a/fs/rsext4/src/file/io/zero.rs
++++ b/fs/rsext4/src/file/io/zero.rs
+@@ -69,18 +69,80 @@ pub(super) fn zero_mapped_inode_tail<B: BlockIo>(
+     inode: &mut Ext4Inode,
+     size: u64,
+ ) -> Ext4Result<()> {
++    zero_mapped_inode_tail_with_undo(device, fs, inode_num, inode, size).map(drop)
++}
++
++/// The bytes that zeroing a retained EOF block replaced.
++///
++/// A shrink zeroes the tail of the block it keeps before it changes any
++/// mapping, as Linux does. When the metadata transaction that follows fails
++/// and rolls back, the file keeps its old size, so these bytes are visible
++/// again and must be put back.
++pub(super) struct ZeroedTail {
++    physical: AbsoluteBN,
++    offset: usize,
++    bytes: Vec<u8>,
++}
++
++impl ZeroedTail {
++    /// Writes the replaced bytes back into the cached block.
++    pub(super) fn restore<B: BlockIo>(
++        self,
++        device: &mut Jbd2Dev<B>,
++        fs: &mut Ext4FileSystem,
++    ) -> Ext4Result<()> {
++        fs.datablock_cache.modify(device, self.physical, |block| {
++            block[self.offset..].copy_from_slice(&self.bytes)
++        })
++    }
++}
++
++/// Zeroes the retained EOF block's tail and returns what it replaced.
++pub(super) fn zero_mapped_inode_tail_with_undo<B: BlockIo>(
++    device: &mut Jbd2Dev<B>,
++    fs: &mut Ext4FileSystem,
++    inode_num: InodeNumber,
++    inode: &mut Ext4Inode,
++    size: u64,
++) -> Ext4Result<Option<ZeroedTail>> {
+     let block_size = fs.block_size();
+     let block_bytes = block_size as u64;
+     let tail_offset = size % block_bytes;
+     if tail_offset == 0 {
+-        return Ok(());
++        return Ok(None);
+     }
+ 
+     let logical = u32::try_from(size / block_bytes).map_err(|_| Ext4Error::file_too_large())?;
+     let Some(physical) = resolve_inode_block(fs, device, inode_num, inode, logical)? else {
+-        return Ok(());
++        return Ok(None);
+     };
+-    let tail_offset = usize::try_from(tail_offset).map_err(|_| Ext4Error::overflow())?;
+-    fs.datablock_cache
+-        .modify(device, physical, |block| block[tail_offset..].fill(0))
++    let offset = usize::try_from(tail_offset).map_err(|_| Ext4Error::overflow())?;
++    let mut bytes = Vec::new();
++    fs.datablock_cache.modify(device, physical, |block| {
++        bytes.extend_from_slice(&block[offset..]);
++        block[offset..].fill(0);
++    })?;
++    Ok(Some(ZeroedTail {
++        physical,
++        offset,
++        bytes,
++    }))
++}
++
++/// Puts a zeroed tail back when the shrink that zeroed it failed.
++///
++/// The shrink's own error is the one returned; a failure to restore the bytes
++/// cannot be reported in its place without hiding why the shrink failed.
++pub(super) fn restore_tail_on_error<B: BlockIo, T>(
++    device: &mut Jbd2Dev<B>,
++    fs: &mut Ext4FileSystem,
++    zeroed_tail: Option<ZeroedTail>,
++    result: Ext4Result<T>,
++) -> Ext4Result<T> {
++    if result.is_err()
++        && let Some(zeroed_tail) = zeroed_tail
++    {
++        let _ = zeroed_tail.restore(device, fs);
++    }
++    result
+ }
+diff --git a/fs/rsext4/tests/file_operations.rs b/fs/rsext4/tests/file_operations.rs
+index aa1043dbf..5c3c00b85 100644
+--- a/fs/rsext4/tests/file_operations.rs
++++ b/fs/rsext4/tests/file_operations.rs
+@@ -2067,6 +2067,43 @@ mod file_functional_tests {
+         assert_eq!(data, vec![1u8; 100]);
+     }
+ 
++    #[test]
++    fn failed_extent_truncate_restores_the_zeroed_tail_of_the_retained_block() {
++        let (device, fail_after_write_sector) =
++            MockBlockDevice::with_write_failure_handle(100 * 1024 * 1024);
++        let mut jbd2_dev = Jbd2Dev::initial_jbd2dev(0, device, true);
++
++        mkfs(&mut jbd2_dev).expect("mkfs failed");
++        let mut fs = Ext4FileSystem::mount(&mut jbd2_dev).expect("mount failed");
++        mkfile(&mut jbd2_dev, &mut fs, "/extent-truncate-tail", None, None)
++            .expect("file creation failed");
++        let original: Vec<u8> = (0..2 * BLOCK_SIZE).map(|i| (i % 251) as u8 + 1).collect();
++        write_file(
++            &mut jbd2_dev,
++            &mut fs,
++            "/extent-truncate-tail",
++            0,
++            &original,
++        )
++        .unwrap();
++        jbd2_dev.umount_commit().unwrap();
++        jbd2_dev.set_journal_use(false).unwrap();
++        let inode_table = fs.group_descs[0].inode_table();
++
++        fail_after_write_sector.set(Some(inode_table));
++        let error = truncate(&mut jbd2_dev, &mut fs, "/extent-truncate-tail", 100)
++            .expect_err("inode finalize failure must abort the extent truncate");
++        assert_eq!(error.kind(), Ext4ErrorKind::Io);
++
++        let data = read_file(&mut jbd2_dev, &mut fs, "/extent-truncate-tail").unwrap();
++        assert_eq!(data.len(), original.len());
++        let first_changed = data.iter().zip(&original).position(|(now, was)| now != was);
++        assert_eq!(
++            first_changed, None,
++            "a failed truncate must leave every byte of the file as it was"
++        );
++    }
++
+     #[test]
+     fn deleting_fast_symlink_does_not_treat_inline_bytes_as_indirect_blocks() {
+         let device = MockBlockDevice::new(100 * 1024 * 1024);
+-- 
+2.53.0
+
