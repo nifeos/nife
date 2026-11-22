@@ -1,5 +1,6 @@
 ---
 status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017, 1000
 decision_dependencies: none
@@ -219,7 +220,7 @@ The checks are in [the appendix](1108-socket-contract-outside-review/done-when.m
 - **Milestone 1017.** The crate moves in its order, and the move lane takes the items marked At the
   move. The move begins by proving the `std` farm builds from the pinned checkout. The review
   package `notes/crate-reviews/socket-contract.md` holds its own decisions, all ruled or built.
-- **Outstanding.** Item 7's loop proof is bounded at four candidates, as the appendix says.
+- **Recorded.** Item 7's loop proof is bounded at four candidates, as the appendix says.
 
 ## Index row
 
