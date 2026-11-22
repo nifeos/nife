@@ -14,7 +14,7 @@ serves the sink contract, and `sink_tests` proves it against a real RedoxFS imag
 the progenitor to build one per redirection and hands the child the endpoint. That does not work,
 and the reason is worth more than the feature.
 
-`filesystem_contract` shares one page between the FS server and its clients (`fs_service`'s
+`file_system_contract` shares one page between the FS server and its clients (`fs_service`'s
 `FILE_VA_CLIENT`; the server maps the same frame at `FILE_PAGE`). A client stages bytes or a name in
 that page and *then* calls, so its use of the page straddles the call boundary. Two client
 processes doing that at once race, and nothing in the contract orders them: there is no lock, and

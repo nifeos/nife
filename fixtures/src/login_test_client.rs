@@ -76,7 +76,7 @@ const FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_00f0_0000);
 // ..)` having already returned true), the same condition the hand-rolled comment this replaces
 // relied on (milestone 139 round 2; see `user_mode_runtime::mapped_window`).
 const FS_WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(FS_VA, filesystem_contract::PAGE_BYTES as u64) };
+    unsafe { MappedWindow::new(FS_VA, file_system_contract::PAGE_BYTES as u64) };
 
 /// **Present the credential and prove what came back.** The whole of what every credential case
 /// needs: two identities' correct credentials, a wrong secret, an identity with no home subtree, and
@@ -156,7 +156,7 @@ pub const RPT_LOGGED_OUT: u64 = login_contract::LOGGED_OUT;
 /// capabilities this process proved actually work, rather than merely that they arrived.
 pub const F_DIR_WORKS: u64 = 1 << 0;
 pub const F_BUDGET_WORKS: u64 = 1 << 1;
-/// **Set when [`filesystem_fixture::tree::INNER`] is confirmed absent** from the granted directory:
+/// **Set when [`file_system_fixture::tree::INNER`] is confirmed absent** from the granted directory:
 /// that name exists only in the old, shared fixture subtree every identity used to be attenuated to.
 /// Its absence is this client's own proof (not merely an assertion) that the identity this run
 /// authenticated as is
@@ -417,9 +417,9 @@ fn prove_the_directory(behavior: u64, identity: &[u8], dir_ep: u64, region: u64)
     let mut hint = 0u64;
     let (r0, _) = call(
         dir_ep,
-        filesystem_contract::fs::request(
-            filesystem_contract::fs::READDIR,
-            filesystem_contract::fs::ROOT,
+        file_system_contract::file_system::request(
+            file_system_contract::file_system::READDIR,
+            file_system_contract::file_system::ROOT,
             0,
         ),
         0,
@@ -439,7 +439,7 @@ fn prove_the_directory(behavior: u64, identity: &[u8], dir_ep: u64, region: u64)
                 if write_marker(dir_ep, identity) {
                     flags |= F_MARKER_WRITTEN;
                 }
-                if is_absent(dir_ep, filesystem_fixture::tree::INNER) {
+                if is_absent(dir_ep, file_system_fixture::tree::INNER) {
                     flags |= F_NOT_SHARED_SUBTREE;
                 }
             }
@@ -586,20 +586,35 @@ fn schedule(behaviour: u64, budget: u64, dir: u64) -> u64 {
 /// the root of the delegated directory, which is the identity's own subtree), replacing whatever
 /// was there. `true` when every byte landed.
 fn store_schedule(dir: u64, doc: &[u8]) -> bool {
-    use filesystem_contract::fs;
+    use file_system_contract::file_system;
     let name = timetable_store::SCHEDULE_FILE_NAME.as_bytes();
     put_page(name);
-    let (mut h, _) = call(dir, fs::request(fs::CREATE, fs::ROOT, name.len() as u64), 0);
+    let (mut h, _) = call(
+        dir,
+        file_system::request(file_system::CREATE, file_system::ROOT, name.len() as u64),
+        0,
+    );
     if (h as i64) < 0 {
         put_page(name);
-        h = call(dir, fs::request(fs::OPEN, fs::ROOT, name.len() as u64), 0).0;
-        if (h as i64) < 0 || (call(dir, fs::request(fs::TRUNCATE, h, 0), 0).0 as i64) < 0 {
+        h = call(
+            dir,
+            file_system::request(file_system::OPEN, file_system::ROOT, name.len() as u64),
+            0,
+        )
+        .0;
+        if (h as i64) < 0
+            || (call(dir, file_system::request(file_system::TRUNCATE, h, 0), 0).0 as i64) < 0
+        {
             return false;
         }
     }
     put_page(doc);
-    let (w, _) = call(dir, fs::request(fs::WRITE, h, doc.len() as u64), 0);
-    let _ = call(dir, fs::request(fs::CLOSE, h, 0), 0);
+    let (w, _) = call(
+        dir,
+        file_system::request(file_system::WRITE, h, doc.len() as u64),
+        0,
+    );
+    let _ = call(dir, file_system::request(file_system::CLOSE, h, 0), 0);
     w as i64 == doc.len() as i64
 }
 
@@ -632,15 +647,15 @@ fn get_page(n: usize, out: &mut [u8]) {
 
 /// `CREATE` [`MARKER_NAME`] under `dir` and `WRITE` `content` into it, then `CLOSE` the handle.
 /// `true` only if every step succeeded. Create is create, not create-or-open
-/// (`filesystem_contract::fs::CREATE`'s own contract), so this fails loudly rather than overwriting a marker a
+/// (`file_system_contract::file_system::CREATE`'s own contract), so this fails loudly rather than overwriting a marker a
 /// previous run left behind, which would silently defeat the isolation proof this behaviour exists
 /// for.
 fn write_marker(dir: u64, content: &[u8]) -> bool {
     put_page(MARKER_NAME.as_bytes());
     let (h, _) = call(
         dir,
-        filesystem_contract::fs::request(
-            filesystem_contract::fs::CREATE,
+        file_system_contract::file_system::request(
+            file_system_contract::file_system::CREATE,
             0,
             MARKER_NAME.len() as u64,
         ),
@@ -652,26 +667,34 @@ fn write_marker(dir: u64, content: &[u8]) -> bool {
     put_page(content);
     let (w, _) = call(
         dir,
-        filesystem_contract::fs::request(filesystem_contract::fs::WRITE, h, content.len() as u64),
+        file_system_contract::file_system::request(
+            file_system_contract::file_system::WRITE,
+            h,
+            content.len() as u64,
+        ),
         0,
     );
     let ok = w as i64 == content.len() as i64;
     let _ = call(
         dir,
-        filesystem_contract::fs::request(filesystem_contract::fs::CLOSE, h, 0),
+        file_system_contract::file_system::request(file_system_contract::file_system::CLOSE, h, 0),
         0,
     );
     ok
 }
 
 /// `true` if `OPEN`ing `name` under `dir` is refused. The expected answer for a name that lives only
-/// in the old, shared fixture subtree ([`filesystem_fixture::tree::INNER`]) when `dir` is a genuinely
+/// in the old, shared fixture subtree ([`file_system_fixture::tree::INNER`]) when `dir` is a genuinely
 /// different, identity-scoped one.
 fn is_absent(dir: u64, name: &str) -> bool {
     put_page(name.as_bytes());
     let (r0, _) = call(
         dir,
-        filesystem_contract::fs::request(filesystem_contract::fs::OPEN, 0, name.len() as u64),
+        file_system_contract::file_system::request(
+            file_system_contract::file_system::OPEN,
+            0,
+            name.len() as u64,
+        ),
         0,
     );
     (r0 as i64) < 0
@@ -685,8 +708,8 @@ fn read_marker(dir: u64) -> Option<u64> {
     put_page(MARKER_NAME.as_bytes());
     let (h, _) = call(
         dir,
-        filesystem_contract::fs::request(
-            filesystem_contract::fs::OPEN,
+        file_system_contract::file_system::request(
+            file_system_contract::file_system::OPEN,
             0,
             MARKER_NAME.len() as u64,
         ),
@@ -697,12 +720,12 @@ fn read_marker(dir: u64) -> Option<u64> {
     }
     let (n, _) = call(
         dir,
-        filesystem_contract::fs::request(filesystem_contract::fs::READ, h, 16),
+        file_system_contract::file_system::request(file_system_contract::file_system::READ, h, 16),
         0,
     );
     let _ = call(
         dir,
-        filesystem_contract::fs::request(filesystem_contract::fs::CLOSE, h, 0),
+        file_system_contract::file_system::request(file_system_contract::file_system::CLOSE, h, 0),
         0,
     );
     if (n as i64) < 0 {
@@ -725,9 +748,9 @@ fn teardown_directory(dir: u64, region: u64) -> u64 {
     };
     let (r0, _) = call(
         dir,
-        filesystem_contract::fs::request(
-            filesystem_contract::fs::READDIR,
-            filesystem_contract::fs::ROOT,
+        file_system_contract::file_system::request(
+            file_system_contract::file_system::READDIR,
+            file_system_contract::file_system::ROOT,
             0,
         ),
         0,

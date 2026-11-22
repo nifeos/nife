@@ -17,7 +17,7 @@ it. Written by the milestone 64 (enough std to run somebody else's crate) lane
 (`milestone/64-std-filesystem-shim`), from milestone 64's block.
 
 Every option that closes this puts something on the file contract, which two
-programs agree on (`crates/filesystem_contract`, the FS server, every caretaker and the `std` PAL),
+programs agree on (`crates/file_system_contract`, the FS server, every caretaker and the `std` PAL),
 and so is an architect's. Declining is also an answer, and the PAL already implements it.
 
 In brief. The three mtime verbs milestone 47 (navigation and naming) added for `touch` (`GETMTIME`,
@@ -64,8 +64,8 @@ reachability probe, and a reply shape change there is the one place a mistake wo
 provisional). Closes both halves, and it is the shape POSIX kept (`stat`/`fstat`, `utimensat`/
 `futimens`). **The setter runs straight into §112**, which is the finding that makes this a real
 fork rather than a binding: a file handle is hard-attenuated to `READ | WRITE` the moment it is
-opened (`Server::open_file_at`). So it can never carry `dir::SETTIME`, and the arbitrary-time
-authority has nothing to be checked against. Either file handles grow a `SETTIME` bit (a rights
+opened (`Server::open_file_at`). So it can never carry `dir::SET_MODIFICATION_TIME_AT`, and the arbitrary-time
+authority has nothing to be checked against. Either file handles grow a `SET_MODIFICATION_TIME_AT` bit (a rights
 change on every open, and the caretakers' `POLICY` table learns a new row per verb). Or
 `FSETMTIME_AT` is refused on every handle and only `FSETMTIME` (the server's own "now") is offered,
 which is not what `File::set_modified(t)` asks for.
@@ -84,15 +84,15 @@ that a caller cannot get another way except restoring a timestamp through a hand
    mtime verbs are the exception, deliberately, because `touch` never opens what it acts on.
 3. Prior art: POSIX `fstat`/`futimens`; WASI's `fd_filestat_get`/`fd_filestat_set_times`, which
    `cap-std` binds to, are handle-first. Recalled rather than re-read for this proposal.
-4. Is the premise true? Checked: `filesystem_contract::fs::GETMTIME`'s doc says name-taking on
+4. Is the premise true? Checked: `file_system_contract::file_system::GETMTIME`'s doc says name-taking on
    purpose, `redoxfs_server`'s dispatch reads the name from the page, and the per-file caretaker
-   refuses all three with `ENOTDIR` (`filesystem_contract::grant::POLICY`).
+   refuses all three with `ENOTDIR` (`file_system_contract::grant::POLICY`).
 5. Cost, measured: (a) is a line each in the server and the PAL plus a relay in every caretaker. (b) is three
    opcodes, three verb-table rows, three caretaker policy rows, server methods and host tests, plus
-   the `SETTIME` question, which is the expensive part and is not code.
+   the `SET_MODIFICATION_TIME_AT` question, which is the expensive part and is not code.
 6. **Reversibility**: (c) is fully reversible. (a) and (b) are wire changes and are not.
 7. Same cost? If (b) cost the same as (c), (b)'s getter would still win and its setter would
-   still stall on `SETTIME`. The recommendation below is not about effort.
+   still stall on `SET_MODIFICATION_TIME_AT`. The recommendation below is not about effort.
 
 ## Recommendation, and what it is not
 

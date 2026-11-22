@@ -4,7 +4,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
 
 Verified firsthand on a fresh shallow clone of `main` (`137639a3`), inside a memory-capped scope:
 
-- `cargo test -p filesystem_contract`: 58 unit tests and 6 documentation tests pass on the
+- `cargo test -p file_system_contract`: 58 unit tests and 6 documentation tests pass on the
   pinned nightly. The same, copied out of the workspace, passes on Rust 1.88, the manifest's
   `rust-version`, and on stable 1.99.1.
 - `cargo clippy --all-targets -- -D warnings` is clean on the pinned nightly inside nife and red
@@ -31,7 +31,7 @@ Verified firsthand on a fresh shallow clone of `main` (`137639a3`), inside a mem
   `unsafe_scan` finds no `unsafe`.
 - nife's externalization lint (`helpers/lint_externalized_crates.py`): 21 hits in the crate, 7
   `nife-word` and 14 `consumer-name`, at the waiver ceiling.
-- nife's naming worklist (`helpers/name_checks.py crates/filesystem_contract`): 10 unratified
+- nife's naming worklist (`helpers/name_checks.py crates/file_system_contract`): 10 unratified
   wire-or-format names failing `spelled-out`.
 - Every caller of the crate's decoders and packers in the tree, by grep, to see which invariants
   the callers hold that the crate does not.

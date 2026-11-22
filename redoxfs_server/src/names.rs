@@ -68,7 +68,7 @@ pub struct NameCopy {
 
 /// The longest name a [`NameCopy`] holds: one block, the length `Server::handle` clamps every
 /// name to, so a copy from the window never truncates.
-const NAME_MAXIMUM: usize = filesystem_contract::block::BLOCK_BYTES;
+const NAME_MAXIMUM: usize = file_system_contract::block::BLOCK_BYTES;
 
 impl NameCopy {
     /// Copy `src` into a new value and validate UTF-8 on the copy. `EINVAL` for invalid UTF-8 or a

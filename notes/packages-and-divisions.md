@@ -109,7 +109,7 @@ packages, checked once and then pinned by digest, and it keeps them out of the b
 basalt's package build (`recipes/ripgrep.toml` and `helpers/packages.py` in `nifeos/basalt`) is
 the one out-of-tree build. It needs the target file, the linker
 script, the patched `nife-dev` toolchain made by `xtask std-src`, and `-Zbuild-std`. The `std`
-overlay reaches six crates: `abi`, `user_mode_runtime`, `filesystem_contract`,
+overlay reaches six crates: `abi`, `user_mode_runtime`, `file_system_contract`,
 `byte_sink_contract`, `clock_contract` and `counter_frequency_contract`. With their own
 dependencies the closure is ten crates and about 24,400 lines, plus the 4,486-line overlay. That
 closure is the SDK. It is small, and it sits inside the two cleanest divisions.

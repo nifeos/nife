@@ -27,13 +27,13 @@ grant_contract = { version = "0.1.0", path = "../grant_contract" }
 # it, so the shell and the std PAL that reads the page share one definition.
 program_argument_contract = { version = "0.1.0", path = "../program_argument_contract" }
 
-# `filesystem_contract` is a DEV dependency only, and deliberately: the shell must be able to check a command
+# `file_system_contract` is a DEV dependency only, and deliberately: the shell must be able to check a command
 # line without linking the filesystem contract. It is here so one host test can pin the grant name
 # limit against the contract that actually carries it, which is what makes the duplicated constant
 # safe rather than a drift waiting to happen.
 [dev-dependencies]
-filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
-filesystem_fixture = { version = "0.1.0", path = "../filesystem_fixture" }
+file_system_contract = { version = "0.1.0", path = "../file_system_contract" }
+file_system_fixture = { version = "0.1.0", path = "../file_system_fixture" }
 # A dev dependency only, and the one edge that points back: the planner's tests plan the lines a
 # person types against the manifests nife's programs ship with. The library links no program table;
 # its tests pass a row's manifest in, the way a caller does. Nothing here may hand a type of this

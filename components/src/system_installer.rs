@@ -1,6 +1,6 @@
 //! **`system_installer`**: what a booted stick runs to put this system on the machine's own disk.
 //! It is the most destructive program in the tree, so what stands between a stranger and a wiped
-//! disk is its authority, not its judgement: one disk as a `filesystem_contract::block` endpoint,
+//! disk is its authority, not its judgement: one disk as a `file_system_contract::block` endpoint,
 //! with no path to type, and an entropy endpoint so GPT ids are drawn (no entropy, no write). It is
 //! spawned only after a person answers a question naming the disk, asked by
 //! `kernel/src/user/install_service.rs`, because a confirmation it printed itself could be skipped.
@@ -31,7 +31,8 @@
 
 use boot_slot::{SlotHeader, State};
 use file_allocation_table as fat;
-use filesystem_contract::{block, request};
+use file_system_contract::block::LOGICAL_BLOCK_BYTES;
+use file_system_contract::{block, request};
 use globally_unique_identifier_partition_table::entry::Entry;
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
@@ -75,11 +76,8 @@ pub const ROLE_CONFIRM: u64 = 2;
 /// The transfer unit of the block service: one filesystem block per request.
 const TRANSFER: u64 = block::BLOCK_BYTES as u64;
 
-/// The logical block size a GPT counts in, from the blk wire's own unit. See BUGS.
-const LBA: u64 = block::SECTOR_BYTES;
-
 /// Logical blocks per transfer block: eight 512-byte sectors in one 4096-byte request.
-const SECTORS_PER_TRANSFER: u64 = TRANSFER / LBA;
+const SECTORS_PER_TRANSFER: u64 = TRANSFER / LOGICAL_BLOCK_BYTES;
 
 /// **The alignment every partition starts on**, in logical blocks: 1 MiB, which is what every real
 /// partitioning tool uses and what keeps a partition's first byte on an erase block of anything
@@ -202,7 +200,7 @@ fn start(role: u64, a1: u64, _a2: u64) -> ! {
 /// A disk this cannot read, or one with no table, is [`R_EMPTY`]: "there is no nife here" is the
 /// honest answer to both, and the caller's next step after either is to ask a person.
 fn survey() -> ! {
-    let size = call(BLK, request(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
     if size <= 0 {
         send(REPORT, R_EMPTY, 0, 0);
         user_mode_runtime::exit()
@@ -214,8 +212,8 @@ fn survey() -> ! {
     }
     let head: &[u8] = primary();
     let Ok(table) = PartitionTable::parse(
-        &head[LBA as usize..2 * LBA as usize],
-        &head[2 * LBA as usize..],
+        &head[LOGICAL_BLOCK_BYTES as usize..2 * LOGICAL_BLOCK_BYTES as usize],
+        &head[2 * LOGICAL_BLOCK_BYTES as usize..],
     ) else {
         send(REPORT, R_EMPTY, 0, 0);
         user_mode_runtime::exit()
@@ -271,12 +269,12 @@ const MAXIMUM_PARTITIONS: usize = 16;
 /// complete before the primary is touched. See notes/installing/system-installer.md; nothing yet
 /// reads the backup when the primary fails to parse (`uefi_loader::chooser`'s `BUGS`).
 fn confirm(slot: u64) -> ! {
-    let size = call(BLK, request(block::SIZE), 0).0 as i64;
-    if size <= 0 || !(size as u64).is_multiple_of(LBA) {
+    let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
+    if size <= 0 || !(size as u64).is_multiple_of(LOGICAL_BLOCK_BYTES) {
         send(REPORT, R_DISK_FAILED, 1, size as u64);
         user_mode_runtime::exit()
     }
-    let block_count = size as u64 / LBA;
+    let block_count = size as u64 / LOGICAL_BLOCK_BYTES;
 
     if !read_primary() {
         send(REPORT, R_DISK_FAILED, 2, 0);
@@ -294,8 +292,8 @@ fn confirm(slot: u64) -> ! {
     {
         let head: &[u8] = primary();
         let Ok(table) = PartitionTable::parse(
-            &head[LBA as usize..2 * LBA as usize],
-            &head[2 * LBA as usize..],
+            &head[LOGICAL_BLOCK_BYTES as usize..2 * LOGICAL_BLOCK_BYTES as usize],
+            &head[2 * LOGICAL_BLOCK_BYTES as usize..],
         ) else {
             send(REPORT, R_DISK_FAILED, 3, 0);
             user_mode_runtime::exit()
@@ -336,14 +334,18 @@ fn confirm(slot: u64) -> ! {
     parts[at].attributes = state.confirmed().into_attributes(parts[at].attributes);
 
     let array = array();
-    let Ok(table) =
-        PartitionTable::create(disk_guid, LBA as usize, block_count, &parts[..used], array)
-    else {
+    let Ok(table) = PartitionTable::create(
+        disk_guid,
+        LOGICAL_BLOCK_BYTES as usize,
+        block_count,
+        &parts[..used],
+        array,
+    ) else {
         send(REPORT, R_DISK_FAILED, 4, 0);
         user_mode_runtime::exit()
     };
 
-    let mut block = [0u8; LBA as usize];
+    let mut block = [0u8; LOGICAL_BLOCK_BYTES as usize];
     let entry_array: &[u8] = table.entry_array();
 
     // The backup, complete, before the primary is touched; then the primary, its header last so a
@@ -386,12 +388,12 @@ fn confirm(slot: u64) -> ! {
 /// The whole of it, in the order that makes a refusal cheap: ask the disk its size, lay the
 /// arithmetic out, draw the randomness, and only then write.
 fn install(boot_file_len: u64) -> ! {
-    let size = call(BLK, request(block::SIZE), 0).0 as i64;
-    if size <= 0 || !(size as u64).is_multiple_of(LBA) {
+    let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
+    if size <= 0 || !(size as u64).is_multiple_of(LOGICAL_BLOCK_BYTES) {
         send(REPORT, R_DISK_FAILED, 1, size as u64);
         user_mode_runtime::exit()
     }
-    let block_count = size as u64 / LBA;
+    let block_count = size as u64 / LOGICAL_BLOCK_BYTES;
 
     let Some(layout) = Layout::fit(block_count) else {
         send(REPORT, R_TOO_SMALL, size as u64, 0);
@@ -572,12 +574,18 @@ fn write_table(
     }
 
     let array = array();
-    let table = PartitionTable::create(guids[0], LBA as usize, block_count, &parts, array)
-        .map_err(|_| 12u64)?;
+    let table = PartitionTable::create(
+        guids[0],
+        LOGICAL_BLOCK_BYTES as usize,
+        block_count,
+        &parts,
+        array,
+    )
+    .map_err(|_| 12u64)?;
 
     // One logical block of scratch. Built and written one at a time: the protective MBR, the two
     // headers and the entry array are each at a known LBA.
-    let mut block = [0u8; LBA as usize];
+    let mut block = [0u8; LOGICAL_BLOCK_BYTES as usize];
     let entry_array: &[u8] = table.entry_array();
     let steps: [(u64, Option<&[u8]>); 5] = [
         (0, None),
@@ -634,8 +642,8 @@ fn write_efi_system_partition(
             // `slot` is below the number of sectors in one.
             let out = unsafe {
                 core::slice::from_raw_parts_mut(
-                    (BLK_PAGE as *mut u8).add(slot as usize * LBA as usize),
-                    LBA as usize,
+                    (BLK_PAGE as *mut u8).add(slot as usize * LOGICAL_BLOCK_BYTES as usize),
+                    LOGICAL_BLOCK_BYTES as usize,
                 )
             };
             // Past the end of the metadata the volume answers `false` and the sector stays zero,
@@ -738,7 +746,7 @@ fn copy_boot_file(first_block: u64, boot_file_len: u64, step: u64) -> Result<(),
 fn write_at(first_logical_block_address: u64, data: &[u8]) -> bool {
     let mut done = 0usize;
     while done < data.len() {
-        let byte_at = first_logical_block_address * LBA + done as u64;
+        let byte_at = first_logical_block_address * LOGICAL_BLOCK_BYTES + done as u64;
         let block = byte_at / TRANSFER;
         let offset = (byte_at % TRANSFER) as usize;
         let n = core::cmp::min(block::BLOCK_BYTES - offset, data.len() - done);

@@ -36,8 +36,8 @@ interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfac
 # The filesystem contract, for exactly one word: the readiness sentinel a `fs_subtree_caretaker`
 # answers a directory grant's descent with (milestone 31 phase 3). An in-tree protocol crate rather
 # than a constant copied here, which is rule 7: what two binaries agree on is a crate. It brings
-# nothing with it (filesystem_contract has no non-dev dependencies of its own).
-filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
+# nothing with it (file_system_contract has no non-dev dependencies of its own).
+file_system_contract = { version = "0.1.0", path = "../file_system_contract" }
 # The terminal contract's framing, for the one sentence init prints (`proto::OPERATION_WRITE`).
 terminal_contract = { version = "0.1.0", path = "../terminal_contract" }
 # The slot order `terminal_supervisor` is endowed in, which init builds it with.

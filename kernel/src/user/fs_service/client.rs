@@ -14,10 +14,10 @@ use super::*;
 pub(super) const CLIENT_EXTRA_STACK: usize = 8;
 
 // The slot [`spawn_fs_client`] grants a verdict endpoint at is the one `rm` sends on.
-const _: () = assert!(filesystem_contract::rm::VERDICT_SLOT == 2);
+const _: () = assert!(file_system_contract::rm::VERDICT_SLOT == 2);
 
 /// The pages a granted client's endpoints are retyped from: its caretaker's two, the program's
-/// report, and its verdict endpoint when it asks for one (`rm`'s, `filesystem_contract::rm`). One
+/// report, and its verdict endpoint when it asks for one (`rm`'s, `file_system_contract::rm`). One
 /// page per endpoint, so a grant's whole wiring goes back with one region.
 pub(super) const GRANT_ENDPOINT_PAGES: u64 = 4;
 
@@ -26,7 +26,7 @@ pub(super) const GRANT_ENDPOINT_PAGES: u64 = 4;
 ///
 /// `role`, `arg` and `arg2` are the client's three `START` words. `report` is the caller's, so a
 /// granted client's comes out of the region its caretaker's endpoints do and goes back with them.
-/// `verdict`, when given, is granted at slot 2 (`filesystem_contract::rm::VERDICT_SLOT`), the
+/// `verdict`, when given, is granted at slot 2 (`file_system_contract::rm::VERDICT_SLOT`), the
 /// endpoint `rm` sends its exit status on after its report ends; with `None` slot 2 stays empty.
 ///
 /// `extra_stack` is pages below the one `run` maps, at most [`CLIENT_EXTRA_STACK`]. A shell's need
@@ -55,7 +55,7 @@ pub(crate) fn spawn_fs_client(
             flags: Flags::user_data(),
         }; FILE_PAGES + CLIENT_EXTRA_STACK];
         // The whole channel: the throughput benchmark comes through here, and a client may not ask
-        // for more than it mapped (`filesystem_contract::fs::TRANSFER_PAGES`).
+        // for more than it mapped (`file_system_contract::file_system::TRANSFER_PAGES`).
         let n = map_channel(&mut maps, FILE_VA_CLIENT, file_shared, FILE_PAGES);
         for (k, m) in maps[n..n + extra_stack].iter_mut().enumerate() {
             m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
@@ -73,7 +73,7 @@ pub(crate) fn spawn_fs_client(
             Spawn {
                 arg0: role,
                 arg1: arg,
-                // `rm` is started as a grant is (`filesystem_contract::grant`); others pass zero.
+                // `rm` is started as a grant is (`file_system_contract::grant`); others pass zero.
                 arg2,
                 grants: &grants[..if verdict.is_some() { 3 } else { 2 }],
                 maps: &maps[..n + extra_stack],
@@ -132,13 +132,13 @@ pub fn wait_for_service(readiness: Readiness) {
     if let Some(blk_ready) = blk_ready {
         assert_eq!(
             crate::sched::ipc_receive(blk_ready)[0],
-            filesystem_contract::READY,
+            file_system_contract::READY,
             "the block server did not bring the RedoxFS device up",
         );
     }
     assert_eq!(
         crate::sched::ipc_receive(fs_ready)[0],
-        filesystem_contract::READY,
+        file_system_contract::READY,
         "the FS server did not open the RedoxFS image",
     );
 }
@@ -154,7 +154,7 @@ pub fn wait_for_service(readiness: Readiness) {
 pub(super) fn wait_for_caretaker(caretaker_ready: RendezvousId) {
     assert_eq!(
         crate::sched::ipc_receive(caretaker_ready)[0],
-        filesystem_contract::READY,
+        file_system_contract::READY,
         "the caretaker could not open what it was granted, so there is nothing to attenuate",
     );
 }

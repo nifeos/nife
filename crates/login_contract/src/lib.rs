@@ -389,7 +389,7 @@ pub const DURABLE_WINDOW_SLOT: u64 = 8;
 /// progenitor hands jobs behind a directory grant the others, and the kernel harness claims this
 /// one for `login`. One window, so one durable session at a time reads the store
 /// ([`durable::sessions_held`] is bounded by it too). Provisional.
-pub const DURABLE_WINDOW: u64 = filesystem_contract::fs::CLIENT_WINDOWS as u64 - 1;
+pub const DURABLE_WINDOW: u64 = file_system_contract::file_system::CLIENT_WINDOWS as u64 - 1;
 
 /// **How `login` starts a `user_timetable_keeper`** (milestone 152, S1 of 2026-09-26), in this crate for
 /// the reason the two constants above are: `components/src/login.rs` and
@@ -524,7 +524,7 @@ pub mod durable {
     pub enum RederiveSkip {
         /// No free slot: as many sessions are already kept as this process can hold.
         TableFull = 0,
-        /// The name does not fit `filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES`, or this identity already
+        /// The name does not fit `file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES`, or this identity already
         /// has a session kept.
         Identity = 1,
         /// The stored schedule is missing or empty: a stale manifest line.
@@ -762,7 +762,7 @@ mod tests {
     fn the_durable_window_is_the_last_and_the_budgets_are_the_documented_sums() {
         assert_eq!(
             DURABLE_WINDOW as usize + 1,
-            filesystem_contract::fs::CLIENT_WINDOWS
+            file_system_contract::file_system::CLIENT_WINDOWS
         );
         assert_eq!(durable::USER_TIMETABLE_KEEPER_REGION_PAGES, 320);
         assert_eq!(durable::BUDGET_PAGES, 64 + 320 + 416);

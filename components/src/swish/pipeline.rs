@@ -120,7 +120,7 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
 /// Mint the pipes, open the files, spawn the stages, feed the head if the shell is the producer, and
 /// deliver what comes out of the tail. Everything above this decided; this moves capabilities.
 ///
-/// The shell itself backs a `>` and a `<`, because `filesystem_contract`'s one shared page cannot
+/// The shell itself backs a `>` and a `<`, because `file_system_contract`'s one shared page cannot
 /// serve two clients (§55 (the file behind a `>` is the shell itself)); a redirected child still
 /// holds only a rendezvous with `WRITE`. See notes/pipes.md and notes/pipes/the-shell-side.md.
 #[allow(clippy::too_many_arguments)] // one parameter per operator, and there are four of them now
@@ -648,10 +648,16 @@ fn open_at(
     at: DirectoryPath,
     tmp: &mut [u64; grant_navigation::MAXIMUM_DEPTH],
 ) -> Result<(u64, usize), Say> {
-    let mut handle = fs::ROOT;
+    let mut handle = file_system::ROOT;
     let mut n = 0usize;
     for level in 0..at.depth() {
-        let r = nav.name_call_in(t, fs::OPENDIR, handle, at.component(level), t.rights);
+        let r = nav.name_call_in(
+            t,
+            file_system::OPENDIR,
+            handle,
+            at.component(level),
+            t.rights,
+        );
         if r < 0 {
             for h in tmp.iter().take(n) {
                 nav.close_in(t, *h);
@@ -678,19 +684,29 @@ fn open_sink(nav: &mut Nav, g: grant_plan::FileGrant, mode: line::Mode) -> Resul
     let (dir_handle, opened) = open_at(nav, t, g.directory, &mut tmp)?;
     let name = g.name.as_bytes();
     let dir = t.slot;
-    let mut handle = nav.name_call_in(t, fs::CREATE, dir_handle, name, 0);
+    let mut handle = nav.name_call_in(t, file_system::CREATE, dir_handle, name, 0);
     // A file this shell just created is empty, so neither operator has anything to do to it. Only
     // the name that was already there needs a decision.
     let mut off = 0u64;
     if handle < 0 {
-        handle = nav.name_call_in(t, fs::OPEN, dir_handle, name, 0);
+        handle = nav.name_call_in(t, file_system::OPEN, dir_handle, name, 0);
         if handle >= 0 {
             let r = match mode {
                 line::Mode::Truncate => {
-                    call(dir, fs::request(fs::TRUNCATE, handle as u64, 0), 0).0 as i64
+                    call(
+                        dir,
+                        file_system::request(file_system::TRUNCATE, handle as u64, 0),
+                        0,
+                    )
+                    .0 as i64
                 }
                 line::Mode::Append => {
-                    let size = call(dir, fs::request(fs::FSTAT, handle as u64, 0), 0).0 as i64;
+                    let size = call(
+                        dir,
+                        file_system::request(file_system::FSTAT, handle as u64, 0),
+                        0,
+                    )
+                    .0 as i64;
                     if size >= 0 {
                         off = size as u64;
                     }
@@ -727,7 +743,7 @@ pub(super) fn open_source(nav: &mut Nav, g: grant_plan::FileGrant) -> Result<Fil
     let t = nav.tree(g.side);
     let mut tmp = [0u64; grant_navigation::MAXIMUM_DEPTH];
     let (dir_handle, opened) = open_at(nav, t, g.directory, &mut tmp)?;
-    let handle = nav.name_call_in(t, fs::OPEN, dir_handle, g.name.as_bytes(), 0);
+    let handle = nav.name_call_in(t, file_system::OPEN, dir_handle, g.name.as_bytes(), 0);
     for h in tmp.iter().take(opened) {
         nav.close_in(t, *h);
     }
@@ -767,7 +783,7 @@ impl FileOut {
         put_page(&self.buf[..self.n]);
         let r = call(
             self.dir,
-            fs::request(fs::WRITE, self.handle, self.n as u64),
+            file_system::request(file_system::WRITE, self.handle, self.n as u64),
             self.off,
         )
         .0 as i64;
@@ -806,7 +822,11 @@ impl ByteOut for FileOut {
 
     fn finish(&mut self) {
         self.flush();
-        call(self.dir, fs::request(fs::CLOSE, self.handle, 0), 0);
+        call(
+            self.dir,
+            file_system::request(file_system::CLOSE, self.handle, 0),
+            0,
+        );
     }
 }
 
@@ -826,7 +846,7 @@ impl FileIn {
         loop {
             let got = call(
                 self.dir,
-                fs::request(fs::READ, self.handle, FILE_CHUNK as u64),
+                file_system::request(file_system::READ, self.handle, FILE_CHUNK as u64),
                 off,
             )
             .0 as i64;
@@ -844,7 +864,11 @@ impl FileIn {
         // End of stream whatever happened, for `feed`'s reason: the reader is a process blocked in a
         // receive, and a read error is not a reason to leave it there.
         w.finish();
-        call(self.dir, fs::request(fs::CLOSE, self.handle, 0), 0);
+        call(
+            self.dir,
+            file_system::request(file_system::CLOSE, self.handle, 0),
+            0,
+        );
     }
 }
 

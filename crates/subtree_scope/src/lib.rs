@@ -21,8 +21,8 @@
 
 #![no_std]
 
-use filesystem_contract::directory::{self, Rights};
-use filesystem_contract::fs::ROOT;
+use file_system_contract::directory::{self, Rights};
+use file_system_contract::file_system::ROOT;
 
 /// Why a path or a request was refused. Each maps to one errno at the server's boundary
 /// ([`Refusal::errno`]); the crate itself speaks no wire.
@@ -59,7 +59,7 @@ impl Refusal {
     ///
     /// The numbers are the contract's own constants where it names them
     /// ([`directory::EINVAL`], [`directory::ENOTDIR`], [`directory::EISDIR`], [`directory::EPERM`] and
-    /// [`filesystem_contract::verb::file_grant::EBADF`]), so a change there reaches this table. The
+    /// [`file_system_contract::verb::file_grant::EBADF`]), so a change there reaches this table. The
     /// contract carries no constant for `ENOENT`, `ELOOP` or `EXDEV`, and those three are the
     /// Linux numbers written here, which is the numbering the whole contract uses.
     pub const fn errno(self) -> i32 {
@@ -71,7 +71,7 @@ impl Refusal {
             Refusal::Narrowed | Refusal::Refused => directory::EPERM,
             Refusal::Symlink => 40,       // ELOOP
             Refusal::MountCrossing => 18, // EXDEV
-            Refusal::NotYours => filesystem_contract::verb::file_grant::EBADF,
+            Refusal::NotYours => file_system_contract::verb::file_grant::EBADF,
         }
     }
 }
@@ -132,7 +132,7 @@ pub fn check_path(path: &[u8]) -> Result<(), Refusal> {
 /// through the link is refused:
 ///
 /// ```
-/// use filesystem_contract::directory::{self, Rights};
+/// use file_system_contract::directory::{self, Rights};
 /// use subtree_scope::{walk, NodeKind, Refusal};
 ///
 /// let lookup = |node: u32, name: &[u8]| match (node, name) {
@@ -141,14 +141,14 @@ pub fn check_path(path: &[u8]) -> Result<(), Refusal> {
 ///     (1, b"b") => Ok((2, NodeKind::Directory)),
 ///     _ => Err(Refusal::NotFound),
 /// };
-/// let all = Rights::root(directory::ALL);
+/// let all = Rights::root(directory::rights::ALL);
 ///
-/// let (node, _rights, last) = walk(0, all, b"a/b/x", directory::READ, lookup).unwrap();
+/// let (node, _rights, last) = walk(0, all, b"a/b/x", directory::rights::READ, lookup).unwrap();
 /// assert_eq!((node, last), (2, &b"x"[..]));
 ///
-/// assert_eq!(walk(0, all, b"s/x", directory::READ, lookup).unwrap_err(), Refusal::Symlink);
-/// let read_only = Rights::root(directory::DESCEND | directory::READ); // cannot be narrowed into WRITE
-/// let narrowed = walk(0, read_only, b"a/x", directory::WRITE, lookup);
+/// assert_eq!(walk(0, all, b"s/x", directory::rights::READ, lookup).unwrap_err(), Refusal::Symlink);
+/// let read_only = Rights::root(directory::rights::DESCEND | directory::rights::READ); // cannot be narrowed into WRITE
+/// let narrowed = walk(0, read_only, b"a/x", directory::rights::WRITE, lookup);
 /// assert_eq!(narrowed.unwrap_err(), Refusal::Narrowed);
 /// ```
 pub fn walk<N: Copy, E: From<Refusal>>(
@@ -165,12 +165,12 @@ pub fn walk<N: Copy, E: From<Refusal>>(
     };
     let (mut node, mut rights) = (start, rights);
     for step in directories.split(|&b| b == b'/') {
-        if !rights.allows(directory::DESCEND) {
+        if !rights.allows(directory::rights::DESCEND) {
             return Err(Refusal::NotFound.into());
         }
         let (child, kind) = lookup(node, step)?;
         check_landing(kind, true).map_err(E::from)?;
-        let asked = directory::DESCEND | requested_rights;
+        let asked = directory::rights::DESCEND | requested_rights;
         let granted = rights.attenuate(asked);
         if granted != Rights::root(asked) {
             return Err(Refusal::Narrowed.into());
@@ -263,7 +263,7 @@ pub fn admit(
 /// # Examples
 ///
 /// ```
-/// use filesystem_contract::fs::ROOT;
+/// use file_system_contract::file_system::ROOT;
 /// use subtree_scope::{admit, Binding, Bindings, Handle, Refusal};
 ///
 /// let mut table = Bindings::<4>::new();
@@ -571,9 +571,9 @@ mod tests {
     /// rights it has.
     #[test]
     fn undefined_bits_of_requested_rights_change_nothing() {
-        let all = Rights::root(directory::ALL);
-        let plain = down(0, all, b"a/b/x", directory::READ).unwrap();
-        let noisy = down(0, all, b"a/b/x", directory::READ | 1 << 40).unwrap();
+        let all = Rights::root(directory::rights::ALL);
+        let plain = down(0, all, b"a/b/x", directory::rights::READ).unwrap();
+        let noisy = down(0, all, b"a/b/x", directory::rights::READ | 1 << 40).unwrap();
         assert_eq!(plain, noisy);
     }
 
@@ -614,20 +614,23 @@ mod tests {
 
     #[test]
     fn a_walk_goes_down_by_names_and_stops_before_the_last() {
-        let all = Rights::root(directory::ALL);
-        let (n, r, last) = down(0, all, b"a/b/x", directory::READ).unwrap();
+        let all = Rights::root(directory::rights::ALL);
+        let (n, r, last) = down(0, all, b"a/b/x", directory::rights::READ).unwrap();
         assert_eq!((n, last), (2, &b"x"[..]));
-        assert_eq!(r.bits(), directory::DESCEND | directory::READ);
         assert_eq!(
-            down(0, all, b"x", directory::READ).unwrap(),
+            r.bits(),
+            directory::rights::DESCEND | directory::rights::READ
+        );
+        assert_eq!(
+            down(0, all, b"x", directory::rights::READ).unwrap(),
             (0, all, &b"x"[..])
         );
     }
 
     #[test]
     fn a_walk_refuses_everything_that_is_not_a_directory_or_a_name() {
-        let all = Rights::root(directory::ALL);
-        let err = |p: &[u8]| down(0, all, p, directory::READ).err();
+        let all = Rights::root(directory::rights::ALL);
+        let err = |p: &[u8]| down(0, all, p, directory::rights::READ).err();
         assert_eq!(err(b"f/x"), Some(Refusal::NotADirectory));
         assert_eq!(err(b"l/x"), Some(Refusal::Symlink));
         assert_eq!(err(b"m/x"), Some(Refusal::MountCrossing));
@@ -635,14 +638,20 @@ mod tests {
         for bad in [&b"a/../x"[..], b"a//x", b"/a", b"a/", b"./a", b""] {
             assert_eq!(err(bad), Some(Refusal::Malformed), "{bad:?}");
         }
-        let no_descend = Rights::root(directory::READ);
+        let no_descend = Rights::root(directory::rights::READ);
         assert_eq!(
-            down(0, no_descend, b"a/x", directory::READ).err(),
+            down(0, no_descend, b"a/x", directory::rights::READ).err(),
             Some(Refusal::NotFound)
         );
-        let read_only = Rights::root(directory::DESCEND | directory::READ);
+        let read_only = Rights::root(directory::rights::DESCEND | directory::rights::READ);
         assert_eq!(
-            down(0, read_only, b"a/x", directory::READ | directory::WRITE).err(),
+            down(
+                0,
+                read_only,
+                b"a/x",
+                directory::rights::READ | directory::rights::WRITE
+            )
+            .err(),
             Some(Refusal::Narrowed)
         );
     }
@@ -759,13 +768,22 @@ mod tests {
     /// to what it asks for, it does not toggle it, so the next step can be walked from.
     #[test]
     fn requested_rights_that_name_descend_itself_still_carry_it() {
-        let all = Rights::root(directory::ALL);
-        let (n, r, last) = down(0, all, b"a/b/x", directory::DESCEND | directory::READ).unwrap();
+        let all = Rights::root(directory::rights::ALL);
+        let (n, r, last) = down(
+            0,
+            all,
+            b"a/b/x",
+            directory::rights::DESCEND | directory::rights::READ,
+        )
+        .unwrap();
         assert_eq!((n, last), (2, &b"x"[..]));
-        assert_eq!(r.bits(), directory::DESCEND | directory::READ);
-        let (n, r, _) = down(0, all, b"a/b/x", directory::DESCEND).unwrap();
+        assert_eq!(
+            r.bits(),
+            directory::rights::DESCEND | directory::rights::READ
+        );
+        let (n, r, _) = down(0, all, b"a/b/x", directory::rights::DESCEND).unwrap();
         assert_eq!(n, 2);
-        assert!(r.allows(directory::DESCEND));
+        assert!(r.allows(directory::rights::DESCEND));
     }
 
     /// The numbers are the file-service contract's (POSIX errno), spelled once per refusal; a

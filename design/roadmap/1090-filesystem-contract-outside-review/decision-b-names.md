@@ -29,9 +29,9 @@ Recommendation, one table, to rule as a set and apply in one lane after the move
 | module `xattr` | `extended_attribute` | the same; `#[doc(alias = "xattr")]` |
 | module `fs` | keep, `#[doc(alias = "filesystem")]` | mirrors `std::fs` |
 | module `statfs` | keep, alias `volume_statistics` | a POSIX call name |
-| `GETMTIME`, `SETMTIME`, `SETMTIME_AT` | `GET_MODIFICATION_TIME`, `SET_MODIFICATION_TIME`, `SET_MODIFICATION_TIME_AT` | `mtime` is a ruled word; provisional today |
+| `GETMTIME`, `SETMTIME`, `SETMTIME_AT` | `GET_MODIFICATION_TIME_UNIX_SECONDS`, `SET_MODIFICATION_TIME`, `SET_MODIFICATION_TIME_AT_UNIX_SECONDS` | `mtime` is a ruled word; provisional today |
 | `blk::BLOCK_SIZE` | `BLOCK_BYTES` | a size carries its unit |
-| `statfs::LEN` | `RECORD_BYTES` | the same |
+| `volume_statistics::LEN` | `RECORD_BYTES` | the same |
 | `store::RECORD_HEADER` | `RECORD_HEADER_BYTES` | the same |
 | `nameset::BYTES` | `MAXIMUM_BYTES` | a limit opens `MAXIMUM_` |
 | `grant::WORDS_NAME` | `MAXIMUM_WORDS_NAME_BYTES` | a limit with its unit |
@@ -53,4 +53,4 @@ crate keeps every errno as the platform spells it, which is the case the errno n
 Concrete example. A caretaker that reads `verb::of(operation).takes_name()` today would read
 `verb::of(operation).takes_name()` still; one that compares `grant::spec_rights(w)` reads
 `grant::specification_rights(w)`; a client that sends `fs::request(fs::GETMTIME, ..)` sends
-`fs::request(fs::GET_MODIFICATION_TIME, ..)`, and the number 20 does not change.
+`fs::request(fs::GET_MODIFICATION_TIME_UNIX_SECONDS, ..)`, and the number 20 does not change.

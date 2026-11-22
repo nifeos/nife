@@ -1262,7 +1262,7 @@ impl Service<'_> {
         // A directory grant that produced no capability refuses the spawn: a program told to act on
         // something and holding nothing is the one outcome this model must never trade away.
         let dir_failed = wiring.directory_grant && narrowed.is_none();
-        // The window's badge bound by `fs::BIND_SYNC`, so the server answers `SYNC` alone; no page,
+        // The window's badge bound by `file_system::BIND_SYNC`, so the server answers `SYNC` alone; no page,
         // since a sync carries no bytes. `reboot` must not start unable to sync when there is a
         // filesystem, and with none the slot is left empty.
         let sync_ep = match (wants_sync && self.fs_scoped, fs, window) {

@@ -7,7 +7,7 @@ use super::*;
 /// with their digest, made live by `current`. Anything already there is overwritten, and a
 /// generation this writes replaces the whole table, which no test here needs more of.
 pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) {
-    use filesystem_contract::{PAGE_BYTES, directory as rights, fs};
+    use file_system_contract::{PAGE_BYTES, directory, file_system};
     let (fs_ep, fs_page_frame) = root_directory(
         blk_server_image(),
         crate::user::program("redoxfs_server").expect("no redoxfs_server in the initial ramdisk"),
@@ -20,47 +20,47 @@ pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) 
     let call = |w: [u64; 2]| crate::sched::ipc_call(fs_ep, w)[0] as i64;
     let named = |page: &mut [u8], verb: u64, at: u64, name: &str, w1: u64| {
         page[..name.len()].copy_from_slice(name.as_bytes());
-        call([fs::request(verb, at, name.len() as u64), w1])
+        call([file_system::request(verb, at, name.len() as u64), w1])
     };
     // A directory under `at`, made if it is not there.
     let dir = |page: &mut [u8], at: u64, name: &str| {
-        let made = named(page, fs::MKDIR, at, name, rights::ALL);
+        let made = named(page, file_system::MKDIR, at, name, directory::rights::ALL);
         if made >= 0 {
             return made as u64;
         }
-        let h = named(page, fs::OPENDIR, at, name, rights::ALL);
+        let h = named(page, file_system::OPENDIR, at, name, directory::rights::ALL);
         assert!(h >= 0, "could not make or open {name} ({h})");
         h as u64
     };
     // `contents` as the whole of `file` under `at`, a page at a time.
     let put = |page: &mut [u8], at: u64, file: &str, contents: &[u8]| {
-        let mut h = named(page, fs::OPEN, at, file, 0);
+        let mut h = named(page, file_system::OPEN, at, file, 0);
         if h < 0 {
-            h = named(page, fs::CREATE, at, file, 0);
+            h = named(page, file_system::CREATE, at, file, 0);
         }
         assert!(h >= 0, "could not open or create {file} ({h})");
         let h = h as u64;
         assert_eq!(
-            call([fs::request(fs::TRUNCATE, h, 0), 0]),
+            call([file_system::request(file_system::TRUNCATE, h, 0), 0]),
             0,
             "could not truncate {file}"
         );
         for (k, chunk) in contents.chunks(PAGE_BYTES).enumerate() {
             page[..chunk.len()].copy_from_slice(chunk);
             let wrote = call([
-                fs::request(fs::WRITE, h, chunk.len() as u64),
+                file_system::request(file_system::WRITE, h, chunk.len() as u64),
                 (k * PAGE_BYTES) as u64,
             ]);
             assert_eq!(wrote, chunk.len() as i64, "short write of {file}");
         }
-        call([fs::request(fs::CLOSE, h, 0), 0]);
+        call([file_system::request(file_system::CLOSE, h, 0), 0]);
     };
-    let packages = dir(page, fs::ROOT, installed_programs::PACKAGES);
+    let packages = dir(page, file_system::ROOT, installed_programs::PACKAGES);
     let n = dir(page, packages, name);
     let v = dir(page, n, version);
     put(page, v, program, bytes);
     for h in [v, n, packages] {
-        call([fs::request(fs::CLOSE, h, 0), 0]);
+        call([file_system::request(file_system::CLOSE, h, 0), 0]);
     }
 
     // The row and its pointer: the bytes' path is its package and version columns, and its
@@ -84,7 +84,7 @@ pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) 
     let current_len = installed_programs::format_current(1, &mut current).expect("fits");
     let mut digits = [0u8; 10];
     let first = installed_programs::generation_name(1, &mut digits);
-    let activation = dir(page, fs::ROOT, installed_programs::DIRECTORY);
+    let activation = dir(page, file_system::ROOT, installed_programs::DIRECTORY);
     put(page, activation, first, &table[..len]);
     put(
         page,
@@ -92,5 +92,5 @@ pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) 
         installed_programs::CURRENT,
         &current[..current_len],
     );
-    call([fs::request(fs::CLOSE, activation, 0), 0]);
+    call([file_system::request(file_system::CLOSE, activation, 0), 0]);
 }

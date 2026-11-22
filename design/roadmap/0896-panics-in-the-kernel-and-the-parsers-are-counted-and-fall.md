@@ -65,7 +65,7 @@ Of those 32 crates, 20 have no target under `fuzz/`:
 
 The 12 with a target are `redoxfs_server`, `nifefs`, `globally_unique_identifier_partition_table`,
 `package_archive`, `elf`, `domain_name_system`, `http_response`, `device_tree_blob`,
-`filesystem_contract`, `system_log_contract`, `byte_sink_contract` and `compositor`.
+`file_system_contract`, `system_log_contract`, `byte_sink_contract` and `compositor`.
 
 ## The mechanism, and its rung
 

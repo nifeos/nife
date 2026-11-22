@@ -80,7 +80,7 @@ present tense as "as of `685900ec`". These were the expensive-to-reverse choices
 
 ## Free space
 
-Free space is the image's, through `fs_proto`'s `STATFS` (op 18, milestone 54 (a network file
+Free space is the image's, through `fs_proto`'s `GET_VOLUME_STATISTICS` (op 18, milestone 54 (a network file
 service a Mac can actually mount)). The record is three little-endian `u64`s in the shared page
 (allocation unit, total units, free units), and `r0` is its length. That is `READDIR`'s and
 `LISTXATTR`'s existing shape: a reply word carries one `i64`, and this answer is three numbers. The
@@ -105,7 +105,7 @@ read-only share reports zero free whatever the image says. That is the same stat
   backslash, and accepting both would let two clients spell one file two ways. A single leading and a
   single trailing separator are stripped, because clients send `dir\`.
 - `fs_proto` resolves a component under a handle and never a path, so the adapter walks. It does one
-  `fs::OPENDIR` per component, then the verb on the leaf under the parent's handle. That is the
+  `file_system::OPENDIR` per component, then the verb on the leaf under the parent's handle. That is the
   contract's shape rather than a limitation to route around. It is why the descent's rights are
   exactly what the share will use rather than `dir::ALL`. `OPENDIR` refuses with `EPERM` when the
   intersection with the parent is smaller than the request. So asking for everything would fail on a

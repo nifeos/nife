@@ -149,7 +149,7 @@ crate refuses to build a smaller one rather than handing firmware a lie about it
 **The data area has to be cluster-aligned, and FAT32's own sizing arithmetic does not align it.**
 The specification's formula produced 1023 sectors per table on a 512 MiB volume, and
 `32 + 2 * 1023` is not a multiple of eight, so cluster 5 began at partition sector 2102. The
-installer writes whole 4096-byte blocks through `filesystem_contract::blk`, so
+installer writes whole 4096-byte blocks through `file_system_contract::blk`, so
 `2102 / 8` truncated and ten megabytes landed six sectors early on a real disk. The file was
 there, complete, and shifted; the firmware would not start it.
 

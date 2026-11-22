@@ -12,7 +12,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use filesystem_contract::{directory, extended_attribute, fs};
+use file_system_contract::{directory, extended_attribute, file_system};
 use redoxfs::DiskFile;
 use redoxfs_server::NameCopy;
 
@@ -177,7 +177,11 @@ fn write_attributes_as_the_server_does(img: &Path) -> Vec<u8> {
         .unwrap();
 
         let nested = srv
-            .open_dir(fs::ROOT as u32, &named("nested"), directory::ALL)
+            .open_dir(
+                file_system::ROOT as u32,
+                &named("nested"),
+                directory::rights::ALL,
+            )
             .expect("descend into nested");
         srv.set_xattr(
             nested,
@@ -267,7 +271,7 @@ fn the_round_trip_closes_on_the_host_files(out: &Path, finder: &[u8]) {
     );
 
     // The type code is not lost, it is relocated: the raw store comes out with the tree, and the
-    // format is published in `filesystem_contract::extended_attribute::store`. That is what makes "dropped" honest rather
+    // format is published in `file_system_contract::extended_attribute::store`. That is what makes "dropped" honest rather
     // than lossy, so the test asserts the fallback is really there.
     let blobs = std::fs::read_dir(out.join(extended_attribute::STORE_DIRECTORY))
         .expect("the raw store must be extracted alongside, as the type codes' only home")

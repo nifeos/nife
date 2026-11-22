@@ -5,7 +5,7 @@ The driver is `crates/designware_mobile_storage`. The kernel's part is
 `kernel/src/designware_mobile_storage.rs` (a register window and a clock),
 `kernel/src/user/designware_mobile_storage_service.rs` (the EL0 server's wiring) and
 `kernel/src/storage_bench.rs` (the bench boot). The EL0 block server, which answers
-`filesystem_contract::blk` like the virtio and NVMe servers, is
+`file_system_contract::blk` like the virtio and NVMe servers, is
 `components/src/designware_mobile_storage.rs`. Names provisional.
 
 ## What the part is, and how we know

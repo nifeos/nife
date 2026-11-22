@@ -15,12 +15,12 @@ use crate::sched::RendezvousId;
 /// The block channel's address on every `blk` client. Must match `components/src/disk_tree.rs`.
 const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 /// The client windows, directly above the block channel. Must match `components/src/disk_tree.rs`.
-const FILE_PAGE: u64 = BLK_PAGE + filesystem_contract::block::MAXIMUM_TRANSFER_BYTES as u64;
+const FILE_PAGE: u64 = BLK_PAGE + file_system_contract::block::MAXIMUM_TRANSFER_BYTES as u64;
 
-const BLK_PAGES: usize = filesystem_contract::block::TRANSFER_BLOCKS;
+const BLK_PAGES: usize = file_system_contract::block::TRANSFER_BLOCKS;
 /// Every client window, one run, as the filesystem server's pool is.
-pub(crate) const POOL_PAGES: usize =
-    filesystem_contract::fs::CLIENT_WINDOWS * filesystem_contract::fs::TRANSFER_PAGES;
+pub(crate) const POOL_PAGES: usize = file_system_contract::file_system::CLIENT_WINDOWS
+    * file_system_contract::file_system::TRANSFER_PAGES;
 
 /// A running disk tree, from the outside.
 #[derive(Clone, Copy)]
@@ -64,7 +64,7 @@ pub(crate) fn start(fs_window_zero: u64) -> Option<DiskTree> {
             };
         }
         super::fs_service::map_channel(&mut maps[BLK_PAGES..], FILE_PAGE, pool, POOL_PAGES);
-        let window = filesystem_contract::fs::TRANSFER_PAGES;
+        let window = file_system_contract::file_system::TRANSFER_PAGES;
         super::fs_service::map_channel(
             &mut maps[BLK_PAGES..BLK_PAGES + window],
             FILE_PAGE,
@@ -90,7 +90,7 @@ pub(crate) fn start(fs_window_zero: u64) -> Option<DiskTree> {
     .expect("could not spawn the disk tree");
 
     let answer = crate::sched::ipc_receive(report);
-    if answer[0] != filesystem_contract::READY {
+    if answer[0] != file_system_contract::READY {
         crate::println!(
             "  disk tree   : not started: the NVMe disk did not answer SIZE ({:#x}).",
             answer[1]

@@ -53,7 +53,7 @@ Measured on 2026-11-05 (UTC), Kani 0.68.0, on an x86_64 Linux host, heaviest fir
 | `package_archive` | 0.37 | 1 |
 | `inter_process_communication` | 0.32 | 1 |
 | `page_frames` | 0.30 | 1 |
-| `filesystem_contract` | 0.29 | 1 |
+| `file_system_contract` | 0.29 | 1 |
 | `intrusive_queue` | 0.22 | 1 |
 | `periodic_deadline` | 0.19 | 1 |
 | `driver_process_contract::e1000e` | 0.18 | 1 |

@@ -107,7 +107,7 @@ build them, and report what breaks.
   `design/decisions/0105-thread-spawn-decline-for-now.md` and in `notes/thread-spawn-fork.md`. It
   stays unsupported permanently rather than pending.
 - **Done.** Ranks 19 and 28 no longer want a decision: milestone 47's mtime lane landed the get,
-  set and set-at verbs in `crates/filesystem_contract`, on
+  set and set-at verbs in `crates/file_system_contract`, on
   `design/decisions/0112-touch-mtime-authority.md`, decided 2026-08-23.
 - **Done.** Ranks 19 and 28 are bound by path (2026-09-19, [the last pass](0064-std-for-real-crates/tcp-listener-and-file-times.md)):
   `metadata(p).modified()` on `GETMTIME`, `fs::set_times` on `SETMTIME_AT`, and the shim's comments

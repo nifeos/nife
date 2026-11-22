@@ -20,7 +20,7 @@ pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 /// **The most names one expansion may grant**: Unix's `ARG_MAX` as a capability limit. The set
 /// travels by value in a frame the caretaker keeps whole and through four frames of the shell's
 /// stack, and sixteen ran the shell off its stack. It matches
-/// `filesystem_contract::nameset::MAXIMUM_NAMES`, pinned by a host test. Exceeding it is
+/// `file_system_contract::nameset::MAXIMUM_NAMES`, pinned by a host test. Exceeding it is
 /// [`Refusal::TooManyNames`] at the prompt, never a truncation. See notes/glob-grant/xargs.md
 /// ("Why the bound is eight").
 ///
@@ -30,7 +30,7 @@ pub const MAXIMUM_NAMES: usize = 8;
 /// **The most bytes of name one expansion may grant, all its names together**, for
 /// [`MAXIMUM_NAMES`]'s reason: a [`NameSet`] is copied through the shell's deepest frames, so it
 /// holds its names packed in this many bytes rather than [`MAXIMUM_NAMES`] slots of
-/// [`MAXIMUM_NAME_BYTES`] each. It matches `filesystem_contract::nameset::MAXIMUM_NAME_SET_BYTES`, pinned by a host
+/// [`MAXIMUM_NAME_BYTES`] each. It matches `file_system_contract::nameset::MAXIMUM_NAME_SET_BYTES`, pinned by a host
 /// test, and exceeding it is the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md
 /// ("The bytes a set carries").
 ///
@@ -94,11 +94,11 @@ pub struct NameSetFull;
 ///
 /// This is the type that makes the milestone's finding true in the code rather than only in the
 /// prose. `fs_file_caretaker` serves "a namespace of exactly one name"; globbing generalizes it to
-/// a set, and a literal operand is simply the set of one. Same caretaker shape, same `filesystem_contract`
+/// a set, and a literal operand is simply the set of one. Same caretaker shape, same `file_system_contract`
 /// protocol above and below, wider namespace, nothing new in the kernel.
 ///
 /// Each name carries what the directory said it was, because the caretaker answers `READDIR` from
-/// the set itself (`filesystem_contract::nameset`), and because a listing is a rendering of authority.
+/// the set itself (`file_system_contract::nameset`), and because a listing is a rendering of authority.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct NameSet {
     /// The names, packed end to end in order: name `i` is `bytes[start(i)..ends[i]]`. Packed rather

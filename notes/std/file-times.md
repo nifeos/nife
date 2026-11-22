@@ -22,7 +22,7 @@ The mapping, verb by verb:
 | `std` call | what it does here |
 |---|---|
 | `std::fs::metadata(p).modified()`, `DirEntry::metadata().modified()` | Bound. `stat` walks to the directory holding the name (asking `dir::READ`, as it always did), runs `OPEN`/`FSTAT`/`CLOSE` for the size and kind, then `GETMTIME` for the time. Works for a directory as for a file. |
-| `std::fs::set_times(p, t)`, `set_times_nofollow`, `FileTimes::set_modified` | Bound, always to `SETMTIME_AT` with the caller's seconds, walking with `dir::WRITE \| dir::SETTIME`. Sub-second part truncated. |
+| `std::fs::set_times(p, t)`, `set_times_nofollow`, `FileTimes::set_modified` | Bound, always to `SETMTIME_AT` with the caller's seconds, walking with `dir::WRITE \| dir::SET_MODIFICATION_TIME_AT`. Sub-second part truncated. |
 | `File::metadata().modified()`, `Dir::metadata().modified()` | Refused, `Unsupported`: the contract asks by name and a handle has none. |
 | `File::set_times`, `File::set_modified` | Refused, `Unsupported`, same reason. |
 | `FileTimes::set_accessed` passed to `set_times` | Refused whole, `Unsupported`, and nothing is changed: no verb sets an access time. |
@@ -40,7 +40,7 @@ change and is proposed in design/roadmap/0504-an-mtime-for-an-open-file.md.
 
 Why `set_times` never falls back to `SETMTIME`. A `SystemTime` from the caller is an assertion
 about history even when it came from `SystemTime::now()`, and §112 put that authority behind
-`dir::SETTIME`, separate from `dir::WRITE`. So a grant without `SETTIME` answers
+`dir::SET_MODIFICATION_TIME_AT`, separate from `dir::WRITE`. So a grant without `SET_MODIFICATION_TIME_AT` answers
 `ReadOnlyFilesystem`. Falling back to `SETMTIME` would write the server's own "now" instead of the
 time asked for and report success, and that "now" is not a time at all (next paragraph).
 
@@ -56,7 +56,7 @@ EXAMPLES, as `std_exerciser` runs them on all three architectures:
 ```rust
 let t = std::fs::metadata("motd")?.modified()?;          // the host tool's stamp: a real second
 std::fs::write("f", b"x")?;
-std::fs::set_times("f", FileTimes::new().set_modified(t))?; // SETMTIME_AT, needs WRITE | SETTIME
+std::fs::set_times("f", FileTimes::new().set_modified(t))?; // SETMTIME_AT, needs WRITE | SET_MODIFICATION_TIME_AT
 assert_eq!(std::fs::metadata("f")?.modified()?, t);       // whole seconds round-trip
 let f = File::open("f")?;
 assert_eq!(f.metadata()?.modified().unwrap_err().kind(), ErrorKind::Unsupported);
@@ -84,7 +84,7 @@ BUGS:
   time). The four messages are not atomic: a name replaced between `OPEN` and `GETMTIME` reports the
   new node's time with the old node's size.
 - Not exercised through a narrowed grant from `std`. Every std test grants the mount root with every
-  right, so the `ReadOnlyFilesystem` a grant without `SETTIME` answers is proved by
+  right, so the `ReadOnlyFilesystem` a grant without `SET_MODIFICATION_TIME_AT` answers is proved by
   `redoxfs_server`'s host tests (the rights table beside `settime_at`) rather than through this PAL.
   The same gap [the descent section](fs-descent.md#what-is-proven-and-what-is-not) records for
   `OPENDIR`, and closed the same way.

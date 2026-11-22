@@ -149,7 +149,7 @@ pub const ATTEMPTS: u64 = 4;
 /// **The attempt selectors are dense and start at zero, because the C indexes an array with them.**
 /// Asserted at compile time rather than in a test: every operand is a `const`, so a runtime check
 /// would only re-verify what the compiler already knows, and a build failure names the problem at
-/// the edit instead of at the next test run. Same idiom as `filesystem_contract`'s verdict/byte-count
+/// the edit instead of at the next test run. Same idiom as `file_system_contract`'s verdict/byte-count
 /// assertion (notes/rm.md).
 const _: () = assert!(ATTEMPT_OVERRUN == 0);
 const _: () = assert!(ATTEMPT_WILD < ATTEMPTS && ATTEMPT_HONEST < ATTEMPTS);

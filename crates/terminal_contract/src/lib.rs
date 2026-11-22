@@ -46,7 +46,7 @@ pub const OPERATION_SUSPEND_COUNT: u64 = 9;
 ///
 /// It gives the terminal a second writer without a second page: [`OPERATION_WRITE`] reads the one
 /// client output page init maps, the problem §55 (the file behind a `>` is the shell itself)
-/// records for `filesystem_contract`. Eight bytes is the request shape, not a choice: a served
+/// records for `file_system_contract`. Eight bytes is the request shape, not a choice: a served
 /// request arrives through `receive_capability` with two data words, so a sixteen-byte
 /// `byte_sink_contract` message is two of these. See notes/terminal-contract.md ("The IPC
 /// protocol") and notes/sink-protocol.md.

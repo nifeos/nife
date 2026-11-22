@@ -42,7 +42,7 @@
 #![no_main]
 
 use byte_sink_fixture as fixture;
-use filesystem_contract::fs;
+use file_system_contract::file_system;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, exit, send};
 
@@ -57,7 +57,7 @@ const REPORT: u64 = 2;
 /// The page shared with the FS server. Matches `fs_service`'s `FILE_VA_CLIENT`.
 const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the FS contract's transfer unit.
-const PAGE: usize = filesystem_contract::PAGE_BYTES;
+const PAGE: usize = file_system_contract::PAGE_BYTES;
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
@@ -88,14 +88,17 @@ user_mode_runtime::program_entry!(start);
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let name = fixture::SINK_NAME.as_bytes();
     put(name);
-    let handle = fs_call(fs::request(fs::OPEN, fs::ROOT, name.len() as u64), 0);
+    let handle = fs_call(
+        file_system::request(file_system::OPEN, file_system::ROOT, name.len() as u64),
+        0,
+    );
     if handle < 0 {
         send(REPORT, fixture::BAD, handle as u64, 0);
         exit();
     }
     let handle = handle as u64;
 
-    let size = fs_call(fs::request(fs::FSTAT, handle, 0), 0);
+    let size = fs_call(file_system::request(file_system::FSTAT, handle, 0), 0);
     if size < 0 {
         send(REPORT, fixture::BAD, size as u64, 1);
         exit();
@@ -105,7 +108,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let mut off = 0u64;
     while off < size {
         let want = (size - off).min(PAGE as u64);
-        let got = fs_call(fs::request(fs::READ, handle, want), off);
+        let got = fs_call(file_system::request(file_system::READ, handle, want), off);
         if got <= 0 {
             send(REPORT, fixture::BAD, got as u64, off);
             exit();
@@ -128,7 +131,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     }
 
     send(SINK, byte_sink_contract::end_of_stream(), 0, 0);
-    let _ = fs_call(fs::request(fs::CLOSE, handle, 0), 0);
+    let _ = fs_call(file_system::request(file_system::CLOSE, handle, 0), 0);
     send(REPORT, fixture::DONE, size, 0);
     exit();
 }

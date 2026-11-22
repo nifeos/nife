@@ -9,7 +9,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
    timeout not listed in `.github/mutants-exempts` with a reason, and the release gate reads that
    verdict. The baseline row for this crate records 3 survivors and 7 timeouts. The regression
    note for this crate under `notes/mutation-testing/` (the one that triages `clock_contract`,
-   `swish` and `filesystem_contract` together) already gives the reasons. `spin_hint` replaced by `()` is a hint with no host-observable effect. The claim's `+` under `*` is single-threaded blindness that the loom gate kills. `decide`'s `>` under `>=` is equivalent at equality because both arms fall through to `ACCEPTED`. The seven timeouts are the two retry loops' conditions turned into loops that never exit. Nobody knows the mutants' line numbers in the new repository until the first full run, so the note supplies this
+   `swish` and `file_system_contract` together) already gives the reasons. `spin_hint` replaced by `()` is a hint with no host-observable effect. The claim's `+` under `*` is single-threaded blindness that the loom gate kills. `decide`'s `>` under `>=` is equivalent at equality because both arms fall through to `ACCEPTED`. The seven timeouts are the two retry loops' conditions turned into loops that never exit. Nobody knows the mutants' line numbers in the new repository until the first full run, so the note supplies this
    inference, not a measurement.
    Why it matters: the weekly run is red for a known reason until the lines exist, and a red verdict
    blocks the release gate when the release is eventually unheld.

@@ -5,7 +5,7 @@ An appendix to [the milestone](../1091-filesystem-fixture-outside-review.md).
 ## P0: blocks the move
 
 1. The template's cargo-deny policy refuses the one dependency the moved crate will have.
-   Finding: the moved manifest pins `filesystem_contract` by `git` and `rev` on `nifeos/<crate>`,
+   Finding: the moved manifest pins `file_system_contract` by `git` and `rev` on `nifeos/<crate>`,
    the form §305 allows and 1017 prescribes. The template's `deny.toml` and its scaffold's copy both
    say `unknown-git = "deny"` under `[sources]` and allow no git source, so `check / supply-chain`
    is red on the first pull request of the new repository. No crate repository in the organization
@@ -26,12 +26,12 @@ An appendix to [the milestone](../1091-filesystem-fixture-outside-review.md).
    in one workspace repository.
    The reverse coupling is `byte_glob`, which dev-depends on the fixture and leaves in step 5, which the
    bottom-up rule allows. The sibling review of `byte_glob` proposes moving `crates/byte_glob/tests/
-   fixture_agreement.rs` into `crates/filesystem_fixture/tests/` with `byte_glob` as a dev-dependency.
+   fixture_agreement.rs` into `crates/file_system_fixture/tests/` with `byte_glob` as a dev-dependency.
    That would make this crate link a crate that leaves three steps later and block step 2 until
    `byte_glob` has left, which is the pairing problem reintroduced the other way round.
    Evidence: `README.md` lines 55 to 56; lines 11 to 12; 1017 step 2 row; `crates/byte_glob/Cargo.toml`
    dev-dependencies; `crates/byte_glob/tests/fixture_agreement.rs` header.
-   Change: restate both `BUGS` entries as "depends on `filesystem_contract` by path, inside the
+   Change: restate both `BUGS` entries as "depends on `file_system_contract` by path, inside the
    one workspace both crates share"; the owner of 1017 corrects its row's reason. For the glob test,
    `crates/grant_plan/tests/` (which already depends on `byte_glob` and leaves in step 6, after both) or
    leaving it in `byte_glob` keeps the order; this crate must not gain a dev-dependency on `byte_glob`.
@@ -74,9 +74,9 @@ An appendix to [the milestone](../1091-filesystem-fixture-outside-review.md).
    unratified names. The ruling that every name a stranger meets has its ratification before a crate moves stands, and the move commit strips every `Name:` block, so the ratification has to happen here.
    There is no `notes/crate-reviews/filesystem-fixture.md` and no row in `notes/crate-reviews.md`,
    so the architect has no package to read.
-   Evidence: `script/crate-standalone filesystem_fixture`; `ls notes/crate-reviews/`.
+   Evidence: `script/crate-standalone file_system_fixture`; `ls notes/crate-reviews/`.
    Change: a lane writes the package in the shape of the existing ones (identity, public API,
    proofs, names, license, what the move still needs, recommendation), adds the index row, and
-   attaches `python3 helpers/name_release.py --draft filesystem_fixture`. Item 4's renames go in
+   attaches `python3 helpers/name_release.py --draft file_system_fixture`. Item 4's renames go in
    the same ratification so the architect reads each name once.
    Door: two-way. Effort: M.

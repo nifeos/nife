@@ -21,7 +21,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use filesystem_contract::fs;
+use file_system_contract::file_system;
 use user_mode_runtime::call;
 use user_mode_runtime::mapped_window::MappedWindow;
 
@@ -53,7 +53,7 @@ const FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e5_0000);
 // SAFETY: the wiring maps one page read/write at FS_VA before this process runs, shared with the
 // file service and with nothing else.
 const FS_WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(FS_VA, filesystem_contract::PAGE_BYTES as u64) };
+    unsafe { MappedWindow::new(FS_VA, file_system_contract::PAGE_BYTES as u64) };
 
 /// **Success**: the subtree exists (freshly made or already there) and the credential was stored.
 pub const RPT_OK: u64 = 1;
@@ -70,7 +70,7 @@ pub const RPT_SUBTREE_FAILED: u64 = 3;
 pub const RPT_CRED_FAILED: u64 = 4;
 
 /// `EEXIST`: the standard value (matching `redoxfs`/`system_call`'s own, which `redoxfs_server` returns and
-/// nothing in `filesystem_contract` re-exports under a name). The one `MKDIR` failure this process does not
+/// nothing in `file_system_contract` re-exports under a name). The one `MKDIR` failure this process does not
 /// treat as a refusal.
 const EEXIST: i32 = 17;
 
@@ -130,7 +130,7 @@ fn start(id_len: u64, secret_len: u64, _a2: u64) -> ! {
 }
 
 /// `MKDIR` the identity's home subtree under [`FS_EP`]'s root, asking for full rights on it
-/// ([`filesystem_contract::directory::ALL`]), the same rights `login.rs` requests when it descends into the fixed
+/// ([`file_system_contract::directory::rights::ALL`]), the same rights `login.rs` requests when it descends into the fixed
 /// fixture subtree today. `None` on success (the handle this process minted is closed immediately;
 /// it has no further use for it), `Some(errno)` otherwise.
 fn mkdir_home(identity: &[u8]) -> Option<i32> {
@@ -140,15 +140,15 @@ fn mkdir_home(identity: &[u8]) -> Option<i32> {
     page[..n].copy_from_slice(&identity[..n]);
     let (r0, _) = call(
         FS_EP,
-        fs::request(fs::MKDIR, fs::ROOT, identity.len() as u64),
-        filesystem_contract::directory::ALL,
+        file_system::request(file_system::MKDIR, file_system::ROOT, identity.len() as u64),
+        file_system_contract::directory::rights::ALL,
     );
-    match filesystem_contract::reply_errno(r0 as i64) {
+    match file_system_contract::error::code(r0 as i64) {
         Some(errno) => Some(errno),
         None => {
             // Best-effort: a failed close leaks a handle-table slot in the file service and
             // corrupts nothing a caller of this tool could observe.
-            let _ = call(FS_EP, fs::request(fs::CLOSE, r0, 0), 0);
+            let _ = call(FS_EP, file_system::request(file_system::CLOSE, r0, 0), 0);
             None
         }
     }

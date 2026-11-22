@@ -150,7 +150,7 @@ An image written by nife carries a directory in its root called `.extended-attri
 file per node that has extended attributes. `ls` shows it and `extract` copies it out. That the
 store is visible here is a decision and not a leak: no client of the FS server can reach it, and a
 recovery host is not a client of the contract; it holds the image file. The record format is
-written down in `filesystem_contract::xattr::store` so a person holding a damaged image can read it.
+written down in `file_system_contract::xattr::store` so a person holding a damaged image can read it.
 
 `extract` also puts the attributes back on the extracted files and directories (`setxattr` on
 macOS, `lsetxattr` on Linux, never following a symlink), because Time Machine's sparsebundle keeps

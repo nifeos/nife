@@ -97,12 +97,12 @@ file names. A published crate's surface is a one-way door: after the release, re
 a breaking change.
 
 Recommendation: no. Move it to `byte_sink_fixture` (provisional name) in this tree, as
-`filesystem_fixture` already is for the filesystem contract. The published crate then holds the
+`file_system_fixture` already is for the filesystem contract. The published crate then holds the
 wire and nothing else.
 
 Prior art: `embedded-hal` keeps its test doubles in `embedded-hal-mock`, a separate crate;
-`tokio-test` is separate from `tokio`; in this tree `filesystem_fixture` is separate from
-`filesystem_contract`. A crate that ships its own fixtures (`proptest`'s `test-strategy` shapes) does
+`tokio-test` is separate from `tokio`; in this tree `file_system_fixture` is separate from
+`file_system_contract`. A crate that ships its own fixtures (`proptest`'s `test-strategy` shapes) does
 so behind a feature, which keeps the names in the documentation.
 
 Example: on docs.rs, `byte_sink_contract::fixture::SINK_NAME` would read `"sinkout"` with a sentence
@@ -110,7 +110,7 @@ about a file created on a test image by a program the reader cannot find.
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may revisit. No publish happens while the publishing hold stands, and keeping the fixtures out
 is the stricter choice. `fixture` (`src/lib.rs` lines 282 to 309) moves to an in-tree crate,
-`byte_sink_fixture` (name provisional), as `filesystem_fixture` is for `filesystem_contract`. Item 3
+`byte_sink_fixture` (name provisional), as `file_system_fixture` is for `file_system_contract`. Item 3
 is the work.
 
 ### C. The second and third words of an end-of-stream message are reserved
@@ -122,7 +122,7 @@ which is what its documentation says the low 32 bits are. A Kani harness proves 
 over every three words, with a falsification patch.
 
 `rm` reports its exit status and its count on a verdict endpoint of its own, slot 2
-(`filesystem_contract::rm::VERDICT_SLOT`), after its report stream ends. A `SEND` returns only once
+(`file_system_contract::rm::VERDICT_SLOT`), after its report stream ends. A `SEND` returns only once
 a receiver takes its message, so the verdict cannot overtake the text, and a reader drains the report
 before receiving it. The spawn service leaves that slot empty, so at the prompt the kernel refuses the
 send and `rm` exits; the kernel's granted-directory and granted-set wirings grant it when a test asks.
@@ -150,7 +150,7 @@ Each is a published name at release and so one-way. Each predates the rules this
 | `pack`, `unpack`, `classify`, `severity`, `with_severity`, `kind`, `len`, `operation` | keep | `len` and `with` are std spellings; the rest are plain words |
 | `Sent`, `Sent::Ok`, `Sent::Gone`, `Sent::NoSink` | keep | plain words that carry the contract's one distinction |
 
-Prior art for `first_word`: the ABI note names the registers `w0..w4` and describes a system call by its words. `filesystem_contract` and `line_editor` put their opcodes in the same bits and the tree calls
+Prior art for `first_word`: the ABI note names the registers `w0..w4` and describes a system call by its words. `file_system_contract` and `line_editor` put their opcodes in the same bits and the tree calls
 that "the first word" in prose throughout.
 
 Example for `INLINE_MAXIMUM`: `MAXIMUM_NAME_BYTES` versus `MAXIMUM_NAME_LEN` in `design/naming.md`

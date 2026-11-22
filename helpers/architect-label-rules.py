@@ -1822,7 +1822,7 @@ diff --git a/crates/clock_contract/src/lib.rs b/crates/clock_contract/src/lib.rs
 +++ b/crates/clock_contract/src/lib.rs
 @@ -1,3 +1,3 @@
 -/// Where the opcode sits: bits 63:56, the same position `filesystem_proto` uses.
-+/// Where the opcode sits: bits 63:56, the same position `filesystem_contract` uses.
++/// Where the opcode sits: bits 63:56, the same position `file_system_contract` uses.
  pub const VERSION: u32 = 1;
 """, None),
 

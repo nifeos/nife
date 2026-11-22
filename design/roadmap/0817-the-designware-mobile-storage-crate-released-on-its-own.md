@@ -40,7 +40,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut** is larger than that
   note's inventory says. `jh7110::discover` reads a `DeviceTreeBlob`; under codebase rule 2 the
   caller passes the register region instead, and the query moves to the kernel side. The `serve`
-  module is nife's own: it speaks nife's block protocol (`filesystem_contract::blk`) and places
+  module is nife's own: it speaks nife's block protocol (`file_system_contract::blk`) and places
   nife's virtual addresses (`address_space_layout::pair_page`). So `serve` and its harness move to
   `components/src/designware_mobile_storage.rs`, or stay with the two constants inlined; the lane
   picks and records why. The tests also `include_bytes!` a fixture from
@@ -141,7 +141,7 @@ with the pinned nightly for `aarch64-unknown-none-softfloat`, `riscv64imac-unkno
 `script/crate-standalone designware_mobile_storage` fails today, at base `ae6b91e79`. The manifest
 inherits `license` and `lints` from nife's workspace and states no `rust-version`, and there is no
 README, `LICENSE-MIT` or `LICENSE-APACHE`. Those hold for all nine crates. It does not build alone:
-`address_space_layout`, `filesystem_contract` and `device_tree_blob` are path dependencies outside the
+`address_space_layout`, `file_system_contract` and `device_tree_blob` are path dependencies outside the
 copy, so neither the build nor Kani ran. A test reads
 `../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb`. Beyond manifest and files, 14 lines
 cite this tree: 5 `milestone N`, 4 tree paths, 2 `§N`, 2 provenance blocks and 1 naming calef.
@@ -150,7 +150,7 @@ cite this tree: 5 `milestone N`, 4 tree paths, 2 `§N`, 2 provenance blocks and 
 
 Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass, and the only
 citations left sit in `Name:` blocks, which stay until the ratification pass. `address_space_layout`,
-`filesystem_contract` and `device_tree_blob` are still path dependencies, so the copy does not
+`file_system_contract` and `device_tree_blob` are still path dependencies, so the copy does not
 build; the second half of the cut removes them.
 
 Measured again after the cut on 2026-10-25 (UTC), with Kani: the manifest has no dependencies, the

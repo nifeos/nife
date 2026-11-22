@@ -38,7 +38,7 @@ An appendix to [the milestone](../1091-filesystem-fixture-outside-review.md).
    Door: two-way. Effort: S.
 
 8. `durability` is a public module nothing reads.
-   Finding: no file outside the crate names `filesystem_fixture::durability` or any of its five
+   Finding: no file outside the crate names `file_system_fixture::durability` or any of its five
    constants; the module's own `BUGS` says the role that ran the witness went with SMB, and
    `notes/filesystem-fixture.md` says re-homing it is small work with no design question. An
    outside maintainer meets five verdict words whose documentation says nothing produces them.

@@ -25,7 +25,7 @@ pub fn set_home_file(identity: &[u8], file: &str, contents: Option<&[u8]>) {
 /// named `dir`.
 #[cfg(any(test, feature = "system_tests"))]
 fn set_file(dir: Option<&[u8]>, file: &str, contents: Option<&[u8]>) {
-    use filesystem_contract::{directory as rights, fs};
+    use file_system_contract::{directory, file_system};
     let (fs_ep, fs_page_frame) = root_directory(
         blk_server_image(),
         crate::user::program("redoxfs_server").expect("no redoxfs_server in the initial ramdisk"),
@@ -35,17 +35,17 @@ fn set_file(dir: Option<&[u8]>, file: &str, contents: Option<&[u8]>) {
     let page = unsafe {
         core::slice::from_raw_parts_mut(
             mmu::phys_to_virt(fs_page_frame) as *mut u8,
-            filesystem_contract::PAGE_BYTES,
+            file_system_contract::PAGE_BYTES,
         )
     };
     let call = |w: [u64; 2]| crate::sched::ipc_call(fs_ep, w)[0] as i64;
     let at = match dir {
-        None => fs::ROOT,
+        None => file_system::ROOT,
         Some(d) => {
             page[..d.len()].copy_from_slice(d);
             let h = call([
-                fs::request(fs::OPENDIR, fs::ROOT, d.len() as u64),
-                rights::ALL,
+                file_system::request(file_system::OPENDIR, file_system::ROOT, d.len() as u64),
+                directory::rights::ALL,
             ]);
             assert!(
                 h >= 0,
@@ -58,30 +58,33 @@ fn set_file(dir: Option<&[u8]>, file: &str, contents: Option<&[u8]>) {
     let name = file.as_bytes();
     let named = |page: &mut [u8], verb: u64| {
         page[..name.len()].copy_from_slice(name);
-        call([fs::request(verb, at, name.len() as u64), 0])
+        call([file_system::request(verb, at, name.len() as u64), 0])
     };
     if let Some(contents) = contents {
-        let mut h = named(page, fs::OPEN);
+        let mut h = named(page, file_system::OPEN);
         if h < 0 {
-            h = named(page, fs::CREATE);
+            h = named(page, file_system::CREATE);
         }
         assert!(h >= 0, "could not open or create {file} ({h})");
         let h = h as u64;
         assert_eq!(
-            call([fs::request(fs::TRUNCATE, h, 0), 0]),
+            call([file_system::request(file_system::TRUNCATE, h, 0), 0]),
             0,
             "could not truncate {file}"
         );
         page[..contents.len()].copy_from_slice(contents);
-        let wrote = call([fs::request(fs::WRITE, h, contents.len() as u64), 0]);
+        let wrote = call([
+            file_system::request(file_system::WRITE, h, contents.len() as u64),
+            0,
+        ]);
         assert_eq!(wrote, contents.len() as i64, "short write of {file}");
-        call([fs::request(fs::CLOSE, h, 0), 0]);
+        call([file_system::request(file_system::CLOSE, h, 0), 0]);
     } else {
         // `ENOENT` is the state asked for, so the answer is not checked.
-        named(page, fs::UNLINK);
+        named(page, file_system::UNLINK);
     }
-    if at != fs::ROOT {
-        call([fs::request(fs::CLOSE, at, 0), 0]);
+    if at != file_system::ROOT {
+        call([file_system::request(file_system::CLOSE, at, 0), 0]);
     }
 }
 
@@ -89,7 +92,7 @@ fn set_file(dir: Option<&[u8]>, file: &str, contents: Option<&[u8]>) {
 /// other half: the byte count, or `None` when there is no such file.
 #[cfg(any(test, feature = "system_tests"))]
 pub fn read_root_file(file: &str, out: &mut [u8]) -> Option<usize> {
-    use filesystem_contract::fs;
+    use file_system_contract::file_system;
     let (fs_ep, fs_page_frame) = root_directory(
         blk_server_image(),
         crate::user::program("redoxfs_server").expect("no redoxfs_server in the initial ramdisk"),
@@ -98,20 +101,29 @@ pub fn read_root_file(file: &str, out: &mut [u8]) -> Option<usize> {
     let page = unsafe {
         core::slice::from_raw_parts_mut(
             mmu::phys_to_virt(fs_page_frame) as *mut u8,
-            filesystem_contract::PAGE_BYTES,
+            file_system_contract::PAGE_BYTES,
         )
     };
     page[..file.len()].copy_from_slice(file.as_bytes());
     let h = crate::sched::ipc_call(
         fs_ep,
-        [fs::request(fs::OPEN, fs::ROOT, file.len() as u64), 0],
+        [
+            file_system::request(file_system::OPEN, file_system::ROOT, file.len() as u64),
+            0,
+        ],
     )[0] as i64;
     if h < 0 {
         return None;
     }
-    let want = out.len().min(filesystem_contract::PAGE_BYTES) as u64;
-    let n = crate::sched::ipc_call(fs_ep, [fs::request(fs::READ, h as u64, want), 0])[0] as i64;
-    crate::sched::ipc_call(fs_ep, [fs::request(fs::CLOSE, h as u64, 0), 0]);
+    let want = out.len().min(file_system_contract::PAGE_BYTES) as u64;
+    let n = crate::sched::ipc_call(
+        fs_ep,
+        [file_system::request(file_system::READ, h as u64, want), 0],
+    )[0] as i64;
+    crate::sched::ipc_call(
+        fs_ep,
+        [file_system::request(file_system::CLOSE, h as u64, 0), 0],
+    );
     let n = usize::try_from(n).ok()?.min(out.len());
     out[..n].copy_from_slice(&page[..n]);
     Some(n)

@@ -198,7 +198,7 @@ the reasoning is kept to one line each so a reader can check the rule against it
   §242's building lane landing the capability an install would hold; revisit there, and do not
   build a second log to fill it.
 - **A remove operand shares the sixteen bytes a packed name carries** with its version
-  (`filesystem_contract::grant::MAX_NAME`). A package whose name plus `@` plus the version exceeds
+  (`file_system_contract::grant::MAX_NAME`). A package whose name plus `@` plus the version exceeds
   sixteen bytes cannot be removed by the qualified form; it is still removable bare, which
   removes every version. Recorded 2026-09-29 when the qualified form was spelled. If a real
   package hits it, the wire grows a second packed name rather than widening the first.

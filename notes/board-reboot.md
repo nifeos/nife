@@ -95,7 +95,7 @@ rebooting soak, the storage matrix) hold no capability and call the route throug
 hands out), clause 3, puts the sync before the reset, and the kernel does
 none of it. `SYNC` needs `dir::WRITE` on a handle for an ordinary client, which is also the right to
 open and truncate files by name. So the file server binds this program's badge sync-only
-(`filesystem_contract::fs::BIND_SYNC`): it answers `SYNC`, refuses every other verb, and nothing in
+(`file_system_contract::file_system::BIND_SYNC`): it answers `SYNC`, refuses every other verb, and nothing in
 the program can reach a file. calef ruled against the progenitor syncing on its behalf (2026-10-06
 UTC, #1783), so the sync is the program's own act.
 
