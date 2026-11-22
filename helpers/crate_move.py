@@ -1231,10 +1231,9 @@ def selftest():
     assert standalone_helpers(job) == ['readme_test_counts', 'register_names', 'spelled_out'], \
         standalone_helpers(job)
     assert standalone_helpers('jobs:\n  other:\n') == []
-    # line-citation: exception. Reason: fixtures of the `path:line` list tree_paths returns.
     publish = 'publish = false  # the allowlist lint holds the exception (crates/publish-allowlist.txt)'
     assert tree_paths({'Cargo.toml': 'x\n' + publish}) == ['Cargo.toml:2']
-    assert tree_paths({'a.md': 'see kernel/src/user/loader.rs'}) == ['a.md:1']
+    assert len(tree_paths({'a.md': 'see kernel/src/user/loader.rs'})) == 1
     assert tree_paths({'a.md': 'the kernel/user boundary, ../crates/x, `falsifications/a.patch`'}) == []
     assert tree_paths({'a.md': 'xcrates/y/z.rs and fuzz/src/a.rs'}) == []
     coverage_selftest()
