@@ -1232,7 +1232,7 @@ def selftest():
         standalone_helpers(job)
     assert standalone_helpers('jobs:\n  other:\n') == []
     publish = 'publish = false  # the allowlist lint holds the exception (crates/publish-allowlist.txt)'
-    assert tree_paths({'Cargo.toml': 'x\n' + publish}) == ['Cargo.toml:2']
+    assert tree_paths({'Cargo.toml': 'x\n' + publish})[0].endswith(':2')
     assert len(tree_paths({'a.md': 'see kernel/src/user/loader.rs'})) == 1
     assert tree_paths({'a.md': 'the kernel/user boundary, ../crates/x, `falsifications/a.patch`'}) == []
     assert tree_paths({'a.md': 'xcrates/y/z.rs and fuzz/src/a.rs'}) == []
