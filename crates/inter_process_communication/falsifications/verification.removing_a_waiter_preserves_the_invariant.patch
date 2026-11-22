@@ -1,35 +1,31 @@
 Falsifies `inter_process_communication::verification::removing_a_waiter_preserves_the_invariant`.
 
-The defect: `remove_sender` notes the hit and then keeps the victim anyway. The drain-and-repush
-shape invites it: the loop's job reads as "rebuild the queue", the `else` is the only thing that
-drops anything, and the function still returns the right answer to every caller that only asks
-whether the waiter was there.
+The defect: `remove_sender` takes the victim off and then puts it back. The function still returns
+the right answer to every caller that only asks whether the waiter was there.
 
-Expected to fail: the harness's `assert!(!found || e.is_idle())`, on a hit. The invariant
+Expected to fail: the harness's `assert!(found.is_none() || e.is_idle())`, on a hit. The invariant
 assertion survives, because one queue is still empty, which is why this harness states both:
 a remove that reports success while leaving the thread queued is how milestone 133 (ending a
 permanently blocked thread) ends a thread and then finds it again on a wait queue.
 
-Re-cut at milestone 139 (drive the unsafe count down), round 10, when the queues began taking
-`Unqueued` tokens. The original defect re-pushed a node the code also handed back, and with tokens
-that no longer compiles: one token cannot be both pushed and returned. So the defect is written the
-only way it can be now, by minting a second token with `unsafe`. That this takes an `unsafe` block
-a reviewer has to sign is the token doing its job; the harness is still shown to catch the result.
+The defect mints a second token with `unsafe`, because one token cannot be both pushed and
+returned. That this takes an `unsafe` block a reviewer has to sign is the token doing its job; the
+harness is still shown to catch the result.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index 845029a65..469d8e044 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -208,10 +208,10 @@ impl<T: Node> Rendezvous<T> {
-         let mut kept: Queue<T> = Queue::new();
-         let mut found = None;
-         while let Some(node) = self.senders.pop_front() {
+@@ -267,7 +267,12 @@
+     ///
+     /// Name: ratified 2026-11-21 (UTC).
+     pub fn remove_sender(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
+-        self.senders.remove(victim)
++        let found = self.senders.remove(victim);
++        if let Some(node) = &found {
 +            // SAFETY: none. This is the defect: the victim goes back on the queue it was taken off.
-+            kept.push_back(unsafe { Unqueued::new(node.as_non_null()) });
-             if node == victim {
-                 found = Some(node);
--            } else {
--                kept.push_back(node);
-             }
-         }
-         self.senders = kept;
++            self.senders.push_back(unsafe { Unqueued::new(node.as_non_null()) });
++        }
++        found
+     }
+ 
+     /// Take one specific receiver back off the queue, returning its token if it was there. The
