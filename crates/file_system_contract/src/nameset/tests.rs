@@ -181,8 +181,8 @@ fn a_set_past_maximum_names_reads_as_its_first_maximum_names() {
 #[test]
 fn a_page_of_the_smallest_records_walks_to_its_end() {
     let mut page = [0u8; PAGE_BYTES];
-    for record in page.chunks_exact_mut(3) {
-        record.copy_from_slice(&[1, 0, b'a']);
+    for at in (0..PAGE_BYTES - PAGE_BYTES % 3).step_by(3) {
+        page[at..at + 3].copy_from_slice(&[1, 0, b'a']);
     }
     assert_eq!(nameset::iter(&page).count(), nameset::MAXIMUM_NAMES);
 }

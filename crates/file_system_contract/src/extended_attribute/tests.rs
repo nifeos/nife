@@ -467,8 +467,8 @@ fn a_specification_refuses_a_length_past_32_bits() {
 #[test]
 fn a_page_of_the_smallest_records_walks_to_its_end() {
     let mut page = [0u8; PAGE_BYTES];
-    for record in page.chunks_exact_mut(2) {
-        record.copy_from_slice(&[1, b'a']);
+    for at in (0..PAGE_BYTES - PAGE_BYTES % 2).step_by(2) {
+        page[at..at + 2].copy_from_slice(&[1, b'a']);
     }
     assert_eq!(
         extended_attribute::list::iter(&page).count(),
@@ -476,9 +476,9 @@ fn a_page_of_the_smallest_records_walks_to_its_end() {
     );
     let smallest = extended_attribute::store::record_len(1, 0);
     let mut blob = [0u8; PAGE_BYTES];
-    for record in blob.chunks_exact_mut(smallest) {
-        record[0] = 1;
-        record[smallest - 1] = b'a';
+    for at in (0..PAGE_BYTES - PAGE_BYTES % smallest).step_by(smallest) {
+        blob[at] = 1;
+        blob[at + smallest - 1] = b'a';
     }
     assert_eq!(
         extended_attribute::store::iter(&blob).count(),
