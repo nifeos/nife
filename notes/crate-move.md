@@ -36,11 +36,11 @@ The rules every step keeps:
 locally and creates nothing. It copies the crate's tracked files and adds the template's scaffold,
 with every caller pinned at the newest template release. It deletes the `Name:` blocks, regenerates
 each falsification patch over the stripped source for `-p1`, sets `repository` in the manifest and carries the crate's mutation baseline row into `.github/mutants-exempts` as a comment. Then it builds
-and tests the copy at its `rust-version`, runs the template's `clippy` job on stable (host, each
-bare-metal target and the `--cfg kani` pass), and runs the template's cheap checks from that release.
+and tests the copy at its `rust-version`, runs the template's `clippy` job, and runs the template's
+cheap checks from that release.
 The checks are every helper the release's `check / standalone` job enforces, at ceiling 0 on the
 staged tree. A crate that nife's `helpers/template_report_baseline.txt` counts as baseline therefore
-fails the dry run until its findings are fixed. The dry run reads the list from the release's `check.yml`; a
+fails the dry run until a lane fixes its findings. The dry run reads the list from the release's `check.yml`; a
 helper without a runner here fails the run as `template coverage`. A clean run means a green first
 `check / standalone`, except for the shellcheck step and a missing `typos`, which the run reports.
 It ends
