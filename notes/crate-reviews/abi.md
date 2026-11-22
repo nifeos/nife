@@ -124,6 +124,6 @@ kernel, the runtime, the `std` overlay and the system tests. No number changes.
 ## Clearance
 
 Rule in force, ruled 2026-11-22 (UTC), option A of milestone 1075's open decision: the review
-clears once step 3 of milestone 1121 (the `moho_abi` rename) lands. That clearance is the go to
+clears once step 3 of milestone 1121 (the Moho rename: the order in which the binary interface takes its name) lands the `moho_abi` rename. That clearance is the go to
 create the repository with `publish = false`, no tag and no publish. The six names above read
 ratified as of the same ruling.
