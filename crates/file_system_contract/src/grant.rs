@@ -154,6 +154,120 @@ pub const fn is_writable(w: u64) -> bool {
     specification_rights(w) & rights::WRITE != 0
 }
 
+/// **Where a caretaker's grant page holds its name set**, in bytes from the start of the page.
+///
+/// A caretaker is started with one read-only page, its grant page, and every name it is granted
+/// travels there rather than in its `START` words. The granted name (the directory a subtree or
+/// name-set caretaker descends into, or the one file a file caretaker answers for) is at offset 0
+/// as a set of one name in [`super::nameset`]'s encoding, or as an empty set for a grant with no
+/// name to descend by. A name-set caretaker's set follows here. 256 is the first offset past the
+/// longest one-name set, a two-byte header, [`MAXIMUM_NAME_BYTES`] and the terminator, so the two
+/// never overlap whatever the name.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+pub const PAGE_NAME_SET_OFFSET: usize = 256;
+
+const _: () = assert!(PAGE_NAME_SET_OFFSET > 2 + MAXIMUM_NAME_BYTES);
+
+/// **How many bytes of its grant page a caretaker reads**: the granted name and the longest set
+/// after it. Far under a page, so one frame carries the whole grant.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+pub const PAGE_USED_BYTES: usize = PAGE_NAME_SET_OFFSET + super::nameset::MAXIMUM_BYTES;
+
+const _: () = assert!(PAGE_USED_BYTES <= super::PAGE_BYTES);
+
+/// **Write a caretaker's grant page**: `name` at offset 0 as a set of one name, flagged
+/// [`super::nameset::IS_DIRECTORY`] when `is_directory`, and `set`, already encoded by
+/// [`super::nameset::encode`], at [`PAGE_NAME_SET_OFFSET`]. An empty `name` is written as an empty
+/// set, which is how a grant with nothing to descend by travels (the root of the shell's namespace,
+/// or a channel already bound to its directory). An empty `set` is written as an empty set too.
+///
+/// `None`, with `out` partly written, when `name` is longer than [`MAXIMUM_NAME_BYTES`], `set` is
+/// longer than [`super::nameset::MAXIMUM_BYTES`] or `out` is shorter than [`PAGE_USED_BYTES`].
+/// Never a truncation, because a truncated name is a different file.
+///
+/// # Examples
+///
+/// `rm` is granted `notes`, and inside it one name too long for any two words.
+///
+/// ```
+/// use file_system_contract::{grant, nameset};
+///
+/// let long = [b'x'; 200];
+/// let mut set = [0u8; nameset::MAXIMUM_BYTES];
+/// let n = nameset::encode(&[(&long[..], false)], &mut set).unwrap();
+/// let mut page = [0u8; grant::PAGE_USED_BYTES];
+/// grant::write_page(b"notes", true, &set[..n], &mut page).unwrap();
+///
+/// // What the caretaker reads back from its read-only page.
+/// assert_eq!(grant::page_name(&page), Some(&b"notes"[..]));
+/// assert!(nameset::contains(grant::page_name_set(&page), &long));
+/// ```
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+pub fn write_page(name: &[u8], is_directory: bool, set: &[u8], out: &mut [u8]) -> Option<()> {
+    if out.len() < PAGE_USED_BYTES
+        || name.len() > MAXIMUM_NAME_BYTES
+        || set.len() > super::nameset::MAXIMUM_BYTES
+    {
+        return None;
+    }
+    if name.is_empty() {
+        out[0] = 0;
+    } else {
+        super::nameset::encode(&[(name, is_directory)], &mut out[..PAGE_NAME_SET_OFFSET])?;
+    }
+    let tail = &mut out[PAGE_NAME_SET_OFFSET..PAGE_USED_BYTES];
+    if set.is_empty() {
+        tail[0] = 0;
+    } else {
+        tail[..set.len()].copy_from_slice(set);
+    }
+    Some(())
+}
+
+/// **The granted name on a caretaker's grant page**: empty for a grant with nothing to descend by,
+/// or `None` when offset 0 does not hold exactly one name or none.
+///
+/// Read strictly, not with [`super::nameset::iter`], which stops quietly at a record that runs
+/// off its buffer. Here a quiet stop would read as the empty name, and an empty name is the whole
+/// namespace the caretaker was meant to narrow. So a record that runs past [`MAXIMUM_NAME_BYTES`],
+/// a second record, or a flags byte with a bit [`super::nameset::IS_DIRECTORY`] does not define is
+/// `None`, and the caretaker refuses to start.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+pub fn page_name(page: &[u8]) -> Option<&[u8]> {
+    let len = *page.first()? as usize;
+    if len == 0 {
+        return Some(&[]);
+    }
+    if len > MAXIMUM_NAME_BYTES || *page.get(1)? & !super::nameset::IS_DIRECTORY != 0 {
+        return None;
+    }
+    let name = page.get(2..2 + len)?;
+    (*page.get(2 + len)? == 0).then_some(name)
+}
+
+/// **The name set on a caretaker's grant page**, in [`super::nameset`]'s encoding: the bytes from
+/// [`PAGE_NAME_SET_OFFSET`] to [`PAGE_USED_BYTES`], or nothing when `page` is shorter. A subtree
+/// caretaker's is empty.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+pub fn page_name_set(page: &[u8]) -> &[u8] {
+    page.get(PAGE_NAME_SET_OFFSET..PAGE_USED_BYTES)
+        .unwrap_or(&[])
+}
+
+/// **Whether a caretaker's `START` words are the ones a grant page goes with**: both name words
+/// zero and no length in the spec word, so the words carry only the rights. Restrictive first: a
+/// caretaker refuses words that still carry a name, rather than reading one of two places.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+pub const fn words_carry_no_name(name_lo: u64, name_hi: u64, spec: u64) -> bool {
+    name_lo == 0 && name_hi == 0 && specification_len(spec) == 0
+}
+
 /// **A grant whose operand is the holder's whole namespace**, spelled as a name of zero length.
 ///
 /// A per-file or per-directory grant names one thing, and [`fits`] refuses an empty name, so a
