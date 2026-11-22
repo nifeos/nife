@@ -1,6 +1,8 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-11-22
+decided: 2026-11-22
+ratified_by: calef
 ---
 
 # 327. What a service answers for a verb it does not carry
@@ -35,6 +37,17 @@ its protocol carries, and which check comes first when a request is wrong in mor
 Services with their own reply vocabulary (entropy, sockets, clock and reset, the terminal and
 others below) stay out of scope: §325 (the services' wire error vocabulary) leaves those to each
 protocol.
+
+Ruled 2026-11-22 (UTC): option (C), a code of its own for a verb the protocol does not carry.
+
+- §326's table gains `UnknownOperation` at -275 (name provisional), with `doc(alias = "ENOTTY")`.
+- Every site below answers it for an operation number its protocol does not carry.
+- Every server decodes the verb before any other field of the word.
+- `Unsupported` keeps the known verb a server or capability does not offer, `BadHandle` a handle
+  the capability never minted, and `InvalidInput` an argument a known verb cannot take.
+- The `std` overlay maps `UnknownOperation` to `ErrorKind::Unsupported`.
+
+The reason is on the merits; (C) costs one table row and one overlay arm more than (A).
 
 ## Is the premise true
 
@@ -176,7 +189,7 @@ gives no other reason.
 
 ## Options
 
-**(C) A code of its own for "no such verb" (recommended).** The provisional name is
+**(C) A code of its own for "no such verb" (ruled).** The provisional name is
 `UnknownOperation`, the spelling the JH7110 and power-management contracts use. It takes -275, the
 next number after §326's table, with `doc(alias = "ENOTTY")`. Every site above answers it, and the
 neighboring codes then each mean one thing:
@@ -254,7 +267,7 @@ compatibly, and (A) is not.
 ## Would we still choose this if both cost the same
 
 Yes. (C) is the dearer of the two close options by one table row and one overlay arm, and (B) is the
-cheapest, so the recommendation is not about effort.
+cheapest, so the ruling is not about effort.
 
 ## A concrete example
 
@@ -285,9 +298,9 @@ match Code::from_word(r0) {
 
 ## What waits on this
 
-- §326's renaming lane. With a ruling here it changes each of the eleven sites once, to the ruled
-  answer, instead of twice. Under (C), §326's table gains one row.
-- Nothing else. §326 can be ruled without this, since it renames each site as it stands.
+- §326's renaming lane changes each of the eleven sites once, to `UnknownOperation`, and adds its
+  row to §326's table.
+- Nothing else.
 
 ## What was not checked
 
