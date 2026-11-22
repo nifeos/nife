@@ -92,24 +92,26 @@ constants in its own values and its tests.
   names a reader types keep their spelling, each with `#[doc(alias)]` and a doc line naming the
   command. The rename lane built them.
 - Decision 3 (the maintainer's provisional ruling for the package step, 2026-11-19 UTC): one package
-  covers both crates, and the move is not held for it. Ratifying the names and clearing the review,
-  which is also the go to create the repository as `publish = false`, stay the architect's.
+  covers both crates, and the move is not held for it.
+- The clearance and the names (ruled 2026-11-22 UTC, #4009): the crate is cleared as the second crate
+  of the shared repository, `publish = false`; the crate name, the identity pair and the item names
+  are ratified as built.
 
 ## Names
 
-The crate name is provisional, and the architect has ratified nothing else in the crate except the
-standing `tests` module name. This lane ratifies nothing. The full table, one row per name with its status, is the
-output of `python3 helpers/name_release.py --draft file_system_fixture`; the pull request that asks
-for this ruling carries it. In groups:
+The architect ratified the crate's names as built (2026-11-22 UTC, #4009): the crate name, the
+identity pair, and every item name that `python3 helpers/name_release.py --draft file_system_fixture`
+lists. The `Name:` blocks in the tree still read provisional until the move commit strips them. In
+groups:
 
 | group | names | status |
 |---|---|---|
-| crate | `file_system_fixture` | provisional |
-| identity | `VERSION` 1, `INTERFACE_ID` 16 | provisional |
-| Decision 2's renames, as built | the gate refusals (`SCRATCH_PLACEHOLDER`, `MADE_DIRECTORY`, `MADE_A_DIRECTORY`, `NAVIGATION_DIRECTORY`, `GLOB_DIRECTORY`, `TOUCH_MODIFICATION_TIME_ADVANCED`, `BYTE_REGION`, `BYTE_REGION_FILES`); the unit rule (`LOGICAL_BLOCK_BYTES`, `UNIT_BYTES`, `TOTAL_BYTES`, `RECORD_BYTES`, `WARMUP_TRANSFERS`, `NAVIGATION_TOUCH_AT_UNIX_SECONDS`, `WIDE_FILES`); the seven witness modules; the `ATTRIBUTE`, `ABSOLUTE_`, `REDIRECTION`, `SEQUENTIAL_` and `RANDOM_` spellings; `EFI_SYSTEM_PARTITION` | provisional |
-| kept command names | `RG_*`, `rg_match_path`, `RM_*`, `RMDIR_*`, `UNLINK*`, `PWD_*`, `MOTD*`, `GLOB*` | provisional, each `#[doc(alias)]` where the type allows one |
-| the witness lists | `ALL` in each of the seven witness modules | provisional |
-| everything else | 174 items with no block, each named for what it holds | unblocked, read as provisional |
+| crate | `file_system_fixture` | ratified |
+| identity | `VERSION` 1, `INTERFACE_ID` 16 | ratified |
+| Decision 2's renames, as built | the gate refusals (`SCRATCH_PLACEHOLDER`, `MADE_DIRECTORY`, `MADE_A_DIRECTORY`, `NAVIGATION_DIRECTORY`, `GLOB_DIRECTORY`, `TOUCH_MODIFICATION_TIME_ADVANCED`, `BYTE_REGION`, `BYTE_REGION_FILES`); the unit rule (`LOGICAL_BLOCK_BYTES`, `UNIT_BYTES`, `TOTAL_BYTES`, `RECORD_BYTES`, `WARMUP_TRANSFERS`, `NAVIGATION_TOUCH_AT_UNIX_SECONDS`, `WIDE_FILES`); the seven witness modules; the `ATTRIBUTE`, `ABSOLUTE_`, `REDIRECTION`, `SEQUENTIAL_` and `RANDOM_` spellings; `EFI_SYSTEM_PARTITION` | ratified |
+| kept command names | `RG_*`, `rg_match_path`, `RM_*`, `RMDIR_*`, `UNLINK*`, `PWD_*`, `MOTD*`, `GLOB*` | ratified, each `#[doc(alias)]` where the type allows one |
+| the witness lists | `ALL` in each of the seven witness modules | ratified |
+| everything else | 174 items with no block, each named for what it holds | ratified |
 
 ## What still blocks the move
 
@@ -117,27 +119,19 @@ for this ruling carries it. In groups:
 |---|---|
 | The caller workflows with `allow-unpublished` and three targets, the accepted words, and the stranger run before a tag (item 11). | the move lane |
 | The nine consumers' path dependencies become `git` and `rev`, and every file `script/crate-move --dry-run` lists is read. | the move lane |
-| The architect's clearance (Decision 3), asked below. | the architect |
 
 Item 17 (the doc comments read as a note) stays open and does not block the move. Item 18 (no
 harness a third party can run) waits on the shared repository, and the crate's `BUGS` records it.
 
-## Recommendation
+## Ruling
 
-Ready to clear with `file_system_contract`, for the shared repository only. The crate is test data
-with no `unsafe`, one dependency on its sibling, no naming-gate refusal and no mention of its
-consumers. What remains before the move is the move's own work.
+Ruled 2026-11-22 UTC (#4009, option A), with item 1 of
+[the contract's package](filesystem-contract.md#decisions-for-the-architect):
 
-## Decisions for the architect
+1. `file_system_fixture` is cleared as the second crate of the shared repository
+   `nifeos/file_system_contract`, `publish = false`.
+2. The crate name `file_system_fixture` is ratified.
+3. `INTERFACE_ID` 16 at `VERSION` 1 are frozen.
+4. The item names are ratified as built.
 
-1. Clear the review of `file_system_fixture` as the second crate of the shared repository, together
-   with item 1 of [the contract's package](filesystem-contract.md#decisions-for-the-architect).
-   Recommendation: yes.
-2. Ratify the crate name `file_system_fixture`. Recommendation: yes; it names what the crate holds,
-   beside the contract it shares a repository with.
-3. Ratify the identity values `INTERFACE_ID` 16 at `VERSION` 1 as frozen, as for the contract's 14
-   and 15. Recommendation: yes.
-4. Ratify the item names as built, from the table above. Recommendation: yes; the gates refuse none,
-   and a later rule reopens any of them at the release review.
-
-Nothing here asks for a tag, a publication or a repository of the fixture's own.
+Nothing here allows a tag, a publication or a repository of the fixture's own.
