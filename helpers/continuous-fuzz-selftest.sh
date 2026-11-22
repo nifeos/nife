@@ -89,4 +89,28 @@ want "bound ran out" "$(verdict "booting
 continuous-fuzz: $ran_out after 300 s" 0 100)" "held-hang 0 101"
 want "infrastructure" "$(verdict 'booting' 125 100)" "infrastructure 0 101"
 
+# Each driver's held log names its own seed variable and no other. The supervisor sets one variable
+# per window (`driver_test`), the driver reads it with `option_env!` and prints it on its replay
+# line, and the filer refuses a log whose replay line names another driver's variable (nifeos/nife
+# issue 3921). For each driver in `driver_test`, find the source file that defines its test, and
+# check that the file reads that variable, prints a replay line with it, and names no other
+# `NIFE_*_FUZZ_SEEDS` variable in either place.
+sources="$here/../system_tests/src"
+drivers=$(sed -n 's/^ *\([a-z-]*\)) echo "[a-z_]* NIFE_[A-Z_]*_FUZZ_SEEDS" ;;$/\1/p' "$sup")
+[ "$(echo "$drivers" | wc -l | tr -d ' ')" -eq 2 ] || fail "driver_test names '$drivers', wanted two drivers"
+for driver in $drivers; do
+    pair=$(sed -n "s/^ *$driver) echo \"\([a-z_]* NIFE_[A-Z_]*_FUZZ_SEEDS\)\" ;;\$/\1/p" "$sup")
+    filter=${pair% *}
+    var=${pair#* }
+    file=$(grep -rl -E "^fn $filter[a-z_]*\(\)" "$sources" || true)
+    [ "$(echo "$file" | grep -c .)" -eq 1 ] || fail "$driver: wanted one file defining a test that starts '$filter', found '$file'"
+    grep -q "option_env!(\"$var\")" "$file" || fail "$driver: $file does not read $var"
+    grep -q "(replay: $var={}:1)" "$file" || fail "$driver: $file prints no replay line naming $var"
+    other=$(grep -o -E 'option_env!\("NIFE_[A-Z_]*_FUZZ_SEEDS"\)|replay: NIFE_[A-Z_]*_FUZZ_SEEDS=' "$file" \
+        | grep -v -F -e "option_env!(\"$var\")" -e "replay: $var=" || true)
+    [ -z "$other" ] || fail "$driver: $file names another variable: $other"
+    # The supervisor's own reading of the replay line takes the seed from this driver's form.
+    want "$driver replay line" "$(verdict "x (replay: $var=111:1)" 1 100)" "held-finding 11 112"
+done
+
 echo "continuous-fuzz-selftest: ok"
