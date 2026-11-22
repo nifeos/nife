@@ -187,7 +187,7 @@ Built and provisional, not in Decision B's table:
 | `directory::rights::SET_MODIFICATION_TIME_AT` | provisional | a right, written module-qualified beside `file_system::SET_MODIFICATION_TIME` |
 | `directory::Rights::substitute_parent_rights` | provisional | |
 | `grant::fits_words` | provisional | beside `fits` and `MAXIMUM_WORDS_NAME_BYTES` |
-| `verb::Verb::mints_handle_without_name` | provisional | |
+| `verb::Verb::reissues_handle` | ratified 2026-11-22 | |
 | `block::LOGICAL_BLOCK_BYTES` | ratified 2026-11-22 | |
 | `rm::VERDICT_SLOT` | ratified 2026-11-22 | as built |
 | `DESCENT_REFUSED` | ratified 2026-11-22 | as built |

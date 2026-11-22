@@ -177,8 +177,8 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         let filtered = asked == file_system::ROOT;
 
         // A verb that reissues a handle without a name would hand back the whole directory with
-        // the set filter left behind, so the granted directory refuses it (`Verb::mints_handle_without_name`).
-        if filtered && v.mints_handle_without_name() {
+        // the set filter left behind, so the granted directory refuses it (`Verb::reissues_handle`).
+        if filtered && v.reissues_handle() {
             reply(reply_slot, error::word(EPERM), 0);
             continue;
         }

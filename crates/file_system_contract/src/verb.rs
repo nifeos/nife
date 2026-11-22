@@ -73,8 +73,9 @@ impl Verb {
     /// new handle reaches every entry and carries no filter. Derived from the two fields rather
     /// than listed, so a verb added with this shape is refused from the day its row exists.
     ///
-    /// Name: provisional, minted 2026-11-22 (UTC) by the file-system-contract-rename lane (ruled 2026-11-22).
-    pub const fn mints_handle_without_name(&self) -> bool {
+    /// Name: ratified 2026-11-22, as built. Refused: `reopens_directory`, because it suggests the same rights again, which
+    /// `NARROW` does not give; `bypasses_name_filter`, because it names one caller, not the property.
+    pub const fn reissues_handle(&self) -> bool {
         self.mints_handle && matches!(self.operand, Operand::None)
     }
 

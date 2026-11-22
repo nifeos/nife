@@ -106,7 +106,7 @@ fn narrow_carries_a_mask_and_a_minted_handle_and_no_name() {
 fn only_narrow_reissues_a_handle_without_a_name() {
     let reissuing: Vec<&str> = verb::TABLE
         .iter()
-        .filter(|v| v.mints_handle_without_name())
+        .filter(|v| v.reissues_handle())
         .map(|v| v.name)
         .collect();
     assert_eq!(reissuing, ["NARROW"]);
