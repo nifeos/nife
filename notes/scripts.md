@@ -1,6 +1,6 @@
 # The `script/` entry points
 
-Every command you need to work on this repo lives in `script/`, one short file each, with the
+Every command lives in `script/`, one short file each, with the
 same names GitHub's [Scripts to Rule Them All](https://github.com/github/scripts-to-rule-them-all)
 pattern uses. The idea is muscle memory: clone any repo that follows the pattern, run
 `script/setup`, then `script/test`, and you are working, without learning which one uses
@@ -25,7 +25,7 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 | `script/bench` | icount microbenchmarks; `--check` fails on drift from the baseline. |
 | `script/icount` | Boot a `--features icount` kernel and assert the two timing claims a wall clock cannot make. |
 | `script/fmt` | Format with the pinned rustfmt; `--check` is the CI gate. |
-| `script/lint` | Clippy on every ISA and feature build, plus the non-clippy checks sharing its job. It names every failing section. `--quick` runs the cheap ones first. |
+| `script/lint` | Clippy on every ISA and feature build, plus non-clippy checks sharing its job, naming each failing section. `--quick` runs the cheap ones first. |
 | `script/coverage` | Host-crate coverage, gated at 80% per file. |
 | `script/ci-build` | The one list of checks a pull request must pass. CI runs its rows. |
 | `script/qemu-check` | Is the QEMU on PATH exactly the pinned one, with the devices the suite needs? |
@@ -53,6 +53,7 @@ Full rows: [records-and-indexes.md](scripts/records-and-indexes.md).
 | `script/apropos <word>` | Search every document in the repository. |
 | `script/site` | Build the design record as a website and report its broken links. |
 | `script/names` | Who named this, when, and what was refused. |
+| `script/review-status` | Crate review findings, by state. |
 | `script/metrics` | The weekly measures behind `notes/project-metrics.md`. |
 
 ### How the project measures itself

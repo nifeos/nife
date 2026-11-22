@@ -35,7 +35,7 @@ The repository's `check` and `proofs` runs are green on the first push for the c
 
 - P0-1, the manifest stands alone: Open. It still inherits `license` and the lints from the
   workspace, carries `publish = false` and has no license files.
-- P0-2, a README: Open. None exists; a lane writes it once the architect clears the crate.
+- P0-2, a README: Open. None exists.
 - P0-3, documentation that cites this tree: Done, [#3805](https://github.com/nifeos/nife/pull/3805).
   The sentences in `src/lib.rs`, `tests/allocator.rs` and the falsification headers carry their
   reasons and cite no section, milestone, path or program of this tree.
@@ -46,7 +46,7 @@ The repository's `check` and `proofs` runs are green on the first push for the c
 - P1-7, the acronyms gate: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P1-8, the names the release review meets: Done, [#3805](https://github.com/nifeos/nife/pull/3805).
   Decisions 1 and 2 and the two-way renames are built across the crate, `kernel/` and
-  `system_tests/`, with no alias of an old spelling. Ratified 2026-11-20 (UTC): every renamed name.
+  `system_tests/`, with no alias of an old spelling, and every renamed name is ratified.
 - P1-9, `page_frames_in` truncates: Done, [#3567](https://github.com/nifeos/nife/pull/3567), with
   `page_frames_covering`.
 - P1-10, the falsification patches drift: Done, [#3521](https://github.com/nifeos/nife/pull/3521)
@@ -60,23 +60,14 @@ The repository's `check` and `proofs` runs are green on the first push for the c
 - P2-15, the 64-bit `usize`: Done, [#3567](https://github.com/nifeos/nife/pull/3567), a `const`
   assertion at the crate root.
 - P2-16, the `Name:` paragraph: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-17, the mutation exemptions: Open. The new repository writes them.
+- P2-17, the mutation exemptions: At the move. The new repository writes them.
 - P2-18, `Hash`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-19, the scan hint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-20, the stale note: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- Decision 1, `FRAME_SIZE` or `FRAME_BYTES`: Ruled (maintainer, 2026-11-19 UTC; ratified 2026-11-20 UTC), and
-  built in [#3805](https://github.com/nifeos/nife/pull/3805).
-- Decision 2, `physical_address` and `from_physical_address`: Ruled (maintainer, 2026-11-14 UTC;
-  ratified 2026-11-20 UTC), and built in [#3805](https://github.com/nifeos/nife/pull/3805).
-- The template's gates refused two names no item lists, the private `fn get` (`question_shape`)
-  and the test `an_unaligned_address_is_refused_without_a_panic` (`register_names`): Done,
-  [#3805](https://github.com/nifeos/nife/pull/3805), as `is_index_used` and
-  `an_unaligned_physical_address_is_refused_without_a_panic`.
-- Ratifying the public names: Ruled 2026-11-20 (UTC): ratify every public name as built,
-  including `alloc`, std's spelling and meaning.
-- Clearing a review package: Ruled 2026-11-20 (UTC): clear the package and approve the repository
-  `nifeos/page_frames` as `publish = false`, with no tag and no publish. The package is
-  [notes/crate-reviews/page-frames.md](../../notes/crate-reviews/page-frames.md).
+- Decision 1, `FRAME_SIZE` or `FRAME_BYTES`: Done, [#3805](https://github.com/nifeos/nife/pull/3805),
+  as `FRAME_BYTES`, ratified.
+- Decision 2, `physical_address` and `from_physical_address`: Done,
+  [#3805](https://github.com/nifeos/nife/pull/3805), ratified.
 
 ## Rulings
 
@@ -239,8 +230,9 @@ The checks are in [the appendix](1103-page-frames-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Each finding that "Finding status" marks Open, checked against
-  `crates/page_frames` and its manifest. Items 1, 2, 12 and 17 are the move lane's; the review package has its clearance.
+- **Outstanding.** Each finding that "Finding status" marks Open or At the move, checked against
+  `crates/page_frames` and its manifest. Items 1, 2, 12 and 17 are the move lane's; the review
+  package has its clearance.
 
 ## BUGS
 
