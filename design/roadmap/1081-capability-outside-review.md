@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: 1034
 decision_dependencies: 151, 305
 machine_requirements: none
@@ -78,9 +79,10 @@ The crate lives in nifeos/capability_table, which the kernel pins. Each line sta
 - P2-15, notes beside the crate have drifted: Done,
   [#3565](https://github.com/nifeos/nife/pull/3565),
   [#3656](https://github.com/nifeos/nife/pull/3656).
-- P2-16, `Option<Capability<O>>` has no niche: Waiting on nifeos/capability_table#2, which keeps a
+- P2-16, `Option<Capability<O>>` has no niche: Done, nifeos/capability_table#2, which keeps a
   marker bit in a `NonZeroU32` so a 64-slot table of `u64` objects is 1,040 bytes, not 1,552. The
-  kernel's table is unchanged, because its `Object` enum already gave `Option` a niche.
+  kernel pins its merge commit, and the kernel's table is unchanged, because its `Object` enum
+  already gave `Option` a niche.
 - D1, the crate's name: Done, [#3674](https://github.com/nifeos/nife/pull/3674), ruled 2026-11-16
   (UTC), option A.
 - D2, the five names: Done, [#3777](https://github.com/nifeos/nife/pull/3777), ruled 2026-11-19
@@ -214,7 +216,7 @@ The checks are in [the appendix](1081-capability-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** The lines under [Finding status](#finding-status) that are not Done.
+- **Recorded.** P2-14 under [Finding status](#finding-status), which the maintainer declined.
 
 ## BUGS
 
