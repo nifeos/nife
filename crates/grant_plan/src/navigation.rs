@@ -683,6 +683,44 @@ impl Bindings {
 mod tests {
     use super::*;
 
+    /// **A descent past the deepest level the shell tracks is refused**, however short the name,
+    /// and a name that is not a component is refused at the root, however much room is left.
+    #[test]
+    fn descend_refuses_past_the_depth_and_a_non_component() {
+        let mut path = DirectoryPath::root();
+        assert!(!path.descend(b"a/b"));
+        assert!(!path.descend(b""));
+        assert!(path.is_root());
+        for _ in 0..MAXIMUM_DEPTH {
+            assert!(path.descend(b"a"));
+        }
+        assert!(!path.descend(b"a"));
+        assert_eq!(path.depth(), MAXIMUM_DEPTH);
+    }
+
+    /// **A bound name may be exactly [`MAXIMUM_BOUND_NAME_BYTES`] long, and one byte more is
+    /// refused.**
+    #[test]
+    fn a_bound_name_is_held_to_its_bound_inclusively() {
+        let longest = [b'b'; MAXIMUM_BOUND_NAME_BYTES + 1];
+        let mut bindings = Bindings::none();
+        assert_eq!(
+            bindings.add(&longest, DirectoryPath::root()),
+            Err(BindRefusal::NotAName)
+        );
+        assert_eq!(
+            bindings.add(&longest[..MAXIMUM_BOUND_NAME_BYTES], DirectoryPath::root()),
+            Ok(())
+        );
+        assert_eq!(
+            bindings.add(
+                &longest[..MAXIMUM_BOUND_NAME_BYTES - 1],
+                DirectoryPath::root()
+            ),
+            Ok(())
+        );
+    }
+
     /// Two routes to one position compare equal, which the derived `PartialEq` only promises if
     /// [`DirectoryPath::ascend`] leaves no stale component behind (milestone 154 found that it did).
     #[test]
