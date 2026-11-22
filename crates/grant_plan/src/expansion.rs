@@ -380,7 +380,7 @@ impl<'a> Expander<'a> {
     /// dotfiles asks for them and takes the larger grant deliberately.
     ///
     /// `byte_glob` treats `.` and `..` as ordinary names, so `.*` matches both. No listing this
-    /// expander is driven over carries either: RedoxFS stores neither entry, and `disk_tree` refuses
+    /// expander sees carries either: the file servers behind it store neither entry and refuse
     /// both names. A server whose listing did carry them would not widen a grant to a parent,
     /// because neither is a valid file name, and the line refuses with
     /// [`Refusal::MatchNotNameable`]. That refusal is how such a server shows up here.

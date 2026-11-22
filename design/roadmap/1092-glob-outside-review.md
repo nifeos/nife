@@ -74,7 +74,7 @@ release steps.
 - P2-5, two harnesses fix one dot rule: Will not fix in full, ruled 2026-11-20 by the maintainer as
   a two-way call in [nifeos/byte_glob#1](https://github.com/nifeos/byte_glob/pull/1).
   [#3566](https://github.com/nifeos/nife/pull/3566) gave both harnesses a symbolic dot rule and
-  `any_lengths()`. The cost harness keeps it. The no-magic harness is stated under
+  `any_lengths()`. The cost harness keeps it. The no-magic harness states its claim under
   `LeadingDot::Ordinary` again, because the symbolic rule took 567 seconds of the 20-minute proofs
   budget, and the dot-rule harness proves the policy on its own.
 - P2-6, stale solver times: Done, [#3566](https://github.com/nifeos/nife/pull/3566). The shipped
