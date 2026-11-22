@@ -41,7 +41,7 @@ use number_writer::{write_right, write_signed};
 /// `MemoryRegion::USAGE` answered: pages held, and pages spent.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Share {
-    /// `abi::usage::SIZE`.
+    /// `abi::usage::SIZE_PAGES`.
     pub pages: u64,
     /// `abi::usage::COMMITTED`.
     pub committed: u64,

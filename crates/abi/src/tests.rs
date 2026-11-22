@@ -27,12 +27,12 @@ fn a_reset_refusal_maps_to_its_reason_and_survives_the_wire() {
 }
 
 /// `usage::is_known` is the kernel's answer to "is this a record I serve": exactly the seven
-/// numbered `SIZE..=CHILDREN`, and nothing past the last.
+/// numbered `SIZE_PAGES..=CHILDREN`, and nothing past the last.
 #[test]
 fn usage_records_known_are_exactly_the_seven() {
     use crate::usage;
     for r in [
-        usage::SIZE,
+        usage::SIZE_PAGES,
         usage::COMMITTED,
         usage::FRAMES,
         usage::RENDEZVOUS,
@@ -127,10 +127,12 @@ fn the_fault_slot_is_inside_the_capability_table() {
 /// and the shared form, is refused.
 #[test]
 fn the_address_wait_admits_only_a_private_32_bit_word() {
-    use crate::address_wait::{PRIVATE, SIZE_U8, SIZE_U16, SIZE_U32, SIZE_U64, is_admitted};
-    assert!(is_admitted(PRIVATE | SIZE_U32));
-    assert!(!is_admitted(SIZE_U32));
-    for size in [SIZE_U8, SIZE_U16, SIZE_U64] {
+    use crate::address_wait::{
+        PRIVATE, WIDTH_8_BITS, WIDTH_16_BITS, WIDTH_32_BITS, WIDTH_64_BITS, is_admitted,
+    };
+    assert!(is_admitted(PRIVATE | WIDTH_32_BITS));
+    assert!(!is_admitted(WIDTH_32_BITS));
+    for size in [WIDTH_8_BITS, WIDTH_16_BITS, WIDTH_64_BITS] {
         assert!(!is_admitted(PRIVATE | size));
     }
 }
@@ -221,11 +223,11 @@ fn the_system_call_numbers_and_the_first_object_modules_are_pinned() {
         crate::fault::FAULT_RENDEZVOUS_SLOT => 63,
         crate::fault::EVENT_FAULT => 1,
         crate::fault::EVENT_EXIT => 2,
-        crate::address_wait::SIZE_U8 => 0,
-        crate::address_wait::SIZE_U16 => 1,
-        crate::address_wait::SIZE_U32 => 2,
-        crate::address_wait::SIZE_U64 => 3,
-        crate::address_wait::SIZE_MASK => 3,
+        crate::address_wait::WIDTH_8_BITS => 0,
+        crate::address_wait::WIDTH_16_BITS => 1,
+        crate::address_wait::WIDTH_32_BITS => 2,
+        crate::address_wait::WIDTH_64_BITS => 3,
+        crate::address_wait::WIDTH_MASK => 3,
         crate::address_wait::PRIVATE => 128,
         crate::interrupt::WAIT => 0,
         crate::interrupt::ACKNOWLEDGE => 1,
@@ -303,7 +305,7 @@ fn the_last_object_modules_are_pinned() {
         crate::thread_control_block::RESUME => 5,
         crate::timer::ARM => 0,
         crate::timer::CANCEL => 1,
-        crate::usage::SIZE => 0,
+        crate::usage::SIZE_PAGES => 0,
         crate::usage::COMMITTED => 1,
         crate::usage::FRAMES => 2,
         crate::usage::RENDEZVOUS => 3,

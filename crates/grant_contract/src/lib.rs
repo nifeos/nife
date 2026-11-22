@@ -24,12 +24,15 @@ pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 17, naming the capability slot
 /// numbers the progenitor grants into and a program reads. The number is this interface's for good:
-/// no other interface takes it, and a format change is a new version, never a new number. Milestone
-/// 956 (the linked interfaces carry checkable versions) holds the table of numbers, and
-/// `script/lint` holds the tree to it. A program declares the pair of this id and [`VERSION`].
+/// no other interface takes it, and a format change is a new version, never a new number. A
+/// program declares the pair of this id and [`VERSION`].
 ///
 /// Name: ratified 2026-11-20 (UTC).
 pub const INTERFACE_ID: u64 = 17;
+
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
 
 pub mod verbs;
 

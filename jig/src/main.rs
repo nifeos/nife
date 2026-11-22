@@ -72,6 +72,19 @@ capability_manifest_note::carry!(grant_contract::Manifest {
 /// a loader maps into a `std` program. Four MiB, `spawn_protocol::IMAGE_MAXIMUM_PAGES` pages.
 const STAGING_VA: u64 = address_space_layout::pair_page(0x0400_0000);
 
+/// **Where the names' pages are mapped while they are written** (milestone 1122 (every name travels
+/// on a page)): a window of this program's own, above [`STAGING_VA`]'s four MiB and below the
+/// pages a loader maps into a `std` program, so a pair page as [`STAGING_VA`] is. A mapping
+/// outlives the frame's capability, so each name takes the next page of the window
+/// ([`NAME_PAGES`]); `jig` is one request a run, which sends two names at most.
+const NAME_VA: u64 = address_space_layout::pair_page(0x0900_0000);
+
+/// How many pages [`NAME_VA`]'s window holds.
+const NAME_PAGES: u64 = 16;
+
+/// The next free page of [`NAME_VA`]'s window, counted in pages.
+static NEXT_NAME_PAGE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
 /// This machine's architecture, as a package stem spells it.
 const ARCHITECTURE: &str = std::env::consts::ARCH;
 
@@ -143,9 +156,76 @@ fn parse_flags<'a>(words: &'a [&'a str]) -> Option<Flags<'a>> {
     Some(flags)
 }
 
+/// **One follower of a request on the installer endpoint**: three words in one message, or a name
+/// on one `READ` frame laid out by `file_system_contract::grant::write_page` ([`send_name`]).
+///
+/// Name: provisional.
+#[derive(Clone)]
+enum Follower {
+    Words(u64, u64, u64),
+    Name(String),
+}
+
 /// The console's one trailer message, the answered-by every install and removal sends
 /// (milestone 911): the kind word, and the progenitor reads no more of it.
-const CONSOLE_TRAILER: [(u64, u64, u64); 1] = [(spawn_protocol::ANSWERED_CONSOLE, 0, 0)];
+const CONSOLE_TRAILER: [Follower; 1] = [Follower::Words(spawn_protocol::ANSWERED_CONSOLE, 0, 0)];
+
+/// **Whether `name` is one a request may carry**: one to `grant::MAXIMUM_NAME_BYTES` bytes, the
+/// most a name's page holds (milestone 1122 (every name travels on a page)). The same bound
+/// §307 (how long a name may be) rule 5 holds an installed package's name to, so nothing is
+/// installed that `jig remove` cannot name.
+fn carries(name: &str) -> bool {
+    !name.is_empty() && name.len() <= file_system_contract::grant::MAXIMUM_NAME_BYTES
+}
+
+/// **Send `name` on the installer endpoint as one `READ` frame**, laid out by
+/// `file_system_contract::grant::write_page` as a caretaker's granted name is (milestone 1122).
+/// The frame is retyped from this program's region, written at the next page of [`NAME_VA`]'s
+/// window, and sent narrowed to `READ`. When no frame can be made, the window is used up, or the
+/// name does not fit the page, a plain message goes in its place, which the progenitor reads as a
+/// name nothing holds: both sides stay in step.
+fn send_name(name: &str) {
+    let index = NEXT_NAME_PAGE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let address = NAME_VA + index * spawn_protocol::IMAGE_PAGE;
+    let made = if index < NAME_PAGES {
+        u64::try_from(rt::retype_page_frame_run(
+            std_runtime_contract::MEMORY_REGION_SLOT,
+            1,
+        ))
+        .ok()
+    } else {
+        None
+    };
+    let page = made.filter(|&run| {
+        rt::map_page_frame(run, address, true, std_runtime_contract::MEMORY_REGION_SLOT) || {
+            rt::capability_delete(run);
+            false
+        }
+    });
+    let written = page.filter(|_| {
+        // SAFETY: `address` was just mapped read/write, one page of `NAME_VA`'s window that no
+        // other name takes, and the borrow ends before the frame is sent.
+        let out = unsafe {
+            std::slice::from_raw_parts_mut(
+                address as *mut u8,
+                file_system_contract::grant::PAGE_USED_BYTES,
+            )
+        };
+        file_system_contract::grant::write_page(name.as_bytes(), false, &[], out).is_some()
+    });
+    match written {
+        Some(run) => {
+            rt::send_capability(INSTALLER_SLOT, run, abi::rights::READ, 0);
+            rt::capability_delete(run);
+        }
+        None => {
+            if let Some(run) = page {
+                rt::capability_delete(run);
+            }
+            rt::send(INSTALLER_SLOT, 0, 0, 0);
+        }
+    }
+}
 
 /// **One JSON string**, escaped: the quotes, the backslash and the controls a name could carry.
 fn json_string(text: &str) -> String {
@@ -383,19 +463,21 @@ impl Staged {
 /// afterwards, the member a refused install's program is (one more than its table-of-contents
 /// index, 0 otherwise), the package already holding that program's name for `NameTaken`, the
 /// stored records an `Approve` replaced ([`Reply::stored`], which the re-approval diffs its
-/// file against), and the ask an `--approved` install's check refused ([`Reply::ask`]).
+/// file against), and the ask an `--approved` install's check refused ([`Reply::ask`]): its kind,
+/// a directory's rights and the zone's or directory's name.
 struct Reply {
     status: S,
     live: u64,
     member: u64,
     holder: String,
     stored: Option<String>,
-    ask: Option<[u64; 3]>,
+    ask: Option<(u64, u64, String)>,
 }
 
 /// **Send one activation request on the installer endpoint and read its answer**: the frames
-/// of `staged` for an install, the packed name for a removal, nothing for a rollback, and then
-/// `trailer`, the answered-by messages an install and a removal always send (milestone 911:
+/// of `staged` for an install, the name's frame for a removal or a revoke ([`send_name`]),
+/// nothing for a rollback, and then `trailer`, the answered-by followers an install and a
+/// removal always send (milestone 911:
 /// how the answer was given, which the progenitor writes beside the record). An `Approve`'s
 /// records are their own payload; it sends none of these. After the reply, the followers the
 /// status carries: the package a `NameTaken` or a `NotApproved` refusal is about, the ask the
@@ -405,7 +487,7 @@ fn ask(
     verb: Activation,
     staged: Option<&Staged>,
     name: Option<&str>,
-    trailer: &[(u64, u64, u64)],
+    trailer: &[Follower],
 ) -> Reply {
     let len = staged.map_or(0, |s| s.len);
     let (w0, w1, w2) = spawn_protocol::activation_request(verb, len);
@@ -426,13 +508,15 @@ fn ask(
         }
     }
     if let Some(name) = name {
-        // Every caller has held `name` to `grant::MAXIMUM_WORDS_NAME_BYTES`; a longer one sends empty words,
-        // which the progenitor answers as a name it does not know.
-        let (lo, hi) = file_system_contract::grant::pack_name(name.as_bytes()).unwrap_or((0, 0));
-        rt::send(INSTALLER_SLOT, lo, hi, name.len() as u64);
+        send_name(name);
     }
-    for (a, b, c) in trailer {
-        rt::send(INSTALLER_SLOT, *a, *b, *c);
+    for follower in trailer {
+        match follower {
+            Follower::Words(a, b, c) => {
+                rt::send(INSTALLER_SLOT, *a, *b, *c);
+            }
+            Follower::Name(name) => send_name(name),
+        }
     }
     let (r0, r1, r2) = rt::receive(INSTALLER_REPLY_SLOT);
     let status = S::from_word(r0);
@@ -453,9 +537,17 @@ fn ask(
             .collect();
         let mut out = [0u8; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES];
         holder = spawn_protocol::holder_from_words([words[0], words[1]], &mut out).to_string();
-        if count == 3 {
-            let (a, b, c) = words[2];
-            ask = Some([a, b, c]);
+        // The ask's name follows its message, three bytes of it a word (milestone 1122).
+        if count == 3
+            && let Some((kind, rights, len)) = spawn_protocol::refused_ask_from_words(words[2])
+        {
+            let len = len.min(spawn_protocol::IMAGE_PAGE) as usize;
+            let mut bytes = vec![0u8; len];
+            for i in 0..spawn_protocol::stored_messages(len as u64) {
+                let words = rt::receive(INSTALLER_REPLY_SLOT);
+                spawn_protocol::put_stored_words(&mut bytes, (i * 24) as usize, words);
+            }
+            ask = Some((kind, rights, String::from_utf8(bytes).unwrap_or_default()));
         }
     }
     // **The stored records an `Approve` replaced** (milestone 911), as the reply's word 2
@@ -641,6 +733,14 @@ fn send_install(staged: &mut Staged, fetched: bool, flags: &Flags<'_>) -> ExitCo
             package.as_ref().map(|p| p.version().to_string()),
         )
     };
+    // **§307 (how long a name may be) rule 5**: nothing is installed that `jig remove` cannot
+    // name, and a removal's name travels on a page, so the bound is the page's 252 bytes.
+    if package_name.as_deref().is_some_and(|name| !carries(name)) {
+        return refuse(
+            "that package's name is longer than 252 bytes, which jig remove could not name; \
+             nothing was sent to the installer",
+        );
+    }
     let answered;
     let approved;
     let mut said = Said {
@@ -694,8 +794,8 @@ fn send_install(staged: &mut Staged, fetched: bool, flags: &Flags<'_>) -> ExitCo
 /// against the store's records, which the trailer's digest binds; its refusal names the ask and
 /// the generation. The trailer binds the answer to the file's name and digest.
 struct ApprovalAnswer {
-    /// The three trailer messages.
-    trailer: Vec<(u64, u64, u64)>,
+    /// The three trailer messages and the approval's name.
+    trailer: Vec<Follower>,
     /// The file's `approval` key, for the refusal's naming.
     name: String,
 }
@@ -726,7 +826,7 @@ fn approval_answer(bytes: &[u8], path: &str, json: bool) -> Result<ApprovalAnswe
     // The grants given are exactly the asks; the answer binds to the file's digest, which the
     // progenitor could not otherwise know.
     Ok(ApprovalAnswer {
-        trailer: approval_trailer(&text, &file).to_vec(),
+        trailer: approval_trailer(&text, &file),
         name: file.name().to_string(),
     })
 }
@@ -1146,7 +1246,7 @@ fn remove(words: &[&str]) -> ExitCode {
         println!("{USAGE}");
         return ExitCode::from(2);
     };
-    if !file_system_contract::grant::fits_words(package.as_bytes()) {
+    if !carries(package) {
         println!("{USAGE}");
         return ExitCode::from(2);
     }
@@ -1179,7 +1279,7 @@ fn remove(words: &[&str]) -> ExitCode {
 /// **The removal the approval file allows** (milestone 911): a removal passes when the entry
 /// says `remove = true`, and fails closed before anything is sent. The trailer binds the answer
 /// to the file's name and digest, the same binding an approved install's carries.
-fn removal_answer(package: &str, path: &str, json: bool) -> Result<Vec<(u64, u64, u64)>, ExitCode> {
+fn removal_answer(package: &str, path: &str, json: bool) -> Result<Vec<Follower>, ExitCode> {
     let text = read_approval_text(path, json)?;
     let file = parse_approval(&text, path, json)?;
     let entry = file
@@ -1197,7 +1297,7 @@ fn removal_answer(package: &str, path: &str, json: bool) -> Result<Vec<(u64, u64
         }
         return Err(ExitCode::FAILURE);
     }
-    Ok(approval_trailer(&text, &file).to_vec())
+    Ok(approval_trailer(&text, &file))
 }
 
 /// **The approval file read whole**, or the refusal naming the line: the bytes the answer's
@@ -1251,10 +1351,17 @@ fn not_bounded(package: &str, path: &str, file: &approval_file::File<'_>, json: 
     ExitCode::FAILURE
 }
 
-/// **The answered trailer for an approval**: the file's name and the digest of the bytes the
-/// answer was given on, which the progenitor could not otherwise know (milestone 911).
-fn approval_trailer(text: &str, file: &approval_file::File<'_>) -> [(u64, u64, u64); 3] {
-    spawn_protocol::answered_approval(file.name(), &package_archive::sha256(text.as_bytes()))
+/// **The answered trailer for an approval**: the digest of the bytes the answer was given on and
+/// the file's name on its own frame, which the progenitor could not otherwise know (milestone 911;
+/// milestone 1122).
+fn approval_trailer(text: &str, file: &approval_file::File<'_>) -> Vec<Follower> {
+    let mut trailer: Vec<Follower> =
+        spawn_protocol::answered_approval(&package_archive::sha256(text.as_bytes()))
+            .into_iter()
+            .map(|(a, b, c)| Follower::Words(a, b, c))
+            .collect();
+    trailer.push(Follower::Name(file.name().to_string()));
+    trailer
 }
 
 /// **`jig rollback`**: one generation back. Under `--within <name>` the delegated endpoint's
@@ -1422,7 +1529,7 @@ fn revoke(words: &[&str]) -> ExitCode {
         println!("{USAGE}");
         return ExitCode::from(2);
     };
-    if !file_system_contract::grant::fits_words(name.as_bytes()) {
+    if !carries(name) {
         println!("{USAGE}");
         return ExitCode::from(2);
     }
@@ -1533,15 +1640,14 @@ fn answer_words(
     fetched: bool,
     status: S,
     holder: &str,
-    ask: Option<[u64; 3]>,
+    ask: Option<(u64, u64, String)>,
     said: &Said<'_>,
     program: &str,
 ) -> (String, Vec<String>) {
     let mut extra = Vec::new();
-    let mut zone = [0u8; 16];
-    let decoded = ask.as_ref().and_then(|&[word, lo, hi]| {
-        spawn_protocol::refused_ask_from_words((word, lo, hi), &mut zone)
-    });
+    let decoded = ask
+        .as_ref()
+        .map(|(kind, rights, name)| (*kind, *rights, name.as_str()));
     let said_text = match (status, verb) {
         (S::Done, Activation::Install) if fetched => "fetched and installed".to_string(),
         (S::Done, Activation::Install) => "installed".to_string(),

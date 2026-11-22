@@ -2,7 +2,7 @@
 
 use super::{HISTORY_LINES, LineEditor, MAXIMUM_PROMPT_BYTES, MAXIMUM_RAW_QUEUE_BYTES, RawQueue};
 
-/// "LEDT", then the layout, in the blob's first eight bytes.
+/// The bytes `LEDT`, then the layout, in the blob's first eight bytes.
 pub const MAGIC: u32 = 0x5444_454c;
 /// The one layout this build writes and reads.
 pub const LAYOUT: u32 = 1;

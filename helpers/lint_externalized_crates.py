@@ -47,7 +47,6 @@ WAIVERS = {
     "capability_manifest_note": (2, PENDING),
     "domain_name_resolution_contract": (1, PENDING),
     "file_system_contract": (20, PENDING),
-    "file_system_fixture": (18, PENDING),
     "globally_unique_identifier_partition_table": (21, PENDING),
     "grant_plan": (25, PENDING),
     "machine_statistics_contract": (1, PENDING),
