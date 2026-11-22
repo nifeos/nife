@@ -237,6 +237,11 @@ unit's user. It prints the tag and the assets and publishes nothing.
 - Each move to a newer main idles every slot until the slowest current window ends, and the first
   window after it rebuilds. Main lands many commits a day, so this costs a share of the rate that
   nobody has measured.
+- Nothing frees the host's disk. Main bumps the pinned nightly most days, the toolchain step
+  installs each one and removes none, and each slot's `target/` and the replay worktree's keep the
+  artifacts of every compiler they built with, since cargo keys artifacts by compiler version. The
+  held directory also only grows. Nobody has measured the rate, and no check warns before the disk
+  fills, so a full disk shows only as missing releases.
 - An unfinished run of any required check name keeps the current commit, even the skipped duplicate
   that a push to main starts after the merge queue's run. The next look, 5 minutes later, moves.
 - A person who sets `url.<base>.insteadOf` for GitHub in the fuzz account's git configuration to a
