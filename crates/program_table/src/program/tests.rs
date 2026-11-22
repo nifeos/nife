@@ -296,10 +296,10 @@ fn date_declares_the_diagnostics_slot_and_single_stream_programs_none() {
     }
 }
 
-/// **The fast demonstrations are not interruptible**: they finish in one step, so the shell waits
+/// **The fast demonstrations take no interrupt**: they finish in one step, so the shell waits
 /// for them with no `^C` tier.
 #[test]
-fn the_fast_demonstrations_are_not_interruptible() {
+fn the_fast_demonstrations_take_no_interrupt() {
     assert!(!Program::LeastAuthorityDemo.manifest().interruptible);
     assert!(!Program::MemoryGrantDepleter.manifest().interruptible);
 }
