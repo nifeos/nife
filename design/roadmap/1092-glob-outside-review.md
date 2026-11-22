@@ -32,52 +32,66 @@ One line per finding, in the review's order: P0 in
 [the later-items appendix](1092-glob-outside-review/later-items.md), then the decisions and the
 release steps.
 
-- P0-1, another crate holds the name on crates.io: Done,
-  [#3578](https://github.com/nifeos/nife/pull/3578).
-- P0-2, seven public names unratified: Done, [#3790](https://github.com/nifeos/nife/pull/3790)
-  (Decision 2). `Dot` is `LeadingDot` in the crate, its tests and harnesses, `pgrep`, `grant_plan`,
-  the notes and the falsification patches, with no alias. Ratifying the seven names is Decision 3.
+- P0-1, the crate name was taken on crates.io: Done, [#3578](https://github.com/nifeos/nife/pull/3578).
+  The crate is `byte_glob` in code and package.
+- P0-2, seven public names unratified: Done, [#3790](https://github.com/nifeos/nife/pull/3790) and
+  [#3832](https://github.com/nifeos/nife/pull/3832). `Dot` is `LeadingDot` and `cost_bound` is
+  `step_bound`, with no alias, and the review package ratified the seven.
 - P0-3, the integration test links staying crates: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566). The test is in `crates/grant_plan/tests/`, and
-  the manifest has no dev-dependency.
-- P0-4, the shipped text cites the tree: Done. The citations became sentences, the README takes on
-  the scope note and `docs/proofs.md` takes on the proofs note.
-- P0-5, the manifest is not standalone: Done. The `publish = false` comment says the crate waits
-  for its first release, and `repository` names `nifeos/byte_glob`.
+  the matcher's manifest has no dev-dependency.
+- P0-4, the shipped text cites the tree: Done, [#3836](https://github.com/nifeos/nife/pull/3836).
+  Every citation became a sentence. The README carries the scope note, and its "What is proven"
+  section with `src/verification.rs` carries the proofs note.
+- P0-5, the manifest is not standalone: Done, [#3836](https://github.com/nifeos/nife/pull/3836).
+  The manifest carries its own license, lints, `rust-version`, metadata and `include`, and the
+  `publish = false` comment is in the crate's own words.
 - P0-6, no README: Done, [#3566](https://github.com/nifeos/nife/pull/3566), with both license texts.
 - P1-1, `naive` fails the question gate: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-2, falsification patch paths: Done. The six patches diff `a/src/lib.rs` and the move replayed
-  each against the crate at its own root.
+  It is `naive_matches`.
+- P1-2, the falsification patches name the tree's paths: Done,
+  [#3836](https://github.com/nifeos/nife/pull/3836). The six patches diff `a/src/lib.rs` and the
+  six records name `falsifications/...`; the `proofs` workflow is green on the repository's main.
 - P1-3, mutation testing would reach the inline proof module: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566). The repository's `.cargo/mutants.toml` comes
-  with the move.
+  [#3566](https://github.com/nifeos/nife/pull/3566) split the file, and
+  [nifeos/byte_glob#1](https://github.com/nifeos/byte_glob/pull/1) excludes `src/verification.rs`
+  in the repository's `.cargo/mutants.toml`.
 - P1-4, no `forbid(unsafe_code)`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-5, the `/` caveat is missing: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-6, the module doc opens for this tree's reader: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-7, the length parameters lack a unit: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+  They are `pattern_bytes` and `name_bytes`.
 - P2-1, the doc overstates the cost bound: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-2, `.*` matches `.` and `..`: Open. The matcher's doc and README state it; no listing in this
-  tree offers either name (RedoxFS stores neither, `disk_tree` refuses both), and the note saying
-  so in `grant_plan` is not written.
-- P2-3, `match_steps` returns a tuple: Open. The doc states the promise; a named return
-  (`Outcome`) or a recorded keep is two-way before release, so the maintainer rules provisionally.
-- P2-4, no fuzz target: Open. A target with the naive matcher as oracle, under the opt-in rule for
-  crates with no `unsafe`.
-- P2-5, harnesses fix one dot rule: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-6, stale solver times: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-2, `.*` matches `.` and `..`: Done, [#3962](https://github.com/nifeos/nife/pull/3962). The
+  matcher's doc and README state it, and `grant_plan`'s `Expander::offer` says that no listing it
+  sees carries either name, with a test that a listing which did makes `.*` refuse.
+- P2-3, `match_steps` returns a tuple: Waiting on
+  [nifeos/byte_glob#2](https://github.com/nifeos/byte_glob/pull/2), which returns a
+  `#[non_exhaustive]` `Outcome { matched, steps }`, the name provisional.
+- P2-4, no fuzz target: Waiting on [nifeos/byte_glob#2](https://github.com/nifeos/byte_glob/pull/2),
+  a target against a separately written reference matcher, opted in to the weekly run.
+- P2-5, two harnesses fix one dot rule: Will not fix in full, ruled 2026-11-20 by the maintainer as
+  a two-way call in [nifeos/byte_glob#1](https://github.com/nifeos/byte_glob/pull/1).
+  [#3566](https://github.com/nifeos/nife/pull/3566) gave both harnesses a symbolic dot rule and
+  `any_lengths()`. The cost harness keeps it. The no-magic harness is stated under
+  `LeadingDot::Ordinary` again, because the symbolic rule took 567 seconds of the 20-minute proofs
+  budget, and the dot-rule harness proves the policy on its own.
+- P2-6, stale solver times: Done, [#3566](https://github.com/nifeos/nife/pull/3566). The shipped
+  text gives no per-harness seconds.
 - P2-7, `Elem` is an abbreviation: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-8, no benchmark: Open. A `benches/` with the three adversarial shapes and one ordinary
-  pattern.
+- P2-8, no benchmark: Waiting on [nifeos/byte_glob#2](https://github.com/nifeos/byte_glob/pull/2),
+  a standard-library `benches/matching.rs` over the three blowup shapes and one ordinary pattern.
 - Decision 1, the registry name: Done, [#3578](https://github.com/nifeos/nife/pull/3578).
-- Decision 2, the seven names: Ruled (2026-11-20 UTC); `Dot` is `LeadingDot` and `cost_bound` is
-  `step_bound`, both built.
-- Decision 3, ratify the seven names and create `nifeos/byte_glob`: Ruled (2026-11-20 UTC), option
-  A.
+- Decision 2, the seven names: Done, [#3790](https://github.com/nifeos/nife/pull/3790) and
+  [#3832](https://github.com/nifeos/nife/pull/3832).
+- Decision 3, ratify the seven names and create `nifeos/byte_glob`: Done,
+  [#3836](https://github.com/nifeos/nife/pull/3836). The repository exists with `publish = false`
+  and no tag, and nife pins it by commit.
 - R1, the review package: Done, [#3790](https://github.com/nifeos/nife/pull/3790), at
   [notes/crate-reviews/byte-glob.md](../../notes/crate-reviews/byte-glob.md).
-- R2, ratify the seven names and clear `nifeos/byte_glob`: Done (2026-11-20 UTC). The architect cleared
-  the package and ratified the names.
+- R2, ratify the seven names and clear `nifeos/byte_glob`: Done,
+  [#3832](https://github.com/nifeos/nife/pull/3832).
 
 ## Open decisions
 
@@ -220,8 +234,8 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 - **Recorded.** The crate lives at `nifeos/byte_glob` with `publish = false` and no tag, and nife
   pins it by commit. The stranger test is a separate lane's. The module names `tests` and
   `verification` ship provisional.
-- **Outstanding.** Every finding that Finding status above marks Open, each with what remains. A lane checked each finding line
-  against the crate and its pull requests on main.
+- **Outstanding.** Every finding that Finding status above marks Waiting, each with what it waits
+  on.
 
 ## Index row
 
@@ -229,5 +243,5 @@ An outside reading of `byte_glob` before it leaves. The crate name is `byte_glob
 README, the manifest fields and the split proof module are in, and the test that linked two staying
 crates lives in `grant_plan`. `Dot` is `LeadingDot` and `cost_bound` is `step_bound` (Decision 2), and the architect cleared the review package and
 ratified the seven names (Decision 3). The move is done: the crate lives at
-`nifeos/byte_glob`, and nife pins it by commit. Four P2 items follow. The matcher itself checks out. Publishing
+`nifeos/byte_glob`, and nife pins it by commit. Finding status names what the later items wait on. The matcher itself checks out. Publishing
 stays held.
