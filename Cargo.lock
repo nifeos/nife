@@ -421,8 +421,8 @@ dependencies = [
 
 [[package]]
 name = "designware_ethernet"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/designware_ethernet?rev=0e8f92bf67e58016983164cb52bf274e08e1d7ef#0e8f92bf67e58016983164cb52bf274e08e1d7ef"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/designware_ethernet?rev=d6730d2218edead38fac3fe96703eaa1e5e92ee2#d6730d2218edead38fac3fe96703eaa1e5e92ee2"
 
 [[package]]
 name = "designware_inter_integrated_circuit"

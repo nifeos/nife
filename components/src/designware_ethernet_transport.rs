@@ -142,10 +142,6 @@ impl DesignWareNic {
 
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
-        let des3 = (mapped(&PLANE)
-            .read_volatile::<u64>(layout::receive_descriptor(self.plane.receive_cursor()) + 8)
-            >> 32) as u32;
-        designware_ethernet::receive_verdict(des3, MAXIMUM_FRAME_BYTES)
-            != designware_ethernet::ReceiveVerdict::NotYet
+        self.plane.is_frame_waiting(&Plane)
     }
 }

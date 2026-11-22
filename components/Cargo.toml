@@ -784,7 +784,7 @@ non_volatile_memory_express = { version = "0.1.0-pre.3", git = "https://github.c
 e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
 # radon's Ethernet port's ring logic (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): `net_stack`'s designware_ethernet_transport.rs is the volatile shell over it.
-designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "0e8f92bf67e58016983164cb52bf274e08e1d7ef" }
+designware_ethernet = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/designware_ethernet", rev = "d6730d2218edead38fac3fe96703eaa1e5e92ee2" }
 # usb_keyboard_driver.rs is the volatile shell over these two (milestone 242 (USB host and HID)):
 # descriptors and boot reports, and the xHCI ring and context arithmetic. What it agrees on with the
 # kernel (the handoff, the register window and the bring-up report) is in `driver_process_contract`.
