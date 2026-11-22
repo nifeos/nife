@@ -28,7 +28,7 @@ until the drivers did: it is the layer *between* drivers, not a driver.
 
 ## What the engine does and leaves out
 
-The engine's bindings, as `crates/line_editor/src/lib.rs` implements them:
+The engine's bindings, as `line_editor` implements them:
 
 - Insertion and deletion at a cursor. Typing at the end echoes only the byte; an edit mid-line
   redraws the tail.
