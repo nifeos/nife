@@ -487,7 +487,7 @@ impl Manifest {
     }
 }
 
-/// A program's manifest, in the style of SHILL (a capability-based shell scripting language): the
+/// A program's manifest, in the style of the Shill scripting language's capability contracts: the
 /// endowment it declares it expects. The shell checks the command's grants against this at spawn,
 /// so a mismatch is a refusal at the prompt rather than a mystery hang inside a program that did
 /// not get what it needed.

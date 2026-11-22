@@ -13,7 +13,7 @@ publish = false     # stays false until the release that publishes this crate
 # What a program declares it needs and where it finds what it was given: the manifest types, the
 # capability slot numbers, and the narrowing of a manifest by a line's verb. A program reads a slot
 # number from here and links no parser; a command-line planner and a spawner both read the same
-# declarations. Name: provisional.
+# declarations.
 
 [lints.rust]
 # `cfg(kani)` is set by the Kani model checker, which the shared workflows run over this crate.
