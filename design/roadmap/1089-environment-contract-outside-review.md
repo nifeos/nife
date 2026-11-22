@@ -42,9 +42,11 @@ and the release steps.
 - Item 4 (P1), the abbreviated accessors: Done, [#3726](https://github.com/nifeos/nife/pull/3726).
   `time_zone`, `locale`, `terminal_type`, `is_known_*` and `Unknown*`, each accessor with its POSIX
   alias, ratified 2026-11-19 UTC.
-- Item 5 (P1), no Kani proof: Open. Kani proves `field_bytes_never_panics_for_any_length_byte`, with
-  a falsification patch; the round-trip and domain-member harnesses each ran past 25 minutes under
-  Kani and return only with the text scan bounded or the shape split, each with its patch.
+- Item 5 (P1), no Kani proof: Waiting on
+  [nifeos/environment_contract#2](https://github.com/nifeos/environment_contract/pull/2). Kani
+  proves `field_bytes_never_panics_for_any_length_byte` on `main`, with its falsification patch
+  ([#3529](https://github.com/nifeos/nife/pull/3529)). The pull request adds the round-trip and
+  domain-member harnesses with their patches, after the reader stops decoding page bytes as UTF-8.
 - Item 6 (P1), the crate does not stand alone: Done, [#3827](https://github.com/nifeos/nife/pull/3827).
   The manifest carries its license, lints and `rust-version`, the crate has a README that says
   fuzzing stays off because it has `unsafe`, and both license files, and no text cites this tree.
@@ -59,11 +61,14 @@ and the release steps.
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 10 (P2), five documentation sentences: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 11 (P2), a safe reader over borrowed bytes: Open. Only `pub const unsafe fn new` exists; the
-  safe reader is a new public name and an additive two-way door, which the maintainer rules
-  provisionally.
-- Item 12 (P2), the curated lists have no growth path: Open. The crate's `BUGS` states the policy
-  ([#3566](https://github.com/nifeos/nife/pull/3566)); the README's row comes with item 6.
+- Item 11 (P2), a safe reader over borrowed bytes: Waiting on
+  [nifeos/environment_contract#2](https://github.com/nifeos/environment_contract/pull/2).
+  `ConfigurationView::new` takes `&[u8; PAGE_CONTENT_BYTES]` and needs no `unsafe`, a provisional
+  name; `ConfigurationPage` keeps its address constructor and reads through it.
+- Item 12 (P2), the curated lists have no growth path: Done,
+  [#3827](https://github.com/nifeos/nife/pull/3827). The README's "The lists" section names the
+  policy (a pull request that names the real IANA, glibc or terminfo entry) and the refused
+  alternative.
 - Decision, the identity: Done, [#3585](https://github.com/nifeos/nife/pull/3585). Ruled
   2026-11-14 UTC.
 - Decision, the accessor names: Done, [#3726](https://github.com/nifeos/nife/pull/3726). Maintainer
@@ -73,8 +78,8 @@ and the release steps.
   rename would sweep.
 - Name ratification: Done. The architect ratified every public name in the review package's Names
   table as built on 2026-11-19 UTC.
-- Review clearance: Open. The architect clears the review from the package, which is the go to
-  create the repository.
+- Review clearance: Done, [#3827](https://github.com/nifeos/nife/pull/3827). The architect cleared
+  the review on 2026-11-19 UTC, `nifeos/environment_contract` exists, and nife pins its `main`.
 
 ## Open decisions
 
@@ -243,15 +248,13 @@ The checks are in [the appendix](1089-environment-contract-outside-review/done-w
 
 ## Follow-on
 
-- **Outstanding.** Every finding that Finding status above marks Open or Ruled, each with what
+- **Outstanding.** Every finding that Finding status above marks Open or Waiting, each with what
   remains, and each open decision under Open decisions. A lane checked each finding line against
   the crate and its pull requests on main.
 
 ## Index row
 
-An outside review of `environment_contract` before it leaves. Of 16 findings and steps, eleven are
-done: the reader panic, reader-side validation, the family and accessor names, the identity freeze
-and the compile-time cap check among them. Five are open: two wider Kani harnesses, the standalone
-files, a safe reader, the README's growth-path row and the architect's clearance of the review,
-which creates the repository. The architect ratified the names, the review package exists, and no
-decision is open.
+An outside review of `environment_contract` before it left. Of 16 findings and steps, fourteen are
+done: the reader panic, reader-side validation, the names, the identity freeze, the standalone
+files and the growth path among them, and the crate has its own repository. Two wait on one pull
+request in that repository: the two wider Kani harnesses and a safe reader over borrowed bytes.
