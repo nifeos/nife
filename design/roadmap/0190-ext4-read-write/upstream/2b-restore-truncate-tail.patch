@@ -1,6 +1,6 @@
-From 12d7c319dded9adb2e8982ce274514a96010600b Mon Sep 17 00:00:00 2001
-From: Chris Alef <chris@crickertech.com>
-Date: Sun, 22 Nov 2026 19:19:02 +0000
+From cc8b0ca9702f8d3e27e9c2aee69d4479e6e007fc Mon Sep 17 00:00:00 2001
+From: Chris Alef <476570+calef@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 22:31:02 +0000
 Subject: [PATCH] fix(rsext4): restore the zeroed EOF tail when a
  single-transaction truncate fails
 

@@ -227,11 +227,11 @@ through `cargo test -q -p rsext4 --features host-test --test file_operations <te
 `cargo fmt --check -p rsext4`:
 
 ```
-== 1e04622d2 with remove.rs from the base
+== 8610d52e5 with remove.rs from the base
 thread 'file_functional_tests::shrinking_extent_inode_past_a_whole_index_node_frees_that_node' panicked at fs/rsext4/tests/file_operations.rs:2056:14:
 shrinking a depth-2 tree must succeed: Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 49 filtered out; finished in 2.62s
-== 1e04622d2 as committed
+== 8610d52e5 as committed
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 49 filtered out; finished in 2.00s
 passed checks: 3, failed checks: 0, skipped checks: 0
 cargo fmt --check -p rsext4: clean

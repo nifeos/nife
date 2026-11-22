@@ -250,13 +250,13 @@ through `cargo test -q -p rsext4 --features host-test --test file_operations <te
 `cargo fmt --check -p rsext4`:
 
 ```
-== 12d7c319d with zero.rs and resize.rs from the base
+== cc8b0ca97 with zero.rs and resize.rs from the base
 thread 'file_functional_tests::failed_extent_truncate_restores_the_zeroed_tail_of_the_retained_block' panicked at fs/rsext4/tests/file_operations.rs:2050:9:
 assertion `left == right` failed: a failed truncate must leave every byte of the file as it was
   left: Some(100)
  right: None
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 49 filtered out; finished in 0.10s
-== 12d7c319d as committed
+== cc8b0ca97 as committed
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 49 filtered out; finished in 0.07s
 passed checks: 3, failed checks: 0, skipped checks: 0
 cargo fmt --check -p rsext4: clean
