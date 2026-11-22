@@ -37,22 +37,22 @@ prose) forbids, held across two repositories.
 
 ## The work
 
-1. **One table, owned by nife.** `fuzz/drivers.tsv` holds one row per spelling: driver, seed
+1. One table, owned by nife. `fuzz/drivers.tsv` holds one row per spelling: driver, seed
    variable, test filter, and a state, `current` or `retired`. Each driver has one `current` row. A
    rename turns the old row `retired` and adds a new `current` one, and the retired row stays while
    any held log may name it, because the held directory keeps logs from before a rename.
-2. **nife reads it instead of repeating it.** `helpers/continuous-fuzz.sh` takes `driver_test` from
+2. nife reads it instead of repeating it. `helpers/continuous-fuzz.sh` takes `driver_test` from
    the `current` rows. The drivers take the variable from a macro generated from the table, so
    `option_env!` and the replay line's format string cannot disagree with it. The selftests read the
    table for their fixture lines.
-3. **A nife check holds the rest.** A `script/lint` section refuses a table with no `current` row
+3. A nife check holds the rest. A `script/lint` section refuses a table with no `current` row
    for a driver or two for one, a `current` filter that names no test in `system_tests`, and any
    `NIFE_*_FUZZ_SEEDS` spelling in the tree that the table does not hold.
-4. **The filer reads the same table.** fuzz-host keeps a byte copy at `drivers.tsv` beside a file
+4. The filer reads the same table. fuzz-host keeps a byte copy at `drivers.tsv` beside a file
    naming the nife commit it came from, and `fuzz-filer` builds `DRIVERS` from it. A replay line
    whose variable matches any row of its driver passes, and the reproducer uses that row's filter. A variable
    in no row gets a refusal that names it.
-5. **The order of a rename is enforced.** A nife pull-request check fetches fuzz-host's `drivers.tsv`
+5. The order of a rename is enforced. A nife pull-request check fetches fuzz-host's `drivers.tsv`
    from its main branch, with no credential, and refuses a nife table holding a row that copy lacks.
    A rename therefore lands in fuzz-host first, as an added row, and in nife second. fuzz-host's own
    CI runs a daily job that compares its copy with nife main's and opens an issue when nife holds a
