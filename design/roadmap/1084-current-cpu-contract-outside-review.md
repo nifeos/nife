@@ -42,8 +42,8 @@ Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_exter
   ([#3657](https://github.com/nifeos/nife/pull/3657)); the move commit adds `repository`.
 - 2, README and license files (P0): Done, [#3657](https://github.com/nifeos/nife/pull/3657).
 - 3, docs cite nife and quote the decider (P0): Done, [#3657](https://github.com/nifeos/nife/pull/3657).
-- 4, names that lack ratification (P0): Open. The public names are ratified as built (ruled
-  2026-11-19); the `Name:` blocks and the test helper `Aligned::va` and binding `va` remain.
+- 4, names that lack ratification (P0): Done, [#3953](https://github.com/nifeos/nife/pull/3953).
+  Every public item carries a ratified `Name:` block, and the tests spell `virtual_address` out.
 - 5, `cpu()` returns an id past the bound (P1): Done, [#3542](https://github.com/nifeos/nife/pull/3542).
 - 6, `allowance()` truncates on narrow targets (P1): Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - 7, the reader reaches its word through an integer (P1): Done, [#3565](https://github.com/nifeos/nife/pull/3565).
