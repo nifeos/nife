@@ -135,7 +135,7 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
   block) and marks the filesystem as needing recovery, because `debugfs`'s journal-writing
   commands leave no committed transaction in this version. It confirms the transaction with
   `debugfs logdump`, replays a copy with `e2fsck` and checks that the target blocks really
-  changed. It fails if any step does not match, so the seed is always an image a Linux tool agrees
+  changed. It fails if any step does not match, so the seed is always an image `e2fsck` agrees
   needs replay.
 - `README.md` describes the targets, the corpus and how to run them.
 - Compatibility and scope: the targets call only the crate's public interface and do not change

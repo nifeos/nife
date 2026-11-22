@@ -22,7 +22,7 @@ text before anyone files it.
 
 - 交付范围：挂载入口原样传播 `read_superblock` 的错误；魔数检查移入 `read_superblock`，放在块大小检查之前，使非 ext4 设备总是报 `InvalidMagic`。
 - 不包含：其他错误路径的分类，以及 `ax-fs-ng` 的错误映射。
-- 兼容性：调用者看到的错误类型改变（`Io` 变为 `BadSuperblock` 或 `InvalidMagic`）。`ax-fs-ng` 把这两种映射为 `VfsError::InvalidInput`，所以这些拒绝在 StarryOS/ArceOS 上从 `EIO` 变为 `EINVAL`，与 Linux 一致。
+- 兼容性：调用者看到的错误类型改变（`Io` 变为 `BadSuperblock` 或 `InvalidMagic`）。`ax-fs-ng` 把这两种映射为 `VfsError::InvalidInput`，所以这些拒绝在 StarryOS/ArceOS 上从 `EIO` 变为 `EINVAL`：这些拒绝针对的是超级块的内容，而不是设备读取失败。
 
 ### 测试验证
 
@@ -54,7 +54,8 @@ affected are `fs/rsext4`, and `fs/ax-fs-ng` through it.
 - Not included: how other error paths classify errors, and `ax-fs-ng`'s error mapping.
 - Compatibility: the error kind a caller sees changes (`Io` becomes `BadSuperblock` or
   `InvalidMagic`). `ax-fs-ng` maps both to `VfsError::InvalidInput`, so on StarryOS/ArceOS these
-  refusals change from `EIO` to `EINVAL`, which is what Linux returns.
+  refusals change from `EIO` to `EINVAL`: they concern the superblock's contents, not a failed
+  device read.
 
 ### Testing and verification
 
@@ -71,21 +72,21 @@ affected are `fs/rsext4`, and `fs/ax-fs-ng` through it.
 
 `Ext4FileSystem::mount`、`device_has_error_state` 和日志重放后的 `reload_after_journal_replay` 都把 `read_superblock` 的任何错误映射成不带上下文的 `Ext4Error::io()`。`read_superblock` 读出超级块后会按其中的块大小调用 `set_filesystem_block_size`；当文件系统块小于设备逻辑扇区时（例如 1 KiB 块的镜像放在 4096 字节扇区的设备上），这一步返回带有 `device:filesystem_geometry` 上下文的 `BadSuperblock`。映射之后，调用者只看到 `Ext4Error { kind: Io, context: None }`，与一次真正失败的设备读取无法区分，也无从得知该换一个扇区大小的设备还是更换介质。
 
-同样的映射还掩盖了没有 ext4 文件系统的设备：全零设备的块大小字段为 0，即 1 KiB 块，在 4096 字节扇区的设备上同样先在块大小一步失败，于是报 `Io` 而不是 `InvalidMagic`。
+同样的映射还掩盖了没有 ext4 文件系统的设备：全零设备的块大小字段为 0，即 1 KiB 块（ext4 格式文档，即 Linux 内核 Documentation/filesystems/ext4/，“3.1. Super Block”一节给出块大小为 2 ^ (10 + `s_log_block_size`)），在 4096 字节扇区的设备上同样先在块大小一步失败，于是报 `Io` 而不是 `InvalidMagic`。
 
 ### 修改方案
 
-- `read_superblock`（`fs/rsext4/src/ext4/mkfs.rs`）在解码后、检查块大小之前先检查魔数，魔数不符时返回 `Ext4Error::invalid_magic()`。这样做是因为传播错误后，块大小一步会先于调用者的魔数检查失败，非 ext4 设备就会被报成 `BadSuperblock`；先检查魔数让“这不是 ext4”始终优先于“这个 ext4 的几何不合适”，也让三个调用点不必各自重复同一检查。
+- `read_superblock`（`fs/rsext4/src/ext4/mkfs.rs`）在解码后、检查块大小之前先检查魔数，魔数不符（同一节规定 `s_magic` 为 0xEF53）时返回 `Ext4Error::invalid_magic()`。这样做是因为传播错误后，块大小一步会先于调用者的魔数检查失败，非 ext4 设备就会被报成 `BadSuperblock`；先检查魔数让“这不是 ext4”始终优先于“这个 ext4 的几何不合适”，也让三个调用点不必各自重复同一检查。
 - `mount.rs` 中三处 `read_superblock(...).map_err(|_| Ext4Error::io())` 改为直接用 `?` 传播错误，并删除其后已经重复的魔数检查。错误已经由 `read_superblock` 及其调用的函数准确分类，并带有操作上下文；在挂载入口再统一改写成 `Io` 只会丢失信息。原来的映射没有注释说明意图。
 - `mkfs_with_options` 末尾的回读检查改为直接返回 `read_superblock` 的结果；它原来在魔数不符时返回 `corrupted()`，现在返回 `invalid_magic()`。这是魔数检查移入 `read_superblock` 的直接结果。
 - 在 `fs/rsext4/tests/error_handling.rs` 中新增测试 `mount_reports_why_it_refused_the_superblock`：全零设备必须报 `InvalidMagic`；只写入魔数的 1 KiB 块超级块放在 4096 字节扇区的设备上必须报 `BadSuperblock`，且上下文为 `device:filesystem_geometry`。测试复用现有的 `ErrorMockDevice`（4096 字节扇区），两种情况放在同一个测试里，因为它们共同证明一个行为：挂载拒绝时报告真实原因。
-- 兼容性和受影响范围：调用者看到的错误类型改变，`Io` 变为 `BadSuperblock` 或 `InvalidMagic`，mkfs 的回读在魔数不符时报 `InvalidMagic` 而不是 `Corrupted`。仓库中经由挂载接收这些错误的是 `ax-fs-ng`：它的 `into_vfs_err`（`fs/ax-fs-ng/src/fs/ext4/rsext4/util.rs`）把 `BadSuperblock` 和 `InvalidMagic` 映射为 `VfsError::InvalidInput`，把 `Io` 映射为 `VfsError::Io`。因此在 StarryOS/ArceOS 上，因这些原因被拒绝的挂载从返回 `EIO` 变为返回 `EINVAL`，与 Linux 在这两种情况下的返回值一致。成功挂载的路径不变。
+- 兼容性和受影响范围：调用者看到的错误类型改变，`Io` 变为 `BadSuperblock` 或 `InvalidMagic`，mkfs 的回读在魔数不符时报 `InvalidMagic` 而不是 `Corrupted`。仓库中经由挂载接收这些错误的是 `ax-fs-ng`：它的 `into_vfs_err`（`fs/ax-fs-ng/src/fs/ext4/rsext4/util.rs`）把 `BadSuperblock` 和 `InvalidMagic` 映射为 `VfsError::InvalidInput`，把 `Io` 映射为 `VfsError::Io`。因此在 StarryOS/ArceOS 上，因这些原因被拒绝的挂载从返回 `EIO` 变为返回 `EINVAL`，因为拒绝的原因是超级块的内容，而不是设备读取失败。成功挂载的路径不变。
 
 ### 测试验证
 
 - 先在未修复的代码上运行新测试，它失败：`left: Io, right: InvalidMagic`，错误为 `Ext4Error { kind: Io, context: None }`。修复后通过。
 - `cargo xtask clippy --package rsext4` 通过（3 项检查），`cargo fmt` 无改动。
-- `cargo xtask test --since 6e80b940d` 中，除下面三项外所有被选中的软件包都通过。`rsext4` 的 `tests/filesystem_growth.rs` 中 `growth_recovers_commit_checkpoint_and_flush_interruptions` 和 `growth_preserves_files_and_exposes_new_groups_to_linux`，以及 `ax-fs-ng` 的 `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents` 失败；这三项在未改动的基准提交上以同样的方式失败，与本改动无关。原因是本机 `mke2fs`（e2fsprogs 1.47.2）默认启用 `orphan_file`，而扩容在 `GrowthLayout::check`（`fs/rsext4/src/ext4/grow/layout.rs`）拒绝该特性（`grow:features_or_durability`）。
+- `cargo xtask test --since 6e80b940d` 中，除下面三项外所有被选中的软件包都通过。`rsext4` 的 `tests/filesystem_growth.rs` 中 `growth_recovers_commit_checkpoint_and_flush_interruptions` 和 `growth_preserves_files_and_exposes_new_groups_to_linux`，以及 `ax-fs-ng` 的 `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents` 失败；这三项在未改动的基准提交上以同样的方式失败，与本改动无关。原因是本机 `mke2fs`（e2fsprogs 1.47.2）默认启用 `orphan_file`，而扩容在 `GrowthLayout::check`（`fs/rsext4/src/ext4/grow/layout.rs`）拒绝该特性（`grow:features_or_durability`）。`orphan_file` 是兼容特性：ext4 格式文档（Linux 内核 Documentation/filesystems/ext4/）“3.1. Super Block”一节规定，`s_feature_compat` 中的特性即使不被理解，也仍可读写该文件系统，因此这一拒绝是 `rsext4` 扩容自身的限制，不是格式规则的要求。
 - 另用一个外部读取比对工具（用 `mke2fs` 生成 1 KiB、2 KiB、4 KiB 块的镜像，分别放在 512 和 4096 字节扇区的设备上挂载）验证：修复前 1 KiB 和 2 KiB 块镜像在 4096 字节扇区上被拒绝为 `Ext4Error { kind: Io, context: None }`，修复后为 `BadSuperblock` 及 `device:filesystem_geometry` 上下文；其余镜像与扇区组合的结果不变。
 - 未验证：QEMU 和实体板卡。本改动只影响挂载失败时返回的错误类型，不改变任何成功挂载的路径。
 
@@ -106,13 +107,16 @@ really failed, and gives no hint whether to use a device with another sector siz
 medium.
 
 The same mapping hides a device that holds no ext4 filesystem. A zeroed device's block-size field
-is 0, meaning 1 KiB blocks, so on a device of 4,096-byte sectors it also fails first at the block
-size, and mount reports `Io` rather than `InvalidMagic`.
+is 0, which means 1 KiB blocks. The ext4 format documentation (the Linux kernel's
+Documentation/filesystems/ext4/), section "3.1. Super Block", gives the block size as
+2 ^ (10 + `s_log_block_size`). So on a device of 4,096-byte sectors a zeroed device also fails
+first at the block size, and mount reports `Io` rather than `InvalidMagic`.
 
 ### Proposed change
 
 - `read_superblock` (`fs/rsext4/src/ext4/mkfs.rs`) checks the magic after decoding and before the
-  block size, and returns `Ext4Error::invalid_magic()` when it does not match. Once errors
+  block size, and returns `Ext4Error::invalid_magic()` when it is not 0xEF53, the `s_magic` value the same
+  section gives. Once errors
   propagate, the block-size step would fail before the callers' magic checks, and mount would
   report a non-ext4 device as `BadSuperblock`. Checking the magic first keeps "this is not ext4"
   ahead of "this ext4's geometry does not fit", and spares the three call sites from each
@@ -136,8 +140,8 @@ size, and mount reports `Io` rather than `InvalidMagic`.
   the repository, `ax-fs-ng` receives these errors through mount. Its `into_vfs_err`
   (`fs/ax-fs-ng/src/fs/ext4/rsext4/util.rs`) maps `BadSuperblock` and `InvalidMagic` to
   `VfsError::InvalidInput`, and `Io` to `VfsError::Io`. So on StarryOS/ArceOS, a mount refused
-  for these reasons changes from returning `EIO` to returning `EINVAL`, which is what Linux
-  returns in both cases. No path of a mount that succeeds changes.
+  for these reasons changes from returning `EIO` to returning `EINVAL`, because the reason is the
+  superblock's contents, not a failed device read. No path of a mount that succeeds changes.
 
 ### Testing and verification
 
@@ -152,6 +156,10 @@ size, and mount reports `Io` rather than `InvalidMagic`.
   the same way on the unchanged base commit, so this change does not cause them. The cause: the
   host's `mke2fs` (e2fsprogs 1.47.2) enables `orphan_file`, and growth refuses that feature in
   `GrowthLayout::check` (`fs/rsext4/src/ext4/grow/layout.rs`, `grow:features_or_durability`).
+  `orphan_file` is a compatible feature. The ext4 format documentation (the Linux kernel's
+  Documentation/filesystems/ext4/), section "3.1. Super Block", says a filesystem can still be
+  read and written by code that does not understand a flag in `s_feature_compat`. So this refusal
+  is a limit of `rsext4`'s growth, not a rule of the format.
 - Also checked with an external read comparison tool, which mounts `mke2fs` images with 1 KiB,
   2 KiB and 4 KiB blocks on devices of 512-byte and 4,096-byte sectors. Before the fix, mount refuses the
   1 KiB and 2 KiB block images on 4,096-byte sectors as `Ext4Error { kind: Io, context: None }`;
@@ -163,8 +171,8 @@ size, and mount reports `Io` rather than `InvalidMagic`.
 ## Notes for the reviewer (not filed)
 
 - **Design choice upstream might refuse.** The errno a StarryOS/ArceOS mount returns changes from
-  `EIO` to `EINVAL` for these refusals. That matches Linux, but a program on those systems that
-  treated `EIO` from mount as "this device cannot hold this filesystem" would change behavior.
+  `EIO` to `EINVAL` for these refusals. A program on those systems that treated `EIO` from mount
+  as "this device cannot hold this filesystem" would change behavior.
 - "An external read comparison tool" is our `tools/ext4_oracle`, run through a local, uncommitted
   `[patch]` of `rsext4`. When the fix lands upstream and we move to it, the oracle's
   `expected.txt` lines for those three image and sector pairings change with it.

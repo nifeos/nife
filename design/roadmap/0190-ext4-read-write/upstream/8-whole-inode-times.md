@@ -14,7 +14,11 @@ text before anyone files it.
 
 ### 当前问题
 
-拥有型接口返回的 `InodeInfo` 把 `atime`、`ctime`、`mtime`、`btime` 存为 inode 中原始的 32 位秒字段，因此丢失纳秒，把 1970 年以前的时间读成 2106 年附近的时间，并让 2106 年以后的时间回绕。crate 已有正确的解码（`Ext4Inode::atime_ts` 等访问器），写入接口也完整写入带纳秒和纪元位的 `Ext4Timestamp`，问题只在读回给调用者的这一层。`ax-fs-ng` 用 `Duration::from_secs(u64::from(inode.atime))` 转换，因此 StarryOS/ArceOS 的 `stat` 同样看不到纳秒。
+拥有型接口返回的 `InodeInfo` 把 `atime`、`ctime`、`mtime`、`btime` 存为 inode 中原始的 32 位秒字段，因此丢失纳秒，把 1970 年以前的时间读成 2106 年附近的时间，并让 2106 年以后的时间回绕。
+
+时间的编码以 ext4 格式文档（Linux 内核 Documentation/filesystems/ext4/）“4.1. Index Nodes”页的“4.1.3. Inode Timestamps”一节为准：秒字段是有符号 32 位数；inode 大于 128 字节且 `i_extra_isize` 覆盖相应的 `i_[cma]time_extra` 字段时，该字段的低两位扩展秒数，高 30 位保存纳秒。
+
+crate 已有正确的解码（`Ext4Inode::atime_ts` 等访问器），写入接口也完整写入带纳秒和纪元位的 `Ext4Timestamp`，问题只在读回给调用者的这一层。`ax-fs-ng` 用 `Duration::from_secs(u64::from(inode.atime))` 转换，因此 StarryOS/ArceOS 的 `stat` 同样看不到纳秒。
 
 复现：用 `update_inode_metadata` 写入一个 1970 年以前带纳秒的访问时间，再用 `inode()` 读回。期望结果：读回的值与写入的值相同。实际结果：读回的是 `u32` 秒数 4294880896，没有纳秒。影响的组件：`fs/rsext4`，以及使用这些字段的 `fs/ax-fs-ng`。
 
@@ -35,8 +39,15 @@ text before anyone files it.
 
 The `InodeInfo` the owned interface returns stores `atime`, `ctime`, `mtime` and `btime` as the
 inode's raw 32-bit seconds fields. So it drops the nanoseconds, reads a time before 1970 as one
-near 2106, and wraps a time past 2106. The crate already decodes these correctly (the
-`Ext4Inode::atime_ts` accessors and their siblings), and its write interface writes an
+near 2106, and wraps a time past 2106.
+
+The authority for the encoding is the ext4 format documentation (the Linux kernel's
+Documentation/filesystems/ext4/), page "4.1. Index Nodes", section "4.1.3. Inode Timestamps". The
+seconds fields are signed 32-bit numbers. When the inode is larger than 128 bytes and
+`i_extra_isize` covers the matching `i_[cma]time_extra` field, that field's low two bits extend the
+seconds and its upper 30 bits hold the nanoseconds.
+
+The crate already decodes these correctly (the `Ext4Inode::atime_ts` accessors and their siblings), and its write interface writes an
 `Ext4Timestamp` whole, nanoseconds and epoch bits included. The problem is only in the layer that
 reads them back to the caller. `ax-fs-ng` converts with `Duration::from_secs(u64::from(inode.atime))`,
 so `stat` on StarryOS/ArceOS sees no nanoseconds either.
@@ -69,17 +80,18 @@ the `u32` seconds 4294880896, with no nanoseconds. The components affected are `
 
 关联 Issue：#<to be filled>
 
-拥有型接口 `Ext4::inode`、`lookup_child`、`update_inode_metadata` 等返回的 `InodeInfo` 把 `atime`、`ctime`、`mtime`、`btime` 存为 inode 中原始的 32 位秒字段（`i_atime` 等）。这样做有三个后果：
+拥有型接口 `Ext4::inode`、`lookup_child`、`update_inode_metadata` 等返回的 `InodeInfo` 把 `atime`、`ctime`、`mtime`、`btime` 存为 inode 中原始的 32 位秒字段（`i_atime` 等）。按 ext4 格式文档（Linux 内核 Documentation/filesystems/ext4/）“4.1. Index Nodes”页的“4.1.3. Inode Timestamps”一节，这样做有三个后果：
 
-- 纳秒丢失。256 字节 inode 的 `*_extra` 字段保存纳秒，`InodeInfo` 不读它。
+- 纳秒丢失。inode 大于 128 字节且 `i_extra_isize` 覆盖相应字段时，`i_[cma]time_extra` 的高 30 位保存纳秒，`InodeInfo` 不读它。
 - 1970 年以前的时间读成 2106 年附近的时间。ext4 的秒字段是有符号 32 位数，`u32` 把 1969-12-31 读成 4294880896。
-- 2106 年以后的时间回绕。`*_extra` 的低两位是纪元扩展位，`InodeInfo` 不读它。
+- 2106 年以后的时间回绕。`i_[cma]time_extra` 的低两位是纪元扩展位，`InodeInfo` 不读它。
 
 crate 本身已经能正确处理这些时间：`Ext4Inode::atime_ts` 等访问器按 inode 大小解码扩展字段，`update_inode_metadata` 也会把带纳秒和纪元位的 `Ext4Timestamp` 完整写入磁盘。问题只在读回给调用者的这一层。`ax-fs-ng` 用 `Duration::from_secs(u64::from(inode.atime))` 转换，因此 VFS 看到的时间同样没有纳秒。
 
 ### 修改方案
 
 - `InodeInfo::{atime, ctime, mtime}` 的类型由 `u32` 改为 `Ext4Timestamp`，`InodeInfo::btime` 改为 `Option<Ext4Timestamp>`。选择 `Ext4Timestamp` 而不是 `Duration` 或 `(i64, u32)`，是因为它就是 crate 写入接口 `InodeMetadataUpdate` 使用的类型，读写两侧对称，也能表示 1970 年以前的时间。`btime` 用 `Option`，是因为 128 字节 inode 没有创建时间字段，此时返回 0 会和真实的 1970-01-01 混淆；`crtime_ts` 本身已经返回 `Option`。
+  - 依据：同一页的 inode 表中 `i_crtime` 位于偏移 0x90，在原始的 128 字节 ext2 inode 之外；“4.1.1. Inode Size”一节要求访问这类字段前先确认它在 `i_extra_isize` 范围内。
 - `owned/metadata.rs` 用现有的 `atime_ts`、`ctime_ts`、`mtime_ts`、`crtime_ts` 访问器按 inode 大小解码这四个时间。解码逻辑已经存在且经过测试，`InodeInfo` 只需要调用它，不新增解码代码。
 - `ax-fs-ng` 新增 `Inode::duration`，把 `Ext4Timestamp` 转换为 VFS 的 `Duration`，保留纳秒；1970 年以前的时间无法用 `Duration` 表示，读为纪元起点。这里不报错，是因为 `stat` 一个文件不应因为时间早于 1970 而失败；VFS 的 `Duration` 无法表示负时间，这是该层现有的限制。
 - 新增测试 `owned_metadata_update_reports_whole_times`（`fs/rsext4/tests/integration_test.rs`）：写入一个 1970 年以前带纳秒的访问时间和一个 2106 年以后带纳秒的修改时间，检查 `update_inode_metadata` 的返回值和只读重新挂载后 `inode()` 的结果都与写入的值相同，并检查新文件的创建时间存在且等于其状态改变时间。`rsext4` 中没有检查拥有型接口读回时间的测试，因此新增一个。
@@ -90,7 +102,7 @@ crate 本身已经能正确处理这些时间：`Ext4Inode::atime_ts` 等访问�
 
 - 先把 `owned/metadata.rs` 的解码临时恢复为只读 32 位秒字段，新测试失败：`left: Ext4Timestamp { sec: 4294880896, nsec: 0 }, right: Ext4Timestamp { sec: -86400, nsec: 123456789 }`；`ax-fs-ng` 的持久化测试也失败：`left: 123s, right: 123.456789012s`。恢复修复后两者都通过。
 - `cargo xtask clippy --package rsext4`（3 项检查）和 `cargo xtask clippy --package ax-fs-ng`（6 项检查）通过，`cargo fmt` 无改动。
-- `cargo xtask test --since 6e80b940d` 中，除下面三项外所有被选中的软件包都通过。`rsext4` 的 `tests/filesystem_growth.rs` 中 `growth_recovers_commit_checkpoint_and_flush_interruptions` 和 `growth_preserves_files_and_exposes_new_groups_to_linux`，以及 `ax-fs-ng` 的 `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents` 失败；这三项在未改动的基准提交上以同样的方式失败，与本改动无关。原因是本机 `mke2fs`（e2fsprogs 1.47.2）默认启用 `orphan_file`，而扩容在 `GrowthLayout::check`（`fs/rsext4/src/ext4/grow/layout.rs`）拒绝该特性（`grow:features_or_durability`）。
+- `cargo xtask test --since 6e80b940d` 中，除下面三项外所有被选中的软件包都通过。`rsext4` 的 `tests/filesystem_growth.rs` 中 `growth_recovers_commit_checkpoint_and_flush_interruptions` 和 `growth_preserves_files_and_exposes_new_groups_to_linux`，以及 `ax-fs-ng` 的 `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents` 失败；这三项在未改动的基准提交上以同样的方式失败，与本改动无关。原因是本机 `mke2fs`（e2fsprogs 1.47.2）默认启用 `orphan_file`，而扩容在 `GrowthLayout::check`（`fs/rsext4/src/ext4/grow/layout.rs`）拒绝该特性（`grow:features_or_durability`）。`orphan_file` 是兼容特性：ext4 格式文档（Linux 内核 Documentation/filesystems/ext4/）“3.1. Super Block”一节规定，`s_feature_compat` 中的特性即使不被理解，也仍可读写该文件系统，因此这一拒绝是 `rsext4` 扩容自身的限制，不是格式规则的要求。
 - 另用一个外部读取比对工具（用 `mke2fs` 和 `debugfs` 生成包含带纳秒、1970 年以前和 2106 年以后时间的文件的镜像，与 `debugfs` 读出的时间比较）验证：修复前所有镜像和扇区组合中这三类文件的时间都与 `debugfs` 不同，修复后全部相同。
 - 未验证：QEMU 和实体板卡上的 StarryOS 和 ArceOS `stat` 结果。改动只影响 inode 时间的读取和转换，`ax-fs-ng` 的主机测试已覆盖该转换。
 
@@ -102,14 +114,16 @@ Linked issue: #<to be filled>
 
 The `InodeInfo` that the owned interface returns (from `Ext4::inode`, `lookup_child`,
 `update_inode_metadata` and others) stores `atime`, `ctime`, `mtime` and `btime` as the inode's
-raw 32-bit seconds fields (`i_atime` and so on). That has three consequences:
+raw 32-bit seconds fields (`i_atime` and so on). Under the ext4 format documentation (the Linux
+kernel's Documentation/filesystems/ext4/), page "4.1. Index Nodes", section "4.1.3. Inode
+Timestamps", that has three consequences:
 
-- The nanoseconds go missing. A 256-byte inode keeps them in its `*_extra` fields, which `InodeInfo`
-  does not read.
+- The nanoseconds go missing. When the inode is larger than 128 bytes and `i_extra_isize` covers
+  the field, the upper 30 bits of `i_[cma]time_extra` hold them, and `InodeInfo` does not read them.
 - A time before 1970 reads as one near 2106. ext4's seconds field is a signed 32-bit number, and
   as a `u32` 1969-12-31 reads as 4294880896.
-- A time past 2106 wraps. The low two bits of `*_extra` extend the epoch, and `InodeInfo` does not
-  read them.
+- A time past 2106 wraps. The low two bits of `i_[cma]time_extra` extend the epoch, and
+  `InodeInfo` does not read them.
 
 The crate already handles these times correctly elsewhere. The `Ext4Inode::atime_ts` accessors
 and their siblings decode the extra fields according to the inode size, and
@@ -125,6 +139,9 @@ converts with `Duration::from_secs(u64::from(inode.atime))`, so the VFS sees no 
   then match, and it can hold a time before 1970. `btime` is an `Option` because a 128-byte inode
   has no creation-time field, and a caller would mistake a 0 there for a real 1970-01-01.
   `crtime_ts` already returns an `Option`.
+  - The authority: the same page's inode table places `i_crtime` at offset 0x90, past the original
+    128-byte ext2 inode, and section "4.1.1. Inode Size" says to check that such a field lies
+    within `i_extra_isize` before reading it.
 - `owned/metadata.rs` decodes the four times with the existing `atime_ts`, `ctime_ts`, `mtime_ts`
   and `crtime_ts` accessors, according to the inode size. The crate already has the decoding and
   tests it, so `InodeInfo` only needs to call it; the change adds no new decoding code.
@@ -164,6 +181,10 @@ converts with `Duration::from_secs(u64::from(inode.atime))`, so the VFS sees no 
   the same way on the unchanged base commit, so this change does not cause them. The cause: the
   host's `mke2fs` (e2fsprogs 1.47.2) enables `orphan_file`, and growth refuses that feature in
   `GrowthLayout::check` (`fs/rsext4/src/ext4/grow/layout.rs`, `grow:features_or_durability`).
+  `orphan_file` is a compatible feature. The ext4 format documentation (the Linux kernel's
+  Documentation/filesystems/ext4/), section "3.1. Super Block", says a filesystem can still be
+  read and written by code that does not understand a flag in `s_feature_compat`. So this refusal
+  is a limit of `rsext4`'s growth, not a rule of the format.
 - Also checked with an external read comparison tool, which uses `mke2fs` and `debugfs` to build
   images holding files with nanosecond times, times before 1970 and times past 2106, and compares
   the times read against `debugfs`'s. Before the fix, those files' times differ from `debugfs`'s
