@@ -13,8 +13,9 @@ whose finding status says what each item needs.
 ## In one paragraph
 
 The numbers a program and a kernel agree on: five system call numbers, the method numbers of every
-capability object, the rights bits, the error codes and a few message-word conventions (the fault
-rendezvous slot, the console's register stride, the cycle counter's meaning). It is `no_std`, has no
+capability object, the rights bits and the error codes. It also holds a few message-word
+conventions: the fault rendezvous slot, the console's register stride and the cycle counter's
+meaning. It is `no_std`, has no
 dependency and no `unsafe`, and holds only constants, two small enums and a handful of `const fn`
 decoders. Fifteen crates in this tree depend on it, the kernel and the runtime among them, and the
 `std` port carries a generated copy. The architect ruled its published name `moho_abi` (§323 ruling
@@ -36,10 +37,10 @@ decoders. Fifteen crates in this tree depend on it, the kernel and the runtime a
 
 ## Who in nife depends on it
 
-`kernel`, `user_mode_runtime`, `components`, `fixtures`, `jig`, `system_initializer`,
-`process_builder`, `capability_plan`, `confined_system_call_fuzzer_contract`, `memory_region_heap`,
-`pgrep`, `pmap`, `ps` and `top` by a path dependency, and `system_tests` as a development
-dependency. The `std` overlay reads a copy that the farm generates from the crate's sources. Two
+Fourteen manifests depend on it by a path dependency: `kernel`, `user_mode_runtime`,
+`components`, `fixtures`, `jig`, `system_initializer`, `process_builder`, `capability_plan`,
+`confined_system_call_fuzzer_contract`, `memory_region_heap`, `pgrep`, `pmap`, `ps` and `top`.
+`system_tests` takes it as a development dependency. The `std` overlay reads a copy that the farm generates from the crate's sources. Two
 cleared packages wait for this crate's repository: `user_mode_runtime` and `memory_region_heap`.
 
 ## Public API
@@ -71,10 +72,14 @@ On the branch of pull request 3942, on stable 1.99.1:
 | `python3 helpers/name_release.py --draft abi` | 146 rows: 19 ratified, 127 provisional, none without a block |
 | `script/crate-review-packet abi` | no dependency, no `unsafe`, no reference back into nife |
 
-Not run, and so not claimed: Miri (the crate has no `unsafe`), mutation (the census belongs in the
-08:00 to 13:00 UTC window; the first weekly run in the new repository lists survivors, item 20),
-`script/crate-move abi --dry-run`, the stranger test, `cargo-semver-checks` (a first release has no
-baseline), and the kernel boot rows, which run in the merge queue.
+Not run, and so not claimed:
+
+- Miri: the crate has no `unsafe`.
+- Mutation. The census belongs in the 08:00 to 13:00 UTC window, and the first weekly run in the
+  new repository lists survivors (item 20).
+- `script/crate-move abi --dry-run`, the stranger test and `cargo-semver-checks`, which has no
+  baseline before a first release.
+- The kernel boot rows, which run in the merge queue.
 
 ## Names
 
