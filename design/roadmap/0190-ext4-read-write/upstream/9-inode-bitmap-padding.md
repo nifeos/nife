@@ -31,7 +31,10 @@ rsext4: inode bitmap padding is left clear when an INODE_UNINIT group gets its f
 
 块组带有 `EXT4_BG_INODE_UNINIT` 标志时，rsext4 的 `alloc_inodes` 在该组分配第一个 inode 时，在内存中把
 inode 位图整块清零，然后置位新分配的 inode。该组最后一个 inode 之后直到块末尾的填充位因此为 0。
-Linux 的 `ext4_init_inode_bitmap` 用 `ext4_mark_bitmap_end` 把这些位置 1，`e2fsck` 也要求它们为 1。
+
+[ext4 格式文档](https://www.kernel.org/doc/html/latest/filesystems/ext4/)（2.2.4 Lazy Block Group Initialization）只说这类组的位图“可以计算出来”，磁盘上的位图块不初始化；
+3.3 Block and inode Bitmaps 对填充位没有规定。`e2fsck`（e2fsprogs 1.47.2）要求这些填充位全部为 1，否则报告
+`Padding at end of inode bitmap is not set`。
 
 - 代码版本：`dev`，`6e80b940d46167a59a795e158bb17a7eb28333af`。
 - 环境：x86_64 Linux 主机，e2fsprogs 1.47.2。
@@ -45,8 +48,10 @@ Linux 的 `ext4_init_inode_bitmap` 用 `ext4_mark_bitmap_end` 把这些位置 1�
 ## 修改方案
 
 - 范围：只修改 `alloc_inodes` 为 `INODE_UNINIT` 组合成位图的那一处，清零后把第 `s_inodes_per_group`
-  位到块末尾的位置 1，与 `ext4_mark_bitmap_end` 相同。`mkfs` 和 `grow` 写位图时已经设置填充位，不在范围内。
-- 兼容性：inode 位图校验和只覆盖前 `s_inodes_per_group / 8` 字节，填充位不改变校验和；分配器只搜索到
+  位到块末尾的位置 1（Linux 内核在 `ext4_mark_bitmap_end` 中也这样设置）。`mkfs` 和 `grow` 写位图时已经设置
+  填充位，不在范围内。
+- 兼容性：e2fsprogs 1.47.2 只对前 `s_inodes_per_group / 8` 字节计算并校验 inode 位图校验和
+  （`lib/ext2fs/rw_bitmaps.c`），rsext4 的 `ext4_inode_bitmap_csum32` 也一样，填充位不改变校验和；分配器只搜索到
   `s_inodes_per_group`，分配结果不变。磁盘格式与公共接口都不变。
 
 ## 测试验证
@@ -64,8 +69,12 @@ Linux 的 `ext4_init_inode_bitmap` 用 `ext4_mark_bitmap_end` 把这些位置 1�
 
 When a block group carries `EXT4_BG_INODE_UNINIT` and rsext4's `alloc_inodes` allocates the first
 inode in it, it zeroes the whole inode bitmap in memory and then sets the bit of the new inode. The
-padding bits from the group's last inode to the end of the block are therefore 0. Linux's
-`ext4_init_inode_bitmap` sets them to 1 with `ext4_mark_bitmap_end`, and `e2fsck` requires them set.
+padding bits from the group's last inode to the end of the block are therefore 0.
+
+The [ext4 format documentation](https://www.kernel.org/doc/html/latest/filesystems/ext4/) (2.2.4 Lazy Block Group Initialization) says only that such a group's
+bitmap "can be calculated" and that the on-disk bitmap block is not initialized; 3.3 Block and inode
+Bitmaps says nothing about the padding. `e2fsck` (e2fsprogs 1.47.2) requires every padding bit set,
+and reports `Padding at end of inode bitmap is not set` otherwise.
 
 - Code version: `dev`, `6e80b940d46167a59a795e158bb17a7eb28333af`.
 - Environment: an x86_64 Linux host, e2fsprogs 1.47.2.
@@ -82,12 +91,13 @@ and a single group never reaches this path.
 ## Proposed change
 
 - Scope: only the place where `alloc_inodes` synthesizes the bitmap of an `INODE_UNINIT` group.
-  After zeroing, set every bit from bit `s_inodes_per_group` to the end of the block, as
-  `ext4_mark_bitmap_end` does. `mkfs` and `grow` already set the padding when they write a bitmap,
-  and are out of scope.
-- Compatibility: the inode bitmap checksum covers only the first `s_inodes_per_group / 8` bytes, so
-  the padding does not change it; the allocator searches only up to `s_inodes_per_group`, so the
-  allocation result is unchanged. The on-disk format and the public interface do not change.
+  After zeroing, set every bit from bit `s_inodes_per_group` to the end of the block (the Linux
+  kernel sets them the same way in `ext4_mark_bitmap_end`). `mkfs` and `grow` already set the
+  padding when they write a bitmap, and are out of scope.
+- Compatibility: e2fsprogs 1.47.2 computes and verifies the inode bitmap checksum over the first
+  `s_inodes_per_group / 8` bytes only (`lib/ext2fs/rw_bitmaps.c`), as rsext4's
+  `ext4_inode_bitmap_csum32` does, so the padding does not change it; the allocator searches only up
+  to `s_inodes_per_group`, so the allocation result is unchanged. The on-disk format and the public interface do not change.
 
 ## Test verification
 
@@ -116,21 +126,22 @@ fix(rsext4): set the inode bitmap padding when initializing an uninit group
 块组带有 `EXT4_BG_INODE_UNINIT` 标志时，磁盘上的 inode 位图尚未初始化。`alloc_inodes` 在该组分配第一个
 inode 时，会在内存中把位图整块清零，然后置位新分配的 inode。
 
-Linux 的 `ext4_init_inode_bitmap` 只清零属于该组 inode 的位，并用 `ext4_mark_bitmap_end` 把最后一个
-inode 之后直到块末尾的位全部置 1。`e2fsck` 要求这些填充位为 1。每组 inode 数小于一个块的位数时（例如
+[ext4 格式文档](https://www.kernel.org/doc/html/latest/filesystems/ext4/)（2.2.4 Lazy Block Group Initialization）只说这类组的位图“可以计算出来”；3.3 Block and inode
+Bitmaps 没有规定最后一个 inode 之后直到块末尾的填充位。`e2fsck`（e2fsprogs 1.47.2）要求这些填充位全部为 1。每组 inode 数小于一个块的位数时（例如
 `mke2fs` 以 1 KiB 块创建的文件系统，每组 1,024 个 inode，而位图块有 8,192 位），只要 rsext4 在这样的
 组里分配过 inode，`e2fsck -fn` 就报告 "Padding at end of inode bitmap is not set" 并以状态 4 退出。
 
 ## 修改方案
 
 - `alloc_inodes` 为 `INODE_UNINIT` 组合成位图时，清零之后调用新的 `mark_inode_bitmap_padding`，把
-  第 `s_inodes_per_group` 位到块末尾的位全部置 1，与 `ext4_mark_bitmap_end` 相同。只改合成位图这一处：
+  第 `s_inodes_per_group` 位到块末尾的位全部置 1（Linux 内核在 `ext4_mark_bitmap_end` 中也这样设置）。只改合成位图这一处：
   `mkfs` 为第 0 组写位图时、`grow` 为新组写位图时都已经设置了填充位，只有 `INODE_UNINIT` 组的首次分配
   漏掉了。
 - 增强已有测试 `alloc_inode_treats_uninit_bitmap_as_all_free`：分配之后，要求该组最后一个 inode 之后的
   每一位都为 1。按仓库的测试规则，修复复用并增强已有的通用测试，而不是新增测试。
-- 兼容性：inode 位图校验和（`ext4_inode_bitmap_csum32`）只覆盖前 `s_inodes_per_group / 8` 字节，
-  填充位不改变校验和，校验和的计算不需要改动。填充位在分配器的搜索范围之外（搜索只到
+- 兼容性：e2fsprogs 1.47.2 只对前 `s_inodes_per_group / 8` 字节计算并校验 inode 位图校验和
+  （`lib/ext2fs/rw_bitmaps.c`），rsext4 的 `ext4_inode_bitmap_csum32` 也一样，填充位不改变校验和，
+  校验和的计算不需要改动。填充位在分配器的搜索范围之外（搜索只到
   `s_inodes_per_group`），分配结果不变。磁盘格式和公共接口都不变；受影响的只有 rsext4 在
   `INODE_UNINIT` 组里的首次 inode 分配。
 
@@ -160,9 +171,10 @@ When a block group carries `EXT4_BG_INODE_UNINIT`, its inode bitmap on disk is n
 When `alloc_inodes` allocates the first inode in such a group, it zeroes the whole bitmap in memory
 and then sets the bit of the new inode.
 
-Linux's `ext4_init_inode_bitmap` zeroes only the bits of the group's inodes, and with
-`ext4_mark_bitmap_end` sets every bit past the last inode to the end of the block. `e2fsck` requires
-those padding bits set. When a group has fewer inodes than one block has bits (for example a file
+The [ext4 format documentation](https://www.kernel.org/doc/html/latest/filesystems/ext4/) (2.2.4 Lazy Block Group Initialization) says only that such a
+group's bitmap "can be calculated"; 3.3 Block and inode Bitmaps says nothing about the padding bits
+from the last inode to the end of the block. `e2fsck` (e2fsprogs 1.47.2) requires every one of them
+set. When a group has fewer inodes than one block has bits (for example a file
 system `mke2fs` made with 1 KiB blocks, 1,024 inodes per group against an 8,192-bit bitmap block),
 once rsext4 has allocated an inode in such a group, `e2fsck -fn` reports "Padding at end of inode
 bitmap is not set" and exits with status 4.
@@ -171,14 +183,16 @@ bitmap is not set" and exits with status 4.
 
 - When `alloc_inodes` synthesizes the bitmap of an `INODE_UNINIT` group, after zeroing it calls the
   new `mark_inode_bitmap_padding`, which sets every bit from bit `s_inodes_per_group` to the end of
-  the block, as `ext4_mark_bitmap_end` does. Only the synthesized bitmap changes: `mkfs` writing
+  the block (the Linux kernel sets them the same way in `ext4_mark_bitmap_end`). Only the
+  synthesized bitmap changes: `mkfs` writing
   group 0's bitmap and `grow` writing a new group's bitmap already set the padding; only the first
   allocation in an `INODE_UNINIT` group missed it.
 - The existing test `alloc_inode_treats_uninit_bitmap_as_all_free` is strengthened: after the
   allocation, every bit past the group's last inode must be set. Under the repository's test rules,
   the fix reuses and strengthens the existing general test rather than adding a new one.
-- Compatibility: the inode bitmap checksum (`ext4_inode_bitmap_csum32`) covers only the first
-  `s_inodes_per_group / 8` bytes, so the padding does not change it and the checksum computation
+- Compatibility: e2fsprogs 1.47.2 computes and verifies the inode bitmap checksum over the first
+  `s_inodes_per_group / 8` bytes only (`lib/ext2fs/rw_bitmaps.c`), as rsext4's
+  `ext4_inode_bitmap_csum32` does, so the padding does not change it and the checksum computation
   needs no change. The padding lies outside the allocator's search range (the search stops at
   `s_inodes_per_group`), so the allocation result is unchanged. The on-disk format and the public
   interface do not change; only rsext4's first inode allocation in an `INODE_UNINIT` group is

@@ -119,7 +119,7 @@ agent-written submissions is read, and followed, before the first one.
 8. `InodeInfo` reports whole times. Its four times are the raw 32-bit seconds fields, which drop
    nanoseconds, times before 1970 and times past 2106; the crate already decodes all three
    inside, and writes them.
-9. The inode bitmap's padding (bug 3), set as Linux sets it when a group `mke2fs` left
+9. The inode bitmap's padding (bug 3), set as `e2fsck` requires when a group `mke2fs` left
    `INODE_UNINIT` gets its first inode, with the crate's own allocation test strengthened.
 
 **Every issue and pull request text is shown to the architect before it is filed.** An upstream
