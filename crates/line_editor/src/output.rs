@@ -16,19 +16,19 @@ pub trait Sink {
 /// Output-side processing: translate `\n` to `\r\n` so applications can speak Unix newlines to
 /// a serial terminal that wants a carriage return. Everything else, ANSI included, passes
 /// through untouched: the wire belongs to the application when it is printing.
-pub fn expand_output(src: &[u8], out: &mut impl Sink) {
+pub fn expand_output(source: &[u8], out: &mut impl Sink) {
     let mut from = 0;
-    for (i, &b) in src.iter().enumerate() {
+    for (i, &b) in source.iter().enumerate() {
         if b == b'\n' {
             if from < i {
-                out.put(&src[from..i]);
+                out.put(&source[from..i]);
             }
             out.put(b"\r\n");
             from = i + 1;
         }
     }
-    if from < src.len() {
-        out.put(&src[from..]);
+    if from < source.len() {
+        out.put(&source[from..]);
     }
 }
 

@@ -10,8 +10,8 @@ Expected to fail: the harness's check that the cursor lands on `a` when it was i
 diff --git a/crates/line_editor/src/line_disc.rs b/crates/line_editor/src/line_disc.rs
 --- a/crates/line_editor/src/line_disc.rs
 +++ b/crates/line_editor/src/line_disc.rs
-@@ -557,3 +557,3 @@
+@@ -575,3 +575,3 @@
          } else {
--            old_cur.min(a)
-+            old_cur
+-            old_cursor.min(a)
++            old_cursor
          };
