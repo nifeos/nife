@@ -163,7 +163,9 @@ pub const READY: u64 = 0xF5_0BEEF5;
 /// other thread: a caretaker that panicked would park it in `RECEIVE` forever. A grant naming a
 /// directory that is not there is an ordinary thing to type, so it is answered with a message.
 ///
-/// Name: ratified 2026-11-22.
+/// Name: ratified 2026-11-22, as built; the value `0xF5_0DEAD5` is unchanged. Refused: `FAILED`, because it does not say
+/// what failed or that the caretaker exits; `SUBTREE_OPEN_FAILED`, because the refusal covers any descent, a missing
+/// directory or a refused right, not only opening the subtree.
 pub const DESCENT_REFUSED: u64 = 0xF5_0DEAD5;
 
 /// What the `rm` program reports, and how a diagnostic is told from the verdict.
