@@ -6,8 +6,8 @@ each one and its state. One decision per section, ordered by what blocks the fir
 ## A shared DMA region trait: provisional answer
 
 Option A, provisional: `designware_mobile_storage` keeps its own `DirectMemoryAccessRegion` for its
-first release. Nothing has published, no repository is created and no dependency is added, so the
-answer is a two-way door that the maintainers take; the release review of the first of the three
+first release. Nothing has published, and the answer creates no repository and adds no dependency, so it
+is a two-way door that the maintainers take; the release review of the first of the three
 drivers to publish rechecks it. The brief below is the reasoning.
 
 ## A shared DMA region trait
