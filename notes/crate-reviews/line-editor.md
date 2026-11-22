@@ -5,8 +5,9 @@ package of [crate-reviews.md](../crate-reviews.md). It has its own file because 
 together outgrow the page. Its twin is [`terminal_contract`](terminal-contract.md), the wire half
 the cut took out of this crate.*
 
-The architect reads this to clear the crate for its move to its own repository. It describes the
-crate as `main` holds it once [#3965](https://github.com/nifeos/nife/pull/3965) lands; the checks under
+The architect cleared this package on 2026-11-22 (UTC), with `publish = false`, no tag and no
+publish: the clearance is the go to create `nifeos/line_editor`, and the move waits on the work
+under What still blocks the move. It describes the crate as `main` holds it once [#3965](https://github.com/nifeos/nife/pull/3965) lands; the checks under
 "What was run" ran at `97d16ae8b`, before the renames. The findings and their statuses are in
 [milestone 1098 (`line_editor`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1098-line-editor-outside-review.md);
 this package does not restate them, and checks which have landed.
@@ -142,7 +143,7 @@ ratifies nothing; the architect ratifies, changes or refuses each row.
 
 ## Recommendation
 
-Ready for review. The cut landed, the engine depends on nothing and carries no nife type, two
+Cleared 2026-11-22 (UTC). The cut landed, the engine depends on nothing and carries no nife type, two
 proofs each have a falsifying patch, and every item milestone 1098 lists as needing no ruling has
 landed. What remains is the move's own work.
 
@@ -153,15 +154,16 @@ landed. What remains is the move's own work.
   only to a format exchanged between separately released parts; whether a replacement from a newer
   release counts is not settled anywhere. `MAGIC` and `LAYOUT` already make a mismatch a refusal.
 
+## Rulings
+
+- The clearance (2026-11-22 UTC): cleared, the go to create `nifeos/line_editor` with
+  `publish = false`, no tag and no publish. The move waits on its own remaining work.
+
 ## Decisions for the architect
 
-1. Clear the review, which is the go to create `nifeos/line_editor` and move the crate (one-way:
-   the template's workflows and nife's pin act on the repository from its first day). Recommended: A.
-   - A. Clear it now; the move follows.
-   - B. Hold the clearance for a reason this package does not see.
-2. Ratify the Names table, including the three limits as the re-ratification
+1. Ratify the Names table, including the three limits as the re-ratification
    of the names #2797 ratified. Two-way before the first tag; one-way after it.
-3. Freeze the `handoff` identity, `MAGIC` "LEDT" and `LAYOUT` 1, as the first published layout.
+2. Freeze the `handoff` identity, `MAGIC` "LEDT" and `LAYOUT` 1, as the first published layout.
    Recommended: yes, since a replacement from a later release reads it.
 
 Nothing here asks for a tag or a publication.

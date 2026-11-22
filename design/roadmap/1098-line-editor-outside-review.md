@@ -19,8 +19,8 @@ The review's accepted baseline is the disposition in the releasable-crates note
 moves, `terminal_contract` joins the contract crates and `line_editor_component` stays. It takes the
 crate name (ratified), `Event::Suspend`, `Event::Tab` and the badge and opcode values of `proto` as
 settled, together with §232 (the `line_editor` swap contract) and §295 (the line editor's crate
-root splits into module files). No review package exists for this crate under
-`notes/crate-reviews/`, so the baseline is thinner than other crates'.
+root splits into module files). No review package existed for this crate under
+`notes/crate-reviews/` when the review ran, so the baseline is thinner than other crates'.
 Three names #2797 ratified, `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and `RAW_QUEUE_MAXIMUM`, are reopened here. The later unit rule (design/naming.md, "Units": a limit opens `MAXIMUM_` and ends with its unit) contradicts them. The rule in force is that a release review rechecks a name ratified before a later rule.
 
 Reuse: the template `nifeos/crate-workflows` and its helpers (`spelled_out.py`,
@@ -54,18 +54,19 @@ milestone reaches delivery.
   ruled 2026-11-14 (UTC) by the maintainer, provisional.
 - Decision 3, the three limits take their unit: Done, [#3965](https://github.com/nifeos/nife/pull/3965),
   ruled 2026-11-19 (UTC) by the maintainer, provisional.
-- Decision 4, an interface identity for `terminal_contract`: Waiting on a ruling ([#3972](https://github.com/nifeos/nife/pull/3972)),
-  the architect's freeze of interface 25 at version 1. Ruled 2026-11-19 (UTC), A: an interface
-  number and version 1, with no magic.
+- Decision 4, an interface identity for `terminal_contract`: Done, [#3972](https://github.com/nifeos/nife/pull/3972),
+  ruled 2026-11-19 (UTC), A, and frozen 2026-11-22 (UTC) as interface 25, version 1, with no magic.
 - Decision 5, the name `terminal_contract`: Done, [#3965](https://github.com/nifeos/nife/pull/3965),
   ruled 2026-11-19 (UTC), A, in [#3796](https://github.com/nifeos/nife/pull/3796).
-- Decision 6, review clearance and the repositories: Waiting on a ruling ([#3972](https://github.com/nifeos/nife/pull/3972)),
-  the architect's clearance of `notes/crate-reviews/line-editor.md` and
-  `notes/crate-reviews/terminal-contract.md`.
+- Decision 6, review clearance and the repositories: Cleared 2026-11-22 (UTC), both
+  `notes/crate-reviews/line-editor.md` and `notes/crate-reviews/terminal-contract.md`. The
+  repositories are not created yet; each move waits on its own remaining work.
+- Decision 7, the reserved bits of the terminal's first request word: Done,
+  [#3972](https://github.com/nifeos/nife/pull/3972), ruled 2026-11-22 (UTC), A.
 
 ## Open decisions
 
-Decisions 4 and 6 wait on the architect in [#3972](https://github.com/nifeos/nife/pull/3972).
+None.
 
 ## Goal
 
@@ -236,9 +237,29 @@ took their identities before they moved. Linux, which has no such check, added `
 not at the first call. Example: under A, the shell's note carries
 `(terminal_contract::INTERFACE_ID, 1)`.
 
-Ruled 2026-11-19 (UTC): A. The crate takes an interface number and version 1, with no magic. The
-architect mints the number when freezing the crate's identity, as for the other contract crates;
-it is not chosen yet.
+Ruled 2026-11-19 (UTC): A. The crate takes an interface number and version 1, with no magic.
+Frozen 2026-11-22 (UTC): interface 25, version 1, row 25 of the table in milestone 956 (the linked
+interfaces carry checkable versions).
+
+### The reserved bits of the terminal's first request word
+
+Background. A request's first word carries the operation in bits 63 to 56 and a length or count in
+bits 31 to 0; bits 55 to 32 are reserved, and a client sends zero there. Both terminal servers
+shifted and masked the bits away, so a request that set one was served as if they were zero. Once a
+client outside nife builds against the published crate, a later version could not give those bits
+a meaning without breaking it.
+
+- A. Refuse the word with `BAD_REQUEST`, through one crate function both servers decode with.
+- B. Keep ignoring the bits, and state that a future version may not give them a meaning.
+
+Prior art. `entropy_contract` refuses an unknown operation and any reserved bit (decision 2 of
+milestone 1071), and Linux's `openat2` and `clone3` refuse unknown flag bits with `EINVAL` so the
+bits stay usable. Where nife differs: the refusal is the protocol's existing `BAD_REQUEST` reply, so
+it adds no reply. Example: `terminal_contract::decode(req(OPERATION_WRITE, 5) | 1 << 32)` is `None`.
+
+Ruled 2026-11-22 (UTC): A. A terminal refuses a first request word with any of bits 55 to 32 set,
+answering `BAD_REQUEST`. `line_editor` and `display_terminal` decode through
+`terminal_contract::decode`, and a host test pins the refusal.
 
 ### The name `terminal_contract`
 
@@ -260,8 +281,7 @@ creation.
 ### Review clearance and the repositories
 
 Background. Clearing a crate review is the go to create its repository under nifeos. `line_editor`
-and `terminal_contract` leave; `line_editor_component` stays in nife. Neither leaving crate has a
-review package in `notes/crate-reviews/`.
+and `terminal_contract` leave; `line_editor_component` stays in nife.
 
 - A. Clear both once the review package exists.
 - B. Clear `line_editor` alone first, since it depends on nothing.
@@ -276,13 +296,18 @@ and the clearance itself stays the architect's. Rule A: one review package cover
 `terminal_contract`, a lane writes it after this pull request, and the architect gives the go for
 both from the package, with no tag and no publication.
 
+Cleared 2026-11-22 (UTC): both packages, `notes/crate-reviews/line-editor.md` and
+`notes/crate-reviews/terminal-contract.md`, as the go to create `nifeos/line_editor` and
+`nifeos/terminal_contract` with `publish = false`, no tag and no publish. Each move waits on its own
+remaining work.
+
 ## Done when
 
 The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 
 ## BUGS
 
-- No review package exists for this crate under `notes/crate-reviews/`, so this block had no list
+- No review package existed for this crate under `notes/crate-reviews/` when the review ran, so this block had no list
   of accepted names and proposed items to measure itself against; it took the releasable-crates
   disposition, the two notes and #2797 as the baseline.
 - The mutation figures come from records, not a re-run, and predate the module split and the unit
@@ -296,5 +321,5 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 
 An outside review of `line_editor` before it leaves. The cut has landed: `terminal_contract` and
 `line_editor_component` hold the contract, and the engine depends on nothing. Thirteen of the
-fourteen items have landed, the engine's renames among them. The move's own work, the interface
-number for `terminal_contract` and the architect's clearance of the review packages remain.
+fourteen items have landed, the engine's renames among them, and both review packages are cleared.
+The two moves remain.
