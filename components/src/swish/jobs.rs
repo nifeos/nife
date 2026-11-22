@@ -453,7 +453,8 @@ pub(super) fn release_budget(slot: u64, program: Program) {
         yield_now,
     );
     if verdict == swish::BudgetReturn::LeftChildren {
-        let pages = user_mode_runtime::memory_region_usage(slot, abi::usage::SIZE).max(0) as u64;
+        let pages =
+            user_mode_runtime::memory_region_usage(slot, abi::usage::SIZE_PAGES).max(0) as u64;
         failed();
         swish::write_budget_left(program.name().as_bytes(), pages, &mut print);
     }

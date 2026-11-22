@@ -145,7 +145,7 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 - Item 21, P2, no machine checks: Waiting on the new repository's first proofs run.
 - Decision B, `console::WRITE` stays reserved: Done, [#3596](https://github.com/nifeos/nife/pull/3596).
 - Found at the finish, six size names without a unit (`address_wait::SIZE_U8` to `SIZE_U64`,
-  `SIZE_MASK`, `usage::SIZE`): ratified under decision C; the rename pass is [#3998](https://github.com/nifeos/nife/pull/3998).
+  `SIZE_MASK`, `usage::SIZE`): Done, [#3998](https://github.com/nifeos/nife/pull/3998), as decision C ratifies them.
 - The move: Waiting on step 3 of milestone 1121, after which decision C clears the package and the
   repository may be created.
 - Publishing: Waiting on the last outside-review milestone closing (ruled 2026-11-18 UTC).
@@ -154,7 +154,7 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 
 - **Done.** Decision B: `console::WRITE` stays as a reserved operation (#3596).
 - **Outstanding.** Decision A's rename to `moho_abi`, milestone 1121 step 3.
-- **Outstanding.** The six ratified names in the code (#3998).
+- **Done.** The six ratified size names, [#3998](https://github.com/nifeos/nife/pull/3998).
 - **Outstanding.** The repository, once step 3 lands, then items 9, 20 and 21 at and after the move.
   The finding status above says what each needs.
 

@@ -14,7 +14,7 @@
 /// Name: provisional, minted 2026-11-22 (UTC) by milestone/1098-finish-review; the units rule ends a limit with its unit.
 pub const MAXIMUM_RAW_QUEUE_BYTES: usize = 64;
 
-/// **Raw-mode byte delivery** (milestone 169 (`kilo`, the smallest real text editor, as the forcing function for raw terminal input), `OPERATION_READRAW`): a plain FIFO of wire bytes, with no
+/// **Raw-mode byte delivery** (`OPERATION_READRAW`): a plain first-in, first-out (FIFO) queue of wire bytes, with no
 /// interpretation of any of them. Kept separate from [`LineEditor`](crate::LineEditor) rather than a mode bit on it,
 /// because raw mode's whole point is that nothing here ever looks at what a byte means; a
 /// `LineEditor` exists to do exactly that.

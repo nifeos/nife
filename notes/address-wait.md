@@ -18,7 +18,7 @@ is contended. An address wait (Linux calls it a fast user-space mutex, "futex") 
 | | `WAIT(va, flags, expected)` | `WAKE(va, flags, count)` |
 |---|---|---|
 | returns | `0` woken, `1` the word differed | how many were woken |
-| `flags` | `PRIVATE` with `SIZE_U32`, nothing else (futex2's bit layout) | same |
+| `flags` | `PRIVATE` with `WIDTH_32_BITS`, nothing else (futex2's bit layout) | same |
 | the capability | the caller's own space, with `READ` | same |
 | `va` | 4-aligned, user half, mapped readable | 4-aligned, user half; need not be mapped |
 

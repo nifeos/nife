@@ -260,7 +260,7 @@ pub mod virtual_io;
 /// Methods on a `MemoryRegion` capability. **How a process spends its own memory.**
 pub mod memory_region;
 
-/// **Which figure a [`memory_region::USAGE`] asks for**, in pages (the names and numbers are fixed). [`SIZE`](usage::SIZE), [`COMMITTED`](usage::COMMITTED) and
+/// **Which figure a [`memory_region::USAGE`] asks for**, in pages (the names and numbers are fixed). [`SIZE_PAGES`](usage::SIZE_PAGES), [`COMMITTED`](usage::COMMITTED) and
 /// [`CHILDREN`](usage::CHILDREN) are this region's; [`FRAMES`](usage::FRAMES) and the object kinds
 /// count **the whole subtree**, bump-only like a watermark: where the budget went, not what lives.
 ///

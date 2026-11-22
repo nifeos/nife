@@ -15,7 +15,7 @@
 //!   four threads contending a `std::sync::Mutex`.
 
 use abi::Error;
-use abi::address_wait::{PRIVATE, SIZE_U32, SIZE_U64};
+use abi::address_wait::{PRIVATE, WIDTH_32_BITS, WIDTH_64_BITS};
 
 use super::*;
 use crate::capability_object::Rights;
@@ -144,7 +144,7 @@ fn start_waiter(region: u64) -> (u64, u64, u64) {
     .expect("give the waiter its own space");
     sched::configure_thread_control_block(tid, CODE_VA, STACK_VA + page_frames::FRAME_BYTES, name)
         .expect("configure");
-    sched::start_thread_control_block(tid, [0, VA, PRIVATE | SIZE_U32]).expect("start");
+    sched::start_thread_control_block(tid, [0, VA, PRIVATE | WIDTH_32_BITS]).expect("start");
     assert!(
         wait_for(5, || sched::address_wait_waiters(name, VA) == 1),
         "the waiter never parked on its word (it returned {} times, results {:#x})",
@@ -276,13 +276,13 @@ fn the_reserved_address_wait_forms_and_foreign_words_are_refused() {
         Rights::WRITE,
     ))
     .expect("grant");
-    let good = PRIVATE | SIZE_U32;
+    let good = PRIVATE | WIDTH_32_BITS;
     let kernel_half = mmu::phys_to_virt(0);
 
     for method in [abi::address_space::WAIT, abi::address_space::WAKE] {
         for (flags, what) in [
-            (SIZE_U32, "a shared address wait"),
-            (PRIVATE | SIZE_U64, "a 64-bit address wait"),
+            (WIDTH_32_BITS, "a shared address wait"),
+            (PRIVATE | WIDTH_64_BITS, "a 64-bit address wait"),
             (good | 1 << 8, "an unknown flag"),
         ] {
             assert_eq!(

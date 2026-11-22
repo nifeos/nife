@@ -1,0 +1,139 @@
+# The ext4 write oracle's cases: each runs on a fresh copy of every base image write_compare.py
+# names, and write-expected.txt holds what each leaves. The operation language is in
+# write_compare.py's docstring. Paths under /files, /extents, /htree, /links, /attributes and
+# /empty-directory are the corpus's own, written by mke2fs, so a case that touches one changes a
+# file Linux wrote.
+#
+# See design/roadmap/0190-ext4-read-write/write-oracle.md.
+#
+# Name: provisional. calef names files.
+
+case create
+mkdir /new
+create /new/empty
+create /new/small
+write /new/small 0 100 1
+create /new/one-block
+write /new/one-block 0 4096 2
+create /new/large
+write /new/large 0 1048579 3
+create /new/sparse
+write /new/sparse 10485760 5000 4
+
+case overwrite
+create /new
+write /new 0 20000 5
+write /new 5000 3000 6
+write /files/size-160 100 50 7
+write /files/size-1048579 0 1048579 8
+
+case append
+create /new
+write /new 0 1000 9
+write /new 1000 5000 10
+write /new 6000 9000 11
+write /files/size-61 61 4000 12
+write /links/hard-a 333 100 13
+
+case truncate
+create /new
+write /new 0 50000 14
+truncate /new 10000
+truncate /new 100000
+truncate /new 0
+truncate /files/size-1048579 4097
+truncate /extents/depth-1 3000
+truncate /files/size-100 200000
+
+case rename
+mkdir /moved
+create /moved/a
+write /moved/a 0 300 15
+rename /moved/a /moved/b
+rename /moved/b /files/across
+rename /files/size-0 /files/size-1
+rename /deep/level-0 /moved/level-0
+rename /links /moved/links
+
+case unlink
+create /new
+write /new 0 70000 16
+unlink /new
+unlink /links/hard-b
+unlink /files/size-1048579
+unlink /links/slow
+
+case mkdir-rmdir
+mkdir /m
+mkdir /m/a
+mkdir /m/a/b
+create /m/a/file
+rmdir /m/a/b
+unlink /m/a/file
+rmdir /m/a
+rmdir /empty-directory
+mkdir /extents/added
+
+case links
+create /target
+write /target 0 500 17
+link /target /files/second-name
+link /files/size-160 /extents/also-160
+symlink /fast-link files/size-1
+symlink /slow-link aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+# Found by this oracle. At 1 KiB blocks a group holds 1,024 inodes and its inode bitmap block 8,192
+# bits; the fourth new inode is the first in group 3, which mke2fs left INODE_UNINIT, and rsext4
+# writes that group's bitmap without setting the padding bits past the group's last inode.
+case inode-bitmap-padding
+fill / 4 group-
+
+# A directory rsext4 grows from one block into an htree. With empty files its blocks stay
+# contiguous and its extents stay in the inode.
+case htree-growth
+mkdir /grow
+fill /grow 3000 entry-
+fill /htree 500 added-
+
+# Bug 1. File data interleaved with the directory's growth fragments its blocks, so it passes the
+# inode's four extents into a level-1 leaf, and its i_blocks comes out short.
+case directory-past-inline-extents
+mkdir /grow
+fill /grow 1000 entry- 4096 18
+
+# Bug 2. A file of 1,400 separate extents has a depth-2 tree at 1 KiB and 4 KiB blocks; truncating
+# it to 0 fails.
+case truncate-depth-2-to-zero
+create /cut
+stripes /cut 1400 8192 4096 19
+truncate /cut 0
+
+# Bug 2, its atomicity half: the failed truncation must leave the file's bytes as they were.
+case truncate-depth-2-inside-a-block
+create /cut
+stripes /cut 1400 8192 4096 20
+truncate /cut 100
+
+case truncate-linux-depth-2
+truncate /extents/depth-2 0
+
+case extended-attributes
+create /new
+setxattr /new user.short 10 21
+setxattr /new trusted.other 40 22
+setxattr /new user.large 900 23
+setxattr /new user.short 30 24
+removexattr /new trusted.other
+setxattr /attributes/small user.color 5 25
+removexattr /attributes/small user.empty
+removexattr /attributes/large user.blob
+setxattr /attributes/directory security.label 16 26
+
+case sync-between
+create /new
+write /new 0 8000 27
+sync
+write /new 8000 8000 28
+mkdir /after-sync
+sync
+truncate /new 100
