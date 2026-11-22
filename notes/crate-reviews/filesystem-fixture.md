@@ -93,9 +93,9 @@ constants in its own values and its tests.
   command. The rename lane built them.
 - Decision 3 (the maintainer's provisional ruling for the package step, 2026-11-19 UTC): one package
   covers both crates, and the move is not held for it.
-- The clearance and the names (ruled 2026-11-22 UTC, #4009): the crate is cleared as the second crate
-  of the shared repository, `publish = false`; the crate name, the identity pair and the item names
-  are ratified as built.
+- The clearance and the names (ruled 2026-11-22 UTC, #4009): the architect cleared the crate as the
+  second crate of the shared repository, `publish = false`, and ratified the crate name, the
+  identity pair and the item names as built.
 
 ## Names
 
@@ -128,10 +128,10 @@ harness a third party can run) waits on the shared repository, and the crate's `
 Ruled 2026-11-22 UTC (#4009, option A), with item 1 of
 [the contract's package](filesystem-contract.md#decisions-for-the-architect):
 
-1. `file_system_fixture` is cleared as the second crate of the shared repository
+1. The architect cleared `file_system_fixture` as the second crate of the shared repository
    `nifeos/file_system_contract`, `publish = false`.
-2. The crate name `file_system_fixture` is ratified.
-3. `INTERFACE_ID` 16 at `VERSION` 1 are frozen.
-4. The item names are ratified as built.
+2. The architect ratified the crate name `file_system_fixture`.
+3. The identity pair `INTERFACE_ID` 16 at `VERSION` 1 stays frozen.
+4. The architect ratified the item names as built.
 
 Nothing here allows a tag, a publication or a repository of the fixture's own.
