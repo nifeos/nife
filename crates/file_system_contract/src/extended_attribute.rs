@@ -120,8 +120,14 @@ pub const fn specification_value_len(w1: u64) -> usize {
 /// boundary is "negative is a negated errno" ([`super::error::word`]). That is what costs the kind
 /// its 32nd bit, and it is the right trade: a separate reply word does not exist, and a header
 /// in front of the value would make every client copy the value twice.
+///
+/// `kind` must be at most [`MAXIMUM_KIND`] and `value_len` must fit 32 bits; a caller that passes
+/// more is a bug, and the packer panics rather than hand back a different kind or length. The
+/// store never yields such a kind ([`store::iter`] stops before one), so the server, which packs
+/// what the store read, never reaches the panic.
 pub const fn reply(kind: u32, value_len: usize) -> i64 {
-    (((kind & MAXIMUM_KIND) as i64) << 32) | (value_len as i64 & 0xffff_ffff)
+    assert!(kind <= MAXIMUM_KIND && value_len <= u32::MAX as usize);
+    ((kind as i64) << 32) | value_len as i64
 }
 /// The kind of a [`file_system::GETXATTR`] reply. Only meaningful when the reply is non-negative.
 pub const fn reply_kind(r0: i64) -> u32 {
@@ -270,7 +276,9 @@ pub mod store {
     /// Stops at a zero name length and at the first record that runs off the end. Both are what a
     /// **truncated or zero-padded** blob looks like, and neither may be read as an attribute: a
     /// torn write that left half a record behind must produce fewer attributes, never a value
-    /// with somebody else's bytes on the end of it.
+    /// with somebody else's bytes on the end of it. It stops too at a record whose kind is past
+    /// [`super::MAXIMUM_KIND`], which [`set`] never writes, so a damaged blob cannot hand
+    /// [`super::reply`] a kind it refuses.
     pub fn iter(blob: &[u8]) -> Records<'_> {
         Records { blob, at: 0 }
     }
@@ -402,6 +410,9 @@ pub mod store {
                 return None;
             }
             let kind = u32::from_le_bytes([head[1], head[2], head[3], head[4]]);
+            if kind > super::MAXIMUM_KIND {
+                return None;
+            }
             let value_len = u16::from_le_bytes([head[5], head[6]]) as usize;
             let body = self.at + RECORD_HEADER_BYTES;
             let name = self.blob.get(body..body + name_len)?;
