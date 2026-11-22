@@ -398,19 +398,31 @@ def unsafe_files(root, crate):
             re.search(r'\bunsafe\b', code_text(open(os.path.join(root, f), errors='replace').read()))]
 
 
+def own_dependencies(root, crate):
+    """The crate's own `[dependencies]`, {name: spec}, as its manifest in this tree states them."""
+    try:
+        manifest = tomllib.load(open(os.path.join(root, 'crates', crate, 'Cargo.toml'), 'rb'))
+    except OSError:
+        return {}
+    return manifest.get('dependencies', {})
+
+
 def crate_targets(root, crate):
     """[(name, path)] of the fuzz targets that exercise this crate and no other crate of the tree.
 
-    A target belongs to the crate when its source names the crate and none of the other path
-    dependencies of `fuzz/Cargo.toml`: one that links several crates tests their combination, and
-    stays where the combination is. The path is relative to `fuzz/`.
+    A target belongs to the crate when its source names the crate and no other path dependency of
+    `fuzz/Cargo.toml` beyond the crate's own dependencies: one that links another crate tests the
+    combination, and stays where the combination is. A crate's own dependency goes wherever the
+    crate goes, so a target may name its types (the vocabulary a decoder returns) and still
+    leave. The path is relative to `fuzz/`.
     """
     try:
         manifest = tomllib.load(open(os.path.join(root, FUZZ_MANIFEST), 'rb'))
     except OSError:
         return [], []
+    own = own_dependencies(root, crate)
     others = [d for d, spec in manifest.get('dependencies', {}).items()
-              if isinstance(spec, dict) and 'path' in spec and d != crate]
+              if isinstance(spec, dict) and 'path' in spec and d != crate and d not in own]
     mine, mixed = [], []
     for b in manifest.get('bin', []):
         text = code_text(open(os.path.join(root, 'fuzz', b['path']), errors='replace').read())
@@ -515,13 +527,46 @@ def seed_script_source(text, names):
     return text
 
 
-def fuzz_manifest_text(crate, edition, libfuzzer, targets):
+def dependency_line(name, spec):
+    """One `[dependencies]` line of the staged fuzz manifest, for a dependency the crate states.
+
+    A `path` is the crate manifest's, so from `fuzz/` it gains one `../`; the move rewrites both
+    manifests' lines to the dependency's own repository together.
+    """
+    if isinstance(spec, str):
+        return f'{name} = "{spec}"\n'
+    fields = []
+    for key, value in spec.items():
+        if key == 'path':
+            value = '../' + value
+        if isinstance(value, bool):
+            fields.append(f'{key} = {str(value).lower()}')
+        elif isinstance(value, list):
+            fields.append(f'{key} = [' + ', '.join(f'"{v}"' for v in value) + ']')
+        else:
+            fields.append(f'{key} = "{value}"')
+    return f'{name} = {{ ' + ', '.join(fields) + ' }\n'
+
+
+def fuzz_manifest_text(crate, edition, libfuzzer, targets, dependencies=None):
+    """The staged `fuzz/Cargo.toml`: libfuzzer, the crate, and the crate's own dependencies a
+    target names directly (`dependencies`, {name: spec} from the crate's manifest)."""
     bins = ''.join(f'\n[[bin]]\nname = "{n}"\npath = "{p}"\ntest = false\ndoc = false\nbench = false\n'
                    for n, p in targets)
+    extra = ''.join(dependency_line(n, s) for n, s in sorted((dependencies or {}).items()))
     return ('[package]\nname = "fuzz"\nversion = "0.0.0"\npublish = false\n'
             f'edition = "{edition}"\n\n[package.metadata]\ncargo-fuzz = true\n\n'
             f'[dependencies]\nlibfuzzer-sys = "{libfuzzer}"\n'
-            f'{crate} = {{ path = ".." }}\n\n[workspace]\nmembers = ["."]\n{bins}')
+            f'{crate} = {{ path = ".." }}\n{extra}\n[workspace]\nmembers = ["."]\n{bins}')
+
+
+def seed_path_source(text, names):
+    """A crate file as it reads the moved seeds: `fuzz/seeds/<target>` in this tree, reached from
+    the crate's directory as `../../fuzz/seeds/<target>`, is the repository's `fuzz/corpus/<target>`."""
+    for name in names:
+        text = text.replace(f'../../fuzz/seeds/{name}', f'fuzz/corpus/{name}')
+        text = text.replace(f'fuzz/seeds/{name}', f'fuzz/corpus/{name}')
+    return text
 
 
 def stage_fuzz(root, crate, into, report):
@@ -542,8 +587,12 @@ def stage_fuzz(root, crate, into, report):
     crate_edition = tomllib.load(open(os.path.join(into, 'Cargo.toml'), 'rb'))['package'].get('edition', '2021')
     libfuzzer = manifest['dependencies']['libfuzzer-sys']
     os.makedirs(os.path.join(fuzz, 'fuzz_targets'))
+    staged = tomllib.load(open(os.path.join(into, 'Cargo.toml'), 'rb')).get('dependencies', {})
+    sources = [code_text(open(os.path.join(root, 'fuzz', p), errors='replace').read()) for _n, p in targets]
+    named = {d: s for d, s in staged.items()
+             if any(re.search(r'\b' + re.escape(d) + r'::', text) for text in sources)}
     open(os.path.join(fuzz, 'Cargo.toml'), 'w').write(
-        fuzz_manifest_text(crate, crate_edition, libfuzzer, targets))
+        fuzz_manifest_text(crate, crate_edition, libfuzzer, targets, named))
     open(os.path.join(fuzz, '.gitignore'), 'w').write('target/\nartifacts/\ncoverage/\n')
     counts = []
     for name, path in targets:
@@ -808,6 +857,19 @@ def stage(root, crate, into, tree, sha, report):
     staged_manifest(root, into, report)
     check_patches(into, report)
     moved, opted_in = stage_fuzz(root, crate, into, report)
+    seed_readers = []
+    for f in files if moved else []:
+        rel = os.path.relpath(f, f'crates/{crate}')
+        path = os.path.join(into, rel)
+        if not rel.endswith(crate_release.TEXT) or rel.startswith('falsifications/'):
+            continue
+        text = open(path, errors='replace').read()
+        new = seed_path_source(text, moved)
+        if new != text:
+            open(path, 'w').write(new)
+            seed_readers.append(rel)
+    if seed_readers:
+        report('ok', 'seed paths', 'the moved seeds read as fuzz/corpus/ in ' + ', '.join(seed_readers))
     if opted_in:
         turn_on_weekly_fuzz(into, report)
     own = {os.path.relpath(f, f'crates/{crate}') for f in files}
@@ -1038,6 +1100,12 @@ def fuzz_selftest():
         open(os.path.join(tmp, 'crates/x/src/lib.rs'), 'w').write('//! no unsafe here\npub fn f() {}\n')
         mine, mixed = crate_targets(tmp, 'x')
         assert mine == [('x_a', 'fuzz_targets/x_a.rs')] and mixed == ['x_with_y'], (mine, mixed)
+        # y is x's own dependency: a target that names it leaves with x.
+        open(os.path.join(tmp, 'crates/x/Cargo.toml'), 'w').write('[dependencies]\ny = { path = "../y" }\n')
+        mine, mixed = crate_targets(tmp, 'x')
+        assert mine == [('x_a', 'fuzz_targets/x_a.rs'), ('x_with_y', 'fuzz_targets/x_with_y.rs')] \
+            and mixed == [], (mine, mixed)
+        os.remove(os.path.join(tmp, 'crates/x/Cargo.toml'))
         assert fixture_dirs(tmp, 'x', 'x_a') == ['crates/x/tests/fixtures'], fixture_dirs(tmp, 'x', 'x_a')
         assert fixture_dirs(tmp, 'x', 'y_only') == []
         assert sorted(n for _p, n in corpus_files(tmp, 'x', 'x_a')) == ['f.bin', 's.bin'], corpus_files(tmp, 'x', 'x_a')
@@ -1049,6 +1117,12 @@ def fuzz_selftest():
         assert unsafe_files(tmp, 'x') == ['crates/x/src/lib.rs']
     toml = tomllib.loads(fuzz_manifest_text('x', '2024', '0.4', [('x_a', 'fuzz_targets/x_a.rs')]))
     assert toml['dependencies']['x'] == {'path': '..'} and toml['bin'][0]['name'] == 'x_a'
+    toml = tomllib.loads(fuzz_manifest_text('x', '2024', '0.4', [('x_a', 'fuzz_targets/x_a.rs')],
+                                            {'v': {'version': '0.1.0', 'path': '../v'}, 'w': '1'}))
+    assert toml['dependencies']['v'] == {'version': '0.1.0', 'path': '../../v'}, toml
+    assert toml['dependencies']['w'] == '1', toml
+    assert seed_path_source('join("../../fuzz/seeds/x_a") // fuzz/seeds/x_a/ and fuzz/seeds/y_b', ['x_a']) \
+        == 'join("fuzz/corpus/x_a") // fuzz/corpus/x_a/ and fuzz/seeds/y_b'
     assert toml['package']['metadata']['cargo-fuzz'] and toml['workspace']['members'] == ['.']
     assert 'fuzz/README.md' in target_source('// notes/fuzzing/targets.md\n', 'x')
     assert seed_script_source("fuzz/seeds/t/a.img; os.path.join(here, 't', 'a'); python3 fuzz/seeds/m.py", ['t']) \
