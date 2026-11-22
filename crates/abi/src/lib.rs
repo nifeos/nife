@@ -239,7 +239,8 @@ pub mod fault;
 /// **What a granted user-mode cycle-counter read counts**, per architecture.
 ///
 /// The kernel chooses what `PMCCFILTR_EL0` filters and which counter a grant opens, so this is a
-/// promise at the boundary rather than a property of the instruction; no system call carries it.
+/// promise at the boundary rather than a property of the instruction. It is a message-word
+/// convention and not a method: no system call carries it.
 /// A runtime wrapper returns one beside the count and the kernel's test checks the variant per
 /// architecture. The three are **not the same quantity**: compare
 /// [`cycle_counter::CycleMeaning`]s before comparing cycle figures across architectures.
