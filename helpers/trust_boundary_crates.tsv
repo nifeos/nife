@@ -93,7 +93,7 @@ glob	shared	retired
 globally_unique_identifier_partition_table	shared	components,kernel,redoxfs_server,uefi_loader
 glyph_atlas	shared	components,fixtures,kernel
 gpt	userspace	retired
-grant_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+grant_contract	shared	retired
 grant_plan	shared	components,fixtures,jig,kernel,std_exerciser
 graphics_contract	shared	components,fixtures,kernel
 graphics_proto	shared	retired

@@ -35,7 +35,7 @@ byte_glob = { version = "0.1.0", git = "https://github.com/nifeos/byte_glob", re
 
 # The declarations a line is planned against: the manifest types, the slot numbers and the narrowing
 # by verb. A program reads them without linking this parser.
-grant_contract = { version = "0.1.0", path = "../grant_contract" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 
 # The argument page's layout: `argv` assembles a line's words onto it, so the shell and the program
 # that reads the page share one definition.
