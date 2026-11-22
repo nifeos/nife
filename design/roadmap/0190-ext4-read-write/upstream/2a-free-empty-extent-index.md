@@ -46,7 +46,9 @@ rsext4: truncate of a depth-2 extent tree fails with extent:empty_index
 
 交付范围：在 `fs/rsext4/src/extents_tree/remove.rs` 的索引分支中，外部索引节点删除最后一个子节点后不再写回，
 由父节点照常删除并释放该块。根节点没有自己的块，保持原有处理（第三阶段把空的根变成空的叶子）。
-不放宽校验：条目数为 0 的外部索引节点在 ext4 中是非法的，`e2fsck` 也会报告。
+不放宽校验。ext4 格式文档（4.2.3 Extent Tree）只把 `eh_entries` 定义为头部之后有效条目的个数，没有说明索引节点能否没有条目；
+依据是 `e2fsck` 的检查：一级索引节点的 `eh_entries` 为 0 时，e2fsprogs 1.47.2 的 `e2fsck -fn` 报告
+`Failed to iterate extents in inode 12 (op EXT2_EXTENT_DOWN, blk 2070, lblk 0): No 'down' extent`。
 
 不包含：截断失败后被清零的文件尾部（另一个 Issue），以及盘区插入的其他问题。
 
@@ -89,8 +91,11 @@ parent already deletes and frees a child it sees as empty.
 Scope: in the index branch of `fs/rsext4/src/extents_tree/remove.rs`, an external index node
 whose last child was removed is no longer written back, and the parent removes and frees its block
 as before. The root has no block of its own and keeps its existing handling (phase 3 turns an
-empty root into an empty leaf). The validation stays: an external index node with 0 entries is
-invalid in ext4, and `e2fsck` reports it too.
+empty root into an empty leaf). The validation stays. The ext4 format documentation (4.2.3 Extent Tree)
+defines `eh_entries` only as the number of valid entries following the header, and it does not say
+whether an index node may have none. The authority is `e2fsck`: when a level-1 index node has
+`eh_entries` set to 0, `e2fsck -fn` from e2fsprogs 1.47.2 reports
+`Failed to iterate extents in inode 12 (op EXT2_EXTENT_DOWN, blk 2070, lblk 0): No 'down' extent`.
 
 Out of scope: the file tail a failed truncate leaves zeroed (a separate Issue), and other extent
 insertion problems.
@@ -133,8 +138,9 @@ fix(rsext4): free an emptied extent index node instead of writing it back
 
 一个提交，只改 `fs/rsext4/src/extents_tree/remove.rs` 的索引分支：外部索引节点删除最后一个子节点后不再写回。
 
-- 为什么不写回而不是放宽校验：条目数为 0 的外部索引节点在 ext4 中是非法的，`e2fsck` 也会报告，
-  校验是对的，错误在于写出它。
+- 为什么不写回而不是放宽校验：ext4 格式文档（4.2.3 Extent Tree）没有说明索引节点能否没有条目，
+  依据是 `e2fsck` 的检查：一级索引节点的 `eh_entries` 为 0 时，e2fsprogs 1.47.2 的 `e2fsck -fn` 报告
+  `Failed to iterate extents in inode 12 (op EXT2_EXTENT_DOWN, blk 2070, lblk 0): No 'down' extent`。校验是对的，错误在于写出它。
 - 为什么跳过写回是安全的：父节点看到 `empty` 后会立即删除并释放这个块，写回的内容随后就被丢弃，
   跳过它不会遗漏任何需要持久化的数据。
 - 根节点没有自己的块，保持原有处理：第三阶段把空的根变成空的叶子。
@@ -181,9 +187,10 @@ truncate leaves zeroed.
 One commit, in the index branch of `fs/rsext4/src/extents_tree/remove.rs` alone: an external
 index node whose last child was removed is no longer written back.
 
-- Why skip the write rather than relax the validation: an external index node with 0 entries is
-  invalid in ext4, and `e2fsck` reports it too, so the validation is right and the mistake is
-  writing such a node.
+- Why skip the write rather than relax the validation: the ext4 format documentation (4.2.3
+  Extent Tree) does not say whether an index node may have no entries, so the authority is
+  `e2fsck`. When a level-1 index node has `eh_entries` set to 0, `e2fsck -fn` from e2fsprogs
+  1.47.2 reports `Failed to iterate extents in inode 12 (op EXT2_EXTENT_DOWN, blk 2070, lblk 0): No 'down' extent`. The validation is right, and the mistake is writing such a node.
 - Why skipping the write is safe: the parent removes and frees this block as soon as it sees
   `empty`, so whatever the write stored is discarded at once, and skipping it loses nothing that
   had to be made durable.
@@ -227,17 +234,18 @@ through `cargo test -q -p rsext4 --features host-test --test file_operations <te
 `cargo fmt --check -p rsext4`:
 
 ```
-== 8610d52e5 with remove.rs from the base
+== bae856610 with remove.rs from the base
 thread 'file_functional_tests::shrinking_extent_inode_past_a_whole_index_node_frees_that_node' panicked at fs/rsext4/tests/file_operations.rs:2056:14:
 shrinking a depth-2 tree must succeed: Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 49 filtered out; finished in 2.62s
-== 8610d52e5 as committed
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 49 filtered out; finished in 2.00s
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 49 filtered out; finished in 2.38s
+== bae856610 as committed
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 49 filtered out; finished in 2.21s
 passed checks: 3, failed checks: 0, skipped checks: 0
 cargo fmt --check -p rsext4: clean
 ```
 
-`cargo xtask test --since 6e80b940d` selected 20 packages and exited 1. rsext4 passed 543 tests and
+`cargo xtask test --since 6e80b940d`, run before the last edit to this commit, which changed only
+comments, selected 20 packages and exited 1. rsext4 passed 543 tests and
 failed 2, both in `tests/filesystem_growth.rs`; ax-fs-ng failed
 `root_growth_preserves_other_partitions_and_ext4_contents` in two feature profiles. ax-block failed 6 of its `block::cache` tests in that run (`independent global sync cannot
 borrow maintenance`); ax-block does not depend on rsext4, and it passed 188 of 188 in each of three
@@ -260,3 +268,26 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 222 filtered out; fi
 thread 'root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents' panicked at fs/ax-fs-ng/src/root/grow.rs:533:17:
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 222 filtered out; finished in 0.19s
 ```
+
+The `e2fsck` message the Issue and the pull request quote comes from a separate image, not from
+the test. `mke2fs -t ext4 -b 4096 -O ^orphan_file,^metadata_csum` made a 64 MiB image, with the
+checksum feature off so that an extent block checksum does not report first. `debugfs` wrote a
+3,200-block file and punched every odd block, which gives a depth-2 tree whose level-1 index node
+sits at block 2070. `e2fsck -fn` passed that image with exit 0. With that node's `eh_entries` set
+from 5 to 0, it reported:
+
+```
+e2fsck 1.47.2 (1-Jan-2025)
+Pass 1: Checking inodes, blocks, and sizes
+Failed to iterate extents in inode 12
+	(op EXT2_EXTENT_DOWN, blk 2070, lblk 0): No 'down' extent
+Clear inode? no
+
+Inode 12 extent tree (at level 1) could be shorter.  Optimize? no
+
+Error while iterating over blocks in inode 12: No 'down' extent
+
+img: ********** WARNING: Filesystem still has errors **********
+```
+
+`e2fsck -fn` exited 12 there.

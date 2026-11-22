@@ -1,4 +1,4 @@
-From 8610d52e5cc27659800244125b07931a1a610266 Mon Sep 17 00:00:00 2001
+From bae856610d4b209d42aa7049c01d427d616b9c05 Mon Sep 17 00:00:00 2001
 From: Chris Alef <476570+calef@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 22:31:02 +0000
 Subject: [PATCH] fix(rsext4): free an emptied extent index node instead of
@@ -23,7 +23,7 @@ nodes, to one block and remounts it.
  2 files changed, 59 insertions(+), 1 deletion(-)
 
 diff --git a/fs/rsext4/src/extents_tree/remove.rs b/fs/rsext4/src/extents_tree/remove.rs
-index 40c54e2e7..2b7a23d4e 100644
+index 40c54e2e7..b51bb24c2 100644
 --- a/fs/rsext4/src/extents_tree/remove.rs
 +++ b/fs/rsext4/src/extents_tree/remove.rs
 @@ -423,7 +423,14 @@ impl<'a> ExtentTree<'a> {
@@ -32,10 +32,10 @@ index 40c54e2e7..2b7a23d4e 100644
  
 -                                if let Some(block_id) = phy_block {
 +                                // An external index node whose last child was just removed is
-+                                // not written back: an index node with no entries is invalid on
-+                                // disk, and the parent removes and frees this block as soon as
-+                                // it sees `empty`. The root has no block here; phase 3 turns an
-+                                // empty root into an empty leaf.
++                                // not written back: e2fsck cannot walk an index node with no
++                                // entries, and the parent removes and frees this block as soon
++                                // as it sees `empty`. The root has no block here; phase 3
++                                // turns an empty root into an empty leaf.
 +                                if let Some(block_id) = phy_block
 +                                    && !entries.is_empty()
 +                                {

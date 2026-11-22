@@ -30,7 +30,7 @@ rsext4: a failed truncate leaves the file's tail zeroed
 ```markdown
 ## 当前问题
 
-`truncate` 缩小文件失败时，文件内容被改动。缩小操作先把保留下来的末尾块中新文件末尾之后的字节清零（与 Linux 的顺序一致），
+`truncate` 缩小文件失败时，文件内容被改动。缩小操作先把保留下来的末尾块中新文件末尾之后的字节清零，
 再提交元数据事务。事务失败时元数据回滚，文件保持原来的大小，但被清零的字节不在回滚范围内，
 因此一次失败的 truncate 会丢失从新文件末尾到该块末尾的数据，而调用方看到的是“操作失败、文件未变”。
 
@@ -49,8 +49,10 @@ rsext4: a failed truncate leaves the file's tail zeroed
 传统间接块路径在单事务提交失败时，通过 `restore_tail_on_error` 把这些字节写回数据块缓存。原来的
 `zero_mapped_inode_tail` 保留为不需要撤销的调用方的包装。
 
-理由：保留“先清零再解除映射”的顺序，用撤销副本实现原子性，而不是改成提交之后再清零。这个顺序与 Linux 一致，
-原有注释也说明它让损坏的隐藏分支在修改任何数据之前就在预检阶段失败；改变顺序会改变这两点。代价是每次缩小多复制最多一个块的字节。
+理由：保留“先清零再解除映射”的顺序，用撤销副本实现原子性，而不是改成提交之后再清零。ext4 格式文档
+（4.1 Index Nodes、4.2 The Contents of inode.i_block）只描述磁盘上的字段，没有规定截断各步骤的顺序，`e2fsck` 也不检查文件末尾之后的字节。
+因此这个顺序的依据是原有注释给出的理由：损坏的隐藏分支在修改任何数据之前就在预检阶段失败，改成提交之后再清零会失去这一点。
+Linux 的 `ext4_truncate`（`fs/ext4/inode.c`）同样在 `ext4_ext_truncate` 之前清零末尾，这里只作为实现上的参照。代价是每次缩小多复制最多一个块的字节。
 
 不包含：需要重新启动、分多个事务提交的缩小。较早的事务可能已经持久化，文件大小已经变化，恢复旧字节反而会把已经超出文件末尾的数据写回，
 所以这条路径保持原有行为，代码中加注释说明。深度为 2 的盘区树缩小失败（`extent:empty_index`）是另一个 Issue。
@@ -70,7 +72,7 @@ rsext4: a failed truncate leaves the file's tail zeroed
 ## Current problem
 
 A failed `truncate` changes the file's contents. The shrink first zeroes the bytes after the new
-end of file in the block it keeps (the same order as Linux), then commits the metadata
+end of file in the block it keeps, then commits the metadata
 transaction. When the transaction fails, the metadata rolls back and the file keeps its old size,
 but the zeroed bytes are outside the rollback, so a failed truncate loses the data from the new
 end of file to the end of that block, while the caller sees "the operation failed and the file is
@@ -97,9 +99,13 @@ bytes back into the data block cache through `restore_tail_on_error`. The origin
 `zero_mapped_inode_tail` stays, as a wrapper for callers that need no undo.
 
 Reasoning: keep "zero, then detach mappings" and get atomicity from an undo copy, rather than
-zeroing after the commit. The order matches Linux, and the existing comment says it lets a corrupt
-hidden branch fail in the preflight before any data is changed; changing the order would change
-both. The cost is copying at most one block's bytes per shrink.
+zeroing after the commit. The ext4 format documentation (4.1 Index Nodes and 4.2 The Contents of
+inode.i_block) describes on-disk fields only and is silent on the order of a truncate's steps, and
+`e2fsck` does not check the bytes past end of file. The order therefore rests on the reason the
+existing comment gives: a corrupt hidden branch fails in the preflight before any data is changed,
+which zeroing after the commit would lose. Linux's `ext4_truncate` (`fs/ext4/inode.c`) implements
+the same order, zeroing the tail before `ext4_ext_truncate`; it is cited only as an
+implementation. The cost is copying at most one block's bytes per shrink.
 
 Out of scope: a restarted shrink, which commits in several transactions. An earlier one may
 already be durable and the file's size has then changed, so restoring the old bytes would write
@@ -145,8 +151,10 @@ fix(rsext4): restore the zeroed EOF tail when a single-transaction truncate fail
 - `zero_mapped_inode_tail_with_undo` 在清零时保存被替换的字节，返回 `ZeroedTail`；原来的
   `zero_mapped_inode_tail` 保留为不需要撤销的调用方的包装。
 - 盘区路径和传统间接块路径在单事务提交失败时，通过 `restore_tail_on_error` 把这些字节写回数据块缓存。
-- 为什么用撤销副本而不是改成提交之后再清零：“先清零再解除映射”的顺序与 Linux 一致，原有注释也说明它让损坏的隐藏分支
-  在修改任何数据之前就在预检阶段失败。改变顺序会改变这两点，所以选择在失败时恢复。代价是每次缩小多复制最多一个块的字节。
+- 为什么用撤销副本而不是改成提交之后再清零：ext4 格式文档（4.1 Index Nodes、4.2 The Contents of inode.i_block）
+  没有规定截断各步骤的顺序，`e2fsck` 也不检查文件末尾之后的字节。依据是原有注释给出的理由：“先清零再解除映射”让损坏的隐藏分支
+  在修改任何数据之前就在预检阶段失败，改变顺序会失去这一点，所以选择在失败时恢复。Linux 的 `ext4_truncate`
+  （`fs/ext4/inode.c`）同样在 `ext4_ext_truncate` 之前清零末尾，这里只作为实现上的参照。代价是每次缩小多复制最多一个块的字节。
 - 为什么只在单事务路径恢复：需要重新启动的缩小操作分多个事务提交，较早的事务可能已经持久化，此时文件大小已经变化，
   恢复旧字节反而会把已经超出文件末尾的数据写回。这条路径保持原有行为，代码中有注释说明。
 - 恢复本身失败时返回缩小操作自己的错误：用恢复的错误替换它会隐藏缩小失败的原因。这一点是取舍，
@@ -198,10 +206,13 @@ One commit, in `fs/rsext4/src/file/io/zero.rs` and `fs/rsext4/src/file/io/resize
   undo.
 - When the single-transaction commit fails, the extent path and the legacy indirect-block path
   write those bytes back into the data block cache through `restore_tail_on_error`.
-- Why an undo copy rather than zeroing after the commit: "zero, then detach mappings" matches
-  Linux, and the existing comment says it lets a corrupt hidden branch fail in the preflight
-  before any data is changed. Changing the order would change both, so the fix restores on failure
-  instead. The cost is copying at most one block's bytes per shrink.
+- Why an undo copy rather than zeroing after the commit: the ext4 format documentation (4.1
+  Index Nodes and 4.2 The Contents of inode.i_block) is silent on the order of a truncate's
+  steps, and `e2fsck` does not check the bytes past end of file. The authority is the reason the
+  existing comment gives: "zero, then detach mappings" lets a corrupt hidden branch fail in the
+  preflight before any data is changed. Changing the order would lose that, so the fix restores on
+  failure instead. Linux's `ext4_truncate` (`fs/ext4/inode.c`) implements the same order, zeroing
+  the tail before `ext4_ext_truncate`; it is cited only as an implementation. The cost is copying at most one block's bytes per shrink.
 - Why restore only on the single-transaction path: a restarted shrink commits in several
   transactions, and an earlier one may already be durable. The file's size has then changed, and
   restoring the old bytes would write back data that already lies past the end of file. That path
@@ -250,19 +261,20 @@ through `cargo test -q -p rsext4 --features host-test --test file_operations <te
 `cargo fmt --check -p rsext4`:
 
 ```
-== cc8b0ca97 with zero.rs and resize.rs from the base
+== 2c004f2c4 with zero.rs and resize.rs from the base
 thread 'file_functional_tests::failed_extent_truncate_restores_the_zeroed_tail_of_the_retained_block' panicked at fs/rsext4/tests/file_operations.rs:2050:9:
 assertion `left == right` failed: a failed truncate must leave every byte of the file as it was
   left: Some(100)
  right: None
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 49 filtered out; finished in 0.10s
-== cc8b0ca97 as committed
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 49 filtered out; finished in 0.07s
+== 2c004f2c4 as committed
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 49 filtered out; finished in 0.08s
 passed checks: 3, failed checks: 0, skipped checks: 0
 cargo fmt --check -p rsext4: clean
 ```
 
-`cargo xtask test --since 6e80b940d` selected 20 packages and exited 1. rsext4 passed 543 tests and
+`cargo xtask test --since 6e80b940d`, run before the last edit to this commit, which changed only
+comments, selected 20 packages and exited 1. rsext4 passed 543 tests and
 failed 2, both in `tests/filesystem_growth.rs`; ax-fs-ng failed
 `root_growth_preserves_other_partitions_and_ext4_contents` in two feature profiles. Every
 other selected package passed. The growth failures come from this host's `mke2fs.conf`, which
