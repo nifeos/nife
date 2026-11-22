@@ -63,10 +63,10 @@ the mechanism step by step are in [`hung-component/the-armed-kill.md`](hung-comp
 A watchdog holds `ENUMERATE` and nothing else, and there is no hole in the names-not-acts rule
 because noticing and acting are separated into two processes rather than two rights in one.
 
-`moho_abi::endpoint::SURVEY` (milestone 126, who else is running) is the whole view: a cursor walk
-over the supervision subtree, returning `(tid, state)` per member, gated on `Rights::ENUMERATE` and
-pointedly not `READ`, because `READ` is what `RECEIVE` and `REAP` take. calef's ruling on 2026-08-17
-is that a domain names its members and does not act on them.
+`moho_abi::endpoint::SURVEY`, from milestone 126 (who else is running), is the whole view: a cursor
+walk over the supervision subtree, returning `(tid, state)` per member, gated on `Rights::ENUMERATE`
+and pointedly not `READ`, because `READ` is what `RECEIVE` and `REAP` take. calef's ruling on
+2026-08-17 is that a domain names its members and does not act on them.
 
 A watchdog looks like the first thing that needs both halves, and it is not: it does not need to
 act, it needs to be believed. It produces a verdict about liveness, and what acts on that verdict is

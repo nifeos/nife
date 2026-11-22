@@ -24,9 +24,9 @@ SURVEY  ENUMERATE  DONE  READY  RUNNING  BLOCKED  DEAD
 
 All seven are milestone 126's, `endpoint::SURVEY` plus `rights::ENUMERATE` plus the five `survey`
 state codes. **This lane was briefed that the seven also included `fs_proto::fs::STATFS` and
-milestone 40's (documentation as a system service) manual-index constants, and they are not in it**:
-the baseline counts `crates/moho_abi` only, and both of those live in other crates (and are not
-`u64`). Recorded because it changed where the sharpest read was: the trigger is entirely about
+the manual-index constants of milestone 40 (documentation as a system service), and they are not in
+it**: the baseline counts `crates/moho_abi` only, and both of those live in other crates (and are
+not `u64`). Recorded because it changed where the sharpest read was: the trigger is entirely about
 **supervision, enumeration, and a new right**, not about the filesystem protocol. Both of the
 constants named in error were checked anyway and are in the findings below or in the clean list.
 
