@@ -124,6 +124,9 @@ CONFIGURATIONS = {
     'crates/domain_name_resolution_contract/fuzz/clippy': ('--manifest-path',
                                                            'crates/domain_name_resolution_contract/fuzz/Cargo.toml',
                                                            '--all-targets'),
+    'crates/pci_configuration_space/fuzz/clippy': ('--manifest-path',
+                                                   'crates/pci_configuration_space/fuzz/Cargo.toml',
+                                                   '--all-targets'),
 }
 # Files whose change cannot alter what clippy reports (the freshness rule's exception): prose,
 # records, workflows, and the scripts and Python helpers that never reach rustc. A `.rs` file under
