@@ -45,6 +45,9 @@ A reader that holds one segment at a time feeds each `PT_NOTE` segment, in table
 `NoteSearch::segment`. `NoteSegments::from_head` lists those segments from the first bytes of a
 file.
 
+Notes inside a segment are padded to 8 bytes when its `p_align` is 8, and to 4 bytes when it is 0,
+1 or 4, the rule LLVM's reader follows. Any other `p_align` refuses the lookup as `BadAlignment`.
+
 ## What is proven
 
 Nine Kani harnesses. Five in `src/verification.rs` prove the per-segment bounds check panic-free,
