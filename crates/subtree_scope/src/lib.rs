@@ -473,8 +473,8 @@ mod proofs {
     #[kani::proof]
     #[kani::unwind(7)]
     fn a_walk_asks_for_every_component_in_order() {
-        let mut buf = [0u8; PROOF_PATH_BYTES];
-        let path = any_path(&mut buf);
+        let mut buffer = [0u8; PROOF_PATH_BYTES];
+        let path = any_path(&mut buffer);
         let base = path.as_ptr() as usize;
         let mut next = 0usize;
         let widest = Rights::root(directory::rights::ALL);
