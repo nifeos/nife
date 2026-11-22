@@ -45,7 +45,7 @@ decisions and the review package. The item texts use the names the review read; 
 now are `file_system_contract`, `directory`, `extended_attribute` and `block`.
 
 - Item 1 (P0), the crate does not stand alone: At the move. The prose and the manifest stand
-  alone ([#3911](https://github.com/nifeos/nife/pull/3911), [#3999](https://github.com/nifeos/nife/pull/3999): no program of this tree is named, and the externalization lint
+  alone ([#3911](https://github.com/nifeos/nife/pull/3911), [#3999](https://github.com/nifeos/nife/pull/3999): the text names no program of this tree, and the externalization lint
   carries no waiver for the crate); the move commit strips the `Name:` blocks and the milestone
   citations inside them.
 - Item 2 (P0), clippy refuses `RedoxFS` without a `clippy.toml`: Done, [#3911](https://github.com/nifeos/nife/pull/3911). The crate root
@@ -57,12 +57,10 @@ now are `file_system_contract`, `directory`, `extended_attribute` and `block`.
   `grant_plan::rm_report` ([#3999](https://github.com/nifeos/nife/pull/3999)).
 - Item 5 (P0), names the gates refuse: Done, [#3726](https://github.com/nifeos/nife/pull/3726) and [#3999](https://github.com/nifeos/nife/pull/3999). Decision B's renames are in
   force with their aliases, `GET_SIZE_BYTES` carries its unit, and the last two refusals of the
-  repository's naming gates (`spec`, `PAGE_NAME_SET_OFFSET`) are renamed.
+  repository's naming gates (`spec`, `PAGE_NAME_SET_OFFSET`) now have new names.
 - Item 6 (P1), `reply_errno` not total: Done, [#3577](https://github.com/nifeos/nife/pull/3577). Now `error::word` and `error::code`.
 - Item 7 (P1), the packers mask: Open. `file_system::request`, `rename_destination`,
-  `grant::specification` and `extended_attribute::specification` still mask; about 190 call sites
-  pack with them, the attack fixtures among them, so each proxy that forwards a client's length or
-  handle needs a refusal first and an attack fixture a raw packer before the packers assert.
+  `grant::specification` and `extended_attribute::specification` still mask. About 190 call sites pack with them, the attack fixtures among them. Before the packers can assert, each proxy that forwards a client's length or handle needs a refusal, and each attack fixture needs a raw packer.
 - Item 8 (P1), seven unproven properties: Open. Six harnesses with falsification patches are in
   [#3566](https://github.com/nifeos/nife/pull/3566) and [#3637](https://github.com/nifeos/nife/pull/3637); the termination of the four walkers is still unproven.
 - Item 9 (P1), equivalent mutants need a home: At the move. The classes go into the new
@@ -73,7 +71,7 @@ now are `file_system_contract`, `directory`, `extended_attribute` and `block`.
 - Item 11 (P1), twelve bare acronyms: Done, [#3566](https://github.com/nifeos/nife/pull/3566) and [#3911](https://github.com/nifeos/nife/pull/3911). The template's
   `prose_acronyms` gate passes on the crate's text.
 - Item 12 (P1), `rm` is not filesystem protocol: Done, [#3999](https://github.com/nifeos/nife/pull/3999). `rm`'s report protocol is
-  `grant_plan::rm_report`, beside `rm_options`, and `CLIENT_WINDOWS` is stated as a contract fact: a
+  `grant_plan::rm_report`, beside `rm_options`, and the text states `CLIENT_WINDOWS` as a contract fact: a
   server refuses a badge at or past it.
 - Item 13 (P1), dates and British spellings: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 14 (P2), `request_block_count` decodes 256: Done, [#3999](https://github.com/nifeos/nife/pull/3999). It answers `None` past
@@ -81,16 +79,15 @@ now are `file_system_contract`, `directory`, `extended_attribute` and `block`.
   first).
 - Item 15 (P2), `directory_entry::encode` accepts an empty name: Done, [#3999](https://github.com/nifeos/nife/pull/3999). The encoder
   refuses one; the reader still reads one, so the refusal can relax later.
-- Item 16 (P2), three spellings of the errno vocabulary: Waiting on the build of §326 (the services'
-  own wire error codes), which replaces the errno numbers this item would gather into one module.
+- Item 16 (P2), three spellings of the errno vocabulary: Waiting on the build of §326 (the names and numbers of the services'
+  wire error codes), which replaces the errno numbers this item would gather into one module.
 - Item 17 (P2), the length-or-offset doc: Done, [#3566](https://github.com/nifeos/nife/pull/3566); the name is `MAXIMUM_LENGTH_BYTES`
   ([#3726](https://github.com/nifeos/nife/pull/3726)).
 - Item 18 (P2), stale distinctness tests: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 19 (P2), `usize` width: Done, [#3566](https://github.com/nifeos/nife/pull/3566). A `const` assertion that `usize::BITS >= 40`.
 - Item 20 (P2), `in_opcode_order` warns at 1.88: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 21 (P2), no fuzz target: Waiting on the crate's own repository (milestone 1017 step 2). The
-  `fuzz/` crate and the template's crash-input opt-in live there, and the fuzzing dependency is
-  approved only for a crate repository's unpublished fuzz crate.
+  `fuzz/` crate and the template's crash-input opt-in live there, and the standing approval of the fuzzing dependency covers only a crate repository's unpublished fuzz crate.
 - Item 22 (P2), `extended_attribute::reply` masks a kind: Done, [#3999](https://github.com/nifeos/nife/pull/3999). The packer panics on a
   kind past `MAXIMUM_KIND`, and the store's walk stops before a record that carries one.
 - Decision A, the store directory: Done, [#3577](https://github.com/nifeos/nife/pull/3577). Ruled 2026-11-14 UTC.
