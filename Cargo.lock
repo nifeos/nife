@@ -1181,9 +1181,6 @@ dependencies = [
 [[package]]
 name = "pci_configuration_space"
 version = "0.1.0"
-dependencies = [
- "device_tree_blob",
-]
 
 [[package]]
 name = "periodic_deadline"
