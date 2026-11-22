@@ -267,7 +267,7 @@ failed 2, both in `tests/filesystem_growth.rs`; ax-fs-ng failed
 `root_growth_preserves_other_partitions_and_ext4_contents` in two feature profiles. Every
 other selected package passed. The growth failures come from this host's `mke2fs.conf`, which
 enables `orphan_file`; `layout.rs`'s feature check refuses any compatible feature outside its
-list. With `MKE2FS_CONFIG` pointing at a copy of `/etc/mke2fs.conf` without `orphan_file`, they
+list. At the base commit the same three tests fail the same way. With `MKE2FS_CONFIG` pointing at a copy of `/etc/mke2fs.conf` without `orphan_file`, they
 pass:
 
 ```

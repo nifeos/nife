@@ -155,7 +155,8 @@ fix(rsext4): free an emptied extent index node instead of writing it back
 - `cargo xtask test --since 6e80b940d`：rsext4 只有 `tests/filesystem_growth.rs` 中的两个测试失败，ax-fs-ng 的
   `root_growth_preserves_other_partitions_and_ext4_contents` 失败，其余全部通过。这三个测试在基准提交上同样失败，
   原因是宿主的 `mke2fs` 默认启用 `orphan_file`，而扩容拒绝该特性（`fs/rsext4/src/ext4/grow/layout.rs` 的特性检查），
-  与本改动无关。
+  与本改动无关。同一次运行中 ax-block 的 6 个 `block::cache` 测试失败（`independent global sync cannot borrow
+  maintenance`）；ax-block 不依赖 rsext4，在同一分支上重跑三次均为 188 个全部通过。
 
 未验证：没有运行 QEMU 或板卡测试，改动只影响宿主测试可以覆盖的 rsext4 行为，不涉及启动路径。
 ```
@@ -209,7 +210,9 @@ Environment: an x86_64 Linux host, the nightly `rust-toolchain.toml` names, e2fs
   fail, plus ax-fs-ng's `root_growth_preserves_other_partitions_and_ext4_contents`; everything
   else passes. Those three fail the same way at the base commit, because the host's `mke2fs`
   enables `orphan_file` by default and growth refuses that feature (the feature check in
-  `fs/rsext4/src/ext4/grow/layout.rs`), so they are unrelated to this change.
+  `fs/rsext4/src/ext4/grow/layout.rs`), so they are unrelated to this change. In the same run 6
+  of ax-block's `block::cache` tests failed (`independent global sync cannot borrow maintenance`);
+  ax-block does not depend on rsext4, and three reruns on the same branch passed all 188.
 
 Not verified: no QEMU or board test ran; the change affects only rsext4 behavior host tests reach,
 and no boot path.
@@ -241,7 +244,7 @@ borrow maintenance`); ax-block does not depend on rsext4, and it passed 188 of 1
 reruns on the same branch. Every
 other selected package passed. The growth failures come from this host's `mke2fs.conf`, which
 enables `orphan_file`; `layout.rs`'s feature check refuses any compatible feature outside its
-list. With `MKE2FS_CONFIG` pointing at a copy of `/etc/mke2fs.conf` without `orphan_file`, they
+list. At the base commit the same three tests fail the same way. With `MKE2FS_CONFIG` pointing at a copy of `/etc/mke2fs.conf` without `orphan_file`, they
 pass:
 
 ```
