@@ -50,7 +50,7 @@ word (`OPERATION_SHIFT`, `request`, `operation`).
   512 bytes of name. `extended_attribute` holds the limits, the encodings and the store. The crate
   never truncates a set or name silently, and it refuses a limit with its own errno.
 - `READY` is the filesystem server's readiness word, and `DESCENT_REFUSED` is a caretaker's
-  refusal. `rm` defines what a remove program reports.
+  refusal.
 
 ## EXAMPLES
 
