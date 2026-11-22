@@ -271,14 +271,22 @@ fn a_wrapped_raw_queue_round_trips() {
     let mut got = RawQueue::new();
     got.restore(&mut handoff::Reader::new(&page[..n]).unwrap())
         .unwrap();
-    let mut a = Vec::new();
-    let mut b = Vec::new();
-    while let Some((k, v)) = q.pop_up_to_eight() {
-        a.extend_from_slice(&v.to_le_bytes()[..k]);
-    }
-    while let Some((k, v)) = got.pop_up_to_eight() {
-        b.extend_from_slice(&v.to_le_bytes()[..k]);
-    }
+    let a = drain(&mut q);
+    let b = drain(&mut got);
     assert_eq!(a, b);
     assert_eq!(a.len(), 4 + 10);
+}
+
+/// Every byte a raw queue holds, oldest first. Bounded at one pop per byte the ring can hold, so a
+/// `pop_up_to_eight` that never empties the queue fails the assertion instead of hanging.
+fn drain(q: &mut RawQueue) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    for _ in 0..=MAXIMUM_RAW_QUEUE_BYTES {
+        let Some((n, packed)) = q.pop_up_to_eight() else {
+            return bytes;
+        };
+        assert!((1..=8).contains(&n), "a pop returns one to eight bytes, got {n}");
+        bytes.extend_from_slice(&packed.to_le_bytes()[..n]);
+    }
+    panic!("the queue never emptied");
 }
