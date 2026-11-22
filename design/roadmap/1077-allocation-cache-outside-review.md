@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -157,45 +158,46 @@ The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.
 
 ## Finding status
 
-- P0-1, manifest and files stand alone: Open. The README, both licenses, a literal license, lints
-  and `rust-version` are in the tree; the `repository` and `documentation` fields and the strip of
-  the `Name:` blocks come with the `runtime` package's move.
-- P0-2, documentation names no consumer: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
-  [#3660](https://github.com/nifeos/nife/pull/3660).
-- P0-3, a workspace member depends on the crate: Open. When the `runtime` package moves, `xtask`
-  takes a `git` dependency on the crate at that repository's tag so `cargo xtask std-src` still
-  finds it; today only the workspace member list names the crate.
-- P1-4, arithmetic edges on bare `usize`: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
-  [#3660](https://github.com/nifeos/nife/pull/3660). `class` compares before it rounds, and the
+Each line was checked against `crates/allocation_cache` on `main` and the pull request that changed it.
+
+- P0-1, manifest and files stand alone: At the move. The README, both license files, a literal
+  license, `rust-version`, `description`, `keywords`, `categories` and an inline lints table landed
+  in [#3565](https://github.com/nifeos/nife/pull/3565) and
+  [#3660](https://github.com/nifeos/nife/pull/3660). The `repository` and `documentation` fields
+  name the `runtime` package's repository, and the move strips the `Name:` blocks.
+- P0-2, documentation names no consumer: Done, [#3565](https://github.com/nifeos/nife/pull/3565)
+  and [#3660](https://github.com/nifeos/nife/pull/3660).
+- P0-3, a workspace member depends on the crate: At the move. The move's nife-side pull request
+  gives `xtask` a `git` dependency on the crate at the `runtime` repository's tag, so
+  `cargo xtask std-src` still finds it.
+- P1-4, arithmetic edges on bare `usize`: Done, [#3565](https://github.com/nifeos/nife/pull/3565)
+  and [#3660](https://github.com/nifeos/nife/pull/3660). `class` compares before it rounds, and the
   `Class` newtype of decision 3 replaces the bare index.
 - P1-5, zeroed is empty: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- P1-6, the owner's rule beyond `push`: Done, [#3660](https://github.com/nifeos/nife/pull/3660).
-- P1-7, constant and method names: Done, [#3660](https://github.com/nifeos/nife/pull/3660). The
-  names are ratified (decision 2).
-- P1-8, proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+- P1-6, the owner's rule beyond `push`: Done, [#3565](https://github.com/nifeos/nife/pull/3565)
+  and [#3660](https://github.com/nifeos/nife/pull/3660).
+- P1-7, constant and method names: Done, [#3660](https://github.com/nifeos/nife/pull/3660).
+- P1-8, proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565) and
   [#3660](https://github.com/nifeos/nife/pull/3660). Five harnesses, each with a falsification
   patch.
 - P1-9, `Free` alignment asserted: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- P2-10, the `talc` patch left behind: Open. The new repository's weekly Miri run confirms the
-  unpatched `talc` 5.1.1; if it turns red, the host test pins a fixed `talc` or swaps in an arena of
-  its own.
-- P2-11, `proofs` on an empty harness set: Open. Item 8 gives the crate five harnesses; the move
-  lane still sees the `proofs` workflow green on its first pull request.
+- P2-10, the `talc` patch left behind: At the move. The `runtime` repository builds the host test
+  against unpatched `talc` 5.1.1, and its Miri job on the move's first pull request settles the
+  record in `vendor/README.md`.
+- P2-11, `proofs` on an empty harness set: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+  The crate has five harnesses, so the set is not empty.
 - P2-12, `Debug` and a leak-noticing `Drop`: Done,
-  [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3565](https://github.com/nifeos/nife/pull/3565) and
   [#3660](https://github.com/nifeos/nife/pull/3660).
 - P2-13, constants not tunable: Done, [#3565](https://github.com/nifeos/nife/pull/3565). A `BUGS`
   line says the constants do not move.
 - P2-14, cross-owner free in the crate's `BUGS`: Done,
   [#3565](https://github.com/nifeos/nife/pull/3565).
 - P2-15, the `uncached` test name: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Decision 1, own repository: Done (ruled 2026-11-16 UTC: the crate moves with the `runtime`
-  package), [#3670](https://github.com/nifeos/nife/pull/3670). No milestone schedules the `runtime`
-  package's move, which needs its own review clearance; nifeos/runtime does not exist.
-- Decision 2, crate, constant and method names: Done (ruled 2026-11-19 UTC, option A), built in
-  [#3660](https://github.com/nifeos/nife/pull/3660).
-- Decision 3, a `Class` newtype: Done, [#3660](https://github.com/nifeos/nife/pull/3660). The name
-  `Class` is ratified with decision 2.
+- Decision 1, own repository: Done, [#3670](https://github.com/nifeos/nife/pull/3670). The crate
+  moves with the `runtime` package.
+- Decision 2, crate, constant and method names: Done, [#3660](https://github.com/nifeos/nife/pull/3660).
+- Decision 3, a `Class` newtype: Done, [#3660](https://github.com/nifeos/nife/pull/3660).
 
 ## Open decisions
 
@@ -203,8 +205,8 @@ None. The publishing hold stands.
 
 ## Follow-on
 
-- **Outstanding.** The Open lines under [Finding status](#finding-status). Nothing waits on a
-  ruling, and the publishing hold stands.
+- **Recorded.** Items 1, 3 and 10 finish when the `runtime` package moves. No milestone schedules
+  that move, which needs its own review clearance, and nifeos/runtime does not exist.
 
 ## BUGS
 
