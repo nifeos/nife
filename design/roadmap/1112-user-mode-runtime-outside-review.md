@@ -42,6 +42,7 @@ crate's own reasons.
 
 ## Finding status
 
+
 - P0-1, `MappedWindow::read<T>` and `write<T>` take any type at any offset: Done, [#3580](https://github.com/nifeos/nife/pull/3580). They
   take the sealed `WindowInteger`, and a misaligned address panics.
 - P0-2, two barriers declared `nomem`: Done, [#3527](https://github.com/nifeos/nife/pull/3527).
@@ -55,8 +56,8 @@ crate's own reasons.
 - P0-5, build scripts reach `link.ld` by a relative path: Done, [#3611](https://github.com/nifeos/nife/pull/3611).
 - P1-6, a zero `CNTFRQ_EL0` divides by zero: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-7, the aarch64 child stub hard-codes two `abi` constants: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
-- P1-8, text that speaks to a reader inside nife: Open. Nine source files cite a section, about 64
-  lines cite a milestone, and 29 mention `notes/`. `notes/user-mode-runtime.md` and its directory
+- P1-8, text that speaks to a reader inside nife: Open. Nine source files cite a section, about 71
+  lines cite a milestone, and 30 mention `notes/`. `notes/user-mode-runtime.md` and its directory
   move into the crate's `docs/`, and the externalized-crates ceiling falls to zero.
 - P1-9, twenty-four acronyms not expanded at first use: Done,
   [#3815](https://github.com/nifeos/nife/pull/3815) (maintainer, provisional, 2026-11-19 UTC). The
@@ -70,26 +71,19 @@ crate's own reasons.
 - P2-16, a stale reason for `socket_frame` living here: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - P2-17, no wrapper for `SYSTEM_CALL_EXIT_THREAD`: Done, [#3629](https://github.com/nifeos/nife/pull/3629) (maintainer, provisional,
   2026-11-15 UTC); the docs of `exit` say why none is needed.
-- Decision 1, the rename table: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional, 2026-11-14 UTC).
-- Decision 1, the sized accessors: Done, [#3815](https://github.com/nifeos/nife/pull/3815)
-  (maintainer, recommendation B, provisional, 2026-11-19 UTC). the maintainer removed `read_u8` to `write_u64`
-  and every call site uses `read::<T>` and `write::<T>`; a two-way door until the first tag.
-- Decision 1, ratifying the names: Done, ruled 2026-11-20 UTC. The names stand as built with the short
+- Decision 1, the names a stranger meets: Done. [#3611](https://github.com/nifeos/nife/pull/3611)
+  built the rename table (maintainer, provisional, 2026-11-14 UTC).
+  [#3815](https://github.com/nifeos/nife/pull/3815) removed the sized accessors `read_u8` to
+  `write_u64`, and every call site uses `read::<T>` and `write::<T>` (maintainer, recommendation B,
+  provisional, 2026-11-19 UTC). The names were ratified on 2026-11-20 UTC as built, with the short
   forms spelled out (`header_length`, `fill_random_bytes`, `read_volatile`, `write_volatile`,
-  `reap_thread`, `counter_ticks`, and spelled-out parameters), the old spellings kept as `doc(alias)`,
-  and every `Name:` block in the crate ratified.
+  `reap_thread`, `counter_ticks`, and spelled-out parameters), the old spellings kept as
+  `doc(alias)`, and every `Name:` block in the crate ratified.
 - Decision 2, `link.ld` on the link search path: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional,
   2026-11-14 UTC). A two-way door until `disk-tools` leaves (milestone 1017 step 4), so not calef's
   until then.
 - Decision 3, one `Message` and one `Received`: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional,
   2026-11-14 UTC).
-- Review package: Done, [#3815](https://github.com/nifeos/nife/pull/3815): the package is
-  `notes/crate-reviews/user-mode-runtime.md`, with its index row.
-- Clearing the review package, which approves the repository and the move: Done, ruled 2026-11-21 UTC,
-  option A. The repository `nifeos/user_mode_runtime` is approved as `publish = false`, with no tag and no
-  publish. The move waits until `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract`
-  have left the tree. The thin machine checks are a recorded limitation (the package lists them), and a
-  first tag needs its own ruling.
 
 ## Open decisions
 
@@ -281,6 +275,10 @@ has no caller outside the crate. Item 15 is the work.
 ## Follow-on
 
 - **Outstanding.** The findings marked Open in Finding status.
+- The move to `nifeos/user_mode_runtime`, approved 2026-11-21 UTC as `publish = false` with no tag
+  and no publish. It waits until `abi`, `address_space_layout`, `current_cpu_contract` and
+  `socket_contract` have left the tree. The thin machine checks are a recorded limitation (the
+  package lists them), and a first tag needs its own ruling.
 
 ## Done when
 
