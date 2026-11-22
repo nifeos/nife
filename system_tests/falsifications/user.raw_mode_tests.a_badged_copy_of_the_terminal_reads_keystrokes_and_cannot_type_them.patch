@@ -1,44 +1,33 @@
 Falsifies `system_tests::user::raw_mode_tests::a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them`.
 
 Architecture: all three (the change is in a userspace component, `components/src/line_editor.rs`,
-built for every ISA from one source; the table it reads is `crates/terminal_contract/src/lib.rs`'s
-`admits`).
+built for every ISA from one source; the table it reads is `terminal_contract::admits`, which
+nife takes from `nifeos/terminal_contract` by rev).
 
 The defect this restores is the one milestone 709 closes: the boot line discipline served every
 request the same whatever the badge on the capability that sent it, so a `graphical_terminal`
 session holding a copy of its endpoint could `OPERATION_BYTES` a command line into the queue the boot shell
-reads with `OPERATION_READLINE`. The patch lets the raw-only badge through the terminal's
-allowlist whole (`RAW_ONLY_BADGE => true` in `proto::admits`), which is that guard removed for this badge.
+reads with `OPERATION_READLINE`. The patch lets the raw-only badge past the serve loop's
+allowlist whole (`badge == proto::RAW_ONLY_BADGE ||` ahead of `proto::admits`), which is that
+guard removed for this badge.
 
 Expected to fail: `assert_eq!(r[0], BAD_REQUEST, "a badged holder's OPERATION_BYTES was served (r0 = 0):
 it can type a line the boot shell reads")`, the first assertion in the test. Under the patch the
 discipline answers `0` and queues `ls`.
 
-Replayed on 2026-10-03 (UTC) by the lane for milestone 709 (a graphical terminal session on the
-no-keyboard arm holds only the raw half of the boot discipline); see the roadmap block for the exit
-code and the assertion line. The first red was taken before the fix existed, which is the same
-tree as this patch applied.
+The patch sits in `line_editor`'s serve loop because the table itself left the tree with
+`terminal_contract`. Replayed red on aarch64 on 2026-11-22 (UTC), at the same first assertion.
 
-**Re-cut 2026-10-12 (UTC) by the long-function paydown lane**, when `_start`'s opcode match moved
-into `Terminal::serve` and the guard came to sit ahead of that call instead. Same defect, same
-lines removed. Replayed red on aarch64 the same day, at the same first assertion
-(`raw_mode_tests.rs:449`).
-
-**Re-cut 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only**, when the serve
-loop's allowlist moved into `terminal_contract::admits` so `line_editor` and its host tests read
-one table. Same defect, `RAW_ONLY_BADGE => true` there. Replayed red on aarch64 the same day, at
-the same first assertion (`raw_mode_tests.rs:449`).
-
-diff --git a/crates/terminal_contract/src/lib.rs b/crates/terminal_contract/src/lib.rs
-index 44da33940..6e75276c9 100644
---- a/crates/terminal_contract/src/lib.rs
-+++ b/crates/terminal_contract/src/lib.rs
-@@ -201,7 +201,7 @@ pub const fn admits(badge: u64, operation: u64) -> bool {
-                 | OPERATION_RAWMODE
-                 | OPERATION_READRAW
-         ),
--        RAW_ONLY_BADGE => matches!(operation, OPERATION_RAWMODE | OPERATION_READRAW),
-+        RAW_ONLY_BADGE => true,
-         STDIN_BADGE => operation == OPERATION_READ_LINE_BYTES,
-         SUPERVISOR_BADGE => operation == OPERATION_QUIESCE,
-         _ => false,
+diff --git a/components/src/line_editor.rs b/components/src/line_editor.rs
+index 71b08e4ce..105113804 100644
+--- a/components/src/line_editor.rs
++++ b/components/src/line_editor.rs
+@@ -159,7 +159,7 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
+             reply(slot, proto::BAD_REQUEST, 0);
+             continue;
+         };
+-        if !proto::admits(badge, operation) {
++        if !(badge == proto::RAW_ONLY_BADGE || proto::admits(badge, operation)) {
+             reply(slot, proto::BAD_REQUEST, 0);
+             continue;
+         }
