@@ -1,5 +1,6 @@
 ---
 status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017, 956
 decision_dependencies: 248, 252
@@ -292,7 +293,8 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
 
 ## Follow-on
 
-- **Outstanding.** Item 11, which the move carries out.
+- **Recorded.** Item 11 is at the move: the move lists the six equivalent mutants in the new
+  repository's `.github/mutants-exempts`.
 
 ## Index row
 
