@@ -42,6 +42,7 @@ crate's own reasons.
 
 ## Finding status
 
+
 - P0-1, fixture tests that reach into nife: Done, [#3807](https://github.com/nifeos/nife/pull/3807).
   The five witness tests moved to `crates/machine_discovery/tests/pci_host_bridge_windows.rs`, the
   crate inlines the swizzle cells, and the dev-dependency is gone.
@@ -54,10 +55,11 @@ crate's own reasons.
   [#3519](https://github.com/nifeos/nife/pull/3519).
 - P1-5, names the template's gates refuse: Done, [#3807](https://github.com/nifeos/nife/pull/3807).
   The crate, the kernel, `driver_process_contract`, `jh7110_pci_express`
-  and `machine_discovery` carry the new spellings. Every one is provisional, and the review
-  package asks the architect to ratify them.
+  and `machine_discovery` carry the new spellings. The architect ratified them on 2026-11-20 UTC
+  with one change, `Bdf` to `BusDeviceFunction`, built in
+  [#3852](https://github.com/nifeos/nife/pull/3852).
 - P1-6, names the naming rules refuse: Done, [#3807](https://github.com/nifeos/nife/pull/3807). The
-  same renames and the same provisional status as P1-5.
+  same renames and the same ratification as P1-5.
 - P1-7, documentation that assumes the tree: Done, [#3807](https://github.com/nifeos/nife/pull/3807).
   Every public item has a doc comment that cites a specification, and `allow(missing_docs)` is gone.
 - P1-8, the MSI walk and the ceiling: Done, [#3807](https://github.com/nifeos/nife/pull/3807). The
@@ -66,8 +68,9 @@ crate's own reasons.
   by literals and the bus queue, the part a device controls, stays proved.
 - P2, `virtual_io_capabilities` ignores `cap_len`: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2, `intx_interrupt_number` precondition: Open. The doc comment states no bus-0 precondition,
-  `intx_pin_through_bridge` does not exist, and `kernel/src/pci.rs` has no BUGS entry for it.
+- P2, `intx_interrupt_number` precondition: Open. The doc comment states the bus-0 precondition
+  ([#3807](https://github.com/nifeos/nife/pull/3807)), but `intx_pin_through_bridge` does not
+  exist, and `kernel/src/pci.rs` has no BUGS entry for it.
 - P2, `Bdf` fields unmasked: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2, `#![forbid(unsafe_code)]`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2, fuzz targets: Open. No target covers `mem32_window` or the walks; the opt-in waits for the
@@ -76,19 +79,13 @@ crate's own reasons.
   regenerate against the renamed source.
 - P2, the proof table: Done, [#3807](https://github.com/nifeos/nife/pull/3807).
   `notes/verification/parser-harnesses.md` lists all ten harnesses.
-- P2, mutation survivors: Open. The baseline row carries counts only; the first run in the
+- P2, mutation survivors: At the move. The baseline row carries counts only; the first run in the
   repository exempts the 11 equivalent survivors.
 - Decision, the package name: Done, [#3588](https://github.com/nifeos/nife/pull/3588) (ruled
   2026-11-14 UTC).
 - Decision, the crate moves before the bus server: Done,
   [#3589](https://github.com/nifeos/nife/pull/3589) (maintainer, provisional, 2026-11-14 UTC;
   nothing to build).
-- Review package: Done, [#3807](https://github.com/nifeos/nife/pull/3807):
-  [`pci-configuration-space.md`](../../notes/crate-reviews/pci-configuration-space.md) and its row.
-- Review package clearance: Done (2026-11-20 UTC). The architect cleared the package and approved
-  `nifeos/pci_configuration_space` with `publish = false`, no tag and no publish.
-- Follow-on, creating `nifeos/pci_configuration_space`: Open. It waits on the virtio to `virtual_io`
-  sweep (draft #3854), because the crate has `VirtioCapability` and virtio constants.
 
 ## Open decisions
 
@@ -232,11 +229,12 @@ The checks are in [the appendix](1105-pci-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open under "Finding status" above (the `intx_interrupt_number`
-  precondition, the fuzz targets and the mutation survivors), each with what remains, checked
+- **Outstanding.** Every finding marked Open under "Finding status" above (the
+  `intx_interrupt_number` precondition and the fuzz targets), each with what remains, checked
   against the crate's manifest, `src/lib.rs`, `tests/` and `falsifications/`.
-- **Outstanding.** The architect clears the review package, whose names are ratified, which
-  approves the repository: the decision under "Open decisions" above.
+- **Outstanding.** Creating `nifeos/pci_configuration_space`, which the clearance of 2026-11-20 UTC
+  approved with `publish = false`, no tag and no publish. The `virtio` to `virtual_io` sweep it
+  waited on landed in [#3854](https://github.com/nifeos/nife/pull/3854).
 
 ## BUGS
 
