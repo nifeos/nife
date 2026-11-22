@@ -111,7 +111,7 @@ fn no_short_call_sequence_overlaps_a_childs_run_with_its_parents_retyped_pages()
             } else if let Some(&(name, Some(_), _)) = made.get((call - 19) as usize) {
                 table.unpin(name);
                 if let Some(claim) = table.claim_for_destroy(name) {
-                    table.return_to_parent(&claim);
+                    table.return_to_parent(claim);
                 }
             }
             for &(name, parent, retyped_to) in &made {

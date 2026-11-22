@@ -10,7 +10,7 @@
 use abi::cycle_counter::CycleMeaning;
 
 /// The virtual counter, `CNTVCT_EL0`: a monotonic tick count for self-timing. Readable at EL0 only
-/// because the kernel opened `CNTKCTL_EL1.EL0VCTEN` (see kernel `timer::initialize` and notes/abi.md); the
+/// because the kernel sets `CNTKCTL_EL1.EL0VCTEN` when it starts the timer on each core; the
 /// read is a plain register move, no system call. Pair with [`counter_hertz`] to turn tick deltas into seconds.
 ///
 /// Name: ratified 2026-11-20 (UTC), replacing `now`, which stays as a `doc(alias)`: it returns
@@ -78,9 +78,8 @@ pub fn counter_hertz_checked() -> Option<u64> {
 /// into every process at [`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`]: a plain load, no system call.
 ///
 /// RISC-V has no register that reports the timebase, so the kernel reads the device tree's
-/// `/cpus/timebase-frequency` (`kernel::arch::riscv64::timer::initialize_frequency`) and publishes it
-/// (`kernel::user::timebase_page_phys`). No constant stands in: radon runs at 4 megahertz. See
-/// notes/user-mode-runtime/time.md.
+/// `/cpus/timebase-frequency` on the boot hart and publishes it on that page. No constant stands
+/// in: a VisionFive 2 runs its `time` register at 4 megahertz. See `docs/time.md`.
 ///
 /// # Panics
 /// If the rate is unknown: see [`counter_hertz_checked`], which is this without the panic.
@@ -102,10 +101,9 @@ pub fn counter_hertz() -> u64 {
 #[cfg(target_arch = "riscv64")]
 pub fn counter_hertz_checked() -> Option<u64> {
     // SAFETY: every path that builds a riscv64 process maps a page (real, or zeroed when the rate
-    // was never learned) read-only at `counter_frequency_contract::PAGE_VIRTUAL_ADDRESS` before it runs:
-    // `kernel::user::load`, `kernel::user::map_timebase_page`, and
-    // `process_builder::build_child_space`. See that crate's `BUGS` section for the one shape
-    // that does not, which faults here on purpose.
+    // was never learned) read-only at `counter_frequency_contract::PAGE_VIRTUAL_ADDRESS` before it
+    // runs: the kernel for every space it builds, and a parent for each child it builds. That
+    // crate's `BUGS` section names the one shape that does not, which faults here on purpose.
     let page = unsafe {
         counter_frequency_contract::CounterFrequencyPage::new(
             counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
@@ -118,16 +116,15 @@ pub fn counter_hertz_checked() -> Option<u64> {
 /// The monotonic tick count (`x86_64`): `rdtsc`, readable from ring 3 because `CR4.TSD` is clear
 /// at reset and the kernel never sets it. `rdtsc` answers in `edx:eax`, so this joins the halves;
 /// one `out(reg)` would read only the low half. Not serialized: the reordering window is tens of
-/// cycles. See notes/user-mode-runtime/time.md.
+/// cycles. See `docs/time.md`.
 ///
 /// Name: ratified 2026-11-20 (UTC), replacing `now`, which stays as a `doc(alias)`: it returns
 /// ticks, not a time, and the name says ticks.
 ///
 /// # BUGS
 /// - The time stamp counter (TSC) is ambient, so every ring-3 program holds a fine timing instrument it was never
-///   granted (milestone 228 (the cycle counters are closed by assumption, and on two architectures
-///   the assumption is a comment)); closing it needs a coarse monotonic page first (§43 (reading
-///   the clock is a page)).
+///   granted. Closing it means setting `CR4.TSD`, which needs a coarse monotonic page first, so
+///   that a program can still read the time without the instruction.
 #[cfg(target_arch = "x86_64")]
 #[doc(alias = "now")]
 pub fn counter_ticks() -> u64 {
@@ -142,8 +139,8 @@ pub fn counter_ticks() -> u64 {
 /// The counter frequency in Hz (`x86_64`), read from the **timebase page** the kernel maps
 /// read-only into every process at [`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`]: a plain load, no
 /// system call. x86 has no architected rate ring 3 can ask for, so the kernel reads `CPUID` leaf
-/// `0x15` or calibrates (`arch::x86_64::timer::initialize_frequency`), and a child's page carries its
-/// parent's rate. See notes/user-mode-runtime/time.md.
+/// `0x15` or calibrates against a timer, and a child's page carries its
+/// parent's rate. See `docs/time.md`.
 ///
 /// # Panics
 /// If the rate is unknown (a zeroed or unrecognized page), rather than guessing one: the panic
@@ -198,9 +195,9 @@ pub struct CycleReading {
 }
 
 /// **Read the CPU's cycle counter from user mode, paired with what it counts.** One instruction
-/// per architecture, no system call (§139 (who may read the cycle counter, and by what authority)). On
-/// aarch64 and riscv64 only a thread granted the counter may call it; an ungranted call traps and
-/// the thread is killed. See notes/user-mode-runtime/time.md.
+/// per architecture, no system call: the counter is a grant the kernel makes per thread, so the
+/// read stays a single instruction. On aarch64 and riscv64 only a thread granted the counter may
+/// call it; an ungranted call traps and the thread is killed. See `docs/time.md`.
 ///
 /// | architecture | instruction | [`CycleMeaning`] |
 /// |---|---|---|
@@ -223,9 +220,9 @@ pub struct CycleReading {
 ///
 /// # BUGS
 /// - No manifest field grants the counter yet, so only the kernel's own test may call this on
-///   aarch64 or riscv64 (milestone 75 (who may read the cycle counter, and by what authority)).
-/// - riscv64's `cycle` is `mcycle`, and the kernel's probe may hold `hpmcounter3` (milestone 856
-///   (a program asks whether it may read the cycle counter)).
+///   aarch64 or riscv64.
+/// - riscv64's `cycle` is `mcycle`, and the kernel's probe may hold `hpmcounter3`; a program has
+///   no way yet to ask whether it may read the counter.
 /// - Under QEMU every count is emulator time, never a measurement of a core.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted, minted by milestone 353's lane on 2026-10-07 (UTC), Rust's getter shape.
@@ -281,13 +278,13 @@ fn read_cycle_counter() -> u64 {
 
 /// **Which CPU this thread is running on**, or `None` if this process has no page to read it from
 /// or has somehow not been switched in yet. A plain load, no system call: a thread observing itself
-/// reads a page (§204 (how userspace asks where a thread runs)); `crates/current_cpu_contract`
-/// carries the layout and the ordering argument.
+/// reads a page the kernel keeps current; `current_cpu_contract` carries the layout and the
+/// ordering argument.
 ///
 /// The answer can be stale before it is used, since the kernel may migrate the thread right after
 /// the load, so a per-CPU cache built on it must stay correct on the previous core's answer. The
 /// value is a CPU id, not an index: size a per-CPU array by
-/// [`current_cpu_contract::CPU_ID_BOUND`]. See notes/user-mode-runtime/time.md.
+/// [`current_cpu_contract::CPU_ID_BOUND`]. See `docs/time.md`.
 ///
 /// # EXAMPLES
 ///
@@ -331,8 +328,8 @@ pub fn tick_hertz() -> Option<core::num::NonZeroU64> {
 ///
 /// The conversion splits into whole seconds and a remainder, because `ticks * 1_000_000_000`
 /// overflows a `u64` about five minutes into a boot at 62.5 megahertz. No capability is needed: the
-/// counter is ambient, so any process can measure a duration. The wall clock is what needs one
-/// (notes/clock.md).
+/// counter is ambient, so any process can measure a duration. The wall clock is what needs one:
+/// it is this plus an offset only the kernel's clock page carries.
 pub fn monotonic_nanoseconds() -> u64 {
     ticks_to_nanoseconds(counter_ticks(), counter_hertz())
 }

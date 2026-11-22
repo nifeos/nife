@@ -4,6 +4,11 @@ The bottom of the memory hierarchy. Page tables (milestone 4), the kernel heap, 
 (milestone 8), and user process pages (milestone 7) all ask this for memory, and there is
 nothing underneath it to ask.
 
+The allocator itself is the `page_frames` crate, and its
+[README](../crates/page_frames/README.md) states the bitmap, the all-used start and the rounding for
+a reader of the crate alone. This note keeps the kernel's side: where the RAM comes from, where the
+bitmap goes, and the order the boot declares regions in.
+
 ## Two questions
 
 1. **Where is the RAM?** Answered by the [device tree](device-tree.md), which the machine

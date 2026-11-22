@@ -1,0 +1,21 @@
+Falsifies `globally_unique_identifier_partition_table::verification::the_entry_array_check_is_total`.
+
+The defect: the entry size is checked for a multiple of eight and not for its lower bound, so a
+header that declares entries of 0 or 8 bytes passes, and the partition check that follows slices
+a 128-byte entry past the end of the array it was given.
+
+Expected to fail: the assertion that an accepted array is one 128-byte entry, on a header that
+declares one entry of 8 bytes.
+diff --git a/crates/globally_unique_identifier_partition_table/src/table.rs b/crates/globally_unique_identifier_partition_table/src/table.rs
+index 81de8b293..2722ae90f 100644
+--- a/crates/globally_unique_identifier_partition_table/src/table.rs
++++ b/crates/globally_unique_identifier_partition_table/src/table.rs
+@@ -536,7 +536,7 @@ pub(crate) fn check_entry_array<'a>(
+     header: &Header,
+     supplied: &'a [u8],
+ ) -> Result<&'a [u8], Error> {
+-    if header.entry_bytes < entry::ENTRY_BYTES_U32 || !header.entry_bytes.is_multiple_of(8) {
++    if !header.entry_bytes.is_multiple_of(8) {
+         return Err(Error::EntryBytes(header.entry_bytes));
+     }
+     if header.entry_count == 0 {

@@ -103,18 +103,12 @@ c_library/src/start.rs::CMain
 
 c_library/src/start.rs::run
 
-components/src/block_driver_roles.rs::run
-
-components/src/block_driver_roles.rs::run_attack
-
-components/src/block_driver_roles.rs::run_attack_indirect
 
 
-components/src/block_driver_roles.rs::run_net
 
-components/src/block_driver_roles.rs::run_write
 
-components/src/block_driver_roles.rs::run_write_abandon
+
+
 
 components/src/credentialer.rs::RPT_READY
 
@@ -3793,9 +3787,7 @@ crates/line_editor/src/handoff.rs::u32
 
 crates/line_editor/src/line_disc.rs::Event
 
-crates/line_editor/src/line_disc.rs::HIST
 
-crates/line_editor/src/line_disc.rs::LineDisc
 
 crates/line_editor/src/line_disc.rs::abandon
 
@@ -3827,7 +3819,6 @@ crates/line_editor/src/raw_queue.rs::is_empty
 
 crates/line_editor/src/raw_queue.rs::new
 
-crates/line_editor/src/raw_queue.rs::pop8
 
 crates/line_editor/src/raw_queue.rs::push
 

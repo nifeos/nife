@@ -1,4 +1,4 @@
-Falsifies `pci::verification::the_ranges_parse_is_total`.
+Falsifies `pci_configuration_space::verification::the_ranges_parse_is_total`.
 
 The defect: the size cells are read one cell too far, `cell(6)`/`cell(7)` in place of
 `cell(5)`/`cell(6)`. Seven cells per entry with the last two holding the size is the kind of
@@ -13,7 +13,7 @@ hostile-input class as a device's config space, so a panic here is a kernel that
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -1014,7 +1014,7 @@
+@@ -1090,7 +1090,7 @@
          }
          let pci_address = (cell(1) << 32) | cell(2);
          let cpu_address = (cell(3) << 32) | cell(4);

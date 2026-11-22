@@ -35,8 +35,8 @@ pub fn interrupt_acknowledge(interrupt_slot: u64) -> i64 {
     unsafe { invoke(interrupt_slot, abi::interrupt::ACKNOWLEDGE, 0, 0, 0) }
 }
 
-/// **Invoke the reboot object in `slot`** (milestone 805 (`reboot` at the prompt), DECISIONS §251
-/// (restarting the machine is a kernel object the progenitor hands out)): `abi::reboot::REBOOT`.
+/// **Invoke the reboot object in `slot`**: `abi::reboot::REBOOT`. Restarting the machine is a
+/// kernel object the first process hands out, so only a holder can ask.
 /// Does not return when the reset works. When it does return, the answer is negative: an
 /// `abi::Error`: one of the four `Reset…` errors (`abi::Error::ResetDenied` and its kin) when the firmware
 /// refused, `NoSuchSlot` when nothing is held there.
@@ -47,10 +47,10 @@ pub fn reboot(slot: u64) -> i64 {
     unsafe { invoke(slot, abi::reboot::REBOOT, 0, 0, 0) }
 }
 
-/// **Write one byte to an x86 I/O port** (milestone 299 (the x86 port-range capability)). Not a system call: `out` is an instruction,
+/// **Write one byte to an x86 I/O port.** Not a system call: `out` is an instruction,
 /// and a ring-3 program may execute it exactly when it holds a `PortRange` capability naming `port`,
-/// which the kernel enforces through the task state segment (TSS) I/O permission bitmap (§121 (what a device capability
-/// is when the device has no page: x86 port I/O)). A port it does not hold raises a general
+/// which the kernel enforces through the task state segment (TSS) I/O permission bitmap: a device
+/// with no page is a range of ports, and the capability names the range. A port it does not hold raises a general
 /// protection fault, which its supervisor sees as a fault message; no page table catches a wrong
 /// guess. Here rather than in each driver because an instruction belongs with the code that knows
 /// the instruction set architecture (ISA).
@@ -68,7 +68,7 @@ pub fn port_write_byte(port: u16, value: u8) {
     }
 }
 
-/// **Read one byte from an x86 I/O port** (milestone 299 (the x86 port-range capability)). The `in` twin of [`port_write_byte`]; the same
+/// **Read one byte from an x86 I/O port.** The `in` twin of [`port_write_byte`]; the same
 /// capability rule and the same fault on a port the caller does not hold. A read is not automatically
 /// harmless: several legacy devices (the 16550's receive register at `COM1`'s base) have read side
 /// effects, which is exactly why a driver, not the kernel, decides when to issue one.

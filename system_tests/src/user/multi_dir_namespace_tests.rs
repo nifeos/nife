@@ -32,7 +32,10 @@ fn two_dir_witness() -> Option<u64> {
             b: (file_system_fixture::tree::OTHER, TWO_TREE_RIGHTS),
             role: 10, // ROLE_TWO_DIR
             arg: 0,
-            stack_pages: 0,
+            // In a debug build the chain through `two_dir` and `TwoRoots::resolve_absolute` is
+            // about 5 KiB, because each resolved path is a 512-byte `DirectoryPath` held by value.
+            // The one mapped page faults; three leave about 7 KiB.
+            stack_pages: 2,
         },
     ) else {
         // No print, no skip!() here: this is a helper, and `skip!()` returns from the function it
@@ -110,12 +113,13 @@ fn two_tree_shell() -> Option<u64> {
             b: (file_system_fixture::tree::OTHER, rights),
             role: ROLE_TWO_TREES,
             arg: file_system_contract::grant::specification(0, rights),
-            // **Seven, measured.** This script plans an `rm`, and the planner's own frames in a
-            // debug build (`plan_against_with_streams` alone is over 11 KiB) are the deepest chain it
-            // reaches, about 26 KiB with the witness above them. Four overflowed there, presenting
-            // as a data abort on the shell's own `sp` and then as the lost-wakeup watchdog, and six
-            // would leave under 2 KiB; the seventh is headroom, one short of this wiring's ceiling.
-            stack_pages: 7,
+            // **Eleven.** This script plans an `rm`, and in a debug build the deepest chain
+            // from `_start` through `two_tree_rm` and the planner (`plan_against_with_streams`,
+            // `plan_input_operand`, `designate`) is about 43.8 KiB, the sum of each frame's
+            // prologue, most of it 512-byte directory paths held by value. Twelve pages leave about
+            // 4.3 KiB. An overflow presents as a data abort on the shell's own `sp` and then as the
+            // lost-wakeup watchdog.
+            stack_pages: 11,
         },
     )?;
     let [tag, verdict, ..] = sched::ipc_receive(report);

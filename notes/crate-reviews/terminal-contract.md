@@ -100,13 +100,13 @@ No nife type appears in a signature. What a stranger may find surprising:
 |---|---|---|
 | Decision 1 of milestone 1098, the cut | landed ([#3587](https://github.com/nifeos/nife/pull/3587)) | the crate exists with no dependency; the kernel and the protocol's clients depend on it, not on `line_editor` |
 | Decision 4, an interface identity | ruled, not built | no `INTERFACE_ID` or `VERSION` in `src/lib.rs`; the number is not minted |
-| Decision 5, the name | ruled, not recorded at the crate | the crate root's `Name:` block still says the published name waits on the naming-layers decision |
+| Decision 5, the name | landed ([#3965](https://github.com/nifeos/nife/pull/3965)) | the crate root's `Name:` block records the ratification |
 | Item 4, the crate's own name worklist | open | the 14 components the `abbreviations` report lists |
 | The externalization list | open | `crates/externalization-list.txt` names `line_editor` and not this crate |
 
 ## Names
 
-The crate name carries decision 5's ratification in milestone 1098 and nowhere else yet.
+The crate name carries decision 5's ratification, in milestone 1098 and at the crate root.
 The architect ratified `NOTE_NOT_ABSORBED`. Everything else below is provisional or has no block. This lane
 ratifies nothing; the architect ratifies, changes or refuses each row. The proposals in the third
 column follow rulings already in force and are not built.

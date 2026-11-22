@@ -204,11 +204,6 @@ paths = ["notes/periodic-deadline-proofs.md"]
 
 [[home]]
 status = "undecided"
-reason = "about crates/user_mode_runtime alone; it leaves with that crate (§315)"
-paths = ["notes/user-mode-runtime.md", "notes/user-mode-runtime/"]
-
-[[home]]
-status = "undecided"
 reason = "about crates/video_terminal alone; it leaves with that crate (§315)"
 paths = ["notes/video-terminal.md", "notes/video-terminal/"]
 

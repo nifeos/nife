@@ -455,11 +455,10 @@ pub mod durable {
     /// caretaker's region. Measured for the process on aarch64's debug build on 2026-09-26 at 192
     /// with room to spare. Provisional.
     pub const USER_TIMETABLE_KEEPER_REGION_PAGES: u64 = 192 + 2 * 64;
-    /// **What a durable `user_timetable_keeper` builds its timetable from**: the timetable's region (284,
+    /// **What a durable `user_timetable_keeper` builds its timetable from**: the timetable's region (328,
     /// `user_timetable_keeper.rs`'s `TIMETABLE_REGION_PAGES`) and its jobs' budget (128), with room for two
-    /// endpoints. 400 -> 416 on 2026-10-02 (UTC), for the timetable's staging buffer growing to
-    /// 128 KiB. Provisional.
-    pub const USER_TIMETABLE_KEEPER_BUDGET_PAGES: u64 = 416;
+    /// endpoints. Provisional.
+    pub const USER_TIMETABLE_KEEPER_BUDGET_PAGES: u64 = 460;
     /// **One durable session's whole budget**: the client's own, `user_timetable_keeper`'s region, and
     /// what it builds from. `login` splits this many pages per durable session, and its spawner
     /// sizes `login`'s construction budget with it. Provisional.
@@ -524,8 +523,8 @@ pub mod durable {
     pub enum RederiveSkip {
         /// No free slot: as many sessions are already kept as this process can hold.
         TableFull = 0,
-        /// The name does not fit `file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES`, or this identity already
-        /// has a session kept.
+        /// The name is longer than [`crate::MAXIMUM_IDENTITY`], or this identity already has a
+        /// session kept.
         Identity = 1,
         /// The stored schedule is missing or empty: a stale manifest line.
         NoStoredSchedule = 2,
@@ -765,8 +764,8 @@ mod tests {
             file_system_contract::file_system::CLIENT_WINDOWS
         );
         assert_eq!(durable::USER_TIMETABLE_KEEPER_REGION_PAGES, 320);
-        assert_eq!(durable::BUDGET_PAGES, 64 + 320 + 416);
-        assert_eq!(durable::BUDGET_PAGES, 800);
+        assert_eq!(durable::BUDGET_PAGES, 64 + 320 + 460);
+        assert_eq!(durable::BUDGET_PAGES, 844);
     }
 
     /// Skip counts pack one byte each in reason order and saturate at 255, not wrap.

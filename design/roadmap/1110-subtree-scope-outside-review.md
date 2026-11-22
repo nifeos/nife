@@ -54,15 +54,17 @@ the crate's own reasons.
 - P1-7, names the rules refuse: Done, [#3813](https://github.com/nifeos/nife/pull/3813). The eight
   renames (`PROOF_PATH_BYTES`, `directories`, `want_directory`, `component`, `NodeKind`,
   `Binding::Unbound`, `check_landing`, `Bindings::binding`) stand in the tree and in
-  `redoxfs_server`. The architect ratified them with the review package on 2026-11-20 UTC.
+  `redoxfs_server`, and `walk`'s parameter is `requested_rights`
+  ([#3858](https://github.com/nifeos/nife/pull/3858)). The architect ratified them with the review
+  package on 2026-11-20 UTC.
 - P1-8, no example anywhere: At the move. The doctests on `walk` and `Bindings` landed in
   [#3580](https://github.com/nifeos/nife/pull/3580); the README's `## EXAMPLES` remains.
-- P1-9, what the walk proofs leave out and cost: Open. The completeness harness
-  `a_walk_asks_for_every_component_in_order` verifies at unwind 7, but costs 11 minutes of wall
-  time on a loaded host (658 s of CPU) at a peak of 4.6 GiB, against the crate's whole row of 234
-  seconds. That overruns a prove shard's room, so it stays out of the tree. The package records the
-  measurement and the harness's shape. A lane that makes room in the shards, or shrinks the
-  harness, adds it.
+- P1-9, what the walk proofs leave out and cost: Done,
+  [#3980](https://github.com/nifeos/nife/pull/3980). The harness
+  `a_walk_asks_for_every_component_in_order` states that `walk` asks for every component before the
+  last `/`, in order, and keeps one running offset instead of a record of the steps. Its
+  falsification makes `walk` skip the first component. The README's line that the unit tests, not
+  the proofs, cover `NotFound` and `Narrowed` goes with P0-1.
 - P1-10, passive voice over the template's ceiling: At the move. The template counts 26 passives in
   4,081 words against an allowance of 8; the rewrite goes with P0-2.
 - P2-11, `Refusal::errno` restates the contract's numbers: Done,
@@ -206,7 +208,6 @@ The checks are in [the appendix](1110-subtree-scope-outside-review/done-when.md)
 
 - **Milestone 1017.** The crate moves at its step 9; the move lane takes the items marked At the
   move, and P0-3's pin waits on `file_system_contract`'s repository at step 2.
-- **Outstanding.** Item 9, which needs a Kani run of about 6 GiB.
 
 ## Index row
 

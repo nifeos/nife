@@ -11,9 +11,9 @@ categories = ["no-std", "embedded", "os"]
 publish = false     # `false` until the release that publishes this crate; that release deletes the line
 
 # Host tests exercise the pure logic (bounds and alignment checks, the frame's accessors, the stubs'
-# encodings) on any architecture this crate has arms for. `script/lint` clippies the bare-metal
-# targets with `--lib`, because `--all-targets` there would pull in libtest, which does not exist
-# for the `*-unknown-none` targets. There are no benches.
+# encodings) on any architecture this crate has arms for. Clippy runs on the bare-metal targets
+# with `--lib`, because `--all-targets` there would pull in libtest, which does not exist for the
+# `*-unknown-none` targets. There are no benches.
 [lib]
 bench = false
 
@@ -41,17 +41,15 @@ doc_markdown = "warn"
 [dependencies]
 abi = { version = "0.1.0", path = "../abi" }
 address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
-# The x86_64 timebase page (milestone 161 (the x86_64 kernel port)'s `counter_hertz` follow-up): the kernel's calibrated TSC rate,
-# read from the fixed page `kernel::user::load` maps read-only into every x86_64 process. Only
-# `counter_hertz`'s x86_64 arm reads it, but the dependency is unconditional the way clock_contract's and
-# environment_contract's kernel-side deps are, since it is tiny, no_std, and dependency-free.
+# The clock contract, for `NANOSECONDS_PER_SECOND` in `monotonic_nanoseconds`. Dependency-free and
+# no_std.
 clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
 current_cpu_contract = { version = "0.1.0", path = "../current_cpu_contract" }
-# The entropy contract, for `entropy::fill_random_bytes` (lane/uuid-crate, 2026-10-06): the client loop four
-# programs had copied. Dependency-free and no_std, like the other two protocol crates above.
+# The entropy contract, for `entropy::fill_random_bytes`: the client loop four programs had copied.
+# Dependency-free and no_std, like the other protocol crates here.
 entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
-# The socket contract's frame layout (milestone 410 (six copies of the shared-frame accessors)):
-# `socket_frame::Frame` reads and writes the shared frame through it. Dependency-free and no_std,
+# The socket contract's frame layout: `socket_frame::Frame` reads and writes the shared frame
+# through it. Dependency-free and no_std,
 # like the protocol crates above. The type lives here rather than in socket_contract because a
 # contract crate never links the runtime: the dependency runs from this crate to that one.
 socket_contract = { version = "0.1.0", path = "../socket_contract" }

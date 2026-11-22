@@ -49,13 +49,11 @@ logic is testable on the host, and its names pass `design/naming.md`.
   [#3628](https://github.com/nifeos/nife/pull/3628). The driver-side `Version` check stays closed on purpose (Decision 3).
 - P1-7, four completion loops and three submits: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P1-8, the receive parser trusts the buffer: Done, [#3520](https://github.com/nifeos/nife/pull/3520).
-- P1-9, names against `design/naming.md`: Open. [#3816](https://github.com/nifeos/nife/pull/3816)
-  spelled most of the roles file out (maintainer, provisional, two-way: the program publishes no
-  name). `DMA_VA` is `DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS`, `S_*` are `DEVICE_STATUS_*` with
-  the specification's spelling as `#[doc(alias)]`, `QSIZE` is `QUEUE_ENTRIES`, `mr` and `mw` are
-  `read_device_register` and `write_device_register`, and `run_blk_server`, `blk_read`,
-  `blk_write`, `blk_flush`, `submit_blk` and `complete_blk` carry `block`. Still to spell out:
-  `BLK_REQ`, `BLK_READY`, `BLK_OFF_DATA`, the byte-order helpers and the locals the item lists.
+- P1-9, names against `design/naming.md`: Done, [#3816](https://github.com/nifeos/nife/pull/3816)
+  and [#3983](https://github.com/nifeos/nife/pull/3983). Every name the item lists is spelled out,
+  each register, feature bit, descriptor flag and request type keeps the specification's spelling
+  as `#[doc(alias)]` and in its doc comment's opening, and the public entry points carry `Name:`
+  blocks. All are provisional (maintainer, two-way: the program publishes no name).
 - P1-10, the documentation describes a different crate: Done, [#3613](https://github.com/nifeos/nife/pull/3613) and [#3662](https://github.com/nifeos/nife/pull/3662).
 - P1-11, the manifest does not stand alone: Will not fix. After the fold
   ([#3662](https://github.com/nifeos/nife/pull/3662)) the roles have no manifest of their own, which
@@ -245,8 +243,7 @@ The kernel's scan does not offer the slot, so nothing starts a driver for it.
 
 ## Follow-on
 
-- **Outstanding.** P1-3 and Decision 2, which wait on milestone 1075 item 11, and the names P1-9
-  still lists.
+- **Outstanding.** P1-3 and Decision 2, which wait on milestone 1075 item 11.
 - **Milestone 1062.** The shared library that holds the name `virtio`, ruled 2026-11-16 UTC.
   Whether and when to cut it waits on milestone 1062 (the device control planes leave the kernel),
   step 7.

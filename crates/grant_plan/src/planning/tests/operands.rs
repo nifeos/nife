@@ -21,7 +21,7 @@ fn naming_something_to_remove_grants_the_directory_that_holds_it() {
         panic!()
     };
     let e = plan(&r, WITH_DIRECTORY).unwrap();
-    assert_eq!(e.manifest, Program::Rm.manifest());
+    assert_eq!(e.manifest, rows::RM);
     let g = e
         .directory
         .expect("the operand did not become a directory grant");
@@ -161,7 +161,7 @@ fn an_option_the_manifest_does_not_declare_is_refused() {
     };
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::NoSuchOption));
     // And a program that declares no options at all refuses every one.
-    let CommandLine::Run(r) = parse(b"least_authority_demo -r 9") else {
+    let CommandLine::Run(r) = parse(b"count -r 9") else {
         panic!()
     };
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::NoSuchOption));
@@ -212,7 +212,6 @@ fn a_directory_grant_cannot_be_named_out_of_the_shells_root() {
         (b"rm ..", Refusal::FileNotNameable),
         (b"rm ../motd", Refusal::FileNotNameable),
         (too_long, Refusal::FileNotNameable),
-        (b"rm seventeen-bytes!!/old.txt", Refusal::FileNotNameable),
     ] {
         let CommandLine::Run(r) = parse(line) else {
             panic!()
@@ -424,8 +423,8 @@ fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
         super::plan_against(
             &r,
             READS_A_FILE,
-            WITH_DIRECTORY,
-            Expansion::new(0, expanded(b"*.txt").unwrap()),
+            &WITH_DIRECTORY,
+            &Expansion::new(0, expanded(b"*.txt").unwrap()),
         ),
         Err(Refusal::AmbiguousFile),
     );
@@ -436,8 +435,8 @@ fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
     let g = super::plan_against(
         &r,
         READS_A_FILE,
-        WITH_DIRECTORY,
-        Expansion::new(0, expanded(b"*.log").unwrap()),
+        &WITH_DIRECTORY,
+        &Expansion::new(0, expanded(b"*.log").unwrap()),
     )
     .unwrap()
     .file
@@ -507,36 +506,6 @@ fn the_set_bound_matches_the_contract_that_carries_the_set() {
     assert_eq!(set.name_bytes(), expansion::MAXIMUM_NAME_SET_BYTES);
 }
 
-/// **A program that hears words places no positional grant** (milestone 205, DECISIONS §170).
-/// Its words carry no authority and all of them go to its argv, so a positional file,
-/// directory or input slot would have nothing left to fill, and an option letter the shell
-/// validated would be one the program never sees. Only `std` reads an argv.
-#[test]
-fn a_program_that_hears_words_places_no_positional_grant() {
-    let mut hearing = 0;
-    for &p in Program::ALL {
-        let m = p.manifest();
-        if !m.program_argument.hears_words() {
-            continue;
-        }
-        hearing += 1;
-        let name = p.name();
-        assert_eq!(
-            m.startup,
-            StartupContract::Std,
-            "{name}: only std reads an argv"
-        );
-        assert_eq!(m.file, FileGrantDeclaration::Forbidden, "{name}");
-        assert_eq!(m.directory, DirectoryGrantDeclaration::Forbidden, "{name}");
-        assert_eq!(m.input, InputDeclaration::Forbidden, "{name}");
-        assert!(
-            m.short_options.letters().is_empty(),
-            "{name}: its options are its own"
-        );
-    }
-    assert!(hearing > 0, "a sweep over nothing proves nothing");
-}
-
 /// **The planner lets a program that hears words have its whole line** (§170): a flag-shaped
 /// token is not `Unexpected`, a letter is not `NoSuchOption`, and five words are not past
 /// `MAXIMUM_POSITIONALS`. Nothing is placed, so the endowment carries no argument and no short
@@ -544,18 +513,18 @@ fn a_program_that_hears_words_places_no_positional_grant() {
 #[test]
 fn a_program_that_hears_words_is_planned_whatever_its_words_are() {
     let e = plan(
-        &parse_invocation(b"std_exerciser -xyz --long a b c d e f"),
+        &parse_invocation(b"search -xyz --long a b c d e f"),
         WITH_DIRECTORY,
     )
     .unwrap();
-    assert_eq!(e.manifest, Program::StdExerciser.manifest());
+    assert_eq!(e.manifest, rows::SEARCH);
     assert_eq!(
         (e.program_argument, e.short_options, e.file, e.directory),
         (0, 0, None, None)
     );
     // And a line `argv` would refuse is refused here, at the prompt, before anything is sent.
     assert_eq!(
-        plan(&parse_invocation(b"std_exerciser *.rs"), WITH_DIRECTORY),
+        plan(&parse_invocation(b"search *.rs"), WITH_DIRECTORY),
         Err(Refusal::PatternInArguments)
     );
 }

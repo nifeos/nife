@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 953, 1017
 decision_dependencies: 39, 46
@@ -48,9 +49,12 @@ proof the crate has runs somewhere after the move.
   [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-6, the `pause` survivor's exemption line: At the move. One `.github/mutants-exempts` line with
   the triage's reason.
-- P1-7, the second falsification is a hand step: Open. The loom falsification patch here and a
-  loom form of the template's falsify gate in nifeos/crate-workflows remain; the README calls the
-  step manual.
+- P1-7, the second falsification is a hand step: At the move. The template's `proofs / loom`
+  replays a loom model's patch since
+  [nifeos/crate-workflows#85](https://github.com/nifeos/crate-workflows/pull/85). The move commit
+  adds `falsifications/interleavings.two_takers_are_exclusive_and_ordered.patch` and its record, and
+  the README's manual step becomes that gate. The patch waits for the move because this tree's
+  `script/falsifications` replays a host test without `--cfg loom`, where the model does not exist.
 - P1-8, no README, example or doc-test: Done, [#3636](https://github.com/nifeos/nife/pull/3636).
 - P1-9, the standard library's accessors: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-10, documentation for the kernel's reader: Done,
@@ -194,7 +198,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
    `.github/mutants-exempts` line that gives the reason. Fix: one line at the move, with the
    triage's reason. Effort S. Two-way.
 
-7. The second falsification is a hand step, not a gate. `notes/interleaving/what-was-modeled.md` LEFT: the template's; the README calls the step manual.
+7. The second falsification is a hand step, not a gate. `notes/interleaving/what-was-modeled.md` LEFT: move work (the template's replay landed in nifeos/crate-workflows#85).
    records that weakening the compare-exchange's success ordering to Relaxed fails the four
    positive models; this review replayed it (4 failures, the should-panic model passing). The
    in-crate should-panic model (`a_relaxed_release_publishes_nothing`, `src/lib.rs` line 472) keeps
@@ -257,14 +261,12 @@ The checks are in [the appendix](1109-spin-lock-outside-review/done-when.md).
 
 - **Milestone 1017.** The crate moves in the order of milestone 1017 (the contract crates leave in
   this order); the move lane takes the items marked At the move.
-- **Outstanding.** Item 7: the template's falsify gate cannot replay a loom patch, checked
-  against nifeos/crate-workflows' `falsify.py`.
 - **Refused.** Item 16: `try_lock` already answers `is_locked`, and a `lock_api` impl is a new
   dependency.
 
 ## Index row
 
-An outside review of `test_and_set_lock` before it leaves. The template's falsify gate cannot replay the
-crate's loom falsification, and the move commit still owes the `Name:` blocks, the citations and the
-`pause` exemption. The crate left the name `spin_lock`, which crates.io already holds, for `test_and_set_lock`. Three P0,
+An outside review of `test_and_set_lock` before it leaves. The template now replays a loom model's
+falsification, and the move commit still owes that patch, the `Name:` blocks, the
+citations and the `pause` exemption. The crate left the name `spin_lock`, which crates.io already holds, for `test_and_set_lock`. Three P0,
 seven P1 and six P2 items; the one one-way door, the name, is ruled.
