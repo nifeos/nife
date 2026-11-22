@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
 milestone_dependencies: 672, 994, 1017
 decision_dependencies: 170
@@ -71,17 +71,16 @@ section number, a milestone or a person in another repository.
   IntoIterator` stays out: the `std` port copies this file and would demand stability attributes.
 - P2-14, the data bounds the record walk: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-15, the one-file constraint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- Ruling, the layout leaves as built, with the magic numbered at 994: Waiting on a ruling
-  ([#3982](https://github.com/nifeos/nife/pull/3982)) on the numbered magic's spelling.
-  [#3579](https://github.com/nifeos/nife/pull/3579) recorded `VERSION` 1 and `INTERFACE_ID` 18.
+- Ruling, the layout leaves as built, with a numbered magic: Done,
+  [#3579](https://github.com/nifeos/nife/pull/3579) and
+  [#3982](https://github.com/nifeos/nife/pull/3982) (ruled 2026-11-22 UTC): `PROGARG2`, `VERSION` 2.
 - Ruling, three public names: Done, [#3808](https://github.com/nifeos/nife/pull/3808) and
   [#3978](https://github.com/nifeos/nife/pull/3978), with P0-4 and P1-5.
 - Ruling, the remaining names: Done, [#3885](https://github.com/nifeos/nife/pull/3885).
 
 ## Open decisions
 
-- The numbered magic's spelling, which replaces `nifeargv`, on
-  [#3982](https://github.com/nifeos/nife/pull/3982).
+None.
 
 ## What was checked, and how
 
@@ -248,14 +247,13 @@ The P2 items are in [the appendix](1106-program-argument-contract-outside-review
 
 Only the one-way doors went to the architect. Everything else above is the maintainer's.
 
-### The layout leaves as built, with the magic unnumbered until 994
+### The layout leaves as built, with a numbered magic
 
-Ruled by the architect, 2026-11-14 (UTC). The argument page leaves nife as built, with milestone
-672's layout, `VERSION` 1 and `INTERFACE_ID` 18. The magic `nifeargv` stays unnumbered until
-milestone 994 (the cross-repository pair is tested where the pin is) moves the pair test to basalt.
-In the change at 994, a numbered magic that does not spell nife replaces it, so one
-break and one basalt rebuild carry both. There is no checksum (item 9) and the length prefix stays
-four bytes.
+Ruled by the architect, 2026-11-14 (UTC), and for the magic and version on 2026-11-22 (UTC). The
+argument page leaves nife with milestone 672's layout and `INTERFACE_ID` 18. Its magic is
+`PROGARG2` and its `VERSION` is 2: the magic is the page's name and the version's digit, and a new
+magic is a new version, as the format-values check requires. There is no checksum (item 9) and the
+length prefix stays four bytes.
 
 ### Three public names
 
@@ -286,9 +284,9 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 
 - **Done.** Two milestones meet the layout ruling's condition (maintainer's reading, provisional,
   2026-11-19 UTC): 1115 (the gate builds basalt's delivered programs from the candidate tree) in
-  every merge group, and 994 in basalt. The numbered magic lands in one nife pull request, a lane of its own.
-- **Outstanding.** The numbered magic, on [#3982](https://github.com/nifeos/nife/pull/3982).
-- **Outstanding.** The repository (ruled 2026-11-14 UTC), after the numbered magic: a lane creates
+  every merge group, and 994 in basalt.
+- **Done.** The numbered magic, [#3982](https://github.com/nifeos/nife/pull/3982).
+- **Outstanding.** The repository (ruled 2026-11-14 UTC): a lane creates
   `nifeos/program_argument_contract`, runs the move check and a dry run, and tags `v0.1.0-pre.1`
   with no publish, after the renames and milestone 994.
 

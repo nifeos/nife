@@ -98,7 +98,7 @@ const _: () = assert!(MAXIMUM_RECORDS_BYTES <= u32::MAX as usize);
 /// The first eight bytes of an assembled page: the page's name and then the digit of its
 /// [`VERSION`], so a reader that meets a later layout refuses it at the first comparison.
 ///
-/// Name: provisional, awaiting a ruling on the spelling.
+/// Name: ratified 2026-11-22 (UTC), with `VERSION` 2.
 pub const MAGIC: [u8; 8] = *b"PROGARG2";
 
 // The magic's last byte is the version's digit, so the two cannot drift apart.
