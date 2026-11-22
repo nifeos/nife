@@ -57,8 +57,9 @@
 //! - A block freed by an owner other than the one that allocated it lands in the freeing owner's
 //!   cache, bounded by [`BLOCKS_PER_CLASS`] and spilled at the bound.
 //!
-//! Name: provisional, minted 2026-10-10 (UTC), for what the crate holds rather than its owner. No
-//! architect has ruled on it; the maintainer kept it 2026-11-14 (UTC), provisionally.
+//! Name: ratified 2026-11-19 (UTC, decision 2 of milestone 1077 (`allocation_cache`: what an
+//! outside maintainer would fix before the move and the first tag)). It names what the crate holds
+//! rather than its owner.
 
 #![no_std]
 
@@ -71,13 +72,14 @@ use core::ptr::NonNull;
 
 /// The size step between classes, and the most alignment a cached request may ask for.
 ///
-/// Name: provisional, spelled with its unit 2026-11-16 (UTC) as the maintainer's provisional ruling
-/// of 2026-11-14 on decision 2 of the outside review.
+/// Name: ratified 2026-11-19 (UTC, decision 2 of milestone 1077 (`allocation_cache`: what an
+/// outside maintainer would fix before the move and the first tag)). Refused `GRID` (no unit).
 pub const GRID_BYTES: usize = 16;
 
 /// The largest effective size a cache holds.
 ///
-/// Name: provisional, as [`GRID_BYTES`].
+/// Name: ratified 2026-11-19 (UTC), as [`GRID_BYTES`]. Refused `LARGEST` (no unit, and a limit
+/// opens `MAXIMUM_`).
 pub const MAXIMUM_CLASS_BYTES: usize = 256;
 
 /// How many size classes there are: one per grid step up to [`MAXIMUM_CLASS_BYTES`].
@@ -85,7 +87,8 @@ pub const CLASSES: usize = MAXIMUM_CLASS_BYTES / GRID_BYTES;
 
 /// How many blocks of one class a cache holds before a free spills.
 ///
-/// Name: provisional, as [`GRID_BYTES`].
+/// Name: ratified 2026-11-19 (UTC), as [`GRID_BYTES`]. Refused `DEPTH` (a count names the things
+/// it counts).
 pub const BLOCKS_PER_CLASS: usize = 16;
 
 /// How many blocks a refill takes from the heap, and a spill gives back, under one acquisition of
@@ -93,12 +96,14 @@ pub const BLOCKS_PER_CLASS: usize = 16;
 /// lock once per eight blocks, and one that alternates at the boundary does not take it on every
 /// call.
 ///
-/// Name: provisional, as [`GRID_BYTES`].
+/// Name: ratified 2026-11-19 (UTC), as [`GRID_BYTES`]. Refused `BATCH` (a count names the things
+/// it counts).
 pub const BATCH_BLOCKS: usize = BLOCKS_PER_CLASS / 2;
 
 /// The most memory one full cache keeps out of the heap.
 ///
-/// Name: provisional, as [`GRID_BYTES`].
+/// Name: ratified 2026-11-19 (UTC), as [`GRID_BYTES`]. Refused `MOST_CACHED_BYTES` (a limit
+/// opens `MAXIMUM_`).
 pub const MAXIMUM_CACHED_BYTES: usize = BLOCKS_PER_CLASS * GRID_BYTES * CLASSES * (CLASSES + 1) / 2;
 
 // A class is a byte, so the class count must fit one.
@@ -108,8 +113,8 @@ const _: () = assert!(CLASSES <= 256);
 /// [`MAXIMUM_CLASS_BYTES`]. Only [`class`] makes one, so a method that takes a `Class` cannot be
 /// handed an index past the last class.
 ///
-/// Name: provisional, minted 2026-11-16 (UTC) as the maintainer's provisional ruling of 2026-11-14
-/// on decision 3 of the outside review.
+/// Name: ratified 2026-11-19 (UTC), as [`GRID_BYTES`]; decision 3 of the same milestone made a
+/// class a type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct Class(u8);
@@ -262,8 +267,8 @@ impl Cache {
     /// A cached block of `class`, or `None` when there is none and the caller must go to the heap.
     /// The glibc spelling is `tcache_get`.
     ///
-    /// Name: provisional, per the maintainer's provisional ruling of 2026-11-14 on decision 2 of
-    /// the outside review: `std` and `heapless` spell a bounded stack's `pop` this way.
+    /// Name: ratified 2026-11-19 (UTC), as [`GRID_BYTES`]: `std` and `heapless` spell a bounded
+    /// stack's `pop` this way. Refused `take`, for the stack spelling.
     #[doc(alias = "tcache_get")]
     pub fn pop(&mut self, class: Class) -> Option<NonNull<u8>> {
         let head = NonNull::new(self.heads[class.index()])?;
@@ -278,8 +283,9 @@ impl Cache {
     /// the caller should [`spill`](Self::spill) and try again, or free it to the heap. The glibc
     /// spelling is `tcache_put`.
     ///
-    /// Name: provisional, as [`pop`](Self::pop): `std` and `heapless` spell a bounded stack's
-    /// `push` this way, with the same `Result<(), T>` on a full container.
+    /// Name: ratified 2026-11-19 (UTC), as [`pop`](Self::pop): `std` and `heapless` spell a
+    /// bounded stack's `push` this way, with the same `Result<(), T>` on a full container. Refused
+    /// `put` (the glibc word).
     ///
     /// # Safety
     ///
@@ -345,9 +351,8 @@ impl Cache {
     /// Hand every block to `give` with its class, leaving the cache empty: an owner's end. It
     /// hands back only blocks that [`push`](Self::push) or [`refill`](Self::refill) took.
     ///
-    /// Name: provisional, per the maintainer's provisional ruling of 2026-11-14 on decision 2 of
-    /// the outside review: `drain` takes a closure here, where `std`'s `drain` returns an
-    /// iterator.
+    /// Name: ratified 2026-11-19 (UTC), as [`GRID_BYTES`]. Refused `drain` (`std`'s `drain`
+    /// returns an iterator, and this one takes a closure).
     pub fn give_back_all(&mut self, mut give: impl FnMut(Class, NonNull<u8>)) {
         for index in 0..CLASSES {
             let c = Class::at(index);
