@@ -13,7 +13,7 @@
 //! # The layout
 //! ```text
 //!   offset  size  field
-//!   0       8     MAGIC, b"nifeargv"
+//!   0       8     MAGIC, b"PROGARG1"
 //!   8       4     count, little-endian u32: how many arguments
 //!   12      4     total, little-endian u32: how many bytes of records follow
 //!   16      ...   count records, each a little-endian u32 length and then that many bytes
@@ -87,12 +87,18 @@ const LENGTH_PREFIX_BYTES: usize = 4;
 // enough that no stored number truncates.
 const _: () = assert!(MAXIMUM_RECORDS_BYTES <= u32::MAX as usize);
 
-/// The first eight bytes of an assembled page. Provisional, with the rest of the layout.
-pub const MAGIC: [u8; 8] = *b"nifeargv";
+/// The first eight bytes of an assembled page: the page's name and then the digit of its
+/// [`VERSION`], so a reader that meets a later layout refuses it at the first comparison.
+///
+/// Name: provisional, awaiting a ruling on the spelling.
+pub const MAGIC: [u8; 8] = *b"PROGARG1";
 
-/// The page layout's version. The magic carries no digits, so this constant records the version
-/// the layout now carries: a break to the layout is a new version, and the magic changes in the
-/// same coordinated change.
+// The magic's last byte is the version's digit, so the two cannot drift apart.
+#[allow(clippy::cast_possible_truncation)]
+const _: () = assert!(MAGIC[7] == b'0' + VERSION as u8);
+
+/// The page layout's version, the digit that ends [`MAGIC`]: a break to the layout is a new
+/// version, and the magic's digit changes in the same coordinated change.
 ///
 /// Name: ratified 2026-11-21 (UTC).
 pub const VERSION: u32 = 1;
