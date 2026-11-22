@@ -19,7 +19,7 @@ An appendix to [the milestone](../1058-non-volatile-memory-express-outside-revie
   outside the ledger) and all three fuzz targets are green at the commit a tag would carry. The tag
   itself waits for its own ruling.
 - P1-1 to P1-14 have closed in the repository, each by a pull request in the crate's repository,
-  recorded in this block's Follow-on, and each P2 item has either closed or become an entry in the README's BUGS.
+  recorded in this block's finding status, and each P2 item has either closed or become an entry in the README's BUGS.
 
 ## What needs QEMU or hardware
 
@@ -30,11 +30,7 @@ The review ran none of these.
   rings wrap within the test. It writes a block, reads it back, records every reported `SQHD`
   without an error, and flushes. Once P1-9 lands, the same run repeats with the controller set for
   a 16 KiB memory page.
-  Status: built and run in nifeos/non_volatile_memory_express#38, which records every head; open
-  until it merges.
 - Hardware: the same driver on one real controller, with a namespace formatted to a non-zero
   `FLBAS`, so that the parse reads the format table at an index other than zero.
-  Status: open, needs the bench.
 - A weakly ordered host (aarch64): a run long enough to cross the wraps of both rings thousands of
   times with the ordering discipline of P1-6 in place, and no stale field observed.
-  Status: open, needs the bench.
