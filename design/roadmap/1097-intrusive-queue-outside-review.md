@@ -1,6 +1,7 @@
 ---
 status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -227,7 +228,7 @@ The rules in force, each with its background and prior art, are in
 
 ## Follow-on
 
-- **Outstanding.** The soak. The crate keeps `publish = false`, and the kernel and
+- **Recorded.** The soak. The crate keeps `publish = false`, and the kernel and
   `inter_process_communication` take it by `rev`, a commit on the repository's main, checked in
   `kernel/Cargo.toml`; a tag moves the pin later.
 
