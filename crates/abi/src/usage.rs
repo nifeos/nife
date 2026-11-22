@@ -2,8 +2,9 @@
 
 /// Pages the region holds in total.
 ///
-/// Name: provisional.
-pub const SIZE: u64 = 0;
+/// Name: ratified 2026-11-22 (UTC): a size carries its unit. Refused `SIZE` (a size with no
+/// unit).
+pub const SIZE_PAGES: u64 = 0;
 /// Pages spent so far: the watermark.
 ///
 /// Name: provisional.

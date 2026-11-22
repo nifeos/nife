@@ -70,7 +70,7 @@ On the branch of pull request 3942, on stable 1.99.1:
 | `cargo build -p abi --lib --target <t>` for `x86_64-unknown-none`, `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-elf` | all three build |
 | `cargo check -p pmap -p ps -p memory_region_heap -p user_mode_runtime` | builds |
 | the template's helpers at `nifeos/crate-workflows` `1b9abe9`, run by hand over the crate | prose caps, passive voice, history phrases, acronyms, comment blocks, file and function length, spelled-out words, unit symbols and British spelling pass. `register_names` refuses six names (below) |
-| `python3 helpers/name_release.py --draft abi` | 146 rows: 19 ratified, 127 provisional, none without a block |
+| `python3 helpers/name_release.py --draft abi` | 146 rows: 25 ratified, 121 provisional, none without a block |
 | `script/crate-review-packet abi` | no dependency, no `unsafe`, no reference back into nife |
 
 Not run, and so not claimed:
@@ -84,10 +84,10 @@ Not run, and so not claimed:
 
 ## Names
 
-Nineteen names read ratified: the crate, the modules `interrupt` and `object_type`, the five system
-call numbers, `MAP_READ_ONLY`, `MAP_READ_WRITE`, `FAULT_RENDEZVOUS_SLOT`, `interrupt::ACKNOWLEDGE`,
-`REPLY_DELIVERED`, `SUSPEND`, `RESUME`, `READ_REGISTER`, `WRITE_REGISTER` and the two `tests`
-modules. Every other public name reads `Name: provisional.` The ruled rename to `moho_abi` changes
+Twenty-five names read ratified: the crate, the modules `interrupt` and `object_type`, the five
+system call numbers, `MAP_READ_ONLY`, `MAP_READ_WRITE`, `FAULT_RENDEZVOUS_SLOT`,
+`interrupt::ACKNOWLEDGE`, `REPLY_DELIVERED`, `SUSPEND`, `RESUME`, `READ_REGISTER`, `WRITE_REGISTER`,
+the two `tests` modules and the six size names below. Every other public name reads `Name: provisional.` The ruled rename to `moho_abi` changes
 the crate's name and no item's.
 
 Four names come from the outside review's items, set provisionally by the maintainer:
@@ -100,11 +100,11 @@ Four names come from the outside review's items, set provisionally by the mainta
   `reg-shift` and `reg-io-width` as aliases (item 16).
 - `CapabilitySlot` is gone: nothing named it (item 15).
 
-Six names failed the template's rule that a size carries its unit. The architect ratified their
-replacements on 2026-11-22 (UTC), and the rename pass of pull request 3998 carries them across the
-kernel, the runtime, the `std` overlay and the system tests. No number changes.
+Six names carry their unit, as the template's size rule asks, ratified on 2026-11-22 (UTC) across
+the kernel, the runtime, the `std` overlay and the system tests. Their numbers are the ones the
+refused names held.
 
-| name in the code | what it is | ratified |
+| refused | what it is | ratified |
 |---|---|---|
 | `address_wait::SIZE_U8`, `SIZE_U16`, `SIZE_U32`, `SIZE_U64` | the width of the waited word, in the flags word | `WIDTH_8_BITS`, `WIDTH_16_BITS`, `WIDTH_32_BITS`, `WIDTH_64_BITS` |
 | `address_wait::SIZE_MASK` | the two bits that hold the width | `WIDTH_MASK` |
@@ -115,7 +115,6 @@ kernel, the runtime, the `std` overlay and the system tests. No number changes.
 | item | owner |
 |---|---|
 | The rename to `moho_abi` | milestone 1121, step 3 |
-| The six ratified size names above | pull request 3998 |
 | The README's badge row, with the repository's name (item 9) | the move commit |
 | Convert the fifteen manifests and the `std` farm's copy to the pinned repository | the move lane's nife-side pull request |
 | One `mutants-exempts` line or one test per survivor of the first weekly run (item 20) | the move lane, in the new repository |
