@@ -1,12 +1,11 @@
 # Upstream draft 4: fuzz targets
 
 Item 4 of [milestone 190](../../0190-ext4-read-write.md)'s upstream round. The slug and the seven
-target names are provisional. Nothing here has been filed; the architect reviews this text before
+target names are provisional. Nobody has filed it; the architect reviews this text before
 anyone files it.
 
 - **Repository and base.** rcore-os/tgoskits, branch `dev`, commit
-  `6e80b940d46167a59a795e158bb17a7eb28333af`, which is still the head of `dev` when this draft was
-  written.
+  `6e80b940d46167a59a795e158bb17a7eb28333af`, still the head of `dev` as of this draft.
 - **Patch.** [4-fuzz-targets.patch](4-fuzz-targets.patch), one commit, which adds only files under
   `fs/rsext4/fuzz/`.
 - **Pull request title.** `test(rsext4): add fuzz targets for the on-disk parsers, mount and journal replay`
@@ -60,7 +59,7 @@ anyone files it.
 
 ### Problem
 
-Every byte `rsext4` reads comes from a disk, and a disk can be damaged or built to attack (a USB
+Every byte `rsext4` reads comes from a disk, and a disk can arrive damaged or built to attack (a USB
 stick someone plugs in, an image someone downloads). The crate has many unit and contract tests for
 particular errors, but nothing that tries the parse and mount paths with arbitrary input. When the
 superblock, group descriptors, extent tree, directory blocks, hash-tree index or journal replay
@@ -86,7 +85,7 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
   at most 256 KiB read from each file).
 - `make-seeds.sh` builds the seed corpus with `mke2fs` and a fixed time: 1 KiB and 4 KiB blocks,
   with and without `metadata_csum`, a directory of 150 entries indexed by `e2fsck -D`, and an image
-  with one committed journal transaction. The parser targets' seeds are cut from these images.
+  with one committed journal transaction. The script cuts the parser targets' seeds from these images.
 - `README.md` describes the targets, the corpus and how to run them.
 
 ### Reasoning of each step
@@ -96,36 +95,36 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
 - The fuzz crate has its own `[workspace]` and stays out of the repository workspace. `cargo fuzz`
   needs the nightly toolchain and sanitizer flags, and joining the workspace would make every
   `cargo xtask` build and check compile `libfuzzer-sys`. `libfuzzer-sys` is `cargo fuzz`'s standard
-  dependency and is used only in this unpublished crate (`publish = false`); `rsext4`'s own
-  dependencies do not change. Following the existing rule in `fs/rsext4/.gitignore`, no
-  `Cargo.lock` is committed.
+  dependency, and only this unpublished crate uses it (`publish = false`); `rsext4`'s own
+  dependencies do not change. Following the existing rule in `fs/rsext4/.gitignore`, the
+  change commits no `Cargo.lock`.
 - The whole-image targets use an in-memory device rather than a file, so an iteration never touches
-  the disk. 512-byte sectors let a 1 KiB block image mount; otherwise most inputs would be refused
-  at the block-size step.
-- The walk is bounded because a damaged image can make a directory cycle or claim a huge file, and
+  the disk. 512-byte sectors let a 1 KiB block image mount; otherwise mount would refuse most
+  inputs at the block-size step.
+- The walk has a bound because a damaged image can make a directory cycle or claim a huge file, and
   without a bound one iteration could time out and hide the real problem. The bound limits only
   the target's work, not the crate's behaviour.
 - The script writes the journal seed's committed transaction itself (a descriptor block, two data
   blocks and a commit block) and marks the filesystem as needing recovery, because `debugfs`'s
   journal-writing commands leave no committed transaction in this version. The script confirms the
-  transaction with `debugfs logdump`, replays a copy with `e2fsck` and checks that the target blocks
-  really changed, and fails if any step does not match, so the seed is always an image a Linux tool
-  agrees needs replay.
-- Each parser target's seeds are cut from real images, so mutation starts from valid structures
-  rather than random bytes.
+  transaction with `debugfs logdump`, replays a copy with `e2fsck` and checks that the target
+  blocks really changed. It fails if any step does not match, so the seed is always an image a
+  Linux tool agrees needs replay.
+- The script cuts each parser target's seeds from real images, so mutation starts from valid
+  structures rather than random bytes.
 
 ### Verification
 
 - Each target ran locally for 600 seconds (`cargo fuzz run -O <target> corpus/<target> --
   -max_total_time=600 -timeout=10`; rustc nightly 2026-11-12, cargo-fuzz 0.13.2, x86_64 Linux,
   e2fsprogs 1.47.2). None crashed, timed out or ran out of memory. The run counts are below.
-- A small program, not committed, confirmed that the seeds reach the intended paths: the three walk
-  images and the indexed-directory image all mount through the fuzz crate's device, and every name
-  the walk lists is found with `lookup_child`; mounting the journal image read-write replays the
+- A small program, not committed, confirmed that the seeds reach the intended paths. The three walk
+  images and the indexed-directory image all mount through the fuzz crate's device, and
+  `lookup_child` finds every name the walk lists. Mounting the journal image read-write replays the
   transaction's two blocks into the filesystem.
 - `cargo xtask clippy --package rsext4` passes; `cargo clippy --all-targets -- -D warnings` passes
   on the fuzz crate; `cargo fmt --check` changes nothing.
-- `cargo xtask test` was not run: the change touches no source of a tested package, and the fuzz
+- We did not run `cargo xtask test`: the change touches no source of a tested package, and the fuzz
   crate is outside the workspace, so `xtask` does not build it.
 - Not verified: a scheduled run in CI. This pull request adds no CI job; whether and how CI runs the
   fuzz targets is the maintainers' choice.
@@ -136,9 +135,9 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
 `*const Ext4GroupDesc` and returns a reference from an `unsafe` block. `Ext4GroupDesc` is
 `#[repr(C)]` with `u32` fields, so its alignment is 4, and the function checks only the length,
 not the alignment. The safe public constructor `BlockGroupDescTable::new` accepts any `&[u8]`, so a
-caller passing a misaligned slice (`&bytes[1..]`, for example) gets a misaligned reference, which
-is undefined behaviour. Also, without the `64bit` feature a descriptor is 32 bytes while
-`Ext4GroupDesc` is 64, so for every descriptor but the last the high-half fields read the next
+caller passing a misaligned slice (`&bytes[1..]`, for example) gets a misaligned reference, and
+Rust leaves the behaviour of forming one undefined. Also, without the `64bit` feature a descriptor
+is 32 bytes while `Ext4GroupDesc` is 64, so for every descriptor but the last the high-half fields read the next
 descriptor's bytes. The fuzz target always passes an aligned slice, so it did not trigger this,
 and this pull request does not change it; inside the crate only `test_contracts.rs` calls
 `get_desc`. It could decode by value instead (`Ext4GroupDesc::decode_checked`); we can send a
@@ -152,9 +151,9 @@ separate pull request if wanted.
   `libfuzzer-sys` covers our own crate repositories' fuzz crates; this one is upstream's call, and
   nife takes on no dependency from it.
 - **The `get_desc` paragraph is a finding by reading.** No run demonstrated it: the debug-assertion
-  alignment check does not fire when a reference is formed this way, and Miri is not installed
+  alignment check does not fire when code forms a reference this way, and Miri is not installed
   here. If the reviewer prefers, it can leave this body and become its own issue draft.
-- **No crash was found,** so no crash report draft accompanies this one. Ten minutes per target is
+- **No run found a crash,** so no crash report draft accompanies this one. Ten minutes per target is
   short, especially for the whole-image targets (33,066 to 273,613 runs); nife's fuzz rotation
   over the hostile-image corpus, in milestone 190's own list, is where longer runs belong.
 

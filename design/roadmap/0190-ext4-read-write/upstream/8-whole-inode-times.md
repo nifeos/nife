@@ -1,11 +1,10 @@
 # Upstream draft 8: InodeInfo reports whole times
 
 Item 8 of [milestone 190](../../0190-ext4-read-write.md)'s upstream round. The slug is
-provisional. Nothing here has been filed; the architect reviews this text before anyone files it.
+provisional. Nobody has filed it; the architect reviews this text before anyone files it.
 
 - **Repository and base.** rcore-os/tgoskits, branch `dev`, commit
-  `6e80b940d46167a59a795e158bb17a7eb28333af`, which is still the head of `dev` when this draft was
-  written.
+  `6e80b940d46167a59a795e158bb17a7eb28333af`, still the head of `dev` as of this draft.
 - **Patch.** [8-whole-inode-times.patch](8-whole-inode-times.patch), one commit.
 - **Pull request title.** `fix(rsext4)!: report whole inode times in InodeInfo`
 
@@ -54,7 +53,7 @@ The `InodeInfo` that the owned interface returns (from `Ext4::inode`, `lookup_ch
 `update_inode_metadata` and others) stores `atime`, `ctime`, `mtime` and `btime` as the inode's
 raw 32-bit seconds fields (`i_atime` and so on). That has three consequences:
 
-- The nanoseconds are lost. A 256-byte inode keeps them in its `*_extra` fields, which `InodeInfo`
+- The nanoseconds go missing. A 256-byte inode keeps them in its `*_extra` fields, which `InodeInfo`
   does not read.
 - A time before 1970 reads as one near 2106. ext4's seconds field is a signed 32-bit number, and
   as a `u32` 1969-12-31 reads as 4294880896.
@@ -80,18 +79,19 @@ converts with `Duration::from_secs(u64::from(inode.atime))`, so the VFS sees no 
   past 2106, both with nanoseconds. It checks that `update_inode_metadata`'s return value, and
   `inode()` after a read-only remount, both give back the values written, and that a new file has
   a creation time equal to its status change time.
-- The existing `ax-fs-ng` test `metadata_owner_and_times_remain_durable_after_explicit_sync` is
-  strengthened: the times it sets carry nanoseconds, and its modification time is past 2106.
+- The change strengthens the existing `ax-fs-ng` test
+  `metadata_owner_and_times_remain_durable_after_explicit_sync`: the times it sets carry
+  nanoseconds, and its modification time is past 2106.
 
 ### Reasoning of each step
 
-- The decoding already exists and is tested, so `InodeInfo` only needs to call it; no new decoding
-  code is added.
-- `Ext4Timestamp` is chosen over `Duration` or `(i64, u32)` because it is the type the crate's own
+- The crate already has the decoding and tests it, so `InodeInfo` only needs to call it; the change
+  adds no new decoding code.
+- We chose `Ext4Timestamp` over `Duration` or `(i64, u32)` because it is the type the crate's own
   write interface, `InodeMetadataUpdate`, takes. Reading and writing then match, and it can hold a
   time before 1970.
-- `btime` is an `Option` because a 128-byte inode has no creation-time field, and returning 0 there
-  would be confused with a real 1970-01-01. `crtime_ts` already returns an `Option`.
+- `btime` is an `Option` because a 128-byte inode has no creation-time field, and a caller would
+  mistake a 0 there for a real 1970-01-01. `crtime_ts` already returns an `Option`.
 - This breaks a public interface, so the title uses `fix(rsext4)!` and the commit message carries
   `BREAKING CHANGE`; release-plz derives the version and the changelog from them.
 - In `ax-fs-ng` a time before 1970 reads as the epoch rather than failing, because `stat` on a file
@@ -99,7 +99,7 @@ converts with `Duration::from_secs(u64::from(inode.atime))`, so the VFS sees no 
   an existing limit of that layer.
 - A bug fix strengthens an existing test first. `ax-fs-ng`'s persistence test already sets times,
   syncs and reads them back, and only needed values that reach the nanoseconds and the epoch bits.
-  `rsext4` has no test of the times the owned interface reads back, so one is added.
+  `rsext4` has no test of the times the owned interface reads back, so the change adds one.
 
 ### Verification
 
@@ -114,14 +114,14 @@ converts with `Duration::from_secs(u64::from(inode.atime))`, so the VFS sees no 
   `growth_preserves_files_and_exposes_new_groups_to_linux` in `rsext4`'s
   `tests/filesystem_growth.rs`, and `ax-fs-ng`'s
   `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents`. These three fail
-  the same way on the unchanged base commit (e2fsprogs 1.47.2, x86_64 Linux), and are unrelated to
-  this change.
+  the same way on the unchanged base commit (e2fsprogs 1.47.2, x86_64 Linux), so this change does
+  not cause them.
 - Also checked with an external read comparison tool, which uses `mke2fs` and `debugfs` to build
   images holding files with nanosecond times, times before 1970 and times past 2106, and compares
   the times read against `debugfs`'s. Before the fix, those files' times differ from `debugfs`'s
   on every image and sector pairing; after it, all of them match.
 - Not verified: `stat` results from StarryOS and ArceOS under QEMU or on physical boards. The
-  change touches only how inode times are read and converted, and `ax-fs-ng`'s host test covers
+  change touches only how the crate reads and converts inode times, and `ax-fs-ng`'s host test covers
   the conversion.
 
 ## Notes for the reviewer (not filed)

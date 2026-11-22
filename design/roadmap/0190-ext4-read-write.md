@@ -250,9 +250,10 @@ it. That ruling is not the adoption ruling above, which stays open.
 - **Outstanding.** The upstream round: the two bug fixes, the recovery-flag order, the safety
   arguments, the cast replacement and the Kani harnesses. Each text goes to the architect before
   anyone files it.
-- **Outstanding.** The fuzz targets, the mount's error report and whole times in `InodeInfo`, whose
-  drafts in [`0190-ext4-read-write/upstream/`](0190-ext4-read-write/upstream/) await the
-  architect's review before anyone files them.
+- **Outstanding.** The [fuzz targets](0190-ext4-read-write/upstream/4-fuzz-targets.md), the
+  [mount's error report](0190-ext4-read-write/upstream/7-mount-refusal-reason.md) and
+  [whole times in `InodeInfo`](0190-ext4-read-write/upstream/8-whole-inode-times.md), whose drafts
+  await the architect's review before anyone files them.
 - **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the

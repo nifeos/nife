@@ -1,11 +1,10 @@
 # Upstream draft 7: mount reports why it refused the superblock
 
 Item 7 of [milestone 190](../../0190-ext4-read-write.md)'s upstream round. The slug is
-provisional. Nothing here has been filed; the architect reviews this text before anyone files it.
+provisional. Nobody has filed it; the architect reviews this text before anyone files it.
 
 - **Repository and base.** rcore-os/tgoskits, branch `dev`, commit
-  `6e80b940d46167a59a795e158bb17a7eb28333af`, which is still the head of `dev` when this draft was
-  written.
+  `6e80b940d46167a59a795e158bb17a7eb28333af`, still the head of `dev` as of this draft.
 - **Patch.** [7-mount-refusal-reason.patch](7-mount-refusal-reason.patch), one commit.
 - **Pull request title.** `fix(rsext4): report why mount refused the superblock`
 
@@ -48,35 +47,35 @@ context. After decoding the superblock, `read_superblock` calls `set_filesystem_
 its block size. When the filesystem block is smaller than the device's logical sector (a 1 KiB
 block image on a device of 4,096-byte sectors, for example), that step returns `BadSuperblock`
 with the context `device:filesystem_geometry`. After the mapping, the caller sees only
-`Ext4Error { kind: Io, context: None }`, which cannot be told apart from a device read that really
-failed, and gives no hint whether to use a device with another sector size or to replace the
+`Ext4Error { kind: Io, context: None }`, which nobody can tell apart from a device read that
+really failed, and gives no hint whether to use a device with another sector size or to replace the
 medium.
 
 The same mapping hides a device that holds no ext4 filesystem. A zeroed device's block-size field
 is 0, meaning 1 KiB blocks, so on a device of 4,096-byte sectors it also fails first at the block
-size, and is reported as `Io` rather than `InvalidMagic`.
+size, and mount reports `Io` rather than `InvalidMagic`.
 
 ### Change
 
 - `read_superblock` (`fs/rsext4/src/ext4/mkfs.rs`) checks the magic after decoding and before the
   block size, and returns `Ext4Error::invalid_magic()` when it does not match.
 - The three `read_superblock(...).map_err(|_| Ext4Error::io())` in `mount.rs` propagate the error
-  with `?`, and the magic checks after them, now duplicates, are removed.
+  with `?`, and the change deletes the magic checks after them, now duplicates.
 - The read-back check at the end of `mkfs_with_options` returns `read_superblock`'s result
   directly. It used to return `corrupted()` on a bad magic and now returns `invalid_magic()`.
 - A new test, `mount_reports_why_it_refused_the_superblock` in `fs/rsext4/tests/error_handling.rs`:
-  a zeroed device must be refused as `InvalidMagic`, and a 1 KiB block superblock holding only the
-  magic, on a device of 4,096-byte sectors, must be refused as `BadSuperblock` with the context
+  mount must refuse a zeroed device as `InvalidMagic`, and must refuse a 1 KiB block superblock
+  holding only the magic, on a device of 4,096-byte sectors, as `BadSuperblock` with the context
   `device:filesystem_geometry`.
 
 ### Reasoning of each step
 
 - `read_superblock` and the functions it calls already classify the error and attach the
-  operation. Rewriting it to `Io` at the mount entry only loses information, so the error is
-  propagated as it is. The old mapping carries no comment stating an intent, and we found no
+  operation. Rewriting it to `Io` at the mount entry only loses information, so mount now
+  propagates the error as it is. The old mapping carries no comment stating an intent, and we found no
   caller that depends on `Io` (inside the repository only tests examine these error kinds).
 - The magic check moves into `read_superblock` because, once errors propagate, the block-size step
-  would fail before the callers' magic checks and a non-ext4 device would be reported as
+  would fail before the callers' magic checks and mount would report a non-ext4 device as
   `BadSuperblock`. Checking the magic first keeps "this is not ext4" ahead of "this ext4's
   geometry does not fit", and spares the three call sites from each repeating the same check.
 - The test reuses the existing `ErrorMockDevice` (4,096-byte sectors). The two cases share one
@@ -84,7 +83,7 @@ size, and is reported as `Io` rather than `InvalidMagic`.
 
 ### Verification
 
-- The new test was run first on the unfixed code and failed (`left: Io, right: InvalidMagic`, the
+- We ran the new test first on the unfixed code, and it failed (`left: Io, right: InvalidMagic`, the
   error `Ext4Error { kind: Io, context: None }`). It passes with the fix.
 - `cargo xtask clippy --package rsext4` passes (3 checks), and `cargo fmt` changes nothing.
 - In `cargo xtask test --since 6e80b940d`, every selected package passes except three tests:
@@ -92,11 +91,11 @@ size, and is reported as `Io` rather than `InvalidMagic`.
   `growth_preserves_files_and_exposes_new_groups_to_linux` in `rsext4`'s
   `tests/filesystem_growth.rs`, and `ax-fs-ng`'s
   `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents`. These three fail
-  the same way on the unchanged base commit (e2fsprogs 1.47.2, x86_64 Linux), and are unrelated to
-  this change.
+  the same way on the unchanged base commit (e2fsprogs 1.47.2, x86_64 Linux), so this change does
+  not cause them.
 - Also checked with an external read comparison tool, which mounts `mke2fs` images with 1 KiB,
-  2 KiB and 4 KiB blocks on devices of 512-byte and 4,096-byte sectors. Before the fix, the 1 KiB
-  and 2 KiB block images on 4,096-byte sectors are refused as `Ext4Error { kind: Io, context: None }`;
+  2 KiB and 4 KiB blocks on devices of 512-byte and 4,096-byte sectors. Before the fix, mount refuses the
+  1 KiB and 2 KiB block images on 4,096-byte sectors as `Ext4Error { kind: Io, context: None }`;
   after it, as `BadSuperblock` with the context `device:filesystem_geometry`. Every other image
   and sector pairing gives the same result as before.
 - Not verified: QEMU and physical boards. The change alters only the error a failed mount returns,
