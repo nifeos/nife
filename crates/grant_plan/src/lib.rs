@@ -34,7 +34,7 @@ mod tests;
 
 pub use command::{
     CommandLine, DirectoryGrant, Endowment, FileGrant, MAXIMUM_SHORT_OPTIONS, MountedTree,
-    ShellHoldings, TouchOperands, rm_options,
+    ShellHoldings, TouchOperands, rm_options, rm_report,
 };
 pub use escalation::{COOPERATIVE_GRACE_POLLS, Escalation, InterruptAction};
 // The declarations a line is planned against, in scope under the names the modules here always

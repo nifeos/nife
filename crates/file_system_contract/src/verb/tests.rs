@@ -140,7 +140,7 @@ fn get_volume_statistics_names_a_handle_and_nothing_else() {
 /// **A name filter must see every verb that names a directory entry, and no others.**
 ///
 /// This is the row that decides a security property rather than a formatting one:
-/// `fs_nameset_caretaker` asks "is this name in the set" exactly when `takes_name` is true, so a
+/// a name-set caretaker asks "is this name in the set" exactly when `takes_name` is true, so a
 /// name-taking verb whose row says otherwise walks straight past the filter. The list is spelled
 /// out rather than derived, because deriving it from the field it is checking would assert
 /// nothing.
@@ -186,7 +186,7 @@ fn the_filter_sees_exactly_the_verbs_that_name_a_directory_entry() {
 
 /// **Every mutating verb is refused by a read-only per-file grant**, which is what makes the
 /// attribute forwarding safe: `SETXATTR` and `REMOVEXATTR` mutate, so a read grant must not pass
-/// them on, and `fs_file_caretaker` decides that from `mutates()` rather than from a list of
+/// them on, and a file caretaker decides that from `mutates()` rather than from a list of
 /// verbs somebody maintains.
 #[test]
 fn a_read_only_file_grant_refuses_every_verb_that_mutates() {
