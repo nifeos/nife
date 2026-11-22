@@ -61,10 +61,9 @@ then the three decisions.
 - Item 9 (P1), the shared-frame witness doc states the refuted outcome: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 10 (P1), 14 equivalent mutants: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 11 (P1), caller workflows, manifest and stranger run: At the move. The manifest half is in
-  [#4000](https://github.com/nifeos/nife/pull/4000); the caller workflows (three targets,
-  `allow-unpublished`), the accepted words and the stranger run before a tag belong to the new
-  repository.
+- Item 11 (P1), caller workflows, manifest and stranger run: Done in part,
+  [#4000](https://github.com/nifeos/nife/pull/4000) and [#4020](https://github.com/nifeos/nife/pull/4020). The manifest and the caller
+  workflows (three targets, `allow-unpublished`) are in place; the stranger run comes before a tag.
 - Item 12 (P1), the README's claims mislead: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 13 (P2), `rg_match_path` unbounded: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 14 (P2), `wide_name` wraps: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -76,8 +75,9 @@ then the three decisions.
 - Item 18 (P2), outsiders get nothing to run: Waiting on milestone 1017's move. A harness a third
   party can run belongs to the shared repository once both crates are there; the README and the
   crate root's `BUGS` record the gap.
-- Decision 1, the repository: At the move. One workspace repository shared with
-  `file_system_contract`, ruled 2026-11-14 (UTC); milestone 1017's step 2 builds it.
+- Decision 1, the repository: Done, [#4020](https://github.com/nifeos/nife/pull/4020). One workspace repository shared with
+  `file_system_contract`, ruled 2026-11-14 (UTC); nife depends on both crates at commit
+  7577a7d0df339107f75747c3681f5990f116cf61.
 - Decision 2, the names: Done, [#3910](https://github.com/nifeos/nife/pull/3910).
 - Decision 3, the review package and clearance: Waiting on a ruling (#4009).
 

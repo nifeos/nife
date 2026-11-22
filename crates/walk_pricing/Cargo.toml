@@ -14,7 +14,7 @@ workspace = true
 # crate) moved it out of the protocol crate: this crate prices walks over exactly the layout the
 # test image ships, so the image builder, the priced program and a host run cannot disagree about
 # what was walked.
-file_system_fixture = { version = "0.1.0", path = "../file_system_fixture" }
+file_system_fixture = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 
 [dev-dependencies]
 # `examples/rg_host.rs` splits `fixture::walk::RG_SEARCH` with the function that builds nife's argv,

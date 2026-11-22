@@ -43,8 +43,6 @@ members = [
     "crates/initial_ramdisk_writer",
     "crates/static_elf",
     "crates/page_frames",
-    "crates/file_system_contract",
-    "crates/file_system_fixture",
     "crates/byte_sink_fixture",
     "crates/firmware_configuration",
     "crates/graphics_contract",

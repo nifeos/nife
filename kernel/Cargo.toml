@@ -146,11 +146,11 @@ primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }
 nifefs = { version = "0.1.0", path = "../crates/nifefs" }
 direct_memory_access_validator = { version = "0.1.0", path = "../crates/direct_memory_access_validator" }
-file_system_contract = { version = "0.1.0", path = "../crates/file_system_contract" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 # Optional, and only for the `bench` feature's filesystem benchmark (see the feature below):
 # the throughput and walk shapes are test data since milestone 886 (the filesystem test fixture
 # moves to its own crate), and nothing that boots links them.
-file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture", optional = true }
+file_system_fixture = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61", optional = true }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The entropy contract (milestone 56, DECISIONS §44). The kernel wires the entropy service and its
 # tests are its clients, speaking the same request/reply the std PAL does, so no party has its own

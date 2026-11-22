@@ -1883,181 +1883,101 @@ crates/domain_name_resolution_contract/src/wire.rs::word
 
 
 
-crates/file_system_contract/src/block.rs
 
 
-crates/file_system_contract/src/block.rs::FLUSH
 
-crates/file_system_contract/src/block.rs::READ
 
-crates/file_system_contract/src/block.rs::TRANSFER_BLOCKS
 
-crates/file_system_contract/src/block.rs::WRITE
 
 
 
 
-crates/file_system_contract/src/directory.rs
 
-crates/file_system_contract/src/directory.rs::ALL
 
-crates/file_system_contract/src/directory.rs::CREATE
 
-crates/file_system_contract/src/directory.rs::DESCEND
 
-crates/file_system_contract/src/directory.rs::EINVAL
 
-crates/file_system_contract/src/directory.rs::EISDIR
 
-crates/file_system_contract/src/directory.rs::ENOTDIR
 
-crates/file_system_contract/src/directory.rs::ENOTEMPTY
 
-crates/file_system_contract/src/directory.rs::ENUMERATE
 
-crates/file_system_contract/src/directory.rs::EPERM
 
-crates/file_system_contract/src/directory.rs::EROFS
 
-crates/file_system_contract/src/directory.rs::READ
 
-crates/file_system_contract/src/directory.rs::REMOVE
 
-crates/file_system_contract/src/directory.rs::REMOVE_TREE
 
-crates/file_system_contract/src/directory.rs::Rights
 
-crates/file_system_contract/src/directory.rs::WRITE
 
-crates/file_system_contract/src/directory.rs::allows
 
-crates/file_system_contract/src/directory.rs::attenuate
 
-crates/file_system_contract/src/directory.rs::bits
 
-crates/file_system_contract/src/directory.rs::denies_all
 
-crates/file_system_contract/src/directory.rs::explain
 
-crates/file_system_contract/src/directory.rs::root
 
 
-crates/file_system_contract/src/directory_entry.rs
 
-crates/file_system_contract/src/directory_entry.rs::Entries
 
 
-crates/file_system_contract/src/directory_entry.rs::encode
 
-crates/file_system_contract/src/directory_entry.rs::iter
 
-crates/file_system_contract/src/directory_entry.rs::record_len
 
 
-crates/file_system_contract/src/extended_attribute.rs
 
-crates/file_system_contract/src/extended_attribute.rs::E2BIG
 
-crates/file_system_contract/src/extended_attribute.rs::ENODATA
 
-crates/file_system_contract/src/extended_attribute.rs::ENOSPC
 
-crates/file_system_contract/src/extended_attribute.rs::ENOTSUP
 
-crates/file_system_contract/src/extended_attribute.rs::ERANGE
 
-crates/file_system_contract/src/extended_attribute.rs::Names
 
-crates/file_system_contract/src/extended_attribute.rs::RAW
 
-crates/file_system_contract/src/extended_attribute.rs::Records
 
-crates/file_system_contract/src/extended_attribute.rs::count
 
-crates/file_system_contract/src/extended_attribute.rs::encode
 
-crates/file_system_contract/src/extended_attribute.rs::file_name
 
-crates/file_system_contract/src/extended_attribute.rs::get
 
-crates/file_system_contract/src/extended_attribute.rs::is_valid_name
 
-crates/file_system_contract/src/extended_attribute.rs::iter
 
-crates/file_system_contract/src/extended_attribute.rs::iter
 
-crates/file_system_contract/src/extended_attribute.rs::list
 
-crates/file_system_contract/src/extended_attribute.rs::record_len
 
-crates/file_system_contract/src/extended_attribute.rs::record_len
 
-crates/file_system_contract/src/extended_attribute.rs::remove
 
-crates/file_system_contract/src/extended_attribute.rs::reply
 
-crates/file_system_contract/src/extended_attribute.rs::reply_kind
 
-crates/file_system_contract/src/extended_attribute.rs::reply_value_len
 
-crates/file_system_contract/src/extended_attribute.rs::set
 
 
-crates/file_system_contract/src/file_system.rs
 
-crates/file_system_contract/src/file_system.rs::BIND
 
-crates/file_system_contract/src/file_system.rs::CLIENT_WINDOWS
 
-crates/file_system_contract/src/file_system.rs::CLOSE
 
-crates/file_system_contract/src/file_system.rs::CREATE
 
-crates/file_system_contract/src/file_system.rs::FSTAT
 
-crates/file_system_contract/src/file_system.rs::GETXATTR
 
-crates/file_system_contract/src/file_system.rs::LISTXATTR
 
-crates/file_system_contract/src/file_system.rs::MKDIR
 
-crates/file_system_contract/src/file_system.rs::OPEN
 
-crates/file_system_contract/src/file_system.rs::OPENDIR
 
-crates/file_system_contract/src/file_system.rs::READ
 
-crates/file_system_contract/src/file_system.rs::READDIR
 
-crates/file_system_contract/src/file_system.rs::REMOVEXATTR
 
-crates/file_system_contract/src/file_system.rs::RENAME
 
-crates/file_system_contract/src/file_system.rs::RMDIR
 
-crates/file_system_contract/src/file_system.rs::ROOT
 
 
 
 
-crates/file_system_contract/src/file_system.rs::SETXATTR
 
-crates/file_system_contract/src/file_system.rs::SYNC
 
 
-crates/file_system_contract/src/file_system.rs::TRANSFER_PAGES
 
-crates/file_system_contract/src/file_system.rs::TRUNCATE
 
 
 
-crates/file_system_contract/src/file_system.rs::UNBIND
 
-crates/file_system_contract/src/file_system.rs::UNLINK
 
 
 
-crates/file_system_contract/src/file_system.rs::WRITE
 
 
 
@@ -2066,48 +1986,28 @@ crates/file_system_contract/src/file_system.rs::WRITE
 
 
 
-crates/file_system_contract/src/grant.rs
 
-crates/file_system_contract/src/grant.rs::ENOTDIR
 
-crates/file_system_contract/src/grant.rs::EROFS
 
-crates/file_system_contract/src/grant.rs::HANDLE
 
-crates/file_system_contract/src/grant.rs::READ
 
-crates/file_system_contract/src/grant.rs::WHOLE_NAMESPACE
 
 
-crates/file_system_contract/src/grant.rs::WRITE
 
-crates/file_system_contract/src/grant.rs::fits
 
-crates/file_system_contract/src/grant.rs::is_writable
 
 
-crates/file_system_contract/src/grant.rs::pack_name
 
-crates/file_system_contract/src/grant.rs::unpack_name
 
-crates/file_system_contract/src/lib.rs::OPERATION_SHIFT
 
-crates/file_system_contract/src/lib.rs::READY
 
-crates/file_system_contract/src/lib.rs::operation
 
-crates/file_system_contract/src/nameset.rs
 
 
-crates/file_system_contract/src/nameset.rs::Names
 
-crates/file_system_contract/src/nameset.rs::contains
 
-crates/file_system_contract/src/nameset.rs::count
 
-crates/file_system_contract/src/nameset.rs::encode
 
-crates/file_system_contract/src/nameset.rs::iter
 
 
 
@@ -2116,231 +2016,126 @@ crates/file_system_contract/src/nameset.rs::iter
 
 
 
-crates/file_system_contract/src/verb.rs
 
-crates/file_system_contract/src/verb.rs::EBADF
 
-crates/file_system_contract/src/verb.rs::FIRST
 
-crates/file_system_contract/src/verb.rs::LAST
 
-crates/file_system_contract/src/verb.rs::Operand
 
-crates/file_system_contract/src/verb.rs::POLICY
 
-crates/file_system_contract/src/verb.rs::Policy
 
-crates/file_system_contract/src/verb.rs::TABLE
 
-crates/file_system_contract/src/verb.rs::Verb
 
-crates/file_system_contract/src/verb.rs::carries_len
 
-crates/file_system_contract/src/verb.rs::mutates
 
-crates/file_system_contract/src/verb.rs::of
 
-crates/file_system_contract/src/verb.rs::of
 
-crates/file_system_contract/src/verb.rs::takes_name
 
 
 
 
 
-crates/file_system_contract/src/volume_statistics.rs
 
-crates/file_system_contract/src/volume_statistics.rs::decode
 
-crates/file_system_contract/src/volume_statistics.rs::encode
 
-crates/file_system_contract/src/volume_statistics.rs::free_bytes
 
 
-crates/file_system_contract/src/volume_statistics.rs::total_bytes
 
-crates/file_system_fixture/src/lib.rs::A
 
-crates/file_system_fixture/src/lib.rs::ABSOLUTE_CLAMPED_AT_ROOT
 
-crates/file_system_fixture/src/lib.rs::ABSOLUTE_IS_MY_ROOT
 
-crates/file_system_fixture/src/lib.rs::ABSOLUTE_REACHED_INNER
 
-crates/file_system_fixture/src/lib.rs::ABSOLUTE_REACHED_SECRET
 
 
 
-crates/file_system_fixture/src/lib.rs::AGREED
 
 
-crates/file_system_fixture/src/lib.rs::B
 
-crates/file_system_fixture/src/lib.rs::BIND_ASCEND_REACHES_REAL_PARENT
 
-crates/file_system_fixture/src/lib.rs::BIND_REACHED_TARGET
 
-crates/file_system_fixture/src/lib.rs::BIND_STOPS_AT_TRUE_ROOT
 
-crates/file_system_fixture/src/lib.rs::BLOCKS
 
-crates/file_system_fixture/src/lib.rs::BOUND_INTO_MOUNT
 
-crates/file_system_fixture/src/lib.rs::CHAIN
 
-crates/file_system_fixture/src/lib.rs::CLAMPED_AT_ROOT
 
-crates/file_system_fixture/src/lib.rs::CLIMBED_OUT
 
-crates/file_system_fixture/src/lib.rs::CREATED
 
-crates/file_system_fixture/src/lib.rs::CREATED
 
-crates/file_system_fixture/src/lib.rs::CREATED
 
-crates/file_system_fixture/src/lib.rs::CUT
 
-crates/file_system_fixture/src/lib.rs::DATA
 
-crates/file_system_fixture/src/lib.rs::DEEPER
 
-crates/file_system_fixture/src/lib.rs::DEPTH
 
-crates/file_system_fixture/src/lib.rs::DESCENDED
 
-crates/file_system_fixture/src/lib.rs::DESCENDED
 
-crates/file_system_fixture/src/lib.rs::DISK_BLOCKS
 
-crates/file_system_fixture/src/lib.rs::DOT_DOT_CROSSED_MOUNTS
 
 
-crates/file_system_fixture/src/lib.rs::ENUMERATED
 
-crates/file_system_fixture/src/lib.rs::ENUMERATED_A_STRANGER
 
 
-crates/file_system_fixture/src/lib.rs::EXCLUDED_A_STRANGER
 
-crates/file_system_fixture/src/lib.rs::EXPANDED
 
-crates/file_system_fixture/src/lib.rs::EXPECTED
 
-crates/file_system_fixture/src/lib.rs::FORGED_HANDLE
 
-crates/file_system_fixture/src/lib.rs::FORGED_HANDLE
 
-crates/file_system_fixture/src/lib.rs::GLOBMANY
 
-crates/file_system_fixture/src/lib.rs::GLOBSET
 
-crates/file_system_fixture/src/lib.rs::GLOB_BODY
 
 
-crates/file_system_fixture/src/lib.rs::GLOB_FAILED
 
-crates/file_system_fixture/src/lib.rs::GLOB_INNER
 
-crates/file_system_fixture/src/lib.rs::GLOB_MISS
 
-crates/file_system_fixture/src/lib.rs::GLOB_NOMATCH
 
-crates/file_system_fixture/src/lib.rs::GLOB_ONE
 
-crates/file_system_fixture/src/lib.rs::GLOB_PATTERN
 
-crates/file_system_fixture/src/lib.rs::GLOB_PLAIN
 
-crates/file_system_fixture/src/lib.rs::GLOB_TWO
 
-crates/file_system_fixture/src/lib.rs::GONE_AFTER_REMOVE
 
-crates/file_system_fixture/src/lib.rs::GONE_AFTER_UNLINK
 
-crates/file_system_fixture/src/lib.rs::GRANTED_ACCESS_FAILED
 
-crates/file_system_fixture/src/lib.rs::GRANTED_ACCESS_FAILED
 
 
-crates/file_system_fixture/src/lib.rs::GRANTED_READ_FAILED
 
-crates/file_system_fixture/src/lib.rs::HOLDER_KEPT_READING
 
-crates/file_system_fixture/src/lib.rs::HOME_IS_ROOT
 
-crates/file_system_fixture/src/lib.rs::INITIAL
 
-crates/file_system_fixture/src/lib.rs::INNER
 
-crates/file_system_fixture/src/lib.rs::INNER_BODY
 
-crates/file_system_fixture/src/lib.rs::KIND
 
 
-crates/file_system_fixture/src/lib.rs::LEAF
 
-crates/file_system_fixture/src/lib.rs::LEAF_BODY
 
-crates/file_system_fixture/src/lib.rs::LEVEL
 
-crates/file_system_fixture/src/lib.rs::LEVEL_FILE
 
-crates/file_system_fixture/src/lib.rs::LINUX
 
-crates/file_system_fixture/src/lib.rs::LISTED
 
-crates/file_system_fixture/src/lib.rs::LISTED
 
-crates/file_system_fixture/src/lib.rs::LISTED_MOUNT
 
-crates/file_system_fixture/src/lib.rs::LISTED_ROOT
 
-crates/file_system_fixture/src/lib.rs::MADE
 
 
-crates/file_system_fixture/src/lib.rs::MADE_BODY
 
-crates/file_system_fixture/src/lib.rs::MADE_BODY
 
 
 
-crates/file_system_fixture/src/lib.rs::MADE_NAME
 
-crates/file_system_fixture/src/lib.rs::MANY_BODY
 
-crates/file_system_fixture/src/lib.rs::MANY_FIRST_BATCH
 
-crates/file_system_fixture/src/lib.rs::MANY_MISS
 
-crates/file_system_fixture/src/lib.rs::MANY_NAMES
 
-crates/file_system_fixture/src/lib.rs::MANY_PATTERN
 
-crates/file_system_fixture/src/lib.rs::MANY_SECOND_BATCH
 
-crates/file_system_fixture/src/lib.rs::MOTD
 
-crates/file_system_fixture/src/lib.rs::MOTD_NAME
 
-crates/file_system_fixture/src/lib.rs::MOUNT
 
-crates/file_system_fixture/src/lib.rs::MOVED
 
-crates/file_system_fixture/src/lib.rs::MOVED_INTO_MOUNT
 
-crates/file_system_fixture/src/lib.rs::MOVED_ON_REFUSAL
 
-crates/file_system_fixture/src/lib.rs::NAME
 
-crates/file_system_fixture/src/lib.rs::NAME
 
-crates/file_system_fixture/src/lib.rs::NAMES
 
-crates/file_system_fixture/src/lib.rs::NAME_GONE_AFTER_UNLINK
 
-crates/file_system_fixture/src/lib.rs::NARROW
 
-crates/file_system_fixture/src/lib.rs::NAVIGATION_FAILED
 
 
 
@@ -2359,221 +2154,123 @@ crates/file_system_fixture/src/lib.rs::NAVIGATION_FAILED
 
 
 
-crates/file_system_fixture/src/lib.rs::NO_MATCH_REFUSED
 
-crates/file_system_fixture/src/lib.rs::OPENED_A
 
-crates/file_system_fixture/src/lib.rs::OPENED_B
 
-crates/file_system_fixture/src/lib.rs::OPENED_ITS_OWN
 
-crates/file_system_fixture/src/lib.rs::OPENED_RELATIVE_IN_MOUNT
 
-crates/file_system_fixture/src/lib.rs::OPENED_ROOT_FROM_MOUNT
 
-crates/file_system_fixture/src/lib.rs::OTHER
 
-crates/file_system_fixture/src/lib.rs::OVERSIZE_REFUSED
 
-crates/file_system_fixture/src/lib.rs::PARTITIONS
 
-crates/file_system_fixture/src/lib.rs::PATTERN_IN_PATH_REFUSED
 
-crates/file_system_fixture/src/lib.rs::PAYLOAD_FILL
 
-crates/file_system_fixture/src/lib.rs::PHASES
 
-crates/file_system_fixture/src/lib.rs::PROBE
 
-crates/file_system_fixture/src/lib.rs::PROBE_MOVED
 
-crates/file_system_fixture/src/lib.rs::PWD_IS_ROOT
 
-crates/file_system_fixture/src/lib.rs::PWD_STARTS_AT_ROOT
 
 
 
-crates/file_system_fixture/src/lib.rs::REACHED_ACROSS
 
-crates/file_system_fixture/src/lib.rs::REACHED_AN_UNMATCHED_NAME
 
-crates/file_system_fixture/src/lib.rs::REACHED_A_VIA_B
 
-crates/file_system_fixture/src/lib.rs::REACHED_B_VIA_A
 
-crates/file_system_fixture/src/lib.rs::REACHED_INNER
 
-crates/file_system_fixture/src/lib.rs::REACHED_PARENT
 
-crates/file_system_fixture/src/lib.rs::REACHED_SECRET
 
-crates/file_system_fixture/src/lib.rs::REACHED_SIBLING
 
 
 
-crates/file_system_fixture/src/lib.rs::RECORD_READ
 
 
-crates/file_system_fixture/src/lib.rs::REDIRECTED_FROM_MOUNT
 
 
 
 
 
-crates/file_system_fixture/src/lib.rs::RENAMED
 
-crates/file_system_fixture/src/lib.rs::RETURNED
 
-crates/file_system_fixture/src/lib.rs::RG_FOUR
 
-crates/file_system_fixture/src/lib.rs::RG_MATCHES
 
-crates/file_system_fixture/src/lib.rs::RMDIR_REFUSED_NON_EMPTY
 
-crates/file_system_fixture/src/lib.rs::RMDIR_REMOVED_EMPTY
 
-crates/file_system_fixture/src/lib.rs::RMTREE
 
-crates/file_system_fixture/src/lib.rs::RM_BODY
 
-crates/file_system_fixture/src/lib.rs::RM_DOOMED
 
-crates/file_system_fixture/src/lib.rs::RM_IN_MOUNT_REFUSED
 
-crates/file_system_fixture/src/lib.rs::RM_KEEP
 
-crates/file_system_fixture/src/lib.rs::RM_KEEP_BODY
 
-crates/file_system_fixture/src/lib.rs::RM_LEAF
 
-crates/file_system_fixture/src/lib.rs::RM_MISSING
 
-crates/file_system_fixture/src/lib.rs::RM_NESTED
 
-crates/file_system_fixture/src/lib.rs::RM_ONE
 
-crates/file_system_fixture/src/lib.rs::RM_SOLO
 
-crates/file_system_fixture/src/lib.rs::RM_TWO
 
-crates/file_system_fixture/src/lib.rs::ROLE
 
-crates/file_system_fixture/src/lib.rs::ROOT
 
-crates/file_system_fixture/src/lib.rs::ROOT_CLAMPED
 
-crates/file_system_fixture/src/lib.rs::ROOT_ENTRIES
 
-crates/file_system_fixture/src/lib.rs::SAW_A
 
-crates/file_system_fixture/src/lib.rs::SAW_B
 
-crates/file_system_fixture/src/lib.rs::SAW_INNER
 
-crates/file_system_fixture/src/lib.rs::SAW_NEITHER
 
-crates/file_system_fixture/src/lib.rs::SAW_SECRET
 
 
-crates/file_system_fixture/src/lib.rs::SCRATCH_NAME
 
-crates/file_system_fixture/src/lib.rs::SECOND_FILE
 
-crates/file_system_fixture/src/lib.rs::SECRET
 
-crates/file_system_fixture/src/lib.rs::SECRET_BODY
 
 
 
-crates/file_system_fixture/src/lib.rs::SET_AND_READ_BACK
 
 
-crates/file_system_fixture/src/lib.rs::SHARED_ISOLATED
 
-crates/file_system_fixture/src/lib.rs::SHARED_SUBSTITUTED
 
-crates/file_system_fixture/src/lib.rs::SHARED_UNEXPECTED
 
-crates/file_system_fixture/src/lib.rs::SHARED_USURPER_BODY
 
-crates/file_system_fixture/src/lib.rs::SHARED_USURPER_NAME
 
-crates/file_system_fixture/src/lib.rs::SHARED_VICTIM_BODY
 
-crates/file_system_fixture/src/lib.rs::SHARED_VICTIM_NAME
 
 
 
-crates/file_system_fixture/src/lib.rs::SMALL_BODY
 
-crates/file_system_fixture/src/lib.rs::STORE_UNLISTED
 
-crates/file_system_fixture/src/lib.rs::STORE_UNNAMEABLE
 
-crates/file_system_fixture/src/lib.rs::SUB
 
-crates/file_system_fixture/src/lib.rs::SUCCESS
 
-crates/file_system_fixture/src/lib.rs::SURVIVED_RENAME
 
-crates/file_system_fixture/src/lib.rs::TEXT_UNTOUCHED
 
-crates/file_system_fixture/src/lib.rs::TOUCH_AT_REFUSED_WITHOUT_SETTIME
 
-crates/file_system_fixture/src/lib.rs::TOUCH_AT_ROUND_TRIPPED
 
-crates/file_system_fixture/src/lib.rs::TOUCH_CREATED
 
 
-crates/file_system_fixture/src/lib.rs::TOUCH_NOW_NEEDS_ONLY_WRITE
 
-crates/file_system_fixture/src/lib.rs::TOUCH_PRESERVED
 
-crates/file_system_fixture/src/lib.rs::TRUNCATED
 
-crates/file_system_fixture/src/lib.rs::TWO_TREES_FAILED
 
 
-crates/file_system_fixture/src/lib.rs::UNLINKED
 
-crates/file_system_fixture/src/lib.rs::UNLINK_REFUSED_A_DIRECTORY
 
-crates/file_system_fixture/src/lib.rs::UP_FROM_MOUNT_IS_PARENT
 
-crates/file_system_fixture/src/lib.rs::VALUE
 
-crates/file_system_fixture/src/lib.rs::VERDICT
 
-crates/file_system_fixture/src/lib.rs::WALKED_UP
 
-crates/file_system_fixture/src/lib.rs::WALKED_UP
 
-crates/file_system_fixture/src/lib.rs::WALK_BYTES
 
-crates/file_system_fixture/src/lib.rs::WALK_COMPONENTS
 
-crates/file_system_fixture/src/lib.rs::WALK_ENTRIES
 
-crates/file_system_fixture/src/lib.rs::WALK_FILES
 
 
-crates/file_system_fixture/src/lib.rs::WIDE
 
-crates/file_system_fixture/src/lib.rs::WIDENED
 
 
-crates/file_system_fixture/src/lib.rs::WRITE_PATTERN
 
-crates/file_system_fixture/src/lib.rs::WROTE
 
-crates/file_system_fixture/src/lib.rs::WROTE
 
 
-crates/file_system_fixture/src/lib.rs::name
 
-crates/file_system_fixture/src/lib.rs::sized_byte
 
-crates/file_system_fixture/src/lib.rs::wide_name
 
 
 crates/firmware_configuration/src/lib.rs::COMMAND_LEN

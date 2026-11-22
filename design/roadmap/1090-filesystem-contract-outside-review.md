@@ -44,15 +44,13 @@ in [the later-items appendix](1090-filesystem-contract-outside-review/later-item
 decisions and the review package. The item texts use the names the review read; the crate's names
 now are `file_system_contract`, `directory`, `extended_attribute` and `block`.
 
-- Item 1 (P0), the crate does not stand alone: At the move. The prose and the manifest stand
-  alone ([#3911](https://github.com/nifeos/nife/pull/3911), [#3999](https://github.com/nifeos/nife/pull/3999): the text names no program of this tree, and the externalization lint
-  carries no waiver for the crate); the move commit strips the `Name:` blocks and the milestone
-  citations inside them.
+- Item 1 (P0), the crate does not stand alone: Done, [#3911](https://github.com/nifeos/nife/pull/3911), [#3999](https://github.com/nifeos/nife/pull/3999) and [#4020](https://github.com/nifeos/nife/pull/4020).
+  The text names no program of this tree, the externalization lint carried no waiver for the crate,
+  and the repository's root commit carries no `Name:` block and no milestone citation.
 - Item 2 (P0), clippy refuses `RedoxFS` without a `clippy.toml`: Done, [#3911](https://github.com/nifeos/nife/pull/3911). The crate root
   carries `clippy.toml` with `doc-valid-idents`.
-- Item 3 (P0), the falsification patches carry this tree's path: At the move. The eleven patches
-  and the harness doc comments still name `crates/file_system_contract/`; the move commit rewrites
-  them to the repository's own paths.
+- Item 3 (P0), the falsification patches carry this tree's path: Done, [#4020](https://github.com/nifeos/nife/pull/4020). The
+  repository's patches and harness doc comments name its own paths.
 - Item 4 (P0), `rm.rs` uncovered: Done, [#3566](https://github.com/nifeos/nife/pull/3566). The test now lives with the module in
   `grant_plan::rm_report` ([#3999](https://github.com/nifeos/nife/pull/3999)).
 - Item 5 (P0), names the gates refuse: Done, [#3726](https://github.com/nifeos/nife/pull/3726) and [#3999](https://github.com/nifeos/nife/pull/3999). Decision B's renames are in
@@ -68,8 +66,9 @@ now are `file_system_contract`, `directory`, `extended_attribute` and `block`.
   Ten harnesses carry falsification patches. Four of them prove that the four walkers end on every
   buffer up to eight bytes (sixteen for the store). Each yielded record takes a fixed least number of
   bytes, which bounds a walk over a page; a host test walks a page of the smallest records for each.
-- Item 9 (P1), equivalent mutants need a home: At the move. The classes go into the new
-  repository's `.github/mutants-exempts`, with one green full run before the tag.
+- Item 9 (P1), equivalent mutants need a home: Waiting on the first full mutation run of
+  nifeos/file_system_contract. Its `.github/mutants-exempts` carries the census counts; each
+  survivor that run names goes in with its reason, and one green full run comes before the tag.
 - Item 10 (P1), the README is short of the scaffold: Done, [#3911](https://github.com/nifeos/nife/pull/3911) and [#3999](https://github.com/nifeos/nife/pull/3999). The badge row,
   `patch -p1` and the single-harness command came first; the measured Kani time and peak memory
   follow.
@@ -101,6 +100,9 @@ now are `file_system_contract`, `directory`, `extended_attribute` and `block`.
 - Decision C, the reply error range: Done, [#3577](https://github.com/nifeos/nife/pull/3577). Ruled 2026-11-14 UTC.
 - Decision D, §99's store name: Done, [#3789](https://github.com/nifeos/nife/pull/3789). Ruled 2026-11-19 UTC; §99 names
   `.extended-attributes`.
+- The move: Done as a pin, [#4020](https://github.com/nifeos/nife/pull/4020). nifeos/file_system_contract holds both crates as one
+  workspace, and nife depends on both at commit 7577a7d0df339107f75747c3681f5990f116cf61 (`version = "0.1.0"`,
+  `publish = false`). No tag and no publish; a pre-release tag moves the pin later.
 - Decision E, the review package for the shared repository: Done, [#3889](https://github.com/nifeos/nife/pull/3889). [The contract's
   package](../../notes/crate-reviews/filesystem-contract.md) and [the
   fixture's](../../notes/crate-reviews/filesystem-fixture.md) form the one package.
