@@ -141,8 +141,8 @@ rename before any move keeps the whole change inside one repository and one queu
 
 Each needs its own go from calef and none is part of steps 1 to 6.
 
-- A repository for `moho_abi`. It follows the clearing of the crate's review package, the open
-  decision of milestone 1075.
+- A repository for `moho_abi`. Done: [nifeos/moho_abi](https://github.com/nifeos/moho_abi), which nife
+  pins by revision ([#4021](https://github.com/nifeos/nife/pull/4021)).
 - The crates.io publish. Publishing waits until every outside-review milestone closes. The
   name `moho_abi` was free on crates.io on 2026-11-21.
 - An upstream rustc target. No rustc target, and no LLVM `OSType`, says `moho` or `nife`, on

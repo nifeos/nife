@@ -128,8 +128,9 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 - Item 6, P1, the register convention: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Item 7, P1, three self-contradictions: Done, (a) and (c) in [#3565](https://github.com/nifeos/nife/pull/3565), (b) in [#3596](https://github.com/nifeos/nife/pull/3596).
 - Item 8, P1, dates and rulings as history: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 9, P1, README prose gates and badge row: At the move. The move commit adds the badge row
-  with the repository's name; the prose passes the template's gates ([#3565](https://github.com/nifeos/nife/pull/3565), [#3942](https://github.com/nifeos/nife/pull/3942)).
+- Item 9, P1, README prose gates and badge row: Done. The badge row names `nifeos/moho_abi`
+  ([#4022](https://github.com/nifeos/nife/pull/4022)), and the prose passes the template's gates ([#3565](https://github.com/nifeos/nife/pull/3565), [#3942](https://github.com/nifeos/nife/pull/3942)) in the
+  repository's first `check` run.
 - Item 10, P1, the manifest's publish comment: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Item 11, P1, the version gate: Done, [#3942](https://github.com/nifeos/nife/pull/3942), on [#3565](https://github.com/nifeos/nife/pull/3565)'s counting test.
 - Item 12, P1, `futex::admitted` and `Error::from_ret`: Done, [#3942](https://github.com/nifeos/nife/pull/3942).
@@ -143,12 +144,14 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 - Item 19, P2, `Name:` blocks quote the decider: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Item 20, P2, six survivors with no record: Waiting on the new repository's first weekly mutation
   run.
-- Item 21, P2, no machine checks: Waiting on the new repository's first proofs run.
+- Item 21, P2, no machine checks: Done. The repository's first `proofs` run on main is green with
+  no harness ([run 45084955571](https://github.com/nifeos/moho_abi/actions/runs/45084955571)).
 - Decision B, `console::WRITE` stays reserved: Done, [#3596](https://github.com/nifeos/nife/pull/3596).
 - Found at the finish, six size names without a unit (`address_wait::SIZE_U8` to `SIZE_U64`,
   `SIZE_MASK`, `usage::SIZE`): Done, [#3998](https://github.com/nifeos/nife/pull/3998), as decision C ratifies them.
-- The move: Decision C clears the package now that step 3 of milestone 1121 has landed
-  ([#4013](https://github.com/nifeos/nife/pull/4013)), so the repository may be created.
+- The move: Done. The crate lives in [nifeos/moho_abi](https://github.com/nifeos/moho_abi), and nife
+  pins every consumer at its root commit, `nifeos/moho_abi@c8d556ec5ca7e567df529368c7dd24943423ab74`
+  ([#4021](https://github.com/nifeos/nife/pull/4021)).
 - Publishing: Waiting on the last outside-review milestone closing (ruled 2026-11-18 UTC).
 
 ## Follow-on
@@ -156,8 +159,8 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 - **Done.** Decision B: `console::WRITE` stays as a reserved operation (#3596).
 - **Done.** Decision A's rename to `moho_abi`, milestone 1121 step 3, [#4013](https://github.com/nifeos/nife/pull/4013).
 - **Done.** The six ratified size names, [#3998](https://github.com/nifeos/nife/pull/3998).
-- **Outstanding.** The repository, then items 9, 20 and 21 at and after the move.
-  The finding status above says what each needs.
+- **Done.** The repository and the move, [#4021](https://github.com/nifeos/nife/pull/4021), with items 9 and 21.
+- **Outstanding.** Item 20, after the repository's first weekly mutation run.
 
 ## BUGS
 
@@ -165,8 +168,11 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
   x86_64 trap and the kernel's entry before it writes a register name.
 - Item 20 names three survivors of six; the other three are what the first weekly run reports, and
   this block does not guess them.
-- Item 21 does not know whether the proofs job is green with no harness; the lane that stages the
-  move finds out on the first push.
+- nife's two gates on a moved number read the old in-tree path. A bump of the pinned revision is a
+  pinned first-party git dependency, so `helpers/architect-label-rules.py` rule 1 and the second
+  case of `helpers/format_values_check.py` see nothing when the new revision moves a system call
+  number. The crate's counting test and its repository's review are what see it; the rules' BUGS
+  section says the same.
 - The coverage figure was not measured; every function in the crate has a test that calls it, so the 85 floor should pass, unverified.
 
 ## Index row
