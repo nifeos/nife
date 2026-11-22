@@ -1,5 +1,5 @@
-use filesystem_contract::directory;
-use filesystem_fixture::{navigation as nb, tree};
+use file_system_contract::directory;
+use file_system_fixture::{navigation as nb, tree};
 
 use super::*;
 use crate::sched;
@@ -52,7 +52,7 @@ pub(super) const ALWAYS: u64 = nb::PWD_IS_ROOT
 /// Wire a `fs_subtree_caretaker` holding a capability to `root` and run the shell's navigation
 /// script inside it. `run` keeps the names it creates distinct across runs sharing one image.
 ///
-/// The run index and the rights ride in one word packed by `filesystem_contract::grant::specification`, the same
+/// The run index and the rights ride in one word packed by `file_system_contract::grant::specification`, the same
 /// packing the caretaker's own grant uses: the shell is **told** what its capability carries
 /// because nothing on this wire reports what a handle holds, and `OPENDIR` refuses a request
 /// wider than the parent rather than narrowing it (notes/shell-navigation.md).
@@ -67,13 +67,15 @@ pub(super) fn navigate(root: &'static str, run: u64) -> Option<u64> {
         program("swish").expect("no swish program in the initial ramdisk"),
         fs_service::DirGrant {
             name: root,
-            rights: directory::ALL,
+            rights: directory::rights::ALL,
             role: ROLE_NAVIGATE,
-            arg: filesystem_contract::grant::specification(run as usize, directory::ALL),
+            arg: file_system_contract::grant::specification(run as usize, directory::rights::ALL),
             arg2: 0,
             // Measured, not guessed: see `spawn_fs_client`. A shell carries a path stack, a
-            // parsed path and a listing buffer by value, and one page is 192 bytes short.
-            stack_pages: 2,
+            // parsed path and a listing buffer by value. In a debug build the deepest direct
+            // chain from `_start` through `navigate` and `Nav::ls` is about
+            // 20.5 KiB, the frame sizes summed; six pages leave about 4 KiB.
+            stack_pages: 5,
             verdict: false,
         },
     )?;
@@ -81,7 +83,7 @@ pub(super) fn navigate(root: &'static str, run: u64) -> Option<u64> {
     held.release_or_fail("a granted shell");
     assert_eq!(
         tag,
-        filesystem_fixture::VERDICT,
+        file_system_fixture::VERDICT,
         "the shell's report is not a verdict word",
     );
     Some(verdict)

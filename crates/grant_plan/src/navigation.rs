@@ -20,31 +20,41 @@
 pub const MAXIMUM_DEPTH: usize = 8;
 
 /// The longest single component a path may have, which is [`crate::MAXIMUM_FILE_NAME_BYTES`]: the last
-/// component of a path can be a file, and a file may be named that long. A component the shell
-/// descends through or stands in is held to [`MAXIMUM_DIRECTORY_NAME_BYTES`] as well ([`DirectoryPath::descend`]).
+/// component of a path can be a file, and a file may be named that long. So may a directory, and the
+/// components the shell descends through are held together to [`MAXIMUM_PATH_BYTES`]
+/// ([`DirectoryPath::descend`]).
 ///
 /// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 
-/// **The longest directory name a [`DirectoryPath`] or a bound name holds**, which is [`crate::MAXIMUM_WORDS_NAME_BYTES`]:
-/// a directory grant names its directory in the caretaker's two `START` words, and a shell that
-/// could `cd` into a directory it cannot grant would be able to reach a place it cannot talk about.
-/// It is also what keeps a [`DirectoryPath`] small, and the shell carries one by value in every
-/// [`crate::ShellHoldings`] and several in an [`crate::Endowment`].
+/// **The bytes a [`DirectoryPath`] packs its components into**: each component as a length byte and
+/// its bytes, one after another, as `nameset` packs a set. Two components of [`MAXIMUM_NAME_BYTES`]
+/// fit, or eight of 63. A descent past it is [`PathRefusal::PathTooLong`], never a truncation.
 ///
-/// Name: ratified 2026-11-20 (UTC).
-pub const MAXIMUM_DIRECTORY_NAME_BYTES: usize = crate::MAXIMUM_WORDS_NAME_BYTES;
+/// A bound internal to the shell, beside [`MAXIMUM_DEPTH`]: no wire carries a whole path. It is
+/// what keeps a [`DirectoryPath`] near half a kibibyte, and the shell carries one by value in every
+/// [`crate::ShellHoldings`], one in each [`BindEntry`] and several in an [`crate::Endowment`].
+///
+/// Name: provisional.
+pub const MAXIMUM_PATH_BYTES: usize = 512;
 
-// A bound directory entry holds its name length as a `u8`.
+/// **The longest name `bind` gives a position.** A label the shell keeps and never sends, short
+/// because a [`Bindings`] holds [`MAXIMUM_BINDS`] of them by value beside their positions.
+///
+/// Name: provisional.
+pub const MAXIMUM_BOUND_NAME_BYTES: usize = 16;
+
+// A packed component and a bound entry hold their name length as a `u8`, and two of the longest
+// components fit in one path.
 const _: () = assert!(MAXIMUM_NAME_BYTES <= u8::MAX as usize);
-const _: () = assert!(MAXIMUM_DIRECTORY_NAME_BYTES <= u8::MAX as usize);
+const _: () = assert!(MAXIMUM_BOUND_NAME_BYTES <= u8::MAX as usize);
+const _: () = assert!(2 * (1 + MAXIMUM_NAME_BYTES) <= MAXIMUM_PATH_BYTES);
 
-/// The bytes [`DirectoryPath::render`] can need: a slash per level, plus each name, plus the leading slash a
-/// root renders as on its own.
+/// The bytes [`DirectoryPath::render`] can need: a slash where each packed length byte is, plus each
+/// name, or the one slash a root renders as on its own.
 ///
 /// Name: ratified 2026-11-20 (UTC).
-pub const MAXIMUM_RENDERED_PATH_BYTES: usize =
-    1 + MAXIMUM_DEPTH * (1 + MAXIMUM_DIRECTORY_NAME_BYTES);
+pub const MAXIMUM_RENDERED_PATH_BYTES: usize = MAXIMUM_PATH_BYTES;
 
 /// Why a token cannot be navigated. Each is a fact about the *name*, never about a permission,
 /// which is the distinction the whole model rests on.
@@ -57,11 +67,10 @@ pub enum PathRefusal {
     NotAName,
     /// More components than [`MAXIMUM_DEPTH`], or a descent that would take the shell past it.
     TooDeep,
-    /// A directory to stand in, descend through or bind whose name is over
-    /// [`MAXIMUM_DIRECTORY_NAME_BYTES`]. A name that long is a file's, not a place this shell can be.
+    /// A descent that would take the path's components past [`MAXIMUM_PATH_BYTES`] together.
     ///
-    /// Name: ratified 2026-11-20 (UTC).
-    DirectoryNameTooLong,
+    /// Name: provisional.
+    PathTooLong,
     /// `..` at the root. The clamp, reported rather than silently ignored: at your root there is
     /// nothing above to name, and a shell that said nothing would leave a user believing they had
     /// moved.
@@ -79,8 +88,8 @@ impl PathRefusal {
         match self {
             PathRefusal::NotAName => "that is not a name: one component, at most 252 bytes",
             PathRefusal::TooDeep => "too deep: this shell tracks at most 8 levels below its root",
-            PathRefusal::DirectoryNameTooLong => {
-                "that directory's name is longer than this shell can stand in: at most 16 bytes"
+            PathRefusal::PathTooLong => {
+                "too long: this shell tracks at most 512 bytes of path below its root"
             }
             PathRefusal::AtYourRoot => "you are at your root; there is nothing above it to name",
         }
@@ -204,14 +213,6 @@ pub fn is_valid_component(part: &[u8]) -> bool {
         && !part.contains(&0)
 }
 
-/// Whether one component can be a directory this shell stands in: [`is_valid_component`], and at most
-/// [`MAXIMUM_DIRECTORY_NAME_BYTES`] bytes.
-///
-/// Name: ratified 2026-11-20 (UTC).
-pub fn is_valid_directory_name(part: &[u8]) -> bool {
-    is_valid_component(part) && part.len() <= MAXIMUM_DIRECTORY_NAME_BYTES
-}
-
 /// **Where a shell is, relative to its own root**: the components it descended through, and nothing
 /// above them.
 ///
@@ -222,12 +223,14 @@ pub fn is_valid_directory_name(part: &[u8]) -> bool {
 /// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct DirectoryPath {
-    names: [[u8; MAXIMUM_DIRECTORY_NAME_BYTES]; MAXIMUM_DEPTH],
-    lens: [u8; MAXIMUM_DEPTH],
+    /// The components, packed: each a length byte and its bytes ([`MAXIMUM_PATH_BYTES`]). Every byte
+    /// past `used` is zero.
+    packed: [u8; MAXIMUM_PATH_BYTES],
+    used: usize,
     depth: usize,
 }
 
-/// Written as the path it means. The derived form is 137 bytes of mostly zeroes, which turns any
+/// Written as the path it means. The derived form is over 500 bytes of mostly zeroes, which turns any
 /// assertion failure that carries one (and [`crate::Endowment`] carries one) into something nobody
 /// will read.
 impl core::fmt::Debug for DirectoryPath {
@@ -257,8 +260,8 @@ impl DirectoryPath {
     /// with no directory capability can be.
     pub const fn root() -> Self {
         DirectoryPath {
-            names: [[0; MAXIMUM_DIRECTORY_NAME_BYTES]; MAXIMUM_DEPTH],
-            lens: [0; MAXIMUM_DEPTH],
+            packed: [0; MAXIMUM_PATH_BYTES],
+            used: 0,
             depth: 0,
         }
     }
@@ -273,17 +276,32 @@ impl DirectoryPath {
         self.depth == 0
     }
 
-    /// Record a descent. `false` if the name does not fit, is longer than a directory's may be
-    /// ([`MAXIMUM_DIRECTORY_NAME_BYTES`]), or the shell is already as deep as it tracks; the caller must
-    /// not have sent the request in that case.
+    /// Record a descent. `false` if the name is not a component, the path would grow past
+    /// [`MAXIMUM_PATH_BYTES`], or the shell is already as deep as it tracks; the caller must not
+    /// have sent the request in that case.
     pub fn descend(&mut self, name: &[u8]) -> bool {
-        if self.depth == MAXIMUM_DEPTH || !is_valid_directory_name(name) {
+        if self.depth == MAXIMUM_DEPTH || !is_valid_component(name) || !self.has_room_for(name) {
             return false;
         }
-        self.names[self.depth][..name.len()].copy_from_slice(name);
-        self.lens[self.depth] = name.len() as u8;
+        self.packed[self.used] = name.len() as u8;
+        self.packed[self.used + 1..self.used + 1 + name.len()].copy_from_slice(name);
+        self.used += 1 + name.len();
         self.depth += 1;
         true
+    }
+
+    /// Whether `name` fits in what is left of [`MAXIMUM_PATH_BYTES`], with its length byte.
+    fn has_room_for(&self, name: &[u8]) -> bool {
+        MAXIMUM_PATH_BYTES - self.used > name.len()
+    }
+
+    /// Where the component at `level` starts in `packed`: its length byte.
+    fn start(&self, level: usize) -> usize {
+        let mut at = 0;
+        for _ in 0..level {
+            at += 1 + self.packed[at] as usize;
+        }
+        at
     }
 
     /// Pop one level. **`false` at the root, which is the clamp**: there is nothing above it, so
@@ -299,14 +317,16 @@ impl DirectoryPath {
             return false;
         }
         self.depth -= 1;
-        self.names[self.depth] = [0; MAXIMUM_DIRECTORY_NAME_BYTES];
-        self.lens[self.depth] = 0;
+        let start = self.start(self.depth);
+        self.packed[start..self.used].fill(0);
+        self.used = start;
         true
     }
 
     /// The component at `level` (0 is the first below the root).
     pub fn component(&self, level: usize) -> &[u8] {
-        &self.names[level][..self.lens[level] as usize]
+        let start = self.start(level);
+        &self.packed[start + 1..start + 1 + self.packed[start] as usize]
     }
 
     /// The last component, or `None` at the root. What `ls` prints as a heading and what a shell
@@ -363,11 +383,11 @@ impl DirectoryPath {
                     if !is_valid_component(name) {
                         return Err(PathRefusal::NotAName);
                     }
-                    if !is_valid_directory_name(name) {
-                        return Err(PathRefusal::DirectoryNameTooLong);
+                    if next.depth == MAXIMUM_DEPTH {
+                        return Err(PathRefusal::TooDeep);
                     }
                     if !next.descend(name) {
-                        return Err(PathRefusal::TooDeep);
+                        return Err(PathRefusal::PathTooLong);
                     }
                 }
             }
@@ -520,7 +540,7 @@ pub const MAXIMUM_BINDS: usize = 4;
 /// One name a shell has bound to a position it already reached some other way.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct BindEntry {
-    name: [u8; MAXIMUM_DIRECTORY_NAME_BYTES],
+    name: [u8; MAXIMUM_BOUND_NAME_BYTES],
     name_length_bytes: u8,
     /// Name: ratified 2026-11-20 (UTC).
     position: DirectoryPath,
@@ -601,7 +621,7 @@ impl Bindings {
     /// Bind `name` to `pos`, a path in the one tree the shell presents. Refuses a name that cannot be a component, one already
     /// bound, or a full table; never overwrites.
     pub fn add(&mut self, name: &[u8], pos: DirectoryPath) -> Result<(), BindRefusal> {
-        if !is_valid_directory_name(name) {
+        if !is_valid_component(name) || name.len() > MAXIMUM_BOUND_NAME_BYTES {
             return Err(BindRefusal::NotAName);
         }
         if self.lookup(name).is_some() {
@@ -612,7 +632,7 @@ impl Bindings {
             .iter_mut()
             .find(|e| e.is_none())
             .ok_or(BindRefusal::TooMany)?;
-        let mut packed = [0u8; MAXIMUM_DIRECTORY_NAME_BYTES];
+        let mut packed = [0u8; MAXIMUM_BOUND_NAME_BYTES];
         packed[..name.len()].copy_from_slice(name);
         *slot = Some(BindEntry {
             name: packed,
@@ -662,6 +682,44 @@ impl Bindings {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// **A descent past the deepest level the shell tracks is refused**, however short the name,
+    /// and a name that is not a component is refused at the root, however much room is left.
+    #[test]
+    fn descend_refuses_past_the_depth_and_a_non_component() {
+        let mut path = DirectoryPath::root();
+        assert!(!path.descend(b"a/b"));
+        assert!(!path.descend(b""));
+        assert!(path.is_root());
+        for _ in 0..MAXIMUM_DEPTH {
+            assert!(path.descend(b"a"));
+        }
+        assert!(!path.descend(b"a"));
+        assert_eq!(path.depth(), MAXIMUM_DEPTH);
+    }
+
+    /// **A bound name may be exactly [`MAXIMUM_BOUND_NAME_BYTES`] long, and one byte more is
+    /// refused.**
+    #[test]
+    fn a_bound_name_is_held_to_its_bound_inclusively() {
+        let longest = [b'b'; MAXIMUM_BOUND_NAME_BYTES + 1];
+        let mut bindings = Bindings::none();
+        assert_eq!(
+            bindings.add(&longest, DirectoryPath::root()),
+            Err(BindRefusal::NotAName)
+        );
+        assert_eq!(
+            bindings.add(&longest[..MAXIMUM_BOUND_NAME_BYTES], DirectoryPath::root()),
+            Ok(())
+        );
+        assert_eq!(
+            bindings.add(
+                &longest[..MAXIMUM_BOUND_NAME_BYTES - 1],
+                DirectoryPath::root()
+            ),
+            Ok(())
+        );
+    }
 
     /// Two routes to one position compare equal, which the derived `PartialEq` only promises if
     /// [`DirectoryPath::ascend`] leaves no stale component behind (milestone 154 found that it did).
@@ -733,8 +791,8 @@ mod tests {
             "that is not a name: one component, at most 252 bytes",
         );
         assert_eq!(
-            PathRefusal::DirectoryNameTooLong.message(),
-            "that directory's name is longer than this shell can stand in: at most 16 bytes",
+            PathRefusal::PathTooLong.message(),
+            "too long: this shell tracks at most 512 bytes of path below its root",
         );
         assert_eq!(
             PathRefusal::TooDeep.message(),
@@ -765,19 +823,19 @@ mod tests {
         assert_eq!(working_directory.last(), Some(&b"b"[..]));
     }
 
-    /// `MAXIMUM_RENDERED_PATH_BYTES` is the worst case exactly: the deepest position with the widest names fills
-    /// all but one of its bytes, and the spare byte is the lone slash a root renders as, which
-    /// never coexists with a level. Slack would hide a truncation bug behind a buffer that always
-    /// happened to fit; a byte short would truncate a real prompt.
+    /// `MAXIMUM_RENDERED_PATH_BYTES` is the worst case exactly: a position that fills
+    /// [`MAXIMUM_PATH_BYTES`] renders a slash for each length byte, so it fills every byte of the
+    /// buffer, and a root's lone slash is one. Slack would hide a truncation bug behind a buffer that
+    /// always happened to fit; a byte short would truncate a real prompt.
     #[test]
-    fn render_maximum_is_the_worst_case_plus_the_roots_lone_slash() {
+    fn render_maximum_is_the_worst_case_exactly() {
         let mut working_directory = DirectoryPath::root();
         for _ in 0..MAXIMUM_DEPTH {
-            assert!(working_directory.descend(b"sixteen-bytes!!!"));
+            assert!(working_directory.descend(&[b'e'; MAXIMUM_PATH_BYTES / MAXIMUM_DEPTH - 1]));
         }
         let mut buf = [0u8; MAXIMUM_RENDERED_PATH_BYTES];
         let n = working_directory.render(&mut buf);
-        assert_eq!(n, MAXIMUM_RENDERED_PATH_BYTES - 1);
+        assert_eq!(n, MAXIMUM_RENDERED_PATH_BYTES);
         // And nothing was truncated to make that true: a wider buffer renders the same count.
         let mut wide = [0u8; 2 * MAXIMUM_RENDERED_PATH_BYTES];
         assert_eq!(working_directory.render(&mut wide), n);
@@ -942,22 +1000,11 @@ mod tests {
             Err(PathRefusal::NotAName),
             "a/ and one byte too many"
         );
-        // A component as long as a file's name may be is a path, and only standing in it is not.
+        // A directory may be named as long as a file, and the shell can stand in it.
         assert!(path(b"a/least_authority_demo").is_ok());
         let mut working_directory = DirectoryPath::root();
-        assert_eq!(
-            cd(&mut working_directory, "seventeen-bytes!!"),
-            Err(PathRefusal::DirectoryNameTooLong)
-        );
-        assert_eq!(
-            cd(&mut working_directory, "seventeen-bytes!!/a"),
-            Err(PathRefusal::DirectoryNameTooLong)
-        );
-        assert!(
-            working_directory.is_root(),
-            "a refused descent leaves the shell where it was"
-        );
-        assert_eq!(cd(&mut working_directory, "sixteen-bytes!!!"), Ok(()));
+        assert_eq!(cd(&mut working_directory, "seventeen-bytes!!"), Ok(()));
+        assert_eq!(working_directory.last(), Some(&b"seventeen-bytes!!"[..]));
         assert_eq!(path(b"a/b\\c"), Err(PathRefusal::NotAName));
         assert_eq!(path(b"a:b"), Err(PathRefusal::NotAName));
         // Nine components, one more than the shell tracks. Refused rather than truncated: a
@@ -974,6 +1021,39 @@ mod tests {
         }
         assert_eq!(cd(&mut working_directory, "d"), Err(PathRefusal::TooDeep));
         assert_eq!(working_directory.depth(), MAXIMUM_DEPTH);
+    }
+
+    /// The path's bytes are a bound of their own: two of the longest names fit, a third is
+    /// refused before the shell moves, and a pop gives its bytes back whole.
+    #[test]
+    fn a_path_longer_than_the_shell_tracks_is_refused_rather_than_truncated() {
+        let longest = [b'n'; MAXIMUM_NAME_BYTES];
+        let mut working_directory = DirectoryPath::root();
+        assert!(working_directory.descend(&longest));
+        assert!(working_directory.descend(&longest));
+        let two = working_directory;
+        assert_eq!(
+            working_directory.apply(&[Step::Down(b"sixsix")]),
+            Err(PathRefusal::PathTooLong),
+            "two of the longest names leave six bytes, one short of a six-byte component"
+        );
+        let mut five = working_directory;
+        assert!(five.descend(b"five!"), "and room for a five-byte one");
+        assert_eq!(
+            working_directory, two,
+            "a refused descent leaves the shell where it was"
+        );
+        assert_eq!(working_directory.component(1), &longest[..]);
+
+        assert!(working_directory.ascend());
+        assert!(working_directory.descend(b"short"));
+        let mut direct = DirectoryPath::root();
+        assert!(direct.descend(&longest));
+        assert!(direct.descend(b"short"));
+        assert_eq!(
+            working_directory, direct,
+            "a popped component leaves nothing behind that tells two equal positions apart"
+        );
     }
 
     /// The grant-time split: the directory to narrow, and the one name in it.

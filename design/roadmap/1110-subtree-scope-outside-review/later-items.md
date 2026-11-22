@@ -5,12 +5,12 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
 ## P2: later
 
 11. `Refusal::errno` restates numbers the contract defines. DONE (`errno` reads `dir::EINVAL`, `ENOTDIR`, `EISDIR`, `EPERM` and `file_grant::EBADF`; `ENOENT`, `ELOOP` and `EXDEV` stay literal and the doc says whose numbering they are).
-    Finding: `EPERM`, `ENOTDIR` and `EINVAL` exist in `filesystem_contract::dir` (and `EISDIR`,
+    Finding: `EPERM`, `ENOTDIR` and `EINVAL` exist in `file_system_contract::dir` (and `EISDIR`,
     which item 4 needs); the crate writes 1, 20 and 22 again. `ENOENT`, `ELOOP`, `EXDEV` and
     `EBADF` have no constant in the contract. The numbers are Linux's generic values (`ELOOP` is 40
     here and 62 on macOS), and the doc says the crate speaks no wire while it does speak a
     numbering.
-    Evidence: `crates/subtree_scope/src/lib.rs` lines 55 to 65; `filesystem_contract/src/dir.rs`
+    Evidence: `crates/subtree_scope/src/lib.rs` lines 55 to 65; `file_system_contract/src/dir.rs`
     lines 84 to 94.
     Change: use the contract's constants where they exist, and one sentence in `errno`'s doc
     saying whose numbering the rest follow.
@@ -40,7 +40,7 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
     (`open_file_path`, line 97). Whether a client can put the sentinel in `OPEN`'s second word is
     the server's matter and unverified; the crate should say what it does with undefined bits.
     Evidence: `crates/subtree_scope/src/lib.rs` lines 126 to 130; `redoxfs_server/src/server.rs`
-    lines 97 and 127; `filesystem_contract/src/dir.rs` lines 49 to 61.
+    lines 97 and 127; `file_system_contract/src/dir.rs` lines 49 to 61.
     Change: one sentence in `walk`'s doc, and a unit test with a hop word that has a high bit set.
     Door: two-way. Effort: XS.
 

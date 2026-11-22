@@ -11,9 +11,10 @@ use super::*;
 /// round.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub struct Grant {
-    /// The one name the caretaker will answer for. Must fit [`filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES`].
+    /// The one name the caretaker will answer for, at most
+    /// [`file_system_contract::grant::MAXIMUM_NAME_BYTES`].
     pub name: &'static str,
-    /// `grant::READ`, or `READ | WRITE`.
+    /// `grant::rights::READ`, or `READ | WRITE`.
     pub rights: u64,
     /// The confined program's `arg0` (its role) and `arg1`.
     pub role: u64,
@@ -52,29 +53,34 @@ pub fn start_granted(
     let caretaker_ready = endpoint();
     let report = endpoint();
 
-    let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes())
-        .expect("a granted name rides in two argument words; this one does not fit");
-    let spec = filesystem_contract::grant::specification(name.len(), rights);
+    // The name rides on the caretaker's read-only grant page and the direction in its START words.
+    let grant_phys = grant_page(name.as_bytes(), false, &[]);
+    let spec = file_system_contract::grant::specification(0, rights);
 
-    // The grant (the name and the direction) rides in the caretaker's START arguments, so a
-    // per-file grant costs no frame.
     let caretaker = crate::sched::spawn(move || {
         run(
             caretaker_image,
             Spawn {
-                arg0: lo,
-                arg1: hi,
+                arg0: 0,
+                arg1: 0,
                 arg2: spec,
                 grants: &[
                     rendezvous_capability(file_ep, Rights::WRITE), // slot 0: CALL the FS server
                     rendezvous_capability(narrow_ep, Rights::READ), // slot 1: serve the narrowed capability
                     rendezvous_capability(caretaker_ready, Rights::WRITE), // slot 2: readiness, once
                 ],
-                maps: &[Mapping {
-                    va: FILE_VA_CLIENT,
-                    phys: file_shared,
-                    flags: Flags::user_data(),
-                }],
+                maps: &[
+                    Mapping {
+                        va: FILE_VA_CLIENT,
+                        phys: file_shared,
+                        flags: Flags::user_data(),
+                    },
+                    Mapping {
+                        va: GRANT_VA_CARETAKER,
+                        phys: grant_phys,
+                        flags: Flags::user_read_only_data(),
+                    },
+                ],
                 windows: &[],
             },
         )

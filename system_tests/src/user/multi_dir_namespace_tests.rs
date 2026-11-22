@@ -1,5 +1,5 @@
-use filesystem_contract::directory;
-use filesystem_fixture::endpoint_boundary as t;
+use file_system_contract::directory;
+use file_system_fixture::endpoint_boundary as t;
 
 use super::*;
 use crate::sched;
@@ -28,11 +28,14 @@ fn two_dir_witness() -> Option<u64> {
             // caretakers (`start_granted_two_dirs` reuses a pair asked for twice). The extra
             // rights do not widen what this witness proves: it opens by name, and the claim is
             // that each endpoint reaches only its own subtree.
-            a: (filesystem_fixture::tree::SUB, TWO_TREE_RIGHTS),
-            b: (filesystem_fixture::tree::OTHER, TWO_TREE_RIGHTS),
+            a: (file_system_fixture::tree::SUB, TWO_TREE_RIGHTS),
+            b: (file_system_fixture::tree::OTHER, TWO_TREE_RIGHTS),
             role: 10, // ROLE_TWO_DIR
             arg: 0,
-            stack_pages: 0,
+            // In a debug build the chain through `two_dir` and `TwoRoots::resolve_absolute` is
+            // about 5 KiB, because each resolved path is a 512-byte `DirectoryPath` held by value.
+            // The one mapped page faults; three leave about 7 KiB.
+            stack_pages: 2,
         },
     ) else {
         // No print, no skip!() here: this is a helper, and `skip!()` returns from the function it
@@ -45,7 +48,7 @@ fn two_dir_witness() -> Option<u64> {
     let [tag, verdict, ..] = sched::ipc_receive(report);
     assert_eq!(
         tag,
-        filesystem_fixture::VERDICT,
+        file_system_fixture::VERDICT,
         "the two-directory witness's report is not a verdict word",
     );
     Some(verdict)
@@ -85,7 +88,8 @@ fn a_process_holding_two_directory_capabilities_reaches_both_and_crosses_neither
 
 /// The rights both tests in this module grant on both trees: what the two-tree shell needs to
 /// list (`ENUMERATE`), walk (`DESCEND`) and read (`READ`), and nothing that writes.
-const TWO_TREE_RIGHTS: u64 = directory::ENUMERATE | directory::READ | directory::DESCEND;
+const TWO_TREE_RIGHTS: u64 =
+    directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND;
 
 /// The `swish` binary's two-tree role (`components/src/swish.rs`'s `ROLE_TWO_TREES`).
 const ROLE_TWO_TREES: u64 = 6;
@@ -105,22 +109,23 @@ fn two_tree_shell() -> Option<u64> {
             .expect("no fs_subtree_caretaker program in the initial ramdisk"),
         program("swish").expect("no swish program in the initial ramdisk"),
         fs_service::TwoDirGrant {
-            a: (filesystem_fixture::tree::SUB, rights),
-            b: (filesystem_fixture::tree::OTHER, rights),
+            a: (file_system_fixture::tree::SUB, rights),
+            b: (file_system_fixture::tree::OTHER, rights),
             role: ROLE_TWO_TREES,
-            arg: filesystem_contract::grant::specification(0, rights),
-            // **Seven, measured.** This script plans an `rm`, and the planner's own frames in a
-            // debug build (`plan_against_with_streams` alone is over 11 KiB) are the deepest chain it
-            // reaches, about 26 KiB with the witness above them. Four overflowed there, presenting
-            // as a data abort on the shell's own `sp` and then as the lost-wakeup watchdog, and six
-            // would leave under 2 KiB; the seventh is headroom, one short of this wiring's ceiling.
-            stack_pages: 7,
+            arg: file_system_contract::grant::specification(0, rights),
+            // **Eleven.** This script plans an `rm`, and in a debug build the deepest chain
+            // from `_start` through `two_tree_rm` and the planner (`plan_against_with_streams`,
+            // `plan_input_operand`, `designate`) is about 43.8 KiB, the sum of each frame's
+            // prologue, most of it 512-byte directory paths held by value. Twelve pages leave about
+            // 4.3 KiB. An overflow presents as a data abort on the shell's own `sp` and then as the
+            // lost-wakeup watchdog.
+            stack_pages: 11,
         },
     )?;
     let [tag, verdict, ..] = sched::ipc_receive(report);
     assert_eq!(
         tag,
-        filesystem_fixture::VERDICT,
+        file_system_fixture::VERDICT,
         "the two-tree shell's report is not a verdict word",
     );
     Some(verdict)
@@ -138,7 +143,7 @@ fn two_tree_shell() -> Option<u64> {
 /// consistent with a shell that reaches nothing.
 #[test_case]
 fn a_shell_holding_two_trees_moves_between_them_and_crosses_neither() {
-    use filesystem_fixture::mounted_tree as tt;
+    use file_system_fixture::mounted_tree as tt;
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }

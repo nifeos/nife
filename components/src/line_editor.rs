@@ -21,7 +21,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use line_editor::{Event, LINE_MAXIMUM, LineDisc, PROMPT_MAXIMUM, RawQueue, Sink};
+use line_editor::{Event, LineEditor, MAXIMUM_LINE_BYTES, MAXIMUM_PROMPT_BYTES, RawQueue, Sink};
 use terminal_contract as proto;
 use user_mode_runtime::{Reply, call, receive, receive_request, reply, send};
 
@@ -90,10 +90,10 @@ const _: () = assert!(proto::QUIESCED == hot_swap_contract::QUIESCED);
 const QUEUE: usize = 4;
 
 /// These three live in `.bss`, not on the stack: a user process gets one 4 KiB stack page
-/// (`kernel/src/user.rs`'s `USER_STACK_VA`), and `LineDisc` alone is a couple of KiB before
+/// (`kernel/src/user.rs`'s `USER_STACK_VA`), and `LineEditor` alone is a couple of KiB before
 /// `LineQueue` and `RawQueue` are added, which overflowed the page as `_start` locals. Their `new`s
 /// are `const` so this is possible, as for `display_terminal.rs`'s `TERMINAL`.
-static mut DISC: LineDisc = LineDisc::new();
+static mut DISC: LineEditor = LineEditor::new();
 static mut LINE_QUEUE: LineQueue = LineQueue::new();
 static mut RAW_QUEUE: RawQueue = RawQueue::new();
 
@@ -164,7 +164,7 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
 /// Everything the serve loop carries between requests: the three `.bss` statics, the output sink,
 /// both parked readers, and the mode and counters a quiesce hands to a replacement.
 struct Terminal {
-    disc: &'static mut LineDisc,
+    disc: &'static mut LineEditor,
     queue: &'static mut LineQueue,
     raw_queue: &'static mut RawQueue,
     /// A parked `OPERATION_READ_LINE_BYTES`, answered when a line is complete.
@@ -296,7 +296,7 @@ impl Terminal {
     #[inline]
     fn bytes_raw(&mut self, w0: u64, w1: u64, slot: Reply) {
         // Raw mode: no echo, no interpretation, straight into the raw queue. A burst past
-        // RAW_QUEUE_MAXIMUM is dropped audibly, the same overflow contract `disc.feed` uses.
+        // MAXIMUM_RAW_QUEUE_BYTES is dropped audibly, the same overflow contract `disc.feed` uses.
         let n = proto::len(w0).min(8);
         let bytes = w1.to_le_bytes();
         if self.raw_queue.push(&bytes[..n]) < n {
@@ -395,8 +395,8 @@ impl Terminal {
             reply(slot, proto::BAD_REQUEST, 0);
             return;
         }
-        let plen = proto::len(w0).min(PROMPT_MAXIMUM);
-        let mut prompt = [0u8; PROMPT_MAXIMUM];
+        let plen = proto::len(w0).min(MAXIMUM_PROMPT_BYTES);
+        let mut prompt = [0u8; MAXIMUM_PROMPT_BYTES];
         copy_in(APP_OUT_VA, 0, &mut prompt[..plen]);
         if core::mem::replace(&mut self.resuming_line, false) {
             self.disc.resume_line(&prompt[..plen]);
@@ -485,7 +485,7 @@ impl Terminal {
 
 /// **The line a stdin reader is draining**, with its `\n`, and how far it has read.
 struct StdinLine {
-    bytes: [u8; LINE_MAXIMUM + 1],
+    bytes: [u8; MAXIMUM_LINE_BYTES + 1],
     len: usize,
     at: usize,
 }
@@ -493,7 +493,7 @@ struct StdinLine {
 impl StdinLine {
     const fn new() -> Self {
         StdinLine {
-            bytes: [0; LINE_MAXIMUM + 1],
+            bytes: [0; MAXIMUM_LINE_BYTES + 1],
             len: 0,
             at: 0,
         }
@@ -504,7 +504,7 @@ impl StdinLine {
     }
 
     fn fill(&mut self, line: &[u8]) {
-        let n = line.len().min(LINE_MAXIMUM);
+        let n = line.len().min(MAXIMUM_LINE_BYTES);
         self.bytes[..n].copy_from_slice(&line[..n]);
         self.bytes[n] = b'\n';
         self.len = n + 1;
@@ -539,7 +539,7 @@ fn deliver_raw(raw_queue: &mut RawQueue, pending_raw: &mut Option<Reply>) {
     if pending_raw.is_none() {
         return;
     }
-    let Some((n, packed)) = raw_queue.pop8() else {
+    let Some((n, packed)) = raw_queue.pop_up_to_eight() else {
         return;
     };
     let p = pending_raw.take().unwrap();
@@ -616,7 +616,7 @@ fn copy_in(base: u64, offset: usize, dst: &mut [u8]) {
 
 /// The type-ahead queue: completed lines waiting for a reader, FIFO, fixed storage.
 struct LineQueue {
-    lines: [([u8; LINE_MAXIMUM], usize, u64); QUEUE],
+    lines: [([u8; MAXIMUM_LINE_BYTES], usize, u64); QUEUE],
     head: usize,
     count: usize,
     /// The line a [`proto::STDIN_BADGE`] reader is draining, `\n` included: taken from the front of
@@ -627,7 +627,7 @@ struct LineQueue {
 impl LineQueue {
     const fn new() -> Self {
         LineQueue {
-            lines: [([0; LINE_MAXIMUM], 0, 0); QUEUE],
+            lines: [([0; MAXIMUM_LINE_BYTES], 0, 0); QUEUE],
             head: 0,
             count: 0,
             stdin: StdinLine::new(),
@@ -640,7 +640,7 @@ impl LineQueue {
             return;
         }
         let slot = (self.head + self.count) % QUEUE;
-        let n = line.len().min(LINE_MAXIMUM);
+        let n = line.len().min(MAXIMUM_LINE_BYTES);
         self.lines[slot].0[..n].copy_from_slice(&line[..n]);
         self.lines[slot].1 = n;
         self.lines[slot].2 = flags;
@@ -704,7 +704,7 @@ impl LineQueue {
 /// or malformed, and then the caller refuses the swap rather than serve half a state.
 fn restore(
     r: &mut line_editor::handoff::Reader<'_>,
-    disc: &mut LineDisc,
+    disc: &mut LineEditor,
     queue: &mut LineQueue,
     raw_queue: &mut RawQueue,
 ) -> Option<(bool, u64, bool)> {

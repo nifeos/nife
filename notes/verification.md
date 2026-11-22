@@ -121,7 +121,7 @@ table and the reasoning.
 | `static_elf` | 4 | segment bounds arithmetic is total and yields in-bounds ranges | [parsers](verification/parser-harnesses.md) |
 | `nifefs` | 2 | the initrd parse's acceptance makes reads in-bounds | [parsers](verification/parser-harnesses.md) |
 | `memory_region_heap` | 3 | the heap's growth arithmetic stays inside its cap, refuses at the cap, and never overflows | [core](verification/core-harnesses.md) |
-| `pci` | 4 | config-space decode is total on any device's answers | [parsers](verification/parser-harnesses.md) |
+| `pci_configuration_space` | 10 | config-space decode is total on any device's answers, and every BAR it returns is a power of two | [parsers](verification/parser-harnesses.md) |
 | `direct_memory_access_validator` | 7 | no descriptor the device reads escapes the driver's grant | [DMA](verification/direct-memory-access-validator.md) |
 | `byte_glob` | 6 | the matcher is total on any pattern and name | [glob](verification/glob-proofs.md) |
 

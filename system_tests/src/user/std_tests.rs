@@ -198,8 +198,8 @@ pub(super) fn assert_a_kill_mid_transaction_recovers(
     redoxfs_server_image: &'static [u8],
     client_image: &'static [u8],
 ) {
-    use filesystem_contract::READY;
-    use filesystem_fixture::{SUCCESS, crash};
+    use file_system_contract::READY;
+    use file_system_fixture::{SUCCESS, crash};
     // The caller has already established the disk is there (`fs_service::is_crash_disk_present`)
     // and skipped its own `#[test_case]` if it is not. This `expect` is that guard restated where
     // it can fail loudly: a `None` here means the disk went away between the two calls, which is a
@@ -259,7 +259,7 @@ pub(super) fn assert_a_kill_mid_transaction_recovers(
 /// same thing and the useful part is naming *which* claim broke rather than printing a number
 /// the reader has to decode. Each missing bit is one sentence about the layer.
 pub(super) fn assert_attrs(attrs: u64) {
-    use filesystem_fixture::attributes as a;
+    use file_system_fixture::attributes as a;
     if attrs == a::EXPECTED {
         return;
     }
@@ -319,14 +319,14 @@ pub(super) fn std_fs_expected(buf: &mut [u8; 768]) -> usize {
     // The lengths spelled out below are the motd's; if the fixture changes, fail here rather
     // than in a byte comparison nobody can read.
     assert_eq!(
-        filesystem_fixture::MOTD.len(),
+        file_system_fixture::MOTD.len(),
         79,
         "the motd fixture changed; the expected transcript's lengths must change with it",
     );
     let mut n = 0;
     for part in [
         b"std fs on nife\n".as_slice(),
-        filesystem_fixture::MOTD,
+        file_system_fixture::MOTD,
         b"read_to_string 79\nmetadata len 79\n".as_slice(),
         // `/motd` and `motd` open the same file and `current_dir` names their root. The refusals
         // are `/../motd`, the level above the only root, and `sub/../other/secret`, a file this

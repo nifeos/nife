@@ -44,18 +44,23 @@ user_mode_runtime::program_entry!(start);
 fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     // A direct grant's three words are its handoff, and the role travels in it; a mediated
     // grant's first word is the role and its second the DMA page's physical base.
-    let (role, direct_memory_access_phys) = match roles::direct::take([arg0, arg1, arg2]) {
-        Some(granted) => (granted.role, granted.physical_address),
-        None => (arg0, arg1),
-    };
+    let (role, direct_memory_access_physical_address) =
+        match roles::direct::take([arg0, arg1, arg2]) {
+            Some(granted) => (granted.role, granted.physical_address),
+            None => (arg0, arg1),
+        };
     match role {
-        VIRTUAL_IO_BLK => roles::run(direct_memory_access_phys),
-        VIRTUAL_IO_ATTACK => roles::run_attack(direct_memory_access_phys),
-        VIRTUAL_IO_ATTACK_INDIRECT => roles::run_attack_indirect(direct_memory_access_phys),
-        VIRTUAL_IO_BLK_WRITE => roles::run_write(direct_memory_access_phys),
-        VIRTUAL_IO_BLK_WRITE_ABANDON => roles::run_write_abandon(direct_memory_access_phys),
-        VIRTUAL_IO_NET => roles::run_net(direct_memory_access_phys),
-        VIRTUAL_IO_BLK_SERVER => roles::run_block_server(direct_memory_access_phys),
+        VIRTUAL_IO_BLK => roles::run(direct_memory_access_physical_address),
+        VIRTUAL_IO_ATTACK => roles::run_attack(direct_memory_access_physical_address),
+        VIRTUAL_IO_ATTACK_INDIRECT => {
+            roles::run_attack_indirect(direct_memory_access_physical_address)
+        }
+        VIRTUAL_IO_BLK_WRITE => roles::run_write(direct_memory_access_physical_address),
+        VIRTUAL_IO_BLK_WRITE_ABANDON => {
+            roles::run_write_abandon(direct_memory_access_physical_address)
+        }
+        VIRTUAL_IO_NET => roles::run_net(direct_memory_access_physical_address),
+        VIRTUAL_IO_BLK_SERVER => roles::run_block_server(direct_memory_access_physical_address),
         _ => panic!(),
     }
 }

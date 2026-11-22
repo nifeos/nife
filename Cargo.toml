@@ -45,8 +45,8 @@ members = [
     "crates/initial_ramdisk_writer",
     "crates/static_elf",
     "crates/page_frames",
-    "crates/filesystem_contract",
-    "crates/filesystem_fixture",
+    "crates/file_system_contract",
+    "crates/file_system_fixture",
     "crates/byte_sink_fixture",
     "crates/firmware_configuration",
     "crates/graphics_contract",
@@ -146,6 +146,7 @@ exclude = [
     "crates/memory_region_heap/fuzz",
     "crates/master_boot_record/fuzz",
     "crates/domain_name_resolution_contract/fuzz",
+    "crates/pci_configuration_space/fuzz",
 ]
 
 # Shared package metadata. Each member opts in with `license.workspace = true`, so the

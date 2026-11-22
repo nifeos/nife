@@ -5,7 +5,7 @@ on two byte strings with no filesystem in it; this note is the layer that turns 
 authority, and the demonstration that hangs on it.
 
 The code is `crates/grant_plan/src/expansion.rs` (the expander and the name set, host-tested),
-`crates/filesystem_contract`'s `nameset` module (the wire encoding),
+`crates/file_system_contract`'s `nameset` module (the wire encoding),
 `components/src/fs_nameset_caretaker.rs` (the caretaker), `components/src/swish/` (`echo`, and the
 grant path), `components/src/rm.rs` (the namespace mode), and `kernel/src/user/fs_service/set_grant.rs`'s
 `start_granted_set`, and `system_tests/src/user/glob_grant_tests.rs`.
@@ -27,7 +27,7 @@ The roadmap's four candidates and its verdict, which this lane implements rather
 
 The finding that makes it tractable is that this is a small change: `fs_file_caretaker` already
 serves *a namespace of exactly one name*, so globbing generalizes the namespace and nothing else.
-Same caretaker shape, same `filesystem_contract` protocol above and below, nothing new in the
+Same caretaker shape, same `file_system_contract` protocol above and below, nothing new in the
 kernel.
 
 That generalization is in the type system rather than only in the prose. `grant_plan::DirectoryGrant` used
@@ -102,7 +102,7 @@ and the frame a set needs at start, are weighed in
 Milestone 61 removed the *other* duplication, which was the dangerous one. Which verbs got asked "is
 this name in the set" was a list of match arms in this program. So a name-taking verb added
 to the contract would have arrived unfiltered and a set capability would quietly have reached a name
-the pattern never matched. It is now `filesystem_contract::verb`'s `takes_name()`, one row per verb,
+the pattern never matched. It is now `file_system_contract::verb`'s `takes_name()`, one row per verb,
 in a host-testable crate: the filter covers a new verb from the moment its row exists. The
 attenuation is not shared: `fs_subtree_caretaker` still consults no policy, the property a mode
 would have destroyed.
@@ -148,8 +148,8 @@ directory said. That is the same resolve-at-grant-time rule the rest of a grant 
 
 ## `rm` is told "everything you can see"
 
-A set grant has no single name to put in the `START` words, so `rm` is started with a grant whose
-name is zero bytes long (`filesystem_contract::grant::WHOLE_NAMESPACE`). A name cannot be empty, so
+A set grant has no single name, so `rm` is started with a grant whose
+name is zero bytes long (`file_system_contract::grant::WHOLE_NAMESPACE`). A name cannot be empty, so
 that spelling was free. It means the operand is the namespace, and `rm` learns the names by
 enumerating its own capability.
 
@@ -235,8 +235,7 @@ Known limitations, next to the feature rather than only in a tracker.
   the prompt. The stop rule sees only failures the shell prints, a sweep lists the directory once
   per batch, and a name created mid-sweep joins it only above the watermark.
 - A literal operand's type bit is `false` because nothing enumerated it. `rm` with a literal name
-  over two argument words is served through `fs_nameset_caretaker` (milestone 946 (a granted file name can be longer than sixteen bytes)), so its
-  listing calls a directory of that name a file. `rm` reads only the names and asks the server.
+  is served through `fs_nameset_caretaker`, so its listing calls a directory of that name a file. `rm` reads only the names and asks the server.
 - A set capability cannot move a name out of its set, so `mv *.txt elsewhere/` is not expressible
   (see `RENAME` above).
 - Only the first pattern on a line is expanded. No manifest declares two name slots, so a second

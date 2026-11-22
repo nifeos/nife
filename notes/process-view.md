@@ -81,7 +81,7 @@ the placement cost argument, the proofs and the cursor's safety argument are in
 ## Refused, empty, and populated are three answers
 
 This is the deliverable, not a detail. A monitor that reports nothing because it *could not look*
-reads exactly like a quiet machine, which is the worst failure this tool has available. `filesystem_contract`
+reads exactly like a quiet machine, which is the worst failure this tool has available. `file_system_contract`
 chose `EPERM` over an empty listing for the same reason (milestone 108's shape).
 
 | what the viewer holds | answer |

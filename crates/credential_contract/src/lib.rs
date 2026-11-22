@@ -20,12 +20,12 @@
 
 #![cfg_attr(not(test), no_std)]
 
-/// The shared-page size, in bytes. One host page, the same unit `filesystem_contract` moves, and far more
+/// The shared-page size, in bytes. One host page, the same unit `file_system_contract` moves, and far more
 /// than the [`MAXIMUM_IDENTITY`] + [`MAXIMUM_SECRET`] a request can fill.
 pub const PAGE: usize = 4096;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
-/// `filesystem_contract`, `entropy_contract` and `terminal_contract` use, so the contracts read alike.
+/// `file_system_contract`, `entropy_contract` and `terminal_contract` use, so the contracts read alike.
 pub const OPERATION_SHIFT: u32 = 56;
 
 /// The longest identity, in bytes. An identity here is **an opaque byte string and nothing more**:

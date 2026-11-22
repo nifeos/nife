@@ -17,7 +17,7 @@
 //! second writer reaches it by chance on four-core boots; the handshake removes the flakiness, not
 //! the mechanism.
 
-use filesystem_fixture as fixture;
+use file_system_fixture as fixture;
 
 use super::*;
 use crate::sched;

@@ -493,7 +493,7 @@ static_elf	106	the loader's front half, and the note walk, panic-free on hostile
 page_frames	16	the physical frame allocator
 allocation_cache	3	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
 domain_name_resolution_contract	498	the grant table: any short run of control messages never panics, and a badge is in force only once a message said Granted, in a window that never moves
-program_argument_contract	71	the argument page parser: never panics, yields exactly len items, and a parsed page holds exactly the records its header states
+program_argument_contract	71	the argument page: the parser never panics, yields exactly len items, a parsed page holds exactly the records its header states, and two built arguments read back exactly
 inter_process_communication	16	the rendezvous state machine
 address_space_identifier	1	the TLB tag allocator
 line_editor	86	the line editor's escape parser and range delete keep the cursor inside the line
@@ -513,7 +513,7 @@ direct_memory_access_validator	122	the DMA-confinement validator, no descriptor 
 network_time_protocol	19	the 1900-epoch era pivot, and no hostile packet moves the clock
 globally_unique_identifier_partition_table	176	the partition table's CRC-32, its round trips, and partitions that overlap
 master_boot_record	7	the MBR parse reads each entry from its own bytes, and the scratch range never touches a partition or sector 0
-filesystem_contract	4	a directory capability's child never exceeds its parent, at any depth
+file_system_contract	4	a directory capability's child never exceeds its parent, at any depth
 subtree_scope	238	a subtree grant reaches only its own root and what it minted, never goes up, never follows a link, never crosses a mount
 current_cpu_contract	2	the current-CPU page: a reader answers only what the page holds, and a built page reads back its words
 credential_contract	2	no request word reads outside the page; nothing but MATCH authenticates
@@ -728,6 +728,8 @@ for c in $crates; do
         # The bookkeeping harness stubs the zone parse (`#[kani::stub]`), which needs the flag on the
         # command line; the crate-level Cargo.toml setting did not reach this path in CI.
         domain_name_resolution_contract) extra="-Z stubbing" ;;
+        # Two of the `parse` totality harnesses stub a function (`#[kani::stub]`).
+        globally_unique_identifier_partition_table) extra="-Z stubbing" ;;
         # `components` is many `[[bin]]` targets and one package, so a bare `cargo kani -p components`
         # compiles all of them. Kani refuses every `#![no_std]` crate root that does not mention it
         # ("Failed to detect Kani functions"), so that run fails on the first binary carrying no

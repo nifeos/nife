@@ -172,7 +172,7 @@ release. The release review rechecks every name before any publication.
 
 | was | is | why |
 |---|---|---|
-| `req(operation, n)` | `request(operation, byte_count)` | `req` abbreviates `request`. Six other crates spell a builder `req` (`byte_sink_contract`, `clock_contract`, `credential_contract`, `filesystem_contract`, `graphics_contract`, `line_editor`) and `domain_name_resolution_contract` spells it `request`; each of the six renames at its own review |
+| `req(operation, n)` | `request(operation, byte_count)` | `req` abbreviates `request`. Six other crates spell a builder `req` (`byte_sink_contract`, `clock_contract`, `credential_contract`, `file_system_contract`, `graphics_contract`, `line_editor`) and `domain_name_resolution_contract` spells it `request`; each of the six renames at its own review |
 | `want(w0)` | `requested_bytes(request_word)` | a quantity takes its unit, and a verb does not name a reading |
 | `bringup_failure(step)` | `bring_up_failure(step)` | `bringup` is not a word; the tree writes `bring_up` 106 times in Rust |
 | `delivered(r0)` | `delivered_bytes(first_reply_word)` | it returns a byte count, so it takes the unit |

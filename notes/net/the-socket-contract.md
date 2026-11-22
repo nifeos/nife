@@ -101,7 +101,7 @@ The module's BUGS, at length:
 
 `fixture` holds the inbound gate's shared facts, because four programs must agree on them and three
 are separate binaries: `socket_test_client`, `std_exerciser` in its own workspace, and the kernel
-test that decides which ports each stack is granted. It is `filesystem_fixture`'s discipline and
+test that decides which ports each stack is granted. It is `file_system_fixture`'s discipline and
 rule 7's reason.
 
 The host's copy is deliberately not here. `xtask`'s prober spells `IN_MSG` and `OUT_MSG` again as

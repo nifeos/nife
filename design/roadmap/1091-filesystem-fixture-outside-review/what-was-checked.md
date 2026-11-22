@@ -4,14 +4,14 @@ An appendix to [the milestone](../1091-filesystem-fixture-outside-review.md).
 
 Verified firsthand on the clone (the review's report holds `hostname`, not this page):
 
-- `cargo test -p filesystem_fixture` (16 unit tests and the README's one doctest), `cargo clippy
+- `cargo test -p file_system_fixture` (16 unit tests and the README's one doctest), `cargo clippy
   --all-targets` and `cargo doc` with warnings denied. All are clean on the pinned nightly.
 - `cargo build --lib` for `x86_64-unknown-none` and `riscv64imac-unknown-none-elf`, clean.
-- The crate and `filesystem_contract` copied into a two-member scratch workspace and tested on Rust
+- The crate and `file_system_contract` copied into a two-member scratch workspace and tested on Rust
   1.88, the manifest's `rust-version`. The 16 tests and the doctest pass, and the `x86_64-unknown-none`
   build is clean.
-- `script/crate-standalone filesystem_fixture`: five failures (the crate name is provisional; 244 names lack ratification; the path dependency on `filesystem_contract` leaves the copy; it skipped the build and the proofs).
-- `script/crate-review-packet filesystem_fixture`: 1,178 lines of library and 561 of tests, 14
+- `script/crate-standalone file_system_fixture`: five failures (the crate name is provisional; 244 names lack ratification; the path dependency on `file_system_contract` leaves the copy; it skipped the build and the proofs).
+- `script/crate-review-packet file_system_fixture`: 1,178 lines of library and 561 of tests, 14
   modules and 4 functions. It finds no `unsafe`, no Kani harness and no falsification patch. It
   finds nine dependents in nife (`byte_glob` and `system_tests` as dev-dependencies, the rest normal).
 - `helpers/lint_externalized_crates.py --count`: 18 hits, exactly at the crate's ceiling. By hand:
@@ -28,7 +28,7 @@ Verified firsthand on the clone (the review's report holds `hostname`, not this 
 - The recorded mutation census (`notes/project-metrics/mutation-census.csv`): 216 mutants tested,
   183 caught, 14 missed, 19 unviable, no timeouts, in four consecutive weekly runs; the triage
   classifies all 14 as equivalent. No census ran for this review.
-- The commit history of `crates/filesystem_contract/Cargo.toml` and of the crate through the
+- The commit history of `crates/file_system_contract/Cargo.toml` and of the crate through the
   GitHub API, to date the removal of the dev-dependency and the last changes.
 - The arithmetic of the constants: the walk totals, the blank disk's partition bounds and alignment,
   the throughput shape's compile-time assertions, the Unix seconds of the `touch -t` instant, the

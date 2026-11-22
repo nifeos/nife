@@ -142,7 +142,7 @@ impl Header {
 ///
 /// The reader asks for a page by number and gets it or does not; it never seeks, never reads a byte
 /// range, and never holds two pages at once. That is the whole interface, and it is this small so
-/// that the guest implementation is a single `filesystem_contract` `READ` and the host implementation is a
+/// that the guest implementation is a single `file_system_contract` `READ` and the host implementation is a
 /// slice.
 pub trait Pages {
     /// Fill `out` with page `index` of the file. `false` means the read failed or ran off the end.
@@ -238,7 +238,7 @@ pub fn normalize(word: &[u8], out: &mut [u8; MAXIMUM_TERM_BYTES]) -> usize {
 /// notes/documentation/underscore-terms.md.
 ///
 /// BUGS: folding is ASCII only and every other byte splits, so a search for `filesystem` also
-/// finds every page that says `filesystem_contract`.
+/// finds every page that says `file_system_contract`.
 pub fn tokens(text: &[u8], mut f: impl FnMut(&[u8])) {
     let mut buf = [0u8; MAXIMUM_TERM_BYTES];
     let mut n = 0;

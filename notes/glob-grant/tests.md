@@ -85,7 +85,7 @@ let report = fs_service::start_granted_set(
         dir: tree::GLOBSET,
         names: &[(b"gl-one.txt", false), (b"gl-two.txt", false)],
         rights: dir::REMOVE,                       // take names out, and nothing else
-        role: filesystem_contract::grant::spec(0, 0),         // no name: the operand is the namespace
+        role: file_system_contract::grant::spec(0, 0),         // no name: the operand is the namespace
         arg: 0,
         arg2: 0,
         stack_pages: 4,

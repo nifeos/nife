@@ -85,7 +85,7 @@ except in six monomorphized functions in each architecture's server binary (inli
   (maintainer PR #1924).
 - `notes/benchmarks/read-path-block-contract-and-metadata-cache.md`, `notes/fs-server/throughput.md`,
   `notes/shell-navigation.md`, `bench/cache-slots-sweep.sh` and one comment in
-  `crates/filesystem_contract` now name the new path.
+  `crates/file_system_contract` now name the new path.
 
 ## Found while moving
 

@@ -75,7 +75,7 @@ exactly what a second broadcast in the loop at `:883-897` produces. The fix: rea
 `used.ring[i].len`, bound every read by it, and make the option loop's guard `o + 2 < end`.
 Effort: S. Two-way.
 
-9. Names, against `design/naming.md`. The rule covers parameters and private items as well as
+9. Names, against `design/naming.md`. DONE (every name below is spelled out and provisional; each specification term keeps its spelling as `#[doc(alias)]`, and the public entry points carry `Name:` blocks). The rule covers parameters and private items as well as
 public ones, and `script/crate-standalone` requires every name a stranger meets to carry a
 ratification. Found, with the rule each breaks:
 - `DMA_VA` (`:39`): `dma` and `va` both appear on the spelled-out list, and the appendix wants
@@ -91,7 +91,7 @@ ratification. Found, with the rule each breaks:
 - `blk` in `run_blk_server`, `blk_read`, `blk_write`, `blk_flush`, `submit_blk`, `complete_blk`,
   `BLK_REQ`, `BLK_READY`, `BLK_OFF_DATA`: the acronyms appendix names `blk` as a failing
   abbreviation, and the maintainers renamed the binary that carried it to `block_driver` on that
-  ground. (The `filesystem_contract::blk` module it mirrors sits outside this crate.)
+  ground. (The `file_system_contract::blk` module it mirrors sits outside this crate.)
 - `mr`, `mw` (`:109`, `:114`), `wr_be16`, `wr_be32`, `rd_be16`, `rd_be32` (`:583-602`),
   `write_desc`, `desc_base`, `avail_idx`, `QSIZE`, `OFF_*`, `csum`, `istatus`, `dev_lo`,
   `dev_hi`, `ack_hi`, `req_type`, `req`, `w0`, `st`, `ihl`: abbreviations a reader decodes.

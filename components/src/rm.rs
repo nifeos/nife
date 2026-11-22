@@ -3,23 +3,24 @@
 //! A **program, not a shell builtin**: a builtin would run with the shell's entire endowment, where
 //! a program takes an explicit attenuated grant, so `caps rm -r logs` prints the subtree at risk
 //! first and a bug in the recursion reaches only what this process was handed. The recursion is
-//! here because no single call on `filesystem_contract` takes a tree away ([`fs::UNLINK`] refuses a
-//! directory, [`fs::RMDIR`] a non-empty one): enumerate, unlink, recurse, remove bottom-up, each
+//! here because no single call on `file_system_contract` takes a tree away ([`file_system::UNLINK`] refuses a
+//! directory, [`file_system::RMDIR`] a non-empty one): enumerate, unlink, recurse, remove bottom-up, each
 //! step needing its right at that level, so the walk stops where the capabilities stop. An
 //! interrupted run leaves a partial tree and a non-zero exit, since no transaction spans requests.
 
 //! # Capability contract (`kernel/src/user/fs_service/directory_grant.rs`, `start_granted_dir`)
 //!
-//! - **slot 0**: the narrowed directory endpoint, `WRITE`; [`fs::ROOT`] on it is **the directory
+//! - **slot 0**: the narrowed directory endpoint, `WRITE`; [`file_system::ROOT`] on it is **the directory
 //!   the name is in**, because taking a name away is an operation on a directory.
 //! - **slot 1**: a report endpoint, `WRITE`: framed text, then one end of stream
 //!   ([`byte_sink_contract::end_of_stream`], its reserved words zero). Output at slot 1, unlike every other
 //!   program, so both wirings agree (notes/rm.md, "The program's shape").
 //! - **slot 2** ([`rm::VERDICT_SLOT`]): a verdict endpoint, `WRITE`, optional: the exit status
-//!   and the count, once, after the end of stream ([`filesystem_contract::rm`], [`verdict`]). The
+//!   and the count, once, after the end of stream ([`file_system_contract::rm`], [`verdict`]). The
 //!   shell leaves it empty.
-//! - **[`PAGE_VA`]**: the page shared with the FS server. The name and options ride in the three
-//!   `START` words, packed by [`filesystem_contract::grant`].
+//! - **[`PAGE_VA`]**: the page shared with the FS server. The options ride in the `START` spec
+//!   word ([`file_system_contract::grant`]), and its two name words are zero: the operands are
+//!   the names slot 0's set capability holds.
 //!
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist), on AGENTS.md's naming
 //! section, "standard terms a reader already knows from outside". This is the one of the five
@@ -39,7 +40,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use filesystem_contract::{directory, directory_entry, fs, grant, rm};
+use file_system_contract::{directory, directory_entry, file_system, grant, rm};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, exit, send};
 
@@ -56,11 +57,13 @@ const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
 // write_volatile loops below).
 const WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(PAGE_VA, filesystem_contract::PAGE_BYTES as u64) };
+    unsafe { MappedWindow::new(PAGE_VA, file_system_contract::PAGE_BYTES as u64) };
 
 /// `ENOENT`. Not in [`directory`]'s list because it is POSIX's oldest number and this contract answers it
 /// from three different rungs; `-f` cares about exactly one of them (see [`remove`]).
 const ENOENT: i32 = 2;
+/// `EINVAL`, for START words that still carry a name, which no wiring sends.
+const EINVAL: i32 = 22;
 /// `ELOOP`, borrowed for a tree deeper than this program can walk. It is **this program's refusal
 /// and not the filesystem's**, which is why it prints its own sentence for it: nothing was wrong
 /// with the directory.
@@ -82,8 +85,8 @@ const LISTING: usize = 128;
 /// set may hold. It is one frame at the top of the stack and is never held across the recursion,
 /// which is why it can be larger than [`LISTING`] on a program with four stack pages.
 const SET_LISTING: usize = directory_entry::record_len(0)
-    * filesystem_contract::nameset::MAXIMUM_NAMES
-    + filesystem_contract::nameset::MAXIMUM_NAME_SET_BYTES;
+    * file_system_contract::nameset::MAXIMUM_NAMES
+    + file_system_contract::nameset::MAXIMUM_NAME_SET_BYTES;
 
 /// The most rounds one directory takes before the walk gives up on it. A ceiling rather than a limit
 /// on directories: **each round removes everything it saw and starts again at cursor 0**, because a
@@ -96,7 +99,7 @@ const MAXIMUM_ROUNDS: usize = 64;
 fn put_page(bytes: &[u8]) {
     for (i, &b) in bytes
         .iter()
-        .take(filesystem_contract::PAGE_BYTES)
+        .take(file_system_contract::PAGE_BYTES)
         .enumerate()
     {
         WINDOW.write_volatile::<u8>(i as u64, b);
@@ -114,24 +117,29 @@ fn get_page(n: usize, out: &mut [u8]) {
 /// contract's `i64`, so a negative value is a negated errno.
 fn name_call(verb: u64, handle: u64, name: &[u8], w1: u64) -> i64 {
     put_page(name);
-    call(DIR, fs::request(verb, handle, name.len() as u64), w1).0 as i64
+    call(
+        DIR,
+        file_system::request(verb, handle, name.len() as u64),
+        w1,
+    )
+    .0 as i64
 }
 
 /// Give a directory handle back. A failure here is not actionable and is deliberately dropped: this
 /// program is exiting shortly either way, and a handle nobody closes pins a node in a server whose
 /// table outlives its clients.
 fn close(handle: u64) {
-    call(DIR, fs::request(fs::CLOSE, handle, 0), 0);
+    call(DIR, file_system::request(file_system::CLOSE, handle, 0), 0);
 }
 
 /// **Remove `name` from the directory `parent` names**, recursing if it is a directory and `-r` is
 /// on. Returns the errno of the first failure, or `Ok`.
 ///
 /// The order of the two attempts is the whole of "`rm` on a directory is a refusal, never a silent
-/// escalation": the [`fs::UNLINK`] goes first, and its `EISDIR` is what a plain `rm` reports. The
+/// escalation": the [`file_system::UNLINK`] goes first, and its `EISDIR` is what a plain `rm` reports. The
 /// recursive path is only reached because the option said so.
 fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -> Result<(), i32> {
-    let r = name_call(fs::UNLINK, parent, name, 0);
+    let r = name_call(file_system::UNLINK, parent, name, 0);
     if r == 0 {
         *count += 1;
         if flags & grant_plan::rm_options::VERBOSE != 0 {
@@ -168,7 +176,12 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
     // Asking for more would be refused (`EPERM`) rather than quietly narrowed, and asking through a
     // grant that carries less is `ENOENT` from the rung above: **a `rm` handed the narrow grant
     // cannot even learn there is a subtree there.**
-    let child = name_call(fs::OPENDIR, parent, name, directory::REMOVE_TREE);
+    let child = name_call(
+        file_system::OPENDIR,
+        parent,
+        name,
+        directory::rights::REMOVE_TREE,
+    );
     if child < 0 {
         diagnose(name, (-child) as i32);
         return Err((-child) as i32);
@@ -179,7 +192,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
 
     // Bottom-up: the name goes only once nothing is behind it. A `RMDIR` before this point would
     // have been `ENOTEMPTY`, which is the contract refusing to let one call take a tree away.
-    let r = name_call(fs::RMDIR, parent, name, 0);
+    let r = name_call(file_system::RMDIR, parent, name, 0);
     if r < 0 {
         diagnose(name, (-r) as i32);
         return Err((-r) as i32);
@@ -204,7 +217,12 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
 fn empty(handle: u64, flags: u64, depth: usize, count: &mut u64) -> Result<(), i32> {
     let mut first_error = None;
     for _ in 0..MAXIMUM_ROUNDS {
-        let n = call(DIR, fs::request(fs::READDIR, handle, 0), 0).0 as i64;
+        let n = call(
+            DIR,
+            file_system::request(file_system::READDIR, handle, 0),
+            0,
+        )
+        .0 as i64;
         if n < 0 {
             // `ENUMERATE` withheld is `EPERM` here, and that is the walk stopping where the
             // capability stops: it can see the directory and not what is in it.
@@ -248,7 +266,12 @@ fn empty(handle: u64, flags: u64, depth: usize, count: &mut u64) -> Result<(), i
 /// listing, no rounds: a set namespace is *fixed*, so re-reading as [`empty`] must would hand this
 /// loop the names it has already taken away, a page of `ENOENT`s.
 fn sweep(flags: u64, count: &mut u64) -> Result<(), i32> {
-    let n = call(DIR, fs::request(fs::READDIR, fs::ROOT, 0), 0).0 as i64;
+    let n = call(
+        DIR,
+        file_system::request(file_system::READDIR, file_system::ROOT, 0),
+        0,
+    )
+    .0 as i64;
     if n < 0 {
         // A capability that may not be listed cannot say what it was granted, which is the one
         // failure this mode cannot work around.
@@ -262,7 +285,7 @@ fn sweep(flags: u64, count: &mut u64) -> Result<(), i32> {
 
     let mut first_error = None;
     for (name, _) in directory_entry::iter(&buf[..n]) {
-        if let Err(e) = remove(fs::ROOT, name, flags, 0, count) {
+        if let Err(e) = remove(file_system::ROOT, name, flags, 0, count) {
             first_error = first_error.or(Some(e));
         }
     }
@@ -334,7 +357,7 @@ fn text(bytes: &[u8]) {
     }
 }
 
-/// **Close the report, then send the verdict on its own endpoint** ([`filesystem_contract::rm`]).
+/// **Close the report, then send the verdict on its own endpoint** ([`file_system_contract::rm`]).
 ///
 /// This program's manifest declares [`grant_contract::OutputDeclaration::Bytes`], the sink contract:
 /// self-framing byte messages ending in `(end_of_stream(), 0, 0)`, which the shell reads through
@@ -381,8 +404,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::DeclaredInterface {
-        id: filesystem_contract::fs::INTERFACE_ID,
-        version: filesystem_contract::fs::VERSION
+        id: file_system_contract::file_system::INTERFACE_ID,
+        version: file_system_contract::file_system::VERSION
     },
     interfaces_note::DeclaredInterface {
         id: grant_contract::INTERFACE_ID,
@@ -409,8 +432,6 @@ interfaces_note::carry_interfaces!(&[
 user_mode_runtime::program_entry!(start);
 
 fn start(spec: u64, name_lo: u64, name_hi: u64) -> ! {
-    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
-    let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
     // The options ride in the spec word's mask field, the same field a caretaker's rights ride in:
     // both are "what this process was started with", and neither needs a frame. The bit order is
     // `grant_plan::rm_options`, which is the shell's own numbering, so the program and the prompt cannot
@@ -418,13 +439,15 @@ fn start(spec: u64, name_lo: u64, name_hi: u64) -> ! {
     let flags = grant::specification_rights(spec);
 
     let mut count = 0u64;
-    // **A grant with no name in it means the operand is the namespace** (`grant::WHOLE_NAMESPACE`).
-    // A name cannot be empty, so a length of zero cannot be one, which is what lets a set grant say
-    // "everything you hold" without a second protocol. See [`sweep`].
-    let removal = if n == grant::WHOLE_NAMESPACE {
+    // **The operands are the namespace** (`grant::WHOLE_NAMESPACE`): the shell grants every `rm`
+    // a set capability holding exactly the names its command line designated, and this program
+    // learns them by listing it. START words that still carry a name are refused, restrictive
+    // first, rather than read as a second way to say what to remove. See [`sweep`].
+    let removal = if grant::words_carry_no_name(name_lo, name_hi, spec) {
         sweep(flags, &mut count)
     } else {
-        remove(fs::ROOT, &buf[..n], flags, 0, &mut count)
+        diagnose(b"", EINVAL);
+        Err(EINVAL)
     };
     let status = match removal {
         Ok(()) => rm::OK,

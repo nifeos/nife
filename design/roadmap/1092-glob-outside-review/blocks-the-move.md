@@ -35,7 +35,7 @@ first tag. S.
 
 #### P0-3. The integration test links two crates that do not leave with it
 
-`tests/fixture_agreement.rs` dev-depends on `filesystem_contract` and `filesystem_fixture`
+`tests/fixture_agreement.rs` dev-depends on `file_system_contract` and `file_system_fixture`
 (`Cargo.toml` lines 22 to 24), both sibling crates by path. The rule in milestone 1017 is that a crate leaves
 when every crate it links, dev-dependencies included, has left or leaves with it; `standalone.py`
 and the review packet both flag the two paths. The test checks that nife's staged fixtures equal the expansion of the patterns they stand for, which is a fact about the fixtures, not about the
@@ -43,8 +43,8 @@ matcher. Its own header says it lives here only because the fixture crate does n
 matcher; a dev-dependency the other way creates no cycle and is the ordinary shape.
 
 Change: move the file to `crates/grant_plan/tests/`, which already depends on `byte_glob` and leaves
-after it, and delete the two dev-dependencies here. `filesystem_fixture` must not take it, since
-that crate leaves first, as item 2 of milestone 1091 (`filesystem_fixture`: what an outside
+after it, and delete the two dev-dependencies here. `file_system_fixture` must not take it, since
+that crate leaves first, as item 2 of milestone 1091 (`file_system_fixture`: what an outside
 maintainer would fix before it leaves) states. Two-way. S.
 
 #### P0-4. The shipped text cites the tree it is leaving

@@ -1,15 +1,4 @@
 crate,function,mutation
-designware_ethernet,Handoff::pack,replace | with ^
-designware_ethernet,fifo_bytes,replace > with >=
-designware_ethernet,mac_conf,replace | with ^
-designware_ethernet,modify_ext,replace | with ^
-designware_ethernet,phy_id,replace | with ^
-designware_ethernet,rx_descriptor_words,replace | with ^
-designware_ethernet,rx_queue_mode,replace | with ^
-designware_ethernet,rx_verdict,replace | with ^
-designware_ethernet,select_rgmii,replace | with ^
-designware_ethernet,tx_descriptor_words,replace | with ^
-designware_ethernet,tx_queue_mode,replace | with ^
 driver_process_contract,Handoff::pack,replace | with ^
 non_volatile_memory_express,Handoff::pack,replace | with ^
 system_log_contract,,replace - with /

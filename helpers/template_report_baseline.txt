@@ -47,7 +47,6 @@ credentialer abbreviations 33
 credentialer prose_acronyms 8
 credentialer readme_acronyms 2
 credentialer register_names 4
-current_cpu_contract abbreviations 2
 designware_inter_integrated_circuit abbreviations 2
 device_tree_patch abbreviations 72
 device_tree_patch prose_acronyms 4
@@ -66,11 +65,11 @@ domain_name_resolution_contract abbreviations 3
 driver_process_contract abbreviations 38
 driver_process_contract prose_acronyms 18
 driver_process_contract register_names 8
-filesystem_contract abbreviations 85
-filesystem_contract prose_acronyms 9
-filesystem_contract register_names 1
-filesystem_fixture abbreviations 88
-filesystem_fixture register_names 2
+file_system_contract abbreviations 85
+file_system_contract prose_acronyms 9
+file_system_contract register_names 1
+file_system_fixture abbreviations 88
+file_system_fixture register_names 2
 firmware_configuration abbreviations 7
 firmware_configuration prose_acronyms 4
 firmware_configuration readme_acronyms 2
@@ -249,7 +248,7 @@ uptime prose_acronyms 2
 uptime readme_acronyms 2
 uptime register_names 2
 user_mode_runtime abbreviations 8
-user_mode_runtime register_names 2
+user_mode_runtime register_names 1
 video_terminal abbreviations 189
 video_terminal prose_acronyms 17
 video_terminal readme_acronyms 4

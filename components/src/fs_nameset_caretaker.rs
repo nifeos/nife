@@ -5,8 +5,9 @@
 //! one subtree; this narrows it to a set of names in one directory, which is what `rm *.txt`
 //! designates. A name not in the set does not exist here: every verb that names it is `ENOENT`, at
 //! the granted directory and nowhere below it. `start_granted_set` in
-//! `kernel/src/user/fs_service/set_grant.rs` wires its slots, passes the directory's name and rights
-//! in the three `START` words, and maps the set at [`SET_VA`] ([`filesystem_contract::nameset`]).
+//! `kernel/src/user/fs_service/set_grant.rs` wires its slots, passes the rights in the `START`
+//! words, and maps the grant page at [`SET_VA`]: the directory's name, then the set
+//! ([`file_system_contract::grant::write_page`]).
 //! Why it is a third caretaker is in notes/glob-grant/third-caretaker.md.
 
 //! # BUGS
@@ -24,9 +25,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use filesystem_contract::{
-    directory_entry, fs, grant, nameset, operation, reply_err, reply_errno, verb,
-};
+use file_system_contract::{directory_entry, error, file_system, grant, nameset, operation, verb};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{Reply, call, receive_request, send};
 
@@ -41,21 +40,21 @@ const REPORT: u64 = 2;
 /// The one page, shared with the FS server above and the client below, for `fs_file_caretaker`'s
 /// reason: every request on both hops is a blocking `CALL`.
 const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
-/// The read-only page the encoded name set arrives in. A second frame, and the only place in the
-/// grant machinery that needs one: a set is the first thing a grant carries that registers cannot.
-/// It is copied into a local at startup and never read again, so nothing that happens to this page
-/// afterwards can widen the namespace.
-const SET_VA: u64 = address_space_layout::pair_page(0x0000_0000_0070_0000);
+/// The read-only grant page: the granted directory's name at offset 0 and the encoded name set at
+/// [`grant::PAGE_NAME_SET_OFFSET`]. Both are copied into locals at startup and never read again, so
+/// nothing that happens to this page afterwards can widen the namespace.
+const SET_VA: u64 = grant::PAGE_VIRTUAL_ADDRESS;
 /// The shared page's size, the contract's transfer unit.
-const PAGE: usize = filesystem_contract::PAGE_BYTES;
+const PAGE: usize = file_system_contract::PAGE_BYTES;
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
 // write_volatile loops below).
 const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
-// SAFETY: the wiring maps SET_VA read-only, at least nameset::MAXIMUM_BYTES bytes, before this program runs.
+// SAFETY: the wiring maps one page read-only at SET_VA before this program runs, and
+// grant::PAGE_USED_BYTES is less than a page.
 const SET_WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(SET_VA, nameset::MAXIMUM_BYTES as u64) };
+    unsafe { MappedWindow::new(SET_VA, grant::PAGE_USED_BYTES as u64) };
 
 /// How many handles a confined program may hold open at once, including the granted directory at
 /// index 0. `fs_subtree_caretaker`'s number, for `fs_subtree_caretaker`'s reason: no heap, one
@@ -146,7 +145,7 @@ fn name_at(off: usize, len: usize, buf: &mut [u8; grant::MAXIMUM_NAME_BYTES]) ->
 /// Serve [`CLIENT`] forever: `fs_subtree_caretaker`'s dispatch, plus one question asked in one
 /// place, whether a name in the granted directory `dir` is in `set`.
 ///
-/// Which verbs are asked is [`verb::Verb::takes_name`], a row in `filesystem_contract`'s verb
+/// Which verbs are asked is [`verb::Verb::takes_name`], a row in `file_system_contract`'s verb
 /// table, so a name-taking verb added to the contract is filtered from the day its row exists. An
 /// attribute name ([`verb::Operand::Payload`]) is a payload, not a name in the directory, so the
 /// four extended-attribute verbs are never compared against the set. See notes/glob-grant.md.
@@ -163,25 +162,25 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         let Some(reply_slot) = req.delivered.into_reply() else {
             continue;
         };
-        let len = fs::request_length_bytes(w0).min(PAGE);
+        let len = file_system::request_length_bytes(w0).min(PAGE);
         let code = operation(w0);
-        let asked = fs::request_handle(w0);
+        let asked = file_system::request_handle(w0);
         let Some(server_handle) = table.get(asked) else {
-            reply(reply_slot, reply_err(EBADF), 0);
+            reply(reply_slot, error::word(EBADF), 0);
             continue;
         };
         let Some(v) = verb::of(code) else {
-            reply(reply_slot, reply_err(EINVAL), 0);
+            reply(reply_slot, error::word(EINVAL), 0);
             continue;
         };
         // The filter is at the granted directory and nowhere else: what is under a directory the
         // pattern matched was never a question the pattern asked.
-        let filtered = asked == fs::ROOT;
+        let filtered = asked == file_system::ROOT;
 
         // A verb that reissues a handle without a name would hand back the whole directory with
         // the set filter left behind, so the granted directory refuses it (`Verb::reissues_handle`).
         if filtered && v.reissues_handle() {
-            reply(reply_slot, reply_err(EPERM), 0);
+            reply(reply_slot, error::word(EPERM), 0);
             continue;
         }
 
@@ -192,14 +191,14 @@ fn serve(dir: u64, set: &[u8]) -> ! {
             // `OPEN` and `OPENDIR` may carry a relative path (milestone 606 (a directory walk
             // costs what it does on Linux), ruling A). Only its first component is a name in this
             // directory, so only it is checked and written back.
-            let first = if code == fs::OPEN || code == fs::OPENDIR {
+            let first = if code == file_system::OPEN || code == file_system::OPENDIR {
                 first_component(len)
             } else {
                 len
             };
             let n = name_at(0, first, &mut buf);
             if !nameset::contains(set, &buf[..n]) {
-                reply(reply_slot, reply_err(ENOENT), 0);
+                reply(reply_slot, error::word(ENOENT), 0);
                 continue;
             }
             // Write the checked name back before forwarding (milestone 43,
@@ -211,14 +210,17 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         // `OPEN`'s second reply word is the file's size (milestone 606 (a directory walk costs
         // what it does on Linux), ruling B), passed through untouched; every other verb's is 0.
         let mut size = 0u64;
-        let r: i64 = if code == fs::CLOSE {
-            if asked == fs::ROOT {
-                reply_err(EINVAL)
+        let r: i64 = if code == file_system::CLOSE {
+            if asked == file_system::ROOT {
+                error::word(EINVAL)
             } else {
                 table.0[asked as usize] = None;
-                forward(fs::request(fs::CLOSE, server_handle, 0), 0)
+                forward(
+                    file_system::request(file_system::CLOSE, server_handle, 0),
+                    0,
+                )
             }
-        } else if code == fs::READDIR && filtered {
+        } else if code == file_system::READDIR && filtered {
             // At the granted directory `READDIR` is answered from the set, which is the namespace.
             // It is not gated on the grant's `ENUMERATE`: a listing here reveals exactly the set,
             // which the command line already printed (notes/glob-grant.md).
@@ -227,12 +229,12 @@ fn serve(dir: u64, set: &[u8]) -> ! {
             // `RENAME` needs both names in the set: renaming a matched name onto an unmatched one
             // destroys a name this capability was never granted. So a set capability cannot move a
             // name out of the set, and `mv *.txt` is not expressible (notes/glob-grant.md).
-            let destination_length_bytes = fs::destination_length_bytes(w1).min(PAGE);
+            let destination_length_bytes = file_system::destination_length_bytes(w1).min(PAGE);
             let mut src = [0u8; grant::MAXIMUM_NAME_BYTES];
             let mut dst = [0u8; grant::MAXIMUM_NAME_BYTES];
             let sn = name_at(0, len, &mut src);
             let dn = name_at(len, destination_length_bytes, &mut dst);
-            let destination_handle = table.get(fs::destination_handle(w1));
+            let destination_handle = table.get(file_system::destination_handle(w1));
             let src_ok = !filtered || nameset::contains(set, &src[..sn]);
             let dst_ok = destination_handle != Some(dir) || nameset::contains(set, &dst[..dn]);
             // Re-stage both halves, for the shared-page reason above.
@@ -241,12 +243,12 @@ fn serve(dir: u64, set: &[u8]) -> ! {
                 put_at(len, &dst[..dn]);
             }
             match destination_handle {
-                _ if !(src_ok && dst_ok) => reply_err(ENOENT),
+                _ if !(src_ok && dst_ok) => error::word(ENOENT),
                 Some(d) => forward(
-                    fs::request(code, server_handle, len as u64),
-                    fs::rename_destination(d, destination_length_bytes as u64),
+                    file_system::request(code, server_handle, len as u64),
+                    file_system::rename_destination(d, destination_length_bytes as u64),
                 ),
-                None => reply_err(EBADF),
+                None => error::word(EBADF),
             }
         } else {
             // Everything else is `fs_subtree_caretaker`'s one forward, driven by the same table: the
@@ -254,9 +256,9 @@ fn serve(dir: u64, set: &[u8]) -> ! {
             // word only for the verbs that read it.
             let n = if v.carries_len() { len as u64 } else { 0 };
             let second = if v.carries_w1 { w1 } else { 0 };
-            let (r0, r1) = call(FS, fs::request(code, server_handle, n), second);
+            let (r0, r1) = call(FS, file_system::request(code, server_handle, n), second);
             let r = r0 as i64;
-            if code == fs::OPEN {
+            if code == file_system::OPEN {
                 size = r1;
             }
             if !v.mints_handle || r < 0 {
@@ -265,8 +267,8 @@ fn serve(dir: u64, set: &[u8]) -> ! {
                 match table.install(r as u64) {
                     Some(client) => client as i64,
                     None => {
-                        forward(fs::request(fs::CLOSE, r as u64, 0), 0);
-                        reply_err(EMFILE)
+                        forward(file_system::request(file_system::CLOSE, r as u64, 0), 0);
+                        error::word(EMFILE)
                     }
                 }
             }
@@ -299,52 +301,59 @@ fn list(set: &[u8], cursor: usize) -> i64 {
 user_mode_runtime::program_entry!(start);
 
 fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
-    // **Copy the set before anything else runs.** It arrives in a read-only page, and this process
-    // then works from a local for the rest of its life, so the namespace it serves cannot be
-    // changed by anything that touches that page later. It is `nameset::MAXIMUM_BYTES`, 523 bytes, on a
-    // stack of `CARETAKER_STACK_PAGES`.
-    let mut set = [0u8; nameset::MAXIMUM_BYTES];
-    for (i, b) in set.iter_mut().enumerate() {
+    // **Copy the grant page before anything else runs.** It arrives read-only, and this process
+    // then works from locals for the rest of its life, so the namespace it serves cannot be changed
+    // by anything that touches that page later. The copy is `grant::PAGE_USED_BYTES`, on a stack
+    // of `CARETAKER_STACK_PAGES`.
+    let mut page = [0u8; grant::PAGE_USED_BYTES];
+    for (i, b) in page.iter_mut().enumerate() {
         *b = SET_WINDOW.read_volatile::<u8>(i as u64);
     }
-
-    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
-    let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
+    let set = grant::page_name_set(&page);
+    // START words that still carry a name are refused, not read beside the page: one place holds
+    // the name, and a wiring that wrote two is wrong. So is a page whose name is malformed.
+    if !grant::words_carry_no_name(name_lo, name_hi, spec) {
+        panic!();
+    }
+    let Some(name) = grant::page_name(&page) else {
+        panic!();
+    };
+    let n = name.len();
 
     // The descent, exactly `fs_subtree_caretaker`'s: ask for the granted directory with the granted
     // rights, and die rather than come up serving a hole. Everything the client reaches, it reaches
     // through the handle this one request minted. An empty name is a channel the progenitor already
     // bound to the directory (milestone 946 (a granted file name can be longer than sixteen bytes)), whose root is the granted directory and whose rights
     // the server holds it to, so there is nothing to descend into. With no name to descend by, the
-    // handle is narrowed to the granted rights by `fs::NARROW` (the root of the shell's namespace,
-    // or a bound root; §173 (narrowing the root of the shell's namespace)), and by `fs::OPENDIR` otherwise.
+    // handle is narrowed to the granted rights by `file_system::NARROW` (the root of the shell's namespace,
+    // or a bound root; §173 (narrowing the root of the shell's namespace)), and by `file_system::OPENDIR` otherwise.
     let (r0, _) = if n == 0 {
         call(
             FS,
-            fs::request(fs::NARROW, fs::ROOT, 0),
+            file_system::request(file_system::NARROW, file_system::ROOT, 0),
             grant::specification_rights(spec),
         )
     } else {
-        put_at(0, &buf[..n]);
+        put_at(0, name);
         call(
             FS,
-            fs::request(fs::OPENDIR, fs::ROOT, n as u64),
+            file_system::request(file_system::OPENDIR, file_system::ROOT, n as u64),
             grant::specification_rights(spec),
         )
     };
-    if reply_errno(r0 as i64).is_some() {
+    if error::code(r0 as i64).is_some() {
         panic!();
     }
     let dir = r0;
     // A set with nothing in it is not a capability anybody meant to hand out, and the shell refuses
     // to plan one (`grant_plan::Refusal::NoMatch`). If one arrives anyway the wiring is wrong, and dying
     // here is better than serving a namespace with no names in it.
-    if nameset::count(&set) == 0 {
+    if nameset::count(set) == 0 {
         panic!();
     }
 
-    send(REPORT, filesystem_contract::READY, 0, 0);
-    serve(dir, &set);
+    send(REPORT, file_system_contract::READY, 0, 0);
+    serve(dir, set);
 }
 
 user_mode_runtime::panic_handler!();

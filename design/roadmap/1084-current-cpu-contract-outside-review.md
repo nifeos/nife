@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: 1017, 956
 decision_dependencies: 204
 machine_requirements: none
@@ -37,42 +38,30 @@ Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_exter
 
 ## Finding status
 
-- 1, the manifest is nife's: Open. The license, lints, `rust-version`, description and docs.rs
-  targets are the crate's own ([#3657](https://github.com/nifeos/nife/pull/3657)). The move adds
-  `repository` and turns the `address_space_layout` path dependency into a pinned one once that
-  crate has left.
-- 2, README and license files: Done, [#3657](https://github.com/nifeos/nife/pull/3657).
-- 3, docs cite nife and quote the decider: Done, [#3657](https://github.com/nifeos/nife/pull/3657).
-- 4, names that lack ratification: Open. The public renames are in
-  ([#3657](https://github.com/nifeos/nife/pull/3657)) and ratified (ruled 2026-11-19 UTC, option A);
-  the `Name:` blocks follow. `spelled_out` still refuses the test helper
-  `Aligned::va` and a test binding `va`; the maintainer rules their spelled-out names provisionally.
-- 5, `cpu()` returns an id past the bound: Done, [#3542](https://github.com/nifeos/nife/pull/3542).
-- 6, `allowance()` truncates on narrow targets: Done,
-  [#3565](https://github.com/nifeos/nife/pull/3565).
-- 7, the reader reaches its word through an integer: Done,
-  [#3565](https://github.com/nifeos/nife/pull/3565).
-- 8, unsafe entry points check nothing in debug builds: Done,
-  [#3565](https://github.com/nifeos/nife/pull/3565).
-- 9, the builder and the readers disagree on unknown: Done,
-  [#3657](https://github.com/nifeos/nife/pull/3657).
-- 10, nothing machine-checked: Done, [#3657](https://github.com/nifeos/nife/pull/3657).
-- 11, a stale BUGS section: Done, [#3657](https://github.com/nifeos/nife/pull/3657).
-- 12, the single-file constraint: Open. The README and `BUGS` sentence are in
-  ([#3657](https://github.com/nifeos/nife/pull/3657)). The farm check that refuses a private `mod
-  x;` or an `include!` in a copied single-file crate, and tells `cfg(test)` and `cfg(kani)` modules
-  from real ones, is not built and has no other home than this line.
-- 13, `cfg_attr(not(test), no_std)`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- 14, the type of `CPU_OFFSET_BYTES`: Done (ruled 2026-11-19 UTC, option A). It stays `u64`.
-- 15, the kernel's safety comment says 16 bytes: Done,
-  [#3565](https://github.com/nifeos/nife/pull/3565).
-- 16, two notes that do not link: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Decision A, the CPU id bound is part of the identity: Done,
-  [#3542](https://github.com/nifeos/nife/pull/3542).
-- Decision B, the names: Done (ruled 2026-11-19 UTC, option A). Built
-  ([#3657](https://github.com/nifeos/nife/pull/3657)) and ratified as built.
-- Review package: Done. [The package](../../notes/crate-reviews/current-cpu-contract.md).
-- Review clearance: Done (ruled 2026-11-19 UTC, option A); [the package](../../notes/crate-reviews/current-cpu-contract.md) exists.
+- 1, the manifest is nife's (P0): At the move. The license, lints, `rust-version`, description,
+  docs.rs targets and the pinned `address_space_layout` dependency are the crate's own
+  ([#3657](https://github.com/nifeos/nife/pull/3657)); the move commit adds `repository`.
+- 2, README and license files (P0): Done, [#3657](https://github.com/nifeos/nife/pull/3657).
+- 3, docs cite nife and quote the decider (P0): Done, [#3657](https://github.com/nifeos/nife/pull/3657).
+- 4, names that lack ratification (P0): Done, [#3953](https://github.com/nifeos/nife/pull/3953).
+  Every public item carries a ratified `Name:` block, and the tests spell `virtual_address` out.
+- 5, `cpu()` returns an id past the bound (P1): Done, [#3542](https://github.com/nifeos/nife/pull/3542).
+- 6, `allowance()` truncates on narrow targets (P1): Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- 7, the reader reaches its word through an integer (P1): Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- 8, unsafe entry points check nothing in debug builds (P1): Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- 9, the builder and the readers disagree on unknown (P1): Done, [#3657](https://github.com/nifeos/nife/pull/3657).
+- 10, nothing machine-checked (P1): Done, [#3657](https://github.com/nifeos/nife/pull/3657).
+- 11, a stale BUGS section (P1): Done, [#3657](https://github.com/nifeos/nife/pull/3657).
+- 12, the single-file constraint (P1): Done, [#3953](https://github.com/nifeos/nife/pull/3953).
+  The README and `BUGS` sentence are in [#3657](https://github.com/nifeos/nife/pull/3657), and the
+  farm refuses a copied file that names a source file the copy leaves behind.
+- 13, `cfg_attr(not(test), no_std)` (P2): Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- 14, the type of `CPU_OFFSET_BYTES` (P2): Will not fix, ruled 2026-11-19. It stays `u64`.
+- 15, the kernel's safety comment says 16 bytes (P2): Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- 16, two notes that do not link (P2): Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Decision A, the CPU id bound is part of the identity: Done, [#3542](https://github.com/nifeos/nife/pull/3542).
+- Decision B, the names: Done, [#3657](https://github.com/nifeos/nife/pull/3657), ratified as built (ruled 2026-11-19).
+- Review package: Done, [#3782](https://github.com/nifeos/nife/pull/3782).
 
 ## Goal
 
@@ -240,10 +229,8 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
   disagree, the package wins.
 - Item 6 came from reading: no 32-bit build has run. The `rust-version` of 1.88 is checked by one
   build of the crate on that toolchain.
-- The farm check of item 12 is not built. The farm inlines a copied crate's `pub mod` files, so a
-  second source file does not by itself break the copy.
-  A private `mod x;` or an `include!` would, and a check for them must tell `cfg(test)` and `cfg(kani)` modules from real ones. Until it
-  exists, the crate's README and `BUGS` tell a stranger to keep one file.
+- The farm check of item 12 runs in nife, not in the crate's own repository, so a second source
+  file there fails at the next pin bump rather than in the crate's own pull request.
 - The template's behavior on a crate with zero harnesses was not exercised; the sibling's package
   left the same question open.
 - The prior-art rows marked "recalled" were not read in their sources during this review.
@@ -252,10 +239,8 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 4 and 12, each as [Finding status](#finding-status) gives it. Checked against the crate's
-  code and the template's naming helpers.
-- **Milestone 1017.** The contract crates leave in its order. This crate moves once the `Name:` blocks
-  read ratified, so the standalone gate's `names` check can pass.
+- **Milestone 1017.** The contract crates leave in its order, and this crate is ready to move. The
+  move commit adds item 1's `repository` key.
 
 ## Index row
 

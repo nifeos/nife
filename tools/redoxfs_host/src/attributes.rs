@@ -8,12 +8,12 @@ use super::*;
 // --- The attribute store, from the recovery side (milestone 57) --------------------------------
 //
 // `.extended-attributes` in an image's root holds one file per node with extended attributes, named for
-// its `TreePtr` id in hex, in the records `filesystem_contract::extended_attribute::store` defines (a crate, per
+// its `TreePtr` id in hex, in the records `file_system_contract::extended_attribute::store` defines (a crate, per
 // CLAUDE.md rule 7); only the FS server writes it. Nothing here may fail an extraction: a problem
 // is a skip the caller counts and walks past, so the files come out when the metadata does not.
 
 /// One extended attribute, as recovery sees it: the name and value as bytes, plus the type code
-/// [`filesystem_contract::extended_attribute`] carries and no host filesystem can hold.
+/// [`file_system_contract::extended_attribute`] carries and no host filesystem can hold.
 pub struct Attr {
     pub name: Vec<u8>,
     pub kind: u32,

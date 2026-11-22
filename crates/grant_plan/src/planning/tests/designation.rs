@@ -11,31 +11,31 @@ use crate::*;
 #[test]
 fn a_bare_program_name_spawns_it() {
     // The name is the command; the manifest places the 9.
-    let CommandLine::Run(r) = parse(b"least_authority_demo 9") else {
+    let CommandLine::Run(r) = parse(b"count 9") else {
         panic!("not an invocation")
     };
-    assert_eq!(r.program, b"least_authority_demo");
+    assert_eq!(r.program, b"count");
     assert_eq!(r.positionals(), [&b"9"[..]]);
     assert_eq!(r.memory_grant, None);
     let e = plan(&r, ShellHoldings::default()).unwrap();
-    assert_eq!(e.manifest, Program::LeastAuthorityDemo.manifest());
+    assert_eq!(e.manifest, rows::COUNT);
     assert_eq!(e.program_argument, 9);
     assert_eq!(e.memory_grant_pages, 0);
     assert!(e.reports);
 }
 
 #[test]
-fn least_authority_demo_needs_an_integer_argument() {
-    let CommandLine::Run(r) = parse(b"least_authority_demo") else {
+fn count_needs_an_integer_argument() {
+    let CommandLine::Run(r) = parse(b"count") else {
         panic!()
     };
     assert_eq!(
         plan(&r, ShellHoldings::default()),
         Err(Refusal::ProgramArgumentRequired)
     );
-    // And a token that cannot be an integer is a missing argument, not a file: least_authority_demo's
+    // And a token that cannot be an integer is a missing argument, not a file: count's
     // manifest declares no file, so there is no other slot the word could have meant.
-    let CommandLine::Run(r) = parse(b"least_authority_demo eight") else {
+    let CommandLine::Run(r) = parse(b"count eight") else {
         panic!()
     };
     assert_eq!(
@@ -45,17 +45,14 @@ fn least_authority_demo_needs_an_integer_argument() {
 }
 
 #[test]
-fn least_authority_demo_refuses_a_memory_grant_whichever_side_the_flag_is_typed() {
+fn count_refuses_a_memory_grant_whichever_side_the_flag_is_typed() {
     // `--mem` is an ordinary flag after the command name, and both placements are the same
     // grant, so both must reach the same refusal.
-    for line in [
-        &b"least_authority_demo 3 --mem 8"[..],
-        b"--mem 8 least_authority_demo 3",
-    ] {
+    for line in [&b"count 3 --mem 8"[..], b"--mem 8 count 3"] {
         let CommandLine::Run(r) = parse(line) else {
             panic!()
         };
-        assert_eq!(r.program, b"least_authority_demo");
+        assert_eq!(r.program, b"count");
         assert_eq!(
             plan(&r, ShellHoldings::default()),
             Err(Refusal::MemoryGrantForbidden),
@@ -66,8 +63,8 @@ fn least_authority_demo_refuses_a_memory_grant_whichever_side_the_flag_is_typed(
 }
 
 #[test]
-fn memory_grant_depleter_needs_its_grant() {
-    let CommandLine::Run(r) = parse(b"memory_grant_depleter") else {
+fn deplete_needs_its_grant() {
+    let CommandLine::Run(r) = parse(b"deplete") else {
         panic!()
     };
     assert_eq!(
@@ -77,19 +74,19 @@ fn memory_grant_depleter_needs_its_grant() {
 }
 
 #[test]
-fn memory_grant_depleter_with_mem_plans_the_grant() {
-    let CommandLine::Run(r) = parse(b"memory_grant_depleter --mem 16") else {
+fn deplete_with_mem_plans_the_grant() {
+    let CommandLine::Run(r) = parse(b"deplete --mem 16") else {
         panic!()
     };
     let e = plan(&r, ShellHoldings::default()).unwrap();
-    assert_eq!(e.manifest, Program::MemoryGrantDepleter.manifest());
+    assert_eq!(e.manifest, rows::DEPLETE);
     assert_eq!(e.memory_grant_pages, 16);
     assert_eq!(e.program_argument, 0);
 }
 
 #[test]
-fn memory_grant_depleter_mem_out_of_range() {
-    let CommandLine::Run(r) = parse(b"memory_grant_depleter --mem 999") else {
+fn deplete_mem_out_of_range() {
+    let CommandLine::Run(r) = parse(b"deplete --mem 999") else {
         panic!()
     };
     assert_eq!(
@@ -99,7 +96,7 @@ fn memory_grant_depleter_mem_out_of_range() {
             maximum: 64
         })
     );
-    let CommandLine::Run(r0) = parse(b"memory_grant_depleter --mem 0") else {
+    let CommandLine::Run(r0) = parse(b"deplete --mem 0") else {
         panic!()
     };
     assert_eq!(
@@ -115,10 +112,7 @@ fn memory_grant_depleter_mem_out_of_range() {
 /// pages plans, and only one past either edge refuses.
 #[test]
 fn a_memory_grant_at_either_end_of_the_declared_range_plans() {
-    for (line, pages) in [
-        (&b"memory_grant_depleter --mem 1"[..], 1),
-        (b"memory_grant_depleter --mem 64", 64),
-    ] {
+    for (line, pages) in [(&b"deplete --mem 1"[..], 1), (b"deplete --mem 64", 64)] {
         let CommandLine::Run(r) = parse(line) else {
             panic!()
         };
@@ -134,8 +128,8 @@ fn a_memory_grant_at_either_end_of_the_declared_range_plans() {
 }
 
 #[test]
-fn memory_grant_depleter_takes_no_argument() {
-    let CommandLine::Run(r) = parse(b"memory_grant_depleter --mem 8 5") else {
+fn deplete_takes_no_argument() {
+    let CommandLine::Run(r) = parse(b"deplete --mem 8 5") else {
         panic!()
     };
     assert_eq!(
@@ -165,9 +159,9 @@ fn unknown_program_is_refused_by_name() {
 
 #[test]
 fn a_bare_unplaceable_token_is_still_refused() {
-    // A stray word does not become a capability transfer: `least_authority_demo 5 extra` has no
+    // A stray word does not become a capability transfer: `count 5 extra` has no
     // slot for `extra` because its manifest declares `FileGrantDeclaration::Forbidden`.
-    let CommandLine::Run(r) = parse(b"least_authority_demo 5 extra") else {
+    let CommandLine::Run(r) = parse(b"count 5 extra") else {
         panic!()
     };
     assert_eq!(r.positionals(), [&b"5"[..], &b"extra"[..]]);
@@ -185,11 +179,11 @@ fn the_manifest_refuses_a_file_to_a_program_that_declares_none() {
     // The same rule from the other side: a name at a program with no file slot, in a shell that
     // could back one. Refused rather than granted-and-ignored, because a name the program has
     // no use for is authority the user thought they were moving.
-    let CommandLine::Run(r) = parse(b"interrupt_heeder report.txt") else {
+    let CommandLine::Run(r) = parse(b"heed report.txt") else {
         panic!()
     };
     assert_eq!(
-        plan_against(&r, Program::InterruptHeeder.manifest(), WITH_DIRECTORY),
+        plan_against(&r, rows::HEED, WITH_DIRECTORY),
         Err(Refusal::FileForbidden),
     );
     assert_eq!(
@@ -257,7 +251,7 @@ fn wc_source(line: &[u8], shell_holdings: ShellHoldings) -> Result<FileGrant, Re
     let CommandLine::Run(r) = parse(line) else {
         panic!("not a run: {line:?}")
     };
-    match plan_against(&r, Program::Wc.manifest(), shell_holdings)?.source {
+    match plan_against(&r, rows::WC, shell_holdings)?.source {
         Source::File(g) => Ok(g),
         other => panic!("wc's operand planned as {other:?}"),
     }
@@ -298,7 +292,7 @@ fn a_grant_under_a_mount_point_is_in_the_mounted_tree() {
     );
 
     // The redirection planner is the same resolver.
-    let g = output_file_grant(b"/media/usb/out", mounted()).unwrap();
+    let g = output_file_grant(b"/media/usb/out", &mounted()).unwrap();
     assert_eq!(
         (g.side, g.directory),
         (
@@ -645,7 +639,7 @@ fn date_takes_nothing_from_the_command_line() {
         panic!()
     };
     let e = plan(&r, ShellHoldings::default()).unwrap();
-    assert_eq!(e.manifest, Program::Date.manifest());
+    assert_eq!(e.manifest, rows::DATE);
     assert_eq!((e.program_argument, e.memory_grant_pages), (0, 0));
     assert!(e.file.is_none());
     assert!(e.reports, "it answers with a line of text");
@@ -678,14 +672,14 @@ fn date_takes_nothing_from_the_command_line() {
 #[test]
 fn a_designation_becomes_one_grant_at_the_current_directory() {
     use expansion::Designation;
-    let run = parse_invocation(b"std_exerciser needle src");
+    let run = parse_invocation(b"search needle src");
     let mut d = Designation::none();
     d.try_add_name(b"src", true).unwrap();
     let e = super::plan_against(
         &run,
-        Program::StdExerciser.manifest(),
-        WITH_DIRECTORY,
-        Expansion::designated(d),
+        rows::SEARCH,
+        &WITH_DIRECTORY,
+        &Expansion::designated(d),
     )
     .unwrap();
     let g = e.directory.expect("src was designated");
@@ -694,10 +688,10 @@ fn a_designation_becomes_one_grant_at_the_current_directory() {
     assert!(g.subtree);
 
     let none = super::plan_against(
-        &parse_invocation(b"std_exerciser needle"),
-        Program::StdExerciser.manifest(),
-        WITH_DIRECTORY,
-        Expansion::designated(Designation::none()),
+        &parse_invocation(b"search needle"),
+        rows::SEARCH,
+        &WITH_DIRECTORY,
+        &Expansion::designated(Designation::none()),
     )
     .unwrap();
     assert_eq!(
@@ -708,10 +702,10 @@ fn a_designation_becomes_one_grant_at_the_current_directory() {
     let mut here = Designation::none();
     here.designate_here();
     let e = super::plan_against(
-        &parse_invocation(b"std_exerciser needle ."),
-        Program::StdExerciser.manifest(),
-        WITH_DIRECTORY,
-        Expansion::designated(here),
+        &parse_invocation(b"search needle ."),
+        rows::SEARCH,
+        &WITH_DIRECTORY,
+        &Expansion::designated(here),
     )
     .unwrap();
     assert!(
@@ -724,12 +718,7 @@ fn a_designation_becomes_one_grant_at_the_current_directory() {
         ..WITH_DIRECTORY
     };
     assert_eq!(
-        super::plan_against(
-            &run,
-            Program::StdExerciser.manifest(),
-            holds_none,
-            Expansion::designated(d)
-        ),
+        super::plan_against(&run, rows::SEARCH, &holds_none, &Expansion::designated(d)),
         Err(Refusal::NoSuchCapability(CapabilityKind::File))
     );
 }
@@ -746,10 +735,10 @@ fn a_designation_under_a_mount_point_is_in_the_mounted_tree() {
     let mut shell_holdings = mounted();
     shell_holdings.working_directory = at(&[b"media", b"usb", b"nvme0"]);
     let e = super::plan_against(
-        &parse_invocation(b"std_exerciser needle n1"),
-        Program::StdExerciser.manifest(),
-        shell_holdings,
-        Expansion::designated(d),
+        &parse_invocation(b"search needle n1"),
+        rows::SEARCH,
+        &shell_holdings,
+        &Expansion::designated(d),
     )
     .unwrap();
     let g = e.directory.expect("n1 was designated");

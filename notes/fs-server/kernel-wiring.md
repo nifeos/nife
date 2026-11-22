@@ -46,7 +46,7 @@ own sentinel, and only then spawns the program.
 A set does not fit in `START` registers, so the set grant encodes it into a frame of its own,
 mapped read-only into the caretaker before it is spawned. No client can reach that frame, so it
 needs none of the ordering above. `ARG_MAX` returns here as the size of a capability, bounded by
-`filesystem_contract::nameset::MAXIMUM_NAMES` at both ends.
+`file_system_contract::nameset::MAXIMUM_NAMES` at both ends.
 
 ## Two directories for one program
 
@@ -72,13 +72,16 @@ no state between clients, so a second client of the same pair holds the same gra
 
 ## Stacks a client needs
 
-`spawn_fs_client` maps up to eight extra stack pages. The hand-written `fs_test_client` roles need
+`spawn_fs_client` maps up to eleven extra stack pages. The hand-written `fs_test_client` roles need
 none. A shell carries a path stack, a parsed path and a listing buffer by value, and with no extra
 pages it overflowed by 192 bytes. Each pipeline stage's endowment can carry a whole `FileGrant`, and
 four pages then overflowed by 48 bytes. Both presented as a data abort on the client's `sp`, then
 the lost-wakeup watchdog. The test was still waiting for a report from a dead process. The
 shell's stack is sized by the largest value `grant_plan` hands it, so a field added there can be a
-page needed here.
+page needed here. Size it by measurement. In the debug build the suite boots, the frame sizes summed
+along the deepest call chain from `_start` match where the shell faults. A frame over a few pages
+takes a probe loop (`sub x9, sp, #N`) to allocate, so read that instruction too. A 512-byte
+directory path held by value in each planner frame puts the two-tree `rm` script near 44 KiB.
 
 ## The disk the FS server mounts
 

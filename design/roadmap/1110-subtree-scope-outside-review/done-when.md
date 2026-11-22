@@ -3,7 +3,7 @@
 An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
 
 - `script/crate-move --dry-run --into <dir> subtree_scope` exits 0 against a template release that
-  runs `passive_voice.py` and `spelled_out.py`, with `filesystem_contract` written as a `git` and
+  runs `passive_voice.py` and `spelled_out.py`, with `file_system_contract` written as a `git` and
   `rev` dependency and the staged `deny.toml` accepting it.
 - `helpers/lint_externalized_crates.py` reports `subtree_scope` clean and its waiver entry is gone.
 - `Refusal::IsADirectory` exists with errno 21, `check_landing(NodeKind::Directory, false)` returns it, and

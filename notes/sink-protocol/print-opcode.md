@@ -7,7 +7,7 @@ An appendix to [`notes/sink-protocol.md`](../sink-protocol.md), which states the
 The plan said the adapter would be `file_sink`'s shape and that the work was rewiring the progenitor. Building
 it found something else: `OPERATION_WRITE` reads from the client's output page, and there is exactly one
 of those. The progenitor maps a single frame into `line_editor` read-only and into the shell read/write. A
-second page-based client needs a second frame and a page index in every request, which is `filesystem_contract`'s
+second page-based client needs a second frame and a page index in every request, which is `file_system_contract`'s
 one-page-two-clients problem (DECISIONS §55, the reason the file behind a `>` is the shell itself)
 arriving in a second contract.
 

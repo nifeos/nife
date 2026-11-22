@@ -552,14 +552,22 @@ fn the_standard_mode_fill_is_one_stretched_low_count() {
 }
 
 #[test]
-fn a_slow_input_clock_still_produces_legal_counts() {
-    // 1 MHz: high 4, low minimum 5, period 10, so low 6; the counts are all nonzero.
+fn a_slow_input_clock_gets_the_controllers_smallest_counts() {
+    // 1 MHz: the specification asks for high 4 and low 5 in a period of 10, both under the
+    // controller's floors, so the counts are the floors 7 and 9; the hold stays 1.
     let t = standard_mode_100_kilohertz(1_000_000);
-    assert_eq!((t.high_count, t.low_count, t.data_hold), (4, 6, 1));
-    // Below 100 kHz of input every count is the floor of 1; nothing divides by zero or wraps.
+    assert_eq!((t.high_count, t.low_count, t.data_hold), (7, 9, 1));
+    // 2 MHz is above both floors: high 8, low minimum 10 (9.4), period 20, so low 20 - 8 = 12.
+    let t = standard_mode_100_kilohertz(2_000_000);
+    assert_eq!((t.high_count, t.low_count, t.data_hold), (8, 12, 1));
+    // Below 100 kHz of input every count is a floor; nothing divides by zero or wraps.
     for clock in [0u64, 1, 1_000, 99_999] {
         let t = standard_mode_100_kilohertz(clock);
-        assert!(t.high_count > 0 && t.low_count > 0 && t.data_hold > 0);
+        assert_eq!(
+            (t.high_count, t.low_count, t.data_hold),
+            (7, 9, 1),
+            "at {clock}"
+        );
     }
     // The widest input saturates instead of wrapping.
     let t = standard_mode_100_kilohertz(u64::MAX);

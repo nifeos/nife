@@ -20,7 +20,7 @@ pub enum OutputDeclaration {
     /// One or more raw `u64` answers on the result endpoint, read by the shell and rendered by it.
     /// Older than the sink contract and still right for an integer; not redirectable.
     Words,
-    /// The sink contract (`nifeos/byte_sink_contract`): self-framing byte messages ending in `OPERATION_END_OF_STREAM`. The
+    /// The sink contract (`byte_sink_contract`): self-framing byte messages ending in `OPERATION_END_OF_STREAM`. The
     /// only output that `>` and `|` can substitute, because it is the only one whose meaning does
     /// not depend on who is reading it.
     Bytes,
@@ -320,7 +320,7 @@ pub const SYNC_SLOT: u64 = 14;
 /// Name: ratified 2026-11-20 (UTC).
 pub const POWER_MANAGEMENT_CHIP_ROUTE_SLOT: u64 = 23;
 
-/// A program's expectation about the integer argument (`least_authority_demo 9`'s `9`).
+/// A program's expectation about the integer argument (the `9` of `count 9`).
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -383,9 +383,9 @@ pub enum WordGrant {
 pub const RIGHTS_BITS_DO_NOT_OVERLAP: () = assert!((1u64 | 2 | 32) + 4 + 8 == 1 | 2 | 4 | 8 | 32);
 
 impl WordGrant {
-    /// The rights a caretaker asks the file service for, as `filesystem_contract::directory`'s bits. Spelled
+    /// The rights a caretaker asks the file service for, as `file_system_contract::directory`'s bits. Spelled
     /// as numbers here because this crate does not link the filesystem contract (see its
-    /// `Cargo.toml`); `word_rights_are_the_filesystem_contracts` pins them to its constants.
+    /// `Cargo.toml`); `word_rights_are_the_file_system_contracts` pins them to its constants.
     ///
     /// Name: ratified 2026-11-20 (UTC).
     pub const fn rights(self) -> u64 {
@@ -529,7 +529,7 @@ pub struct Manifest {
     /// that answers with a number in a register cannot have a file put behind it, because a file
     /// sink would receive a word it has no way to read as bytes.
     ///
-    /// Declaring it is what lets `least_authority_demo 5 > out.txt` be `grant_plan::Refusal::NotAByteStream` at the prompt
+    /// Declaring it is what lets `count 5 > out.txt` be `grant_plan::Refusal::NotAByteStream` at the prompt
     /// instead of a file full of nothing. Unix has no equivalent because on Unix every program's
     /// stdout is bytes by construction; here the register fastpath is real and older than the sink
     /// contract, so the two conventions coexist and the manifest is where they are told apart.
@@ -543,7 +543,7 @@ pub struct Manifest {
     pub reports: bool,
     /// Granted a per-job interrupt channel so `^C` can reach it (DECISIONS §24). A
     /// long-running or interactive program declares this and the shell wires the two-tier interrupt
-    /// path for it; a program that finishes in one step (`least_authority_demo`) declares `false` and is simply
+    /// path for it; a program that finishes in one step declares `false` and is simply
     /// waited on. "Granted by default to interactive programs" is expressed here, per program.
     pub interruptible: bool,
     /// **Endowed a read-only mapping of the wall clock** (milestone 51 (wall-clock time)), with no
@@ -578,7 +578,7 @@ pub struct Manifest {
     /// cannot name").
     pub entropy: bool,
     /// **Endowed a client view of the network stack** (milestone 590 (provisional), the booted
-    /// system starts its network stack; `crates/socket_contract`, `components/src/net_stack.rs`).
+    /// system starts its network stack; the requests are `socket_contract`'s).
     ///
     /// [`entropy`](Manifest::entropy)'s shape, one service over: `WRITE` at [`NETWORK_SLOT`], the
     /// right to `CALL` the socket contract, and the declaration is the whole of who may reach the
@@ -620,7 +620,7 @@ pub struct Manifest {
     pub reboot: bool,
     /// **Endowed a sync-only capability to the file server** (milestone 805, the 2026-10-06
     /// amendment to §251), at [`SYNC_SLOT`]: an endpoint badged and bound by
-    /// `filesystem_contract::fs::BIND_SYNC`, so it answers `fs::SYNC` and refuses every other
+    /// `file_system_contract::file_system::BIND_SYNC`, so it answers `file_system::SYNC` and refuses every other
     /// verb. It names no directory and reaches no file. The progenitor makes one for the job from
     /// a client window the job holds until it is reaped, places it, and keeps no copy.
     ///
@@ -712,7 +712,7 @@ pub enum IndexStoreDeclaration {
 }
 
 impl IndexStoreDeclaration {
-    /// The rights the store's directory is opened with, as `filesystem_contract::directory`'s bits:
+    /// The rights the store's directory is opened with, as `file_system_contract::directory`'s bits:
     /// [`WordGrant::ReadOnly`]'s for reading, and [`WordGrant::Create`]'s for writing, since the
     /// first `update` creates the copy. `None` for [`IndexStoreDeclaration::Forbidden`].
     pub const fn rights(self) -> Option<u64> {
@@ -725,7 +725,7 @@ impl IndexStoreDeclaration {
 }
 
 /// **Where a program expects its capabilities**: in the order its spawner lists them, or at the
-/// slots nife's `std` fixes (milestone 595 (provisional)).
+/// slots the system's `std` fixes (milestone 595 (provisional)).
 ///
 /// A native program reads its capabilities by position, and the progenitor fills them from slot 0
 /// upward in the order `spawn_service` documents. A `std` program cannot: the code reading its
@@ -740,7 +740,7 @@ pub enum StartupContract {
     /// Capabilities in order, the output first. Every program in `components/` and `fixtures/`.
     Native,
     /// `std_runtime_contract`'s fixed slots, its shared pages, and a heap carved from
-    /// `STD_REGION_PAGES`. A program built with `-Zbuild-std` for a `*-unknown-nife`
+    /// `STD_REGION_PAGES`. A program built with `-Zbuild-std` for the system's own
     /// target.
     Std,
 }

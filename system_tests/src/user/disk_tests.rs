@@ -176,7 +176,7 @@ fn the_disk_surveyor_reads_a_table_gptfdisk_wrote() {
     }
     // Past device bring-up, so a hang below is a hang in a read rather than in the driver.
     let [ready, ..] = crate::sched::ipc_receive(w.ready);
-    assert_eq!(ready, filesystem_contract::READY);
+    assert_eq!(ready, file_system_contract::READY);
 
     roster_message_names_every_disk(&w);
 
@@ -368,7 +368,7 @@ fn the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else(
     if let Some(ready) = disk.blk_ready {
         // Past device bring-up, so a hang below is a hang in a write rather than in the driver.
         let [word, ..] = crate::sched::ipc_receive(ready);
-        assert_eq!(word, filesystem_contract::READY);
+        assert_eq!(word, file_system_contract::READY);
     }
     let Some(entropy) = entropy_rendezvous() else {
         skip_unless_required!(
@@ -384,7 +384,7 @@ fn the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else(
 /// Steps 1 to 3 of the write half: the partitioner refuses without entropy, leaves the disk
 /// untouched, then succeeds with it and the table reads back.
 fn partition_phase(disk: &disk_service::BlankDisk, entropy: crate::sched::RendezvousId) {
-    use filesystem_fixture::blank;
+    use file_system_fixture::blank;
 
     // 1. The partitioner, with the disk and NO entropy rendezvous. It must refuse, and it must refuse
     //    before writing anything, which is why the program draws all four ids first and lays out
@@ -449,7 +449,7 @@ fn mkfs_phase(
     disk: &disk_service::BlankDisk,
     entropy: crate::sched::RendezvousId,
 ) {
-    use filesystem_fixture::blank;
+    use file_system_fixture::blank;
 
     // 4. `mkfs` with the disk and no entropy. The same refusal one layer up: a filesystem's uuid has
     //    the GPT's problem, and the engine now takes it as an argument for exactly this reason.
@@ -485,11 +485,12 @@ fn mkfs_phase(
         "mkfs failed at step {blocks} with errno {first}",
     );
     let want_blocks = (blank::DATA.1 - blank::DATA.0 + 1) * blank::LOGICAL_BLOCK_BYTES
-        / filesystem_contract::block::BLOCK_BYTES as u64;
+        / file_system_contract::block::BLOCK_BYTES as u64;
     assert_eq!(blocks, want_blocks, "the filesystem covers the partition");
     assert_eq!(
         first,
-        blank::DATA.0 * blank::LOGICAL_BLOCK_BYTES / filesystem_contract::block::BLOCK_BYTES as u64,
+        blank::DATA.0 * blank::LOGICAL_BLOCK_BYTES
+            / file_system_contract::block::BLOCK_BYTES as u64,
         "and starts at the partition's first block",
     );
 
@@ -520,7 +521,7 @@ fn mkfs_phase(
 /// `transfer_first_sector` would turn this test red, but that run has not been made.
 #[test_case]
 fn a_transfer_past_the_disks_capacity_is_refused_and_the_block_server_keeps_serving() {
-    use filesystem_contract::{block, reply_err};
+    use file_system_contract::{block, error};
 
     let Some(disk) = disk_service::blank_disk(fs_service::blk_server_image()) else {
         skip_unless_required!(
@@ -531,17 +532,17 @@ fn a_transfer_past_the_disks_capacity_is_refused_and_the_block_server_keeps_serv
     if let Some(ready) = disk.blk_ready {
         // Past device bring-up, so a hang below is a hang in a request rather than in the driver.
         let [word, ..] = crate::sched::ipc_receive(ready);
-        assert_eq!(word, filesystem_contract::READY);
+        assert_eq!(word, file_system_contract::READY);
     }
     let call = |operation, index| {
         crate::sched::ipc_call(disk.blk_ep, [block::request(operation, 1), index])[0] as i64
     };
-    let size = call(block::SIZE, 0);
+    let size = call(block::GET_SIZE_BYTES, 0);
     assert!(size > 0, "the server answered {size} for the disk's size");
     let first_past_the_end = size as u64 / block::BLOCK_BYTES as u64;
     // The largest index whose sector number (eight sectors to a block) still fits a `u64` is
     // `u64::MAX / 8`, so one more overflows the multiplication the server must check.
-    let overflowing = u64::MAX / block::SECTORS_PER_BLOCK + 1;
+    let overflowing = u64::MAX / (block::BLOCK_BYTES as u64 / 512) + 1;
 
     for (what, index) in [
         ("the first block past the end", first_past_the_end),
@@ -550,7 +551,7 @@ fn a_transfer_past_the_disks_capacity_is_refused_and_the_block_server_keeps_serv
         for (verb, operation) in [("read", block::READ), ("write", block::WRITE)] {
             assert_eq!(
                 call(operation, index),
-                reply_err(22),
+                error::word(22),
                 "a {verb} of {what} must answer EINVAL"
             );
         }
@@ -558,7 +559,7 @@ fn a_transfer_past_the_disks_capacity_is_refused_and_the_block_server_keeps_serv
 
     // Still serving: the same size, and a read of block 0 that the device completes.
     assert_eq!(
-        call(block::SIZE, 0),
+        call(block::GET_SIZE_BYTES, 0),
         size,
         "the server answered a different size after a refusal"
     );

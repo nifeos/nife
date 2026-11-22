@@ -27,6 +27,10 @@ macro, the panic handler macro and typed windows over memory the kernel handed t
 A wrong argument panics or meets a refusal from the kernel. No safe function reads or writes memory
 its type did not promise.
 
+[docs/design.md](docs/design.md) carries the design behind each module, and
+[docs/time.md](docs/time.md) how each architecture reads the counter, its frequency, the cycle
+counter and the current CPU.
+
 ## EXAMPLES
 
 ```rust,no_run

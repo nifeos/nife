@@ -94,7 +94,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |
 | [`domain_name_resolution_contract`](crate-reviews/domain-name-resolution-contract.md) | 6 | ready for review |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | cleared to move (2026-11-21 UTC, repository `nifeos/socket_contract` approved, `publish = false`, no tag, no publish); the move lane first proves the `std` farm builds from the pinned checkout |
-| [`machine_statistics_contract`](crate-reviews/machine-statistics-contract.md) | contract | cleared to move (2026-11-20 UTC, no tag, no publish); the move waits for `address_space_layout` and `current_cpu_contract` |
+| [`machine_statistics_contract`](crate-reviews/machine-statistics-contract.md) | contract | cleared to move (2026-11-20 UTC, no tag, no publish); the move waits for `current_cpu_contract` |
 | [`address_space_layout`](crate-reviews/address-space-layout.md) | 3 | cleared 2026-11-21 (UTC); moved to `nifeos/address_space_layout`, pinned by `rev`, `publish = false`, no tag, no publish |
 | [`user_mode_runtime`](crate-reviews/user-mode-runtime.md) | 3 | cleared to move (2026-11-21 UTC, `publish = false`, no tag, no publish); the move waits for `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` to leave the tree; thin machine checks recorded as a limitation |
 | [`memory_region_heap`](crate-reviews/memory-region-heap.md) | 9 | cleared to move (2026-11-20 UTC, no tag, no publish); the move waits for `abi`, `address_space_layout` and `user_mode_runtime` to get repositories |
@@ -107,9 +107,9 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`test_and_set_lock`](crate-reviews/test-and-set-lock.md) | 1109 | cleared to move (2026-11-20 UTC, `publish = false`, no tag, no publish); the first tag waits for a litmus run on real Arm and RISC-V hardware |
 | [`boot_ladder`](crate-reviews/boot-ladder.md) | 1078 | ready for review |
 | [`capability_table`](crate-reviews/capability-table.md) | kernel | cleared to move (2026-11-21 UTC, no tag, no publish); milestone 1081 (`capability_table`: what an outside maintainer would fix before it leaves) tracks the move |
-| [`filesystem_contract`](crate-reviews/filesystem-contract.md) | 2 | ready for review; one clearance of the repository shared with `filesystem_fixture`, and the names |
-| [`filesystem_fixture`](crate-reviews/filesystem-fixture.md) | 2 | ready for review with `filesystem_contract`; the item names wait for the rename lane of milestone 1091 (`filesystem_fixture`: what an outside maintainer would fix before it leaves) |
-| [`byte_sink_contract`](crate-reviews/byte-sink-contract.md) | contract | ready for review; milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves) asks for the clearance |
+| [`file_system_contract`](crate-reviews/filesystem-contract.md) | 2 | ready for review; one clearance of the repository shared with `file_system_fixture`, and the names |
+| [`file_system_fixture`](crate-reviews/filesystem-fixture.md) | 2 | ready for review with `file_system_contract`; the item names wait for the rename lane of milestone 1091 (`file_system_fixture`: what an outside maintainer would fix before it leaves) |
+| [`byte_sink_contract`](crate-reviews/byte-sink-contract.md) | contract | cleared and moved (no tag, no publish); nife pins `nifeos/byte_sink_contract` by commit, and every finding of milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves) has landed |
 | [`line_editor`](crate-reviews/line-editor.md) | 1098 | ready for review; the move waits for the item 3 rename lane |
 | [`terminal_contract`](crate-reviews/terminal-contract.md) | contract | ready for review; the move waits for its interface number and the reserved-bit ruling |
 | [`abi`](crate-reviews/abi.md) | contract | ready for review; clearance waits on the `moho_abi` rename and asks six size names |

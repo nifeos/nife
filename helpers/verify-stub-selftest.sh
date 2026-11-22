@@ -27,7 +27,12 @@ cd "$root"
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/nife-verify-stub-selftest.XXXXXX")"
 holder=""
 cleanup() {
-	[ -z "$holder" ] || kill "$holder" 2>/dev/null || true
+	# The holder releases its slot file in $tmp/slots as it exits; wait for it, or rm -rf races
+	# that release and fails with "Directory not empty".
+	if [ -n "$holder" ]; then
+		kill "$holder" 2>/dev/null || true
+		wait "$holder" 2>/dev/null || true
+	fi
 	rm -rf "$tmp"
 }
 trap cleanup EXIT HUP INT TERM

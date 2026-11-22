@@ -14,7 +14,7 @@ use super::*;
 ///
 /// A server since milestone 606 (a directory walk costs what it does on Linux), ruling A, resolves
 /// a relative path in one `OPEN` or `OPENDIR` with exactly the rights the hop-by-hop walk would get
-/// (`filesystem_contract::fs::OPEN` has the rule); an older one answers `EINVAL` to any name with a
+/// (`file_system_contract::file_system::OPEN` has the rule); an older one answers `EINVAL` to any name with a
 /// `/`. So the PAL sends the path and on `EINVAL` walks it instead. If the walk succeeds, the
 /// `EINVAL` was the server's age and every later request walks without asking; an `EINVAL` the
 /// walk repeats was the name's, and says nothing about the server.
@@ -58,7 +58,7 @@ pub(super) fn joined(path: &Path) -> Option<String> {
 
 /// The [`dir`] rights an `OPEN` needs on the directory holding the name.
 ///
-/// `filesystem_contract::verb::TABLE` records `OPEN` as the contract's one "any of" row (`READ` *or* `WRITE`
+/// `file_system_contract::verb::TABLE` records `OPEN` as the contract's one "any of" row (`READ` *or* `WRITE`
 /// will do), so this is the one place a caller has to say which, and it says it from the options it
 /// was handed. Asking for both when the caller only reads would refuse a read through a read-only
 /// grant, which is the over-asking trap one level down from the one [`descend`] describes.
@@ -67,16 +67,16 @@ pub(super) fn joined(path: &Path) -> Option<String> {
 pub(super) fn open_rights(opts: &OpenOptions) -> u64 {
     let mut want = 0;
     if opts.read {
-        want |= fsproto::directory::READ;
+        want |= fsproto::directory::rights::READ;
     }
     if opts.write || opts.append || opts.truncate {
-        want |= fsproto::directory::WRITE;
+        want |= fsproto::directory::rights::WRITE;
     }
     want
 }
 
 /// `OPEN` the last name in `path`. Returns the server's handle and the size its reply carried (0
-/// when it carried none; `filesystem_contract::fs::OPEN` says why 0 means "not given").
+/// when it carried none; `file_system_contract::file_system::OPEN` says why 0 means "not given").
 ///
 /// Since ruling A of milestone 606 (a directory walk costs what it does on Linux) a multi-name
 /// path is one `OPEN` with the rights each step asks for in the second word, and a server that
@@ -128,7 +128,7 @@ pub(super) fn create_handle(path: &Path, opts: &OpenOptions) -> io::Result<u64> 
         &mut p,
         proto::ROOT,
         path,
-        fsproto::directory::CREATE | open_rights(opts),
+        fsproto::directory::rights::CREATE | open_rights(opts),
     )?;
     p.put(name.as_bytes());
     request(proto::request(proto::CREATE, at.0, name.len() as u64), 0)

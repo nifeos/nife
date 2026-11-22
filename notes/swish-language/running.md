@@ -12,8 +12,9 @@ A program whose manifest says it hears words gets its directory grant through `w
 through `rm`'s `dir_grant`. The caretaker descends into the shell's current directory with the rights
 `WordGrant::rights` asks for. The progenitor clamps those rights to the manifest it endows, so an
 unvouched program gets read-only access whatever the shell asks. A set of names becomes a
-`fs_nameset_caretaker`, with the set encoded on its own page. The whole directory (`.`) becomes a
-`fs_subtree_caretaker` with no page. The confined program's own `START` words are zero, because a
+`fs_nameset_caretaker`, with the set on the grant page. The whole directory (`.`) becomes a
+`fs_subtree_caretaker`, whose grant page has an empty set. Either way the directory's name is on
+that page too. The confined program's own `START` words are zero, because a
 `std` program reads none.
 
 The set's filter can be raced on a real boot. The caretaker forwards a checked name through the file
@@ -65,7 +66,7 @@ segment larger than one page is refused for the same fail-closed reason.
 ## The directory grant
 
 `dir_grant` builds the two `START` triples for a program like `rm`: the caretaker's, then the
-program's. The caretaker is told the directory and the `filesystem_contract::dir` rights to ask for.
+program's. The caretaker is told the directory and the `file_system_contract::dir` rights to ask for.
 The program is told the operand and the options that were typed. Nothing between the shell and the
 process decodes either triple, so `spawn_protocol` carries them without linking the filesystem contract.
 The order is the wire's. Backwards, it would start `rm` with a directory's name and a caretaker with
@@ -77,7 +78,7 @@ enumerate it, read it or walk into it. With it the capability is `REMOVE_TREE`, 
 walk. `caps rm -r logs` prints the difference before anything happens.
 
 The shell holds no `GRANT` on its file-service rendezvous, so it cannot hand a caretaker anything.
-It says what the grant is, and the progenitor, which holds the service, builds the caretaker. Four
+It says what the grant is, and the progenitor, which holds the service, builds the caretaker. Three
 shapes cannot be delivered, and each is refused with nothing spawned rather than half-granted.
 
 - A directory in a two-grant shell's second tree. The progenitor descends from the root of the first
@@ -86,14 +87,11 @@ shapes cannot be delivered, and each is refused with nothing spawned rather than
   supervised by the client it serves)), and the progenitor builds one.
 - A set of more than one name. That grant is a `fs_nameset_caretaker`, and the progenitor builds the
   subtree one for this path. `rm *.txt` is planned, previewed by `caps`, and refused at delivery.
-- A directory name that does not fit in a grant's two argument words
-  (`filesystem_contract::grant::WORDS_NAME`, which `pack_name` refuses past), because the caretaker
-  is told its directory packed into two words.
-
-A file name that does not fit those two words is delivered, not refused (milestone 946 (a granted file name can be longer than sixteen bytes)). `dir_grant`
-tells `rm` `grant::WHOLE_NAMESPACE` instead of a name and grants the set of that one name, which
-`set_page` writes on the page a words grant's set uses. The progenitor builds
-`fs_nameset_caretaker` for it, as for any set. Where the file server binds badges, the caretaker
+Every name the grant carries is on the grant page, which `grant_page` writes and the shell sends
+after the argv frame (milestone 1122 (every name travels on a page)). `dir_grant` tells `rm`
+`grant::WHOLE_NAMESPACE` instead of a name and grants the set of that one name, so a file name is
+delivered up to `grant::MAXIMUM_NAME_BYTES`. The progenitor builds `fs_nameset_caretaker` for it,
+as for any set. Where the file server binds badges, the caretaker
 sits in front of the bound badge, which is bound to the whole directory.
 
 ## The plain request

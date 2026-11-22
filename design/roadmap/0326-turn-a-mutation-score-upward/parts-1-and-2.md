@@ -24,7 +24,7 @@ which is where a reader should go to disagree with one.
 | `dtb` | 14 | 1 | 13 | 1 | 0 | 0 |
 | `clock_contract` | 6 | 3 | 0 | 3 | 3 | 0 |
 | `swish` | 20 | 4 | 16 | 4 | 0 | 0 |
-| `filesystem_contract` | 59 | 40 | 19 | 38 | 0 | 2 |
+| `file_system_contract` | 59 | 40 | 19 | 38 | 0 | 2 |
 | total | 169 | 51 | 77 | 49 | 41 | 2 |
 
 `after` is what a re-run reports now: the equivalents plus the two recorded gaps. Excluded mutants are no longer generated, so they leave the column.
@@ -41,12 +41,12 @@ What moved the numbers, in order of how much a reader should care.
 2. Seventy-seven were real, and four of them are places a probe reports nothing.
    `capability_table::survey_includes`, the predicate deciding which threads a supervision rendezvous may
    see, had no `cargo test` caller at all: a constant `true` and a constant `false` both survived.
-   `filesystem_contract::fixture::twodir` had no distinctness test, so five witness bits could each
+   `file_system_contract::fixture::twodir` had no distinctness test, so five witness bits could each
    become zero while their boot passed. `memory_regions::has_children` is what the kernel asks before
    it offers to destroy, and every test proved the refusal through a different door.
 3. Forty-nine are equivalent and that is a result, not a shortfall. They are argued by group in
    the note so a later pass can re-check a group rather than a mutant, and the two crates whose
-   numbers barely moved (`clock_contract`, `filesystem_contract`) are the two where that is the
+   numbers barely moved (`clock_contract`, `file_system_contract`) are the two where that is the
    honest answer.
 
 And the one thing this part was told to look for, which it did not find. The block ordered

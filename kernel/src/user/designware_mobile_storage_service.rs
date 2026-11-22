@@ -10,7 +10,7 @@
 use driver_process_contract::designware_mobile_storage::{
     Handoff, REGISTER_VIRTUAL_ADDRESS, TRANSFER_VIRTUAL_ADDRESS, Window,
 };
-use filesystem_contract::block;
+use file_system_contract::block;
 use machine_discovery::jh7110::designware_mobile_storage::Slot;
 
 use super::*;
@@ -47,7 +47,7 @@ fn stack_maps(frames: [u64; EXTRA_STACK_PAGES]) -> [Mapping; EXTRA_STACK_PAGES] 
 /// A running server: where a client sends, where readiness arrives, and the physical base of the
 /// transfer region a client maps.
 pub(crate) struct Wiring {
-    /// Requests, `filesystem_contract::block`.
+    /// Requests, `file_system_contract::block`.
     pub request: RendezvousId,
     /// One message when the server is up, or which step stopped it.
     pub ready: RendezvousId,

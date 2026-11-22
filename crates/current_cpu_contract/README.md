@@ -6,29 +6,30 @@
 [![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/current_cpu_contract/blob/main/Cargo.toml)
 
 The page that tells a thread which core it is running on, without a system call. `no_std`. A kernel
-and the runtime of its processes share this one definition, so the writer and the readers cannot
-drift on the page's layout or its fixed virtual address.
+and the runtime of its processes share this one definition. The writer and the readers cannot drift
+on the page's layout or its fixed virtual address.
 
-The kernel maps the page read-only at `PAGE_VIRTUAL_ADDRESS` in every process, and writes the CPU
+The kernel maps the page read-only at `PAGE_VIRTUAL_ADDRESS` in every process. It writes the CPU
 word at every switch-in, on the destination core. A reader may be stale one instruction after it
-reads, so a per-core cache built on the answer must stay correct when the thread has already moved.
+reads. A per-core cache built on the answer must stay correct when the thread has already moved.
 
 ## The contract
 
-- The page is `PAGE_CONTENT_BYTES` (32) bytes: `MAGIC` (the ASCII text `CURRCPU1`), then three
-  little-endian `u64` words: the CPU, the allowance (how many cores the thread's process may use)
-  and the scheduler tick in hertz. `VERSION` (1) is the digit the magic carries.
-- Each word reads as `None` when it is unknown: `None` for a frame without the magic, `None` for a
-  thread that never ran (the CPU word holds `UNSCHEDULED`, which is not zero because zero is a valid
-  CPU id), and `None` for an allowance or a tick of zero.
-- `cpu()` also reads an id at or past `CPU_ID_BOUND` as unknown, so its answer always indexes an
-  array of `CPU_ID_BOUND` elements. The bound is part of the page's identity: a change to it re-mints
-  the magic and bumps the version in the same change.
+- The page is `PAGE_CONTENT_BYTES` (32) bytes. `MAGIC`, the ASCII text `CURRCPU1`, comes first.
+  Three little-endian `u64` words follow: the CPU, the allowance and the scheduler tick in hertz.
+  The allowance is how many cores the thread's process may use. `VERSION` (1) is the digit the
+  magic carries.
+- Each word reads as `None` when it is unknown. A frame without the magic reads `None`, and so do
+  an allowance and a tick of zero. The CPU word of a thread that never ran holds `UNSCHEDULED`,
+  which reads `None`. It is not zero, because zero is a valid CPU id.
+- `cpu()` also reads an id at or past `CPU_ID_BOUND` as unknown. Its answer always indexes an
+  array of `CPU_ID_BOUND` elements. The bound is part of the page's identity: a change to it
+  re-mints the magic and bumps the version.
 - `CurrentCpuPage` is deliberately neither `Send` nor `Sync`: the page is this thread's answer, and
   carrying it to another thread carries a wrong one.
-- The layout grows only by appending a word that reads zero where a kernel never wrote it, so a new
+- The layout grows only by appending a word that reads zero where a kernel never wrote it. A new
   field never changes the magic.
-- The crate ships one source file, because a consumer may copy it into a standard library: keep it
+- The crate ships one source file, because a consumer may copy it into a standard library. Keep it
   to one file with fully qualified paths.
 
 ## EXAMPLES
@@ -55,13 +56,13 @@ assert_eq!(per_core[3], 1);
 
 ## What is proven
 
-Two Kani harnesses cover the crate. `the_readers_answer_only_what_the_page_holds` proves, over every
-32-byte frame, that each reader answers `Some` exactly when the magic matches and its word is a real
-answer: the CPU when it is neither `UNSCHEDULED` nor at or past `CPU_ID_BOUND`, the allowance and the
-tick when they are nonzero. `a_built_page_reads_back_its_words` proves that a page from
-`build_page_with` reads back its allowance and tick for every pair of values, and reads the CPU as
-unknown. Each has a falsification patch in `falsifications/` that turns it red. No proof covers the
-caller's promise that the address names a mapped page, because Kani cannot see a mapping.
+Two Kani harnesses cover the crate. `the_readers_answer_only_what_the_page_holds` covers every
+32-byte frame. Each reader answers `Some` exactly when the magic matches and its word is a real
+answer. For the CPU that means neither `UNSCHEDULED` nor at or past `CPU_ID_BOUND`. For the
+allowance and the tick it means nonzero. `a_built_page_reads_back_its_words` proves that a page from
+`build_page_with` reads back its allowance and tick for every pair of values. It also reads the CPU
+as unknown. Each has a falsification patch in `falsifications/` that turns it red. No proof covers
+the caller's promise that the address names a mapped page, because Kani cannot see a mapping.
 
 ## Building and testing
 
@@ -75,12 +76,12 @@ The tests drive both halves of the page without a kernel.
 ## BUGS
 
 - The reader forms an `&AtomicU64` over a read-only mapping, a shape the Rust memory model has not
-  settled; the fallback is a raw atomic load that forms no reference.
+  settled. The fallback is a raw atomic load that forms no reference.
 - A process has at most `THREAD_PAGE_SLOTS` threads, one page each.
 - An address space never bound to a thread has no page, so a reader there faults.
 - `CPU_ID_BOUND` sizes per-core arrays and does not enumerate the cores that exist.
-- A consumer may copy this crate's single source file into a standard library: keep the crate to one
-  file with fully qualified paths.
+- A consumer may copy this crate's single source file into a standard library. Keep the crate to
+  one file with fully qualified paths.
 
 ## Minimum Rust version
 

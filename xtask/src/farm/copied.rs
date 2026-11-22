@@ -66,7 +66,7 @@ pub(super) const COPIED_FILES: [CopiedFile; 15] = [
     // (milestone 27 (Rust `std` on the native ABI), phase two) cannot drift from the server it
     // opens files through.
     CopiedFile {
-        package: "filesystem_contract",
+        package: "file_system_contract",
         file: "src/lib.rs",
         destination: "sys/pal/nife/fsproto.rs",
     },

@@ -26,7 +26,7 @@ name: mutation testing
 # **Shards split the mutant list, not the crates, and `round-robin` rather than the default
 # `slice`.** Mutant `i` goes to shard `i % 8`, so every shard holds a sample of every crate instead
 # of an alphabetical block of a few. Two things follow, and the second is why it changed. The jobs
-# finish together instead of one carrying `filesystem_contract` alone, which is what the original
+# finish together instead of one carrying `file_system_contract` alone, which is what the original
 # four-way split was reaching for. And **a lost shard costs an eighth of every crate rather than all
 # of a few**: with `slice`, losing shard 1 on 2026-08-31 meant `gpt` and `grant_plan` went entirely
 # unmeasured and the surviving report could say nothing about them, where a round-robin loss leaves
@@ -194,7 +194,7 @@ jobs:
       - name: Read the pinned cargo-mutants version
         id: mutants
         run: echo "version=$(cat .cargo-mutants-version)" >> "$GITHUB_OUTPUT"
-      - uses: taiki-e/install-action@ab49d3c64680143e184118bed66a46419fc15519 # v2.90.5
+      - uses: taiki-e/install-action@75a7c0f87bd666af3cdb75c5b9e9d03ab6044e6f # v2.90.6
         with:
           tool: cargo-mutants@${{ steps.mutants.outputs.version }}
 
@@ -429,7 +429,7 @@ jobs:
       - name: Mint an installation token for the automation App, when it is installed
         id: app-token
         if: env.AUTOMATION_APP_ID != ''
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3
         with:
           app-id: ${{ secrets.AUTOMATION_APP_ID }}
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}

@@ -73,12 +73,12 @@ current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contra
 confined_system_call_fuzzer_contract = { version = "0.1.0", path = "../crates/confined_system_call_fuzzer_contract" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
-environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "b4925221c6d33163c6217aa2b118ba29f0be5379" }
+environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "4778d5937460ef1e43e39113721422dd573a3306" }
 # The C programs' directory in the test image and their command lines (milestone 835 (a C library,
 # stage 1: files, clock and memory)).
 c_program_fixture = { path = "../crates/c_program_fixture" }
-filesystem_contract = { version = "0.1.0", path = "../crates/filesystem_contract" }
-filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" }
+file_system_contract = { version = "0.1.0", path = "../crates/file_system_contract" }
+file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture" }
 grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }

@@ -317,8 +317,9 @@ mod tests {
 
     thread_local! {
         /// Synthetic PA to host pointer. Thread-local so parallel tests cannot see each other's
-        /// frames, which also means each test's pool starts empty.
-        static PHYS: RefCell<Vec<(u64, u64)>> = const { RefCell::new(Vec::new()) };
+        /// frames, which also means each test's pool starts empty. The pointer is the one
+        /// `alloc_zeroed` returned, kept as a pointer so it never loses its provenance.
+        static PHYS: RefCell<Vec<(u64, *mut u8)>> = const { RefCell::new(Vec::new()) };
     }
 
     /// The layout every host frame is allocated with, and the one every `dealloc` must repeat.
@@ -364,7 +365,7 @@ mod tests {
             // SAFETY: a valid non-zero layout; alloc_zeroed returns zeroed memory or null (asserted).
             let p = unsafe { alloc_zeroed(frame_layout()) };
             assert!(!p.is_null());
-            PHYS.with(|m| m.borrow_mut().push((physical_address, p as u64)));
+            PHYS.with(|m| m.borrow_mut().push((physical_address, p)));
             physical_address
         }
 
@@ -380,7 +381,7 @@ mod tests {
         fn build_domain<F: PageFormat>(&self, regions: &[DirectMemoryAccessRegion]) -> u64 {
             let root = self.frame();
             // SAFETY: `root` and every table the build asks for are zeroed, page-aligned host
-            // frames this pool just allocated and still holds; `physical_to_pointer` is the identity over
+            // frames this pool just allocated and still holds; `physical_to_pointer` returns the host pointer of
             // exactly those frames; and nothing installs `root` anywhere.
             unsafe {
                 build_identity_domain::<_, _, F>(
@@ -410,7 +411,7 @@ mod tests {
                 for (_, host) in m.borrow_mut().drain(..) {
                     // SAFETY: `host` came from `frame_at`'s alloc_zeroed with exactly this layout,
                     // registered exactly once, and the drain removes it so nothing frees it twice.
-                    unsafe { std::alloc::dealloc(host as *mut u8, frame_layout()) };
+                    unsafe { std::alloc::dealloc(host, frame_layout()) };
                 }
             });
         }
@@ -424,7 +425,7 @@ mod tests {
             m.borrow()
                 .iter()
                 .find(|(p, _)| *p == physical_address)
-                .map(|(_, host)| *host as *mut PageTable)
+                .map(|(_, host)| host.cast::<PageTable>())
                 .unwrap_or_else(|| panic!("no host frame backs synthetic PA {physical_address:#x}"))
         })
     }

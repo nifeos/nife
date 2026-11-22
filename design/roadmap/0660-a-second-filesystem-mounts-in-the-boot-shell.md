@@ -46,7 +46,7 @@ What lands with it:
   become scripts the shipping shell runs) left it in swish on calef's ruling of 2026-10-11 (UTC),
   because the shipping shell cannot hold a second tree until this lands. What goes: role 6
   (`ROLE_TWO_TREES`), the rest of `components/src/swish/witness.rs`, the `role` read in `_start`,
-  and `filesystem_contract::fixture::twotrees` with its host test rows.
+  and `file_system_contract::fixture::twotrees` with its host test rows.
 
 ## Exit criterion
 

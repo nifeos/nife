@@ -232,3 +232,84 @@ fn every_compiled_in_manifest_round_trips() {
         assert_eq!(decode(&encode(&m)), Ok(m), "{g:?}");
     }
 }
+
+/// **A program that hears words places no positional grant** (milestone 205, DECISIONS §170).
+/// Its words carry no authority and all of them go to its argv, so a positional file,
+/// directory or input slot would have nothing left to fill, and an option letter the shell
+/// validated would be one the program never sees. Only `std` reads an argv.
+#[test]
+fn a_program_that_hears_words_places_no_positional_grant() {
+    let mut hearing = 0;
+    for &p in Program::ALL {
+        let m = p.manifest();
+        if !m.program_argument.hears_words() {
+            continue;
+        }
+        hearing += 1;
+        let name = p.name();
+        assert_eq!(
+            m.startup,
+            StartupContract::Std,
+            "{name}: only std reads an argv"
+        );
+        assert_eq!(m.file, FileGrantDeclaration::Forbidden, "{name}");
+        assert_eq!(m.directory, DirectoryGrantDeclaration::Forbidden, "{name}");
+        assert_eq!(m.input, InputDeclaration::Forbidden, "{name}");
+        assert!(
+            m.short_options.letters().is_empty(),
+            "{name}: its options are its own"
+        );
+    }
+    assert!(hearing > 0, "a sweep over nothing proves nothing");
+}
+
+/// **No builtin is also a program**, so Tab never offers a word that would run something else:
+/// `grant_plan::parse` matches [`grant_plan::BUILTINS`] before a name reaches this table, and a
+/// row of a builtin's name could never be run. `jig` and `rm` are rows; `package` is neither.
+#[test]
+fn no_builtin_is_also_a_program() {
+    for &b in grant_plan::BUILTINS {
+        assert!(Program::from_name(b).is_none(), "{:?} is also a program", b);
+    }
+    assert_eq!(Program::from_name(b"jig"), Some(Program::Jig));
+    assert_eq!(Program::from_name(b"rm"), Some(Program::Rm));
+    assert_eq!(Program::from_name(b"package"), None);
+}
+
+/// **`date` declares its second stream at [`DIAGNOSTICS_SLOT`]**, and the programs that write
+/// only one stream declare none, so they never need the slot.
+#[test]
+fn date_declares_the_diagnostics_slot_and_single_stream_programs_none() {
+    assert_eq!(
+        Program::Date.manifest().output.diagnostics_slot(),
+        Some(DIAGNOSTICS_SLOT)
+    );
+    for p in [
+        Program::LeastAuthorityDemo,
+        Program::MemoryGrantDepleter,
+        Program::InterruptHeeder,
+        Program::InterruptIgnorer,
+        Program::Rm,
+        Program::Wc,
+    ] {
+        assert_eq!(p.manifest().output.diagnostics_slot(), None, "{p:?}");
+    }
+}
+
+/// **The fast demonstrations take no interrupt**: they finish in one step, so the shell waits
+/// for them with no `^C` tier.
+#[test]
+fn the_fast_demonstrations_take_no_interrupt() {
+    assert!(!Program::LeastAuthorityDemo.manifest().interruptible);
+    assert!(!Program::MemoryGrantDepleter.manifest().interruptible);
+}
+
+#[test]
+fn every_program_counts_as_well_formed_and_an_empty_list_counts_none() {
+    assert_eq!(
+        manifests::well_formed_count(Program::ALL),
+        Program::ALL.len()
+    );
+    assert_eq!(manifests::well_formed_count(&Program::ALL[..1]), 1);
+    assert_eq!(manifests::well_formed_count(&[]), 0);
+}

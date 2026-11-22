@@ -136,7 +136,7 @@ impl<'a> PartitionTable<'a> {
     }
 
     /// The geometry and partition rules every table meets, whichever copy it was read from.
-    fn checked(
+    pub(crate) fn checked(
         header: Header,
         entry_array: &'a [u8],
         block_bytes: usize,

@@ -18,7 +18,7 @@ pub const BLOCK: usize = 4096;
 pub const CACHE_SLOTS: usize = 256;
 
 /// The wire-to-store assertions, here because this is the one place in the tree that sees both
-/// `filesystem_contract` and the store. `const` rather than tests, so they fire in the EL0 build
+/// `file_system_contract` and the store. `const` rather than tests, so they fire in the EL0 build
 /// too, where no test harness runs. See notes/fs-server/caches-and-io.md.
 const _: () = {
     // `BLOCK` is the transfer unit for a store whose block size is `BLOCK_SIZE`; if they disagree,
@@ -28,7 +28,7 @@ const _: () = {
     // The record-aligned throughput phase reads at multiples of `RECORD`, which means what it
     // claims only while each multiple is a record boundary. See that constant's comment.
     assert!(
-        filesystem_fixture::throughput::RECORD_BYTES
+        file_system_fixture::throughput::RECORD_BYTES
             .is_multiple_of(redoxfs::BLOCK_SIZE << redoxfs::RECORD_LEVEL)
     );
 
@@ -39,8 +39,8 @@ const _: () = {
     // The file channel is a whole number of blocks (milestone 138 (close the read gap) step 3): a
     // channel ending part way through a block would make the last chunk of every full-channel
     // request partial, the repeat-write bug's shape.
-    assert!(filesystem_contract::fs::MAXIMUM_TRANSFER_BYTES.is_multiple_of(BLOCK));
-    assert!(filesystem_contract::fs::MAXIMUM_TRANSFER_BYTES >= BLOCK);
+    assert!(file_system_contract::file_system::MAXIMUM_TRANSFER_BYTES.is_multiple_of(BLOCK));
+    assert!(file_system_contract::file_system::MAXIMUM_TRANSFER_BYTES >= BLOCK);
 };
 
 /// A block-granular transport: read or write one whole filesystem block, or report the disk size.

@@ -20,7 +20,7 @@ pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 /// **The most names one expansion may grant**: Unix's `ARG_MAX` as a capability limit. The set
 /// travels by value in a frame the caretaker keeps whole and through four frames of the shell's
 /// stack, and sixteen ran the shell off its stack. It matches
-/// `filesystem_contract::nameset::MAXIMUM_NAMES`, pinned by a host test. Exceeding it is
+/// `file_system_contract::nameset::MAXIMUM_NAMES`, pinned by a host test. Exceeding it is
 /// [`Refusal::TooManyNames`] at the prompt, never a truncation. See notes/glob-grant/xargs.md
 /// ("Why the bound is eight").
 ///
@@ -30,7 +30,7 @@ pub const MAXIMUM_NAMES: usize = 8;
 /// **The most bytes of name one expansion may grant, all its names together**, for
 /// [`MAXIMUM_NAMES`]'s reason: a [`NameSet`] is copied through the shell's deepest frames, so it
 /// holds its names packed in this many bytes rather than [`MAXIMUM_NAMES`] slots of
-/// [`MAXIMUM_NAME_BYTES`] each. It matches `filesystem_contract::nameset::MAXIMUM_NAME_SET_BYTES`, pinned by a host
+/// [`MAXIMUM_NAME_BYTES`] each. It matches `file_system_contract::nameset::MAXIMUM_NAME_SET_BYTES`, pinned by a host
 /// test, and exceeding it is the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md
 /// ("The bytes a set carries").
 ///
@@ -94,11 +94,11 @@ pub struct NameSetFull;
 ///
 /// This is the type that makes the milestone's finding true in the code rather than only in the
 /// prose. `fs_file_caretaker` serves "a namespace of exactly one name"; globbing generalizes it to
-/// a set, and a literal operand is simply the set of one. Same caretaker shape, same `filesystem_contract`
+/// a set, and a literal operand is simply the set of one. Same caretaker shape, same `file_system_contract`
 /// protocol above and below, wider namespace, nothing new in the kernel.
 ///
 /// Each name carries what the directory said it was, because the caretaker answers `READDIR` from
-/// the set itself (`filesystem_contract::nameset`), and because a listing is a rendering of authority.
+/// the set itself (`file_system_contract::nameset`), and because a listing is a rendering of authority.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct NameSet {
     /// The names, packed end to end in order: name `i` is `bytes[start(i)..ends[i]]`. Packed rather
@@ -378,6 +378,12 @@ impl<'a> Expander<'a> {
     /// default is not a compatibility habit here: `rm *` hands a child authority over everything it
     /// matched, so the default reading is the one that **grants less**. A user who wants the
     /// dotfiles asks for them and takes the larger grant deliberately.
+    ///
+    /// `byte_glob` treats `.` and `..` as ordinary names, so `.*` matches both. No listing this
+    /// expander sees carries either: the file servers behind it store neither entry and refuse
+    /// both names. A server whose listing did carry them would not widen a grant to a parent,
+    /// because neither is a valid file name, and the line refuses with
+    /// [`Refusal::MatchNotNameable`]. That refusal is how such a server shows up here.
     pub fn offer(&mut self, name: &[u8], is_directory: bool) {
         if !byte_glob::matches(self.pattern, name) || self.set.contains(name) {
             return;
@@ -730,6 +736,15 @@ mod tests {
             Some(&b".config"[..]),
             "asking for them by name is how you take the larger grant",
         );
+    }
+
+    /// A listing that offered `.` and `..` would hand `.*` a parent's authority, so the line
+    /// refuses rather than grant either. No listing in this tree carries them.
+    #[test]
+    fn dot_and_dot_dot_in_a_listing_refuse_rather_than_grant() {
+        let listing: [(&[u8], bool); 3] = [(b".", true), (b"..", true), (b".config", false)];
+        assert_eq!(expand(b".*", &listing), Err(Refusal::MatchNotNameable));
+        assert_eq!(expand(b"*", &listing), Err(Refusal::NoMatch));
     }
 
     /// A pattern lives in the **last** component or nowhere, because selecting directories to walk

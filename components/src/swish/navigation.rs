@@ -23,9 +23,9 @@ pub(super) struct Nav {
     /// **The rights the root capability carries**, as this shell was told at spawn.
     ///
     /// It is told rather than asking, and that is a gap in the contract rather than a shortcut:
-    /// `filesystem_contract` has no verb that reports what a handle carries. It matters because `OPENDIR`
+    /// `file_system_contract` has no verb that reports what a handle carries. It matters because `OPENDIR`
     /// refuses (`EPERM`) when the intersection is smaller than the request, so a shell that asked
-    /// for `directory::ALL` from a narrower capability could not `cd` at all. See notes/shell-navigation.md.
+    /// for `directory::rights::ALL` from a narrower capability could not `cd` at all. See notes/shell-navigation.md.
     pub(super) rights: u64,
     /// **What this shell holds, as the planner sees it**: where it stands (`holds.cwd`, a path in
     /// the one tree it presents), the names it has bound (`holds.binds`, values rather than
@@ -36,7 +36,7 @@ pub(super) struct Nav {
     /// every walk: an 800-byte `ShellHoldings` built per walking frame overflowed the globbing witness's
     /// stack, the frame budget `glob_grant_tests` records.
     pub(super) holds: grant_plan::ShellHoldings,
-    /// `handles[i]` is the directory capability for level `i + 1`; level 0 is [`fs::ROOT`], the
+    /// `handles[i]` is the directory capability for level `i + 1`; level 0 is [`file_system::ROOT`], the
     /// capability the rendezvous itself designates.
     handles: [u64; grant_navigation::MAXIMUM_DEPTH],
     /// The sweep in progress, when the line is under `xargs` (milestone 109). Zeroed outside one.
@@ -178,7 +178,7 @@ impl Nav {
     /// The handle for `level` levels below the root.
     pub(super) fn at(&self, level: usize) -> u64 {
         match level.checked_sub(1) {
-            None => fs::ROOT,
+            None => file_system::ROOT,
             Some(i) => self.handles[i],
         }
     }
@@ -194,7 +194,12 @@ impl Nav {
         w1: u64,
     ) -> i64 {
         put_page(name);
-        call(t.slot, fs::request(verb, handle, name.len() as u64), w1).0 as i64
+        call(
+            t.slot,
+            file_system::request(verb, handle, name.len() as u64),
+            w1,
+        )
+        .0 as i64
     }
 
     /// Close a handle we opened in the tree we stand in. A failure here is not reportable and not
@@ -206,7 +211,11 @@ impl Nav {
 
     /// [`Nav::close`] on a named tree.
     pub(super) fn close_in(&self, t: Tree, handle: u64) {
-        call(t.slot, fs::request(fs::CLOSE, handle, 0), 0);
+        call(
+            t.slot,
+            file_system::request(file_system::CLOSE, handle, 0),
+            0,
+        );
     }
 
     /// **Resolve a path without moving and open it**, from the root when the token began with `/`
@@ -231,7 +240,7 @@ impl Nav {
         let (side, pos) = self.holds.serving_tree(&start);
         let mut w = Walk {
             tree: self.tree(side),
-            handle: fs::ROOT,
+            handle: file_system::ROOT,
             tmp: [0; grant_navigation::MAXIMUM_DEPTH],
             n: 0,
         };
@@ -246,7 +255,7 @@ impl Nav {
     /// **One level further down a walk**: one `OPENDIR` on the walk's own tree. A level that
     /// cannot be opened closes everything the walk opened before it.
     fn descend(&self, w: &mut Walk, name: &[u8]) -> Result<(), Say> {
-        let r = self.name_call_in(w.tree, fs::OPENDIR, w.handle, name, w.tree.rights);
+        let r = self.name_call_in(w.tree, file_system::OPENDIR, w.handle, name, w.tree.rights);
         if r < 0 {
             self.unwind(w);
             return Err(Say::Failed(-r as i32));
@@ -281,9 +290,8 @@ impl Nav {
 
     /// **Parse and validate a path to a name**, for a verb that opens or makes its last component
     /// rather than standing in it: [`Nav::plan_path`] for every step but the last, which is a name
-    /// in that directory and so may be as long as a file's ([`grant_navigation::MAXIMUM_NAME_BYTES`], milestone 946 (a
-    /// granted file name can be longer than sixteen bytes)) where a directory the shell stands in
-    /// may not ([`grant_navigation::MAXIMUM_DIRECTORY_NAME_BYTES`]). A path ending in `..` names a directory, and is
+    /// in that directory, so it is not held to the room left in a [`DirectoryPath`]
+    /// ([`grant_navigation::MAXIMUM_PATH_BYTES`]). A path ending in `..` names a directory, and is
     /// validated whole.
     ///
     /// Name: provisional (milestone 946).
@@ -448,7 +456,7 @@ impl Nav {
     /// there, and a shell that silently moved you would be doing two things under one word.
     pub(super) fn mkdir(&mut self, token: &[u8]) -> Say {
         self.act(token, |nav, t, handle, name| {
-            let r = nav.name_call_in(t, fs::MKDIR, handle, name, t.rights);
+            let r = nav.name_call_in(t, file_system::MKDIR, handle, name, t.rights);
             if r < 0 {
                 Say::Failed(-r as i32)
             } else {
@@ -480,10 +488,10 @@ impl Nav {
     }
 
     /// **`touch`**: create an empty file if the name is not there (a no-op if it already is), then
-    /// bump its modification time. Bare `touch` sets it to now (`fs::SET_MODIFICATION_TIME`, needs only the
-    /// `WRITE` this shell already holds); `-t` asserts a caller-chosen instant (`fs::SET_MODIFICATION_TIME_AT`,
-    /// needs `WRITE` **and** `SETTIME`, DECISIONS §112). The create half is `mkdir`'s shape, one
-    /// right narrower: `fs::CREATE` mints a name and this builtin gives the handle straight back,
+    /// bump its modification time. Bare `touch` sets it to now (`file_system::SET_MODIFICATION_TIME`, needs only the
+    /// `WRITE` this shell already holds); `-t` asserts a caller-chosen instant (`file_system::SET_MODIFICATION_TIME_AT_UNIX_SECONDS`,
+    /// needs `WRITE` **and** `SET_MODIFICATION_TIME_AT`, DECISIONS §112 (`touch`'s two behaviors need two rights)). The create half is `mkdir`'s shape, one
+    /// right narrower: `file_system::CREATE` mints a name and this builtin gives the handle straight back,
     /// because touching a file is not opening it.
     ///
     /// **Milestone 47 built the create half first and the mtime half here**, in that order, because
@@ -503,14 +511,14 @@ impl Nav {
         };
 
         self.act(args.name, |nav, t, handle, name| {
-            let r = nav.name_call_in(t, fs::CREATE, handle, name, 0);
+            let r = nav.name_call_in(t, file_system::CREATE, handle, name, 0);
             if r >= 0 {
                 nav.close_in(t, r as u64);
             } else {
                 let errno = -r as i32;
                 // `CREATE` is create, not create-or-open (DECISIONS §27): an existing name answers
                 // `EEXIST`, which is exactly the outcome this half of `touch` wants for a name that
-                // is already there. Not in `filesystem_contract::directory`'s named list, for
+                // is already there. Not in `file_system_contract::directory`'s named list, for
                 // `components/src/rm.rs::ENOENT`'s reason: this contract answers it from one rung only,
                 // so there is nothing else in this program that would collide with a local name for
                 // it.
@@ -521,10 +529,14 @@ impl Nav {
             }
 
             let r = match at_seconds {
-                None => nav.name_call_in(t, fs::SET_MODIFICATION_TIME, handle, name, 0),
-                Some(seconds) => {
-                    nav.name_call_in(t, fs::SET_MODIFICATION_TIME_AT, handle, name, seconds)
-                }
+                None => nav.name_call_in(t, file_system::SET_MODIFICATION_TIME, handle, name, 0),
+                Some(seconds) => nav.name_call_in(
+                    t,
+                    file_system::SET_MODIFICATION_TIME_AT_UNIX_SECONDS,
+                    handle,
+                    name,
+                    seconds,
+                ),
             };
             if r < 0 {
                 return Say::Failed(-r as i32);
@@ -623,7 +635,12 @@ impl Nav {
         // Bounded so a server whose cursor does not advance costs a short listing rather than a
         // prompt that never comes back.
         for _ in 0..ROUNDS {
-            let n = call(t.slot, fs::request(fs::READDIR, handle, 0), cursor).0 as i64;
+            let n = call(
+                t.slot,
+                file_system::request(file_system::READDIR, handle, 0),
+                cursor,
+            )
+            .0 as i64;
             if n < 0 {
                 return Say::Failed(-n as i32);
             }

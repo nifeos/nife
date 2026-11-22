@@ -24,7 +24,11 @@ impl documentation::index::Pages for Shard {
     fn page(&mut self, index: u64, out: &mut [u8; documentation::index::PAGE]) -> bool {
         let got = call(
             self.dir,
-            fs::request(fs::READ, self.handle, documentation::index::PAGE as u64),
+            file_system::request(
+                file_system::READ,
+                self.handle,
+                documentation::index::PAGE as u64,
+            ),
             index * documentation::index::PAGE as u64,
         )
         .0 as i64;
@@ -73,8 +77,8 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
 
     let store = nav.name_call_in(
         t,
-        fs::OPENDIR,
-        fs::ROOT,
+        file_system::OPENDIR,
+        file_system::ROOT,
         index::STORE_DIR.as_bytes(),
         t.rights,
     );
@@ -86,14 +90,14 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
     // The manifest, copied out of the shared page before anything else touches it: every `OPENDIR`
     // below stages a name in that same page.
     let mut names = [0u8; MANIFEST_MAXIMUM];
-    let handle = nav.name_call_in(t, fs::OPEN, store, index::MANIFEST.as_bytes(), 0);
+    let handle = nav.name_call_in(t, file_system::OPEN, store, index::MANIFEST.as_bytes(), 0);
     if handle < 0 {
         nav.close_in(t, store);
         return Say::Failed(-handle as i32);
     }
     let got = call(
         dir,
-        fs::request(fs::READ, handle as u64, MANIFEST_MAXIMUM as u64),
+        file_system::request(file_system::READ, handle as u64, MANIFEST_MAXIMUM as u64),
         0,
     )
     .0 as i64;
@@ -112,12 +116,12 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
     let mut trouble = 0i32;
     let mut unreadable = false;
     index::bundles(&names[..got], |bundle| {
-        let at = nav.name_call_in(t, fs::OPENDIR, store, bundle, t.rights);
+        let at = nav.name_call_in(t, file_system::OPENDIR, store, bundle, t.rights);
         if at < 0 {
             trouble = -at as i32;
             return;
         }
-        let shard = nav.name_call_in(t, fs::OPEN, at as u64, index::SHARD.as_bytes(), 0);
+        let shard = nav.name_call_in(t, file_system::OPEN, at as u64, index::SHARD.as_bytes(), 0);
         if shard < 0 {
             trouble = -shard as i32;
         } else {
@@ -182,7 +186,7 @@ fn read_line(prompt: &[u8], out: &mut [u8]) -> (usize, u64) {
 /// The same sans-IO engine the terminal runs, fed from `OPERATION_READRAW`, so a Tab reaches the process
 /// that holds the authority completion needs. A `static` for `line_editor`'s own reason: the
 /// engine is a few KiB and this shell's stack has run out before (notes/pipes.md).
-static mut EDITOR: line_editor::LineDisc = line_editor::LineDisc::new();
+static mut EDITOR: line_editor::LineEditor = line_editor::LineEditor::new();
 
 /// Bytes a raw read delivered after the one that ended a line, kept for the next line. A paste of
 /// two lines arrives in one burst, and dropping the second would lose typed input.
@@ -315,10 +319,10 @@ pub(super) fn edit_line(nav: &mut Nav, prompt: &[u8], out: &mut [u8]) -> (usize,
 /// **Tab**: finish the word under the cursor from what this shell can name (`swish::complete`).
 /// A program or builtin name in command position; otherwise an entry of the directory the word's
 /// lead names, read with the same `ENUMERATE` `ls` needs. No match rings the bell.
-fn complete_word(nav: &mut Nav, disc: &mut line_editor::LineDisc, echo: &mut Echo) {
+fn complete_word(nav: &mut Nav, disc: &mut line_editor::LineEditor, echo: &mut Echo) {
     use line_editor::Sink;
     use swish::complete::{Answer, Completing, Lister, Matches};
-    let mut buf = [0u8; line_editor::LINE_MAXIMUM];
+    let mut buf = [0u8; line_editor::MAXIMUM_LINE_BYTES];
     let (line, cur) = disc.pending();
     let len = line.len();
     buf[..len].copy_from_slice(line);

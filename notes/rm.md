@@ -1,6 +1,6 @@
 # `rm`, `rm -r`, and why removal needs a directory
 
-Milestone 47. Built 2026-07-31. The contract side is `filesystem_contract::fs::RMDIR`; the program is
+Milestone 47. Built 2026-07-31. The contract side is `file_system_contract::file_system::RMDIR`; the program is
 `components/src/rm.rs`; the grant is `grant_contract::DirectoryGrantDeclaration`.
 
 ## Removal is an operation on the directory, not on the file
@@ -71,7 +71,7 @@ necessary, that is a signal something else broke, not a license to add it.
 `RM_MISSING` is deliberately a name the fixture never stages. Without that, the `-f` run and the
 plain run would be indistinguishable, because the whole of `-f` is that a name which is not there is
 not an error. A fixture that accidentally shipped that name would make the test pass while proving
-nothing, and `filesystem_contract` has a host test asserting it is never staged.
+nothing, and `file_system_contract` has a host test asserting it is never staged.
 
 ## `rm *.txt`: the operand can be a set, and then it is the namespace
 
@@ -82,12 +82,12 @@ capability could remove anything else in that directory) is closed for a pattern
 for a literal one, which is the honest state: a single name still travels through
 `fs_subtree_caretaker`.
 
-A set does not fit in the two argument words a name rides in, so `rm` is started with a grant whose
-name is zero bytes long (`filesystem_contract::grant::WHOLE_NAMESPACE`). So is a literal name longer
-than those two words hold (`grant::WORDS_NAME`, 16 bytes, milestone 946 (a granted file name can be longer than sixteen bytes)): the shell grants the set of
-that one name, and `rm` sweeps it. It means "the operand is your
+`rm` is started with a grant whose name is zero bytes long
+(`file_system_contract::grant::WHOLE_NAMESPACE`), whether the operand is a set or one literal name:
+the shell grants the set of that one name, and `rm` sweeps it. It means "the operand is your
 namespace", and `rm` learns the names by enumerating the capability it holds, which reveals exactly
-what the command line already printed.
+what the command line already printed. No name rides in `rm`'s `START` words, and `rm` refuses words
+that carry one (milestone 1122 (every name travels on a page)).
 
 It sweeps in one listing with no rounds, and the contrast with the recursive walk is a fact about
 the namespace rather than an optimization. That walk must re-read from cursor 0, because removing a
@@ -108,14 +108,14 @@ slot 0. The report endpoint is slot 1, and every other program in this tree take
 slot 0. The order is this way round so the two slots mean one thing on both wirings. The kernel's
 `start_granted_dir` puts the narrowed endpoint at slot 0 and a report endpoint at slot 1.
 `system_initializer`'s spawn service puts the caretaker it built at slot 0 and the shell's output
-at slot 1, ahead of every other grant. The name and the options ride in the three `START` argument
-words, packed by `filesystem_contract::grant` exactly as a per-file grant's name is. So the program
-costs no extra frame, and holds nothing that names a progenitor, a terminal, or the filesystem
+at slot 1, ahead of every other grant. The options ride in the `START` specification word
+(`file_system_contract::grant`), and the names are on the caretaker's grant page. So the program
+costs no extra frame of its own, and holds nothing that names a progenitor, a terminal, or the filesystem
 above its grant.
 
 The report is a byte sink and ends as every sink stream does, with `(end_of_stream(), 0, 0)`. The exit
 status and the count of names removed go after it, once, to a verdict endpoint at slot 2
-(`filesystem_contract::rm::VERDICT_SLOT`). A `SEND` returns only once a receiver takes its message, so
+(`file_system_contract::rm::VERDICT_SLOT`). A `SEND` returns only once a receiver takes its message, so
 the verdict cannot overtake the text: a reader drains the report to its end, then receives the
 verdict. The kernel's `start_granted_dir` and `start_granted_set` grant that endpoint when the
 caller asks (`verdict: true`). The spawn service leaves slot 2 empty, so at the prompt the kernel
@@ -142,7 +142,7 @@ refuses the second `SEND` and `rm` exits.
   buffer by value. `rm` asks for 4 stack pages. A deep enough tree will exhaust it, and the failure
   will be a data abort rather than a diagnostic.
 - **`rm` removes nothing this contract has since grown**, and that is now checked rather than
-  assumed. Milestone 61 (the caretakers: one verb table, and names that say what you get) made the caretakers dispatch off `filesystem_contract::verb`. A verb added to the
+  assumed. Milestone 61 (the caretakers: one verb table, and names that say what you get) made the caretakers dispatch off `file_system_contract::verb`. A verb added to the
   contract is forwarded by them from the day its row exists; `rm` still holds `REMOVE` and nothing
   else, so what it can *send* is unchanged. The two facts are independent and it is worth saying so:
   the caretaker got wider, the grant did not.

@@ -124,54 +124,74 @@ license and the crate name. This block does not reopen them.
 
 ## Where this stands
 
-Every item is done or waits on the release that publishes, which the publishing hold keeps back
-until every outside review is delivered. Milestone 1033 owns that release, its tags and the pin
-bumps in this tree. The Follow-on list gives each item's status.
+Every finding is done or waits on the release that publishes. The publishing hold keeps that release
+back until every outside review is delivered (ruled 2026-11-18 UTC), and milestone 1033 owns it, its
+tags and the pin bumps in this tree.
+
+## Finding status
+
+Read against `nifeos/generational_table` `main` at `8328360`, the merge of
+`nifeos/generational_table#22`.
+
+- Item 1 (P0), the manifest's publish line: Waiting on the release that publishes, which deletes
+  `publish = false` as ruled. The comment beside it is one sentence a stranger can act on
+  (`nifeos/generational_table#11`).
+- Item 2 (P1), the slot truncation on a narrow target: Done, `nifeos/generational_table#9` and
+  `nifeos/generational_table#14`. `slot_index` widens a slot without a check where `usize` holds
+  32 bits or more and resolves nothing elsewhere, and the `EntryName` documentation says so. The
+  narrow-target test needs a toolchain the repository does not carry (BUGS).
+- Item 3 (P1), the README's recorded gaps: Waiting on the release that publishes, which adds the
+  `cargo add` line and the crates.io and docs.rs badges. `nifeos/generational_table#11` landed the
+  rest: the "Building and proving" section, the one-line Kani install and a stranger run with no
+  open finding (`docs/stranger-test.md`).
+- Item 4 (P1), the template's mutation stack: Done, `nifeos/generational_table#15`,
+  `nifeos/generational_table#18` and `nifeos/generational_table#20`. The callers pin template
+  release `v8`, `mutation.yml` is a caller with the repository's cron, `check / mutation-diff` is a
+  required check on `main`, and mutation run 44468076120 is green at `8328360`.
+- Item 5 (P1), the single-shard mutation verdict: Done, `nifeos/crate-workflows#50`.
+- Item 6 (P1), the five methods: Done, `nifeos/generational_table#10`, with the spellings of
+  `nifeos/generational_table#21`: `insert`, `contains_key`, `iter_mut`, `slot_count` and `clear`,
+  each in the README's method list.
+- Item 7 (P1), the induction step for the walk bound: Done, `nifeos/generational_table#9`. Ten
+  harnesses carry ten falsification patches, among them
+  `the_walk_bound_and_the_live_count_survive_any_operation`, and the walk harness counts
+  `values_mut`.
+- Item 8 (P1), the performance figure: Done, `nifeos/generational_table#12`. `cargo bench`
+  reproduces every figure the README states.
+- Item 9 (P2), the O(N) first-fit scan: Done, `nifeos/generational_table#12`. Insert scans from a
+  cursor below which no slot is free, and `the_scan_cursor_keeps_first_fit_order` proves the order
+  unchanged.
+- Item 10 (P2), the storage layout: Done, `nifeos/generational_table#12`. The README states the
+  layout, a `size_of` test pins it, and the one-array layout measured no faster, so the two arrays
+  stay.
+- Item 11 (P2), `EntryName` as a key: Done, `nifeos/generational_table#10`. `PartialOrd` and `Ord`
+  order by the packed bits, as ratified, and `Debug` goes through `debug_struct`.
+- Item 12 (P2), the docs.rs front page: Done, `nifeos/generational_table#11`. The crate
+  documentation opens with an example and states the range of `N` and the stack cost.
+- Item 13 (P2), four text fixes: Waiting on the release that publishes, which collapses the
+  changelog's three pre-release sections to one line. `nifeos/generational_table#11` landed the
+  other three (`slab` in the comparison, the CONTRIBUTING line, the CODEOWNERS caveat).
+- Item 14 (P2), the unmatched `Zlib` allowance: Done, `nifeos/generational_table#11`. The item asked
+  for no change to the list; `deny.toml` keeps the template's list and says why the warning is
+  expected.
+- Item 15 (P2), `rust-version`: Done, `nifeos/generational_table#11`. `rust-version` is 1.85, and
+  the weekly `msrv` job holds it.
+- Done when, last bullet, every gate green at the commit 0.1.0 tags: Waiting on the release that
+  publishes. Tests, proofs and mutation are green at `8328360`; fuzz last ran green at `551fb87`,
+  before the renames of `nifeos/generational_table#21`, and runs again on its weekly schedule.
+- The release review's names: Done, `nifeos/generational_table#21` and
+  `nifeos/generational_table#22`. `slot_of` is `slot_index`, `live_slots` is `live_slot_indices`,
+  `iter_from` is `iter_from_slot_index` (parameter `first_slot_index`), `insert_with` is
+  `insert_with_name`, `capacity` is `slot_count`, `NEVER_MINTED` stays, and the `Debug` field
+  matches.
 
 ## Follow-on
 
-Read against `nifeos/generational_table` `main` at `8328360`, the merge of #22.
-
-- **Outstanding.** Item 1 (P0): the release that publishes deletes `publish = false`, as ruled.
-  The comment beside it is already one sentence a stranger can act on. Read from `Cargo.toml`.
-- **Done.** Item 2 (P1), in #9 and #14: `slot_index` widens a slot without a check where `usize`
-  holds 32 bits or more and resolves nothing elsewhere. The narrow-target test waits on a
-  toolchain (BUGS).
-- **Outstanding.** Item 3 (P1): the `cargo add` line and the crates.io and docs.rs badges wait on
-  the release that publishes. #11 landed the rest: the "Building and proving" section, the
-  one-line Kani install and a stranger run that found no gap (`docs/stranger-test.md`). Read from
-  the README.
-- **Done.** Item 4 (P1): the callers pin template release `v8` (#20), `mutation.yml` is a caller
-  with the repository's cron (#15), the `mutation-diff 30` budget is #18, `check / mutation-diff`
-  is a required check on `main`, and mutation run 44468076120 is green at `8328360`.
-- **Done.** Item 5 (P1), in `nifeos/crate-workflows#50`.
-- **Done.** Item 6 (P1), in #10, with the spellings this crate's rulings chose in #21: `insert`,
-  `contains_key`, `iter_mut`, `slot_count` and `clear`, each in the README's method list.
-- **Done.** Item 7 (P1), in #9: ten harnesses carry ten falsification patches, among them
-  `the_walk_bound_and_the_live_count_survive_any_operation`, and the walk harness counts
-  `values_mut`.
-- **Done.** Item 8 (P1), in #12: `cargo bench` reproduces every figure the README states.
-- **Done.** Item 9 (P2), in #12: insert scans from a cursor below which no slot is free, and
-  `the_scan_cursor_keeps_first_fit_order` proves the order unchanged.
-- **Done.** Item 10 (P2), in #12: the README states the layout, a `size_of` test pins it, and the
-  one-array layout measured no faster, so the two arrays stay.
-- **Done.** Item 11 (P2), in #10: `PartialOrd` and `Ord` by the packed bits, as ratified, and
-  `Debug` through `debug_struct`.
-- **Done.** Item 12 (P2), in #11: the crate documentation opens with an example and states the
-  range of `N` and the stack cost.
-- **Outstanding.** Item 13 (P2): the changelog's three pre-release sections collapse to one line
-  at 0.1.0. #11 landed the other three fixes (`slab` in the comparison, the CONTRIBUTING line, the
-  CODEOWNERS caveat). Read from `CHANGELOG.md`.
-- **Refused.** Item 14 (P2): `deny.toml` keeps the template's list and says why the `Zlib` warning
-  is expected, since the crate has no dependency for any allowance to match.
-- **Done.** Item 15 (P2), in #11: `rust-version` is 1.85, and the weekly `msrv` job holds it.
-- **Outstanding.** Done when, last bullet: tests, proofs, mutation and both fuzz targets green at
-  the commit 0.1.0 tags. Fuzz last ran green at `551fb87`, before the renames of #21. Read from the
-  repository's fuzz runs.
-- **Done.** The release review's names, in #21: `slot_of` is `slot_index`, `live_slots` is
-  `live_slot_indices`, `iter_from` is `iter_from_slot_index` (parameter `first_slot_index`),
-  `insert_with` is `insert_with_name`, `capacity` is `slot_count`, and `NEVER_MINTED` stays. #22
-  renames the `Debug` field to match.
+- **Milestone 1033.** Items 1, 3 and 13 and the last bullet of Done when wait on the release that
+  publishes, which milestone 1033 (`generational_table`: the fixed-capacity, proved slotmap,
+  released on its own) owns. The finding status above says what each release step does.
+- **Done.** Items 2, 4 to 12, 14 and 15 and the release review's names, in the crate repository
+  pull requests the finding status names.
 
 ## Open decisions
 

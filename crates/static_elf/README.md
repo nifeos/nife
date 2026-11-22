@@ -45,6 +45,9 @@ A reader that holds one segment at a time feeds each `PT_NOTE` segment, in table
 `NoteSearch::segment`. `NoteSegments::from_head` lists those segments from the first bytes of a
 file.
 
+Notes inside a segment are padded to 8 bytes when its `p_align` is 8, and to 4 bytes when it is 0,
+1 or 4, the rule the reader in the toolchain behind Clang follows. Any other `p_align` refuses the lookup as `BadAlignment`.
+
 ## What is proven
 
 Nine Kani harnesses. Five in `src/verification.rs` prove the per-segment bounds check panic-free,
@@ -105,8 +108,6 @@ bare-metal targets `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-e
 
 - `Elf::parse` checks overlap over `p_vaddr`, not `p_paddr`. A boot loader that places segments
   by physical address must check that their physical ranges are disjoint itself.
-- The note reader reads a `p_align` of 0 or 1 as 4-byte padding for any segment. The reader in
-  the toolchain behind Clang accepts 0 only for an empty segment and refuses 1. No common producer writes either value.
 - The machine list is three machines: `aarch64`, `riscv64` and `x86_64`.
 - The API may still change before the first release.
 

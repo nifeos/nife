@@ -35,7 +35,7 @@ visible in the code.
 ## Data messages and frames
 
 A directory grant's two messages are opaque to `grant_plan`. They are
-`filesystem_contract::grant`'s packing, and `grant_plan` has no non-dev dependency on that crate on
+`file_system_contract::grant`'s packing, and `grant_plan` has no non-dev dependency on that crate on
 purpose: the shell must be able to check a command line without linking the filesystem contract.
 The shell packs them, the progenitor forwards them, and nothing in between reads them. A change to
 how a grant is packed is then a change in one crate rather than in this wire.

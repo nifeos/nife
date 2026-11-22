@@ -163,7 +163,6 @@ dependencies = [
  "domain_name_resolution_contract",
  "grant_contract",
  "interfaces_note",
- "program_table",
 ]
 
 [[package]]
@@ -176,7 +175,7 @@ dependencies = [
 [[package]]
 name = "capability_table"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/capability_table?rev=a8d0fa65b08050e788719bd0e88922f9cd6b43bb#a8d0fa65b08050e788719bd0e88922f9cd6b43bb"
+source = "git+https://github.com/nifeos/capability_table?rev=968a16fed9723d88bf5168ec6604d0bbcaba853b#a8d0fa65b08050e788719bd0e88922f9cd6b43bb"
 
 [[package]]
 name = "capability_witness_contract"
@@ -247,8 +246,8 @@ dependencies = [
  "environment_contract",
  "extensible_host_controller_interface",
  "file_allocation_table",
- "filesystem_contract",
- "filesystem_fixture",
+ "file_system_contract",
+ "file_system_fixture",
  "free",
  "globally_unique_identifier_partition_table",
  "grant_contract",
@@ -421,8 +420,8 @@ dependencies = [
 
 [[package]]
 name = "designware_ethernet"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/designware_ethernet?rev=0e8f92bf67e58016983164cb52bf274e08e1d7ef#0e8f92bf67e58016983164cb52bf274e08e1d7ef"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/designware_ethernet?rev=d6730d2218edead38fac3fe96703eaa1e5e92ee2#d6730d2218edead38fac3fe96703eaa1e5e92ee2"
 
 [[package]]
 name = "designware_inter_integrated_circuit"
@@ -464,7 +463,7 @@ version = "0.1.0"
 name = "disk_tree"
 version = "0.1.0"
 dependencies = [
- "filesystem_contract",
+ "file_system_contract",
 ]
 
 [[package]]
@@ -504,7 +503,7 @@ dependencies = [
  "designware_inter_integrated_circuit",
  "driver_process_contract",
  "extensible_host_controller_interface",
- "filesystem_contract",
+ "file_system_contract",
  "non_volatile_memory_express",
  "pci_configuration_space",
  "startup_page_contract",
@@ -523,7 +522,7 @@ source = "git+https://github.com/nifeos/entropy_contract?rev=7e800fdcebe9128eaa5
 [[package]]
 name = "environment_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/environment_contract?rev=b4925221c6d33163c6217aa2b118ba29f0be5379#b4925221c6d33163c6217aa2b118ba29f0be5379"
+source = "git+https://github.com/nifeos/environment_contract?rev=4778d5937460ef1e43e39113721422dd573a3306#4778d5937460ef1e43e39113721422dd573a3306"
 
 [[package]]
 name = "equivalent"
@@ -542,14 +541,14 @@ version = "0.1.0-pre.2"
 source = "git+https://github.com/nifeos/file_allocation_table?rev=6f8aa1df729d4d437d11b8305fadbafa07c93251#6f8aa1df729d4d437d11b8305fadbafa07c93251"
 
 [[package]]
-name = "filesystem_contract"
+name = "file_system_contract"
 version = "0.1.0"
 
 [[package]]
-name = "filesystem_fixture"
+name = "file_system_fixture"
 version = "0.1.0"
 dependencies = [
- "filesystem_contract",
+ "file_system_contract",
 ]
 
 [[package]]
@@ -586,8 +585,8 @@ dependencies = [
  "domain_name_resolution_contract",
  "domain_name_resolution_fixture",
  "entropy_contract",
- "filesystem_contract",
- "filesystem_fixture",
+ "file_system_contract",
+ "file_system_fixture",
  "grant_contract",
  "grant_plan",
  "graphics_contract",
@@ -666,7 +665,7 @@ version = "0.1.0"
 name = "grant_contract"
 version = "0.1.0"
 dependencies = [
- "filesystem_contract",
+ "file_system_contract",
  "program_argument_contract",
 ]
 
@@ -675,11 +674,10 @@ name = "grant_plan"
 version = "0.1.0"
 dependencies = [
  "byte_glob",
- "filesystem_contract",
- "filesystem_fixture",
+ "file_system_contract",
+ "file_system_fixture",
  "grant_contract",
  "program_argument_contract",
- "program_table",
 ]
 
 [[package]]
@@ -796,7 +794,7 @@ source = "git+https://github.com/nifeos/interfaces_note?rev=bfa27187a87e0cc1916e
 [[package]]
 name = "intrusive_queue"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/intrusive_queue?rev=08c31f2d1397edc91f8046d068eaaf4f116b580b#08c31f2d1397edc91f8046d068eaaf4f116b580b"
+source = "git+https://github.com/nifeos/intrusive_queue?rev=10d1fa2893c1cab6db3901f79a1ab2bc0029170b#10d1fa2893c1cab6db3901f79a1ab2bc0029170b"
 
 [[package]]
 name = "jh7110_clock_and_reset"
@@ -836,9 +834,9 @@ dependencies = [
 
 [[package]]
 name = "jiff"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9cc767b5763de45e810109520123bb2829a653f3a7ed9be40b2bc4f81158f595"
+checksum = "ed5d126d72eb017f10b302e73bdeca446bea405ee449af4d9e7866d6b082d83e"
 dependencies = [
  "jiff-core",
  "jiff-static",
@@ -857,9 +855,9 @@ dependencies = [
 
 [[package]]
 name = "jiff-static"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "955491488dc99b572ea6d67b172dcd98787d00744b1fb44a5689b4e6413695a6"
+checksum = "c0127e9bde3c6130d6169e7d8d68676e4be69c4bf7573c308b6f960a5089c428"
 dependencies = [
  "jiff-core",
  "proc-macro2",
@@ -900,8 +898,8 @@ dependencies = [
  "entropy_contract",
  "environment_contract",
  "extensible_host_controller_interface",
- "filesystem_contract",
- "filesystem_fixture",
+ "file_system_contract",
+ "file_system_fixture",
  "firmware_configuration",
  "generational_table",
  "grant_plan",
@@ -993,7 +991,7 @@ name = "login_contract"
 version = "0.1.0"
 dependencies = [
  "credential_contract",
- "filesystem_contract",
+ "file_system_contract",
 ]
 
 [[package]]
@@ -1181,9 +1179,6 @@ dependencies = [
 [[package]]
 name = "pci_configuration_space"
 version = "0.1.0"
-dependencies = [
- "device_tree_blob",
-]
 
 [[package]]
 name = "periodic_deadline"
@@ -1276,7 +1271,7 @@ name = "program_table"
 version = "0.1.0"
 dependencies = [
  "capability_manifest_note",
- "filesystem_contract",
+ "file_system_contract",
  "grant_contract",
  "grant_plan",
  "primitive_benchmark_contract",
@@ -1529,7 +1524,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 name = "subtree_scope"
 version = "0.1.0"
 dependencies = [
- "filesystem_contract",
+ "file_system_contract",
 ]
 
 [[package]]
@@ -1547,7 +1542,7 @@ dependencies = [
  "byte_glob",
  "documentation",
  "environment_contract",
- "filesystem_contract",
+ "file_system_contract",
  "grant_contract",
  "grant_plan",
  "installed_programs",
@@ -1589,7 +1584,7 @@ dependencies = [
  "credential_contract",
  "domain_name_resolution_contract",
  "entropy_contract",
- "filesystem_contract",
+ "file_system_contract",
  "grant_contract",
  "graphics_contract",
  "installed_programs",
@@ -1658,8 +1653,8 @@ dependencies = [
  "e1000e",
  "entropy_contract",
  "environment_contract",
- "filesystem_contract",
- "filesystem_fixture",
+ "file_system_contract",
+ "file_system_fixture",
  "grant_contract",
  "grant_plan",
  "graphics_contract",
@@ -1991,7 +1986,7 @@ dependencies = [
 name = "walk_pricing"
 version = "0.1.0"
 dependencies = [
- "filesystem_fixture",
+ "file_system_fixture",
  "grant_plan",
 ]
 
@@ -2064,7 +2059,7 @@ dependencies = [
  "compositor",
  "documentation",
  "file_allocation_table",
- "filesystem_fixture",
+ "file_system_fixture",
  "globally_unique_identifier_partition_table",
  "glyph_atlas",
  "grant_contract",

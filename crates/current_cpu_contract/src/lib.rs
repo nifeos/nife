@@ -48,23 +48,27 @@ use core::sync::atomic::{AtomicU64, Ordering};
 /// any other magic as having no allowance and walks on one thread. The layout grows only by
 /// appending a word that reads zero where a kernel never wrote it, so a new field never changes the
 /// magic. A change to [`CPU_ID_BOUND`] does, and so does a layout break.
+///
+/// Name: ratified 2026-11-19 (UTC).
 pub const MAGIC: [u8; 8] = *b"CURRCPU1";
 
 /// The page layout's version, the digit [`MAGIC`] carries. A reader's check is the magic itself;
 /// a break bumps this and re-mints the magic in one change.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC).
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's interface note: 10, naming the current-CPU page. The
 /// number is this interface's for good: no other interface takes it, and a format change is a new
 /// version, never a new number. A program declares the pair of this id and [`VERSION`].
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC).
 pub const INTERFACE_ID: u64 = 10;
 
 /// What the CPU word holds before the kernel has ever switched this thread in. Not zero, because
 /// zero is a valid CPU id, so the unset state cannot be a zeroed word.
+///
+/// Name: ratified 2026-11-19 (UTC).
 ///
 /// # Examples
 ///
@@ -95,6 +99,8 @@ pub const UNSCHEDULED: u64 = u64::MAX;
 /// same change. The reader backs this up: [`CurrentCpuPage::cpu`] reads an id at or past the bound
 /// as unknown.
 ///
+/// Name: ratified 2026-11-19 (UTC). Kept over `MAXIMUM_CPUS`: it bounds ids, and is not a count.
+///
 /// # Examples
 ///
 /// Sizing a per-core array, which is the consumer this page exists for:
@@ -122,7 +128,7 @@ const MAGIC_OFFSET_BYTES: usize = 0;
 /// hand-assembled machine code loading the word by absolute address. A `u64`, so it adds to an
 /// address without a cast.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC). The page-contract family's `<FIELD>_OFFSET_BYTES` form.
 pub const CPU_OFFSET_BYTES: u64 = MAGIC_OFFSET_BYTES as u64 + 8;
 
 const CPU_OFFSET: usize = CPU_OFFSET_BYTES as usize;
@@ -133,13 +139,15 @@ const TICK_HERTZ_OFFSET_BYTES: usize = ALLOWANCE_OFFSET_BYTES + 8;
 /// allowance and the scheduler tick. Under one frame, the unit it is mapped as, and inside one
 /// cache line, so the reader is a single load on a line nobody else writes.
 ///
-/// Name: provisional. The bytes are the page's content, not the whole page it is mapped as.
+/// Name: ratified 2026-11-19 (UTC). The bytes are the page's content, not the whole page it is mapped as.
 pub const PAGE_CONTENT_BYTES: usize = TICK_HERTZ_OFFSET_BYTES + 8;
 
 /// How many threads of one process can each have a page: the slots below
 /// [`PAGE_VIRTUAL_ADDRESS`] in `address_space_layout::PROCESS_PAGES`. Slot `k` is at
 /// [`thread_page_virtual_address`]`(k)`; slot 0 is [`PAGE_VIRTUAL_ADDRESS`] itself, so a process's
 /// first thread reads where every thread read before slots existed.
+///
+/// Name: ratified 2026-11-19 (UTC).
 pub const THREAD_PAGE_SLOTS: usize =
     (address_space_layout::PROCESS_PAGES.bytes() / address_space_layout::PAGE_BYTES) as usize;
 
@@ -147,7 +155,7 @@ pub const THREAD_PAGE_SLOTS: usize =
 /// for each slot after it, inside `PROCESS_PAGES` and so inside the stack's last-level table.
 /// `None` past [`THREAD_PAGE_SLOTS`].
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC). `virtual_address` spelled out, as everywhere.
 pub const fn thread_page_virtual_address(k: usize) -> Option<u64> {
     if k < THREAD_PAGE_SLOTS {
         Some(PAGE_VIRTUAL_ADDRESS - k as u64 * address_space_layout::PAGE_BYTES)
@@ -162,7 +170,7 @@ pub const fn thread_page_virtual_address(k: usize) -> Option<u64> {
 /// mapping costs only its leaf entry; a page alone in its tables costs a table frame at each level
 /// on every spawn.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC). The page-contract family's name for the page's fixed address.
 pub const PAGE_VIRTUAL_ADDRESS: u64 = address_space_layout::CURRENT_CPU_PAGE_VIRTUAL_ADDRESS;
 
 /// Build a fresh page's bytes: the magic, and [`UNSCHEDULED`] for a thread that has not run yet,
@@ -171,6 +179,8 @@ pub const PAGE_VIRTUAL_ADDRESS: u64 = address_space_layout::CURRENT_CPU_PAGE_VIR
 ///
 /// There is no `build_page(cpu)`: the CPU is not known at build time and is not the kind of thing
 /// a builder should be able to assert. [`publish`] is the only way the word ever changes.
+///
+/// Name: ratified 2026-11-19 (UTC).
 pub fn build_page() -> [u8; PAGE_CONTENT_BYTES] {
     build_page_with(None, None)
 }
@@ -181,7 +191,7 @@ pub fn build_page() -> [u8; PAGE_CONTENT_BYTES] {
 /// ([`CurrentCpuPage::tick_hertz`]). [`None`] for either is the unknown the readers answer, which
 /// is what [`build_page`] writes.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC).
 pub fn build_page_with(
     allowance: Option<NonZeroU64>,
     tick_hertz: Option<NonZeroU64>,
@@ -208,7 +218,7 @@ pub fn build_page_with(
 /// the call. In a kernel that is its direct-map view of a frame the address space owns and nothing
 /// else can reach.
 ///
-/// Name: provisional (the parameter).
+/// Name: ratified 2026-11-19 (UTC). The parameter `page_virtual_address` too.
 #[inline]
 pub unsafe fn publish(page_virtual_address: u64, cpu: u64) {
     debug_assert!(
@@ -229,6 +239,8 @@ pub unsafe fn publish(page_virtual_address: u64, cpu: u64) {
 
 /// The current-CPU page, as seen through one thread's read-only mapping of it at
 /// [`PAGE_VIRTUAL_ADDRESS`].
+///
+/// Name: ratified 2026-11-19 (UTC).
 ///
 /// # Examples
 ///
@@ -269,7 +281,7 @@ impl CurrentCpuPage {
     /// such a page, read-only, at [`PAGE_VIRTUAL_ADDRESS`]; see the crate's `BUGS` section for the
     /// shape that does not get one.
     ///
-    /// Name: provisional (the parameter).
+    /// Name: ratified 2026-11-19 (UTC). The parameter `virtual_address` too.
     pub const unsafe fn new(virtual_address: u64) -> Self {
         debug_assert!(virtual_address.is_multiple_of(8), "the page is 8-aligned");
         CurrentCpuPage {
@@ -299,6 +311,8 @@ impl CurrentCpuPage {
     /// available parallelism), or `None` for an unrecognized page or one built without an
     /// allowance. An allowance the target cannot hold reads as unknown, never as a truncated count.
     /// One load, never written after the page is built, so it needs no ordering.
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     pub fn allowance(&self) -> Option<NonZeroUsize> {
         usize::try_from(self.word(ALLOWANCE_OFFSET_BYTES)?)
             .ok()
@@ -312,7 +326,7 @@ impl CurrentCpuPage {
     /// the one page every process on every architecture has. One load, never written after the page
     /// is built.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-19 (UTC).
     pub fn tick_hertz(&self) -> Option<NonZeroU64> {
         NonZeroU64::new(self.word(TICK_HERTZ_OFFSET_BYTES)?)
     }
@@ -325,6 +339,8 @@ impl CurrentCpuPage {
     /// of `CPU_ID_BOUND` elements.
     ///
     /// Two aligned loads and three comparisons, no system call.
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     pub fn cpu(&self) -> Option<usize> {
         match self.word(CPU_OFFSET)? {
             UNSCHEDULED => None,
@@ -347,7 +363,7 @@ mod tests {
     struct Aligned([u8; PAGE_CONTENT_BYTES]);
 
     impl Aligned {
-        fn va(&mut self) -> u64 {
+        fn virtual_address(&mut self) -> u64 {
             self.0.as_mut_ptr() as u64
         }
 
@@ -361,26 +377,26 @@ mod tests {
         fn publish(&mut self, cpu: u64) {
             // SAFETY: `self` is a live, 8-aligned buffer of exactly `PAGE_CONTENT_BYTES`, borrowed
             // mutably for the call, so this thread is its only writer.
-            unsafe { publish(self.va(), cpu) }
+            unsafe { publish(self.virtual_address(), cpu) }
         }
 
         /// [`CurrentCpuPage::cpu`] over this buffer. The page value never leaves the call, so it
         /// cannot outlive the buffer it names.
         fn cpu(&mut self) -> Option<usize> {
             // SAFETY: as `publish`; the page is read and dropped while `self` is borrowed.
-            unsafe { CurrentCpuPage::new(self.va()) }.cpu()
+            unsafe { CurrentCpuPage::new(self.virtual_address()) }.cpu()
         }
 
         /// [`CurrentCpuPage::allowance`] over this buffer, under `cpu`'s argument.
         fn allowance(&mut self) -> Option<core::num::NonZeroUsize> {
             // SAFETY: as `cpu`.
-            unsafe { CurrentCpuPage::new(self.va()) }.allowance()
+            unsafe { CurrentCpuPage::new(self.virtual_address()) }.allowance()
         }
 
         /// [`CurrentCpuPage::tick_hertz`] over this buffer, under `cpu`'s argument.
         fn tick_hertz(&mut self) -> Option<core::num::NonZeroU64> {
             // SAFETY: as `cpu`.
-            unsafe { CurrentCpuPage::new(self.va()) }.tick_hertz()
+            unsafe { CurrentCpuPage::new(self.virtual_address()) }.tick_hertz()
         }
     }
 
@@ -501,8 +517,8 @@ mod tests {
     fn the_thread_page_slots_fill_the_process_pages_band() {
         assert_eq!(thread_page_virtual_address(0), Some(PAGE_VIRTUAL_ADDRESS));
         for k in 0..THREAD_PAGE_SLOTS {
-            let va = thread_page_virtual_address(k).unwrap();
-            assert!(address_space_layout::PROCESS_PAGES.contains(va));
+            let virtual_address = thread_page_virtual_address(k).unwrap();
+            assert!(address_space_layout::PROCESS_PAGES.contains(virtual_address));
         }
         assert_eq!(thread_page_virtual_address(THREAD_PAGE_SLOTS), None);
         assert_eq!(THREAD_PAGE_SLOTS, 16);

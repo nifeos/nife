@@ -25,7 +25,7 @@ server enforces itself brings it to 0.85x Linux.
 
 Parity with Linux on the same hardware tier for the walk `ripgrep`'s `ignore` crate performs: list
 every directory, read every file. The instrument is milestone 121's (`walk_pricing` over
-`filesystem_contract::fixture::walk`), through the grant a confined `rg pattern src/` will hold.
+`file_system_contract::fixture::walk`), through the grant a confined `rg pattern src/` will hold.
 
 ## What is built
 

@@ -71,7 +71,6 @@ http_response = { path = "../crates/http_response" }
 package_archive = { path = "../crates/package_archive" }
 capability_manifest_note = { path = "../crates/capability_manifest_note" }
 grant_contract = { path = "../crates/grant_contract" }
-program_table = { path = "../crates/program_table" }
 domain_name_resolution_contract = { path = "../crates/domain_name_resolution_contract" }
 package_index = { path = "../crates/package_index" }
 video_terminal = { path = "../crates/video_terminal" }
@@ -92,7 +91,7 @@ machine_discovery = { path = "../crates/machine_discovery" }
 # names no registry crate beyond `libfuzzer-sys`.
 redoxfs_server = { path = "../redoxfs_server" }
 redoxfs = { path = "../vendor/redoxfs", default-features = false, features = ["std"] }
-filesystem_contract = { path = "../crates/filesystem_contract" }
+file_system_contract = { path = "../crates/file_system_contract" }
 system_log = { path = "../crates/system_log" }
 system_log_contract = { path = "../crates/system_log_contract" }
 byte_sink_contract = { version = "0.1.0", git = "https://github.com/nifeos/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }

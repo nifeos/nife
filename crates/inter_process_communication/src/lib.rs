@@ -24,7 +24,7 @@ pub mod timer;
 /// Machine-checked proofs of the rendezvous state machine: every operation preserves the
 /// one-queue invariant, and each decision matches its rule.
 ///
-/// The harnesses are inductive steps over one waiter per queue, and each discharges the token
+/// The harnesses are inductive steps over at most one waiter, and each discharges the token
 /// obligations `notes/inter-process-communication.md` ("How it is proved") states: every node is
 /// declared before the rendezvous, on no queue, and minted once.
 #[cfg(kani)]

@@ -22,7 +22,7 @@ publish = false
 # **Only the public contracts** (milestone 809's "other package managers can emerge": a second
 # manager on these crates can do what `jig` can). The request wire and the manifest
 # (`grant_plan`'s `spawn_protocol`), the package format and the catalog's lookup rule
-# (`package_archive`), how a name travels on that wire (`filesystem_contract::grant`), the plain
+# (`package_archive`), how a name travels on that wire (`file_system_contract::grant`), the plain
 # HTTP reader the progenitor used to run (`http_response`, which left the progenitor's graph in the
 # same change), where the package source answers (`socket_fixture`), the `std` layout's
 # pages (`std_runtime_contract`), and the system calls a `std` program has no binding for
@@ -30,7 +30,7 @@ publish = false
 [dependencies]
 abi = { path = "../crates/abi" }
 address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
-filesystem_contract = { path = "../crates/filesystem_contract" }
+file_system_contract = { path = "../crates/file_system_contract" }
 grant_contract = { path = "../crates/grant_contract" }
 program_table = { path = "../crates/program_table" }
 http_response = { path = "../crates/http_response" }

@@ -411,6 +411,6 @@ pub fn destroy(region: u64) {
     } else {
         // A child region: its pages return to the parent, never the allocator. The LIFO test and the
         // un-bump happen under one hold, with the amount the proved `destroy_outcome` dictates.
-        REGIONS.lock().return_to_parent(&claim);
+        REGIONS.lock().return_to_parent(claim);
     }
 }

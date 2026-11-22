@@ -46,7 +46,7 @@ const REBOOT_SLOT: u64 = grant_contract::REBOOT_SLOT;
 const SYNC_SLOT: u64 = grant_contract::SYNC_SLOT;
 const ROUTE_SLOT: u64 = grant_contract::POWER_MANAGEMENT_CHIP_ROUTE_SLOT;
 
-/// `EOPNOTSUPP`: the device offers no flush, which `fs::SYNC` passes through on purpose.
+/// `EOPNOTSUPP`: the device offers no flush, which `file_system::SYNC` passes through on purpose.
 const EOPNOTSUPP: i64 = 95;
 
 user_mode_runtime::program_entry!(start);
@@ -64,8 +64,13 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // filesystem (the progenitor refuses the spawn when there is one it could not bind), so there
     // is nothing to sync. Otherwise the reply is the device's flush count, or a negative errno.
     let synced = if is_granted(SYNC_SLOT) {
-        use filesystem_contract::fs;
-        call(SYNC_SLOT, fs::request(fs::SYNC, fs::ROOT, 0), 0).0 as i64
+        use file_system_contract::file_system;
+        call(
+            SYNC_SLOT,
+            file_system::request(file_system::SYNC, file_system::ROOT, 0),
+            0,
+        )
+        .0 as i64
     } else {
         0
     };

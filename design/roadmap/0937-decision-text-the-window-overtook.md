@@ -25,7 +25,7 @@ moved. None changes a ruling.
   `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED` is 37, so 27 are free; the conclusion holds.
 - [§307 (how long a name may be)](../decisions/0307-how-long-a-name-may-be.md) cites
   `xtask/basalt-pins.index`, which is gone; the pin is `xtask/basalt-pin`. It also names
-  `filesystem_protocol` and `system_log_protocol`, now `filesystem_contract` and
+  `filesystem_protocol` and `system_log_protocol`, now `file_system_contract` and
   `system_log_contract`, with the constants it quotes unchanged.
 - [§306 (the web's authority list is a package and a capability)](../decisions/0306-the-web-authority-list-is-a-package-and-a-capability.md)
   points at an "open question 1" of milestone 809 (the package client becomes a program); 809 has

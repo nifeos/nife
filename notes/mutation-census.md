@@ -105,7 +105,7 @@ survivors 687 -> 563, viable 8,893 -> 8,925
 
 crate                                    viable          killed         survivors   points
 timetable                           182 ->   146   73.6% -> 100.0%    48 ->    0      0.51
-filesystem_contract                 598 ->   598   90.1% ->  93.3%    59 ->   40      0.21
+file_system_contract                 598 ->   598   90.1% ->  93.3%    59 ->   40      0.21
 swish                               188 ->   188   89.4% ->  97.9%    20 ->    4      0.18
 device_tree_blob                    411 ->   411   96.6% ->  99.8%    14 ->    1      0.15
 work_steal_slot                      24 ->    13   54.2% -> 100.0%    11 ->    0      0.11

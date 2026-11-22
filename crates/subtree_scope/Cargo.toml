@@ -11,4 +11,4 @@ workspace = true
 
 [dependencies]
 # The rights arithmetic a step narrows with. `no_std` and dependency-free.
-filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
+file_system_contract = { version = "0.1.0", path = "../file_system_contract" }

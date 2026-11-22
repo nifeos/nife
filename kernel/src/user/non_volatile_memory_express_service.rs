@@ -545,7 +545,7 @@ impl Wiring {
     }
 
     /// Take the startup report, or `None` when this caller was not the one that wired the server.
-    /// Word 0 is [`filesystem_contract::READY`] when the first command round-tripped, and
+    /// Word 0 is [`file_system_contract::READY`] when the first command round-tripped, and
     /// a `0xDEAD_..` word naming the failing step otherwise; word 1 is the namespace size the
     /// server was handed, so a bench transcript can see the geometry reached ring 3 intact.
     pub fn wait_for_ready(&self) -> Option<[u64; 5]> {
@@ -557,7 +557,7 @@ impl Wiring {
     pub fn blk(&self, operation: u64, block: u64) -> i64 {
         crate::sched::ipc_call(
             self.request,
-            [filesystem_contract::request(operation), block],
+            [file_system_contract::request(operation), block],
         )[0] as i64
     }
 
