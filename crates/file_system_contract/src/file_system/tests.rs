@@ -49,11 +49,7 @@ fn a_request_refuses_a_handle_past_the_field() {
 #[test]
 #[should_panic]
 fn a_request_refuses_a_length_past_the_field() {
-    let _ = file_system::request(
-        file_system::READ,
-        3,
-        file_system::MAXIMUM_LENGTH_BYTES + 1,
-    );
+    let _ = file_system::request(file_system::READ, 3, file_system::MAXIMUM_LENGTH_BYTES + 1);
 }
 
 #[test]
