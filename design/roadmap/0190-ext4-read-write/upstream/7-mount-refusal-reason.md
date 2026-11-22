@@ -85,7 +85,7 @@ affected are `fs/rsext4`, and `fs/ax-fs-ng` through it.
 
 - 先在未修复的代码上运行新测试，它失败：`left: Io, right: InvalidMagic`，错误为 `Ext4Error { kind: Io, context: None }`。修复后通过。
 - `cargo xtask clippy --package rsext4` 通过（3 项检查），`cargo fmt` 无改动。
-- `cargo xtask test --since 6e80b940d` 中，除下面三项外所有被选中的软件包都通过。`rsext4` 的 `tests/filesystem_growth.rs` 中 `growth_recovers_commit_checkpoint_and_flush_interruptions` 和 `growth_preserves_files_and_exposes_new_groups_to_linux`，以及 `ax-fs-ng` 的 `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents` 失败；这三项在未改动的基准提交上以同样的方式失败，与本改动无关。原因是本机 `mke2fs`（e2fsprogs 1.47.2）默认启用 `orphan_file`，而扩容在 `fs/rsext4/src/ext4/grow/layout.rs:93` 拒绝该特性（`grow:features_or_durability`）。
+- `cargo xtask test --since 6e80b940d` 中，除下面三项外所有被选中的软件包都通过。`rsext4` 的 `tests/filesystem_growth.rs` 中 `growth_recovers_commit_checkpoint_and_flush_interruptions` 和 `growth_preserves_files_and_exposes_new_groups_to_linux`，以及 `ax-fs-ng` 的 `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents` 失败；这三项在未改动的基准提交上以同样的方式失败，与本改动无关。原因是本机 `mke2fs`（e2fsprogs 1.47.2）默认启用 `orphan_file`，而扩容在 `GrowthLayout::check`（`fs/rsext4/src/ext4/grow/layout.rs`）拒绝该特性（`grow:features_or_durability`）。
 - 另用一个外部读取比对工具（用 `mke2fs` 生成 1 KiB、2 KiB、4 KiB 块的镜像，分别放在 512 和 4096 字节扇区的设备上挂载）验证：修复前 1 KiB 和 2 KiB 块镜像在 4096 字节扇区上被拒绝为 `Ext4Error { kind: Io, context: None }`，修复后为 `BadSuperblock` 及 `device:filesystem_geometry` 上下文；其余镜像与扇区组合的结果不变。
 - 未验证：QEMU 和实体板卡。本改动只影响挂载失败时返回的错误类型，不改变任何成功挂载的路径。
 
@@ -150,8 +150,8 @@ size, and mount reports `Io` rather than `InvalidMagic`.
   `tests/filesystem_growth.rs`, and `ax-fs-ng`'s
   `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents`. These three fail
   the same way on the unchanged base commit, so this change does not cause them. The cause: the
-  host's `mke2fs` (e2fsprogs 1.47.2) enables `orphan_file`, and growth refuses that feature at
-  `fs/rsext4/src/ext4/grow/layout.rs:93` (`grow:features_or_durability`).
+  host's `mke2fs` (e2fsprogs 1.47.2) enables `orphan_file`, and growth refuses that feature in
+  `GrowthLayout::check` (`fs/rsext4/src/ext4/grow/layout.rs`, `grow:features_or_durability`).
 - Also checked with an external read comparison tool, which mounts `mke2fs` images with 1 KiB,
   2 KiB and 4 KiB blocks on devices of 512-byte and 4,096-byte sectors. Before the fix, mount refuses the
   1 KiB and 2 KiB block images on 4,096-byte sectors as `Ext4Error { kind: Io, context: None }`;
