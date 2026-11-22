@@ -102,15 +102,15 @@ fn a_quoted_limit_is_the_constant_behind_it() {
     let cases: &[(Refusal, &str, usize, &str)] = &[
         (
             Refusal::FileNotNameable,
-            "at most {} bytes a file",
+            "at most {} bytes a name",
             crate::MAXIMUM_FILE_NAME_BYTES,
             "MAXIMUM_FILE_NAME_BYTES",
         ),
         (
             Refusal::FileNotNameable,
-            "{} a directory",
-            crate::navigation::MAXIMUM_DIRECTORY_NAME_BYTES,
-            "navigation::MAXIMUM_DIRECTORY_NAME_BYTES",
+            "{} bytes a path",
+            crate::navigation::MAXIMUM_PATH_BYTES,
+            "navigation::MAXIMUM_PATH_BYTES",
         ),
         (
             Refusal::FileNotNameable,
@@ -188,10 +188,7 @@ fn every_number_a_refusal_names_is_its_constants_value() {
 
     let refused_file_name = Refusal::FileNotNameable.message();
     says(refused_file_name, crate::MAXIMUM_FILE_NAME_BYTES);
-    says(
-        refused_file_name,
-        crate::navigation::MAXIMUM_DIRECTORY_NAME_BYTES,
-    );
+    says(refused_file_name, crate::navigation::MAXIMUM_PATH_BYTES);
     says(refused_file_name, crate::navigation::MAXIMUM_DEPTH);
     let too_many = Refusal::TooManyNames.message();
     says(too_many, crate::expansion::MAXIMUM_NAMES);
@@ -217,12 +214,12 @@ fn every_number_a_refusal_names_is_its_constants_value() {
         crate::navigation::MAXIMUM_DEPTH,
     );
     says(
-        crate::navigation::PathRefusal::DirectoryNameTooLong.message(),
-        crate::navigation::MAXIMUM_DIRECTORY_NAME_BYTES,
+        crate::navigation::PathRefusal::PathTooLong.message(),
+        crate::navigation::MAXIMUM_PATH_BYTES,
     );
     says(
         crate::navigation::BindRefusal::NotAName.message(),
-        crate::navigation::MAXIMUM_DIRECTORY_NAME_BYTES,
+        crate::navigation::MAXIMUM_BOUND_NAME_BYTES,
     );
     says(
         crate::navigation::BindRefusal::TooMany.message(),
