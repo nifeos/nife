@@ -253,8 +253,8 @@ The checks are in [the appendix](1105-pci-outside-review/done-when.md).
 ## Index row
 
 An outside review of `pci` before it leaves. It finds two blockers (the fixture tests that reach
-into nife, and the staged tree's red gates), six items to land before the tag (BAR sizing that
-trusts the mask, BAR probing on any header, two name lists, documentation for a stranger, a missing
-MSI proof), and seven for later. Every item has landed except the mutation exemptions, which the
+into nife, and the staged tree's red gates). It also finds six items to land before the tag (BAR
+sizing that trusts the mask, BAR probing on any header, two name lists, documentation for a
+stranger, a missing MSI proof), and seven for later. Every item has landed except the mutation exemptions, which the
 move adds, and the INTx bridge route, which waits on the bus server. The names are ratified, the
 package name has a ruling, and the review is cleared.
