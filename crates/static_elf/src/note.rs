@@ -29,7 +29,9 @@ pub enum NoteError {
     NotReadable,
     /// A `PT_NOTE` whose file range is not inside the file.
     SegmentOutOfBounds,
-    /// A `PT_NOTE` whose `p_align` is not 0, 1, 4 or 8.
+    /// A `PT_NOTE` whose `p_align` is not 0, 1, 4 or 8. The reader pads notes to 8 bytes under
+    /// `p_align` 8 and to 4 bytes under the other three, as LLVM's reader does, which accepts 0
+    /// for Linux core dumps and still accepts 1.
     BadAlignment,
     /// A note header, name or descriptor (with its padding) runs past the end of its segment.
     Truncated,
@@ -205,9 +207,10 @@ fn align_up(x: usize, align: usize) -> Option<usize> {
     Some(x.checked_add(mask)? & !mask)
 }
 
-/// `p_align` to note padding, by LLVM's `Elf_Note_Iterator` rule: the gABI says 8-byte padding for
-/// ELF64, toolchains write 4 except under `p_align` 8. Alignments 0 and 1 read as 4-byte padding for
-/// any segment, where LLVM accepts 0 only for an empty segment and refuses 1.
+/// `p_align` to note padding, by LLVM's rule (`ELFFile::notes_begin`): the gABI says 8-byte padding
+/// for ELF64, toolchains write 4 except under `p_align` 8. LLVM accepts `p_align` 0, 1, 4 and 8 for
+/// any segment and pads to the larger of `p_align` and 4, so 0 and 1 read as 4-byte padding there
+/// and here.
 fn padding(p_align: u64) -> Result<usize, NoteError> {
     match p_align {
         0 | 1 | 4 => Ok(4),

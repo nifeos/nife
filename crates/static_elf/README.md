@@ -105,8 +105,6 @@ bare-metal targets `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-e
 
 - `Elf::parse` checks overlap over `p_vaddr`, not `p_paddr`. A boot loader that places segments
   by physical address must check that their physical ranges are disjoint itself.
-- The note reader reads a `p_align` of 0 or 1 as 4-byte padding for any segment. The reader in
-  the toolchain behind Clang accepts 0 only for an empty segment and refuses 1. No common producer writes either value.
 - The machine list is three machines: `aarch64`, `riscv64` and `x86_64`.
 - The API may still change before the first release.
 

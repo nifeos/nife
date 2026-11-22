@@ -99,8 +99,7 @@ What a stranger may find surprising:
 - The five policy refusals have no setting. The README lists them with their reasons and lists what
   the parse does not check (`e_flags`, `p_align`, section headers and more).
 - A tail entry in zero-filled memory is refused as `EntryNotExecutable`.
-- The note reader reads a `p_align` of 0 or 1 as 4-byte padding, which differs from LLVM for the
-  value 1. The README's BUGS section says so; nobody has yet read LLVM's source to state the rule.
+- The note reader reads a `p_align` of 0 or 1 as 4-byte padding, as LLVM's `notes_begin` does.
 
 ## Proofs
 
