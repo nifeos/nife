@@ -16,7 +16,7 @@ use super::{
 };
 
 /// `p_type` for a segment of notes.
-const PT_NOTE: u32 = 4;
+pub(crate) const PT_NOTE: u32 = 4;
 
 /// The three header words.
 const NHDR_SIZE: usize = 12;
@@ -388,7 +388,8 @@ mod verification {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{EXECUTABLE, NATIVE_MACHINE, READABLE};
+    use crate::forge::Builder;
+    use crate::{EXECUTABLE, READABLE};
     extern crate std;
     use std::vec;
     use std::vec::Vec;
@@ -413,47 +414,11 @@ mod tests {
 
     /// A one-`PT_LOAD` ELF plus one `PT_NOTE` per entry of `notes`, each `(p_align, bytes)`.
     fn image(notes: &[(u64, Vec<u8>)]) -> Vec<u8> {
-        let phnum = 1 + notes.len();
-        let mut body_off = 64 + phnum * 56;
-        let mut v = vec![0u8; 64];
-        v[0..4].copy_from_slice(&[0x7f, b'E', b'L', b'F']);
-        v[4] = 2;
-        v[5] = 1;
-        v[6] = 1;
-        v[16..18].copy_from_slice(&2u16.to_le_bytes());
-        v[18..20].copy_from_slice(&NATIVE_MACHINE.to_le_bytes());
-        v[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
-        v[32..40].copy_from_slice(&64u64.to_le_bytes());
-        v[54..56].copy_from_slice(&56u16.to_le_bytes());
-        v[56..58].copy_from_slice(&(phnum as u16).to_le_bytes());
-
-        let code = [0xaau8; 16];
-        let mut ph = vec![0u8; 56];
-        ph[0..4].copy_from_slice(&1u32.to_le_bytes());
-        ph[4..8].copy_from_slice(&(READABLE | EXECUTABLE).to_le_bytes());
-        ph[8..16].copy_from_slice(&(body_off as u64).to_le_bytes());
-        ph[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
-        ph[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
-        ph[32..40].copy_from_slice(&16u64.to_le_bytes());
-        ph[40..48].copy_from_slice(&16u64.to_le_bytes());
-        v.extend_from_slice(&ph);
-        body_off += code.len();
-
-        let mut body = code.to_vec();
-        for (align, bytes) in notes {
-            let mut ph = vec![0u8; 56];
-            ph[0..4].copy_from_slice(&PT_NOTE.to_le_bytes());
-            ph[4..8].copy_from_slice(&READABLE.to_le_bytes());
-            ph[8..16].copy_from_slice(&(body_off as u64).to_le_bytes());
-            ph[32..40].copy_from_slice(&(bytes.len() as u64).to_le_bytes());
-            ph[40..48].copy_from_slice(&(bytes.len() as u64).to_le_bytes());
-            ph[48..56].copy_from_slice(&align.to_le_bytes());
-            v.extend_from_slice(&ph);
-            body.extend_from_slice(bytes);
-            body_off += bytes.len();
+        let mut forge = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16);
+        for (alignment, bytes) in notes {
+            forge = forge.note_segment(*alignment, bytes);
         }
-        v.extend_from_slice(&body);
-        v
+        forge.build()
     }
 
     #[test]
