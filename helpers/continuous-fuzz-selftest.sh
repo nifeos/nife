@@ -102,7 +102,7 @@ for driver in $drivers; do
     pair=$(sed -n "s/^ *$driver) echo \"\([a-z_]* NIFE_[A-Z_]*_FUZZ_SEEDS\)\" ;;\$/\1/p" "$sup")
     filter=${pair% *}
     var=${pair#* }
-    file=$(grep -rl -E "^fn $filter[a-z_]*\(\)" "$sources" || true)
+    file=$(grep -rl -E "^fn ${filter}[a-z_]*\(\)" "$sources" || true)
     [ "$(echo "$file" | grep -c .)" -eq 1 ] || fail "$driver: wanted one file defining a test that starts '$filter', found '$file'"
     grep -q "option_env!(\"$var\")" "$file" || fail "$driver: $file does not read $var"
     grep -q "(replay: $var={}:1)" "$file" || fail "$driver: $file prints no replay line naming $var"
