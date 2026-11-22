@@ -144,7 +144,8 @@ pub(super) fn serve_installer(
             // at any length (milestone 1122 (every name travels on a page)).
             if answer.member == 3 {
                 let ask = &answer.ask;
-                let (a, b, c) = spawn_protocol::refused_ask_words(ask.kind, ask.rights, ask.len);
+                let (a, b, c) =
+                    spawn_protocol::refused_ask_words(ask.kind, ask.rights, ask.length_bytes);
                 send(reply, a, b, c);
                 let name = ask.name();
                 for m in 0..spawn_protocol::stored_messages(name.len() as u64) as usize {
@@ -347,7 +348,7 @@ struct Ask {
     kind: u64,
     rights: u64,
     name: [u8; ASK_NAME_BYTES],
-    len: usize,
+    length_bytes: usize,
 }
 
 impl Ask {
@@ -356,12 +357,12 @@ impl Ask {
         kind: 0,
         rights: 0,
         name: [0; ASK_NAME_BYTES],
-        len: 0,
+        length_bytes: 0,
     };
 
     /// The ask's name, as [`refused_with_ask`] copied it.
     fn name(&self) -> &[u8] {
-        &self.name[..self.len]
+        &self.name[..self.length_bytes]
     }
 }
 
@@ -1278,10 +1279,10 @@ fn refused_with_ask(
     let mut ask = Ask {
         kind,
         rights,
-        len: name.len().min(ASK_NAME_BYTES),
+        length_bytes: name.len().min(ASK_NAME_BYTES),
         ..Ask::NONE
     };
-    ask.name[..ask.len].copy_from_slice(&name.as_bytes()[..ask.len]);
+    ask.name[..ask.length_bytes].copy_from_slice(&name.as_bytes()[..ask.length_bytes]);
     cx.ask.set(ask);
     refused
 }
