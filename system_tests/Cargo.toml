@@ -79,7 +79,7 @@ environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/env
 c_program_fixture = { path = "../crates/c_program_fixture" }
 file_system_contract = { version = "0.1.0", path = "../crates/file_system_contract" }
 file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture" }
-grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "ce12324c374e1bb31c870f4142af1a71d3d3be9c" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The registration page's layout (milestone 129 (scheduled execution), DECISIONS §222 (who holds a

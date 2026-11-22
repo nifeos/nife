@@ -87,7 +87,7 @@ milestone reaches delivery.
   `program_argument_contract` has its own repository, since it depends on that crate.
 - The move of `grant_contract`: Done as a pin, [#4016](https://github.com/nifeos/nife/pull/4016).
   nifeos/grant_contract exists, and nife depends on it at commit
-  ce12324c374e1bb31c870f4142af1a71d3d3be9c (`version = "0.1.0"`, `publish = false`). No tag and
+  d4e9ca29d51bc71d678aadaa00411eba953202b3 (`version = "0.1.0"`, `publish = false`). No tag and
   no publish; a pre-release tag moves the pin later.
 - Decision, the names of both crates: Done, [#3868](https://github.com/nifeos/nife/pull/3868), ruled 2026-11-20 (UTC). Names with no block
   wait on rulings by family.

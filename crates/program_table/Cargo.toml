@@ -15,7 +15,7 @@ workspace = true
 
 [dependencies]
 # The manifest types and slot numbers every row is written in.
-grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "ce12324c374e1bb31c870f4142af1a71d3d3be9c" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 # The planner: `plan` and `plan_stage` resolve a name here and plan against its manifest there.
 grant_plan = { version = "0.1.0", path = "../grant_plan" }
 
