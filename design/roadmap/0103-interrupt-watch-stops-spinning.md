@@ -26,7 +26,7 @@ through and marked DONE when they landed. Item 1, `^C`, was never struck, and it
 
 - `DECISIONS` §24 (interrupting the foreground process) carries a section headed "Implementation amendment (built): two primitives
   forced the shape", describing both tiers as running on both ISAs.
-- `crates/line_editor` implements `OPERATION_INTRCOUNT`; `crates/grant_plan` holds `jobframe` (the per-job
+- `line_editor` implements `OPERATION_INTRCOUNT`; `crates/grant_plan` holds `jobframe` (the per-job
   shared interrupt frame) and `Escalation` (the host-tested escalation policy); `interruptible` is a
   manifest field the shell sets per program.
 - §24 records that "a pure `loop {}` spinner is now torn down on the second `^C` on both ISAs",

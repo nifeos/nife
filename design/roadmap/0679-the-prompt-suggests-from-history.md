@@ -25,7 +25,7 @@ text after the cursor that is not part of the line.
 
 ## Exit criterion
 
-A host test in `crates/line_editor` shows the suggestion drawn after the cursor, erased when the
+A host test in `line_editor` shows the suggestion drawn after the cursor, erased when the
 next key disagrees with it, and accepted by a right arrow at the end of the line.
 
 ## Index row

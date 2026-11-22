@@ -13,7 +13,7 @@ needs_person: no
 *Title and slug are drafts.*
 Raised by milestone 47 (navigation and naming), recorded rather than built. The stem is provisional.
 
-Shell-side, in `crates/line_editor` (DECISIONS §227 (how Tab reaches the shell)
+Shell-side, in `line_editor` (DECISIONS §227 (how Tab reaches the shell)
 option D put the engine in the shell).
 
 ## What it is
@@ -24,7 +24,7 @@ engine's history is eight entries today, so this is worth building alongside a l
 
 ## Exit criterion
 
-Host tests in `crates/line_editor` for the narrowing, the repeat, accepting and abandoning, with
+Host tests in `line_editor` for the narrowing, the repeat, accepting and abandoning, with
 the screen model the crate's tests already use.
 
 ## Index row

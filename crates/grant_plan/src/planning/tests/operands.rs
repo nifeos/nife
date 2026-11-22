@@ -5,7 +5,7 @@ use crate::expansion::{Expander, Expansion, MAXIMUM_NAMES};
 use crate::test_support::{READS_A_FILE, WITH_DIRECTORY, plan, plan_against};
 use crate::*;
 
-// ---- `rm` is a program, and its operand grants a directory (milestone 47's rmdir lane) ----
+// ---- `rm` is a program, and its operand grants a directory ----
 
 /// **The headline at this level: naming something to remove grants the directory that holds
 /// it.** `rm old.txt` hands `rm` a capability to the directory `old.txt` is in, plus that one
@@ -39,7 +39,7 @@ fn naming_something_to_remove_grants_the_directory_that_holds_it() {
     assert_eq!((e.program_argument, e.memory_grant_pages), (0, 0));
 
     // A path operand is walked at the prompt, so the grant is the directory it landed in and
-    // the child still only ever sees one component (§27 intact).
+    // the child still only ever sees one component.
     let CommandLine::Run(r) = parse(b"rm logs/2026/old.txt") else {
         panic!()
     };
@@ -80,7 +80,7 @@ fn the_recursion_option_is_what_widens_the_grant() {
 
 /// A manifest whose recursion letter is not its first option, which no shipped program has:
 /// `rm` declares `r` first, so its bit is zero, where `1 << bit` and every wrong spelling of it
-/// agree. Through [`plan_against`], the door an external manifest (milestone 23) comes through.
+/// agree. Through [`plan_against`], the door an external manifest comes through.
 const SWEEPS_A_TREE: Manifest = Manifest {
     file: FileGrantDeclaration::Forbidden,
     directory: DirectoryGrantDeclaration::Required {
@@ -172,8 +172,8 @@ fn an_option_the_manifest_does_not_declare_is_refused() {
 }
 
 /// `rm` with nothing to remove, and `rm` in a shell that holds no directory. The second is the
-/// milestone's headline refusal reaching a **shipped** program for the first time: until now no
-/// program in the static table declared a grant the interactive shell cannot back.
+/// capability model's headline refusal reaching a **shipped** program: one that declares a grant
+/// the interactive shell cannot back.
 #[test]
 fn rm_needs_an_operand_and_something_to_narrow() {
     let CommandLine::Run(r) = parse(b"rm") else {
@@ -262,7 +262,7 @@ fn a_directory_grant_is_fixed_where_it_was_planned() {
     assert_eq!(g.directory.depth(), 1, "the grant followed the shell");
 }
 
-// ---- globbing: the expansion is the grant (milestone 47's globbing lane) ----
+// ---- globbing: the expansion is the grant ----
 
 /// A directory as the shell would enumerate it: two names the pattern takes, one it does not,
 /// and a subdirectory it does not either. The last two are the controls, and they are what make
@@ -277,8 +277,8 @@ const LISTING: [(&[u8], bool); 4] = [
 /// Expand a pattern over [`LISTING`], the way both `echo` and the shell's grant path do.
 fn expanded(pattern: &[u8]) -> Result<expansion::NameSet, Refusal> {
     let mut e = Expander::new(pattern);
-    for (name, is_dir) in LISTING {
-        e.offer(name, is_dir);
+    for (name, is_directory) in LISTING {
+        e.offer(name, is_directory);
     }
     e.finish()
 }
@@ -474,26 +474,11 @@ fn a_pattern_is_resolved_where_the_shell_was_standing() {
     assert_eq!(g.directory.depth(), 2, "the grant followed the shell");
 }
 
-/// The set bound is one number spelled in two crates, for [`MAXIMUM_FILE_NAME_BYTES`]'s reason:
-/// `grant_plan` must be able to check a command line without linking the filesystem contract, so
-/// the pair is pinned here rather than shared.
+/// **The widest set fills the set's bytes exactly**: every name it may hold, sharing every byte it
+/// may hold. A consumer that links the filesystem contract pins these bounds to the contract's.
 #[test]
-fn the_set_bound_matches_the_contract_that_carries_the_set() {
-    assert_eq!(MAXIMUM_NAMES, file_system_contract::nameset::MAXIMUM_NAMES);
-    assert_eq!(
-        expansion::MAXIMUM_NAME_SET_BYTES,
-        file_system_contract::nameset::MAXIMUM_NAME_SET_BYTES
-    );
-    assert_eq!(
-        expansion::MAXIMUM_NAME_BYTES,
-        file_system_contract::grant::MAXIMUM_NAME_BYTES
-    );
-    // And the widest set this crate can plan must fit the buffer that contract sizes for it: every
-    // name it may hold, sharing every byte it may hold.
+fn the_widest_set_fills_the_name_set_bytes() {
     let wide = [b'w'; expansion::MAXIMUM_NAME_SET_BYTES / MAXIMUM_NAMES];
-    let widest: [(&[u8], bool); MAXIMUM_NAMES] = [(&wide[..], false); MAXIMUM_NAMES];
-    let mut buf = [0u8; file_system_contract::nameset::MAXIMUM_BYTES];
-    assert!(file_system_contract::nameset::encode(&widest, &mut buf).is_some());
     let mut set = expansion::NameSet::empty();
     for i in 0..MAXIMUM_NAMES {
         let mut name = wide;
@@ -506,7 +491,7 @@ fn the_set_bound_matches_the_contract_that_carries_the_set() {
     assert_eq!(set.name_bytes(), expansion::MAXIMUM_NAME_SET_BYTES);
 }
 
-/// **The planner lets a program that hears words have its whole line** (§170): a flag-shaped
+/// **The planner lets a program that hears words have its whole line**: a flag-shaped
 /// token is not `Unexpected`, a letter is not `NoSuchOption`, and five words are not past
 /// `MAXIMUM_POSITIONALS`. Nothing is placed, so the endowment carries no argument and no short
 /// options.
@@ -529,7 +514,7 @@ fn a_program_that_hears_words_is_planned_whatever_its_words_are() {
     );
 }
 
-// ---- the isolation form's reserved spelling (milestone 52 (subshells without `fork`), DECISIONS §160 (what a subshell copies)) ----
+// ---- the isolation form's reserved spelling: a subshell without `fork` ----
 
 /// `swish -c ls` is not "no such program": the spelling is reserved for the isolated child and the
 /// refusal says so, until the child exists.

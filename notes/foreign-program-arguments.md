@@ -12,7 +12,7 @@ file read-only, read-write, or as its directory, and may ask to create a name th
 resolve. An unvouched program gets named files read-only unless the word carries a mark. The
 per-program tables of option B, and option C, were refused for the reasons measured below.
 Milestone 205 built the transport on 2026-09-26 in the layout this page's prototype used, with
-slot 8 and `0x1400_0000` for "where"; `crates/program_argument_contract` is the codec and
+slot 8 and `0x1400_0000` for "where"; `nifeos/program_argument_contract` is the codec and
 `design/roadmap/0672-the-argument-page-layout.md` is the proposal that brings it to calef.
 
 §170 set the test in one sentence. If a shim is per-program work, option A (a POSIX argv) wins. If
@@ -148,7 +148,7 @@ This is the irreversible list, the part a ruling fixes:
 
 ## The page as built
 
-`crates/program_argument_contract` is that layout, built. Its rules beyond the table:
+`nifeos/program_argument_contract` is that layout, built. Its rules beyond the table:
 
 - Records are length-prefixed, not NUL-terminated, so an argument may hold any byte, including NUL
   and the `0xff` a regex can carry.
@@ -186,7 +186,7 @@ separate channel.
 
 ## BUGS
 
-- `ripgrep` has not searched here yet. The prototype became `crates/program_argument_contract`, and
+- `ripgrep` has not searched here yet. The prototype became `nifeos/program_argument_contract`, and
   milestone 205 boots it at the prompt (`std_exerciser` prints its argv on all three
   architectures). `rg` still has nothing to search: a `std` program at the prompt holds no
   directory until the designation half is built

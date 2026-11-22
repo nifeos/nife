@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 672, 994, 1017
 decision_dependencies: 170
@@ -37,10 +38,10 @@ section number, a milestone or a person in another repository.
 ## Finding status
 
 - P0-1, the manifest does not stand alone: Done, [#3808](https://github.com/nifeos/nife/pull/3808).
-  The move adds `repository`.
-- P0-2, the repository files: At the move. The README and both license texts are in the crate
-  ([#3808](https://github.com/nifeos/nife/pull/3808)). The move lane owns the scaffold's other
-  files and the stranger run.
+  The move added `repository`.
+- P0-2, the repository files: Done. The README and both license texts came from the crate
+  ([#3808](https://github.com/nifeos/nife/pull/3808)), and the move added the scaffold's other
+  files. The stranger run is the maintainer's.
 - P0-3, text that reaches into nife: Done, [#3808](https://github.com/nifeos/nife/pull/3808). The
   crate's text has no section, milestone or path, and no architect's name or quotation. The move
   strips the `Name:` blocks.
@@ -54,8 +55,10 @@ section number, a milestone or a person in another repository.
   [#3978](https://github.com/nifeos/nife/pull/3978). The round-trip harness fixes the lengths at
   three and two bytes, which keeps the page inside the solver's memory.
 - P1-7, the `unsafe` reader has no test: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P1-8, the mutation exemption and the coverage figure: At the move. The exemption goes in the new
-  repository's `.github/mutants-exempts`. The tests reach every line and 98 percent of regions.
+- P1-8, the mutation exemption and the coverage figure: Done at the move,
+  [#4007](https://github.com/nifeos/nife/pull/4007). The new repository's
+  `.github/mutants-exempts` lists the one survivor, an equivalent `<` against `<=` in the header
+  check. The tests reach every line and 98 percent of regions.
 - P1-9, the all-or-nothing claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-10, the address truncates on narrow targets: Done,
   [#3978](https://github.com/nifeos/nife/pull/3978) (maintainer, provisional, 2026-11-22 UTC). The
@@ -71,17 +74,20 @@ section number, a milestone or a person in another repository.
   IntoIterator` stays out: the `std` port copies this file and would demand stability attributes.
 - P2-14, the data bounds the record walk: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-15, the one-file constraint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- Ruling, the layout leaves as built, with the magic numbered at 994: Waiting on a ruling
-  ([#3982](https://github.com/nifeos/nife/pull/3982)) on the numbered magic's spelling.
-  [#3579](https://github.com/nifeos/nife/pull/3579) recorded `VERSION` 1 and `INTERFACE_ID` 18.
+- Ruling, the layout leaves as built, with a numbered magic: Done,
+  [#3579](https://github.com/nifeos/nife/pull/3579) and
+  [#3982](https://github.com/nifeos/nife/pull/3982) (ruled 2026-11-22 UTC): `PROGARG2`, `VERSION` 2.
 - Ruling, three public names: Done, [#3808](https://github.com/nifeos/nife/pull/3808) and
   [#3978](https://github.com/nifeos/nife/pull/3978), with P0-4 and P1-5.
 - Ruling, the remaining names: Done, [#3885](https://github.com/nifeos/nife/pull/3885).
+- The move: Done as a pin, [#4007](https://github.com/nifeos/nife/pull/4007).
+  nifeos/program_argument_contract exists with `proofs` green on its first run, and nife depends
+  on it at commit 764e0e55a238252391b1c06135e228ef6b9436c8 (`version = "0.1.0"`,
+  `publish = false`). No tag and no publish; a pre-release tag moves the pin later.
 
 ## Open decisions
 
-- The numbered magic's spelling, which replaces `nifeargv`, on
-  [#3982](https://github.com/nifeos/nife/pull/3982).
+None.
 
 ## What was checked, and how
 
@@ -248,14 +254,13 @@ The P2 items are in [the appendix](1106-program-argument-contract-outside-review
 
 Only the one-way doors went to the architect. Everything else above is the maintainer's.
 
-### The layout leaves as built, with the magic unnumbered until 994
+### The layout leaves as built, with a numbered magic
 
-Ruled by the architect, 2026-11-14 (UTC). The argument page leaves nife as built, with milestone
-672's layout, `VERSION` 1 and `INTERFACE_ID` 18. The magic `nifeargv` stays unnumbered until
-milestone 994 (the cross-repository pair is tested where the pin is) moves the pair test to basalt.
-In the change at 994, a numbered magic that does not spell nife replaces it, so one
-break and one basalt rebuild carry both. There is no checksum (item 9) and the length prefix stays
-four bytes.
+Ruled by the architect, 2026-11-14 (UTC), and for the magic and version on 2026-11-22 (UTC). The
+argument page leaves nife with milestone 672's layout and `INTERFACE_ID` 18. Its magic is
+`PROGARG2` and its `VERSION` is 2: the magic is the page's name and the version's digit, and a new
+magic is a new version, as the format-values check requires. There is no checksum (item 9) and the
+length prefix stays four bytes.
 
 ### Three public names
 
@@ -286,9 +291,9 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 
 - **Done.** Two milestones meet the layout ruling's condition (maintainer's reading, provisional,
   2026-11-19 UTC): 1115 (the gate builds basalt's delivered programs from the candidate tree) in
-  every merge group, and 994 in basalt. The numbered magic lands in one nife pull request, a lane of its own.
-- **Outstanding.** The numbered magic, on [#3982](https://github.com/nifeos/nife/pull/3982).
-- **Outstanding.** The repository (ruled 2026-11-14 UTC), after the numbered magic: a lane creates
+  every merge group, and 994 in basalt.
+- **Done.** The numbered magic, [#3982](https://github.com/nifeos/nife/pull/3982).
+- **Recorded.** The repository (ruled 2026-11-14 UTC): a lane creates
   `nifeos/program_argument_contract`, runs the move check and a dry run, and tags `v0.1.0-pre.1`
   with no publish, after the renames and milestone 994.
 

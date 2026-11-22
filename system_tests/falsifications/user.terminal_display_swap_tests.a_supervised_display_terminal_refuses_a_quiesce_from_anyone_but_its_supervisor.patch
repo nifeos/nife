@@ -9,21 +9,20 @@ until a `CTL_RESUME` its supervisor never sends.
 
 Expected to fail: `assert_eq!` "an unbadged holder quiesced a supervised display_terminal (reply
 0x51554954)", with `left: 1364543828` (`proto::QUIESCED`). Replayed red at exactly that assertion
-on aarch64 on 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only, after the test
-was made to check each answer before its next call; checked together, the second call parked on
-the quiesced terminal and the run ended at the watchdog instead. Re-cut the same day after a merge of main moved its
-context, and replayed red at the same assertion.
+on aarch64 on 2026-11-22 (UTC), cut against the decode that refuses a reserved bit first. The test
+checks each answer before its next call; checked together, the second call parks on the quiesced
+terminal and the run ends at the watchdog instead.
 
 diff --git a/components/src/display_terminal.rs b/components/src/display_terminal.rs
-index a4d630974..6e49800dc 100644
+index 02c94deac..4ef8e0de7 100644
 --- a/components/src/display_terminal.rs
 +++ b/components/src/display_terminal.rs
-@@ -565,7 +565,7 @@ pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
-         // terminal until a supervisor that never asked said `CTL_RESUME`. Other badges are
-         // served as unbadged.
+@@ -576,7 +576,7 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
+             continue;
+         };
          let from_supervisor = req.badge == proto::SUPERVISOR_BADGE;
--        if from_supervisor != (proto::operation(w0) == proto::OPERATION_QUIESCE) {
-+        if from_supervisor && proto::operation(w0) != proto::OPERATION_QUIESCE {
+-        if from_supervisor != (operation == proto::OPERATION_QUIESCE) {
++        if from_supervisor && operation != proto::OPERATION_QUIESCE {
              if let Some(to) = reply_slot {
                  reply(to, proto::BAD_REQUEST, 0);
              }

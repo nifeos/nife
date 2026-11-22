@@ -93,7 +93,7 @@ glob	shared	retired
 globally_unique_identifier_partition_table	shared	components,kernel,redoxfs_server,uefi_loader
 glyph_atlas	shared	components,fixtures,kernel
 gpt	userspace	retired
-grant_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+grant_contract	shared	retired
 grant_plan	shared	components,fixtures,jig,kernel,std_exerciser
 graphics_contract	shared	components,fixtures,kernel
 graphics_proto	shared	retired
@@ -120,7 +120,7 @@ jh7110_pci_express	shared	components,kernel,uefi_loader
 jh7110_trng	shared	retired
 jh7110_watchdog	kernel	kernel
 job_mix	shared	fixtures,kernel
-line_editor	userspace	components
+line_editor	userspace	retired
 line_editor_component	userspace	components,fixtures
 loaded_image_check	userspace	fixtures
 login_contract	shared	components,fixtures,kernel
@@ -160,7 +160,7 @@ pmap	userspace	components
 portable_executable	host	retired
 primitive_benchmark_contract	shared	fixtures,kernel
 process_builder	userspace	components,fixtures
-program_argument_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
+program_argument_contract	shared	retired
 program_asks	userspace	components,fixtures
 program_table	shared	components,fixtures,jig,kernel,std_exerciser
 ps	userspace	components
@@ -197,7 +197,7 @@ system_log	userspace	components
 system_log_contract	shared	components,kernel
 system_log_protocol	shared	retired
 system_manifest	host	-
-terminal_contract	shared	components,fixtures,kernel
+terminal_contract	shared	retired
 test_and_set_lock	kernel	kernel
 test_times	kernel	kernel
 thread_wake_handshake	kernel	kernel

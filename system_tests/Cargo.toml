@@ -79,7 +79,7 @@ environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/env
 c_program_fixture = { path = "../crates/c_program_fixture" }
 file_system_contract = { version = "0.1.0", path = "../crates/file_system_contract" }
 file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture" }
-grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The registration page's layout (milestone 129 (scheduled execution), DECISIONS §222 (who holds a
@@ -97,7 +97,7 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems)).
 jiff = { version = "1.0.0", default-features = false }
 line_editor_component = { version = "0.1.0", path = "../crates/line_editor_component" }
-terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
+terminal_contract = { version = "0.1.0", git = "https://github.com/nifeos/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
 login_contract = { version = "0.1.0", path = "../crates/login_contract" }
 machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }

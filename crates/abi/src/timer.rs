@@ -1,3 +1,5 @@
+//! Name: provisional.
+
 /// `invoke(capability, ARM, deadline, notification_slot, bits)` -> 0. Arm this timer: when the counter
 /// reaches `deadline`, OR `bits` into the notification named by `notification_slot`, exactly as
 /// a [`SIGNAL`](super::notification::SIGNAL) would. **Replaces any pending deadline**, which then
@@ -7,6 +9,8 @@
 /// `WrongObject` if the slot is not a notification; `NotPermitted` without `WRITE` on either.
 /// A notification destroyed while the timer is armed makes the expiry a no-op, not an error:
 /// there is nobody left to tell.
+///
+/// Name: provisional.
 pub const ARM: u64 = 0;
 
 /// `invoke(capability, CANCEL, _, _, _)` -> 1 or 0. Disarm. `1` if a deadline was pending and now never
@@ -14,6 +18,8 @@ pub const ARM: u64 = 0;
 /// tells the caller any signal has already been sent. Bits a timer already signalled stay in
 /// the notification's word: a notification never loses a bit, and a cancel does not reach into
 /// one.
+///
+/// Name: provisional.
 pub const CANCEL: u64 = 1;
 
 /// **Counter ticks in a duration, rounded up**, for a counter running at `hertz`: the `n` that makes
@@ -23,6 +29,8 @@ pub const CANCEL: u64 = 1;
 /// Whole seconds and the sub-second part are multiplied apart, so every product fits in 64 bits
 /// for any counter up to 2^34 Hz (`nanoseconds * hertz` is under `10^9 * 2^34`, under `2^64`): the width the
 /// solver can check, and the width a 64-bit core divides in.
+///
+/// Name: provisional.
 pub const fn counter_ticks_for(seconds: u64, nanoseconds: u32, hertz: u64) -> u64 {
     const NANOSECONDS_PER_SECOND: u64 = 1_000_000_000;
     let Some(whole) = seconds.checked_mul(hertz) else {
@@ -36,7 +44,7 @@ pub const fn counter_ticks_for(seconds: u64, nanoseconds: u32, hertz: u64) -> u6
 
 /// **Tested, not proved, and the reason is a measurement.** A Kani harness over this function
 /// did not finish in ten minutes with a symbolic rate, nor in five with five concrete rates
-///: a symbolic 64-bit divide is the expensive thing for CBMC whatever the
+///: a symbolic 64-bit divide is the expensive thing for the bounded model checker under Kani, whatever the
 /// divisor. The deadline arithmetic that *is* proved is the kernel's
 /// deadline arithmetic, where a wrong answer is a missed wake for everyone;
 /// a wrong answer here is one sleep one tick short, and the tests below pin the boundaries

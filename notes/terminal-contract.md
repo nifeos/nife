@@ -117,7 +117,7 @@ would stop the terminal until a `CTL_RESUME` nobody sends. `line_editor`'s whole
   line discipline, by design, does not give a program (DECISIONS §21 says a program "never sees a
   keystroke, an escape sequence, or an echo"). `OPERATION_RAWMODE` switches the terminal between the line
   discipline and raw mode (`len` 1 to enter, 0 to leave), replied immediately. While raw mode is on,
-  `OPERATION_BYTES` bypasses [`LineEditor`](../crates/line_editor/src/line_disc.rs) entirely: no echo, no editing,
+  `OPERATION_BYTES` bypasses `line_editor::LineEditor` entirely: no echo, no editing,
   no line assembly, and a control byte like `^C` is delivered literally rather than intercepted.
   `OPERATION_READRAW` reads the result: one to eight raw bytes, packed little-endian. That is the
   same register-only shape `OPERATION_BYTES` and `OPERATION_PRINT` already use, so this needs no

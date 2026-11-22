@@ -16,7 +16,7 @@
 //!   ([`byte_sink_contract::end_of_stream`], its reserved words zero). Output at slot 1, unlike every other
 //!   program, so both wirings agree (notes/rm.md, "The program's shape").
 //! - **slot 2** ([`rm::VERDICT_SLOT`]): a verdict endpoint, `WRITE`, optional: the exit status
-//!   and the count, once, after the end of stream ([`file_system_contract::rm`], [`verdict`]). The
+//!   and the count, once, after the end of stream ([`grant_plan::rm_report`], [`verdict`]). The
 //!   shell leaves it empty.
 //! - **[`PAGE_VA`]**: the page shared with the FS server. The options ride in the `START` spec
 //!   word ([`file_system_contract::grant`]), and its two name words are zero: the operands are
@@ -40,7 +40,8 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use file_system_contract::{directory, directory_entry, file_system, grant, rm};
+use file_system_contract::{directory, directory_entry, file_system, grant};
+use grant_plan::rm_report as rm;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, exit, send};
 
@@ -357,7 +358,7 @@ fn text(bytes: &[u8]) {
     }
 }
 
-/// **Close the report, then send the verdict on its own endpoint** ([`file_system_contract::rm`]).
+/// **Close the report, then send the verdict on its own endpoint** ([`grant_plan::rm_report`]).
 ///
 /// This program's manifest declares [`grant_contract::OutputDeclaration::Bytes`], the sink contract:
 /// self-framing byte messages ending in `(end_of_stream(), 0, 0)`, which the shell reads through

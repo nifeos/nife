@@ -102,3 +102,24 @@ fn a_dirent_encodes_at_its_limits_and_not_past_them() {
         "a name one byte too long"
     );
 }
+
+/// **An empty name is refused**, as its two sibling encodings refuse one, so no listing a server
+/// writes carries an entry nobody can open.
+#[test]
+fn an_empty_name_is_refused() {
+    let mut page = [0u8; 8];
+    assert_eq!(directory_entry::encode(&mut page, b"", false), None);
+    assert_eq!(directory_entry::encode(&mut page, b"", true), None);
+    assert_eq!(page, [0u8; 8], "nothing is written");
+}
+
+/// The bounded half of `proofs::the_directory_entry_walk_ends`: a page of the smallest records,
+/// each an empty name, walks to the page's end and no further.
+#[test]
+fn a_page_of_the_smallest_records_walks_to_its_end() {
+    let page = [0u8; PAGE_BYTES];
+    assert_eq!(
+        directory_entry::iter(&page).count(),
+        PAGE_BYTES / directory_entry::record_len(0)
+    );
+}

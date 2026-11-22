@@ -14,7 +14,8 @@ time, resolves paths against the person's current directory and bindings, and re
 `Refusal` that carries its own sentence. It is `no_std` with no allocator and no `unsafe`. It
 depends on the leaf `grant_contract` (the manifest types and the slot constants a program links),
 on `byte_glob` and on `program_argument_contract`. The catalog of nife's programs stays in
-`program_table`, which depends on it only in tests.
+`program_table`, which depends on it; `grant_plan` has no edge back, and its tests plan against
+rows of their own.
 
 ## Identity
 
@@ -88,22 +89,19 @@ the crate's own manifest and adds both license files. The crate adapts no source
 
 ## Proposed items
 
-These findings of the outside review remain unbuilt. Each is Open in milestone 1094.
+Milestone 1094 carries the state of each finding. These remain for the move.
 
-1. P1-5: a Kani harness per claim, with a falsification patch for each.
-2. P0-3: the manifest and the repository root belong to the workspace; the move writes them.
-3. P1-9: documentation written for a stranger, and P1-9b: `missing_docs` denied once it holds.
-4. P1-11: take `&ShellHoldings`, `&Expansion` and `&Streams` instead of two-kilobyte values by value.
-   The milestone records no ruling for it, so it is not built.
-5. P1-13: an undeclared widening option in `Manifest::is_well_formed`.
-6. P1-14: a mutation run on the split crates.
-7. P2-16: the `Result<_, ()>` return of `kill_operands`.
-8. P2-19: a runnable example under `examples/`.
+1. P1-5: a Kani harness per claim, with a falsification patch for each, written in the new
+   repository before any tag.
+2. P1-14: the first mutation run of the crate, in the new repository before any tag.
+3. P0-3: the manifest and the repository root belong to the workspace; the move writes them.
+4. P1-9: documentation written for a stranger; the move strips the citations and the `Name:` lines.
+
+P1-9b, P1-11, P1-13, P2-16 and P2-19 are built.
 
 ## Open questions
 
-None for this package. The names with no block are the architect's to rule by family, and the clearance covers
-`grant_plan` and `grant_contract` together.
+None for this package.
 
 ## Result of `script/crate-standalone`
 
@@ -116,4 +114,7 @@ nife, three of them dev-dependencies that the move rewrites.
 
 ## Recommendation
 
-Ready for review.
+Cleared to move. The architect cleared this review together with `grant_contract`'s on 2026-11-22
+(UTC), which approves creating `nifeos/grant_plan` with `publish = false`, no tag and no
+publication. The proofs (P1-5) and the first mutation run (P1-14) happen in the new repository
+before any tag.

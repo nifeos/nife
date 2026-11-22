@@ -1,7 +1,6 @@
 //! **What a parsed line is, and what a grant holds**: `CommandLine`, `Endowment`, the file and
 //! directory grants, `rm`'s option bits, and the shell's `ShellHoldings`. `ParsedInvocation` is in `parsing`,
-//! beside the one function that builds it (§272 (the grant-plan crate root splits into private
-//! modules), fork 3). The crate root re-exports every public item.
+//! beside the one function that builds it. The crate root re-exports every public item.
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
@@ -32,18 +31,20 @@ pub enum CommandLine<'a> {
     /// A prefix word, carrying a whole command line for [`Capabilities`](CommandLine::Capabilities)'s reason: `time
     /// date | wc` times the pipeline, so the tail keeps its operators and the shell re-dispatches
     /// it as it would untimed. It grants nothing: the shell times the tail with its own clock, so a
-    /// child holding no clock can be timed. See notes/time-command.md.
+    /// child holding no clock can be timed.
     Time(&'a [u8]),
-    /// `xargs <command>`: run that command once per **batch** of what its pattern matched
-    /// (milestone 109 (`xargs`: batching a grant too large to hand over)). The name is provisional.
+    /// `xargs <command>`: run that command once per **batch** of what its pattern matched, so a
+    /// grant too large to hand over in one goes over in several.
+    ///
+    /// Name: provisional.
     ///
     /// A prefix word that grants nothing, as [`CommandLine::Time`] is. A batching program would have to
     /// hold the whole directory, since nothing carries the union of the batches, and a name in a
-    /// pipe is text that grants a program nothing. See notes/glob-grant.md.
+    /// pipe is text that grants a program nothing.
     Xargs(&'a [u8]),
     /// `scope { commands }`: **run a group of commands, then put back what they changed in this
-    /// shell's own state** (milestone 52 (subshells without `fork`), DECISIONS §160 (what a subshell copies)): the working directory and the names
-    /// `bind` filed, and the variables and options when this shell has them. The tail is the whole
+    /// shell's own state**, a subshell without `fork`: the working directory and the names `bind`
+    /// filed, and the variables and options when this shell has them. The tail is the whole
     /// `{ ... }`, carried unsplit for [`Capabilities`](CommandLine::Capabilities)'s reason, and
     /// `swish::scope` reads it. It touches no capability, so what a command did to the world
     /// (a file made, a program run) stays done.
@@ -70,13 +71,12 @@ pub enum CommandLine<'a> {
     Mkdir(&'a [u8]),
     /// `touch <path>` or `touch -t <RFC-3339-instant> <path>`: create an empty file if the name is
     /// not there (a no-op if it already is), then set its modification time to now, or with `-t` to
-    /// a caller-chosen instant (DECISIONS §112 (`touch`'s two behaviors need two rights): the
-    /// ability to *lie about history*).
+    /// a caller-chosen instant. The two forms need two rights, because the second is the ability
+    /// to *lie about history*.
     ///
     /// A builtin in [`Mkdir`](CommandLine::Mkdir)'s category: both forms take only the shell's own
     /// directory capability (`directory::rights::WRITE`, and `directory::rights::SET_MODIFICATION_TIME_AT` for `-t`). [`TouchOperands::at`]
-    /// carries the `-t` text unparsed; it is read where the grant is made (`Nav::touch` in
-    /// `components/src/swish/navigation.rs`). See notes/touch.md.
+    /// carries the `-t` text unparsed; the shell reads it where it makes the grant.
     Touch(TouchOperands<'a>),
     /// `bind <target> <name>`: name a position this shell already reached some other way, so
     /// `/<name>/...` reaches it too ([`navigation::Bindings`]). A builtin in [`Mkdir`](CommandLine::Mkdir)'s
@@ -86,41 +86,44 @@ pub enum CommandLine<'a> {
     /// `name` is the single component the entry is filed under. Neither is tokenized further, as
     /// [`CommandLine::Cd`]'s and [`CommandLine::Mkdir`]'s one path operand is not.
     Bind(&'a [u8], &'a [u8]),
-    /// `apropos <term>`: **name the installed pages that mention a word** (milestone 40 (documentation
-    /// as a system service) phase 2). The operand is one word, folded the way the host builder
+    /// `apropos <term>`: **name the installed pages that mention a word**. The operand is one word, folded the way the host builder
     /// folded the text it indexed.
     ///
     /// A builtin in [`Ls`](CommandLine::Ls)'s category: search is enumeration the shell already holds,
     /// and a searching program would need the whole documentation store. It yields names, never
-    /// capabilities, so a grant happens only when a person types a result at a program. See
-    /// notes/documentation/apropos-builtin.md.
+    /// capabilities, so a grant happens only when a person types a result at a program.
     Apropos(&'a [u8]),
-    /// `vouch <path>`: **the owner vouches for a file's bytes** (DECISIONS §221 (the boot prompt is
-    /// the owner's console)), so they run vouched, recorded under the path's last component. An
+    /// `vouch <path>`: **the owner vouches for a file's bytes** at the owner's console, so they run
+    /// vouched, recorded under the path's last component. An
     /// activation request (`spawn_protocol::Activation::Vouch`) on the spawn endpoint, which `jig`'s
-    /// installer endpoint refuses (milestone 809 (the package client becomes a program)), so a
-    /// vouch stays the owner's console's, and the tail is classified by [`vouch_operand`](crate::vouch_operand).
-    /// A builtin because it names no package: the bytes are what is vouched. Name: provisional
-    /// (2026-09-26).
+    /// installer endpoint refuses, so a vouch stays the owner's console's, and the tail is classified by [`vouch_operand`](crate::vouch_operand).
+    /// A builtin because it names no package: the bytes are what is vouched.
+    ///
+    /// Name: provisional.
     Vouch(&'a [u8]),
     /// `user suspend <name>` and `user resume <name>`: **the owner suspends or resumes an identity**
-    /// (milestone 152 (durable delegation), calef's §108 (disabling credentials kills the durable session) ruling of 2026-09-26, names ratified), by
-    /// editing the suspended list at the root of this shell's directory. The tail is classified by
+    /// by editing the suspended list at the root of this shell's directory. The tail is classified by
     /// [`user_verb`](crate::user_verb). A builtin because that file is the owner's authority only
     /// when this shell is the owner's console; a confined shell's root is its own subtree, where a
     /// `suspended` file is one nothing reads.
     User(&'a [u8]),
-    /// `jobs`: **list the background jobs this shell holds** (milestone 48 (job control), phase
-    /// one). A builtin in `caps`'s category: a job is the capabilities the shell holds for it, so
-    /// listing jobs is the shell reading its own holdings. Name: provisional.
+    /// `jobs`: **list the background jobs this shell holds**. A builtin in `caps`'s category: a
+    /// job is the capabilities the shell holds for it, so listing jobs is the shell reading its own
+    /// holdings.
+    ///
+    /// Name: provisional.
     Jobs,
     /// `wait [%N]`: **block until a background job finishes**, every job when no operand names
-    /// one. The tail is classified by [`job_operand`](crate::job_operand). Name: provisional.
+    /// one. The tail is classified by [`job_operand`](crate::job_operand).
+    ///
+    /// Name: provisional.
     Wait(&'a [u8]),
     /// `kill [-9] %N`: **ask a background job to stop, or with `-9` tear it down.** The two tiers
-    /// are DECISIONS §24 (interrupting the foreground process)'s: the cooperative flag on the job's
-    /// shared frame, and `DESTROY` of the region the shell built it from. The tail is classified by
-    /// [`kill_operands`](crate::kill_operands). Name: provisional.
+    /// are the interrupt escalation's: the cooperative flag on the job's shared frame, and
+    /// `DESTROY` of the region the shell built it from. The tail is classified by
+    /// [`kill_operands`](crate::kill_operands).
+    ///
+    /// Name: provisional.
     Kill(&'a [u8]),
     /// `fg [%N]`: **watch a background job in the foreground**, the most recent when no operand
     /// names one, under the same `^C` escalation a job started in the foreground gets. Nothing is
@@ -128,14 +131,13 @@ pub enum CommandLine<'a> {
     /// Name: ratified 2026-11-20 (UTC).
     Foreground(&'a [u8]),
     /// `bg [%N]`: **resume a job `^Z` stopped, without watching it**, the newest stopped job when
-    /// no operand names one. The resume is `ThreadControlBlock::RESUME` on the TCB the shell holds
-    /// for a supervised job (DECISIONS §309 (a supervised job's `ThreadControlBlock` goes to the
-    /// shell that asked for it)).
+    /// no operand names one. The resume is `ThreadControlBlock::RESUME` on the thread control
+    /// block the shell holds for a supervised job, which goes to the shell that asked for it.
     ///
     /// Name: ratified 2026-11-20 (UTC).
     Background(&'a [u8]),
     /// A program invocation: `<prog> [--mem N] [token ...]`. Named `Run` for the act of running a
-    /// program, not for a verb on the line; milestone 47 deleted the verb. A first word that is not
+    /// program, not for a verb on the line, since there is none. A first word that is not
     /// a builtin lands here even when no such program exists, and the shell's planner answers
     /// [`Refusal::NoSuchProgram`](crate::Refusal::NoSuchProgram), which is the "there is nothing there to name" shape of
     /// no-ambient-authority applied to programs.
@@ -145,7 +147,7 @@ pub enum CommandLine<'a> {
 /// [`CommandLine::Touch`]'s operand: the name, and (with `-t`) the instant asserted for it.
 ///
 /// `at` carries the `-t` token's bytes exactly as typed, unparsed: this crate classifies which
-/// token is which, it does not know what an RFC 3339 instant is. `None` is bare `touch`, which
+/// token is which, it does not know what an RFC (Request for Comments) 3339 instant is. `None` is bare `touch`, which
 /// bumps `name`'s mtime to now with no assertion at all.
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
@@ -165,8 +167,7 @@ pub struct TouchOperands<'a> {
 pub const MAXIMUM_SHORT_OPTIONS: usize = 8;
 
 /// What a valid `run` resolves to: exactly the authority to hand the child, and nothing else.
-/// Reading this is reading the whole endowment, which is §14's "one literal tells you a process's
-/// authority" made concrete.
+/// Reading this is reading the whole endowment: one literal tells you a process's authority.
 ///
 /// **It borrows nothing from the command line**: a name a pattern produced comes out of a directory
 /// listing rather than out of the line, so the grant owns it. With [`FileGrant::directory`] a
@@ -186,13 +187,12 @@ pub struct Endowment {
     /// Pages of untyped to split from the shell's own budget and grant (0 = none).
     pub memory_grant_pages: u64,
     /// The one file to narrow a directory capability down to, and the direction, or `None`.
-    /// Delivered as an endpoint served by a file caretaker (`components/src/fs_file_caretaker.rs`), so
-    /// what the child ends up holding designates this name and nothing else.
+    /// Delivered as an endpoint served by a file caretaker, so what the child ends up holding designates this name and nothing else.
     pub file: Option<FileGrant>,
     /// The one directory to narrow down to, and the **names** in it the program is to act on, or
     /// `None`. Delivered as an endpoint served by a caretaker, so what the child ends up holding
-    /// reaches that directory and nothing above or beside it: `components/src/fs_subtree_caretaker.rs`
-    /// for a set of one, `components/src/fs_nameset_caretaker.rs` for the set a pattern matched.
+    /// reaches that directory and nothing above or beside it: a subtree caretaker for a set of
+    /// one, a name-set caretaker for the set a pattern matched.
     pub directory: Option<DirectoryGrant>,
     /// **The short options that were on the line**, as a bitmask: bit `i` is set when the manifest's
     /// `short_options[i]` was typed. Numbered by position in the manifest rather than by letter, so nothing
@@ -201,14 +201,14 @@ pub struct Endowment {
     ///
     /// Name: ratified 2026-10-18 (calef: "Yes").
     pub short_options: u64,
-    /// **What goes in the child's output slot** (milestone 50): the shell's own result endpoint,
+    /// **What goes in the child's output slot**: the shell's own result endpoint,
     /// the pipe to the next stage, or a file sink. Reading this line is reading everything `>` and
     /// `|` did, and it is one field because they are one mechanism.
     pub sink: line::Sink,
     /// **What goes in the child's input slot**: nothing, the pipe from the previous stage, or a
     /// file streamed out over the same contract. [`sink`](Endowment::sink)'s mirror.
     pub source: line::Source,
-    /// **Where this program's declared second stream goes** (milestone 50's `2>`, DECISIONS §67).
+    /// **Where this program's declared second stream goes**, which is the whole of `2>`.
     /// [`line::Diagnostics::None`] for the programs that declare none, which is all of them but
     /// `date`; the shell mints and delegates a second endpoint only for the rest.
     pub diagnostics: line::Diagnostics,
@@ -236,14 +236,13 @@ pub struct Endowment {
 ///
 /// [`directory`](FileGrant::directory) is where [`plan_against`](crate::plan_against) resolved
 /// the operand's leading path, held as a value, so a `cd` after planning cannot change what the
-/// grant means and the child has no cwd to re-resolve against. See notes/shell-navigation.md ("The
-/// cwd stops at the process boundary").
+/// grant means and the child has no working directory to re-resolve against: the working
+/// directory stops at the process boundary.
 ///
 /// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct FileGrant {
-    /// **Which of the shell's trees `dir` is in**, since milestone 154 (a process that holds two
-    /// directory capabilities): always [`navigation::GrantSide::First`] for a
+    /// **Which of the shell's trees `directory` is in**: always [`navigation::GrantSide::First`] for a
     /// shell holding one directory, and whichever tree the operand named for a shell holding two.
     /// A required field rather than a default, so nothing that builds a grant can forget that a
     /// position means nothing without the tree it is a position in.
@@ -251,8 +250,8 @@ pub struct FileGrant {
     /// The directory the name was resolved in, relative to the root of [`FileGrant::side`]'s
     /// tree, fixed at plan time.
     pub directory: navigation::DirectoryPath,
-    /// The final component. Always a single component: a path was resolved into `dir`, not passed
-    /// on, because the FS contract takes one component per request and no server here walks a path.
+    /// The final component. Always a single component: a path was resolved into `directory`, not passed
+    /// on, because the filesystem contract takes one component per request and no server here walks a path.
     ///
     /// Owned rather than borrowed from the line, because a pattern that matched exactly one file is
     /// a legitimate way to designate one and that name came from a directory listing.
@@ -268,13 +267,13 @@ pub struct FileGrant {
 ///
 /// It is [`FileGrant`]'s shape one rung up: the directory is fixed at plan time as a value. The
 /// names are a set because `rm *.txt` designates many, and a directory capability attenuated to
-/// a name set (`components/src/fs_nameset_caretaker.rs`) is the one answer that neither exhausts
-/// slots nor over-grants. A literal operand is the set of one. See notes/glob-grant.md.
+/// a name set is the one answer that neither exhausts slots nor over-grants. A literal operand
+/// is the set of one.
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct DirectoryGrant {
-    /// **Which of the shell's trees `dir` is in**, [`FileGrant::side`]'s reason (milestone 154).
+    /// **Which of the shell's trees `directory` is in**, for [`FileGrant::side`]'s reason.
     pub side: navigation::GrantSide,
     /// The directory the capability designates, relative to the root of [`DirectoryGrant::side`]'s
     /// tree, fixed at plan time.
@@ -307,6 +306,66 @@ pub mod rm_options {
     pub const VERBOSE: u64 = 1 << 2;
 }
 
+/// **What the `rm` program reports**: lines of text on its report endpoint under the sink
+/// contract, then its verdict on an endpoint of its own.
+///
+/// - A line is framed as std's stdout is: `w0` = the byte count (at most 16), the bytes
+///   little-endian in `w1`|`w2`. Diagnostics always go out this way; `-v` adds one per name removed.
+/// - The report stream ends with the sink contract's end of stream, `(end_of_stream(), 0, 0)`, whose two
+///   words after the first are reserved and carry nothing.
+/// - The verdict, once and after that end of stream, on [`rm_report::VERDICT_SLOT`]: `w0` = the exit status,
+///   `w1` = how many names were removed, `w2` = 0. A `SEND` returns only once its message is
+///   received, so by the time the verdict goes out every line and the end of stream are already
+///   with the reader. A reader drains the report to its end and only then receives the verdict,
+///   and a run whose report holds only the end of stream printed nothing.
+/// - A spawner that wants no verdict leaves the slot empty. The `SEND` is then refused, and the
+///   program exits as it would have anyway.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by lane 1090-finish-review. It sits beside
+/// [`rm_options`], and outside the file protocol's crate, because it is one program's protocol.
+pub mod rm_report {
+    /// The slot `rm` sends its verdict on: after the directory at 0 and the report at 1. It is a
+    /// separate endpoint, rather than words on the report stream, because the report is a byte sink
+    /// that `wc` or a terminal may hold, and a verdict there would be a meaning those sinks cannot read.
+    ///
+    /// Name: ratified 2026-11-22.
+    pub const VERDICT_SLOT: u64 = 2;
+
+    /// The exit status of a run in which everything named was removed. `rm(1)`: "exits 0 if all
+    /// of the named files or file hierarchies were removed".
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1090-finish-review, which moved it here
+    /// unchanged from the file protocol's crate.
+    pub const OK: u64 = 0;
+
+    /// A non-zero exit status **is the errno of the first failure**, rather than a generic 1.
+    ///
+    /// `rm(1)` promises only "a value >0", so this is a choice, and it is the one that costs
+    /// nothing and says more: a test that expected `EROFS` and got `ENOENT` has learned that the
+    /// walk stopped somewhere else than it thought. The `file_system_contract::directory::explain`
+    /// sentence for that number is what the program prints as its diagnostic, so the status word
+    /// and the text a human reads come from the same decision.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1090-finish-review, which moved it here
+    /// unchanged from the file protocol's crate.
+    pub const fn status(errno: i32) -> u64 {
+        errno as u64
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        /// The exit status of a failed run is the errno of the first failure, and a clean run is 0.
+        #[test]
+        fn a_status_is_the_errno_and_success_is_zero() {
+            assert_eq!(OK, 0);
+            assert_eq!(status(2), 2);
+            assert_eq!(status(30), 30);
+        }
+    }
+}
+
 /// **What the shell itself holds**, which is what decides whether a designation can be backed at all.
 ///
 /// This is why it is a parameter rather than a constant. "You hold no such capability" must be a
@@ -319,8 +378,7 @@ pub mod rm_options {
 pub struct ShellHoldings {
     /// The shell holds a directory capability it can narrow into a per-file grant.
     pub directory: bool,
-    /// **A second directory capability, mounted at a position in the first** (milestone 154, a
-    /// process that holds two directory capabilities). `None` for a one-grant shell, which
+    /// **A second directory capability, mounted at a position in the first**. `None` for a one-grant shell, which
     /// resolves and prints exactly as it always has.
     ///
     /// Name: ratified 2026-10-18. The shape is provisional.
@@ -332,13 +390,12 @@ pub struct ShellHoldings {
     /// the root, which is also the only position a shell holding no directory can be in.
     pub working_directory: navigation::DirectoryPath,
     /// **Names this shell has bound to a position it already reached some other way**
-    /// (`bind`, milestone 47 (navigation and naming); [`navigation::Bindings`]'s own doc has the full
-    /// design). A bound position is a path in the one tree, like [`ShellHoldings::working_directory`], so a bind can
+    /// (`bind`; [`navigation::Bindings`]'s own doc has the full design). A bound position is a path in the one tree, like [`ShellHoldings::working_directory`], so a bind can
     /// point through a mount point with nothing special to say about it.
     pub binds: navigation::Bindings,
 }
 
-/// **A second tree, and where it is mounted in the first** (milestone 154).
+/// **A second tree, and where it is mounted in the first**.
 ///
 /// The presentation is one tree with other trees mounted at names in it. The user sees one root; the second tree appears at a mount point, like a Unix mount or a
 /// Plan 9 `bind`, and which capability serves a name is bookkeeping the shell keeps to itself. So
@@ -467,17 +524,17 @@ impl ShellHoldings {
     pub fn path_in_one_tree(
         &self,
         side: navigation::GrantSide,
-        pos: &navigation::DirectoryPath,
+        position: &navigation::DirectoryPath,
     ) -> navigation::DirectoryPath {
         match (side, &self.mounted) {
             (navigation::GrantSide::Second, Some(sd)) => {
                 let mut path = sd.mount;
-                for l in 0..pos.depth() {
-                    path.descend(pos.component(l));
+                for l in 0..position.depth() {
+                    path.descend(position.component(l));
                 }
                 path
             }
-            _ => *pos,
+            _ => *position,
         }
     }
 
@@ -488,14 +545,14 @@ impl ShellHoldings {
     pub fn bind(
         &mut self,
         name: &[u8],
-        pos: navigation::DirectoryPath,
+        position: navigation::DirectoryPath,
     ) -> Result<(), navigation::BindRefusal> {
         if let Some(sd) = &self.mounted
             && name == sd.mount.component(0)
         {
             return Err(navigation::BindRefusal::ReservedLabel);
         }
-        self.binds.add(name, pos)
+        self.binds.add(name, position)
     }
 }
 

@@ -493,10 +493,8 @@ static_elf	106	the loader's front half, and the note walk, panic-free on hostile
 page_frames	16	the physical frame allocator
 allocation_cache	3	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
 domain_name_resolution_contract	498	the grant table: any short run of control messages never panics, and a badge is in force only once a message said Granted, in a window that never moves
-program_argument_contract	71	the argument page: the parser never panics, yields exactly len items, a parsed page holds exactly the records its header states, and two built arguments read back exactly
 inter_process_communication	16	the rendezvous state machine
 address_space_identifier	1	the TLB tag allocator
-line_editor	86	the line editor's escape parser and range delete keep the cursor inside the line
 machine_statistics_contract	56	the statistics page reader admits exactly the pages it names, every accessor is total over an admitted page, and a built header reads back empty
 nifefs	2	the initial ramdisk parser the kernel runs on boot input
 memory_region_heap	2	the heap's growth arithmetic: a grow never commits past the cap, a grow at the cap is a refusal, and the bytes it asks for never overflow

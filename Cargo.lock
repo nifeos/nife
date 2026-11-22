@@ -664,8 +664,8 @@ version = "0.1.0"
 [[package]]
 name = "grant_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/grant_contract?rev=d4e9ca29d51bc71d678aadaa00411eba953202b3#d4e9ca29d51bc71d678aadaa00411eba953202b3"
 dependencies = [
- "file_system_contract",
  "program_argument_contract",
 ]
 
@@ -674,8 +674,6 @@ name = "grant_plan"
 version = "0.1.0"
 dependencies = [
  "byte_glob",
- "file_system_contract",
- "file_system_fixture",
  "grant_contract",
  "program_argument_contract",
 ]
@@ -959,6 +957,7 @@ checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 [[package]]
 name = "line_editor"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/line_editor?rev=b43cb319b1cf57b8e38680d090348f347408ffa2#b43cb319b1cf57b8e38680d090348f347408ffa2"
 
 [[package]]
 name = "line_editor_component"
@@ -1253,6 +1252,7 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
 
 [[package]]
 name = "program_asks"
@@ -1270,8 +1270,10 @@ dependencies = [
 name = "program_table"
 version = "0.1.0"
 dependencies = [
+ "byte_glob",
  "capability_manifest_note",
  "file_system_contract",
+ "file_system_fixture",
  "grant_contract",
  "grant_plan",
  "primitive_benchmark_contract",
@@ -1699,6 +1701,7 @@ dependencies = [
 [[package]]
 name = "terminal_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/terminal_contract?rev=4a93367e22366b1d6f0ddb149d087ee51a3335a2#4a93367e22366b1d6f0ddb149d087ee51a3335a2"
 
 [[package]]
 name = "test_and_set_lock"

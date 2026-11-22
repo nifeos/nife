@@ -24,7 +24,7 @@ static_elf = { version = "0.1.0", path = "../static_elf" }
 # The manifests and slot numbers a child is endowed by, and the spawn protocol's wire form with the
 # program table it names: the protocol init decodes on the other side of the spawn channel. This
 # crate is that other side, and it plans no line, so it does not link the planner.
-grant_contract = { version = "0.1.0", path = "../grant_contract" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 program_table = { version = "0.1.0", path = "../program_table" }
 # The wire format of a manifest a program carries in its own bytes (milestone 597 (a program carries
 # its manifest in an ELF note), provisional): the progenitor endows a file's bytes from the note
@@ -39,7 +39,7 @@ interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfac
 # nothing with it (file_system_contract has no non-dev dependencies of its own).
 file_system_contract = { version = "0.1.0", path = "../file_system_contract" }
 # The terminal contract's framing, for the one sentence init prints (`proto::OPERATION_WRITE`).
-terminal_contract = { version = "0.1.0", path = "../terminal_contract" }
+terminal_contract = { version = "0.1.0", git = "https://github.com/nifeos/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
 # The slot order `terminal_supervisor` is endowed in, which init builds it with.
 line_editor_component = { version = "0.1.0", path = "../line_editor_component" }
 # The hash and the manifest format the kernel measures init with (milestone 104). This crate is the

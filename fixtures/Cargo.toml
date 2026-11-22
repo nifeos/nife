@@ -648,7 +648,7 @@ capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
 # The serving loop both swappable programs run; the wire format stays in `hot_swap_contract`.
 hot_swap_server = { version = "0.1.0", path = "../crates/hot_swap_server" }
-grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The soak workload's shared page (milestone 219). The kernel reads what the soaker writes, so the
@@ -673,7 +673,7 @@ capability_manifest_note = { version = "0.1.0", path = "../crates/capability_man
 file_system_contract = { version = "0.1.0", path = "../crates/file_system_contract" }
 file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
-terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
+terminal_contract = { version = "0.1.0", git = "https://github.com/nifeos/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
 byte_sink_contract = { version = "0.1.0", git = "https://github.com/nifeos/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }
 byte_sink_fixture = { version = "0.1.0", path = "../crates/byte_sink_fixture" }
 primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_benchmark_contract" }

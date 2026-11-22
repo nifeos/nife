@@ -70,8 +70,8 @@ pub const ENOSPC: i32 = 28;
 /// `EOPNOTSUPP`: **this capability does not offer extended attributes at all.**
 ///
 /// The rule is that a backend which cannot meet a verb's guarantee does not offer
-/// the verb, and that the refusal is loud. The caretakers (`fs_file_caretaker`,
-/// `fs_subtree_caretaker`, `fs_nameset_caretaker`) answer this: they serve this same protocol
+/// the verb, and that the refusal is loud. A caretaker (a proxy that narrows a directory
+/// capability to a subtree, a set of names or one file) answers this: it serves this same protocol
 /// over a narrowed namespace and do not forward attribute requests, so a program behind one
 /// learns that its capability does not carry attributes rather than that its request was
 /// malformed. `EINVAL` would have been the silent degradation, because it reads as "you sent
@@ -85,7 +85,7 @@ pub const ENOTSUP: i32 = 95;
 ///
 /// Every name-taking verb refuses it with `EINVAL`, as for `..`, and [`file_system::READDIR`] skips it, in
 /// every directory, so no client reaches attributes as ordinary bytes. Recovery does see it:
-/// `redoxfs_host extract` and upstream's FUSE (filesystem in userspace) mount carry it out with the files, a decision and not
+/// a host tool that extracts an image and upstream's FUSE (filesystem in userspace) mount carry it out with the files, a decision and not
 /// a leak.
 ///
 /// **BUGS.** No file anywhere on a filesystem of this stack can be called `.extended-attributes`, at any rights.
@@ -97,9 +97,15 @@ pub const STORE_DIRECTORY: &str = ".extended-attributes";
 /// the low 32. The name's length rides in the request word's own length field, as every other
 /// verb's payload length does, so the two lengths never share a field.
 ///
+/// # Panics
+///
+/// When `value_len` needs more than 32 bits, because a masked length would name a shorter value
+/// than the caller wrote. The panic is provisional (restrictive first).
+///
 /// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `file_system_contract`).
 pub const fn specification(kind: u32, value_len: u64) -> u64 {
-    ((kind as u64) << 32) | (value_len & 0xffff_ffff)
+    assert!(value_len <= u32::MAX as u64);
+    ((kind as u64) << 32) | value_len
 }
 /// The type code from a [`file_system::SETXATTR`] second word.
 ///
@@ -120,8 +126,14 @@ pub const fn specification_value_len(w1: u64) -> usize {
 /// boundary is "negative is a negated errno" ([`super::error::word`]). That is what costs the kind
 /// its 32nd bit, and it is the right trade: a separate reply word does not exist, and a header
 /// in front of the value would make every client copy the value twice.
+///
+/// `kind` must be at most [`MAXIMUM_KIND`] and `value_len` must fit 32 bits; a caller that passes
+/// more is a bug, and the packer panics rather than hand back a different kind or length. The
+/// store never yields such a kind ([`store::iter`] stops before one), so the server, which packs
+/// what the store read, never reaches the panic.
 pub const fn reply(kind: u32, value_len: usize) -> i64 {
-    (((kind & MAXIMUM_KIND) as i64) << 32) | (value_len as i64 & 0xffff_ffff)
+    assert!(kind <= MAXIMUM_KIND && value_len <= u32::MAX as usize);
+    ((kind as i64) << 32) | value_len as i64
 }
 /// The kind of a [`file_system::GETXATTR`] reply. Only meaningful when the reply is non-negative.
 pub const fn reply_kind(r0: i64) -> u32 {
@@ -270,7 +282,9 @@ pub mod store {
     /// Stops at a zero name length and at the first record that runs off the end. Both are what a
     /// **truncated or zero-padded** blob looks like, and neither may be read as an attribute: a
     /// torn write that left half a record behind must produce fewer attributes, never a value
-    /// with somebody else's bytes on the end of it.
+    /// with somebody else's bytes on the end of it. It stops too at a record whose kind is past
+    /// [`super::MAXIMUM_KIND`], which [`set`] never writes, so a damaged blob cannot hand
+    /// [`super::reply`] a kind it refuses.
     pub fn iter(blob: &[u8]) -> Records<'_> {
         Records { blob, at: 0 }
     }
@@ -402,6 +416,9 @@ pub mod store {
                 return None;
             }
             let kind = u32::from_le_bytes([head[1], head[2], head[3], head[4]]);
+            if kind > super::MAXIMUM_KIND {
+                return None;
+            }
             let value_len = u16::from_le_bytes([head[5], head[6]]) as usize;
             let body = self.at + RECORD_HEADER_BYTES;
             let name = self.blob.get(body..body + name_len)?;

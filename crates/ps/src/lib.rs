@@ -457,7 +457,7 @@ pub const fn state_name(state: u64) -> &'static str {
 /// model, which is the same standard `grant_plan::Refusal::message` holds itself to: the reader
 /// should learn what they do not hold, not which branch of a `match` they landed in.
 pub fn refusal(code: i64) -> &'static str {
-    match abi::Error::from_ret(code) {
+    match abi::Error::try_from(code).ok() {
         Some(abi::Error::NoSuchSlot) => "this process holds no process-domain capability",
         Some(abi::Error::NotPermitted) => {
             "this endpoint may be sent to, but not looked at: no READ on the domain"

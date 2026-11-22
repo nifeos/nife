@@ -302,3 +302,43 @@ fn a_widening_option_must_be_declared() {
     };
     assert!(declared.is_well_formed());
 }
+
+/// **The rights a word grant asks for are the filesystem contract's bits**.
+/// `grant_contract::WordGrant::rights` spells them as numbers because `grant_contract` does not link the
+/// contract, so the pin lives here, in a crate that links both.
+#[test]
+fn word_rights_are_the_file_system_contracts() {
+    use file_system_contract::directory;
+    let read = directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND;
+    assert_eq!(grant_contract::WordGrant::ReadOnly.rights(), read);
+    assert_eq!(
+        grant_contract::WordGrant::ReadWrite.rights(),
+        read | directory::rights::WRITE
+    );
+    assert_eq!(
+        grant_contract::WordGrant::Create.rights(),
+        read | directory::rights::WRITE | directory::rights::CREATE
+    );
+}
+
+/// **The index store opens its directory with exactly a word grant's rights**: none when
+/// forbidden, read-only's for `jig list` and `jig install`, and create's for `jig update`, whose
+/// first run makes the copy. Pinned against the filesystem contract's bits, so a reading verb
+/// that could write, or a writing one that could not create, fails here.
+#[test]
+fn the_index_store_opens_with_a_word_grants_rights() {
+    use file_system_contract::directory;
+    let read = directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND;
+    assert_eq!(
+        grant_contract::IndexStoreDeclaration::Forbidden.rights(),
+        None
+    );
+    assert_eq!(
+        grant_contract::IndexStoreDeclaration::ReadOnly.rights(),
+        Some(read)
+    );
+    assert_eq!(
+        grant_contract::IndexStoreDeclaration::ReadWrite.rights(),
+        Some(read | directory::rights::WRITE | directory::rights::CREATE)
+    );
+}

@@ -317,7 +317,7 @@ pub const UNBIND: u64 = 65;
 /// **Make a badge sync-only**. `w1` is the badge; the handle field is ignored. A request carrying it may
 /// then be [`SYNC`] and nothing else, answered as any writer's; every other verb is `EPERM` before
 /// a handle is read. [`BIND`]'s caller rule and [`UNBIND`]'s revocation apply. The one holder is
-/// `reboot`, which syncs before it restarts the machine. Outside [`super::verb::TABLE`]'s range,
+/// the program that restarts the machine, which syncs first. Outside [`super::verb::TABLE`]'s range,
 /// for [`BIND`]'s reason.
 ///
 /// Name: ratified 2026-10-06 (calef, #1783: "Approve sync for the file-server
@@ -362,11 +362,18 @@ pub const TRANSFER_PAGES: usize = 16;
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_TRANSFER_BYTES: usize = TRANSFER_PAGES * super::PAGE_BYTES;
 
-/// **How many client channels one file service keeps side by side**. Each is its own [`MAXIMUM_TRANSFER_BYTES`]-byte window backed by its own
-/// frame, and the server picks window `badge` for each request (`abi::rendezvous::BADGE`); window 0
-/// is the unbadged default. It bounds how many file clients a boot runs at once, and costs the
-/// server `CLIENT_WINDOWS * MAXIMUM_TRANSFER_BYTES` = 512 KiB of mapped frames. Eight is provisional, a
-/// capacity decision not yet made.
+/// **How many client channels one file service keeps side by side, and the badge it refuses
+/// from.** This is a contract fact, not a deployment choice: a server serves exactly this many
+/// channels, and a client may rely on it. Each channel is its own [`MAXIMUM_TRANSFER_BYTES`]-byte
+/// window backed by its own frame. A request carries a badge, the number the kernel stamps on the
+/// endpoint copy a client was given, and the server uses window `badge`; window 0 is the unbadged
+/// default. A server refuses a request whose badge is at or past this count before it reads any
+/// window, so a badge outside the range is a wire refusal and never a fold onto window 0.
+///
+/// The count bounds how many file clients run at once and costs the server
+/// `CLIENT_WINDOWS * MAXIMUM_TRANSFER_BYTES` = 512 KiB of mapped frames. Eight is provisional;
+/// raising it is a new version of this protocol, because a client wired for a ninth window would
+/// be refused by a server that keeps eight.
 pub const CLIENT_WINDOWS: usize = 8;
 
 /// The largest length that fits the packing below (40 bits). An offset carries no such bound: it
@@ -402,6 +409,13 @@ pub const MAXIMUM_HANDLE: u64 = 0xffff;
 /// [`READ`]/[`WRITE`] pass the handle and the byte count; [`CLOSE`]/[`FSTAT`]/[`TRUNCATE`] pass
 /// the handle and length 0 ([`TRUNCATE`]'s new size rides in the second word).
 ///
+/// # Panics
+///
+/// When `handle` is past [`MAXIMUM_HANDLE`] or `len` past [`MAXIMUM_LENGTH_BYTES`]. A masked field
+/// would reach the server as a different handle or a shorter length, a request the caller never
+/// made. The panic is provisional (restrictive first); a caller that must forward a value it did
+/// not check refuses it first, as a caretaker does with a handle outside its table.
+///
 /// # Examples
 ///
 /// Control needs no shared page; the page is for the bytes.
@@ -423,9 +437,8 @@ pub const MAXIMUM_HANDLE: u64 = 0xffff;
 ///
 /// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `file_system_contract`).
 pub const fn request(operation: u64, handle: u64, len: u64) -> u64 {
-    (operation << super::OPERATION_SHIFT)
-        | ((handle & MAXIMUM_HANDLE) << 40)
-        | (len & MAXIMUM_LENGTH_BYTES)
+    assert!(handle <= MAXIMUM_HANDLE && len <= MAXIMUM_LENGTH_BYTES);
+    (operation << super::OPERATION_SHIFT) | (handle << 40) | len
 }
 /// The handle of a file request word.
 ///
@@ -444,9 +457,14 @@ pub const fn request_length_bytes(w0: u64) -> usize {
 /// fields [`request`] uses, minus the opcode, because a rename names two directories and one word
 /// cannot carry both. Read back with [`destination_handle`] and [`destination_length_bytes`].
 ///
+/// # Panics
+///
+/// On the bounds [`request`] asserts, for its reason.
+///
 /// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `file_system_contract`).
 pub const fn rename_destination(handle: u64, len: u64) -> u64 {
-    ((handle & MAXIMUM_HANDLE) << 40) | (len & MAXIMUM_LENGTH_BYTES)
+    assert!(handle <= MAXIMUM_HANDLE && len <= MAXIMUM_LENGTH_BYTES);
+    (handle << 40) | len
 }
 /// The destination directory handle of a [`RENAME`]'s second word.
 ///

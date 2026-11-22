@@ -42,9 +42,9 @@ struct ReadmeExample;
 /// Retired numbers, and what owes the bump. A number that was served and no longer is stays in
 /// the crate as reserved and is never reused for another method; it is pinned in
 /// `tests::reserved_numbers_are_never_reused`. Removing a number that no kernel serves is not done.
-/// Changing the value or the meaning of a number a kernel serves owes a bump of this constant:
-/// `helpers/format_values_check.py` refuses a change or removal of any public number of this crate
-/// that arrives without a changed `ABI_VERSION`, and a new number owes nothing.
+/// Changing the value or the meaning of a number a kernel serves owes a bump of this constant: a
+/// change that alters or removes any public number of this crate changes `ABI_VERSION` with it,
+/// and a new number owes nothing.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const ABI_VERSION: u32 = 1;
@@ -106,13 +106,6 @@ pub const SYSTEM_CALL_CAPABILITY_DELETE: u64 = 3;
 /// `SYS_EXIT_THREAD`.
 pub const SYSTEM_CALL_EXIT_THREAD: u64 = 4;
 
-/// An index into the calling thread's capability table. **Not a pointer, not a handle you can
-/// guess.** The kernel looks in *your* table, and if the slot is empty you get `NoSuchSlot`.
-///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
-/// `CapSlot` under the capability ruling of 2026-10-06 (UTC).
-pub type CapabilitySlot = u64;
-
 /// The number of slots in a thread's capability table, mirroring the kernel's
 /// the size of the kernel's own table, so userspace can name [`fault::FAULT_RENDEZVOUS_SLOT`] without
 /// reaching into the kernel. The kernel asserts its table size equal to this at compile time, so
@@ -121,6 +114,8 @@ pub type CapabilitySlot = u64;
 /// **Changing it is an ABI change**: [`fault::FAULT_RENDEZVOUS_SLOT`] is derived from it, so a supervisor
 /// built against another size writes the fault rendezvous to a slot the kernel does not read. Every
 /// program that names it is built against one copy of this crate.
+///
+/// Name: provisional.
 pub const CAPABILITY_TABLE_SLOTS: u64 = 64;
 
 /// Methods on a `Console` capability. **Reserved: the number is retired.**
@@ -131,7 +126,7 @@ pub const CAPABILITY_TABLE_SLOTS: u64 = 64;
 /// ever takes it.
 pub mod console;
 
-/// Methods on a `Rendezvous` capability. **This is IPC.**
+/// Methods on a `Rendezvous` capability. **This is inter-process communication (IPC).**
 ///
 /// A rendezvous names a synchronous meeting point, and the two methods are the two sides of it.
 /// Which one you may call is a matter of *rights*, not of the rendezvous: a capability with
@@ -175,7 +170,7 @@ pub mod object_type;
 pub mod reboot;
 
 /// Methods on a `Notification` capability: **a doorbell, not a meeting.** Created by [`memory_region::RETYPE_OBJECT`]
-/// with [`object_type::NOTIFICATION`]. A signaller ORs bits into its word and never blocks; a waiter
+/// with [`object_type::NOTIFICATION`]. A signaller sets bits in its word with a bitwise or and never blocks; a waiter
 /// takes what has accumulated. [`BIND`](notification::BIND) attaches it to one thread, so a signal
 /// can also end that thread's receive on an endpoint, told apart by [`BOUND`](notification::BOUND).
 ///
@@ -246,7 +241,8 @@ pub mod fault;
 /// **What a granted user-mode cycle-counter read counts**, per architecture.
 ///
 /// The kernel chooses what `PMCCFILTR_EL0` filters and which counter a grant opens, so this is a
-/// promise at the boundary rather than a property of the instruction; no system call carries it.
+/// promise at the boundary rather than a property of the instruction. It is a message-word
+/// convention and not a method: no system call carries it.
 /// A runtime wrapper returns one beside the count and the kernel's test checks the variant per
 /// architecture. The three are **not the same quantity**: compare
 /// [`cycle_counter::CycleMeaning`]s before comparing cycle figures across architectures.
@@ -256,7 +252,7 @@ pub mod cycle_counter;
 pub mod interrupt;
 
 /// Methods on a `VirtualIo` capability. **How a driver operates a device it cannot point out of its
-/// own DMA region.** The kernel owns the queue addresses and the notify; the driver builds
+/// own direct memory access (DMA) region.** The kernel owns the queue addresses and the notify; the driver builds
 /// requests in its DMA region and submits through here.
 #[doc(alias = "virtio")]
 pub mod virtual_io;
@@ -264,7 +260,7 @@ pub mod virtual_io;
 /// Methods on a `MemoryRegion` capability. **How a process spends its own memory.**
 pub mod memory_region;
 
-/// **Which figure a [`memory_region::USAGE`] asks for**, in pages (the names and numbers are fixed). [`SIZE`](usage::SIZE), [`COMMITTED`](usage::COMMITTED) and
+/// **Which figure a [`memory_region::USAGE`] asks for**, in pages (the names and numbers are fixed). [`SIZE_PAGES`](usage::SIZE_PAGES), [`COMMITTED`](usage::COMMITTED) and
 /// [`CHILDREN`](usage::CHILDREN) are this region's; [`FRAMES`](usage::FRAMES) and the object kinds
 /// count **the whole subtree**, bump-only like a watermark: where the budget went, not what lives.
 ///
@@ -281,12 +277,12 @@ pub mod page_frame;
 /// of x86 I/O ports a driver holds.**
 ///
 /// A `PortRange` capability is not invoked to *use* the ports: the holder executes `in`/`out`
-/// directly, and the kernel enforces the grant through the TSS I/O permission bitmap at context
+/// directly, and the kernel enforces the grant through the I/O permission bitmap of the task state segment (TSS) at context
 /// switch, with no system call on the data path. The one method is administrative, mirroring
 /// [`page_frame::REVOKE`]'s take-back meaning on a `DeviceFrame`.
 pub mod port_range;
 
-/// **How far apart the console UART's registers are**. Not a capability's methods: the start word the kernel passes the progenitor,
+/// **How far apart the registers of the console's universal asynchronous receiver-transmitter (UART) are**. Not a capability's methods: the start word the kernel passes the progenitor,
 /// and the progenitor its console and input drivers.
 pub mod uart;
 
@@ -313,6 +309,8 @@ pub mod uart;
 /// // already in the caller's own capability table, so its death reveals nothing new.
 /// assert_eq!(Error::NotSupervised as i64, -10);
 /// ```
+///
+/// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i64)]
 pub enum Error {
@@ -380,7 +378,8 @@ pub enum Error {
     /// are the reboot object's only answers, because a reset that works never returns. One name
     /// per concept.
     NoResetMechanism = -12,
-    /// **`Reboot::REBOOT`: the firmware does not offer a reset** (PSCI or SBI `NOT_SUPPORTED`).
+    /// **`Reboot::REBOOT`: the firmware does not offer a reset**: `NOT_SUPPORTED` from the Power State
+    /// Coordination Interface (PSCI) or the Supervisor Binary Interface (SBI).
     ResetNotSupported = -13,
     /// **`Reboot::REBOOT`: the firmware refused this caller** (PSCI or SBI `DENIED`).
     ResetDenied = -14,
@@ -390,26 +389,30 @@ pub enum Error {
 }
 
 // Index exception (2026-10-12): the decode of the error above, kept beside it for the same reason.
-impl Error {
-    /// Decode a negative system call return into its `Error`, or `None` for a result or unknown value.
-    /// # Examples
-    /// ```
-    /// use abi::Error;
-    ///
-    /// // A successful `invoke` returning a handle, a count, or nothing.
-    /// assert_eq!(Error::from_ret(0), None);
-    /// assert_eq!(Error::from_ret(4096), None);
-    ///
-    /// // A refusal, decoded on the userspace side of the boundary.
-    /// assert_eq!(Error::from_ret(-1), Some(Error::NoSuchSlot));
-    /// assert_eq!(Error::from_ret(-4), Some(Error::BadPointer));
-    ///
-    /// // A number that is not one of the kernel's errors is not decoded as one. That is what lets a
-    /// // wire contract layered on top tell "no capability" from "no".
-    /// assert_eq!(Error::from_ret(-99), None);
-    /// ```
-    pub fn from_ret(v: i64) -> Option<Error> {
-        Some(match v {
+/// Decode a negative system call return into its `Error`. The refusal is the word itself, handed
+/// back for a result or for a negative this crate does not know.
+///
+/// # Examples
+/// ```
+/// use abi::Error;
+///
+/// // A successful `invoke` returning a handle, a count, or nothing.
+/// assert_eq!(Error::try_from(0), Err(0));
+/// assert_eq!(Error::try_from(4096), Err(4096));
+///
+/// // A refusal, decoded on the userspace side of the boundary.
+/// assert_eq!(Error::try_from(-1), Ok(Error::NoSuchSlot));
+/// assert_eq!(Error::try_from(-4), Ok(Error::BadPointer));
+///
+/// // A number that is not one of the kernel's errors is not decoded as one. That is what lets a
+/// // wire contract layered on top tell "no capability" from "no".
+/// assert_eq!(Error::try_from(-99), Err(-99));
+/// ```
+impl TryFrom<i64> for Error {
+    type Error = i64;
+
+    fn try_from(word: i64) -> Result<Self, i64> {
+        Ok(match word {
             -1 => Error::NoSuchSlot,
             -2 => Error::WrongObject,
             -3 => Error::NotPermitted,
@@ -425,7 +428,7 @@ impl Error {
             -13 => Error::ResetNotSupported,
             -14 => Error::ResetDenied,
             -15 => Error::ResetDidNotHappen,
-            _ => return None,
+            _ => return Err(word),
         })
     }
 }

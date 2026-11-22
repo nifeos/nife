@@ -26,9 +26,9 @@ pub mod rights {
 pub const MAXIMUM_NAME_BYTES: usize = 252;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, eight per word. A
-/// caretaker's granted directory, `rm`'s operand, a `login` identity's subtree and an activation
-/// request's package name ride this way, so they cost no extra page and the process needs nothing
-/// mapped before it runs. Anything longer is refused where it would be packed ([`pack_name`]
+/// caretaker's granted directory, a remove program's operand, a user's home subtree and the
+/// package name in a request to start a program ride this way, so they cost no extra page and the
+/// process needs nothing mapped before it runs. Anything longer is refused where it would be packed ([`pack_name`]
 /// answers `None`), never truncated, because a truncated name is a different file.
 ///
 /// Name: provisional (milestone 946 (a granted file name longer than sixteen bytes)), for "what two words can hold" beside [`MAXIMUM_NAME_BYTES`]'s "what
@@ -104,6 +104,12 @@ pub const fn fits_words(name: &[u8]) -> bool {
 
 /// Pack the name length and the granted rights into the caretaker's third argument word.
 ///
+/// # Panics
+///
+/// When `len` is past [`MAXIMUM_NAME_BYTES`] or `rights` needs more than the 56 bits above the
+/// length byte. A masked length of 256 would read back as [`WHOLE_NAMESPACE`], a grant of
+/// everything. The panic is provisional (restrictive first).
+///
 /// # Examples
 ///
 /// `wc` starts holding one file, read-only, with the name in two argument words.
@@ -132,7 +138,8 @@ pub const fn fits_words(name: &[u8]) -> bool {
 ///
 /// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `file_system_contract`).
 pub const fn specification(len: usize, rights: u64) -> u64 {
-    ((len as u64) & 0xff) | (rights << 8)
+    assert!(len <= MAXIMUM_NAME_BYTES && rights >> 56 == 0);
+    (len as u64) | (rights << 8)
 }
 
 /// The granted name's length from a spec word.
@@ -155,11 +162,10 @@ pub const fn is_writable(w: u64) -> bool {
 }
 
 /// **Where a caretaker's grant page is mapped**, read-only, in the caretaker's address space. Its
-/// builder maps the page here and the caretaker reads it here, both through this one constant: the
-/// progenitor, `login` and the kernel's test wiring on one side, `fs_subtree_caretaker`,
-/// `fs_nameset_caretaker` and `fs_file_caretaker` on the other. A page of the address space map's
-/// pair-page window; the progenitor checks it against the map at compile time
-/// (`address_space_layout::pair_page`), so this crate keeps no dependency of its own.
+/// builder (the process that starts the caretaker) maps the page here and the caretaker reads it
+/// here, both through this one constant. The address is a page of the pair-page window in the
+/// address space layout, and the builder checks it against that layout at compile time, so this
+/// crate keeps no dependency of its own.
 ///
 /// Name: provisional.
 pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0000_0070_0000;
@@ -174,22 +180,23 @@ pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0000_0070_0000;
 /// longest one-name set, a two-byte header, [`MAXIMUM_NAME_BYTES`] and the terminator, so the two
 /// never overlap whatever the name.
 ///
-/// Name: provisional.
-pub const PAGE_NAME_SET_OFFSET: usize = 256;
+/// Name: provisional, minted 2026-11-22 (UTC) by lane 1090-finish-review. The unit suffix answers the
+/// register-name gate, which reads a bare `_OFFSET` as a register offset.
+pub const PAGE_NAME_SET_OFFSET_BYTES: usize = 256;
 
-const _: () = assert!(PAGE_NAME_SET_OFFSET > 2 + MAXIMUM_NAME_BYTES);
+const _: () = assert!(PAGE_NAME_SET_OFFSET_BYTES > 2 + MAXIMUM_NAME_BYTES);
 
 /// **How many bytes of its grant page a caretaker reads**: the granted name and the longest set
 /// after it. Far under a page, so one frame carries the whole grant.
 ///
 /// Name: provisional.
-pub const PAGE_USED_BYTES: usize = PAGE_NAME_SET_OFFSET + super::nameset::MAXIMUM_BYTES;
+pub const PAGE_USED_BYTES: usize = PAGE_NAME_SET_OFFSET_BYTES + super::nameset::MAXIMUM_BYTES;
 
 const _: () = assert!(PAGE_USED_BYTES <= super::PAGE_BYTES);
 
 /// **Write a caretaker's grant page**: `name` at offset 0 as a set of one name, flagged
 /// [`super::nameset::IS_DIRECTORY`] when `is_directory`, and `set`, already encoded by
-/// [`super::nameset::encode`], at [`PAGE_NAME_SET_OFFSET`]. An empty `name` is written as an empty
+/// [`super::nameset::encode`], at [`PAGE_NAME_SET_OFFSET_BYTES`]. An empty `name` is written as an empty
 /// set, which is how a grant with nothing to descend by travels (the root of the shell's namespace,
 /// or a channel already bound to its directory). An empty `set` is written as an empty set too.
 ///
@@ -226,9 +233,12 @@ pub fn write_page(name: &[u8], is_directory: bool, set: &[u8], out: &mut [u8]) -
     if name.is_empty() {
         out[0] = 0;
     } else {
-        super::nameset::encode(&[(name, is_directory)], &mut out[..PAGE_NAME_SET_OFFSET])?;
+        super::nameset::encode(
+            &[(name, is_directory)],
+            &mut out[..PAGE_NAME_SET_OFFSET_BYTES],
+        )?;
     }
-    let tail = &mut out[PAGE_NAME_SET_OFFSET..PAGE_USED_BYTES];
+    let tail = &mut out[PAGE_NAME_SET_OFFSET_BYTES..PAGE_USED_BYTES];
     if set.is_empty() {
         tail[0] = 0;
     } else {
@@ -260,22 +270,22 @@ pub fn page_name(page: &[u8]) -> Option<&[u8]> {
 }
 
 /// **The name set on a caretaker's grant page**, in [`super::nameset`]'s encoding: the bytes from
-/// [`PAGE_NAME_SET_OFFSET`] to [`PAGE_USED_BYTES`], or nothing when `page` is shorter. A subtree
+/// [`PAGE_NAME_SET_OFFSET_BYTES`] to [`PAGE_USED_BYTES`], or nothing when `page` is shorter. A subtree
 /// caretaker's is empty.
 ///
 /// Name: provisional.
 pub fn page_name_set(page: &[u8]) -> &[u8] {
-    page.get(PAGE_NAME_SET_OFFSET..PAGE_USED_BYTES)
+    page.get(PAGE_NAME_SET_OFFSET_BYTES..PAGE_USED_BYTES)
         .unwrap_or(&[])
 }
 
 /// **Whether a caretaker's `START` words are the ones a grant page goes with**: both name words
-/// zero and no length in the spec word, so the words carry only the rights. Restrictive first: a
+/// zero and no length in the specification word, so the words carry only the rights. Restrictive first: a
 /// caretaker refuses words that still carry a name, rather than reading one of two places.
 ///
 /// Name: provisional.
-pub const fn words_carry_no_name(name_lo: u64, name_hi: u64, spec: u64) -> bool {
-    name_lo == 0 && name_hi == 0 && specification_len(spec) == 0
+pub const fn words_carry_no_name(name_lo: u64, name_hi: u64, specification: u64) -> bool {
+    name_lo == 0 && name_hi == 0 && specification_len(specification) == 0
 }
 
 /// **A grant whose operand is the holder's whole namespace**, spelled as a name of zero length.
