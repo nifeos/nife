@@ -210,55 +210,31 @@ components/src/timetable.rs::staged
 
 components/src/virtual_io_net_transport.rs::bring_up
 
-crates/abi/src/address_space.rs
 
-crates/abi/src/address_space.rs::LIST
 
-crates/abi/src/address_space.rs::MAP_CODE
 
-crates/abi/src/address_space.rs::MAP_INTO
 
 
 
-crates/abi/src/address_space.rs::UNMAP
 
-crates/abi/src/address_space.rs::WAIT
 
-crates/abi/src/address_space.rs::WAKE
 
-crates/abi/src/address_wait.rs
 
-crates/abi/src/address_wait.rs::PRIVATE
 
-crates/abi/src/address_wait.rs::SIZE_MASK
 
-crates/abi/src/address_wait.rs::SIZE_U16
 
-crates/abi/src/address_wait.rs::SIZE_U32
 
-crates/abi/src/address_wait.rs::SIZE_U64
 
-crates/abi/src/address_wait.rs::SIZE_U8
 
-crates/abi/src/address_wait.rs::admitted
 
-crates/abi/src/console.rs
 
-crates/abi/src/console.rs::WRITE
 
-crates/abi/src/cycle_counter.rs
 
-crates/abi/src/cycle_counter.rs::from_word
 
-crates/abi/src/cycle_counter.rs::is_core_cycles
 
-crates/abi/src/cycle_counter.rs::to_word
 
-crates/abi/src/fault.rs
 
-crates/abi/src/fault.rs::EVENT_EXIT
 
-crates/abi/src/fault.rs::EVENT_FAULT
 
 
 
@@ -270,173 +246,93 @@ crates/abi/src/fault.rs::EVENT_FAULT
 
 
 
-crates/abi/src/interrupt.rs::WAIT
 
-crates/abi/src/lib.rs::CAPABILITY_TABLE_SLOTS
 
-crates/abi/src/lib.rs::Error
 
 
 
 
 
-crates/abi/src/lib.rs::from_ret
 
-crates/abi/src/memory_region.rs
 
-crates/abi/src/memory_region.rs::DESTROY
 
-crates/abi/src/memory_region.rs::MAP
 
-crates/abi/src/memory_region.rs::RETYPE
 
 
-crates/abi/src/memory_region.rs::SPLIT
 
-crates/abi/src/memory_region.rs::USAGE
 
-crates/abi/src/notification.rs
 
-crates/abi/src/notification.rs::BIND
 
-crates/abi/src/notification.rs::BOUND
 
-crates/abi/src/notification.rs::POLL
 
-crates/abi/src/notification.rs::SIGNAL
 
-crates/abi/src/notification.rs::WAIT
 
 
-crates/abi/src/object_type.rs::ADDRESS_SPACE
 
-crates/abi/src/object_type.rs::NOTIFICATION
 
-crates/abi/src/object_type.rs::PROCESS
 
-crates/abi/src/object_type.rs::RENDEZVOUS
 
-crates/abi/src/object_type.rs::THREAD_CONTROL_BLOCK
 
-crates/abi/src/object_type.rs::TIMER
 
-crates/abi/src/page_frame.rs
 
-crates/abi/src/page_frame.rs::MAP
 
-crates/abi/src/page_frame.rs::REVOKE
 
-crates/abi/src/page_frame.rs::SLICE
 
-crates/abi/src/port_range.rs
 
-crates/abi/src/port_range.rs::REVOKE
 
-crates/abi/src/process.rs
 
-crates/abi/src/process.rs::DESTROY
 
-crates/abi/src/reboot.rs
 
-crates/abi/src/reboot.rs::REBOOT
 
-crates/abi/src/reboot.rs::from_psci
 
-crates/abi/src/reboot.rs::from_sbi
 
-crates/abi/src/rendezvous.rs
 
-crates/abi/src/rendezvous.rs::BADGE
 
-crates/abi/src/rendezvous.rs::CALL
 
-crates/abi/src/rendezvous.rs::REAP
 
-crates/abi/src/rendezvous.rs::RECEIVE
 
-crates/abi/src/rendezvous.rs::SEND
 
-crates/abi/src/rendezvous.rs::SURVEY
 
-crates/abi/src/reply.rs
 
-crates/abi/src/reply.rs::REPLY
 
-crates/abi/src/reply.rs::REPLY_CAPABILITY
 
-crates/abi/src/rights.rs
 
-crates/abi/src/rights.rs::BIND
 
-crates/abi/src/rights.rs::ENUMERATE
 
-crates/abi/src/rights.rs::GRANT
 
-crates/abi/src/rights.rs::READ
 
-crates/abi/src/rights.rs::WRITE
 
-crates/abi/src/survey.rs
 
-crates/abi/src/survey.rs::BLOCKED
 
-crates/abi/src/survey.rs::DEAD
 
-crates/abi/src/survey.rs::DONE
 
-crates/abi/src/survey.rs::NO_CPU
 
-crates/abi/src/survey.rs::PLACEMENT
 
-crates/abi/src/survey.rs::READY
 
-crates/abi/src/survey.rs::RUNNING
 
-crates/abi/src/survey.rs::STATE
 
-crates/abi/src/survey.rs::is_known
 
 
 
-crates/abi/src/thread_control_block.rs
 
-crates/abi/src/thread_control_block.rs::CONFIGURE
 
-crates/abi/src/thread_control_block.rs::SET_THREAD_POINTER
 
-crates/abi/src/thread_control_block.rs::START
 
-crates/abi/src/timer.rs
 
-crates/abi/src/timer.rs::ARM
 
-crates/abi/src/timer.rs::CANCEL
 
-crates/abi/src/timer.rs::counter_ticks_for
 
-crates/abi/src/usage.rs
 
-crates/abi/src/usage.rs::ADDRESS_SPACES
 
-crates/abi/src/usage.rs::CHILDREN
 
-crates/abi/src/usage.rs::COMMITTED
 
-crates/abi/src/usage.rs::FRAMES
 
-crates/abi/src/usage.rs::RENDEZVOUS
 
-crates/abi/src/usage.rs::SIZE
 
-crates/abi/src/usage.rs::THREADS
 
-crates/abi/src/usage.rs::is_known
 
-crates/abi/src/virtual_io.rs
 
-crates/abi/src/virtual_io.rs::NOTIFY
 
-crates/abi/src/virtual_io.rs::SETUP_QUEUE
 
 crates/address_space_identifier/src/lib.rs::ASIDS
 
