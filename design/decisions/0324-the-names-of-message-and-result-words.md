@@ -118,12 +118,12 @@ uses. It counts the excluded paths as foreign, so its rows add up to more than 2
 | Field in a struct literal or a pattern | 32 | 14 |
 | `pub` struct field (public API) | 6 | 2 |
 | Private struct field | 2 | 2 |
-| **Code identifiers, all** | **1588** | **148** |
+| Code identifiers, all | 1588 | 148 |
 | Rust doc comments | 310 | 58 |
 | Markdown prose | 202 | 58 |
 | Markdown code blocks | 60 | 11 |
 | String literals (assertion and panic text) | 30 | 11 |
-| **Doc prose, all** | **602** | **131** |
+| Doc prose, all | 602 | 131 |
 | Falsification patches and a metrics file, which quote the code above | 47 | 16 |
 | Foreign: aarch64 assembly, disassembly in notes, bench logs, SVG namespace URLs | 108 | 9 |
 
@@ -159,7 +159,7 @@ stays inside its array.
   about 300 files). But it puts a positional name at all 319 declaration sites in the table above,
   which the compiler cannot check against the length, and it leaves a numbering convention that a
   reviewer applies by hand. The tree's numbered names for a fixed layout
-  (`RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK`, milestone 1074) describe a hardware
+  (`RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK`, milestone 1074 (`designware_ethernet`: what an outside maintainer would fix before the move)) describe a hardware
   descriptor, not a message.
 - **A spelled number: `word_zero`.** Refused: a spelled number in an identifier.
 - **An ordinal: `first_word`.** Refused: an ordinal in an identifier.
@@ -200,17 +200,17 @@ by a script posted on the pull request:
 | `first` or `last` otherwise, allowed as a boundary | 283 | 993 |
 | `second` after `per` (`NANOSECONDS_PER_SECOND`), allowed | 7 | 113 |
 
-- **Positions.** Beyond the `word_*`, `argument_*` and `result_word_*` names this decision replaces,
+- Positions. Beyond the `word_*`, `argument_*` and `result_word_*` names this decision replaces,
   the spelled hits include `domain_one`, `slot_one`, `rows_two`, `window_zero`,
   `bus_device_function_zero`, the fixture constants
   `GLOB_ONE`, `RM_ONE`, `REDIRECTION_ONE` and `LABEL_ONE`, and `mainline_port_one` in a test name.
-- **The position-noun pattern.** Its 8 hits include `first_word` (the resolver's word 0) and
+- The position-noun pattern. Its 8 hits include `first_word` (the resolver's word 0) and
   `HolderWiring::first_word`, refused, and `split_first_word` and `paint_last_word` in the line
   editor, where `word` is a word of text and the sense is a boundary: those take exemptions.
-- **Instances.** The 109 later ordinals are the instance sweep; 61 are test names written as
+- Instances. The 109 later ordinals are the instance sweep; 61 are test names written as
   sentences (`a_second_bind_of_a_bound_space_is_refused`). `first` in an instance sense
   (`first_partition`) hides among the 283 boundary names, so the sweep reads those by hand.
-- **Quantities, allowed.** 106 names (289 uses) use a number as an amount: `is_power_of_two`,
+- Quantities, allowed. 106 names (289 uses) use a number as an amount: `is_power_of_two`,
   `ONE_GIBIBYTE`, `split_once`, `draw_twice`. The check passes them.
 
 ## Prior art

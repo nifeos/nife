@@ -7,7 +7,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A message's words are arrays and every decoded value is named by its meaning
+# A message's words are arrays and every decoded value takes the name of its meaning
 
 Raised 2026-11-22 (UTC) by lane `lane/message-word-names`, after section 324 (the names of a
 message's words and a system call's result words) ruled the rule.
