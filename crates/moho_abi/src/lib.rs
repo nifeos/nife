@@ -172,7 +172,7 @@ pub mod object_type;
 pub mod reboot;
 
 /// Methods on a `Notification` capability: **a doorbell, not a meeting.** Created by [`memory_region::RETYPE_OBJECT`]
-/// with [`object_type::NOTIFICATION`]. A signaller sets bits in its word with a bitwise or and never blocks; a waiter
+/// with [`object_type::NOTIFICATION`]. A signaler sets bits in its word with a bitwise or and never blocks; a waiter
 /// takes what has accumulated. [`BIND`](notification::BIND) attaches it to one thread, so a signal
 /// can also end that thread's receive on an endpoint, told apart by [`BOUND`](notification::BOUND).
 ///
@@ -300,7 +300,7 @@ pub mod uart;
 /// // "There is nothing there" and "there was something there and it is gone" are different facts,
 /// // and a writer branches on them in **opposite** directions: a program never granted a stdout
 /// // keeps running and prints into the void; a program whose reader has exited must end. Both used
-/// // to arrive as NoSuchSlot, so the only available behaviour was the wrong one for a pipeline.
+/// // to arrive as NoSuchSlot, so the only available behavior was the wrong one for a pipeline.
 /// assert_ne!(Error::NoSuchSlot, Error::Gone);
 /// assert_eq!(Error::NoSuchSlot as i64, -1);
 /// assert_eq!(Error::Gone as i64, -11);
