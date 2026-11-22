@@ -8,7 +8,7 @@ the `git format-patch` output. Nobody files a draft until the architect has revi
 given a separate go.
 
 - [`4-fuzz-targets.md`](4-fuzz-targets.md): upstream item 4, seven `cargo fuzz` targets over the
-  parsers, mount and journal replay, with an `mke2fs` seed corpus.
+  parsers, mount and journal replay, with an `mke2fs` seed corpus; it files after item 5.
 - [`7-mount-refusal-reason.md`](7-mount-refusal-reason.md): upstream item 7, a refused mount
   reports its reason instead of a bare `Io`.
 - [`8-whole-inode-times.md`](8-whole-inode-times.md): upstream item 8, `InodeInfo` reports whole
