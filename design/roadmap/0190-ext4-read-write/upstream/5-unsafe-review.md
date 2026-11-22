@@ -1,18 +1,18 @@
 # Item 5: the `unsafe` review of `rsext4`
 
 The draft of upstream item 5 in [milestone 190](../../0190-ext4-read-write.md): a safety argument
-at each CRC32C `unsafe` use, and a sound replacement for the two group-descriptor casts. Nothing
-here is filed. The architect reviews this exact text first, and filing is a separate go.
+at each CRC32C `unsafe` use, and a sound replacement for the two group-descriptor casts. Nobody files
+it until the architect reviews this exact text and gives a separate go.
 
 - Repository: `rcore-os/tgoskits`, branch `dev`, package `fs/rsext4` (0.9.2).
-- Base commit: `6e80b940d46167a59a795e158bb17a7eb28333af`, the head of `dev` when the draft was
-  checked; `dev` has no later commit under `fs/rsext4`.
+- Base commit: `6e80b940d46167a59a795e158bb17a7eb28333af`, the head of `dev` when this draft
+  last checked it; `dev` has no later commit under `fs/rsext4`.
 - The change: [5-unsafe-review.patch](5-unsafe-review.patch), two commits, `git format-patch`
   output. It applies with `git am` on the base commit.
 
 ## What upstream may refuse
 
-The cast replacement changes public API, so the second commit is marked breaking (`fix(rsext4)!`).
+The cast replacement changes public API, so the second commit carries the breaking marker (`fix(rsext4)!`).
 `BlockGroupDescTable::get_desc` returns `Option<Ext4GroupDesc>` by value instead of a reference,
 `BlockGroupDescIter` yields values, and `BlockGroupDescTableMut::get_desc_mut` gives way to
 `get_desc` and `set_desc`. A reference into the table cannot be sound for a 32-byte record, since
@@ -180,5 +180,5 @@ std tests failed for 2 package(s): ax-fs-ng, rsext4
 The two packages that fail there fail only in the growth tests named above, on `grow:features_or_
 durability`, and fail the same way on the base commit.
 
-nife's read oracle (`tools/ext4_oracle`) was not run against the patch: it mounts through
-`Ext4FileSystem` and never reaches `BlockGroupDescTable`, so it cannot observe this change.
+This draft does not run nife's read oracle (`tools/ext4_oracle`) against the patch: it mounts
+through `Ext4FileSystem` and never reaches `BlockGroupDescTable`, so it cannot observe this change.
