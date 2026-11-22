@@ -250,8 +250,8 @@ fn a_typed_name_is_planned_against_its_row() {
     };
     let (program, endowment) = plan(
         &run(b"least_authority_demo 9"),
-        ShellHoldings::default(),
-        expansion::Expansion::none(),
+        &ShellHoldings::default(),
+        &expansion::Expansion::none(),
     )
     .unwrap();
     assert_eq!(program, Program::LeastAuthorityDemo);
@@ -260,16 +260,16 @@ fn a_typed_name_is_planned_against_its_row() {
     assert_eq!(
         plan(
             &run(b"swish -c date"),
-            ShellHoldings::default(),
-            expansion::Expansion::none()
+            &ShellHoldings::default(),
+            &expansion::Expansion::none()
         ),
         Err(Refusal::IsolationNotBuilt)
     );
     assert_eq!(
         plan(
             &run(b"no_such_thing"),
-            ShellHoldings::default(),
-            expansion::Expansion::none()
+            &ShellHoldings::default(),
+            &expansion::Expansion::none()
         ),
         Err(Refusal::NoSuchProgram)
     );

@@ -678,7 +678,6 @@ dependencies = [
  "file_system_fixture",
  "grant_contract",
  "program_argument_contract",
- "program_table",
 ]
 
 [[package]]

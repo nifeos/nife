@@ -46,13 +46,17 @@ pub struct Streams {
 /// is a refusal. Placement is by index, and the [`Expansion`] is keyed to it: a pattern with no
 /// expansion is [`Refusal::Unexpanded`], and a token with no magic never consults the expansion.
 /// See notes/glob-grant.md ("The shell expands before it plans").
+///
+/// The holdings, the expansion and the streams arrive by reference: each is a kilobyte or more on a
+/// `no_std` stack, and the size test in this crate pins them. Taking them by reference is
+/// provisional until the release review.
 pub fn plan_against(
     run: &ParsedInvocation<'_>,
     m: Manifest,
-    shell_holdings: ShellHoldings,
-    expanded: Expansion,
+    shell_holdings: &ShellHoldings,
+    expanded: &Expansion,
 ) -> Result<Endowment, Refusal> {
-    plan_against_with_streams(run, m, shell_holdings, expanded, Streams::default())
+    plan_against_with_streams(run, m, shell_holdings, expanded, &Streams::default())
 }
 
 /// [`plan_against`], with the operators' answer. The one that does the work; the other two are the
@@ -62,9 +66,9 @@ pub fn plan_against(
 pub fn plan_against_with_streams(
     run: &ParsedInvocation<'_>,
     m: Manifest,
-    shell_holdings: ShellHoldings,
-    expanded: Expansion,
-    streams: Streams,
+    shell_holdings: &ShellHoldings,
+    expanded: &Expansion,
+    streams: &Streams,
 ) -> Result<Endowment, Refusal> {
     // **A line whose quotes do not make sense is answered before anything else** (milestone 67),
     // because every other refusal below is a sentence about a word, and this is the one that says
@@ -104,21 +108,14 @@ pub fn plan_against_with_streams(
     // The file grant takes the next positional. The name is the whole designation; the direction
     // comes from the manifest, which is why `wc report.txt` reads and `tee report.txt` writes
     // without the human typing a mode.
-    let file = plan_file(&m, pos, &mut next, &shell_holdings, &expanded)?;
+    let file = plan_file(&m, pos, &mut next, shell_holdings, expanded)?;
 
     // The directory grant takes the next positional, and it is resolved exactly as a file grant is:
     // the leading path is walked here, once, against where the shell is standing now, and the
     // result is recorded as a value. The child is handed a capability to the directory the names
     // are **in**, plus the names, because taking a name away is an operation on the directory that
     // holds it and no per-file capability can express it. See [`DirectoryGrantDeclaration`].
-    let dir = plan_directory_grant(
-        &m,
-        short_options,
-        pos,
-        &mut next,
-        &shell_holdings,
-        &expanded,
-    )?;
+    let dir = plan_directory_grant(&m, short_options, pos, &mut next, shell_holdings, expanded)?;
 
     // **A program that hears words is granted what its words designate** (milestone 205, §170
     // (how a foreign program is told what to do) clauses 2 to 5): one directory grant at the
@@ -126,15 +123,15 @@ pub fn plan_against_with_streams(
     // word was `.`. A line that designated nothing grants nothing (calef's N1 ruling,
     // 2026-09-27T06:27Z). What the grant may do is the manifest's [`WordGrant`], which the shell
     // turns into rights and the progenitor clamps to the manifest it endows.
-    let dir = words_directory_grant(&m, &shell_holdings, &expanded, dir)?;
+    let dir = words_directory_grant(&m, shell_holdings, expanded, dir)?;
 
     // The input operand: `wc report.txt` is `wc < report.txt` with the operator left out, which is
     // unambiguous because no manifest declares both a file and an input
     // (`no_program_declares_both_a_file_and_an_input`). An argument and an input compose by fixed
     // order. An explicit `<` wins, and the operand is then unplaceable below. See
     // notes/grant-expression/per-file-grants.md ("`wc report.txt`: the input operand").
-    let mut streams = streams;
-    plan_input_operand(&m, &mut streams, pos, &mut next, &shell_holdings, &expanded)?;
+    let mut streams = *streams;
+    plan_input_operand(&m, &mut streams, pos, &mut next, shell_holdings, expanded)?;
 
     // Anything left designates a slot this program does not have.
     if let Some(&extra) = pos.get(next) {
@@ -383,7 +380,7 @@ fn plan_memory_grant(run: &ParsedInvocation<'_>, m: &Manifest) -> Result<u64, Re
 /// Name: ratified 2026-11-20 (UTC).
 pub fn output_file_grant(
     token: &[u8],
-    shell_holdings: ShellHoldings,
+    shell_holdings: &ShellHoldings,
 ) -> Result<FileGrant, Refusal> {
     redirection_file_grant(token, shell_holdings, true)
 }
@@ -392,19 +389,22 @@ pub fn output_file_grant(
 /// [`output_file_grant`], and the grant is read-only: the program is handed a source, not a file.
 ///
 /// Name: ratified 2026-11-20 (UTC).
-pub fn input_file_grant(token: &[u8], shell_holdings: ShellHoldings) -> Result<FileGrant, Refusal> {
+pub fn input_file_grant(
+    token: &[u8],
+    shell_holdings: &ShellHoldings,
+) -> Result<FileGrant, Refusal> {
     redirection_file_grant(token, shell_holdings, false)
 }
 
 fn redirection_file_grant(
     token: &[u8],
-    shell_holdings: ShellHoldings,
+    shell_holdings: &ShellHoldings,
     writable: bool,
 ) -> Result<FileGrant, Refusal> {
     if !shell_holdings.directory {
         return Err(Refusal::NoSuchCapability(CapabilityKind::File));
     }
-    let (side, dir, names) = designate(token, 0, &shell_holdings, &Expansion::none())?;
+    let (side, dir, names) = designate(token, 0, shell_holdings, &Expansion::none())?;
     let name = names.only().ok_or(Refusal::FileNotNameable)?;
     Ok(FileGrant {
         side,

@@ -11,9 +11,6 @@
 //! milestone/1094-grant-plan-split.
 
 #![no_std]
-// The items moved here from `grant_plan`, which carried the same opt-out for its worklist
-// (notes/doc-coverage.md).
-#![allow(missing_docs)]
 
 pub mod budgets;
 pub mod image;
