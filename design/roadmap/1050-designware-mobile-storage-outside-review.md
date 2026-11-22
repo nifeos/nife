@@ -94,7 +94,7 @@ ruled. Verified. Two-way change to a one-way license statement. S.
 
 #### P0-4. No tag, so the semver gate has no baseline
 
-Status: Done: the git tag `v0.1.0-pre.1` sits on `473b19c` ([nifeos/designware_mobile_storage#13](https://github.com/nifeos/designware_mobile_storage/pull/13), [nifeos/designware_mobile_storage#17](https://github.com/nifeos/designware_mobile_storage/pull/17)); `v0.1.0-pre.2` followed on `4c8dad4` ([nifeos/designware_mobile_storage#21](https://github.com/nifeos/designware_mobile_storage/pull/21)). No release on crates.io.
+Status: Waiting on [nifeos/crate-workflows#84](https://github.com/nifeos/crate-workflows/pull/84). The tags `v0.1.0-pre.1` (`473b19c`) and `v0.1.0-pre.2` (`4c8dad4`) exist, but the template takes no pre-release tag as a semver baseline, so the labeler held nothing on [nifeos/designware_mobile_storage#33](https://github.com/nifeos/designware_mobile_storage/pull/33), which removed a public module.
 
 `git tag` is empty and the repository has no release (verified). The `weekly / semver` job of the
 template and the per-pull-request semver rule of the labeler compare against the newest `v*` tag.
@@ -219,9 +219,10 @@ source. Two-way. S.
    `jh7110` module. Landed in [nifeos/designware_mobile_storage#31](https://github.com/nifeos/designware_mobile_storage/pull/31) and nifeos/nife#3729.
 3. Where the master boot record parser lives. Ruled: the `partition` module (`MasterBootRecord`,
    `PartitionEntry`, `scratch_sector_range`) leaves for a new crate `master_boot_record`, staged in
-   nife first. Open: the staged crate is nifeos/nife#3731; the removal here is [nifeos/designware_mobile_storage#33](https://github.com/nifeos/designware_mobile_storage/pull/33), held on
-   #3731; the pin bump in nife follows both. 
-4. A shared DMA region trait across the organization's drivers. Open: needs a ruling, below.
+   nife first. Landed: the staged crate in [#3731](https://github.com/nifeos/nife/pull/3731), the removal in
+   [nifeos/designware_mobile_storage#33](https://github.com/nifeos/designware_mobile_storage/pull/33), and the pin bump in [#3757](https://github.com/nifeos/nife/pull/3757).
+4. A shared DMA region trait across the organization's drivers. Provisional, option A: the crate
+   keeps its own `DirectMemoryAccessRegion` for its first release (below).
 5. When the first release goes. Ruled 2026-11-19 (UTC): the first release of
    `designware_mobile_storage` waits for the board confirmation of P1-1 (the `CMD12` recovery) and
    P1-2 (busy durations against the deadline defaults). P2-3, P2-4 and the 50 megahertz scope check
@@ -229,13 +230,13 @@ source. Two-way. S.
 
 ## Open decisions
 
-One, briefed in full in
+None. The shared DMA region trait carries a provisional answer, briefed in full in
 [the open decisions appendix](1050-designware-mobile-storage-outside-review/open-decisions.md):
 
-1. A shared DMA region trait. Does this crate keep its own `DirectMemoryAccessRegion` for its first
-   release? Recommended: A, yes; each driver keeps its own trait, and a shared crate waits for a
-   second storage driver. Two-way until the first publish of any of the three drivers that define
-   one, one-way after. It blocks the first publish and the closing of this block.
+1. A shared DMA region trait. Provisional, option A: this crate keeps its own
+   `DirectMemoryAccessRegion` for its first release, and a shared crate waits for a second storage
+   driver. It is a two-way door while none of the three drivers that define such a trait has
+   published, and the release review of the first of them rechecks it.
 
 ## Prior art and the DesignWare pair
 
@@ -245,28 +246,8 @@ should share with `designware_ethernet` are in
 
 ## Verified firsthand, inferred, and not run
 
-Verified by the reviewer on a host:
-
-- `cargo build`, `cargo test` (92 tests and 5 doctests pass), `cargo clippy --all-targets`
-  (clean), `cargo doc` with warnings denied (clean).
-- Release builds for `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-elf` and
-  `x86_64-unknown-none`.
-- Three Kani harnesses (`the_clock_divider_is_total`, `a_register_field_never_exceeds_its_width`,
-  the MBR parse) pass, and the clock-divider falsification patch turns its harness red.
-  `falsify.py --check` holds all 23 records.
-- The README example compiles under `rustdoc --test`. The source holds no `unsafe`, and the prose
-  files hold no contractions.
-- The reviewer read every source location cited above in the clone.
-- The tags, releases, rulesets, team, workflow runs and job logs of the repository, through the
-  GitHub API, and the crates.io figures.
-
-Inferred, not verified: the cause of the runner shutdown in the weekly mutation shards, and the
-behavior of Linux and U-Boot on a data error, from the reviewer's memory of those drivers. The busy
-ceilings of the specification and the internals of `dwmmc-host` are inferences too.
-
-Not run: the full Kani suite and the full falsification replay (CI shows both green on `main`),
-cargo-mutants, Miri, the `standalone` and prose gates of the template locally, and anything on
-hardware.
+What the reviewer ran, what it inferred and what it left unrun are in
+[the verification appendix](1050-designware-mobile-storage-outside-review/verification.md).
 
 ## Done when
 
@@ -282,33 +263,48 @@ claims none of the hardware steps.
 - Hardware figures are absent until the bench runs; the deadline recommendation in P1-2 rests on
   the specification, not on this board.
 
-## Where this stands
+## Finding status
 
-Every P0, P1 and P2 item is done in code on `main` of `nifeos/designware_mobile_storage`; each finding above and in
-[the appendix](1050-designware-mobile-storage-outside-review/after-the-first-release.md) carries its
-status. The board steps that have run are marked in
-[the done-when appendix](1050-designware-mobile-storage-outside-review/done-when.md); the README
-reports them after [nifeos/designware_mobile_storage#32](https://github.com/nifeos/designware_mobile_storage/pull/32).
-
-| item | what remains | blocker |
-|---|---|---|
-| P1-1 | The `CMD12` recovery on the board | bench; blocks the first release |
-| P1-2 | Busy durations on the board, against the deadline defaults | bench; blocks the first release |
-| P2-3 | `CDETECT` polarity and a hot removal | bench; follows the first release |
-| P2-4 | The eMMC socket and its bus modes; slot 0 has no module fitted | bench; follows the first release |
-| Done when | The 50 megahertz clock against a scope | bench; follows the first release |
-| Done when | The semver rule holding a breaking pull request | [nifeos/designware_mobile_storage#33](https://github.com/nifeos/designware_mobile_storage/pull/33) is the first; open, held on nifeos/nife#3731 |
-| Decision 3 | The `partition` module leaves | [nifeos/designware_mobile_storage#33](https://github.com/nifeos/designware_mobile_storage/pull/33), held on nifeos/nife#3731, then the nife pin bump |
-| Decision 4 | A shared DMA region trait | needs a ruling (Open decisions) |
-| Release | The first crates.io release | publishing hold |
+- P0-1, `Identity.firmware` as a positional array: Done, [nifeos/designware_mobile_storage#9](https://github.com/nifeos/designware_mobile_storage/pull/9).
+- P0-2, a visibility rule for the public surface: Done, [nifeos/designware_mobile_storage#2](https://github.com/nifeos/designware_mobile_storage/pull/2).
+- P0-3, the ISC notice only in a doc comment: Done, [nifeos/designware_mobile_storage#3](https://github.com/nifeos/designware_mobile_storage/pull/3).
+- P0-4, no semver baseline: Waiting on [nifeos/crate-workflows#84](https://github.com/nifeos/crate-workflows/pull/84), then the pin bump to the
+  template release that carries it.
+- P1-1, no recovery after a failed data phase: Waiting on a board run; code in [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5).
+- P1-2, fixed deadlines at the ceiling of the specification: Waiting on a board run; code in
+  [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5).
+- P1-3, the two traits state no contract: Done, [nifeos/designware_mobile_storage#3](https://github.com/nifeos/designware_mobile_storage/pull/3) and [nifeos/designware_mobile_storage#15](https://github.com/nifeos/designware_mobile_storage/pull/15).
+- P1-4, forty-nine untriaged mutation survivors: Done, [nifeos/designware_mobile_storage#16](https://github.com/nifeos/designware_mobile_storage/pull/16) and [nifeos/designware_mobile_storage#18](https://github.com/nifeos/designware_mobile_storage/pull/18).
+- P1-5, the stranger test never ran: Done, [nifeos/designware_mobile_storage#14](https://github.com/nifeos/designware_mobile_storage/pull/14) and [nifeos/designware_mobile_storage#15](https://github.com/nifeos/designware_mobile_storage/pull/15).
+- P1-6, the README is not the docs.rs front page: Done, [nifeos/designware_mobile_storage#3](https://github.com/nifeos/designware_mobile_storage/pull/3).
+- P1-7, two misleading error attributions: Done, [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5).
+- P1-8, the weekly caller builds the host only: Done, [nifeos/designware_mobile_storage#4](https://github.com/nifeos/designware_mobile_storage/pull/4).
+- P1-9, `block_address_argument` states no precondition: Done, [nifeos/designware_mobile_storage#15](https://github.com/nifeos/designware_mobile_storage/pull/15).
+- P2-1, no fuzz target: Done, [nifeos/designware_mobile_storage#10](https://github.com/nifeos/designware_mobile_storage/pull/10) and [nifeos/designware_mobile_storage#19](https://github.com/nifeos/designware_mobile_storage/pull/19).
+- P2-2, the simulator is not available to users: Done, [nifeos/designware_mobile_storage#12](https://github.com/nifeos/designware_mobile_storage/pull/12).
+- P2-3, card presence read once: Waiting on a board run. `is_card_present` is in [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5).
+- P2-4, an eMMC runs 1-bit at 25 MHz: Waiting on a board run. The bus-width and high-speed switches
+  are in [nifeos/designware_mobile_storage#11](https://github.com/nifeos/designware_mobile_storage/pull/11); no eMMC module is fitted.
+- P2-5, `reset` leaves the IDMAC registers alone: Done, [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5) and [nifeos/designware_mobile_storage#19](https://github.com/nifeos/designware_mobile_storage/pull/19).
+- P2-6, stale repository facts: Done, [nifeos/designware_mobile_storage#4](https://github.com/nifeos/designware_mobile_storage/pull/4).
+- P2-7, user-facing text says "queue" for the FIFO: Done, [nifeos/designware_mobile_storage#3](https://github.com/nifeos/designware_mobile_storage/pull/3).
+- Decision 2, where the JH7110 facts live: Done, [nifeos/designware_mobile_storage#31](https://github.com/nifeos/designware_mobile_storage/pull/31) and [#3729](https://github.com/nifeos/nife/pull/3729).
+- Decision 3, where the master boot record parser lives: Done, [#3731](https://github.com/nifeos/nife/pull/3731), [nifeos/designware_mobile_storage#33](https://github.com/nifeos/designware_mobile_storage/pull/33) and
+  [#3757](https://github.com/nifeos/nife/pull/3757).
+- Decision 4, a shared DMA region trait: Done, provisional option A, in this block: the crate keeps
+  its own trait ([the open decisions appendix](1050-designware-mobile-storage-outside-review/open-decisions.md)).
+- Done when, the 50 megahertz card-interface clock against a scope: Waiting on a board run; it
+  follows the first release (ruled 2026-11-19 UTC).
+- Done when, the semver rule holding a breaking pull request: Waiting on [nifeos/crate-workflows#84](https://github.com/nifeos/crate-workflows/pull/84).
+- Release, the first crates.io release: Waiting on the publishing hold.
 
 ## Follow-on
 
 - **Done.** Every P0, P1 and P2 item in code, by the pull requests each finding's status names.
-- **Outstanding.** P1-1 and P1-2 are the blockers for delivery.
-- **Outstanding.** The bench rows and the two open pull request rows of *Where this stands*,
-  checked against the pull request list of the crate, its tags and `bench/radon-2026-11-17/`.
-- **Outstanding.** The shared DMA region trait, in *Open decisions*: it needs a ruling.
+- **Outstanding.** P1-1 and P1-2 on the board: the blockers for delivery and for the first release.
+- **Outstanding.** P0-4: [nifeos/crate-workflows#84](https://github.com/nifeos/crate-workflows/pull/84), then a template release and the crate's pin bump to it.
+- **Outstanding.** The release review of the first DMA-region driver to publish rechecks the
+  provisional answer on a shared trait.
 
 ## Index row
 
