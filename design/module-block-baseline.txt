@@ -2805,105 +2805,63 @@ crates/globally_unique_identifier_partition_table/src/testing.rs::sample_disk
 
 
 
-crates/grant_plan/src/command.rs::FORCE
 
 
 
-crates/grant_plan/src/command.rs::RECURSIVE
 
-crates/grant_plan/src/command.rs::VERBOSE
 
 
-crates/grant_plan/src/command.rs::bind
 
 
 
-crates/grant_plan/src/command.rs::mounted_at
 
 
-crates/grant_plan/src/command.rs::resolve
 
-crates/grant_plan/src/command.rs::resolve_path
 
-crates/grant_plan/src/command.rs::resolve_steps
 
 
 
 
-crates/grant_plan/src/escalation.rs::Escalation
 
-crates/grant_plan/src/escalation.rs::is_spent
 
-crates/grant_plan/src/escalation.rs::new
 
-crates/grant_plan/src/escalation.rs::on_interrupt
 
-crates/grant_plan/src/escalation.rs::on_tick
 
 
 
-crates/grant_plan/src/expansion.rs::Batch
 
-crates/grant_plan/src/expansion.rs::Expander
 
-crates/grant_plan/src/expansion.rs::Expansion
 
-crates/grant_plan/src/expansion.rs::Name
 
-crates/grant_plan/src/expansion.rs::NameSet
 
-crates/grant_plan/src/expansion.rs::Resume
 
-crates/grant_plan/src/expansion.rs::as_bytes
 
 
-crates/grant_plan/src/expansion.rs::batch
 
-crates/grant_plan/src/expansion.rs::contains
 
-crates/grant_plan/src/expansion.rs::designated
 
-crates/grant_plan/src/expansion.rs::designation
 
-crates/grant_plan/src/expansion.rs::empty
 
-crates/grant_plan/src/expansion.rs::finish
 
-crates/grant_plan/src/expansion.rs::finish_batch
 
-crates/grant_plan/src/expansion.rs::for_positional
 
 
-crates/grant_plan/src/expansion.rs::is_empty
 
-crates/grant_plan/src/expansion.rs::is_empty
 
-crates/grant_plan/src/expansion.rs::is_here
 
-crates/grant_plan/src/expansion.rs::iter
 
-crates/grant_plan/src/expansion.rs::last
 
-crates/grant_plan/src/expansion.rs::len
 
 
 
-crates/grant_plan/src/expansion.rs::names
 
-crates/grant_plan/src/expansion.rs::new
 
-crates/grant_plan/src/expansion.rs::new
 
 
-crates/grant_plan/src/expansion.rs::none
 
-crates/grant_plan/src/expansion.rs::none
 
-crates/grant_plan/src/expansion.rs::offer
 
-crates/grant_plan/src/expansion.rs::one
 
-crates/grant_plan/src/expansion.rs::only
 
 
 
@@ -2935,31 +2893,19 @@ crates/grant_plan/src/expansion.rs::only
 
 
 
-crates/grant_plan/src/line.rs
 
-crates/grant_plan/src/line.rs::Diagnostics
 
-crates/grant_plan/src/line.rs::Line
 
-crates/grant_plan/src/line.rs::Mode
 
-crates/grant_plan/src/line.rs::Sink
 
-crates/grant_plan/src/line.rs::Source
 
-crates/grant_plan/src/line.rs::diagnostics_mode
 
-crates/grant_plan/src/line.rs::is_plain
 
-crates/grant_plan/src/line.rs::mode
 
 
 
-crates/grant_plan/src/line.rs::split
 
-crates/grant_plan/src/line.rs::stage_count
 
-crates/grant_plan/src/line.rs::stages
 
 
 
@@ -3016,114 +2962,68 @@ crates/grant_plan/src/line.rs::stages
 
 
 
-crates/grant_plan/src/navigation.rs::BindEntry
 
 
-crates/grant_plan/src/navigation.rs::Bindings
 
 
-crates/grant_plan/src/navigation.rs::Path
 
 
-crates/grant_plan/src/navigation.rs::Step
 
 
 
-crates/grant_plan/src/navigation.rs::add
 
-crates/grant_plan/src/navigation.rs::apply
 
-crates/grant_plan/src/navigation.rs::apply_from
 
-crates/grant_plan/src/navigation.rs::ascend
 
-crates/grant_plan/src/navigation.rs::component
 
 
-crates/grant_plan/src/navigation.rs::depth
 
-crates/grant_plan/src/navigation.rs::descend
 
-crates/grant_plan/src/navigation.rs::is_from_root
 
-crates/grant_plan/src/navigation.rs::is_root
 
-crates/grant_plan/src/navigation.rs::iter
 
-crates/grant_plan/src/navigation.rs::last
 
-crates/grant_plan/src/navigation.rs::lookup
 
-crates/grant_plan/src/navigation.rs::message
 
-crates/grant_plan/src/navigation.rs::message
 
-crates/grant_plan/src/navigation.rs::name
 
-crates/grant_plan/src/navigation.rs::new
 
-crates/grant_plan/src/navigation.rs::none
 
-crates/grant_plan/src/navigation.rs::path
 
-crates/grant_plan/src/navigation.rs::render
 
-crates/grant_plan/src/navigation.rs::resolve
 
-crates/grant_plan/src/navigation.rs::resolve
 
-crates/grant_plan/src/navigation.rs::resolve_absolute
 
-crates/grant_plan/src/navigation.rs::resolve_from
 
-crates/grant_plan/src/navigation.rs::root
 
-crates/grant_plan/src/navigation.rs::split_absolute
 
-crates/grant_plan/src/navigation.rs::split_last_component
 
-crates/grant_plan/src/navigation.rs::steps
 
-crates/grant_plan/src/parsing.rs::UserVerb
 
 
-crates/grant_plan/src/parsing.rs::check_words
 
 
-crates/grant_plan/src/parsing.rs::is_quoted
 
-crates/grant_plan/src/parsing.rs::line
 
 
-crates/grant_plan/src/parsing.rs::parse
 
 
-crates/grant_plan/src/parsing.rs::positionals
 
-crates/grant_plan/src/parsing.rs::tokenize
 
-crates/grant_plan/src/parsing.rs::user_verb
 
 
-crates/grant_plan/src/parsing.rs::vouched_name
 
 
-crates/grant_plan/src/planning.rs::Streams
 
-crates/grant_plan/src/planning.rs::check_chain
 
 
-crates/grant_plan/src/planning.rs::plan_against
 
 
 
 
 
-crates/grant_plan/src/planning/tests/designation.rs
 
-crates/grant_plan/src/planning/tests/operands.rs
 
-crates/grant_plan/src/planning/tests/streams.rs
 
 
 
@@ -3133,9 +3033,7 @@ crates/grant_plan/src/planning/tests/streams.rs
 
 
 
-crates/grant_plan/src/refusal.rs::Refusal
 
-crates/grant_plan/src/refusal.rs::message
 
 
 
@@ -3188,28 +3086,17 @@ crates/grant_plan/src/refusal.rs::message
 
 
 
-crates/grant_plan/src/word.rs
 
-crates/grant_plan/src/word.rs::Cursor
 
-crates/grant_plan/src/word.rs::DOUBLE
 
-crates/grant_plan/src/word.rs::Quote
 
-crates/grant_plan/src/word.rs::SINGLE
 
-crates/grant_plan/src/word.rs::Word
 
-crates/grant_plan/src/word.rs::bare
 
-crates/grant_plan/src/word.rs::is_open
 
-crates/grant_plan/src/word.rs::new
 
-crates/grant_plan/src/word.rs::read
 
 
-crates/grant_plan/src/word.rs::step
 
 crates/graphics_contract/src/lib.rs::BACKING
 
