@@ -108,7 +108,8 @@ site picks between the split rows by meaning.
 
 ## The choices inside it
 
-These are the places where the proposal is more than a rename. An architect can rule each on its own.
+These are the places where the proposal is more than a rename. An architect can rule each on its
+own.
 
 1. `EPERM` and `EACCES` become one `PermissionDenied`. In POSIX `EPERM` is a privilege and `EACCES`
    a mode bit; nife has no users, and both answer "not allowed". `std` already folds both into
