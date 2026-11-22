@@ -83,7 +83,7 @@ else. Its TCB is linked there, so the reclaim unlinks it with `remove_receiver` 
 page the TCB sits on.
 
 Both removes call `Queue::remove`, which walks from the head and writes the one link that bridges
-the gap; the queue's own Kani harness proves it keeps the survivors in FIFO order and moves the
+the gap. The queue's own Kani harness proves it keeps the survivors in FIFO order and moves the
 tail back when the last node leaves. The cost is a walk to the victim, on a teardown path. The
 victim is compared by pointer and dereferenced only when the queue holds it.
 
