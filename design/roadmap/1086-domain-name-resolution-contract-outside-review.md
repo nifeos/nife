@@ -293,8 +293,8 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
 
 ## Follow-on
 
-- **Recorded.** Item 11 is at the move: the move lists the six equivalent mutants in the new
-  repository's `.github/mutants-exempts`.
+- **Recorded.** Item 11 is at the move: the move lists the six equivalent mutants, with the
+  reason, in the new repository's mutation exemptions.
 
 ## Index row
 
