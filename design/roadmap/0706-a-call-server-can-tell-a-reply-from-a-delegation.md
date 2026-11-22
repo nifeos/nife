@@ -94,7 +94,7 @@ system-test image every leg boots; the falsification is replayed on aarch64 only
   in and the kernel refuses a delegation at the `SEND_CAP` arm, the shape milestone 603 (an
   interrupt's endpoint refuses every send) took for `SEND`. A wire-format change in the rights word
   or a new attribute, so an architect's call; it waits until a server asks for it. Recorded in §245
-  and in the `RECV_CAP` BUGS in `crates/moho_abi`.
+  and in the `RECV_CAP` BUGS in `nifeos/moho_abi`.
 
 ## Index row
 
