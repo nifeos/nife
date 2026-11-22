@@ -37,10 +37,10 @@ logic is testable on the host, and its names pass `design/naming.md`.
 - P0-1, the crate cannot leave as it stands: Done, [#3662](https://github.com/nifeos/nife/pull/3662). The roles live in
   `components/src/block_driver_roles.rs` (Decision 1, ruled 2026-11-16 UTC, option A).
 - P0-2, no test runs outside QEMU and no proof exists: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
-- P1-3, the ring layout is an unchecked copy of the proved layout: Ruled (maintainer,
-  provisional, 2026-11-14 UTC, Decision 2). Not built: `QUEUE_ENTRIES` and the ring offsets are literals
-  under a BUGS entry in `block_driver_roles.rs`, and `abi::virtual_io` holds no ring constant. It
-  waits on milestone 1075 item 11 (the version gate), which is Open. The `abi` review has not
+- P1-3, the ring layout is an unchecked copy of the proved layout: Waiting on milestone 1075 item 11
+  (the version gate), which is Open. Decision 2 ruled the move (maintainer, provisional, 2026-11-14
+  UTC), and it is not built: `QUEUE_ENTRIES` and the ring offsets are literals under a BUGS entry in
+  `block_driver_roles.rs`, and `abi::virtual_io` holds no ring constant. The `abi` review has not
   settled how a change to a pinned value meets an `ABI_VERSION` bump once the crate leaves nife.
   New public constants would join a surface whose gate is not ready.
 - P1-4, a client-caused device error kills the block server: Done, [#3520](https://github.com/nifeos/nife/pull/3520).
@@ -49,33 +49,27 @@ logic is testable on the host, and its names pass `design/naming.md`.
   [#3628](https://github.com/nifeos/nife/pull/3628). The driver-side `Version` check stays closed on purpose (Decision 3).
 - P1-7, four completion loops and three submits: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P1-8, the receive parser trusts the buffer: Done, [#3520](https://github.com/nifeos/nife/pull/3520).
-- P1-9, names against `design/naming.md`: Done in the roles file,
-  [#3816](https://github.com/nifeos/nife/pull/3816) (maintainer, provisional, two-way: the program
-  publishes no name). `DMA_VA` is `DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS`, `S_*` are
-  `DEVICE_STATUS_*` with the specification's spelling as `#[doc(alias)]`, `QSIZE` is
-  `QUEUE_ENTRIES`, `mr` and `mw` are `read_device_register` and `write_device_register`, and
-  `run_blk_server`, `blk_read`, `blk_write`, `blk_flush`, `submit_blk` and `complete_blk` carry
-  `block`. Left for a later pass: `BLK_REQ`, `BLK_READY`, `BLK_OFF_DATA`, the byte-order helpers and
-  the locals the item lists.
+- P1-9, names against `design/naming.md`: Open. [#3816](https://github.com/nifeos/nife/pull/3816)
+  spelled most of the roles file out (maintainer, provisional, two-way: the program publishes no
+  name). `DMA_VA` is `DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS`, `S_*` are `DEVICE_STATUS_*` with
+  the specification's spelling as `#[doc(alias)]`, `QSIZE` is `QUEUE_ENTRIES`, `mr` and `mw` are
+  `read_device_register` and `write_device_register`, and `run_blk_server`, `blk_read`,
+  `blk_write`, `blk_flush`, `submit_blk` and `complete_blk` carry `block`. Still to spell out:
+  `BLK_REQ`, `BLK_READY`, `BLK_OFF_DATA`, the byte-order helpers and the locals the item lists.
 - P1-10, the documentation describes a different crate: Done, [#3613](https://github.com/nifeos/nife/pull/3613) and [#3662](https://github.com/nifeos/nife/pull/3662).
-- P1-11, the manifest does not stand alone: Declined. After the fold
-  ([#3662](https://github.com/nifeos/nife/pull/3662)) the roles have no manifest of their own.
+- P1-11, the manifest does not stand alone: Will not fix. After the fold
+  ([#3662](https://github.com/nifeos/nife/pull/3662)) the roles have no manifest of their own, which
+  follows from Decision 1, ruled 2026-11-16 (UTC).
 - P2-12, `find_file` trusts the name length: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P2-13, `disk_size_bytes` and the configuration generation: Done, [#3520](https://github.com/nifeos/nife/pull/3520) and [#3613](https://github.com/nifeos/nife/pull/3613).
 - P2-14, one request in flight on the production path: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P2-15, an unused parameter of `run_attack`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P2-16, an unbounded `complete_block`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - Decision 1, fold the roles into `block_driver`: Done, [#3662](https://github.com/nifeos/nife/pull/3662) (ruled 2026-11-16 UTC, A).
-- Decision 2, the ring layout moves to `abi::virtual_io`: Ruled (maintainer, provisional,
-  2026-11-14 UTC). Not built; P1-3 is the work.
+- Decision 2, the ring layout moves to `abi::virtual_io`: Waiting on milestone 1075 item 11. Ruled
+  (maintainer, provisional, 2026-11-14 UTC) and not built; P1-3 is the work.
 - Decision 3, the kernel checks `Version` and the driver does not: Done, [#3628](https://github.com/nifeos/nife/pull/3628) (maintainer,
   provisional, 2026-11-15 UTC).
-- A QEMU test that a block read or write past the disk's capacity answers an error and the server
-  keeps serving: Done, [#3816](https://github.com/nifeos/nife/pull/3816)
-  (`disk_tests::a_transfer_past_the_disks_capacity_is_refused_and_the_block_server_keeps_serving`).
-  A host test of `transfer_first_sector` covers the arithmetic.
-- The shared library that holds the name `virtio`: Ruled (2026-11-16 UTC). Whether and when to cut
-  it waits on milestone 1062 (the device control planes leave the kernel), step 7.
 
 ## Open decisions
 
@@ -251,8 +245,11 @@ The kernel's scan does not offer the slot, so nothing starts a driver for it.
 
 ## Follow-on
 
-- **Outstanding.** P1-3, which waits on milestone 1075 item 11, and the shared library that holds
-  the name `virtio`, which waits on milestone 1062 step 7.
+- **Outstanding.** P1-3 and Decision 2, which wait on milestone 1075 item 11, and the names P1-9
+  still lists.
+- **Milestone 1062.** The shared library that holds the name `virtio`, ruled 2026-11-16 UTC.
+  Whether and when to cut it waits on milestone 1062 (the device control planes leave the kernel),
+  step 7.
 
 ## Done when
 
