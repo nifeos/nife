@@ -50,10 +50,10 @@ pub use planning::{
     Streams, check_chain, input_file_grant, output_file_grant, plan_against,
     plan_against_with_streams,
 };
-// The rows the tests plan against, as a caller would pass them (see the dev dependency's comment).
-#[cfg(test)]
-use program_table::Program;
 pub use refusal::{CapabilityKind, Refusal};
+// The rows the tests plan against, as a caller would pass them.
+#[cfg(test)]
+use test_support::rows;
 
 mod lexing;
 

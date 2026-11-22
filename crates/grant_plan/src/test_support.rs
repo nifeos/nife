@@ -6,16 +6,132 @@
 //!
 //! Name: provisional (milestone 842, 2026-10-11).
 
-use program_table::Program;
-
 use crate::expansion::Expansion;
 use crate::*;
 
-/// **A line planned against nife's program table**, the way `program_table::plan_stage` plans it:
-/// the two answers that come before a name, then the row the first word names, then this crate's
-/// planner against that row's manifest. Spelled here rather than called there because
-/// `program_table` links the library build of this crate, whose `Endowment` is not this test
-/// build's; only the row's `Manifest`, which is `grant_contract`'s, crosses.
+/// **The programs the tests plan against**: a small catalog of the shapes a caller's manifests
+/// take, one row per shape, each named by the word a line types to run it. A caller resolves a
+/// name to a manifest its own way; this is the tests' way, so the crate tests with no catalog of
+/// anyone else's.
+pub(crate) mod rows {
+    use crate::*;
+
+    /// What a row starts from: no grant, no option, no output, nothing endowed.
+    const NOTHING: Manifest = Manifest {
+        program_argument: ProgramArgumentDeclaration::Forbidden,
+        memory_grant: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        directory: DirectoryGrantDeclaration::Forbidden,
+        short_options: NO_SHORT_OPTIONS,
+        output: OutputDeclaration::Silent,
+        input: InputDeclaration::Forbidden,
+        reports: false,
+        interruptible: false,
+        clock: false,
+        domain: false,
+        configuration: false,
+        entropy: false,
+        network: false,
+        machine: false,
+        share: false,
+        reboot: false,
+        sync: false,
+        installer: false,
+        catalog: false,
+        indexes: IndexStoreDeclaration::Forbidden,
+        activation_directory: false,
+        console_input: false,
+        startup: StartupContract::Native,
+    };
+
+    /// `count N`: one integer argument, answered in words.
+    pub(crate) const COUNT: Manifest = Manifest {
+        program_argument: ProgramArgumentDeclaration::Required,
+        output: OutputDeclaration::Words,
+        reports: true,
+        ..NOTHING
+    };
+
+    /// `deplete --mem N`: a memory grant of one to sixty-four pages, answered in words.
+    pub(crate) const DEPLETE: Manifest = Manifest {
+        memory_grant: MemoryGrantDeclaration::Required {
+            minimum: 1,
+            maximum: 64,
+        },
+        output: OutputDeclaration::Words,
+        reports: true,
+        ..NOTHING
+    };
+
+    /// `heed`: silent and interruptible, so `^C` reaches it.
+    pub(crate) const HEED: Manifest = Manifest {
+        interruptible: true,
+        ..NOTHING
+    };
+
+    /// `date`: bytes with a second stream at [`DIAGNOSTICS_SLOT`], and the clock.
+    pub(crate) const DATE: Manifest = Manifest {
+        output: OutputDeclaration::BytesAndDiagnostics {
+            slot: DIAGNOSTICS_SLOT,
+        },
+        reports: true,
+        clock: true,
+        ..NOTHING
+    };
+
+    /// `rm [-rfv] NAME`: a directory grant that `-r` widens to the subtree, answered in bytes.
+    pub(crate) const RM: Manifest = Manifest {
+        directory: DirectoryGrantDeclaration::Required {
+            subtree_option: Some(b'r'),
+        },
+        short_options: ShortOptions::new(b"rfv"),
+        output: OutputDeclaration::Bytes,
+        reports: true,
+        ..NOTHING
+    };
+
+    /// `wc`: reads an input to its end before it writes, and writes bytes.
+    pub(crate) const WC: Manifest = Manifest {
+        output: OutputDeclaration::Bytes,
+        input: InputDeclaration::Required {
+            writes_while_reading: false,
+        },
+        reports: true,
+        ..NOTHING
+    };
+
+    /// `search WORDS`: a `std` program that hears words, granted reading what they designate.
+    pub(crate) const SEARCH: Manifest = Manifest {
+        program_argument: ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
+        output: OutputDeclaration::Bytes,
+        reports: true,
+        clock: true,
+        configuration: true,
+        entropy: true,
+        startup: StartupContract::Std,
+        ..NOTHING
+    };
+
+    /// Every row, with the word that runs it.
+    pub(crate) const ALL: &[(&[u8], Manifest)] = &[
+        (b"count", COUNT),
+        (b"deplete", DEPLETE),
+        (b"heed", HEED),
+        (b"date", DATE),
+        (b"rm", RM),
+        (b"wc", WC),
+        (b"search", SEARCH),
+    ];
+
+    /// The row a line's first word names, or `None` for a word no row answers to.
+    pub(crate) fn named(name: &[u8]) -> Option<Manifest> {
+        ALL.iter().find(|(n, _)| *n == name).map(|&(_, m)| m)
+    }
+}
+
+/// **A line planned against the tests' catalog**, the way a shell plans one: the two answers that
+/// come before a name, then the row the first word names, then this crate's planner against that
+/// row's manifest.
 pub(crate) fn plan_named_stage(
     run: &ParsedInvocation<'_>,
     shell_holdings: ShellHoldings,
@@ -28,8 +144,8 @@ pub(crate) fn plan_named_stage(
     if run.program == b"swish" {
         return Err(Refusal::IsolationNotBuilt);
     }
-    let program = Program::from_name(run.program).ok_or(Refusal::NoSuchProgram)?;
-    plan_against_with_streams(run, program.manifest(), shell_holdings, expanded, streams)
+    let manifest = rows::named(run.program).ok_or(Refusal::NoSuchProgram)?;
+    plan_against_with_streams(run, manifest, shell_holdings, expanded, streams)
 }
 
 /// [`plan_named_stage`] with no operators on the line.

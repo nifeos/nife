@@ -4,11 +4,9 @@ use crate::test_support::plan;
 use crate::*;
 
 #[test]
-fn least_authority_demo_and_memory_grant_depleter_are_not_interruptible() {
+fn a_fast_job_is_not_interruptible() {
     // Fast jobs finish in one step; the shell just waits for them, no ^C tier.
-    assert!(!Program::LeastAuthorityDemo.manifest().interruptible);
-    assert!(!Program::MemoryGrantDepleter.manifest().interruptible);
-    let CommandLine::Run(r) = parse(b"least_authority_demo 9") else {
+    let CommandLine::Run(r) = parse(b"count 9") else {
         panic!()
     };
     assert!(!plan(&r, ShellHoldings::default()).unwrap().interruptible);

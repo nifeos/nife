@@ -3,17 +3,16 @@
 use crate::test_support::{WITH_DIRECTORY, plan};
 use crate::*;
 
-/// Every listed builtin is one `parse` answers as a builtin, and none is also a program, so
-/// Tab never offers a word that would run something else.
+/// Every listed builtin is one `parse` answers as a builtin, so a caller's catalog that keeps
+/// clear of [`BUILTINS`] never holds a name a line could not run.
 #[test]
-fn every_listed_builtin_is_a_builtin_and_no_program() {
+fn every_listed_builtin_is_a_builtin() {
     for &b in BUILTINS {
         assert!(
             !matches!(parse(b), CommandLine::Run(_)),
             "{:?} is not a builtin",
             b
         );
-        assert!(Program::from_name(b).is_none(), "{:?} is also a program", b);
     }
     assert!(
         matches!(parse(b"wc"), CommandLine::Run(_)),
@@ -79,12 +78,12 @@ fn quoting_keeps_a_dash_from_widening_a_grant() {
     // And unquoted it is still the option it always was.
     assert_eq!(parse_invocation(b"rm -r x").short_options(), b"r");
     // Same rule for `--mem`, which is an option that moves memory.
-    let r = parse_invocation(b"memory_grant_depleter \"--mem\" 16");
+    let r = parse_invocation(b"deplete \"--mem\" 16");
     assert_eq!(r.memory_grant, None);
     assert_eq!(r.positionals(), [&b"--mem"[..], &b"16"[..]]);
     // ... while a quoted *value* is still the number it says.
     assert_eq!(
-        parse_invocation(b"memory_grant_depleter --mem \"16\"").memory_grant,
+        parse_invocation(b"deplete --mem \"16\"").memory_grant,
         Some(16)
     );
 }
@@ -119,8 +118,8 @@ fn a_misquoted_line_is_refused_ahead_of_everything_else() {
 /// array either; the missing value stays `None` for the plan to refuse.
 #[test]
 fn a_trailing_mem_flag_is_a_missing_value_not_a_read_past_the_line() {
-    let r = parse_invocation(b"memory_grant_depleter --mem");
-    assert_eq!(r.program, b"memory_grant_depleter");
+    let r = parse_invocation(b"deplete --mem");
+    assert_eq!(r.program, b"deplete");
     assert_eq!(r.memory_grant, None);
 }
 
@@ -129,7 +128,7 @@ fn a_trailing_mem_flag_is_a_missing_value_not_a_read_past_the_line() {
 /// stepping by the wrong arithmetic visibly lands somewhere else.
 #[test]
 fn a_mem_flag_consumes_its_value_and_nothing_after_it() {
-    let r = parse_invocation(b"memory_grant_depleter --mem 4");
+    let r = parse_invocation(b"deplete --mem 4");
     assert_eq!(r.memory_grant, Some(4));
     assert!(r.positionals().is_empty(), "the value became an operand");
     assert_eq!(r.unexpected, None);
@@ -287,44 +286,23 @@ fn vouch_takes_one_path_and_names_it_by_its_last_component() {
     }
 }
 
-/// **`jig` is a program, and `package` is nothing** (milestone 809 (the package client
-/// becomes a program)). The builtin and the program went in one change, so a line that still
-/// says `package` reaches the planner as a program nobody has, and `jig` is a row of the
-/// table, which builtins are matched before.
+/// **A word that is not a builtin reaches the planner as a program name**, whatever the word:
+/// `parse` keeps no catalog, so `jig`, `package` and `rm` are all program invocations, and which
+/// of them names a program is the caller's catalog to answer.
 #[test]
-fn jig_is_a_program_and_package_is_not_a_builtin() {
-    let CommandLine::Run(r) = parse(b"jig install greeting") else {
-        panic!("`jig` must parse as a program invocation");
-    };
-    assert_eq!(Program::from_name(r.program), Some(Program::Jig));
-    let CommandLine::Run(r) = parse(b"package install greeting") else {
-        panic!("`package` is no longer a builtin");
-    };
-    assert_eq!(Program::from_name(r.program), None);
-    // `rm` is a program, not a builtin that would shadow the name; its manifest decides what the
-    // operand grants.
-    let CommandLine::Run(r) = parse(b"rm old.txt") else {
-        panic!("`rm` must parse as a program invocation, not a builtin")
-    };
-    assert_eq!(r.program, b"rm");
-    assert_eq!(Program::from_name(b"rm"), Some(Program::Rm));
-    for reserved in [
-        &b"help"[..],
-        b"echo",
-        b"caps",
-        b"time",
-        b"cd",
-        b"pwd",
-        b"ls",
-        b"mkdir",
-        b"touch",
-        b"bind",
+fn a_word_that_is_not_a_builtin_is_a_program_name() {
+    for line in [
+        &b"jig install greeting"[..],
+        b"package install greeting",
+        b"rm old.txt",
     ] {
-        assert!(
-            Program::from_name(reserved).is_none(),
-            "`{}` is a builtin, so a program of that name could never be run",
-            core::str::from_utf8(reserved).unwrap(),
-        );
+        let CommandLine::Run(r) = parse(line) else {
+            panic!(
+                "{:?} must parse as a program invocation",
+                core::str::from_utf8(line)
+            );
+        };
+        assert_eq!(Some(r.program), line.split(|&b| b == b' ').next());
     }
 }
 
@@ -375,7 +353,7 @@ fn echo_keeps_internal_spacing() {
 
 #[test]
 fn a_second_integer_is_unexpected_not_ignored() {
-    let CommandLine::Run(r) = parse(b"least_authority_demo 3 5") else {
+    let CommandLine::Run(r) = parse(b"count 3 5") else {
         panic!()
     };
     assert_eq!(r.positionals(), [&b"3"[..], &b"5"[..]]);
@@ -384,9 +362,9 @@ fn a_second_integer_is_unexpected_not_ignored() {
 
 #[test]
 fn mem_flag_must_have_a_numeric_value() {
-    // `--mem twelve` is a missing grant, not a silent zero: parse_u64 rejects it, so memory_grant_depleter
+    // `--mem twelve` is a missing grant, not a silent zero: parse_u64 rejects it, so deplete
     // sees "no --mem given" and refuses.
-    let CommandLine::Run(r) = parse(b"memory_grant_depleter --mem twelve") else {
+    let CommandLine::Run(r) = parse(b"deplete --mem twelve") else {
         panic!()
     };
     assert_eq!(r.memory_grant, None);
@@ -401,14 +379,14 @@ fn capabilities_previews_the_command_you_would_have_typed() {
     // The tail is the line itself, so what you inspect and what you run cannot drift apart.
     assert_eq!(parse(b"caps"), CommandLine::Capabilities(b""));
     assert_eq!(
-        parse(b"caps memory_grant_depleter --mem 16"),
-        CommandLine::Capabilities(b"memory_grant_depleter --mem 16")
+        parse(b"caps deplete --mem 16"),
+        CommandLine::Capabilities(b"deplete --mem 16")
     );
-    let CommandLine::Capabilities(tail) = parse(b"caps memory_grant_depleter --mem 16") else {
+    let CommandLine::Capabilities(tail) = parse(b"caps deplete --mem 16") else {
         panic!()
     };
     let (CommandLine::Run(previewed), CommandLine::Run(typed)) =
-        (parse(tail), parse(b"memory_grant_depleter --mem 16"))
+        (parse(tail), parse(b"deplete --mem 16"))
     else {
         panic!()
     };
@@ -430,14 +408,14 @@ fn capabilities_previews_the_command_you_would_have_typed() {
 fn time_runs_the_command_you_would_have_typed() {
     assert_eq!(parse(b"time"), CommandLine::Time(b""));
     assert_eq!(
-        parse(b"time memory_grant_depleter --mem 16"),
-        CommandLine::Time(b"memory_grant_depleter --mem 16")
+        parse(b"time deplete --mem 16"),
+        CommandLine::Time(b"deplete --mem 16")
     );
-    let CommandLine::Time(tail) = parse(b"time memory_grant_depleter --mem 16") else {
+    let CommandLine::Time(tail) = parse(b"time deplete --mem 16") else {
         panic!()
     };
     let (CommandLine::Run(timed), CommandLine::Run(typed)) =
-        (parse(tail), parse(b"memory_grant_depleter --mem 16"))
+        (parse(tail), parse(b"deplete --mem 16"))
     else {
         panic!()
     };
