@@ -329,8 +329,14 @@ fn word_rights_are_the_file_system_contracts() {
 fn the_index_store_opens_with_a_word_grants_rights() {
     use file_system_contract::directory;
     let read = directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND;
-    assert_eq!(grant_contract::IndexStoreDeclaration::Forbidden.rights(), None);
-    assert_eq!(grant_contract::IndexStoreDeclaration::ReadOnly.rights(), Some(read));
+    assert_eq!(
+        grant_contract::IndexStoreDeclaration::Forbidden.rights(),
+        None
+    );
+    assert_eq!(
+        grant_contract::IndexStoreDeclaration::ReadOnly.rights(),
+        Some(read)
+    );
     assert_eq!(
         grant_contract::IndexStoreDeclaration::ReadWrite.rights(),
         Some(read | directory::rights::WRITE | directory::rights::CREATE)
