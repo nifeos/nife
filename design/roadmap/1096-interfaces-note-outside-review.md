@@ -45,14 +45,14 @@ milestone reaches delivery.
   for the public ones: `INTERFACE_RECORD_BYTES`, `descriptor_bytes` and `note_bytes`, with no alias
   of the old spellings.
 - Item 10 (P1), `Declared` names a state: Done, [#3823](https://github.com/nifeos/nife/pull/3823). The type is `DeclaredInterface`.
-- Item 11 (P2), no fuzz target: Waiting on [nifeos/interfaces_note#2](https://github.com/nifeos/interfaces_note/pull/2),
-  which adds a decoder target that encodes an accepted list back and compares, and opts the weekly
-  run in.
+- Item 11 (P2), no fuzz target: Waiting on a ruling (#3968) for
+  [nifeos/interfaces_note#2](https://github.com/nifeos/interfaces_note/pull/2), which adds a decoder
+  target that encodes an accepted list back and compares, and opts the weekly run in.
 - Item 12 (P2), the proof runs one direction: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 13 (P2), a test name the abbreviation report flags: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 14 (P2), `iter` yields by value: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 15 (P2), the triaged timeouts travel nowhere: Waiting on
-  [nifeos/interfaces_note#2](https://github.com/nifeos/interfaces_note/pull/2), which carries the
+  [nifeos/interfaces_note#3](https://github.com/nifeos/interfaces_note/pull/3), which carries the
   three rows into `.github/mutants-exempts`. The template's gate fails an unexempted timeout.
 - Decision 1, the owner string: Done, [#3575](https://github.com/nifeos/nife/pull/3575).
 - Decision 2, ratifying the twenty public names: Done, [#3823](https://github.com/nifeos/nife/pull/3823) for the four renames and [#3835](https://github.com/nifeos/nife/pull/3835)
