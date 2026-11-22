@@ -498,8 +498,8 @@ mod tests {
         assert!(text.contains("used: "));
     }
 
-    /// Any byte survives, which is the reason the layout is length-prefixed: a NUL and a `0xff`
-    /// in the middle of an argument, and an argument that is empty.
+    /// Any byte survives, which is the reason the layout is length-prefixed: a zero byte and a
+    /// `0xff` in the middle of an argument, and an argument that is empty.
     #[test]
     fn every_byte_round_trips() {
         let all: Vec<u8> = (0..=255).collect();
