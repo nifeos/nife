@@ -97,9 +97,15 @@ pub const STORE_DIRECTORY: &str = ".extended-attributes";
 /// the low 32. The name's length rides in the request word's own length field, as every other
 /// verb's payload length does, so the two lengths never share a field.
 ///
+/// # Panics
+///
+/// When `value_len` needs more than 32 bits, because a masked length would name a shorter value
+/// than the caller wrote. The panic is provisional (restrictive first).
+///
 /// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `file_system_contract`).
 pub const fn specification(kind: u32, value_len: u64) -> u64 {
-    ((kind as u64) << 32) | (value_len & 0xffff_ffff)
+    assert!(value_len <= u32::MAX as u64);
+    ((kind as u64) << 32) | value_len
 }
 /// The type code from a [`file_system::SETXATTR`] second word.
 ///

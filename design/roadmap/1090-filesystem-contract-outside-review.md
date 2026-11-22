@@ -59,10 +59,15 @@ now are `file_system_contract`, `directory`, `extended_attribute` and `block`.
   force with their aliases, `GET_SIZE_BYTES` carries its unit, and the last two refusals of the
   repository's naming gates (`spec`, `PAGE_NAME_SET_OFFSET`) now have new names.
 - Item 6 (P1), `reply_errno` not total: Done, [#3577](https://github.com/nifeos/nife/pull/3577). Now `error::word` and `error::code`.
-- Item 7 (P1), the packers mask: Open. `file_system::request`, `rename_destination`,
-  `grant::specification` and `extended_attribute::specification` still mask. About 190 call sites pack with them, the attack fixtures among them. Before the packers can assert, each proxy that forwards a client's length or handle needs a refusal, and each attack fixture needs a raw packer.
-- Item 8 (P1), seven unproven properties: Open. Six harnesses with falsification patches are in
-  [#3566](https://github.com/nifeos/nife/pull/3566) and [#3637](https://github.com/nifeos/nife/pull/3637); the termination of the four walkers is still unproven.
+- Item 7 (P1), the packers mask: Done, [#4010](https://github.com/nifeos/nife/pull/4010). `file_system::request`, `rename_destination`,
+  `grant::specification` and `extended_attribute::specification` assert their field bounds, as
+  `block::request` does (provisional, restrictive first). No call site needed a change: each proxy
+  forwards fields it decoded through the masks, each server mints handles from a table far below
+  `MAXIMUM_HANDLE`, and no attack fixture sends a field past its bound.
+- Item 8 (P1), seven unproven properties: Done, [#3566](https://github.com/nifeos/nife/pull/3566), [#3637](https://github.com/nifeos/nife/pull/3637) and [#4010](https://github.com/nifeos/nife/pull/4010).
+  Ten harnesses carry falsification patches. Four of them prove that the four walkers end on every
+  buffer up to eight bytes (sixteen for the store). Each yielded record takes a fixed least number of
+  bytes, which bounds a walk over a page; a host test walks a page of the smallest records for each.
 - Item 9 (P1), equivalent mutants need a home: At the move. The classes go into the new
   repository's `.github/mutants-exempts`, with one green full run before the tag.
 - Item 10 (P1), the README is short of the scaffold: Done, [#3911](https://github.com/nifeos/nife/pull/3911) and [#3999](https://github.com/nifeos/nife/pull/3999). The badge row,
