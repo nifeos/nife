@@ -4,28 +4,27 @@ The defect: `remove_sender` takes the victim off and then puts it back. The func
 the right answer to every caller that only asks whether the waiter was there.
 
 Expected to fail: the harness's `assert!(found.is_none() || e.is_idle())`, on a hit. The invariant
-assertion survives, because one queue is still empty, which is why this harness states both:
-a remove that reports success while leaving the thread queued is how milestone 133 (ending a
-permanently blocked thread) ends a thread and then finds it again on a wait queue.
+assertion survives, because the queue the tag names still holds a thread, which is why this
+harness states both: a remove that reports success while leaving the thread queued is how
+milestone 133 (ending a permanently blocked thread) ends a thread and then finds it again on a
+wait queue.
 
 The defect mints a second token with `unsafe`, because one token cannot be both pushed and
 returned. That this takes an `unsafe` block a reviewer has to sign is the token doing its job; the
 harness is still shown to catch the result.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
+index 0dcb87d6d..bb5e51467 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -267,7 +267,12 @@
-     ///
-     /// Name: ratified 2026-11-21 (UTC).
-     pub fn remove_sender(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
--        self.senders.remove(victim)
-+        let found = self.senders.remove(victim);
+@@ -296,6 +296,10 @@ impl<T: Node> Rendezvous<T> {
+             return None;
+         };
+         let found = senders.remove(victim);
 +        if let Some(node) = &found {
 +            // SAFETY: none. This is the defect: the victim goes back on the queue it was taken off.
-+            self.senders.push_back(unsafe { Unqueued::new(node.as_non_null()) });
++            senders.push_back(unsafe { Unqueued::new(node.as_non_null()) });
 +        }
-+        found
-     }
- 
-     /// Take one specific receiver back off the queue, returning its token if it was there. The
+         if senders.is_empty() {
+             self.waiting = Waiting::Nobody;
+         }

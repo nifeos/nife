@@ -7,27 +7,24 @@ like the cheapest way to keep it findable. DECISIONS §12 (a one-shot reply capa
 says otherwise: after the collect, the kernel-minted Reply is meant to be the only name for that
 thread anywhere.
 
-Expected to fail: the harness's `assert!(e.senders.is_empty() && e.receivers.is_empty())` after
-a `FromSender`, and the second receive would produce the same caller again, which is a second
-name for a thread that is supposed to be replied to exactly once.
+Expected to fail: the harness's `assert!(e.is_idle())` after a `FromSender`, and the second
+receive would produce the same caller again, which is a second name for a thread that is
+supposed to be replied to exactly once.
 
-Re-cut at milestone 139 (drive the unsafe count down), round 10, when the queues began taking
-`Unqueued` tokens. The original defect re-pushed a node the code also handed back, and with tokens
-that no longer compiles: one token cannot be both pushed and returned. So the defect is written the
-only way it can be now, by minting a second token with `unsafe`. That this takes an `unsafe` block
-a reviewer has to sign is the token doing its job; the harness is still shown to catch the result.
+One token cannot be both pushed and returned, so the defect is written the only way it can be,
+by minting a second token with `unsafe`. That this takes an `unsafe` block a reviewer has to sign
+is the token doing its job; the harness is still shown to catch the result.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index 845029a65..4b526b611 100644
+index 0dcb87d6d..e4389bf8b 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -281,6 +281,9 @@ impl<T: Node> Rendezvous<T> {
+@@ -400,6 +400,8 @@ impl<T: Node> Rendezvous<T> {
              self.pending -= 1;
              ReceiveVerdict::Signal(me)
-         } else if let Some(sender) = self.senders.pop_front() {
+         } else if let Some(sender) = self.take_sender() {
 +            // SAFETY: none. This is the defect: a second token for a node that keeps the first.
-+            self.senders
-+                .push_back(unsafe { Unqueued::new(sender.as_non_null()) });
++            self.queue_sender(unsafe { Unqueued::new(sender.as_non_null()) });
              ReceiveVerdict::FromSender(sender, me)
          } else {
-             self.receivers.push_back(me);
+             self.queue_receiver(me);

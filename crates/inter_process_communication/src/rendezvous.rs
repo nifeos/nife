@@ -1,12 +1,12 @@
-//! **One IPC rendezvous**: its two wait queues and pending-signal count, and what a send or a
-//! receive on it decided.
+//! **One IPC rendezvous**: its one wait queue, tagged with who waits on it, its pending-signal
+//! count, and what a send or a receive on it decided.
 //!
 //! Name: ratified 2026-11-21 (UTC).
 
 use super::*;
 
-/// One IPC rendezvous: two intrusive wait queues and the pending-signal count. At most one queue
-/// is non-empty at any time. See `notes/inter-process-communication.md`.
+/// One IPC rendezvous: one wait queue, tagged with who waits on it, so senders and receivers never
+/// wait at once, and the pending-signal count. See `notes/inter-process-communication.md`.
 ///
 /// # Examples
 ///
@@ -47,10 +47,8 @@ use super::*;
 ///
 /// Name: ratified 2026-11-21 (UTC).
 pub struct Rendezvous<T: Node> {
-    /// Senders blocked here, waiting for a receiver.
-    pub(crate) senders: Queue<T>,
-    /// Receivers blocked here, waiting for a sender.
-    pub(crate) receivers: Queue<T>,
+    /// The threads blocked here, and which side of a rendezvous they wait for.
+    pub(crate) waiting: Waiting<T>,
     /// Async signals that arrived with nobody waiting. Drained by the next receive, never lost.
     pub(crate) pending: u32,
     /// This rendezvous carries a hardware interrupt, so it takes no message. Set once by
@@ -60,6 +58,21 @@ pub struct Rendezvous<T: Node> {
     ///
     /// Name: ratified 2026-11-21 (UTC). Private, read through [`is_bound_to_interrupt`](Self::is_bound_to_interrupt).
     pub(crate) bound_to_interrupt: bool,
+}
+
+/// Who is blocked on a [`Rendezvous`]. A tag that names a queue names one with a thread on it:
+/// the last pop from a queue returns the tag to [`Nobody`](Self::Nobody), which is what
+/// [`one_queue_invariant_holds`](Rendezvous::one_queue_invariant_holds) checks.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by 1095-finish-review, after seL4's endpoint state.
+/// Considered: `State`, which says nothing about threads.
+pub(crate) enum Waiting<T: Node> {
+    /// No thread is blocked here.
+    Nobody,
+    /// Senders blocked here, waiting for a receiver.
+    Senders(Queue<T>),
+    /// Receivers blocked here, waiting for a sender.
+    Receivers(Queue<T>),
 }
 
 /// What a hang dump reads from a [`Rendezvous`]: [`debug_counts`](Rendezvous::debug_counts).
@@ -175,14 +188,13 @@ impl<T> core::fmt::Debug for ReceiveVerdict<T> {
 }
 
 impl<T: Node> Rendezvous<T> {
-    /// An idle rendezvous: both wait queues empty, no pending signal. `const` so the kernel can
+    /// An idle rendezvous: nobody waiting, no pending signal. `const` so the kernel can
     /// build the rendezvous table at compile time rather than at boot.
     ///
     /// Name: ratified 2026-11-21 (UTC).
     pub const fn new() -> Self {
         Self {
-            senders: Queue::new(),
-            receivers: Queue::new(),
+            waiting: Waiting::Nobody,
             pending: 0,
             bound_to_interrupt: false,
         }
@@ -201,7 +213,7 @@ impl<T: Node> Rendezvous<T> {
     /// Name: ratified 2026-11-21 (UTC).
     pub fn bind_to_interrupt(&mut self, mut refuse: impl FnMut(Unqueued<T>)) {
         self.bound_to_interrupt = true;
-        while let Some(sender) = self.senders.pop_front() {
+        while let Some(sender) = self.take_sender() {
             refuse(sender);
         }
     }
@@ -213,21 +225,27 @@ impl<T: Node> Rendezvous<T> {
         self.bound_to_interrupt
     }
 
-    /// **At most one wait queue is ever non-empty.** The load-bearing invariant.
+    /// **At most one wait queue is ever non-empty, and the tag names a queue only while a thread
+    /// is on it.** The layout holds the first half, since [`Waiting`] has room for one queue.
+    /// This checks the second: the last pop from a queue returns the tag to `Nobody`, so
+    /// [`is_idle`](Self::is_idle), which reads the tag, never calls an empty rendezvous busy.
     ///
     /// Name: ratified 2026-11-21 (UTC). The verb form the Rust predicate rule asks for, as its notification twin
     /// `invariant_holds` has. Refused: `is_one_queue`, which reads as a question about the queues
     /// and not about the invariant.
     pub fn one_queue_invariant_holds(&self) -> bool {
-        self.senders.is_empty() || self.receivers.is_empty()
+        match &self.waiting {
+            Waiting::Nobody => true,
+            Waiting::Senders(queue) | Waiting::Receivers(queue) => !queue.is_empty(),
+        }
     }
 
-    /// **No thread is blocked on this rendezvous** (both wait queues empty). The pending signal count
+    /// **No thread is blocked on this rendezvous** (the tag says nobody waits). The pending signal count
     /// does not count: a signal holds no thread.
     ///
     /// Name: ratified 2026-11-21 (UTC).
     pub fn is_idle(&self) -> bool {
-        self.senders.is_empty() && self.receivers.is_empty()
+        matches!(self.waiting, Waiting::Nobody)
     }
 
     /// Diagnostic: how many senders and receivers are queued and how many signals are pending. For
@@ -237,24 +255,31 @@ impl<T: Node> Rendezvous<T> {
     /// Name: ratified 2026-11-21 (UTC), with [`RendezvousCounts`] and its three fields, which replace a tuple
     /// whose positions a reader had to remember.
     pub fn debug_counts(&self) -> RendezvousCounts {
+        let (queued_senders, queued_receivers) = match &self.waiting {
+            Waiting::Nobody => (0, 0),
+            Waiting::Senders(senders) => (senders.len(), 0),
+            Waiting::Receivers(receivers) => (0, receivers.len()),
+        };
         RendezvousCounts {
-            queued_senders: self.senders.len(),
-            queued_receivers: self.receivers.len(),
+            queued_senders,
+            queued_receivers,
             pending_signals: self.pending,
         }
     }
 
-    /// Empty both wait queues, handing every blocked thread to `f` with its token, for object
+    /// Empty the wait queue, handing every blocked thread to `f` with its token, for object
     /// revocation. The caller wakes each one with an error. Afterwards [`is_idle`](Self::is_idle)
     /// holds.
     ///
     /// Name: ratified 2026-11-21 (UTC).
     pub fn drain_waiters(&mut self, mut f: impl FnMut(Unqueued<T>)) {
-        while let Some(w) = self.senders.pop_front() {
-            f(w);
-        }
-        while let Some(w) = self.receivers.pop_front() {
-            f(w);
+        match core::mem::replace(&mut self.waiting, Waiting::Nobody) {
+            Waiting::Nobody => {}
+            Waiting::Senders(mut queue) | Waiting::Receivers(mut queue) => {
+                while let Some(w) = queue.pop_front() {
+                    f(w);
+                }
+            }
         }
     }
 
@@ -267,17 +292,84 @@ impl<T: Node> Rendezvous<T> {
     ///
     /// Name: ratified 2026-11-21 (UTC).
     pub fn remove_sender(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
-        self.senders.remove(victim)
+        let Waiting::Senders(senders) = &mut self.waiting else {
+            return None;
+        };
+        let found = senders.remove(victim);
+        if senders.is_empty() {
+            self.waiting = Waiting::Nobody;
+        }
+        found
     }
 
     /// Take one specific receiver back off the queue, returning its token if it was there. The
     /// twin of [`remove_sender`](Self::remove_sender), for a region teardown that ends a thread
-    /// blocked in `RECEIVE` here. The kernel asks both queues, because a thread's recorded wait
+    /// blocked in `RECEIVE` here. The kernel asks both removes, because a thread's recorded wait
     /// role does not say which queue holds it.
     ///
     /// Name: ratified 2026-11-21 (UTC).
     pub fn remove_receiver(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
-        self.receivers.remove(victim)
+        let Waiting::Receivers(receivers) = &mut self.waiting else {
+            return None;
+        };
+        let found = receivers.remove(victim);
+        if receivers.is_empty() {
+            self.waiting = Waiting::Nobody;
+        }
+        found
+    }
+
+    /// Pop the first receiver, if receivers wait here, and return the tag to `Nobody` after the
+    /// last.
+    fn take_receiver(&mut self) -> Option<Unqueued<T>> {
+        let Waiting::Receivers(receivers) = &mut self.waiting else {
+            return None;
+        };
+        let receiver = receivers.pop_front();
+        if receivers.is_empty() {
+            self.waiting = Waiting::Nobody;
+        }
+        receiver
+    }
+
+    /// Pop the first sender, if senders wait here, and return the tag to `Nobody` after the last.
+    fn take_sender(&mut self) -> Option<Unqueued<T>> {
+        let Waiting::Senders(senders) = &mut self.waiting else {
+            return None;
+        };
+        let sender = senders.pop_front();
+        if senders.is_empty() {
+            self.waiting = Waiting::Nobody;
+        }
+        sender
+    }
+
+    /// Queue `me` as a sender. Called only after [`take_receiver`](Self::take_receiver) found
+    /// nobody, so the tag is `Senders` or `Nobody`.
+    fn queue_sender(&mut self, me: Unqueued<T>) {
+        match &mut self.waiting {
+            Waiting::Senders(senders) => senders.push_back(me),
+            Waiting::Nobody | Waiting::Receivers(_) => {
+                debug_assert!(self.is_idle(), "a sender queued past a waiting receiver");
+                let mut senders = Queue::new();
+                senders.push_back(me);
+                self.waiting = Waiting::Senders(senders);
+            }
+        }
+    }
+
+    /// Queue `me` as a receiver. Called only after [`take_sender`](Self::take_sender) found
+    /// nobody, so the tag is `Receivers` or `Nobody`.
+    fn queue_receiver(&mut self, me: Unqueued<T>) {
+        match &mut self.waiting {
+            Waiting::Receivers(receivers) => receivers.push_back(me),
+            Waiting::Nobody | Waiting::Senders(_) => {
+                debug_assert!(self.is_idle(), "a receiver queued past a waiting sender");
+                let mut receivers = Queue::new();
+                receivers.push_back(me);
+                self.waiting = Waiting::Receivers(receivers);
+            }
+        }
     }
 
     /// A sender `me` arrives. Rendezvous with a waiting receiver if there is one, otherwise `me`
@@ -290,10 +382,10 @@ impl<T: Node> Rendezvous<T> {
         // words is the forgery the refusal exists to stop.
         if self.bound_to_interrupt {
             SendVerdict::Refused(me)
-        } else if let Some(receiver) = self.receivers.pop_front() {
+        } else if let Some(receiver) = self.take_receiver() {
             SendVerdict::Rendezvous(receiver, me)
         } else {
-            self.senders.push_back(me);
+            self.queue_sender(me);
             SendVerdict::Blocked
         }
     }
@@ -307,10 +399,10 @@ impl<T: Node> Rendezvous<T> {
         if self.pending > 0 {
             self.pending -= 1;
             ReceiveVerdict::Signal(me)
-        } else if let Some(sender) = self.senders.pop_front() {
+        } else if let Some(sender) = self.take_sender() {
             ReceiveVerdict::FromSender(sender, me)
         } else {
-            self.receivers.push_back(me);
+            self.queue_receiver(me);
             ReceiveVerdict::Blocked
         }
     }
@@ -355,7 +447,7 @@ impl<T: Node> Rendezvous<T> {
     ///
     /// Name: ratified 2026-11-21 (UTC).
     pub fn signal(&mut self) -> Option<Unqueued<T>> {
-        if let Some(receiver) = self.receivers.pop_front() {
+        if let Some(receiver) = self.take_receiver() {
             Some(receiver)
         } else {
             self.pending = self.pending.saturating_add(1);

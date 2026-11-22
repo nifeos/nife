@@ -173,8 +173,10 @@ are kept. The host tests keep the same two, with each node in a `Box` declared b
 
 ### The rendezvous harnesses
 
-`seed` makes the arbitrary state: at most one queue holding one waiter, a symbolic pending count,
-and a symbolic interrupt binding. Every harness therefore covers a bound rendezvous, including one
+`seed` makes the arbitrary state: nobody waiting, or one sender or one receiver under its tag, a
+symbolic pending count, and a symbolic interrupt binding. The layout keeps senders and receivers
+from waiting at once, so the invariant harnesses check what it leaves open: the last pop from a
+queue returns the tag to `Nobody`, and `is_idle`, which reads the tag, is never wrong. Every harness therefore covers a bound rendezvous, including one
 bound after a sender queued.
 
 - The send harness folds the interrupt refusal in, as the same decision's other branch. Removing
@@ -191,8 +193,8 @@ bound after a sender queued.
   since a membership scan would hand the solver an unbounded loop.
 
 The remove harness is the only bounded one. Its interesting case is the miss: the kernel asks
-both removes on every victim, and a drain over a queue the victim is not on must rebuild that
-queue exactly. It runs one remove per run, chosen symbolically, because the removes share no state
+both removes on every victim, and a walk over a queue the victim is not on must leave that
+queue exactly as it was. It runs one remove per run, chosen symbolically, because the removes share no state
 between calls. A run of both removes twice each did not finish in seventeen minutes, and
 `unwind(3)` with one remove takes 0.2 seconds. The bound is sound: Kani checks the unwinding
 assertion, so a loop that needed a fourth pass would fail the proof. `seed` queues at most one
