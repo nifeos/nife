@@ -170,9 +170,6 @@ primitive_benchmark_contract prose_acronyms 2
 primitive_benchmark_contract readme_acronyms 1
 process_builder abbreviations 35
 process_builder prose_acronyms 4
-program_argument_contract abbreviations 1
-program_argument_contract prose_acronyms 1
-program_argument_contract readme_acronyms 1
 program_asks abbreviations 8
 program_asks prose_acronyms 2
 program_table abbreviations 60
