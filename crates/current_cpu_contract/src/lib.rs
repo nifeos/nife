@@ -363,7 +363,7 @@ mod tests {
     struct Aligned([u8; PAGE_CONTENT_BYTES]);
 
     impl Aligned {
-        fn va(&mut self) -> u64 {
+        fn virtual_address(&mut self) -> u64 {
             self.0.as_mut_ptr() as u64
         }
 
@@ -377,26 +377,26 @@ mod tests {
         fn publish(&mut self, cpu: u64) {
             // SAFETY: `self` is a live, 8-aligned buffer of exactly `PAGE_CONTENT_BYTES`, borrowed
             // mutably for the call, so this thread is its only writer.
-            unsafe { publish(self.va(), cpu) }
+            unsafe { publish(self.virtual_address(), cpu) }
         }
 
         /// [`CurrentCpuPage::cpu`] over this buffer. The page value never leaves the call, so it
         /// cannot outlive the buffer it names.
         fn cpu(&mut self) -> Option<usize> {
             // SAFETY: as `publish`; the page is read and dropped while `self` is borrowed.
-            unsafe { CurrentCpuPage::new(self.va()) }.cpu()
+            unsafe { CurrentCpuPage::new(self.virtual_address()) }.cpu()
         }
 
         /// [`CurrentCpuPage::allowance`] over this buffer, under `cpu`'s argument.
         fn allowance(&mut self) -> Option<core::num::NonZeroUsize> {
             // SAFETY: as `cpu`.
-            unsafe { CurrentCpuPage::new(self.va()) }.allowance()
+            unsafe { CurrentCpuPage::new(self.virtual_address()) }.allowance()
         }
 
         /// [`CurrentCpuPage::tick_hertz`] over this buffer, under `cpu`'s argument.
         fn tick_hertz(&mut self) -> Option<core::num::NonZeroU64> {
             // SAFETY: as `cpu`.
-            unsafe { CurrentCpuPage::new(self.va()) }.tick_hertz()
+            unsafe { CurrentCpuPage::new(self.virtual_address()) }.tick_hertz()
         }
     }
 
@@ -517,8 +517,8 @@ mod tests {
     fn the_thread_page_slots_fill_the_process_pages_band() {
         assert_eq!(thread_page_virtual_address(0), Some(PAGE_VIRTUAL_ADDRESS));
         for k in 0..THREAD_PAGE_SLOTS {
-            let va = thread_page_virtual_address(k).unwrap();
-            assert!(address_space_layout::PROCESS_PAGES.contains(va));
+            let virtual_address = thread_page_virtual_address(k).unwrap();
+            assert!(address_space_layout::PROCESS_PAGES.contains(virtual_address));
         }
         assert_eq!(thread_page_virtual_address(THREAD_PAGE_SLOTS), None);
         assert_eq!(THREAD_PAGE_SLOTS, 16);
