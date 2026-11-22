@@ -34,8 +34,11 @@ pub mod rights {
     /// ([`super::super::file_system::SET_MODIFICATION_TIME`]) needs only [`WRITE`], because the server observed that value. POSIX's
     /// `utime()` draws the same line, and the wall clock draws it between reading the clock and setting it.
     ///
-    /// Name: provisional, minted 2026-11-22 (UTC) by the file-system-contract-rename lane (ruled 2026-11-22: no unit, because the right guards
-    /// [`super::super::file_system::SET_MODIFICATION_TIME_AT_UNIX_SECONDS`] only). Written module-qualified, as `directory::rights::SET_MODIFICATION_TIME_AT`.
+    /// Name: ratified 2026-11-22. The right is written module-qualified, as `directory::rights::SET_MODIFICATION_TIME_AT`, and
+    /// carries no unit because it guards [`super::super::file_system::SET_MODIFICATION_TIME_AT_UNIX_SECONDS`] only. Bit `1 << 6`
+    /// is unchanged. Refused: `BACKDATE`, because the verb also sets a time in the future; `RETIME`, because it does not say
+    /// the caller names the time; `ASSERT_MODIFICATION_TIME`, because the right permits the claim and does not itself assert
+    /// anything; `SET_TIME`, because it reads as the wall clock.
     pub const SET_MODIFICATION_TIME_AT: u64 = 1 << 6;
 
     /// Every right this contract defines. The mount binds its root with exactly this; nothing below

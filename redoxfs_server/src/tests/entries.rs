@@ -376,7 +376,7 @@ fn a_subtree_built_through_directory_handles_survives_a_reopen() {
     let n = srv.read(f, 0, &mut buf).unwrap();
     assert_eq!(&buf[..n], b"written two levels down");
 }
-// --- GET_VOLUME_STATISTICS (milestone 54) ---
+// --- GET_VOLUME_STATISTICS (milestone 54 (a network file service a Mac can actually mount)) ---
 
 /// **The volume's numbers are the image's, and writing to it moves the free count.**
 ///
