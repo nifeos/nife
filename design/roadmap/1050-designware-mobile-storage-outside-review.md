@@ -213,8 +213,7 @@ source. Two-way. S.
 
 ## Decisions this block needs
 
-1. The baseline tag (P0-4). Ruled and placed: `v0.1.0-pre.1` on `473b19c`. The semver rule reads it
-   once the template takes a pre-release tag as a baseline (P0-4).
+1. The baseline tag (P0-4). Ruled and placed: `v0.1.0-pre.1` on `473b19c`.
 2. Where the JH7110 facts live. Ruled: the crate knows no chip. The JH7110 facts live in nife's
    `crates/machine_discovery/src/jh7110/designware_mobile_storage.rs`, and the crate has no
    `jh7110` module. Landed in [nifeos/designware_mobile_storage#31](https://github.com/nifeos/designware_mobile_storage/pull/31) and nifeos/nife#3729.
@@ -271,10 +270,9 @@ claims none of the hardware steps.
 - P0-3, the ISC notice only in a doc comment: Done, [nifeos/designware_mobile_storage#3](https://github.com/nifeos/designware_mobile_storage/pull/3).
 - P0-4, no semver baseline: Waiting on [nifeos/crate-workflows#84](https://github.com/nifeos/crate-workflows/pull/84), then the pin bump to the
   template release that carries it.
-- P1-1, no recovery after a failed data phase: Waiting on a board run. The code is in [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5);
-  the first release waits for the board (ruled 2026-11-19 UTC).
-- P1-2, fixed deadlines at the ceiling of the specification: Waiting on a board run. The code is in
-  [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5); busy durations against the defaults block the first release (ruled 2026-11-19 UTC).
+- P1-1, no recovery after a failed data phase: Waiting on a board run; code in [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5).
+- P1-2, fixed deadlines at the ceiling of the specification: Waiting on a board run; code in
+  [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5).
 - P1-3, the two traits state no contract: Done, [nifeos/designware_mobile_storage#3](https://github.com/nifeos/designware_mobile_storage/pull/3) and [nifeos/designware_mobile_storage#15](https://github.com/nifeos/designware_mobile_storage/pull/15).
 - P1-4, forty-nine untriaged mutation survivors: Done, [nifeos/designware_mobile_storage#16](https://github.com/nifeos/designware_mobile_storage/pull/16) and [nifeos/designware_mobile_storage#18](https://github.com/nifeos/designware_mobile_storage/pull/18).
 - P1-5, the stranger test never ran: Done, [nifeos/designware_mobile_storage#14](https://github.com/nifeos/designware_mobile_storage/pull/14) and [nifeos/designware_mobile_storage#15](https://github.com/nifeos/designware_mobile_storage/pull/15).
@@ -284,11 +282,9 @@ claims none of the hardware steps.
 - P1-9, `block_address_argument` states no precondition: Done, [nifeos/designware_mobile_storage#15](https://github.com/nifeos/designware_mobile_storage/pull/15).
 - P2-1, no fuzz target: Done, [nifeos/designware_mobile_storage#10](https://github.com/nifeos/designware_mobile_storage/pull/10) and [nifeos/designware_mobile_storage#19](https://github.com/nifeos/designware_mobile_storage/pull/19).
 - P2-2, the simulator is not available to users: Done, [nifeos/designware_mobile_storage#12](https://github.com/nifeos/designware_mobile_storage/pull/12).
-- P2-3, card presence read once: Waiting on a board run. `is_card_present` is in [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5); the
-  polarity of the detect line and hot removal follow the first release (ruled 2026-11-19 UTC).
+- P2-3, card presence read once: Waiting on a board run. `is_card_present` is in [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5).
 - P2-4, an eMMC runs 1-bit at 25 MHz: Waiting on a board run. The bus-width and high-speed switches
-  are in [nifeos/designware_mobile_storage#11](https://github.com/nifeos/designware_mobile_storage/pull/11); the board has no eMMC module fitted, and the check follows the first release
-  (ruled 2026-11-19 UTC).
+  are in [nifeos/designware_mobile_storage#11](https://github.com/nifeos/designware_mobile_storage/pull/11); no eMMC module is fitted.
 - P2-5, `reset` leaves the IDMAC registers alone: Done, [nifeos/designware_mobile_storage#5](https://github.com/nifeos/designware_mobile_storage/pull/5) and [nifeos/designware_mobile_storage#19](https://github.com/nifeos/designware_mobile_storage/pull/19).
 - P2-6, stale repository facts: Done, [nifeos/designware_mobile_storage#4](https://github.com/nifeos/designware_mobile_storage/pull/4).
 - P2-7, user-facing text says "queue" for the FIFO: Done, [nifeos/designware_mobile_storage#3](https://github.com/nifeos/designware_mobile_storage/pull/3).
