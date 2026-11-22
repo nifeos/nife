@@ -22,42 +22,39 @@ cargo-mutants. No new tool.
 
 ## Finding status
 
-Every item not Done blocks the first crates.io publish, which waits until every outside-review
+Every finding not Done blocks the first crates.io publish, which waits until every outside-review
 milestone reaches delivery.
 
-- Item 1, the manifest is a workspace member's: Done. The manifest states its own license,
-  `rust-version = "1.85"`, description, keywords, categories and lint tables.
-- Item 2, the front page points into nife: Done for the notes pointers and the DECISIONS
-  citation, which `src/lib.rs` no longer carries, and the README holds the contract's fine print.
-  The repository carries no `Name:` blocks.
-- Item 3, no repository skeleton: Open. The crate lives in `nifeos/intrusive_queue` with the
-  template's scaffold at crate-workflows v8; a stranger run goes on record there next.
-- Item 4, `Queue<T>` is `Send` for every `T`: Done, by this lane's pull request. `Queue<T>` is `Send`
-  only when `T: Send`, with a compile-fail doctest (decision 1).
-- Item 5, the documentation teaches an aliasing minting shape: Done,
-  [#3523](https://github.com/nifeos/nife/pull/3523).
-- Item 6, seven public names lack ratification: Done, by this lane's pull request. The `Name:` blocks
-  read ratified 2026-11-19 (UTC) (decision 2).
-- Item 7, the compile-fail doctest accepts any error: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 8, no rule for dropping a non-empty `Queue`: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 9, `remove` and an `extract_if`-shaped method: Open. Two-way and additive, so the maintainer
-  rules whether the surface grows; a lane then builds it with its harnesses in
+- Item 1 (P0), the manifest is a workspace member's: Done, [#3882](https://github.com/nifeos/nife/pull/3882). The manifest states its own
+  license, `rust-version = "1.85"`, description, keywords, categories and lint tables.
+- Item 2 (P0), the front page points into nife: Done, [#3882](https://github.com/nifeos/nife/pull/3882) and [#3892](https://github.com/nifeos/nife/pull/3892). `src/lib.rs` no
+  longer carries the notes pointers or the DECISIONS citation, the README holds the contract's fine
+  print, and the repository carries no `Name:` blocks.
+- Item 3 (P0), no repository skeleton: Open. The crate lives in `nifeos/intrusive_queue` with the
+  template's scaffold at crate-workflows v8 ([#3892](https://github.com/nifeos/nife/pull/3892)), and `docs/stranger-test.md` there still
+  reads `Last run: none`; a stranger run goes on record next.
+- Item 4 (P1), `Queue<T>` is `Send` for every `T`: Done, [#3795](https://github.com/nifeos/nife/pull/3795). `Queue<T>` is `Send` only when
+  `T: Send`, with a compile-fail doctest (decision 1).
+- Item 5 (P1), the documentation teaches an aliasing minting shape: Done, [#3523](https://github.com/nifeos/nife/pull/3523).
+- Item 6 (P1), seven public names lack ratification: Done, [#3795](https://github.com/nifeos/nife/pull/3795). The `Name:` blocks read
+  ratified 2026-11-19 (UTC) (decision 2), and the move stripped them.
+- Item 7 (P1), the compile-fail doctest accepts any error: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 8 (P1), no rule for dropping a non-empty `Queue`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 9 (P2), `remove` and an `extract_if`-shaped method: Open. Two-way and additive, so the
+  maintainer rules whether the surface grows; a lane then builds it with its harnesses in
   `nifeos/intrusive_queue`.
-- Item 10, link hygiene after a pop: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 11, the standard traits: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 12, acronyms: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 13, one shared test node: Open, as a pull request in `nifeos/intrusive_queue`.
-- Follow-on, the externalization list: Done. Step 10 of milestone 1017 (the contract crates leave
-  in this order) moves the crate, so `crates/externalization-list.txt` no longer names it.
-- Follow-on, review clearance and the repository: Done (ruled 2026-11-20 UTC, option A). The package
-  [`notes/crate-reviews/intrusive-queue.md`](../../notes/crate-reviews/intrusive-queue.md) is
-  cleared, and `nifeos/intrusive_queue` is approved with `publish = false`, no tag and no publish.
-  The move is item 10 of milestone 1017.
-- Follow-on, the soak: in progress. The crate keeps `publish = false`, and the kernel and
-  `inter_process_communication` take it by `rev`, a commit on the repository's main; a tag moves
-  the pin later.
+- Item 10 (P2), link hygiene after a pop: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 11 (P2), the standard traits: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 12 (P2), acronyms: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 13 (P2), one shared test node: Open, as a pull request in `nifeos/intrusive_queue`, whose
+  `src/lib.rs` still defines one test node under `cfg(kani)` and another under `cfg(test)`.
+- Decision 1, the `Send` bound on `Queue`: Done, [#3795](https://github.com/nifeos/nife/pull/3795).
+- Decision 2, the seven public names the release publishes: Done, [#3795](https://github.com/nifeos/nife/pull/3795), ratified 2026-11-19
+  (UTC).
+- Decision 3, review clearance and the repository: Done, [#3892](https://github.com/nifeos/nife/pull/3892), ruled 2026-11-20 (UTC), option
+  A. The package [`notes/crate-reviews/intrusive-queue.md`](../../notes/crate-reviews/intrusive-queue.md)
+  is cleared, and `nifeos/intrusive_queue` holds the crate with `publish = false`, no tag and no
+  publish.
 
 ## Open decisions
 
@@ -231,6 +228,9 @@ The rules in force, each with its background and prior art, are in
 
 - **Outstanding.** Every finding marked Open under "Finding status", each checked against the
   crate's sources on main.
+- **Outstanding.** The soak. The crate keeps `publish = false`, and the kernel and
+  `inter_process_communication` take it by `rev`, a commit on the repository's main, checked in
+  `kernel/Cargo.toml`; a tag moves the pin later.
 
 ## Done when
 
