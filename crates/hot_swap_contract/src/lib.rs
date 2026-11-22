@@ -122,8 +122,9 @@ pub const RPT_REFUSED: u64 = 11;
 /// residual). `w1` = how many members the survey reported, `w2` = their states, packed by
 /// [`survey_counts`].
 ///
-/// The operator reads this out of `moho_abi::rendezvous::SURVEY` (milestone 126), which is the only view of
-/// its own children it has. The report exists so the test can assert what the view **cannot** say.
+/// The operator reads this out of `moho_abi::rendezvous::SURVEY` (milestone 126, who else is
+/// running), which is the only view of its own children it has. The report exists so the test can
+/// assert what the view **cannot** say.
 pub const RPT_SURVEY: u64 = 12;
 
 /// **The dependency graph's own verdict, before any orchestration acts on it** (milestone 23's

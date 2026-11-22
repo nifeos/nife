@@ -64,8 +64,9 @@ logic is testable on the host, and its names pass `design/naming.md`.
 - P2-15, an unused parameter of `run_attack`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P2-16, an unbounded `complete_block`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - Decision 1, fold the roles into `block_driver`: Done, [#3662](https://github.com/nifeos/nife/pull/3662) (ruled 2026-11-16 UTC, A).
-- Decision 2, the ring layout moves to `moho_abi::virtual_io`: Waiting on milestone 1075 item 11. Ruled
-  (maintainer, provisional, 2026-11-14 UTC) and not built; P1-3 is the work.
+- Decision 2, the ring layout moves to `moho_abi::virtual_io`: Waiting on milestone 1075 (what an
+  outside maintainer would fix before the move) item 11. Ruled (maintainer, provisional, 2026-11-14
+  UTC) and not built; P1-3 is the work.
 - Decision 3, the kernel checks `Version` and the driver does not: Done, [#3628](https://github.com/nifeos/nife/pull/3628) (maintainer,
   provisional, 2026-11-15 UTC).
 
@@ -209,8 +210,8 @@ validator's layout. The five constants (`crates/direct_memory_access_validator/s
 (`crates/moho_abi/src/virtual_io.rs` line 38), with `RING_END`, which the validator derives from them and
 the kernel also aliases. The validator and the kernel alias them from there. The present names fail
 the spelled-out rule (`QSIZE`, `DESC`, `OFF`), so the lane that moves them proposes spelled-out
-names in `moho_abi`, provisional. They join the pinned-value list and version gate of milestone 1075 (what an outside
-maintainer would fix in `moho_abi` before the move), its item 11. Item 3 is the work.
+names in `moho_abi`, provisional. They join the pinned-value list and version gate of milestone
+1075 (what an outside maintainer would fix before the move), its item 11. Item 3 is the work.
 
 ### Decision 3. The driver does not check `Version`; the kernel does
 

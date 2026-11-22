@@ -201,11 +201,12 @@ $ script/audits --baseline     # the counts to paste into both index tables
   clearly enough, and a reader who scoped a sweep to `notes/` would be following it correctly.
 
 - **Read what a doc comment is attached to, not only what it says.** The 2026-08-17 sweep's second
-  finding was three lines of correct prose bound to the wrong item since milestone 19a: `moho_abi::rights`
-  had no documentation and `moho_abi::objtype`'s opened by declaring itself the rights bits. Every line
-  parses, every sentence is true of *something*, and no structural gate can see it. It is also
-  invisible to the author, because rustdoc renders prose about rights immediately above the rights
-  constants; only a reader who asks which item owns a comment will catch it.
+  finding was three lines of correct prose bound to the wrong item since milestone 19a (run a real
+  workload): `moho_abi::rights` had no documentation and `moho_abi::objtype`'s opened by declaring
+  itself the rights bits. Every line parses, every sentence is true of *something*, and no
+  structural gate can see it. It is also invisible to the author, because rustdoc renders prose
+  about rights immediately above the rights constants; only a reader who asks which item owns a
+  comment will catch it.
 
 - The worklist ranks documents that cite code in a form it can parse, and says nothing about the
   rest. 138 of the 269 documents in its scope resolve no code path at all and are simply absent

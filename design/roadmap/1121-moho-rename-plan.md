@@ -225,6 +225,15 @@ Hermit and Redox use one name for the kernel and the interface, so they offer no
 
 Blocks: step 4 only in which line the C library's platform module keeps.
 
+## Follow-on
+
+- **Done.** Step 3, the crate rename, in [#4013](https://github.com/nifeos/nife/pull/4013).
+- **Outstanding.** Steps 1 and 6, in basalt. Checked by reading basalt's `main`:
+  `helpers/packages.py` names no `*-unknown-moho` triple.
+- **Outstanding.** Step 2, nife's basalt pin, which waits on step 1's Release.
+- **Outstanding.** Steps 4 and 5, `target_os` with the `std` port and then the triples. Checked by
+  reading the three target specifications, whose `os` field is still `nife`.
+
 ## BUGS
 
 - The census counts lines, not occurrences, and the prose split by status counts each file once at
