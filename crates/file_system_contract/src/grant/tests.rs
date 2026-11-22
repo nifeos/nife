@@ -178,10 +178,10 @@ fn a_malformed_grant_page_name_is_refused_not_read_as_the_root() {
 /// **START words that still carry a name are told apart from the ones a grant page goes with.**
 #[test]
 fn start_words_carrying_a_name_are_recognized() {
-    let spec = grant::specification(0, 3);
-    assert!(grant::words_carry_no_name(0, 0, spec));
-    assert!(!grant::words_carry_no_name(1, 0, spec));
-    assert!(!grant::words_carry_no_name(0, 1, spec));
+    let specification = grant::specification(0, 3);
+    assert!(grant::words_carry_no_name(0, 0, specification));
+    assert!(!grant::words_carry_no_name(1, 0, specification));
+    assert!(!grant::words_carry_no_name(0, 1, specification));
     assert!(!grant::words_carry_no_name(
         0,
         0,

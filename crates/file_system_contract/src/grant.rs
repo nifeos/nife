@@ -173,22 +173,23 @@ pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0000_0070_0000;
 /// longest one-name set, a two-byte header, [`MAXIMUM_NAME_BYTES`] and the terminator, so the two
 /// never overlap whatever the name.
 ///
-/// Name: provisional.
-pub const PAGE_NAME_SET_OFFSET: usize = 256;
+/// Name: provisional, minted 2026-11-22 (UTC) by lane 1090-finish-review. The unit suffix answers the
+/// register-name gate, which reads a bare `_OFFSET` as a register offset.
+pub const PAGE_NAME_SET_OFFSET_BYTES: usize = 256;
 
-const _: () = assert!(PAGE_NAME_SET_OFFSET > 2 + MAXIMUM_NAME_BYTES);
+const _: () = assert!(PAGE_NAME_SET_OFFSET_BYTES > 2 + MAXIMUM_NAME_BYTES);
 
 /// **How many bytes of its grant page a caretaker reads**: the granted name and the longest set
 /// after it. Far under a page, so one frame carries the whole grant.
 ///
 /// Name: provisional.
-pub const PAGE_USED_BYTES: usize = PAGE_NAME_SET_OFFSET + super::nameset::MAXIMUM_BYTES;
+pub const PAGE_USED_BYTES: usize = PAGE_NAME_SET_OFFSET_BYTES + super::nameset::MAXIMUM_BYTES;
 
 const _: () = assert!(PAGE_USED_BYTES <= super::PAGE_BYTES);
 
 /// **Write a caretaker's grant page**: `name` at offset 0 as a set of one name, flagged
 /// [`super::nameset::IS_DIRECTORY`] when `is_directory`, and `set`, already encoded by
-/// [`super::nameset::encode`], at [`PAGE_NAME_SET_OFFSET`]. An empty `name` is written as an empty
+/// [`super::nameset::encode`], at [`PAGE_NAME_SET_OFFSET_BYTES`]. An empty `name` is written as an empty
 /// set, which is how a grant with nothing to descend by travels (the root of the shell's namespace,
 /// or a channel already bound to its directory). An empty `set` is written as an empty set too.
 ///
@@ -225,9 +226,12 @@ pub fn write_page(name: &[u8], is_directory: bool, set: &[u8], out: &mut [u8]) -
     if name.is_empty() {
         out[0] = 0;
     } else {
-        super::nameset::encode(&[(name, is_directory)], &mut out[..PAGE_NAME_SET_OFFSET])?;
+        super::nameset::encode(
+            &[(name, is_directory)],
+            &mut out[..PAGE_NAME_SET_OFFSET_BYTES],
+        )?;
     }
-    let tail = &mut out[PAGE_NAME_SET_OFFSET..PAGE_USED_BYTES];
+    let tail = &mut out[PAGE_NAME_SET_OFFSET_BYTES..PAGE_USED_BYTES];
     if set.is_empty() {
         tail[0] = 0;
     } else {
@@ -259,22 +263,22 @@ pub fn page_name(page: &[u8]) -> Option<&[u8]> {
 }
 
 /// **The name set on a caretaker's grant page**, in [`super::nameset`]'s encoding: the bytes from
-/// [`PAGE_NAME_SET_OFFSET`] to [`PAGE_USED_BYTES`], or nothing when `page` is shorter. A subtree
+/// [`PAGE_NAME_SET_OFFSET_BYTES`] to [`PAGE_USED_BYTES`], or nothing when `page` is shorter. A subtree
 /// caretaker's is empty.
 ///
 /// Name: provisional.
 pub fn page_name_set(page: &[u8]) -> &[u8] {
-    page.get(PAGE_NAME_SET_OFFSET..PAGE_USED_BYTES)
+    page.get(PAGE_NAME_SET_OFFSET_BYTES..PAGE_USED_BYTES)
         .unwrap_or(&[])
 }
 
 /// **Whether a caretaker's `START` words are the ones a grant page goes with**: both name words
-/// zero and no length in the spec word, so the words carry only the rights. Restrictive first: a
+/// zero and no length in the specification word, so the words carry only the rights. Restrictive first: a
 /// caretaker refuses words that still carry a name, rather than reading one of two places.
 ///
 /// Name: provisional.
-pub const fn words_carry_no_name(name_lo: u64, name_hi: u64, spec: u64) -> bool {
-    name_lo == 0 && name_hi == 0 && specification_len(spec) == 0
+pub const fn words_carry_no_name(name_lo: u64, name_hi: u64, specification: u64) -> bool {
+    name_lo == 0 && name_hi == 0 && specification_len(specification) == 0
 }
 
 /// **A grant whose operand is the holder's whole namespace**, spelled as a name of zero length.
