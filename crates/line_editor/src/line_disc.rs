@@ -79,17 +79,18 @@ pub enum Event {
     /// ^C: the line in progress was discarded.
     Interrupt,
     /// ^Z: the line in progress was discarded, and whoever runs a foreground job is asked to
-    /// suspend it (milestone 48 (job control)). At a prompt it is a fresh line, as `^C` is.
+    /// suspend it (job control). At a prompt it is a fresh line, as `^C` is.
     ///
     /// Name: provisional, minted 2026-10-18 (UTC) by lane/48-ctrl-z.
     Suspend,
     /// Tab: nothing was echoed and the line is unchanged. Whoever runs the engine decides what a
-    /// Tab means, because completion needs a namespace the engine does not have (§227).
+    /// Tab means, because completion needs a namespace the engine does not have.
     Tab,
 }
 
-/// The ANSI parser's state. `Esc` has seen 0x1b; `Csi` is inside `ESC [`, accumulating numeric
-/// parameters; `Ss3` is inside `ESC O` (application-mode cursor keys send SS3, not CSI).
+/// The ANSI parser's state. `Esc` has seen 0x1b; `Csi` is inside `ESC [`, a control sequence
+/// introducer (CSI), accumulating numeric parameters; `Ss3` is inside `ESC O`, a single shift
+/// (SS3), which application-mode cursor keys send instead of a CSI.
 enum EscapeState {
     Idle,
     Esc,
@@ -252,7 +253,7 @@ impl LineEditor {
     }
 
     /// Begin a read: remember `prompt` (for repaints) and paint it, followed by whatever the
-    /// user has already typed ahead. Called by the server when a READLINE request arrives.
+    /// user has already typed ahead. Called by the server when a `READLINE` request arrives.
     pub fn start_line(&mut self, prompt: &[u8], out: &mut impl Sink) {
         let n = prompt.len().min(MAXIMUM_PROMPT_BYTES);
         self.prompt[..n].copy_from_slice(&prompt[..n]);
@@ -306,7 +307,7 @@ impl LineEditor {
             }
             0x03 => {
                 // ^C: discard the line in progress. The caller routes the interrupt (or, today,
-                // merely fails a pending read); see design/interrupt-routing.md.
+                // merely fails a pending read).
                 out.put(b"^C\r\n");
                 self.abandon();
                 Event::Interrupt
@@ -356,7 +357,7 @@ impl LineEditor {
             }
             0x0c => {
                 // ^L: clear the screen, repaint prompt and line. The one operation that needs the
-                // prompt, which is why READLINE carries it.
+                // prompt, which is why `READLINE` carries it.
                 self.clear_and_repaint(out);
                 Event::None
             }
