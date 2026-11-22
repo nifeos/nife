@@ -191,7 +191,7 @@ decoder test a bit as well as a sign.
 - Linux (read: `include/linux/err.h`). `MAX_ERRNO` 4095, so a pointer and an error share one
   return value. The source of the 4095 bound kept here.
 - WASI (read: wasi-libc `wasip1.h`). WASI kept POSIX names and chose its own numbers in a
-  `uint16_t`: `__WASI_ERRNO_ACCES` 2, `NOENT` 44, `PERM` 63, `PROTO` 65, `ROFS` 69, and added
+  `uint16_t`: access denied 2, `__WASI_ERRNO_NOENT` 44, `PERM` 63, `PROTO` 65, `ROFS` 69, and added
   `NOTCAPABLE` 76, a capability system's own answer. The header says some codes exist only for
   alignment with POSIX. The closest precedent: a capability system that refused the host's
   numbering, and translates at its libc.
