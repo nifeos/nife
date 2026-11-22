@@ -609,6 +609,18 @@ pub fn free(frame: PageFrame) {
     publish_counts(allocator);
 }
 
+/// Return the `count` frames from `first` that one [`alloc_contiguous`] or
+/// [`alloc_contiguous_zeroed`] of `count` handed out. Panics, with the bitmap unchanged, on a run
+/// the allocator does not own whole or that holds a free frame.
+pub fn free_contiguous(first: PageFrame, count: usize) {
+    let mut guard = ALLOCATOR.lock();
+    let allocator = guard
+        .as_mut()
+        .expect("freeing a run before memory::initialize");
+    allocator.free_contiguous(first, count);
+    publish_counts(allocator);
+}
+
 pub fn stats() -> Option<Stats> {
     Some(ALLOCATOR.lock().as_ref()?.stats())
 }
@@ -1484,11 +1496,7 @@ mod tests {
         );
 
         crate::memory::free(a);
-        for i in 0..8u64 {
-            crate::memory::free(page_frames::PageFrame::from_physical_address(
-                b.physical_address() + i * page_frames::FRAME_BYTES,
-            ));
-        }
+        crate::memory::free_contiguous(b, 8);
 
         assert_eq!(
             crate::memory::stats().unwrap(),
