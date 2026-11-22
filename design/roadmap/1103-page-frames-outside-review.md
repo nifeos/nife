@@ -237,7 +237,7 @@ The checks are in [the appendix](1103-page-frames-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Item 17 is the move lane's, and the review package has its clearance.
+- **Recorded.** Item 17 is the move lane's, in the move table of the review package, which has its clearance.
 
 ## BUGS
 
