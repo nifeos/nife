@@ -1,0 +1,144 @@
+From 1ed44068b3f4690fd9771e793b98a15505d82408 Mon Sep 17 00:00:00 2001
+From: Chris Alef <chris@crickertech.com>
+Date: Sun, 22 Nov 2026 19:03:20 +0000
+Subject: [PATCH] fix(rsext4): report why mount refused the superblock
+
+Mount, device_has_error_state and reload_after_journal_replay mapped
+every error from read_superblock to a bare Io, so a superblock whose
+block size the device's logical sectors cannot address was reported as
+a failed device read. Propagate the error instead, and check the magic
+inside read_superblock before the block size, so a device with no ext4
+filesystem is still refused as InvalidMagic.
+---
+ fs/rsext4/src/ext4/mkfs.rs        | 18 +++++++++--------
+ fs/rsext4/src/ext4/mount.rs       | 13 +++---------
+ fs/rsext4/tests/error_handling.rs | 33 +++++++++++++++++++++++++++++++
+ 3 files changed, 46 insertions(+), 18 deletions(-)
+
+diff --git a/fs/rsext4/src/ext4/mkfs.rs b/fs/rsext4/src/ext4/mkfs.rs
+index 83f1d2fe2..7f8eb261c 100644
+--- a/fs/rsext4/src/ext4/mkfs.rs
++++ b/fs/rsext4/src/ext4/mkfs.rs
+@@ -352,14 +352,9 @@ pub fn mkfs_with_options<B: BlockIo>(
+             fs.umount(block_dev)?;
+         }
+ 
+-        // Final sanity check: read back the superblock and validate the magic.
+-        let verify_sb = read_superblock(block_dev)?;
+-
+-        if verify_sb.s_magic == EXT4_SUPER_MAGIC {
+-            Ok(())
+-        } else {
+-            Err(Ext4Error::corrupted())
+-        }
++        // Final sanity check: read back the superblock, which validates the
++        // magic and the block size.
++        read_superblock(block_dev).map(|_| ())
+     })();
+     let restore_result = block_dev.set_journal_use(old_journal_use);
+     match result {
+@@ -551,12 +546,19 @@ pub(crate) fn write_superblock<B: BlockIo>(
+ }
+ 
+ /// Reads the primary superblock from disk.
++///
++/// The magic is checked before the block size, so a device that holds no
++/// ext4 filesystem is refused as `InvalidMagic` rather than by whatever its
++/// block-size field happens to contain.
+ pub(crate) fn read_superblock<B: BlockIo>(
+     block_dev: &mut Jbd2Dev<B>,
+ ) -> Ext4Result<Ext4Superblock> {
+     let mut bytes = [0; SUPERBLOCK_SIZE];
+     block_dev.read_device_bytes(SUPERBLOCK_OFFSET, &mut bytes)?;
+     let superblock = Ext4Superblock::from_disk_bytes(&bytes);
++    if superblock.s_magic != EXT4_SUPER_MAGIC {
++        return Err(Ext4Error::invalid_magic());
++    }
+     let block_size = superblock.checked_block_size()?;
+     block_dev.set_filesystem_block_size(block_size as usize)?;
+     Ok(superblock)
+diff --git a/fs/rsext4/src/ext4/mount.rs b/fs/rsext4/src/ext4/mount.rs
+index 46311baf6..7107b7b6b 100644
+--- a/fs/rsext4/src/ext4/mount.rs
++++ b/fs/rsext4/src/ext4/mount.rs
+@@ -50,10 +50,7 @@ enum JournalBootstrap {
+ 
+ impl Ext4FileSystem {
+     pub fn device_has_error_state<B: BlockIo>(block_dev: &mut Jbd2Dev<B>) -> Ext4Result<bool> {
+-        let superblock = read_superblock(block_dev).map_err(|_| Ext4Error::io())?;
+-        if superblock.s_magic != EXT4_SUPER_MAGIC {
+-            return Err(Ext4Error::invalid_magic());
+-        }
++        let superblock = read_superblock(block_dev)?;
+         superblock
+             .verify_superblock()
+             .map_err(|error| error.with_operation("mount:superblock_checksum"))?;
+@@ -131,7 +128,7 @@ impl Ext4FileSystem {
+         read_only: bool,
+         block_validity: bool,
+     ) -> Ext4Result<()> {
+-        self.superblock = read_superblock(block_dev).map_err(|_| Ext4Error::io())?;
++        self.superblock = read_superblock(block_dev)?;
+         self.superblock
+             .verify_superblock()
+             .map_err(|error| error.with_operation("mount:superblock_checksum"))?;
+@@ -518,11 +515,7 @@ impl Ext4FileSystem {
+         // 2. load only enough metadata to locate/replay the journal,
+         // 3. reload metadata from the recovered home blocks,
+         // 4. repair bootstrap directories if they are missing.
+-        let mut superblock = read_superblock(block_dev).map_err(|_| Ext4Error::io())?;
+-
+-        if superblock.s_magic != EXT4_SUPER_MAGIC {
+-            return Err(Ext4Error::invalid_magic());
+-        }
++        let mut superblock = read_superblock(block_dev)?;
+         superblock
+             .verify_superblock()
+             .map_err(|error| error.with_operation("mount:superblock_checksum"))?;
+diff --git a/fs/rsext4/tests/error_handling.rs b/fs/rsext4/tests/error_handling.rs
+index 731ba9914..db2543ec0 100644
+--- a/fs/rsext4/tests/error_handling.rs
++++ b/fs/rsext4/tests/error_handling.rs
+@@ -152,6 +152,39 @@ mod error_handling_tests {
+         assert_eq!(error.kind(), Ext4ErrorKind::Io);
+     }
+ 
++    /// A filesystem block smaller than the device's logical sector cannot be
++    /// addressed, so mount must refuse it, and the refusal must say so rather
++    /// than read as a failed device read. A device without an ext4 magic is
++    /// refused as such before its block size is considered.
++    #[test]
++    fn mount_reports_why_it_refused_the_superblock() {
++        let mut device = ErrorMockDevice::new(1024 * 1024);
++        let magic_offset = rsext4::SUPERBLOCK_OFFSET as usize + 56;
++        let mut jbd2_dev = Jbd2Dev::initial_jbd2dev(0, device, true);
++        let Err(error) = Ext4FileSystem::mount(&mut jbd2_dev) else {
++            panic!("a device without an ext4 magic must not mount");
++        };
++        assert_eq!(error.kind(), Ext4ErrorKind::InvalidMagic, "{error:?}");
++
++        // A 1 KiB-block superblock (`s_log_block_size` is 0 in the zeroed
++        // image) on a device of 4,096-byte sectors.
++        device = ErrorMockDevice::new(1024 * 1024);
++        device.data[magic_offset..magic_offset + 2]
++            .copy_from_slice(&rsext4::EXT4_SUPER_MAGIC.to_le_bytes());
++        let mut jbd2_dev = Jbd2Dev::initial_jbd2dev(0, device, true);
++        let Err(error) = Ext4FileSystem::mount(&mut jbd2_dev) else {
++            panic!("a block smaller than the device sector must not mount");
++        };
++        assert_eq!(error.kind(), Ext4ErrorKind::BadSuperblock, "{error:?}");
++        assert_eq!(
++            error.context(),
++            Some(rsext4::ErrorContext::Operation {
++                op: "device:filesystem_geometry"
++            }),
++            "{error:?}"
++        );
++    }
++
+     /// Verifies filesystem-size and ext4 component-length boundaries.
+     #[test]
+     fn test_filesystem_boundaries() {
+-- 
+2.53.0
+

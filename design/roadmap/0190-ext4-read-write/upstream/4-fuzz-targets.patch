@@ -1,0 +1,693 @@
+From 49fc670dd88ef95d4067b5d520a9e8e36655fe5b Mon Sep 17 00:00:00 2001
+From: Chris Alef <chris@crickertech.com>
+Date: Sun, 22 Nov 2026 19:51:21 +0000
+Subject: [PATCH] test(rsext4): add fuzz targets for the on-disk parsers, mount
+ and journal replay
+
+Add a cargo-fuzz crate under fs/rsext4/fuzz with seven targets: the
+superblock checks mount runs first, the group descriptor table, one
+extent-tree node, one directory block with its checksum tails, hash-tree
+lookups through a read-only mount, a bounded read-only walk of a whole
+image, and a read-write mount that replays the journal. The crate has its
+own workspace, so the sanitizer build stays out of the repository
+workspace and xtask.
+
+make-seeds.sh builds a small seed corpus with mke2fs and a fixed time:
+1 KiB and 4 KiB blocks, with and without metadata_csum, an indexed
+directory, and an image with one committed journal transaction that
+e2fsck must replay.
+---
+ fs/rsext4/fuzz/.gitignore                     |   4 +
+ fs/rsext4/fuzz/Cargo.toml                     |  66 +++++++
+ fs/rsext4/fuzz/README.md                      |  35 ++++
+ .../fuzz/fuzz_targets/directory_block.rs      |  21 +++
+ fs/rsext4/fuzz/fuzz_targets/extent_tree.rs    |  10 ++
+ .../fuzz_targets/group_descriptor_table.rs    |  44 +++++
+ fs/rsext4/fuzz/fuzz_targets/htree_lookup.rs   |  23 +++
+ fs/rsext4/fuzz/fuzz_targets/journal_replay.rs |  16 ++
+ fs/rsext4/fuzz/fuzz_targets/mount_and_walk.rs |  20 +++
+ fs/rsext4/fuzz/fuzz_targets/superblock.rs     |  24 +++
+ fs/rsext4/fuzz/make-seeds.sh                  | 140 +++++++++++++++
+ fs/rsext4/fuzz/src/lib.rs                     | 170 ++++++++++++++++++
+ 12 files changed, 573 insertions(+)
+ create mode 100644 fs/rsext4/fuzz/.gitignore
+ create mode 100644 fs/rsext4/fuzz/Cargo.toml
+ create mode 100644 fs/rsext4/fuzz/README.md
+ create mode 100644 fs/rsext4/fuzz/fuzz_targets/directory_block.rs
+ create mode 100644 fs/rsext4/fuzz/fuzz_targets/extent_tree.rs
+ create mode 100644 fs/rsext4/fuzz/fuzz_targets/group_descriptor_table.rs
+ create mode 100644 fs/rsext4/fuzz/fuzz_targets/htree_lookup.rs
+ create mode 100644 fs/rsext4/fuzz/fuzz_targets/journal_replay.rs
+ create mode 100644 fs/rsext4/fuzz/fuzz_targets/mount_and_walk.rs
+ create mode 100644 fs/rsext4/fuzz/fuzz_targets/superblock.rs
+ create mode 100644 fs/rsext4/fuzz/make-seeds.sh
+ create mode 100644 fs/rsext4/fuzz/src/lib.rs
+
+diff --git a/fs/rsext4/fuzz/.gitignore b/fs/rsext4/fuzz/.gitignore
+new file mode 100644
+index 000000000..1a45eee77
+--- /dev/null
++++ b/fs/rsext4/fuzz/.gitignore
+@@ -0,0 +1,4 @@
++target
++corpus
++artifacts
++coverage
+diff --git a/fs/rsext4/fuzz/Cargo.toml b/fs/rsext4/fuzz/Cargo.toml
+new file mode 100644
+index 000000000..60b470265
+--- /dev/null
++++ b/fs/rsext4/fuzz/Cargo.toml
+@@ -0,0 +1,66 @@
++[package]
++name = "rsext4-fuzz"
++version = "0.0.0"
++edition = "2024"
++publish = false
++
++[package.metadata]
++cargo-fuzz = true
++
++[dependencies]
++libfuzzer-sys = "0.4"
++rsext4 = { path = ".." }
++
++# The fuzz targets build with cargo-fuzz's sanitizer flags, so they stay out of the repository
++# workspace and its xtask checks.
++[workspace]
++members = ["."]
++
++[[bin]]
++name = "superblock"
++path = "fuzz_targets/superblock.rs"
++test = false
++doc = false
++bench = false
++
++[[bin]]
++name = "group_descriptor_table"
++path = "fuzz_targets/group_descriptor_table.rs"
++test = false
++doc = false
++bench = false
++
++[[bin]]
++name = "extent_tree"
++path = "fuzz_targets/extent_tree.rs"
++test = false
++doc = false
++bench = false
++
++[[bin]]
++name = "directory_block"
++path = "fuzz_targets/directory_block.rs"
++test = false
++doc = false
++bench = false
++
++[[bin]]
++name = "htree_lookup"
++path = "fuzz_targets/htree_lookup.rs"
++test = false
++doc = false
++bench = false
++
++[[bin]]
++name = "mount_and_walk"
++path = "fuzz_targets/mount_and_walk.rs"
++test = false
++doc = false
++bench = false
++
++[[bin]]
++name = "journal_replay"
++path = "fuzz_targets/journal_replay.rs"
++test = false
++doc = false
++bench = false
+diff --git a/fs/rsext4/fuzz/README.md b/fs/rsext4/fuzz/README.md
+new file mode 100644
+index 000000000..24cab141d
+--- /dev/null
++++ b/fs/rsext4/fuzz/README.md
+@@ -0,0 +1,35 @@
++# rsext4 模糊测试
++
++本目录是 `rsext4` 的 `cargo fuzz` 目标，用于把任意字节作为磁盘内容交给解析和挂载路径，检查它们在恶意或损坏的镜像上只返回错误，不崩溃、不越界、不无限循环。
++
++本目录有自己的 `[workspace]`，不属于仓库工作区，`cargo xtask` 不构建它；它需要夜间工具链和 `cargo-fuzz`（`cargo install cargo-fuzz`）。
++
++## 目标
++
++| 目标 | 输入 | 覆盖的路径 |
++|---|---|---|
++| `superblock` | 1024 字节超级块 | 解码、校验和、块大小、块组数、几何检查 |
++| `group_descriptor_table` | 超级块后接块组描述符表 | 按超级块给出的描述符大小和块组数解码每个描述符 |
++| `extent_tree` | 一个 extent 树节点（`i_block` 的 60 字节或一个整块） | `ExtentTree::parse_node` |
++| `directory_block` | 一个目录块 | 线性目录项遍历、目录块和 HTree 校验尾 |
++| `htree_lookup` | 整个镜像 | 只读挂载后对每个目录逐名 `lookup_child`，索引目录走 HTree 查找 |
++| `mount_and_walk` | 整个镜像 | 只读挂载，有界遍历目录、元数据、extent、扩展属性和文件内容 |
++| `journal_replay` | 整个镜像 | 读写挂载（需要恢复时重放日志），读根目录后卸载 |
++
++遍历有上限（最多 512 个 inode，每个文件最多读 256 KiB），单个输入不会因镜像过大或目录成环而拖住一次迭代。
++
++## 种子语料
++
++```sh
++sh make-seeds.sh            # 写入 ./corpus/<目标>/
++```
++
++脚本用 `mke2fs`（e2fsprogs 1.47 或更新）和固定时间生成几个小镜像：1 KiB 和 4 KiB 块、有无 `metadata_csum`、一个由 `e2fsck -D` 建立索引的大目录，以及一个带一条已提交日志事务、需要恢复的镜像。每个解析器目标的种子从这些镜像中截取。
++
++## 运行
++
++```sh
++cargo fuzz run -O mount_and_walk corpus/mount_and_walk -- -max_total_time=600 -max_len=600000
++```
++
++整镜像目标需要把 `-max_len` 设为不小于种子镜像的大小（`journal_replay` 的种子为 3 MiB）。
+diff --git a/fs/rsext4/fuzz/fuzz_targets/directory_block.rs b/fs/rsext4/fuzz/fuzz_targets/directory_block.rs
+new file mode 100644
+index 000000000..c8880a527
+--- /dev/null
++++ b/fs/rsext4/fuzz/fuzz_targets/directory_block.rs
+@@ -0,0 +1,21 @@
++//! Parses one directory block the way a linear directory read does, and verifies its checksum
++//! tail against a fixed superblock. The input is the block; its length is the block size.
++#![no_main]
++
++use libfuzzer_sys::fuzz_target;
++use rsext4::{
++    checksum::{verify_ext4_dirblock_checksum, verify_ext4_dx_checksum},
++    entries::{DirEntryIterator, classic_dir::list_entries},
++    superblock::Ext4Superblock,
++};
++
++fuzz_target!(|data: &[u8]| {
++    for (entry, _offset) in DirEntryIterator::new(data) {
++        let _ = (entry.name_str(), entry.is_dot(), entry.is_dotdot());
++    }
++    let _ = list_entries(data);
++    let mut superblock = Ext4Superblock::default();
++    superblock.s_feature_ro_compat |= Ext4Superblock::EXT4_FEATURE_RO_COMPAT_METADATA_CSUM;
++    let _ = verify_ext4_dirblock_checksum(&superblock, 2, 0, data);
++    let _ = verify_ext4_dx_checksum(&superblock, 2, 0, data);
++});
+diff --git a/fs/rsext4/fuzz/fuzz_targets/extent_tree.rs b/fs/rsext4/fuzz/fuzz_targets/extent_tree.rs
+new file mode 100644
+index 000000000..023073a5a
+--- /dev/null
++++ b/fs/rsext4/fuzz/fuzz_targets/extent_tree.rs
+@@ -0,0 +1,10 @@
++//! Parses one extent-tree node: the 60 bytes of an inode's `i_block`, or a whole index or leaf
++//! block.
++#![no_main]
++
++use libfuzzer_sys::fuzz_target;
++use rsext4::extents_tree::ExtentTree;
++
++fuzz_target!(|data: &[u8]| {
++    let _ = ExtentTree::parse_node(data);
++});
+diff --git a/fs/rsext4/fuzz/fuzz_targets/group_descriptor_table.rs b/fs/rsext4/fuzz/fuzz_targets/group_descriptor_table.rs
+new file mode 100644
+index 000000000..bf468ea3d
+--- /dev/null
++++ b/fs/rsext4/fuzz/fuzz_targets/group_descriptor_table.rs
+@@ -0,0 +1,44 @@
++//! Decodes the group descriptors that follow a superblock. The input is a 1,024-byte superblock
++//! followed by the descriptor table; the superblock gives the descriptor size and group count, as
++//! it does at mount.
++#![no_main]
++
++use libfuzzer_sys::fuzz_target;
++use rsext4::{
++    blockgroup_description::{BlockGroupDescTable, Ext4GroupDesc},
++    bmalloc::BGIndex,
++    endian::DiskFormat,
++    superblock::Ext4Superblock,
++};
++
++fuzz_target!(|data: &[u8]| {
++    if data.len() < 1024 {
++        return;
++    }
++    let (superblock, table) = data.split_at(1024);
++    let superblock = Ext4Superblock::from_disk_bytes(superblock);
++    if superblock.validate_geometry().is_err() {
++        return;
++    }
++    let desc_size = usize::from(superblock.get_desc_size());
++    let Ok(groups) = superblock.checked_block_groups_count() else {
++        return;
++    };
++    let groups = groups.min((table.len() / desc_size.max(1)) as u32);
++    for record in table.chunks_exact(desc_size).take(groups as usize) {
++        if let Ok(desc) = Ext4GroupDesc::decode_checked(record) {
++            let _ = desc.block_bitmap_csum(&superblock);
++            let _ = desc.inode_bitmap_csum(&superblock);
++            let _ = (desc.is_uninit_bg(), desc.is_inode_table_zeroed());
++        }
++    }
++    let view = BlockGroupDescTable::new(table, desc_size, groups);
++    for index in 0..groups {
++        let _ = view.get_desc(BGIndex::new(index));
++    }
++    let _ = (
++        view.total_free_blocks(),
++        view.total_free_inodes(),
++        view.total_used_dirs(),
++    );
++});
+diff --git a/fs/rsext4/fuzz/fuzz_targets/htree_lookup.rs b/fs/rsext4/fuzz/fuzz_targets/htree_lookup.rs
+new file mode 100644
+index 000000000..65af825f5
+--- /dev/null
++++ b/fs/rsext4/fuzz/fuzz_targets/htree_lookup.rs
+@@ -0,0 +1,23 @@
++//! Mounts an image read-only and looks up every name it lists, and one it does not, in every
++//! directory, so an indexed directory's hash-tree path parses its index blocks.
++#![no_main]
++
++use libfuzzer_sys::fuzz_target;
++use rsext4::{FileName, MountOptions};
++use rsext4_fuzz::{mount, walk_directories};
++
++fuzz_target!(|data: &[u8]| {
++    let Some(mut filesystem) = mount(data, MountOptions::read_only_no_journal_replay()) else {
++        return;
++    };
++    walk_directories(&mut filesystem, |filesystem, directory, entries| {
++        for entry in entries.iter().take(256) {
++            if let Ok(name) = FileName::new(&entry.name) {
++                let _ = filesystem.lookup_child(directory, name);
++            }
++        }
++        if let Ok(name) = FileName::new(b"not-in-the-directory") {
++            let _ = filesystem.lookup_child(directory, name);
++        }
++    });
++});
+diff --git a/fs/rsext4/fuzz/fuzz_targets/journal_replay.rs b/fs/rsext4/fuzz/fuzz_targets/journal_replay.rs
+new file mode 100644
+index 000000000..0be5a3871
+--- /dev/null
++++ b/fs/rsext4/fuzz/fuzz_targets/journal_replay.rs
+@@ -0,0 +1,16 @@
++//! Mounts an image read-write, which replays its journal when the image needs recovery, then
++//! reads the root directory and unmounts.
++#![no_main]
++
++use libfuzzer_sys::fuzz_target;
++use rsext4::{DirectoryCursor, MountOptions};
++use rsext4_fuzz::mount;
++
++fuzz_target!(|data: &[u8]| {
++    let Some(mut filesystem) = mount(data, MountOptions::read_write()) else {
++        return;
++    };
++    let root = filesystem.root_inode();
++    let _ = filesystem.read_directory(root, DirectoryCursor::Start, 64);
++    let _ = filesystem.unmount();
++});
+diff --git a/fs/rsext4/fuzz/fuzz_targets/mount_and_walk.rs b/fs/rsext4/fuzz/fuzz_targets/mount_and_walk.rs
+new file mode 100644
+index 000000000..b5df06b8c
+--- /dev/null
++++ b/fs/rsext4/fuzz/fuzz_targets/mount_and_walk.rs
+@@ -0,0 +1,20 @@
++//! Mounts an image read-only and reads everything a bounded walk reaches: each directory, each
++//! inode's metadata, extents and extended attributes, and the start of each file.
++#![no_main]
++
++use libfuzzer_sys::fuzz_target;
++use rsext4::MountOptions;
++use rsext4_fuzz::{mount, read_inode_fully, walk_directories};
++
++fuzz_target!(|data: &[u8]| {
++    let Some(mut filesystem) = mount(data, MountOptions::read_only_no_journal_replay()) else {
++        return;
++    };
++    let _ = filesystem.statfs();
++    walk_directories(&mut filesystem, |filesystem, _directory, entries| {
++        for entry in entries {
++            read_inode_fully(filesystem, entry.inode);
++        }
++    });
++    let _ = filesystem.unmount();
++});
+diff --git a/fs/rsext4/fuzz/fuzz_targets/superblock.rs b/fs/rsext4/fuzz/fuzz_targets/superblock.rs
+new file mode 100644
+index 000000000..710184a48
+--- /dev/null
++++ b/fs/rsext4/fuzz/fuzz_targets/superblock.rs
+@@ -0,0 +1,24 @@
++//! Decodes a 1,024-byte ext4 superblock and runs every check mount runs on it before it reads
++//! anything else.
++#![no_main]
++
++use libfuzzer_sys::fuzz_target;
++use rsext4::{endian::DiskFormat, superblock::Ext4Superblock};
++
++fuzz_target!(|data: &[u8]| {
++    if data.len() < 1024 {
++        return;
++    }
++    let superblock = Ext4Superblock::from_disk_bytes(&data[..1024]);
++    let _ = superblock.verify_superblock();
++    let _ = superblock.checked_block_size();
++    let _ = superblock.checked_cluster_size();
++    let _ = superblock.checked_block_groups_count();
++    let _ = superblock.primary_gdt_byte_offset();
++    let _ = superblock.validate_geometry();
++    let _ = superblock.descs_per_block();
++    let _ = superblock.inode_table_blocks();
++    let _ = superblock.blocks_count();
++    let _ = superblock.free_blocks_count();
++    let _ = superblock.reserved_blocks_count();
++});
+diff --git a/fs/rsext4/fuzz/make-seeds.sh b/fs/rsext4/fuzz/make-seeds.sh
+new file mode 100644
+index 000000000..1a3da1076
+--- /dev/null
++++ b/fs/rsext4/fuzz/make-seeds.sh
+@@ -0,0 +1,140 @@
++#!/bin/sh
++# Builds the seed corpus of every fuzz target from small images made by mke2fs.
++#
++# Usage: sh make-seeds.sh [corpus-directory]   (default: ./corpus beside this script)
++#
++# Needs e2fsprogs 1.47 or later (mke2fs, e2fsck, debugfs) and python3. The images use a fixed
++# time, so the same e2fsprogs version gives the same seeds. The journal image gets one committed
++# transaction written by this script, and the script fails unless e2fsck replays it.
++set -eu
++
++here=$(cd "$(dirname "$0")" && pwd)
++corpus=${1:-"$here/corpus"}
++work=$(mktemp -d)
++trap 'rm -rf "$work"' EXIT
++export E2FSPROGS_FAKE_TIME=1600000000
++
++# A small tree: a file, a symbolic link, a subdirectory with a binary file, and a sparse file
++# with enough extents to need an extent index block.
++mkdir -p "$work/tree/sub" "$work/htree/many"
++printf 'hello\n' > "$work/tree/a.txt"
++ln -s a.txt "$work/tree/link"
++python3 -c 'import sys; sys.stdout.buffer.write(bytes(range(256)) * 20)' > "$work/tree/sub/b.bin"
++python3 - "$work/tree/sparse" <<'EOF'
++import sys
++with open(sys.argv[1], 'wb') as f:
++    for i in range(12):
++        f.seek(i * 8192)
++        f.write(b'x')
++EOF
++# A directory with enough entries to need a hash-tree index on a 1 KiB block.
++i=1
++while [ "$i" -le 150 ]; do
++    : > "$work/htree/many/file-with-a-long-name-$i"
++    i=$((i + 1))
++done
++
++mkfs() { mke2fs -q -F -t ext4 -E root_owner=0:0 "$@"; }
++mkfs -b 1024 -O ^has_journal -d "$work/tree" "$work/walk-1k.img" 256k
++mkfs -b 4096 -O ^has_journal -d "$work/tree" "$work/walk-4k.img" 512k
++mkfs -b 1024 -O ^has_journal,^metadata_csum -d "$work/tree" "$work/walk-1k-nocsum.img" 256k
++mkfs -b 1024 -N 256 -O ^has_journal -d "$work/htree" "$work/htree.img" 512k
++e2fsck -fyD "$work/htree.img" > /dev/null 2>&1 || [ $? -le 1 ]
++mkfs -b 1024 -J size=1 -d "$work/tree" "$work/journal.img" 3m
++python3 - "$work" "$corpus" <<'EOF'
++import os, re, struct, subprocess, sys
++
++work, corpus = sys.argv[1], sys.argv[2]
++
++def crc32c_raw(crc, data):
++    # The CRC32C register without the final inversion, as ext4 stores its checksums.
++    for byte in data:
++        crc ^= byte
++        for _ in range(8):
++            crc = (crc >> 1) ^ (0x82F63B78 if crc & 1 else 0)
++    return crc
++
++def debugfs(image, request):
++    return subprocess.run(['debugfs', '-R', request, image], capture_output=True, text=True,
++                          check=True).stdout
++
++def put(target, name, data):
++    os.makedirs(os.path.join(corpus, target), exist_ok=True)
++    with open(os.path.join(corpus, target, name), 'wb') as f:
++        f.write(data)
++
++def block_size(image):
++    return 1024 << struct.unpack_from('<I', image, 1024 + 24)[0]
++
++def blocks_of(path, inside):
++    return [int(b) for b in debugfs(path, 'blocks ' + inside).split()]
++
++# One committed transaction in the journal, which rewrites filesystem blocks 400 and 401 with
++# 'j'. The journal mke2fs makes has no checksum features, so this is a plain JBD2 v2 log: a
++# descriptor block with two tags, the two data blocks, and a commit block.
++path = os.path.join(work, 'journal.img')
++image = bytearray(open(path, 'rb').read())
++size = block_size(image)
++journal = blocks_of(path, '<8>')
++magic = 0xC03B3998
++def header(kind, sequence):
++    return struct.pack('>III', magic, kind, sequence)
++descriptor = bytearray(size)
++first_tag = struct.pack('>IHH', 400, 0, 0) + image[1024 + 0x68:1024 + 0x78]  # 0x68: s_uuid
++last_tag = struct.pack('>IHH', 401, 0, 0x2 | 0x8)  # SAME_UUID | LAST_TAG
++descriptor[:12 + len(first_tag) + len(last_tag)] = header(1, 1) + first_tag + last_tag
++commit = bytearray(size)
++commit[:12] = header(2, 1)
++for index, block in enumerate([descriptor, b'j' * size, b'j' * size, commit], start=1):
++    image[journal[index] * size:(journal[index] + 1) * size] = block
++struct.pack_into('>II', image, journal[0] * size + 24, 1, 1)  # s_sequence, s_start
++# Mark the filesystem as needing recovery (INCOMPAT_RECOVER) and reseal its superblock checksum.
++incompat = struct.unpack_from('<I', image, 1024 + 0x60)[0]
++struct.pack_into('<I', image, 1024 + 0x60, incompat | 0x4)
++struct.pack_into('<I', image, 1024 + 0x3FC, crc32c_raw(0xFFFFFFFF, image[1024:1024 + 0x3FC]))
++open(path, 'wb').write(image)
++log = debugfs(path, 'logdump')
++if 'Found expected sequence 1, type 2 (commit block)' not in log:
++    sys.exit('make-seeds.sh: the journal image has no committed transaction:\n' + log)
++replayed = os.path.join(work, 'replayed.img')
++with open(replayed, 'wb') as f:
++    f.write(image)
++subprocess.run(['e2fsck', '-fy', replayed], capture_output=True, check=False)
++if open(replayed, 'rb').read()[400 * size:402 * size] != b'j' * 2 * size:
++    sys.exit('make-seeds.sh: e2fsck did not replay the journal image')
++
++for name in ['walk-1k', 'walk-4k', 'walk-1k-nocsum', 'htree', 'journal']:
++    path = os.path.join(work, name + '.img')
++    image = open(path, 'rb').read()
++    size = block_size(image)
++    superblock = image[1024:2048]
++    put('superblock', name, superblock)
++    table = (2 if size == 1024 else 1) * size
++    put('group_descriptor_table', name, superblock + image[table:table + size])
++    if name == 'journal':
++        put('journal_replay', name, image)
++        continue
++    put('htree_lookup' if name == 'htree' else 'mount_and_walk', name, image)
++    for inside in ['/', '/sub', '/many'] if name == 'htree' or name.startswith('walk') else []:
++        try:
++            numbers = blocks_of(path, inside)
++        except subprocess.CalledProcessError:
++            continue
++        for index, number in enumerate(numbers[:4]):
++            put('directory_block', f'{name}-{inside.strip("/") or "root"}-{index}',
++                image[number * size:(number + 1) * size])
++    for inside in ['/a.txt', '/sub', '/sub/b.bin', '/sparse', '/many']:
++        location = re.search(r'located at block (\d+), offset 0x([0-9a-f]+)',
++                             debugfs(path, 'imap ' + inside))
++        if location is None:
++            continue
++        inode = int(location.group(1)) * size + int(location.group(2), 16)
++        put('extent_tree', f'{name}-{inside.strip("/").replace("/", "-")}',
++            image[inode + 40:inode + 100])
++    # The leaf under the sparse file's index node.
++    leaves = re.findall(r'^\s*0/\s*1\s+\d+/\s*\d+\s+\d+\s*-\s*\d+\s+(\d+)',
++                        debugfs(path, 'ex /sparse'), re.M)
++    for index, number in enumerate(leaves):
++        put('extent_tree', f'{name}-sparse-leaf-{index}', image[int(number) * size:(int(number) + 1) * size])
++EOF
++echo "make-seeds.sh: seeds in $corpus"
+diff --git a/fs/rsext4/fuzz/src/lib.rs b/fs/rsext4/fuzz/src/lib.rs
+new file mode 100644
+index 000000000..c6b08d10b
+--- /dev/null
++++ b/fs/rsext4/fuzz/src/lib.rs
+@@ -0,0 +1,170 @@
++//! Shared pieces of the rsext4 fuzz targets: an in-memory block device over the fuzz input, a
++//! fixed clock, and a bounded walk of a mounted filesystem.
++
++use std::collections::BTreeSet;
++
++use rsext4::{error::Ext4Result, *};
++
++/// Sector size of the in-memory device. 512 bytes lets every ext4 block size mount.
++pub const SECTOR_SIZE: u32 = 512;
++
++/// Most inodes one walk visits, so that a large or cyclic image cannot stall an iteration.
++const WALK_INODE_LIMIT: usize = 512;
++
++/// Most bytes one walk reads from a single file.
++const WALK_FILE_BYTE_LIMIT: u64 = 256 * 1024;
++
++/// A block device backed by the fuzz input.
++pub struct MemoryDevice {
++    data: Vec<u8>,
++    read_only: bool,
++}
++
++impl MemoryDevice {
++    /// Wraps `image`, dropping a trailing partial sector.
++    pub fn new(image: &[u8], read_only: bool) -> Self {
++        let whole = image.len() - image.len() % SECTOR_SIZE as usize;
++        Self {
++            data: image[..whole].to_vec(),
++            read_only,
++        }
++    }
++
++    fn range(&self, sector: SectorId, bytes: usize) -> Ext4Result<core::ops::Range<usize>> {
++        let start = sector
++            .as_usize()?
++            .checked_mul(SECTOR_SIZE as usize)
++            .ok_or_else(Ext4Error::io)?;
++        let end = start.checked_add(bytes).ok_or_else(Ext4Error::io)?;
++        if end > self.data.len() {
++            return Err(Ext4Error::io());
++        }
++        Ok(start..end)
++    }
++}
++
++impl BlockIo for MemoryDevice {
++    fn read(&mut self, buffer: &mut [u8], sector: SectorId, count: u32) -> Ext4Result<()> {
++        let bytes = SECTOR_SIZE as usize * count as usize;
++        if buffer.len() < bytes {
++            return Err(Ext4Error::buffer_too_small(buffer.len(), bytes));
++        }
++        let range = self.range(sector, bytes)?;
++        buffer[..bytes].copy_from_slice(&self.data[range]);
++        Ok(())
++    }
++
++    fn write(&mut self, buffer: &[u8], sector: SectorId, count: u32) -> Ext4Result<()> {
++        if self.read_only {
++            return Err(Ext4Error::io());
++        }
++        let bytes = SECTOR_SIZE as usize * count as usize;
++        if buffer.len() < bytes {
++            return Err(Ext4Error::buffer_too_small(buffer.len(), bytes));
++        }
++        let range = self.range(sector, bytes)?;
++        self.data[range].copy_from_slice(&buffer[..bytes]);
++        Ok(())
++    }
++
++    fn flush(&mut self) -> Ext4Result<()> {
++        Ok(())
++    }
++
++    fn geometry(&self) -> DeviceGeometry {
++        DeviceGeometry::new(SECTOR_SIZE, (self.data.len() / SECTOR_SIZE as usize) as u64)
++    }
++
++    fn capabilities(&self) -> DeviceCapabilities {
++        DeviceCapabilities {
++            read_only: self.read_only,
++            flush: true,
++            ..DeviceCapabilities::default()
++        }
++    }
++}
++
++/// A clock that always reads the same time, so a run is reproducible.
++pub struct FixedClock;
++
++impl Clock for FixedClock {
++    fn now(&self) -> Ext4Result<Ext4Timestamp> {
++        Ok(Ext4Timestamp::new(1_600_000_000, 0))
++    }
++}
++
++/// A mounted filesystem over a [`MemoryDevice`].
++pub type MemoryFilesystem = Ext4<MemoryDevice, MountedServices<(), NoopObserver, ()>>;
++
++/// Mounts `image`, or returns `None` when the crate refuses it.
++pub fn mount(image: &[u8], options: MountOptions) -> Option<MemoryFilesystem> {
++    let device = MemoryDevice::new(image, options.readonly);
++    let services = MountServices::new(FixedClock, (), NoopObserver);
++    Ext4::mount(device, services, options).ok()
++}
++
++/// Visits every directory reachable from the root, up to [`WALK_INODE_LIMIT`] inodes, and calls
++/// `visit` with each directory and the entries read from it. Errors end the branch they occur on.
++pub fn walk_directories(
++    filesystem: &mut MemoryFilesystem,
++    mut visit: impl FnMut(&mut MemoryFilesystem, InodeNumber, &[DirectoryEntry]),
++) {
++    let mut seen = BTreeSet::new();
++    let mut pending = vec![filesystem.root_inode()];
++    while let Some(directory) = pending.pop() {
++        if !seen.insert(directory.raw()) || seen.len() > WALK_INODE_LIMIT {
++            continue;
++        }
++        let mut entries = Vec::new();
++        let mut cursor = DirectoryCursor::Start;
++        while entries.len() < WALK_INODE_LIMIT {
++            let Ok(batch) = filesystem.read_directory(directory, cursor, 64) else {
++                break;
++            };
++            let Some(last) = batch.last() else {
++                break;
++            };
++            cursor = last.next_cursor;
++            entries.extend(batch);
++            if cursor == DirectoryCursor::End {
++                break;
++            }
++        }
++        visit(filesystem, directory, &entries);
++        for entry in &entries {
++            if entry.name != b"."
++                && entry.name != b".."
++                && entry.file_type == DirectoryEntryType::Directory
++            {
++                pending.push(entry.inode);
++            }
++        }
++    }
++}
++
++/// Reads what the walk reaches of one inode: its metadata, its extents, its extended
++/// attributes, and up to [`WALK_FILE_BYTE_LIMIT`] bytes of its contents.
++pub fn read_inode_fully(filesystem: &mut MemoryFilesystem, number: InodeNumber) {
++    let Ok(info) = filesystem.inode(number) else {
++        return;
++    };
++    let _ = filesystem.inode_extents(number, 0, u64::MAX / 2, FileExtentTarget::Data, 1024);
++    if let Ok(names) = filesystem.list_xattrs(number) {
++        for name in names.iter().take(64) {
++            let _ = filesystem.get_xattr(number, name.namespace, &name.name);
++        }
++    }
++    if matches!(
++        info.file_type(),
++        DirectoryEntryType::RegularFile | DirectoryEntryType::Symlink
++    ) {
++        let mut buffer = vec![0; 16 * 1024];
++        let mut offset = 0;
++        while offset < WALK_FILE_BYTE_LIMIT {
++            match filesystem.read_inode(number, offset, &mut buffer) {
++                Ok(0) | Err(_) => break,
++                Ok(read) => offset += read as u64,
++            }
++        }
++    }
++}
+-- 
+2.53.0
+
