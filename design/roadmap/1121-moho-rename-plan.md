@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-21
 milestone_dependencies: 1075, 1115
 decision_dependencies: 323
@@ -101,6 +101,8 @@ list after the steps holds the outward ones.
    falsification patches whose context names the crate. Prose moves by status, per the rename
    checklist, and the path changes everywhere, as navigation. Effort: M.
    Lands alone. `needs-architect` follows from rule 1, and the first open decision covers its clearing.
+   Done in [#4013](https://github.com/nifeos/nife/pull/4013): the crate is `crates/moho_abi`, the
+   package and every use are `moho_abi`, and the `std` overlay's generated module is `moho_abi.rs`.
 4. **`target_os` and the `std` port.** One pull request changes the `os` field of the three
    specifications and the patcher's arms and `env_consts` (`xtask/src/farm/patch.rs`, `source.rs`).
    It renames the overlay's directories, the farm's copy destinations, `TALC_IN_STD` and the
