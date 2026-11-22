@@ -25,50 +25,40 @@ cargo-mutants, cargo-fuzz. No new tool.
 
 ## Finding status
 
-Every item not Done blocks the first crates.io publish, which waits until every outside-review
+Every finding not Done blocks the first crates.io publish, which waits until every outside-review
 milestone reaches delivery.
 
-- Item 1, the manifest does not stand alone: Open. `Cargo.toml` still inherits `license` and
-  `[lints]` and names a milestone; the move writes the crate's own rows.
-- Item 2, no README and no license files: Open. The move stages the scaffold's README and the two
-  license files.
-- Item 3, the documentation cites this tree: Open. The module doc still speaks of the progenitor, a
-  package and nife (`src/lib.rs` lines 3, 4, 15, 16, 41, 47 and 364); the move rewrites it.
-- Item 4, the owner string `nife` is the wire format: Open. The bytes keep their spelling behind the
-  `// wire literal` marker (decision 1, [#3575](https://github.com/nifeos/nife/pull/3575)); the
-  prose lines that name nife reword with item 3.
-- Item 5, passive voice over the template's ceiling: Open. The template's gate runs in the moved
-  repository, and the rewrite lands with item 3.
-- Item 6, two acronyms unexpanded: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 7, a stranger cannot place the note: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 8, the only example does not compile: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 9, private lengths carry a unit: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 9, public lengths carry a unit: Done, [#3823](https://github.com/nifeos/nife/pull/3823).
-  `INTERFACE_RECORD_BYTES`, `descriptor_bytes` and `note_bytes`, with no alias of the old spellings.
-- Item 10, `Declared` names a state: Done, [#3823](https://github.com/nifeos/nife/pull/3823). The
-  type is `DeclaredInterface`.
-- Item 11, no fuzz target: Open. The opt-in is a per-repository choice, off by default, made at the
-  move.
-- Item 12, the proof runs one direction: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 13, a test name the abbreviation report flags: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 14, `iter` yields by value: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 15, the triaged timeouts travel nowhere: Open. The move carries the three rows into
-  `.github/mutants-exempts`.
+- Item 1 (P0), the manifest does not stand alone: Done, [#3835](https://github.com/nifeos/nife/pull/3835). The manifest in
+  `nifeos/interfaces_note` states its license, `rust-version`, description, keywords, categories
+  and lints.
+- Item 2 (P0), no README and no license files: Done, [#3835](https://github.com/nifeos/nife/pull/3835).
+- Item 3 (P0), the documentation cites this tree: Done, [#3835](https://github.com/nifeos/nife/pull/3835). The module doc in
+  `nifeos/interfaces_note` cites no milestone or script and does not speak of the progenitor.
+- Item 4 (P0), the owner string `nife` is the wire format: Done, [#3575](https://github.com/nifeos/nife/pull/3575) and [#3835](https://github.com/nifeos/nife/pull/3835). The bytes
+  keep their spelling behind the `// wire literal` marker (decision 1), and no prose line names
+  nife.
+- Item 5 (P1), passive voice over the template's ceiling: Done, [#3835](https://github.com/nifeos/nife/pull/3835).
+- Item 6 (P1), two acronyms unexpanded: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 7 (P1), a stranger cannot place the note: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 8 (P1), the only example does not compile: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 9 (P1), three lengths carry no unit: Done, [#3566](https://github.com/nifeos/nife/pull/3566) for the private lengths and [#3823](https://github.com/nifeos/nife/pull/3823)
+  for the public ones: `INTERFACE_RECORD_BYTES`, `descriptor_bytes` and `note_bytes`, with no alias
+  of the old spellings.
+- Item 10 (P1), `Declared` names a state: Done, [#3823](https://github.com/nifeos/nife/pull/3823). The type is `DeclaredInterface`.
+- Item 11 (P2), no fuzz target: Open. The opt-in is a per-repository choice, off by default, and
+  `nifeos/interfaces_note` has no `fuzz/` directory.
+- Item 12 (P2), the proof runs one direction: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 13 (P2), a test name the abbreviation report flags: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 14 (P2), `iter` yields by value: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 15 (P2), the triaged timeouts travel nowhere: Open. `.github/mutants-exempts` in
+  `nifeos/interfaces_note` carries no rows yet.
 - Decision 1, the owner string: Done, [#3575](https://github.com/nifeos/nife/pull/3575).
-- Decision 2, ratifying the twenty public names: Ruled 2026-11-19 UTC. The four renames are built
-  ([#3823](https://github.com/nifeos/nife/pull/3823)), and the `Name:` blocks stay provisional
-  until the move lane records the ratification.
-- Decision 3, the crate name: Done, ruled 2026-11-14 UTC with nothing to build; the crate's `Name:`
-  block records it ([#3589](https://github.com/nifeos/nife/pull/3589)).
-- BUGS, the static that `carry_interfaces!` emits: Done, [#3823](https://github.com/nifeos/nife/pull/3823).
-  It is `CARRIED_INTERFACES_NOTE`, provisional.
-- Decision 4, review clearance and the repository: Ruled 2026-11-19 UTC (maintainer, provisional).
-  Decision 5 replaces it.
-- Decision 5, the repository: 2026-11-20 UTC. The architect cleared the review package,
-  [notes/crate-reviews/interfaces-note.md](../../notes/crate-reviews/interfaces-note.md). The architect
-  gives the go to create `nifeos/interfaces_note`, with `publish = false`, no tag and no publish. The move
-  lane runs the stranger test, the template's workflows and the first weekly mutation run there.
+- Decision 2, ratifying the twenty public names: Done, [#3823](https://github.com/nifeos/nife/pull/3823) for the four renames and [#3835](https://github.com/nifeos/nife/pull/3835)
+  for the ratified names, ruled 2026-11-19 (UTC).
+- Decision 3, the crate name: Done, [#3589](https://github.com/nifeos/nife/pull/3589), ruled 2026-11-14 (UTC) with nothing to build.
+- Decision 4, review clearance and the repository: Done, [#3835](https://github.com/nifeos/nife/pull/3835). The architect cleared
+  [notes/crate-reviews/interfaces-note.md](../../notes/crate-reviews/interfaces-note.md) and
+  approved `nifeos/interfaces_note`, with `publish = false`, no tag and no publish.
 
 ## Open decisions
 
@@ -200,8 +190,10 @@ The comparison with nearby work is in [the appendix](1096-interfaces-note-outsid
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open under "Finding status", each checked against
-  the crate's sources on main. The move creates the repository.
+- **Outstanding.** Every finding marked Open under "Finding status", each checked against the
+  sources on main of `nifeos/interfaces_note`.
+- **Outstanding.** The stranger test and the first weekly mutation run in `nifeos/interfaces_note`,
+  whose `docs/stranger-test.md` reads `Last run: none`.
 
 ## Done when
 
