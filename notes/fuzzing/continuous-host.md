@@ -195,7 +195,7 @@ one pull request. See [the proposal](../../design/roadmap/1023-the-fuzz-loop-dea
 
 ## Install, for a person with root
 
-The lane has no root. A person copies the three files in `helpers/systemd/` to
+A person copies the three files in `helpers/systemd/` to
 `/etc/systemd/system/`, tells systemd to reread its unit files, then `enable --now nife-fuzz.service` and
 `enable --now nife-fuzz-publish.timer`.
 
@@ -234,7 +234,7 @@ unit's user. It prints the tag and the assets and publishes nothing.
   the held seed. Only clean rows leave the host, so nothing has leaked; the filer's milestone should
   move held rows' seeds under the held directory.
 - Each move to a newer main idles every slot until the slowest current window ends, and the first
-  window after it rebuilds. Main lands many commits a day, and nobody has measured the cost.
+  window after it rebuilds. Nobody has measured what that costs at main's rate of merges.
 - Nothing frees the host's disk. The toolchain step installs each newly pinned nightly and removes
   none, each slot's `target/` keeps the artifacts of every compiler it used, and the held
   directory only grows. No check warns before the disk fills.
