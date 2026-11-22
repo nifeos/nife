@@ -1,9 +1,6 @@
 //! **Why an invocation was refused**: `Refusal`, the fixed sentence each variant prints, and
 //! `CapabilityKind`.
-//!
-//! Moved out of the crate's root unchanged by milestone 842 (the grant-plan crate root is split
-//! along its seams), as §272 (the grant-plan crate root splits into private modules) lays out; the
-//! root re-exports every public item at its old path.
+//! The crate root re-exports every public item.
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
@@ -16,11 +13,11 @@ pub enum Refusal {
     NoSuchProgram,
     /// The command designated a resource this shell holds no capability for: a file named at a
     /// program that takes one, in a shell that was never granted a directory to narrow. This is the
-    /// refusal the milestone is about: not "permission denied" but "there is nothing you hold that
-    /// could grant this."
+    /// refusal the capability model is about: not "permission denied" but "there is nothing you hold
+    /// that could grant this."
     NoSuchCapability(CapabilityKind),
-    /// The program takes no file, but a token was left over that nothing else could be. The
-    /// milestone's inversion cuts both ways: a name the program has no use for is authority the user
+    /// The program takes no file, but a token was left over that nothing else could be. The same
+    /// inversion applies here: a name the program has no use for is authority the user
     /// did not mean to move, so it is refused rather than granted-and-ignored:
     /// `least_authority_demo 5 extra` stops here because its manifest says
     /// `FileGrantDeclaration::Forbidden`.
@@ -68,7 +65,7 @@ pub enum Refusal {
     ///
     /// Name: ratified 2026-10-18 (calef: "Approve the family").
     ProgramArgumentForbidden,
-    /// **A pattern matched no name here** (milestone 47's globbing lane). zsh's default rather than
+    /// **A pattern matched no name here.** zsh's default rather than
     /// bash's pass-the-pattern-through, and the model forces it: the expansion *is* the grant, so an
     /// empty expansion is an empty grant and running the command would be running it with an
     /// authority nobody named. See [`expansion::Expander::finish`](crate::expansion::Expander::finish).
@@ -84,7 +81,7 @@ pub enum Refusal {
     MatchNotNameable,
     /// A pattern somewhere other than a token's **last** component (`*/report.txt`). Selecting
     /// directories to walk is an authority question, not a matching one, so it is not something a
-    /// string matcher gets to answer (notes/glob.md).
+    /// string matcher gets to answer.
     PatternInPath,
     /// A pattern reached the grant planner with no expansion behind it. It is a fact about the
     /// shell rather than about the line: expanding needs `ENUMERATE` on the directory, and a shell
@@ -94,7 +91,7 @@ pub enum Refusal {
     /// A pattern matched more than one name at a program that is granted exactly one **file**. The
     /// count is the designation, so this is a fact about the line rather than a policy.
     AmbiguousFile,
-    // ---- milestone 50's operators. Every one of these is decided before anything is spawned,
+    // ---- The pipeline and redirection operators. Every one of these is decided before anything is spawned,
     // which matters more here than elsewhere: a pipeline that half-starts leaves a process blocked
     // on a channel nobody will ever write to.
     /// **`>` or `<` with nothing after it.** A redirection is a designation, and there is nothing
@@ -108,13 +105,12 @@ pub enum Refusal {
     /// precedence.
     RedirectMidPipeline,
     /// **A word after a redirection's name** (`< f wc`). The spelling this shell takes is `wc < f`.
-    /// See notes/pipes.md: refusing the other order is what keeps a stage's text a slice of the
+    /// Refusing the other order is what keeps a stage's text a slice of the
     /// line, and `grant_plan` has no allocator.
     WordAfterRedirect,
     /// **A pipeline stage with no command in it** (`| wc`, `a |`).
     ///
-    /// **This listed `a || b` until milestone 67 and no longer can**: `||` is a connector now, and
-    /// the shell splits on it before [`line::split`](crate::line::split) ever sees the line, so that spelling is two
+    /// **`a || b` is not this**: `||` is a connector, and the shell splits on it before [`line::split`](crate::line::split) ever sees the line, so that spelling is two
     /// commands rather than a pipeline with a hole in it. A `||` still reaches this function in a
     /// direct call, which is why the sequence splitter has to run first rather than merely usually
     /// running first.
@@ -131,8 +127,8 @@ pub enum Refusal {
     /// substitute. See [`OutputDeclaration`](crate::OutputDeclaration): `least_authority_demo 9` answers with a number in a register, and a file
     /// sink handed that word would write nothing legible into the file.
     NotAByteStream,
-    /// **This program declares no second output stream**, and the line put a `2>` on it (DECISIONS
-    /// §67). The truthful refusal the decision names: `2>` binds to something the manifest offers,
+    /// **This program declares no second output stream**, and the line put a `2>` on it. The
+    /// truthful refusal: `2>` binds to something the manifest offers,
     /// and a program whose diagnostics ride its one output in-band has nothing for it to bind to.
     /// It is not "you may not do that"; it is "there is no second stream here to name", which is
     /// [`NoSuchProgram`](Refusal::NoSuchProgram)'s shape applied to a stream.
@@ -151,7 +147,7 @@ pub enum Refusal {
     ///
     /// It is a fact about **this shell** rather than about the program, which is why the fix is to
     /// put a reader after it (`| wc`) rather than to change anything the program does. See
-    /// [`check_chain`](crate::check_chain) and notes/pipes.md: with no select, no poll and no timed receive, one wait
+    /// [`check_chain`](crate::check_chain): with no select, no poll and no timed receive, one wait
     /// point per process is the whole of the reason.
     ///
     /// Name: ratified 2026-11-20 (UTC).
@@ -165,7 +161,7 @@ pub enum Refusal {
     /// file a program is granted. Refused rather than ignored, so authority the user thought they
     /// were granting never silently evaporates.
     Unexpected,
-    // ---- milestone 67's quoting and sequencing. Both are facts about the *line*, decided before
+    // ---- Quoting and sequencing. Both are facts about the *line*, decided before
     // any manifest is consulted, which is why they sit at the end rather than beside the grant
     // refusals above.
     /// **A quote that never closes** (`wc 'my notes.txt`). The line is refused whole rather than
@@ -185,50 +181,62 @@ pub enum Refusal {
     /// [`TooManyStages`](Refusal::TooManyStages), and a line that wants more is better written as
     /// several lines than silently truncated.
     TooManySegments,
-    // ---- milestone 205's argv (DECISIONS §170).
+    // ---- The words of a program that hears them.
     /// **A pattern on the line of a program that hears words** (`rg foo *.rs`). A pattern elsewhere
     /// designates the names it matched, and that is a grant; here the words carry no authority, so
     /// expanding one would hand over names without handing over anything they name. Refused rather
     /// than passed through literally, because every other shell a person has used would have
     /// expanded it, and a program searching a file called `*.rs` is a silent misreading. Quoting
-    /// the word passes it as it is. Name: provisional.
+    /// the word passes it as it is.
+    ///
+    /// Name: provisional.
     PatternInArguments,
     /// **The words do not fit on one argument page** (`program_argument_contract::MAXIMUM_RECORDS_BYTES`, 4,080 bytes
     /// with a four-byte length per word). Refused whole rather than truncated, for
-    /// [`Refusal::TooManyNames`]'s reason. Name: provisional.
+    /// [`Refusal::TooManyNames`]'s reason.
+    ///
+    /// Name: provisional.
     ArgumentsTooLong,
-    // ---- milestone 52 (subshells without `fork`)'s scoped block and isolation (DECISIONS §160 (what a subshell copies)). Spellings provisional.
+    // ---- The scoped block and isolation, a subshell without `fork`. Spellings provisional.
     /// **A scoped block that is not `scope { commands }`**: no braces, a brace that never closes,
     /// or text after the closing brace. A block is one command, so what follows it on the line has
-    /// to be a connector, and a `|` after one is refused rather than guessed at. Name: provisional.
+    /// to be a connector, and a `|` after one is refused rather than guessed at.
+    ///
+    /// Name: provisional.
     ScopeMalformed,
     /// **Scoped blocks nested past `swish::scope::MAXIMUM_DEPTH`**, each
-    /// level costing a frame on the few pages of stack this shell has. Name: provisional.
+    /// level costing a frame on the few pages of stack this shell has.
+    ///
+    /// Name: provisional.
     ScopeTooDeep,
     /// **A change the block could not put back**: it would start, stop, wait for or resume a
     /// background job, and the shell holds those jobs as capabilities (a region and a thread) that
     /// leaving the block cannot return. Decided before anything in the block runs, and the message
-    /// names the isolation form. Name: provisional.
+    /// names the isolation form.
+    ///
+    /// Name: provisional.
     ScopeCannotRestore,
-    /// **`( ... )`**, which has no Unix meaning here (§160 (what a subshell copies); §312 (swish
-    /// has one way to do each job in its language)): its two jobs have a form each, and the
-    /// message points at both. Name: provisional.
+    /// **`( ... )`**, which has no Unix meaning here: the language has one way to do each job, its
+    /// two jobs have a form each, and the message points at both.
+    ///
+    /// Name: provisional.
     GroupingParentheses,
     /// **`swish -c`, the isolated child, whose spelling is reserved and whose child is not built.**
     /// It needs a result endpoint of its own for each shell (the spawn service answers every
-    /// request on one) and a way to grant the directory a shell stands in. Name: provisional.
+    /// request on one) and a way to grant the directory a shell stands in.
+    ///
+    /// Name: provisional.
     IsolationNotBuilt,
 }
 
-/// The kind of capability a command designated but the shell cannot back. Phase 1 has one; the
-/// enum exists so milestone 32 (files) and later device/endpoint grants slot in without changing
-/// the refusal's shape.
+/// The kind of capability a command designated but the shell cannot back. There is one kind; the
+/// enum exists so device and endpoint grants slot in without changing the refusal's shape.
 ///
 /// Name: recorded (design/naming/acronyms-and-abbreviations.md). `CapKind` until 2026-10-11 (UTC),
 /// renamed by #1913 under calef's ruling of 2026-10-06 that capability is not abbreviated as cap.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CapabilityKind {
-    /// A file or directory, designated by naming it. Arrives with milestone 32's FS server.
+    /// A file or directory, designated by naming it.
     File,
 }
 
@@ -321,7 +329,7 @@ impl Refusal {
                 "writes while it reads, and this shell can only wait on one thing at a time: give \
                  it a reader that is not this shell, as in '| wc'"
             }
-            // Milestone 67's. Each names what the line is missing rather than what it did wrong,
+            // Quoting and sequencing. Each names what the line is missing rather than what it did wrong,
             // and the quoting pair say *why* the shape is the shape: a token here is a slice of
             // what you typed, so there is nothing to join pieces into.
             Refusal::UnclosedQuote => "a quote here is never closed, so the line ends mid-name",
@@ -337,7 +345,7 @@ impl Refusal {
             Refusal::ArgumentsTooLong => {
                 "those words do not fit on its argument page (4,080 bytes, four more for each word)"
             }
-            // Milestone 52's, in `scope_message`.
+            // The scoped block's, in `scope_message`.
             Refusal::ScopeMalformed
             | Refusal::ScopeTooDeep
             | Refusal::ScopeCannotRestore
@@ -348,7 +356,7 @@ impl Refusal {
 }
 
 impl Refusal {
-    /// The lines of milestone 52's refusals (DECISIONS §160). Each says which form to reach for,
+    /// The lines of the scoped block's refusals. Each says which form to reach for,
     /// because the refusal is the whole documentation of a spelling that ships provisional.
     ///
     /// Name: ratified 2026-11-20 (UTC).

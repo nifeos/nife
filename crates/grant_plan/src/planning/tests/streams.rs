@@ -4,7 +4,7 @@ use crate::expansion::{Expansion, Name};
 use crate::test_support::{WITH_DIRECTORY, plan_line};
 use crate::*;
 
-// ---- milestone 50: the operators, checked against the manifests that ship ----
+// ---- the operators, checked against the manifests the tests ship ----
 
 /// **The headline, at the level this crate can prove it: `>` and `|` are one field.**
 ///
@@ -99,8 +99,7 @@ fn a_reader_with_nothing_to_read_is_refused_at_the_prompt() {
 ///
 /// `wc` declares a stream and no file or directory, so a bare name can only be what feeds it. The
 /// assertion puts the name in the *source*, not in `Endowment::file`: `wc` gets an endpoint
-/// carrying the bytes, narrower than a file capability. See
-/// notes/grant-expression/per-file-grants.md.
+/// carrying the bytes, narrower than a file capability.
 #[test]
 fn naming_a_file_to_a_reader_is_the_operator_left_out() {
     let e = plan_line(b"wc report.txt", WITH_DIRECTORY).unwrap().0[0].unwrap();
@@ -174,11 +173,11 @@ fn only_a_byte_stream_can_be_redirected() {
     assert!(plan_line(b"date > out.txt", WITH_DIRECTORY).is_ok());
 }
 
-// ---- `2>`: the second stream is a declaration, not a number (DECISIONS §67) ----
+// ---- `2>`: the second stream is a declaration, not a number ----
 
 /// **The declaration is what `2>` binds to, and a program that declares none is refused.**
 ///
-/// This is the whole of §67 at the level this crate can prove it. `date` declares a second
+/// This is the whole of the `2>` rule at the level this crate can prove it. `date` declares a second
 /// output, so the operator has something to name; `wc` writes one stream and its diagnostics
 /// ride it, so the same operator names nothing and the line does not run. Nothing here consults
 /// a number: the refusal comes from a manifest that is silent about a second stream.
@@ -209,7 +208,7 @@ fn a_diagnostic_redirection_binds_to_a_declaration_and_refuses_without_one() {
 }
 
 /// **A declared second stream exists whether or not the line mentions it**, which is the half of
-/// §67 that fixes the motivating loss.
+/// the `2>` rule that keeps diagnostics from being lost.
 ///
 /// `date > when.txt` with no `2>` on it still plans a second destination, and that destination
 /// is *not* the file: the shell prints those bytes. A `date` whose complaint went where its
@@ -281,7 +280,7 @@ fn the_declared_slot_is_out_of_reach_of_the_ordinary_grants() {
 
 /// A declared second stream does not change what `>` and `|` may substitute: the first stream is
 /// still the sink contract. If it did, declaring diagnostics would silently make a program
-/// unpipeable, which would be a cost §67 does not pay.
+/// unpipeable, which would be a cost the `2>` rule does not pay.
 #[test]
 fn declaring_a_second_stream_leaves_the_first_one_redirectable() {
     assert!(rows::DATE.output.is_byte_stream());
@@ -371,8 +370,7 @@ fn the_operator_decides_the_direction() {
     assert!(o.writable);
 }
 
-// ---- milestone 50's draining lane: the input operand inside a pipeline, and the one wait
-// point ----
+// ---- draining: the input operand inside a pipeline, and the one wait point ----
 
 /// **`wc report.txt | wc` names its input the way `wc report.txt` does**, and the planner is
 /// the only thing that knows it: an input operand is a trailing positional at a program that
@@ -481,8 +479,8 @@ fn a_chain_this_shell_feeds_needs_one_stage_that_reads_to_the_end() {
     let counter = plan_as(rows::WC, b"wc", src);
     let renderer_piped = plan_as(RENDERS_AS_IT_READS, b"wc", piped);
 
-    // `mdr page.md`: this shell writes the file in, and DECISIONS §106 gives the render
-    // somewhere to go that is not this shell (`terminal_sink_caretaker`), so there is no second
+    // `mdr page.md`: this shell writes the file in, and the render goes somewhere that is not
+    // this shell (a terminal sink), so there is no second
     // reader for the shell to wait behind.
     assert_eq!(check_chain(true, &[Some(renderer)]), Ok(()));
     // `mdr page.md | wc`: the `wc` absorbs the whole stream, so the feed finishes first.
@@ -497,9 +495,8 @@ fn a_chain_this_shell_feeds_needs_one_stage_that_reads_to_the_end() {
     // `ls > out.txt`: the shell is the producer and no stage was spawned at all, so there is no
     // second process for it to deadlock against.
     assert_eq!(check_chain(true, &[None, None]), Ok(()));
-    // `mdr page.md > out.txt`: DECISIONS §106 (take the `terminal_sink_caretaker` narrowing) only
-    // narrows the unredirected case. A `>` still comes back through this shell (DECISIONS §55 (the
-    // file behind a `>` is the shell itself)).
+    // `mdr page.md > out.txt`: the terminal sink narrows only the unredirected case. A `>` still
+    // comes back through this shell, because the file behind a `>` is the shell itself.
     let to_file = Streams {
         sink: line::Sink::File(
             FileGrant {

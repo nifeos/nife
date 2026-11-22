@@ -1,7 +1,43 @@
-//! The staged glob fixtures against the matcher: the sets the filesystem tests state literally are
-//! only trustworthy if they are the expansion of the pattern they are staged for, so this checks
-//! them with the matcher itself. It lives here, in a crate that already depends on the matcher, because
-//! the fixture and the filesystem contract it rides on do not, and the matcher links neither.
+//! `grant_plan` against the filesystem contract and its fixture. The planner checks a command line
+//! without linking the filesystem contract, so it spells the contract's name and set bounds as its
+//! own constants, and the glob fixtures the filesystem tests stage are only trustworthy if they are
+//! what the planner's matcher matches. This crate links the planner and the contract both, so the
+//! pins live here: a change to one side without the other fails on the host, in milliseconds.
+
+/// **The name limits and the set bounds are the contract's**, one number spelled in two crates.
+#[test]
+fn the_planner_bounds_match_the_file_system_contract() {
+    use file_system_contract::{grant, nameset};
+    assert_eq!(
+        grant_plan::MAXIMUM_FILE_NAME_BYTES,
+        grant::MAXIMUM_NAME_BYTES
+    );
+    assert_eq!(
+        grant_plan::MAXIMUM_WORDS_NAME_BYTES,
+        grant::MAXIMUM_WORDS_NAME_BYTES
+    );
+    assert_eq!(grant_plan::expansion::MAXIMUM_NAMES, nameset::MAXIMUM_NAMES);
+    assert_eq!(
+        grant_plan::expansion::MAXIMUM_NAME_SET_BYTES,
+        nameset::MAXIMUM_NAME_SET_BYTES
+    );
+    assert_eq!(
+        grant_plan::expansion::MAXIMUM_NAME_BYTES,
+        grant::MAXIMUM_NAME_BYTES
+    );
+}
+
+/// **The widest set the planner can plan fits the buffer the contract sizes for it**: every name
+/// it may hold, sharing every byte it may hold.
+#[test]
+fn the_widest_planned_set_encodes_in_the_contract_buffer() {
+    use file_system_contract::nameset;
+    use grant_plan::expansion::{MAXIMUM_NAME_SET_BYTES, MAXIMUM_NAMES};
+    let wide = [b'w'; MAXIMUM_NAME_SET_BYTES / MAXIMUM_NAMES];
+    let widest: [(&[u8], bool); MAXIMUM_NAMES] = [(&wide[..], false); MAXIMUM_NAMES];
+    let mut buffer = [0u8; nameset::MAXIMUM_BYTES];
+    assert!(nameset::encode(&widest, &mut buffer).is_some());
+}
 
 /// **The set the globbing lane grants is exactly what the pattern matches**, checked against the
 /// matcher rather than asserted twice.

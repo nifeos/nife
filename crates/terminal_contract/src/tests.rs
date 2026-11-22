@@ -116,3 +116,26 @@ fn each_badge_admits_exactly_its_surface() {
         );
     }
 }
+
+#[test]
+fn the_identity_is_interface_25_version_1() {
+    assert_eq!(proto::INTERFACE_ID, 25);
+    assert_eq!(proto::VERSION, 1);
+}
+
+/// A first word with any reserved bit (55:32) set is refused, each bit alone and all together, and
+/// a word with none set decodes to the operation and length `req` packed, at both ends of each
+/// field.
+#[test]
+fn a_reserved_bit_is_refused() {
+    for operation in [0, proto::OPERATION_WRITE, proto::OPERATION_QUIESCE, 0xff] {
+        for len in [0, 1, 0xffff_ffff] {
+            let w = proto::req(operation, len);
+            assert_eq!(proto::decode(w), Some((operation, len as usize)));
+            for bit in 32..56 {
+                assert_eq!(proto::decode(w | 1 << bit), None, "bit {bit} is reserved");
+            }
+            assert_eq!(proto::decode(w | 0x00ff_ffff_0000_0000), None);
+        }
+    }
+}

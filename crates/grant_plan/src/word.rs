@@ -1,18 +1,16 @@
-//! **Quoting: what a word is, and therefore what a command designates** (milestone 67,
-//! notes/swish-language.md).
+//! **Quoting: what a word is, and therefore what a command designates**.
 //!
 //! Quoting delimits a word and never rewrites one, so every token stays a slice of the line and
 //! what is between the quotes is exactly what is designated. `'...'` and `"..."` wrap a whole word,
 //! there is no backslash escape, and two quoted pieces are not joined ([`Refusal::PartlyQuoted`]).
 //! Quoting suppresses pattern expansion and changes nothing else about authority; `'` and `"` are
-//! both literal while the shell has no variables. notes/swish-language.md, "Quoting delimits a
-//! word", has why.
+//! both literal while the shell has no variables.
 
 //! # BUGS
 //!
 //! - **No backslash escape while tokens are slices.** `my\ notes.txt` names a file whose name
 //!   contains a backslash, and `navigation::is_valid_component` refuses that byte, so the line is refused.
-//! - **Adjacent pieces are not joined.** `a"b"` and `'it''s'` are refused where POSIX joins them.
+//! - **Adjacent pieces are not joined.** `a"b"` and `'it''s'` are refused where a POSIX (Portable Operating System Interface) shell joins them.
 //! - **`"$?"` prints `$?`**, because both forms are literal; variables will have to split them.
 
 use crate::Refusal;
