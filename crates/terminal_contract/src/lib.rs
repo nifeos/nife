@@ -12,7 +12,8 @@
 #![no_std]
 
 /// Request opcode, in bits 63:56 of the first `CALL` word. The low 32 bits carry a length
-/// or count; bits 55:32 are reserved and must be zero.
+/// or count; bits 55:32 are reserved and must be zero, and a terminal refuses a request that sets
+/// one ([`decode`]).
 pub const OPERATION_SHIFT: u32 = 56;
 /// Application → terminal: print `len` bytes from the client's output page. Reply when the
 /// bytes are on the wire: r0 = bytes consumed.
@@ -238,6 +239,31 @@ pub const fn len(w0: u64) -> usize {
     (w0 & 0xffff_ffff) as usize
 }
 
+/// Bits 55:32 of a request's first word, which no operation gives a meaning.
+const RESERVED_REQUEST_BITS: u64 = ((1 << OPERATION_SHIFT) - 1) & !0xffff_ffff;
+
+/// **A request's first word as a server reads it**: its operation and its length or count, or
+/// `None` when any reserved bit (55:32) is set. A terminal answers `None` with [`BAD_REQUEST`]
+/// before it looks at the operation, so a bit nobody defined is refused rather than ignored, and a
+/// later version can give it a meaning without a client already relying on it. [`req`] never sets
+/// one. Both terminal servers, `line_editor` and `display_terminal`, decode through this.
+///
+/// ```
+/// use terminal_contract::{OPERATION_WRITE, decode, req};
+///
+/// assert_eq!(decode(req(OPERATION_WRITE, 5)), Some((OPERATION_WRITE, 5)));
+/// assert_eq!(decode(req(OPERATION_WRITE, 5) | 1 << 32), None);
+/// ```
+///
+/// Name: provisional.
+#[must_use]
+pub const fn decode(w0: u64) -> Option<(u64, usize)> {
+    if w0 & RESERVED_REQUEST_BITS != 0 {
+        return None;
+    }
+    Some((operation(w0), len(w0)))
+}
+
 /// READLINE reply flag: end of input (^D on an empty line). The line length is 0.
 pub const FLAG_EOF: u64 = 1 << 0;
 /// READLINE reply flag: the read was interrupted (^C). The line length is 0. This is the
@@ -260,16 +286,17 @@ pub const fn is_retry(r0: u64, r1: u64) -> bool {
     r0 == 0 && r1 == FLAG_RETRY
 }
 
-/// The reply to a request whose opcode the terminal does not implement: r0 = this, r1 = 0.
+/// The reply to a request whose opcode the terminal does not implement, or whose first word sets
+/// a reserved bit ([`decode`]): r0 = this, r1 = 0.
 /// A sentinel rather than silence, so a confused client fails fast instead of hanging.
 pub const BAD_REQUEST: u64 = u64::MAX;
 
 /// This interface's identity in a program's `INTERFACES` note: 25, the terminal's requests and
-/// replies. The number is this interface's for good: no other interface takes it, and a format
-/// change is a new version, never a new number. A program declares the pair of this id and
-/// [`VERSION`].
+/// replies, with no magic. The number is this interface's for good: no other interface takes it,
+/// and a format change is a new version, never a new number. A program declares the pair of this
+/// id and [`VERSION`]. Frozen 2026-11-22 (UTC) at interface 25, version 1.
 ///
-/// Name: provisional. The number waits on the architect's freeze.
+/// Name: provisional.
 pub const INTERFACE_ID: u64 = 25;
 
 /// The wire's version, one for the operations, flags, badges and reply shapes together. A break
