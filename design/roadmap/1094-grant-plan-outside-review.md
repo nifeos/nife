@@ -28,7 +28,7 @@ own `test_support::plan_line`. No new tool.
 
 ## Finding status
 
-Every finding not Done blocks the first crates.io publish, which waits until every outside-review
+Every item not Done blocks the first crates.io publish, which waits until every outside-review
 milestone reaches delivery.
 
 - P0-1, split the catalog from the planner: Done, [#3584](https://github.com/nifeos/nife/pull/3584).
@@ -40,15 +40,22 @@ milestone reaches delivery.
 - P1-4, the tokenizer drops a seventeenth token: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
 - P1-5, no proof: Open. Neither `grant_plan` nor `grant_contract` has a Kani harness; a lane writes
   one per claim, and the two `job_windows` patches in `program_table` replay host tests.
-- P1-6, limits carry their unit, and four fields named `len`: Done, [#3822](https://github.com/nifeos/nife/pull/3822). Every limit ends in
-  `_BYTES` or `_POLLS`, and the fields that held a length are `length_bytes` or
-  `name_length_bytes`.
-- P1-7, public names that need a decoder: Done, [#3589](https://github.com/nifeos/nife/pull/3589). The modules are `navigation`,
-  `rm_options`, `spawn_protocol` and `job_channel_page`.
+- P1-6, limits carry their unit, and four fields named `len`: Done (ruled by the maintainer,
+  provisional, 2026-11-19 UTC; two-way until the first publish). Every limit now ends in
+  `_BYTES` or `_POLLS`, `MAXIMUM_VERB_BYTES` and `MAXIMUM_HOLDER_NAME_BYTES` among them, and the
+  fields that held a length are `length_bytes` or `name_length_bytes`. The names are provisional
+  until the architect ratifies them from the review packages.
+- P1-7, public names that need a decoder: Done (ruled by the maintainer, provisional, 2026-11-14
+  UTC, [#3589](https://github.com/nifeos/nife/pull/3589)). The modules are `navigation`,
+  `rm_options`, `spawn_protocol` and `job_channel_page`; `BindEntry::position`,
+  `COOPERATIVE_GRACE_POLLS`, `RIGHTS_BITS_DO_NOT_OVERLAP` and `program_id` follow. The names are
+  provisional until the architect ratifies them from the review packages.
 - P1-8, British spellings: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-9, documentation for a stranger: At the move. [#3566](https://github.com/nifeos/nife/pull/3566) and [#3961](https://github.com/nifeos/nife/pull/3961) close the `missing_docs`
   worklists of all three crates; the move strips the citations, the quotations and the `Name:`
   lines.
+- P1-9b, `missing_docs` in the split crates: Done, [#3961](https://github.com/nifeos/nife/pull/3961). Neither `grant_contract`
+  nor `program_table` allows `missing_docs`.
 - P1-10, numbers in refusal sentences: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-11, two-kilobyte values by value: Done, [#3566](https://github.com/nifeos/nife/pull/3566) and [#3961](https://github.com/nifeos/nife/pull/3961). The planning functions take
   `&ShellHoldings`, `&Expansion` and `&Streams`, provisional until the release review; the move
@@ -219,6 +226,10 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
 
 ## Follow-on
 
+- **Done.** P0 item 1, the split, in #3584: `grant_plan`, `crates/grant_contract` and
+  `crates/program_table` build and test on their own.
+- **Done.** The limits rule (P1-6), the eight renames (P1-7) and the 2026-11-20 name rulings are
+  built, and the review packages are written. The review packages carry the clearance, after which the repositories follow with no tag and no publish.
 - **Outstanding.** Every finding marked Open or Waiting on under "Finding status", each checked
   against the three crates' sources on main.
 - **Done.** `crates/externalization-list.txt` names both crates that leave ([#3961](https://github.com/nifeos/nife/pull/3961));
