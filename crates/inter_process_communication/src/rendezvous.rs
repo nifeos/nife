@@ -321,7 +321,7 @@ impl<T: Node> Rendezvous<T> {
 
     /// Take one specific receiver back off the queue, returning its token if it was there. The
     /// twin of [`remove_sender`](Self::remove_sender), for a region teardown that ends a thread
-    /// blocked in `RECEIVE` here. The kernel asks both queues, because a thread's recorded wait
+    /// blocked in `RECEIVE` here. The kernel asks both removes, because a thread's recorded wait
     /// role does not say which queue holds it.
     ///
     /// Name: ratified 2026-11-21 (UTC).

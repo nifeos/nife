@@ -412,8 +412,8 @@ fn binding_to_an_interrupt_is_visible_and_one_way() {
     assert!(e.is_bound_to_interrupt(), "binding twice does not undo it");
 }
 
-/// One tagged queue in place of two: a queue's three words, the tag, and the count with the flag,
-/// five words on a 64-bit target where two queues took seven.
+/// One tagged queue: its three words, the tag, and the count with the flag, five words on a 64-bit
+/// target, two fewer than a pair of queues would take.
 #[test]
 #[cfg(target_pointer_width = "64")]
 fn a_rendezvous_is_five_words() {

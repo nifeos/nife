@@ -248,7 +248,7 @@ fn receive_drains_a_pending_signal_first() {
 }
 
 /// **A collected sender is forgotten by the rendezvous**: the rendezvous half of the one-shot
-/// Reply of §12 (Call/Reply IPC). After a receive collects a sender, neither queue names it and no
+/// Reply of §12 (Call/Reply IPC). After a receive collects a sender, no queue names it and no
 /// later receive can produce it again, so the Reply capability is the only name for the caller.
 /// One waiter covers the general case, because the decision depends only on whether a queue is
 /// empty. Separately, a blocked thread cannot run, so it cannot queue itself a second time.
