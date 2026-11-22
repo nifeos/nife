@@ -17,11 +17,11 @@ Name: provisional. Every new name below is the lane's, not a ruling.
 
 ## Background: how a call works today
 
-A client makes a call with `Rendezvous::CALL` (`crates/abi/src/rendezvous.rs`, `CALL`). It sends two words and blocks until a reply arrives. The kernel mints a one-shot `Reply` capability that names the caller. The server receives it with `RECEIVE_CAPABILITY` and answers once with `reply::REPLY`. §12 (Call/Reply IPC: a one-shot reply capability) is the design.
+A client makes a call with `Rendezvous::CALL` (`crates/moho_abi/src/rendezvous.rs`, `CALL`). It sends two words and blocks until a reply arrives. The kernel mints a one-shot `Reply` capability that names the caller. The server receives it with `RECEIVE_CAPABILITY` and answers once with `reply::REPLY`. §12 (Call/Reply IPC: a one-shot reply capability) is the design.
 
 The caller waits in one of two phases. First it may sit on the rendezvous's sender queue, because no server has taken the request yet. Then it is reply-parked: the server holds the `Reply`, and the caller sits on no queue at all. `ipc_call_badged` in `kernel/src/sched/rendezvous.rs` parks it with `WaitRole::Reply` and says that only the reply, or an abort, may wake it. Its `BUGS` say it plainly: a live server that never replies blocks its caller forever.
 
-Time enters through two other objects. A `Timer` (`crates/abi/src/timer.rs`, `ARM`) signals a notification when the counter reaches an absolute deadline. §147 (a timer a userspace service cannot hold) chose that object on 2026-09-05 (UTC), and the architect refused a deadline argument on `RECEIVE` or `CALL` as a way to save effort. A notification bound to a thread ends that thread's `RECEIVE` (§101 (notification objects)). `bound_receiver` in `kernel/src/sched/notification.rs` wakes a bound thread only when it waits as a `WaitRole::Receiver`.
+Time enters through two other objects. A `Timer` (`crates/moho_abi/src/timer.rs`, `ARM`) signals a notification when the counter reaches an absolute deadline. §147 (a timer a userspace service cannot hold) chose that object on 2026-09-05 (UTC), and the architect refused a deadline argument on `RECEIVE` or `CALL` as a way to save effort. A notification bound to a thread ends that thread's `RECEIVE` (§101 (notification objects)). `bound_receiver` in `kernel/src/sched/notification.rs` wakes a bound thread only when it waits as a `WaitRole::Receiver`.
 
 So a client cannot bound a call. §101's rule 3 says a signal that arriving while the thread waits in `CALL` stays in the word until its next receive. A timer the client armed fires, the bit lands in the word, and the client stays parked.
 
@@ -62,7 +62,7 @@ Nothing tells the server that its caller left. The kernel drops its late `REPLY`
 /// How long `reboot` waits for the route to answer: the route's own two seconds, and one more.
 const ROUTE_CALL_BOUND_SECONDS: u64 = 3;
 
-let deadline = now() + abi::timer::counter_ticks_for(ROUTE_CALL_BOUND_SECONDS, 0, cntfrq());
+let deadline = now() + moho_abi::timer::counter_ticks_for(ROUTE_CALL_BOUND_SECONDS, 0, cntfrq());
 if timer_arm(TIMER_SLOT, deadline, NOTIFICATION_SLOT, DEADLINE_BIT) < 0 {
     complain(b"reboot: the timer refused the deadline; asking the kernel\n");
 } else {

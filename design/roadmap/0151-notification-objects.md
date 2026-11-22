@@ -53,7 +53,7 @@ named in notes/supervision.md, notes/compositor.md, notes/dir-capability.md) and
 |---|---|
 | the state machine: a word, a wait queue, `signal`/`wait`/`poll`, and the binding as one boolean | `crates/inter_process_communication/src/notification.rs` |
 | four Kani harnesses: every operation preserves "a non-zero word and a queued waiter never coexist", a signal loses no bit, a waiter is woken before the bound receiver, a wait never returns zero; each carries a replayable falsification patch, and `script/falsifications --sweep inter_process_communication` turned all ten of the crate's harnesses red | same file, `falsifications/notification.verification.*.patch` |
-| `objtype::NOTIFICATION = 4`, `abi::notification::{SIGNAL, WAIT, POLL, BIND, BOUND}` | `crates/abi/src/lib.rs` |
+| `objtype::NOTIFICATION = 4`, `abi::notification::{SIGNAL, WAIT, POLL, BIND, BOUND}` | `crates/moho_abi/src/lib.rs` |
 | `Object::Notification`, the registry (`MAX_NOTIFICATIONS = 256`), `RETYPE_OBJ`'s arm | `kernel/src/cap.rs`, `kernel/src/sched.rs`, `kernel/src/system_call.rs` |
 | the binding: a signal reaches the bound thread parked in `RECV`, `RECV_CAP` or `Irq::WAIT`, unlinks it from that endpoint's queue and wakes it; a receive takes a word counted while the thread was elsewhere, on entry | `sched::signal_locked`, `bound_receiver`, `deliver_bound`, `take_bound_signal` |
 | one signal path for a thread and for the kernel: `signal_notification_from_interrupt` is the entry milestone 106's timer will call from the tick, placed load-aware as `irq_notify` is | `kernel/src/sched.rs` |
@@ -187,12 +187,12 @@ implies) is most of the difference.
 - **Milestone 33.** Milestone 33 (a compositor) owns the compositor's per-client endpoints woken by a bound notification, §101's
   table's second row. Its own follow-on, not built here.
 - **Recorded.** No unbind, `WAIT`'s word sharing `x0` with the error encoding, `SIGNAL(0)` as a
-  no-op and the O(queue) unlink, all in this block's `BUGS` and in `crates/abi/src/lib.rs` beside
+  no-op and the O(queue) unlink, all in this block's `BUGS` and in `crates/moho_abi/src/lib.rs` beside
   `abi::notification`.
 - **Done.** The latent `w0 = 1` IRQ forgery this lane found: calef ruled B on 2026-09-26 (§101's
   second amendment), and milestone 603 (an interrupt's endpoint refuses every send) built it.
 - **Recorded.** A sender can make a receiver read an error by sending a negative `w0`: beside
-  `abi::rendezvous::RECV` in `crates/abi/src/lib.rs`.
+  `abi::rendezvous::RECV` in `crates/moho_abi/src/lib.rs`.
 - **Decision.** The receive tag (option B), ruled by calef on 2026-09-26, is being recorded as an
   amendment to `design/decisions/0101-notification-objects.md` by the maintainer; the method and
   object-type numbers are §101's own.

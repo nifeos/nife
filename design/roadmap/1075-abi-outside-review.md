@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # 1075. `abi`: what an outside maintainer would fix before the move
 
-Raised by a read-only review of `crates/abi` as a stranger would meet it in a repository of its own.
+Raised by a read-only review of `crates/moho_abi` as a stranger would meet it in a repository of its own.
 It changes nothing; it lists what the next lanes change. The crate is the last of step 2 of
 milestone 1017 (the contract crates leave in this order). No review package exists for it under
 `notes/crate-reviews/`, so this block has no settled baseline to defer to: the crate's ruled name,
@@ -96,7 +96,7 @@ reservation, and the crate's docs state the rule beside `ABI_VERSION` and in the
 ### C. Clearing the review package (ruled)
 
 Rule in force, ruled 2026-11-22 (UTC), option A: the review of
-[the package](../../notes/crate-reviews/abi.md) clears once step 3 of milestone 1121 (the Moho
+[the package](../../notes/crate-reviews/moho-abi.md) clears once step 3 of milestone 1121 (the Moho
 rename: the order in which the binary interface takes its name) lands the `moho_abi` rename. The
 clearance is the go to create the repository with `publish = false`, no tag and no publish. The
 same ruling ratifies six names: `address_wait::SIZE_U8`, `SIZE_U16`, `SIZE_U32` and `SIZE_U64`
@@ -118,9 +118,10 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 ## Finding status
 
 - Item 1, P0, clippy red on `VisionFive 2`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 2 and decision A, P0, the published name: Waiting on step 3 of milestone 1121 (the Moho
-  rename: the order in which the binary interface takes its name). That step renames the crate
-  `moho_abi`, as §323 (the binary interface, and the names of the layers) ruling 2 rules.
+- Item 2 and decision A, P0, the published name: Done, [#4013](https://github.com/nifeos/nife/pull/4013), step 3 of
+  milestone 1121 (the Moho rename: the order in which the binary interface takes its name). The
+  package, the directory and every use are `moho_abi`, as §323 (the binary interface, and the names
+  of the layers) ruling 2 rules.
 - Item 3, P1, the crate names nife and nife programs: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Item 4, P1, twenty-eight references into nife: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Item 5, P1, the virtio error that does not exist: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
@@ -133,7 +134,7 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 - Item 11, P1, the version gate: Done, [#3942](https://github.com/nifeos/nife/pull/3942), on [#3565](https://github.com/nifeos/nife/pull/3565)'s counting test.
 - Item 12, P1, `futex::admitted` and `Error::from_ret`: Done, [#3942](https://github.com/nifeos/nife/pull/3942).
 - Item 13, P1, names not ready and no package: Done, [#3942](https://github.com/nifeos/nife/pull/3942); decision C clears
-  [the package](../../notes/crate-reviews/abi.md) once the rename lands.
+  [the package](../../notes/crate-reviews/moho-abi.md), and the rename has landed.
 - Item 14, P2, `Error` lacks `Display`, `Error` and `Hash`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Item 15, P2, `CapabilitySlot` has no user: Done, [#3942](https://github.com/nifeos/nife/pull/3942).
 - Item 16, P2, `RegisterShape::new`'s parameters: Done, [#3942](https://github.com/nifeos/nife/pull/3942).
@@ -146,16 +147,16 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 - Decision B, `console::WRITE` stays reserved: Done, [#3596](https://github.com/nifeos/nife/pull/3596).
 - Found at the finish, six size names without a unit (`address_wait::SIZE_U8` to `SIZE_U64`,
   `SIZE_MASK`, `usage::SIZE`): Done, [#3998](https://github.com/nifeos/nife/pull/3998), as decision C ratifies them.
-- The move: Waiting on step 3 of milestone 1121, after which decision C clears the package and the
-  repository may be created.
+- The move: Decision C clears the package now that step 3 of milestone 1121 has landed
+  ([#4013](https://github.com/nifeos/nife/pull/4013)), so the repository may be created.
 - Publishing: Waiting on the last outside-review milestone closing (ruled 2026-11-18 UTC).
 
 ## Follow-on
 
 - **Done.** Decision B: `console::WRITE` stays as a reserved operation (#3596).
-- **Outstanding.** Decision A's rename to `moho_abi`, milestone 1121 step 3.
+- **Done.** Decision A's rename to `moho_abi`, milestone 1121 step 3, [#4013](https://github.com/nifeos/nife/pull/4013).
 - **Done.** The six ratified size names, [#3998](https://github.com/nifeos/nife/pull/3998).
-- **Outstanding.** The repository, once step 3 lands, then items 9, 20 and 21 at and after the move.
+- **Outstanding.** The repository, then items 9, 20 and 21 at and after the move.
   The finding status above says what each needs.
 
 ## BUGS

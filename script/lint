@@ -1491,7 +1491,7 @@ echo "==> crate reviews keep one closed set of finding states"
 # Intra-doc links, denied when broken. This codebase leans unusually hard on `[`Item`]` links to
 # stitch the code to itself and to the notes, which is deliberate (see CLAUDE.md on commenting) and
 # makes a broken link a real loss rather than cosmetic. Nothing checked them until 2026-07-30, and
-# there were TEN, including a whole crate's worth in `abi` where nested modules linked crate-root
+# there were TEN, including a whole crate's worth in `moho_abi` where nested modules linked crate-root
 # items without a path, plus `name[24]` in a comment that markdown read as a link.
 #
 # Split three ways because the workspace is not one target: the bare crates document for aarch64
@@ -2521,7 +2521,7 @@ def _sh_scripts():
 
 
 def _abi_system_calls():
-    """`SYSTEM_CALL_*` u64 constants in crates/abi/src/lib.rs: the width of the system call trap.
+    """`SYSTEM_CALL_*` u64 constants in crates/moho_abi/src/lib.rs: the width of the system call trap.
 
     Assumes the system call numbers are the crate's only `SYSTEM_CALL_`-prefixed u64 constants, which they
     are and which the naming makes self-enforcing: every other constant in the crate is a method, a
@@ -2534,12 +2534,12 @@ def _abi_system_calls():
     kernel's system call module, an `Error` variant's description and two notes all saying the surface
     was **three** calls. `SYS_CAP_DELETE` landed 2026-07-24 and moved none of them.
     """
-    text = pathlib.Path('crates/abi/src/lib.rs').read_text(errors='replace')
+    text = pathlib.Path('crates/moho_abi/src/lib.rs').read_text(errors='replace')
     return len(re.findall(r'^[ \t]*pub const SYSTEM_CALL_[A-Z_0-9]+: u64\b', text, re.M))
 
 
 def _rights_bits():
-    """Named single-bit rights in `abi::rights`: how many rights a capability can carry.
+    """Named single-bit rights in `moho_abi::rights`: how many rights a capability can carry.
 
     Counted from the ABI's rights module, which the kernel asserts equal to the rights mask of the
     capability table crate it links (`nifeos/capability_table`, a pinned dependency that is no
@@ -2549,7 +2549,7 @@ def _rights_bits():
     That `ALL` is exactly the union of these bits is pinned by the kernel's assertion and by tests
     rather than here. This counts; those compare.
     """
-    text = pathlib.Path('crates/abi/src/rights.rs').read_text(errors='replace')
+    text = pathlib.Path('crates/moho_abi/src/rights.rs').read_text(errors='replace')
     return len(re.findall(r'^[ \t]*pub const [A-Z_0-9]+: u64 = 1 << \d', text, re.M))
 
 
@@ -2717,7 +2717,7 @@ REGISTRY = {
         _abi_system_calls,
     ),
     'rights-bits': (
-        'how many named single-bit rights a capability can carry (abi::rights)',
+        'how many named single-bit rights a capability can carry (moho_abi::rights)',
         _rights_bits,
     ),
     'loom-harnesses': (

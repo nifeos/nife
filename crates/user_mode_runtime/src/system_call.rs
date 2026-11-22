@@ -143,7 +143,7 @@ pub(crate) unsafe fn invoke6(
     // SAFETY: forwarded from this function's own contract.
     unsafe {
         trap6(
-            abi::SYSTEM_CALL_INVOKE,
+            moho_abi::SYSTEM_CALL_INVOKE,
             [
                 capability,
                 method,

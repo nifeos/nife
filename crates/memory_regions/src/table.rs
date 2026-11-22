@@ -98,21 +98,21 @@ struct Spent {
 /// Name: provisional.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ObjectKind {
-    /// An inter-process communication rendezvous (`abi::object_type::RENDEZVOUS`).
+    /// An inter-process communication rendezvous (`moho_abi::object_type::RENDEZVOUS`).
     Rendezvous,
-    /// An address space's root table (`abi::object_type::ADDRESS_SPACE`).
+    /// An address space's root table (`moho_abi::object_type::ADDRESS_SPACE`).
     AddressSpace,
-    /// A thread control block (`abi::object_type::THREAD_CONTROL_BLOCK`).
+    /// A thread control block (`moho_abi::object_type::THREAD_CONTROL_BLOCK`).
     Thread,
     /// A page of the kernel's own object pool (the kernel's pool), whose contents change kind as
     /// pages are recycled, so no finer count would stay true.
     KernelPool,
-    /// A notification object (`abi::object_type::NOTIFICATION`). Counted, and not yet reported by any
-    /// `abi::usage` record: the ratified records predate this object kind (see that module's BUGS).
+    /// A notification object (`moho_abi::object_type::NOTIFICATION`). Counted, and not yet reported by any
+    /// `moho_abi::usage` record: the ratified records predate this object kind (see that module's BUGS).
     Notification,
-    /// A timer object (`abi::object_type::TIMER`), counted and unreported for the same reason.
+    /// A timer object (`moho_abi::object_type::TIMER`), counted and unreported for the same reason.
     Timer,
-    /// A process (`abi::object_type::PROCESS`), counted and unreported for the same reason.
+    /// A process (`moho_abi::object_type::PROCESS`), counted and unreported for the same reason.
     Process,
 }
 

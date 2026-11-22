@@ -29,7 +29,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
     return (`MAP`, `RETYPE`, `RETYPE_OBJECT`, `SPLIT`, `DESTROY`, `USAGE`), so a heap that peaked
     holds its peak until the region's owner destroys it. glibc trims. `dlmalloc` and `rlsf` release
     pages. A stranger from any of them will expect a high-water mark that falls.
-    Evidence: `crates/abi/src/memory_region.rs`. `src/lib.rs` (no call to `truncate`).
+    Evidence: `crates/moho_abi/src/memory_region.rs`. `src/lib.rs` (no call to `truncate`).
     Change: one README sentence, and a BUGS line in the crate for the day the interface grows a
     return.
     Door: two-way. Effort: XS.

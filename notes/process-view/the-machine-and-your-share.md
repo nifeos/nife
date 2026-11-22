@@ -54,8 +54,8 @@ so a number that moves at rebase needs no second ratification; the table holds w
 
 | what | value | note |
 |---|---|---|
-| the method | `abi::memory_region::USAGE = 5` | |
-| its records | `abi::usage` 0 to 6 | |
+| the method | `moho_abi::memory_region::USAGE = 5` | |
+| its records | `moho_abi::usage` 0 to 6 | |
 | the page's name and layout | `machine_statistics_contract`, magic `MACHSTA1`, a 64-byte header, one line per core | |
 | where a child sees it | `0x005F_F000`, a pair page | the address-space map of milestone 206 (a program image has under 896 KiB) keeps images and stacks away from it; nothing collides with it |
 | the progenitor's boot slot | 23 | the GPU and keyboard of milestone 600 (the graphical terminal stack is built in userspace) hold 17 to 22; the table has 32 slots (calef) so a slot free on every boot exists |
@@ -71,7 +71,7 @@ ratified after this table was drawn; that amendment is raised on #1360.
 ## The table raise, measured
 
 The one Kani harness family that ranges over the table size is `crates/capability_plan`'s, whose
-`any_slot` assumes `s < abi::CAPABILITY_TABLE_SLOTS`. The five harnesses' verification times on
+`any_slot` assumes `s < moho_abi::CAPABILITY_TABLE_SLOTS`. The five harnesses' verification times on
 patagonia (2026-09-27, one sample each, seconds):
 
 | harness | 24 slots | 32 slots | 64 slots (2026-10-04) |

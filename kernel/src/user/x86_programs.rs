@@ -72,13 +72,13 @@ pub const FAULT_PC_OFFSET: u64 = 5;
 pub const fn report(word: u32) -> [u32; 8] {
     const {
         assert!(
-            abi::rendezvous::SEND == 0,
+            moho_abi::rendezvous::SEND == 0,
             "the `xor esi, esi` in this program encodes SEND as zero"
         );
     }
     let w = word.to_le_bytes();
-    let inv = (abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let inv = (moho_abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     pack_8([
         0x31, 0xFF, // xor edi, edi      (arg0: slot 0)
         0x31, 0xF6, // xor esi, esi      (arg1: SEND, which is 0)
@@ -102,14 +102,14 @@ pub const fn report(word: u32) -> [u32; 8] {
 pub(crate) const fn port_out(port: u16, val: u8, word: u32) -> [u32; 9] {
     const {
         assert!(
-            abi::rendezvous::SEND == 0,
+            moho_abi::rendezvous::SEND == 0,
             "the `xor esi, esi` in this program encodes SEND as zero"
         );
     }
     let p = port.to_le_bytes();
     let w = word.to_le_bytes();
-    let inv = (abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let inv = (moho_abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     pack_9([
         0x66, 0xBA, p[0], p[1], // mov dx, port      (16-bit immediate)
         0xB0, val,  // mov al, val
@@ -143,7 +143,7 @@ pub const PORT_OUT_PC_OFFSET: u64 = 6;
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
 pub const fn port_out_then_exit(port: u16, val: u8) -> [u32; 4] {
     let p = port.to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     pack_4([
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xB0, val,  // mov al, val
@@ -178,15 +178,15 @@ packer!(pack_12, 48, 12);
 pub const fn port_out_reporting_cpu(port: u16, val: u8, word: u32) -> [u32; 12] {
     const {
         assert!(
-            abi::rendezvous::SEND == 0,
+            moho_abi::rendezvous::SEND == 0,
             "the `xor esi, esi` in this program encodes SEND as zero"
         );
     }
     let a = CURRENT_CPU_WORD.to_le_bytes();
     let p = port.to_le_bytes();
     let w = word.to_le_bytes();
-    let inv = (abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let inv = (moho_abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     pack_12([
         0x4C, 0x8B, 0x04, 0x25, a[0], a[1], a[2], a[3], // mov r8, [cpu]   (core before)
         0x66, 0xBA, p[0], p[1], // mov dx, port
@@ -217,7 +217,7 @@ pub const fn port_out_reporting_cpu(port: u16, val: u8, word: u32) -> [u32; 12] 
 pub const fn port_out_on_cpu_then_exit(port: u16, val: u8, cpu: u8) -> [u32; 8] {
     let a = CURRENT_CPU_WORD.to_le_bytes();
     let p = port.to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     pack_8([
         0x48, 0x8B, 0x04, 0x25, a[0], a[1], a[2], a[3], // mov rax, [cpu]
         0x83, 0xF8, cpu, // cmp eax, cpu
@@ -253,9 +253,9 @@ pub const PORT_OUT_ON_CPU_WRONG_CPU_PC_OFFSET: u64 = 29;
 /// `cap_delete_then_port_out` under the capability ruling of 2026-10-06 (UTC).
 pub const fn capability_delete_then_port_out(slot: u32, port: u16, val: u8) -> [u32; 7] {
     let s = slot.to_le_bytes();
-    let del = (abi::SYSTEM_CALL_CAPABILITY_DELETE as u32).to_le_bytes();
+    let del = (moho_abi::SYSTEM_CALL_CAPABILITY_DELETE as u32).to_le_bytes();
     let p = port.to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     pack_7([
         0xBF, s[0], s[1], s[2], s[3], // mov edi, slot
         0xB8, del[0], del[1], del[2], del[3], // mov eax, SYSTEM_CALL_CAPABILITY_DELETE
@@ -286,7 +286,7 @@ pub const CAPABILITY_DELETE_THEN_PORT_OUT_PC_OFFSET: u64 = 12 + PORT_OUT_PC_OFFS
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
 pub const fn port_in_then_exit(port: u16) -> [u32; 4] {
     let p = port.to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     pack_4([
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xEC, // in al, dx (offset 4)
@@ -311,7 +311,7 @@ pub const PORT_IN_ONLY_PC_OFFSET: u64 = 4;
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
 pub const fn port_in_then_out(port: u16, val: u8) -> [u32; 4] {
     let p = port.to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     pack_4([
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xEC, // in al, dx (offset 4)
@@ -344,9 +344,9 @@ pub const fn two_capability_deletes_then_port_out(
 ) -> [u32; 10] {
     let a = slot1.to_le_bytes();
     let b = slot2.to_le_bytes();
-    let del = (abi::SYSTEM_CALL_CAPABILITY_DELETE as u32).to_le_bytes();
+    let del = (moho_abi::SYSTEM_CALL_CAPABILITY_DELETE as u32).to_le_bytes();
     let p = port.to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     pack_10([
         0xBF, a[0], a[1], a[2], a[3], // mov edi, slot1
         0xB8, del[0], del[1], del[2], del[3], // mov eax, SYSTEM_CALL_CAPABILITY_DELETE
@@ -382,9 +382,9 @@ pub const RECEIVE_THEN_PORT_OUT_PC_OFFSET: u64 = 25 + PORT_OUT_PC_OFFSET;
 /// take arrives as `EVENT_EXIT` instead of hanging; see notes/x86-user-programs.md.
 pub const fn receive_then_port_out(port: u16, val: u8) -> [u32; 10] {
     let p = port.to_le_bytes();
-    let rcv = (abi::rendezvous::RECEIVE as u32).to_le_bytes();
-    let inv = (abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let rcv = (moho_abi::rendezvous::RECEIVE as u32).to_le_bytes();
+    let inv = (moho_abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     pack_10([
         0xBF, 0x01, 0x00, 0x00, 0x00, // mov edi, 1        (slot 1)
         0xBE, rcv[0], rcv[1], rcv[2], rcv[3], // mov esi, RECEIVE
@@ -407,7 +407,7 @@ pub const fn receive_then_port_out(port: u16, val: u8) -> [u32; 10] {
 /// A thread parked in RECEIVE never reaches `schedule()`, where the armed kill of DECISIONS §16
 /// (object revocation) is spent, so this is the resident only a region's teardown can end.
 pub const fn receive() -> [u32; 8] {
-    invoke_then_exit(abi::rendezvous::RECEIVE as u32)
+    invoke_then_exit(moho_abi::rendezvous::RECEIVE as u32)
 }
 
 /// **A child that blocks in `CALL` on the endpoint capability in slot 0, and is never replied to.**
@@ -417,15 +417,15 @@ pub const fn receive() -> [u32; 8] {
 /// it, so its teardown has to sweep that `Reply` out of the server's table. [`receive`] with a
 /// different method word.
 pub const fn call() -> [u32; 8] {
-    invoke_then_exit(abi::rendezvous::CALL as u32)
+    invoke_then_exit(moho_abi::rendezvous::CALL as u32)
 }
 
 /// The body [`receive`] and [`call`] share: `invoke(slot 0, method, 0, 0, 0)`, then `SYSTEM_CALL_EXIT` if
 /// the invocation ever returns. One copy, so a system call number has one place to be typed wrong.
 const fn invoke_then_exit(method: u32) -> [u32; 8] {
     let m = method.to_le_bytes();
-    let inv = (abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let inv = (moho_abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     pack_8([
         0x31, 0xFF, // xor edi, edi
         0xBE, m[0], m[1], m[2], m[3], // mov esi, method

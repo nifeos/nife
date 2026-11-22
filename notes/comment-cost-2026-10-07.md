@@ -167,7 +167,7 @@ The top 20 files by comment lines:
 | `redoxfs_server/src/lib.rs` | 1,351 | 3,122 |
 | `components/src/login.rs` | 1,329 | 886 |
 | `system_tests/src/user/tests.rs` | 1,315 | 1,885 |
-| `crates/abi/src/lib.rs` | 1,154 | 358 |
+| `crates/moho_abi/src/lib.rs` | 1,154 | 358 |
 | `crates/swish/src/lib.rs` | 1,116 | 2,573 |
 | `crates/video_terminal/src/lib.rs` | 996 | 2,054 |
 | `kernel/src/arch/x86_64/mmu.rs` | 995 | 1,061 |

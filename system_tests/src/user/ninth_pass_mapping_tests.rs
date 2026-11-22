@@ -12,7 +12,7 @@
 //! architecture's `Format`, so the body runs on each ISA (DECISIONS §19 (architectural parity is a
 //! tenet)).
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::arch::mmu::Format;
@@ -69,14 +69,14 @@ fn a_confined_map_cannot_escape_the_aligned_low_half() {
     // A kernel-half target: refused, and before any page is retyped (the dispatcher checks the gate
     // first). A confined program cannot aim a mapping into the kernel's half.
     assert_eq!(
-        call(budget, abi::memory_region::MAP, KERNEL_HALF_PAGE, 0, 0),
+        call(budget, moho_abi::memory_region::MAP, KERNEL_HALF_PAGE, 0, 0),
         Err(Error::BadPointer),
         "MemoryRegion::MAP accepted a kernel-half address: a confined caller mapped into the \
          kernel's half (claim 10)",
     );
     // An unaligned low-half target: refused for the other half of the gate.
     assert_eq!(
-        call(budget, abi::memory_region::MAP, UNALIGNED_LOW, 0, 0),
+        call(budget, moho_abi::memory_region::MAP, UNALIGNED_LOW, 0, 0),
         Err(Error::BadPointer),
         "MemoryRegion::MAP accepted an unaligned address (claim 10)",
     );

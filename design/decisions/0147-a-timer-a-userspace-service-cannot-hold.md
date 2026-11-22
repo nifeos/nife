@@ -206,5 +206,5 @@ tick-resolution already, so there is nothing for a slack to buy today.
 
 Both rulings are calef's own comments on #1378, relayed there under his account by the maintainer
 lane that opened the PR; the exact wording and both timestamps are quoted as posted. The full
-surface, with its rationale in prose, is `crates/abi/src/lib.rs`'s `objtype::TIMER` and `timer`
+surface, with its rationale in prose, is `crates/moho_abi/src/lib.rs`'s `objtype::TIMER` and `timer`
 module doc comments on that branch.

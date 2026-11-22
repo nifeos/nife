@@ -30,7 +30,7 @@ workspace = true
 # and its device registers are named offsets in `drivers/`, as on riscv64 and x86_64, so a proof can
 # stub every access (milestone 707 (aarch64 registers spelled the way riscv64 and x86_64
 # spell them), §46).
-abi = { version = "0.1.0", path = "../crates/abi" }
+moho_abi = { version = "0.1.0", path = "../crates/moho_abi" }
 address_space_identifier = { version = "0.1.0", path = "../crates/address_space_identifier" }
 # The corruption canary's arm/check/disarm serialization (2026-08-15), lifted out of `sched.rs`
 # after its hand-written two-flag protocol raced: the kernel calls the loom-searched gate rather
@@ -60,7 +60,7 @@ periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 # manifest the prompt checks against rather than from a second copy of an ordering. Same rule as
 # `terminal_contract` and `video_terminal` below: no party has its own copy of a shared definition.
 # The spawn protocol's slots are the program table's.
-grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+grant_plan = { version = "0.1.0", git = "https://github.com/nifeos/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The wall-clock contract (milestone 51, DECISIONS §43). The kernel discovers the RTC by
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
@@ -212,7 +212,7 @@ machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 # The terminal contract's IPC framing (DECISIONS §21): the kernel's display-terminal tests play both
 # an application (OPERATION_WRITE) and an input driver (OPERATION_BYTES), so they speak the same protocol the
 # serial terminal's clients and drivers do rather than a second one invented for a test.
-terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
+terminal_contract = { version = "0.1.0", git = "https://github.com/nifeos/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
 # The installed-programs table's names and line format (milestone 198 (a package manager)), which the harness
 # writes when a test installs a program the way an installer would: milestone 152 (durable

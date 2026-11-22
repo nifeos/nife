@@ -123,7 +123,7 @@ which is what its documentation says the low 32 bits are. A Kani harness proves 
 over every three words, with a falsification patch.
 
 `rm` reports its exit status and its count on a verdict endpoint of its own, slot 2
-(`file_system_contract::rm::VERDICT_SLOT`), after its report stream ends. A `SEND` returns only once
+(`grant_plan::rm_report::VERDICT_SLOT`), after its report stream ends. A `SEND` returns only once
 a receiver takes its message, so the verdict cannot overtake the text, and a reader drains the report
 before receiving it. The spawn service leaves that slot empty, so at the prompt the kernel refuses the
 send and `rm` exits; the kernel's granted-directory and granted-set wirings grant it when a test asks.

@@ -18,7 +18,7 @@ without being able to build one) decided it on 2026-07-29, six days earlier, and
 better than either option: authorization is the supervision relationship, not a rights bit and
 not a registry.
 
-`crates/abi`'s `rendezvous::REAP` is that decision shipped. Its own documentation states the
+`crates/moho_abi`'s `rendezvous::REAP` is that decision shipped. Its own documentation states the
 property the supervision tree wanted and could not express (quoted from the doc comment on
 `rendezvous::REAP`):
 
@@ -40,7 +40,7 @@ supervisor with several children receives a tid and cannot say which child it be
 ## Whether the premise is still true, measured 2026-09-19
 
 Yes, and the tree records it where a reader meets it. There is no `NAME` method anywhere in
-`crates/abi`. `crates/ps`'s own limits say it plainly, in its module documentation:
+`crates/moho_abi`. `crates/ps`'s own limits say it plainly, in its module documentation:
 
 > A process has no name here, so there is no `CMD` column. This system has `arg0` in `Spawn` and no
 > display name at all, so the columns are the tid and the run state and that is everything.

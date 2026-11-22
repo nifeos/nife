@@ -10,7 +10,7 @@ needs_person: yes
 ---
 # 1098. `line_editor`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only outside review of `crates/line_editor`, read the way a maintainer meeting it
+Raised by a read-only outside review of `line_editor`, read the way a maintainer meeting it
 for the first time would. It changes nothing; it lists what the next lanes change, and it puts the
 one-way doors to the architect.
 
@@ -59,9 +59,16 @@ milestone reaches delivery.
   ruled 2026-11-19 (UTC), A, in [#3796](https://github.com/nifeos/nife/pull/3796).
 - Decision 6, review clearance and the repositories: At the move. The architect cleared both
   `notes/crate-reviews/line-editor.md` and `notes/crate-reviews/terminal-contract.md` on
-  2026-11-22 (UTC). Neither repository exists yet; each move waits on its own remaining work.
+  2026-11-22 (UTC). `terminal_contract` lives in `nifeos/terminal_contract`, and nife depends on
+  it by rev ([#4015](https://github.com/nifeos/nife/pull/4015)). The move of `line_editor` waits on
+  its own remaining work.
 - Decision 7, the reserved bits of the terminal's first request word: Done,
   [#3972](https://github.com/nifeos/nife/pull/3972), ruled 2026-11-22 (UTC), A.
+
+- The move: Done, [#4001](https://github.com/nifeos/nife/pull/4001). The crate lives in
+  [nifeos/line_editor](https://github.com/nifeos/line_editor), and nife depends on it by git and
+  `rev`, a commit on its `main`, with `version = "0.1.0"`. It keeps `publish = false`; no tag
+  exists, and crates.io holds no release.
 
 ## Open decisions
 
@@ -107,7 +114,7 @@ or identity, a dependency); everything else is two-way and the maintainer decide
 2. The cut the disposition requires is not made: `component`, `proto` and the `capability_plan`
    dependency are nife's terminal contract, not a line editor.
    Finding: `component` declares slot orders, virtual addresses, page budgets and a supervisor
-   protocol for one nife program, and pulls `capability_plan` (which pulls `abi`) into a crate
+   protocol for one nife program, and pulls `capability_plan` (which pulls `moho_abi`) into a crate
    whose engine needs neither. `proto` is the IPC framing of the terminal contract: opcodes,
    badges, a quiesce handshake and a swap protocol that only nife programs speak. 32 of the 38
    caller files reach only these two modules; the kernel links the crate for `proto` alone. The "nothing that leaves references back" rule of milestone 1017 (the contract crates leave in this order) cannot hold while `component` names `terminal_supervisor`, `system_initializer`
@@ -134,8 +141,9 @@ The P2 items are in [the appendix](1098-line-editor-outside-review/later-items.m
   the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
   program holds the two `QUIESCED` values equal. Items 3 and 4 and decisions 2, 3 and 5: the
   engine's names and the crate root's ratification are built.
-- **Recorded.** The two moves, to `nifeos/line_editor` and `nifeos/terminal_contract`, with item 1
-  and the rest of each review package's "What still blocks the move".
+- **Done.** The move to `nifeos/terminal_contract`, [#4015](https://github.com/nifeos/nife/pull/4015).
+- **Recorded.** The move to `nifeos/line_editor`, with item 1 and the rest of its review package's
+  "What still blocks the move".
 - **Recorded.** The externalization list: `crates/externalization-list.txt` names
   `line_editor` and not `terminal_contract`, checked in that file on main.
 
@@ -321,4 +329,4 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 An outside review of `line_editor` before it leaves. The cut has landed: `terminal_contract` and
 `line_editor_component` hold the contract, and the engine depends on nothing. Thirteen of the
 fourteen items have landed, the engine's renames among them, and the architect cleared both review packages.
-The two moves remain.
+`terminal_contract` has moved to its own repository; the move of `line_editor` remains.

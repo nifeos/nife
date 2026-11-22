@@ -1,4 +1,4 @@
-use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
+use moho_abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
 
 /// The child's addresses, its two stubs and the faulting pc are the kernel's
 /// (`user::supervised_child`), so the boot self-test's `supervised` and `teardown` checks and these
@@ -187,21 +187,21 @@ const fn movz(rd: u32, imm: u64) -> u32 {
 const fn label_reporter_aarch64() -> [u32; 32] {
     const SVC: u32 = 0xD400_0001;
     let round = [
-        movz(0, 1),                        // slot 1: the supervision endpoint
-        movz(1, abi::rendezvous::RECEIVE), //
-        movz(2, 0),                        //
-        movz(3, 0),                        //
-        movz(4, 0),                        //
-        movz(5, 0),                        // the label register, zero unless the kernel writes it
-        movz(8, abi::SYSTEM_CALL_INVOKE),  //
-        SVC,                               // RECEIVE: x0 = event, x1 = tid, x5 = label
-        0xAA01_03E2,                       // mov x2, x1   (tid)
-        0xAA05_03E3,                       // mov x3, x5   (label)
-        0xAA00_03E4,                       // mov x4, x0   (event)
-        movz(0, 0),                        // slot 0: the report endpoint
-        movz(1, abi::rendezvous::SEND),    //
-        movz(8, abi::SYSTEM_CALL_INVOKE),  //
-        SVC,                               // SEND [tid, label, event]
+        movz(0, 1),                             // slot 1: the supervision endpoint
+        movz(1, moho_abi::rendezvous::RECEIVE), //
+        movz(2, 0),                             //
+        movz(3, 0),                             //
+        movz(4, 0),                             //
+        movz(5, 0), // the label register, zero unless the kernel writes it
+        movz(8, moho_abi::SYSTEM_CALL_INVOKE), //
+        SVC,        // RECEIVE: x0 = event, x1 = tid, x5 = label
+        0xAA01_03E2, // mov x2, x1   (tid)
+        0xAA05_03E3, // mov x3, x5   (label)
+        0xAA00_03E4, // mov x4, x0   (event)
+        movz(0, 0), // slot 0: the report endpoint
+        movz(1, moho_abi::rendezvous::SEND), //
+        movz(8, moho_abi::SYSTEM_CALL_INVOKE), //
+        SVC,        // SEND [tid, label, event]
     ];
     let mut out = [0u32; 32];
     let mut i = 0;
@@ -210,7 +210,7 @@ const fn label_reporter_aarch64() -> [u32; 32] {
         out[15 + i] = round[i];
         i += 1;
     }
-    out[30] = movz(8, abi::SYSTEM_CALL_EXIT);
+    out[30] = movz(8, moho_abi::SYSTEM_CALL_EXIT);
     out[31] = SVC;
     out
 }
@@ -225,21 +225,21 @@ const fn li(rd: u32, imm: u64) -> u32 {
 const fn label_reporter_riscv64() -> [u32; 32] {
     const ECALL: u32 = 0x0000_0073;
     let round = [
-        li(10, 1),                        // a0: slot 1, the supervision endpoint
-        li(11, abi::rendezvous::RECEIVE), // a1
-        li(12, 0),                        // a2
-        li(13, 0),                        // a3
-        li(14, 0),                        // a4
-        li(15, 0),                        // a5: the label register
-        li(17, abi::SYSTEM_CALL_INVOKE),  // a7
-        ECALL,                            // RECEIVE: a0 = event, a1 = tid, a5 = label
-        0x0005_8613,                      // mv a2, a1   (tid)
-        0x0007_8693,                      // mv a3, a5   (label)
-        0x0005_0713,                      // mv a4, a0   (event)
-        li(10, 0),                        // a0: slot 0, the report endpoint
-        li(11, abi::rendezvous::SEND),    // a1
-        li(17, abi::SYSTEM_CALL_INVOKE),  // a7
-        ECALL,                            // SEND [tid, label, event]
+        li(10, 1),                             // a0: slot 1, the supervision endpoint
+        li(11, moho_abi::rendezvous::RECEIVE), // a1
+        li(12, 0),                             // a2
+        li(13, 0),                             // a3
+        li(14, 0),                             // a4
+        li(15, 0),                             // a5: the label register
+        li(17, moho_abi::SYSTEM_CALL_INVOKE),  // a7
+        ECALL,                                 // RECEIVE: a0 = event, a1 = tid, a5 = label
+        0x0005_8613,                           // mv a2, a1   (tid)
+        0x0007_8693,                           // mv a3, a5   (label)
+        0x0005_0713,                           // mv a4, a0   (event)
+        li(10, 0),                             // a0: slot 0, the report endpoint
+        li(11, moho_abi::rendezvous::SEND),    // a1
+        li(17, moho_abi::SYSTEM_CALL_INVOKE),  // a7
+        ECALL,                                 // SEND [tid, label, event]
     ];
     let mut out = [0u32; 32];
     let mut i = 0;
@@ -248,7 +248,7 @@ const fn label_reporter_riscv64() -> [u32; 32] {
         out[15 + i] = round[i];
         i += 1;
     }
-    out[30] = li(17, abi::SYSTEM_CALL_EXIT);
+    out[30] = li(17, moho_abi::SYSTEM_CALL_EXIT);
     out[31] = ECALL;
     out
 }
@@ -259,13 +259,13 @@ const fn label_reporter_riscv64() -> [u32; 32] {
 const fn label_reporter_x86_64() -> [u32; 26] {
     const {
         assert!(
-            abi::rendezvous::SEND == 0,
+            moho_abi::rendezvous::SEND == 0,
             "`xor esi, esi` encodes SEND as zero"
         );
     }
-    let rcv = (abi::rendezvous::RECEIVE as u32).to_le_bytes();
-    let inv = (abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
+    let rcv = (moho_abi::rendezvous::RECEIVE as u32).to_le_bytes();
+    let inv = (moho_abi::SYSTEM_CALL_INVOKE as u32).to_le_bytes();
+    let ext = (moho_abi::SYSTEM_CALL_EXIT as u32).to_le_bytes();
     let round: [u8; 48] = [
         0xBF, 0x01, 0x00, 0x00, 0x00, // mov edi, 1 (slot 1: the supervision endpoint)
         0xBE, rcv[0], rcv[1], rcv[2], rcv[3], // mov esi, RECEIVE

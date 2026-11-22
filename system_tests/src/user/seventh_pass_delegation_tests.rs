@@ -11,13 +11,13 @@
 //! Name: provisional (this pass's lane, 2026-10-12 UTC). Cross-ISA: `invoke`, the delegation rule
 //! (`Delegation::derive`) and the rendezvous are portable kernel code (DECISIONS §19 (architectural parity is a tenet)).
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::{self, delete_current_capability};
 
-const SEND_CAPABILITY: u64 = abi::rendezvous::SEND_CAPABILITY;
+const SEND_CAPABILITY: u64 = moho_abi::rendezvous::SEND_CAPABILITY;
 use crate::system_call::invoke;
 
 /// `invoke` through the real dispatcher. Copied in shape from `confinement_attack_tests::call`.

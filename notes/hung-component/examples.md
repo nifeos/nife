@@ -9,12 +9,12 @@ Watch the domain of a running supervisor from a program that cannot touch it. Th
 `liveness_watch` would use, and it is `ps`'s loop with the acting half absent:
 
 ```rust
-let mut cursor = abi::survey::DONE;          // 0, which is also "start here"
+let mut cursor = moho_abi::survey::DONE;          // 0, which is also "start here"
 loop {
     let (next, tid, state) = user_mode_runtime::survey(domain, cursor);
     if next < 0 { break }                    // refused: NOT an empty domain. Say so.
     let next = next as u64;
-    if next == abi::survey::DONE || next <= cursor { break }
+    if next == moho_abi::survey::DONE || next <= cursor { break }
     // `state` is READY | RUNNING | BLOCKED | DEAD, and BLOCKED is where a hang hides.
     cursor = next;
 }
@@ -36,9 +36,9 @@ Restore a service under a hung component, which is the four steps minus one, and
 // 1 BUILT: the replacement, endowed without the device, unconfigured.
 // 2 DRAINED: asked with a deadline, and unanswered. That is how the hang was noticed.
 // 3 REVOKED: take the device back from a holder that consents to nothing.
-invoke(DEVICE, abi::frame::REVOKE, 0, 0, 0);
+invoke(DEVICE, moho_abi::frame::REVOKE, 0, 0, 0);
 // 4 STARTED: map, configure, start. It drains what queued behind the silence.
 // 5 DESTROYED: the region kept at build. Finishes the incumbent in place, and its
-//   stranded caller gets abi::Error::Gone.
-invoke(incumbent_region, abi::memory_region::DESTROY, 0, 0, 0);
+//   stranded caller gets moho_abi::Error::Gone.
+invoke(incumbent_region, moho_abi::memory_region::DESTROY, 0, 0, 0);
 ```

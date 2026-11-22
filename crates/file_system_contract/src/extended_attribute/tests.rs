@@ -316,7 +316,6 @@ fn the_attribute_words_carry_a_kind_and_a_length_without_bleeding() {
             extended_attribute::MAXIMUM_KIND,
             extended_attribute::MAXIMUM_VALUE_BYTES,
         ),
-        (0xFFFF_FFFF, 1), // a caller that ignores MAXIMUM_KIND: the reply masks rather than lies
     ] {
         let w1 = extended_attribute::specification(kind, len as u64);
         assert_eq!(
@@ -331,10 +330,7 @@ fn the_attribute_words_carry_a_kind_and_a_length_without_bleeding() {
         );
         let r = extended_attribute::reply(kind, len);
         assert!(r >= 0);
-        assert_eq!(
-            extended_attribute::reply_kind(r),
-            kind & extended_attribute::MAXIMUM_KIND
-        );
+        assert_eq!(extended_attribute::reply_kind(r), kind);
         assert_eq!(extended_attribute::reply_value_len(r), len);
     }
 }
@@ -428,5 +424,64 @@ fn a_record_wider_than_the_contract_is_refused_when_a_blob_is_rewritten() {
     assert_eq!(
         store::remove(&blob, b"b", &mut out),
         Err(extended_attribute::ENOSPC)
+    );
+}
+
+/// **A kind past `MAXIMUM_KIND` is refused at the packer, not masked**: a reply that came back with
+/// a different kind would hand the caller somebody else's type without an error.
+#[test]
+#[should_panic]
+fn a_reply_refuses_a_kind_past_the_maximum() {
+    let _ = extended_attribute::reply(extended_attribute::MAXIMUM_KIND + 1, 1);
+}
+
+/// **A damaged blob whose kind has the top bit set ends the walk there**, because `set` never
+/// writes such a kind and the reply could not carry it.
+#[test]
+fn a_record_with_a_kind_past_the_maximum_ends_the_walk() {
+    use extended_attribute::store;
+    let mut out = scratch();
+    let n = store::set(&[], b"good", extended_attribute::RAW, b"v", &mut out).expect("set");
+    let mut blob = out[..n].to_vec();
+    let mut second = scratch();
+    let m = store::set(&[], b"bad", extended_attribute::RAW, b"w", &mut second).expect("set");
+    // Bytes 1 to 4 of a record are its kind, little-endian; set bit 31.
+    second[4] |= 0x80;
+    blob.extend_from_slice(&second[..m]);
+    assert_eq!(
+        store::count(&blob),
+        1,
+        "the walk stops before the damaged record"
+    );
+    assert!(store::get(&blob, b"bad").is_none());
+}
+
+#[test]
+#[should_panic]
+fn a_specification_refuses_a_length_past_32_bits() {
+    let _ = extended_attribute::specification(extended_attribute::RAW, 1 << 32);
+}
+
+/// The bounded half of `proofs::the_attribute_list_walk_ends` and
+/// `proofs::the_attribute_store_walk_ends`: a page of the smallest records walks to its end.
+#[test]
+fn a_page_of_the_smallest_records_walks_to_its_end() {
+    let mut page = [0u8; PAGE_BYTES];
+    for at in (0..PAGE_BYTES - PAGE_BYTES % 2).step_by(2) {
+        page[at..at + 2].copy_from_slice(&[1, b'a']);
+    }
+    assert_eq!(
+        extended_attribute::list::iter(&page).count(),
+        PAGE_BYTES / extended_attribute::list::record_len(1)
+    );
+    let smallest = extended_attribute::store::record_len(1, 0);
+    let mut blob = [0u8; PAGE_BYTES];
+    for at in (0..PAGE_BYTES - PAGE_BYTES % smallest).step_by(smallest) {
+        blob[at] = 1;
+        blob[at + smallest - 1] = b'a';
+    }
+    assert_eq!(
+        extended_attribute::store::iter(&blob).count(),
+        PAGE_BYTES / smallest
     );
 }

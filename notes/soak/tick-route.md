@@ -33,7 +33,7 @@ which no user workload could reach.
 
 Four properties, each of which was a requirement rather than a bonus:
 
-- No system call is added. The userspace half already existed: `abi::interrupt::WAIT` is a method on an
+- No system call is added. The userspace half already existed: `moho_abi::interrupt::WAIT` is a method on an
   `Interrupt` capability, and `user_mode_runtime::interrupt_wait` calls it. Only the *raise* was
   missing, and the kernel is already the thing that raises interrupts.
 - Nothing exists in a production build. That is proved in [qemu-2026-09.md](qemu-2026-09.md),

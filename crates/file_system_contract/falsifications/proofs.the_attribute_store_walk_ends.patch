@@ -1,0 +1,18 @@
+Falsifies `file_system_contract::proofs::the_attribute_store_walk_ends`.
+
+The defect: `extended_attribute::store::iter` advances by the name and value alone and skips the seven-byte header, so records overlap.
+
+Expected to fail: `assert!(consumed <= length)`, and the unwinding assertion of the walk's loop.
+
+diff --git a/crates/file_system_contract/src/extended_attribute.rs b/crates/file_system_contract/src/extended_attribute.rs
+--- a/crates/file_system_contract/src/extended_attribute.rs
++++ b/crates/file_system_contract/src/extended_attribute.rs
+@@ -425,7 +425,7 @@ pub mod store {
+             let value = self
+                 .blob
+                 .get(body + name_len..body + name_len + value_len)?;
+-            self.at += record_len(name_len, value_len);
++            self.at += name_len + value_len;
+             Some((name, kind, value))
+         }
+     }

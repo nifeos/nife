@@ -45,7 +45,7 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     else {
         refuse()
     };
-    let grants = [(REPORT, abi::rights::WRITE)];
+    let grants = [(REPORT, moho_abi::rights::WRITE)];
     // One page of the building budget, mapped into the child as the window its startup page lists.
     let Ok(window_frame) = retype_into_page_frame_from(MEMORY_REGION) else {
         refuse()
@@ -56,7 +56,7 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
         maps: &[(
             window.virtual_address,
             window_frame,
-            abi::address_space::MAP_READ_WRITE,
+            moho_abi::address_space::MAP_READ_WRITE,
         )],
         windows: &[window],
         stack_pages: system_initializer::CHILD_STACK_PAGES,

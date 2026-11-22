@@ -10,7 +10,7 @@ needs_person: no
 # 153. `OutOfMemory` collapses three distinct causes into one error code
 
 Found 2026-08-22 while costing milestone 49's attribution fork: `Untyped::SPLIT`'s
-own doc comment already admits it (`crates/abi/src/lib.rs`), but nothing downstream lets a caller,
+own doc comment already admits it (`crates/moho_abi/src/lib.rs`), but nothing downstream lets a caller,
 or a person debugging one, tell the three apart.
 
 **Declined for now (DECISIONS §119, 2026-08-23), for want of a customer**: no caller
@@ -26,7 +26,7 @@ failures look like.
 
 `Untyped::SPLIT` (create a new region) returns `Error::OutOfMemory` for three unrelated reasons,
 by its own documentation: *"`OutOfMemory` when the budget or region table is exhausted or the
-cspace is full"* (`crates/abi/src/lib.rs`, the `SPLIT` doc comment). `RETYPE_OBJECT` collapses a
+cspace is full"* (`crates/moho_abi/src/lib.rs`, the `SPLIT` doc comment). `RETYPE_OBJECT` collapses a
 different pair the same way: *"when the untyped is exhausted, the object registry is full, or the
 cspace is."* At the system call layer (`memory_region_split` in `kernel/src/system_call/memory_region.rs`), the kernel-side `Option` from
 `untyped::split()` becomes `.ok_or(Error::OutOfMemory)?` with no cause attached; the caller sees one

@@ -37,8 +37,8 @@ The architect ruled all thirteen on 2026-11-11 (UTC). Each rename reaches every 
 
 What remains:
 
-- `FAULT_RENDEZVOUS_SLOT`'s own doc comment in `crates/abi/src/fault.rs` still says "supervision endpoint" and "a working endpoint". `helpers/format_values_check.py` reads a doc comment that changes under a rename as a changed meaning, so those two words change in a doc-only pull request with no rename beside it.
-- Two spellings the audit did not list, for the architect if wanted: the kernel test `an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack` (and its falsification patch), and the generic IPC sentences in `crates/abi/src/rendezvous.rs` that still call the object an endpoint.
+- `FAULT_RENDEZVOUS_SLOT`'s own doc comment in `crates/moho_abi/src/fault.rs` still says "supervision endpoint" and "a working endpoint". `helpers/format_values_check.py` reads a doc comment that changes under a rename as a changed meaning, so those two words change in a doc-only pull request with no rename beside it.
+- Two spellings the audit did not list, for the architect if wanted: the kernel test `an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack` (and its falsification patch), and the generic IPC sentences in `crates/moho_abi/src/rendezvous.rs` that still call the object an endpoint.
 
 ## What drives it
 

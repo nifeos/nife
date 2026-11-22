@@ -30,7 +30,7 @@ The kernel gains two verbs on the `ThreadControlBlock`, `SUSPEND` and `RESUME`, 
 
 Two rules ride with the decision, so the door stays open without paying for it now:
 
-1. **Unknown event codes are never acted on.** `crates/abi/src/fault.rs` carries
+1. **Unknown event codes are never acted on.** `crates/moho_abi/src/fault.rs` carries
    `EVENT_FAULT = 1` and `EVENT_EXIT = 2`, and every consumer dispatches on those known codes. A
    supervisor that acted on a code it did not know would reap a merely-paused child as dead. This
    rule is what makes a stopped event *additive later* rather than a migration across every

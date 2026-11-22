@@ -151,7 +151,7 @@ releases the lock, and only then calls `schedule()`. `handshake.on_cpu` stays se
 next thread runs `finish_switch`. A supervisor on another core can receive the message and `REAP`
 inside that window, and the refuse phase correctly declines to free a stack a core is standing on.
 The defect is in what `REAP` does with that refusal without the fix: `NotPermitted`, which
-`abi::rendezvous::REAP` documents only for a child region, and which `terminal_supervisor` and
+`moho_abi::rendezvous::REAP` documents only for a child region, and which `terminal_supervisor` and
 `sub_server_supervisor` treat as fatal on the first refusal.
 
 **The fix**: `reap_supervised` yields and looks again while the corpse it was asked for is still

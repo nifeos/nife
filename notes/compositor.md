@@ -140,7 +140,7 @@ not defaults**, and that a refusal read as "you hold no such capability" rather 
 error. Both halves are proved, and the refusal turns out to have two forms:
 
 - An empty capability table slot. A client that was not granted an input endpoint has *nothing* in
-  slot 2. Its `RECEIVE` there returns `abi::Error::NoSuchSlot` (-1), whose doc comment has said the
+  slot 2. Its `RECEIVE` there returns `moho_abi::Error::NoSuchSlot` (-1), whose doc comment has said the
   right thing since milestone 7 (user mode): "The slot is empty. Not permission denied: there is
   nothing there." The test asserts on exactly that value, because `NotPermitted` would mean the
   authority existed and was withheld, which is a different and weaker world.

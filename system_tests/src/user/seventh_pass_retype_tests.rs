@@ -12,7 +12,7 @@
 //! Name: provisional (this pass's lane, 2026-10-12 UTC), for the module and the file; a rename is an
 //! architect's call.
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Object, Rights, memory_region_capability_rights};
@@ -58,7 +58,7 @@ fn a_grant_less_budget_narrows_a_split_child_and_every_retype_alike() {
         Rights::WRITE,
         "the leaf budget should be WRITE-only, with no GRANT to inherit",
     );
-    let child_slot = call(budget_b, abi::memory_region::SPLIT, 2, 0, 0)
+    let child_slot = call(budget_b, moho_abi::memory_region::SPLIT, 2, 0, 0)
         .expect("SPLIT refused a WRITE-only budget") as u64;
     assert_eq!(
         rights_at(child_slot),
@@ -87,7 +87,7 @@ fn a_grant_less_budget_narrows_a_split_child_and_every_retype_alike() {
     );
 
     // A page frame.
-    let frame_slot = call(budget_a, abi::memory_region::RETYPE, 0, 0, 0)
+    let frame_slot = call(budget_a, moho_abi::memory_region::RETYPE, 0, 0, 0)
         .expect("RETYPE refused a WRITE-only budget") as u64;
     assert_eq!(
         rights_at(frame_slot),
@@ -99,11 +99,11 @@ fn a_grant_less_budget_narrows_a_split_child_and_every_retype_alike() {
     // Three kernel object kinds via RETYPE_OBJECT, the case the pass found the frame-only test did not
     // reach. Each must come back WRITE-only.
     for &(kind, name) in &[
-        (abi::object_type::RENDEZVOUS, "rendezvous"),
-        (abi::object_type::NOTIFICATION, "notification"),
-        (abi::object_type::TIMER, "timer"),
+        (moho_abi::object_type::RENDEZVOUS, "rendezvous"),
+        (moho_abi::object_type::NOTIFICATION, "notification"),
+        (moho_abi::object_type::TIMER, "timer"),
     ] {
-        let obj_slot = call(budget_a, abi::memory_region::RETYPE_OBJECT, kind, 0, 0)
+        let obj_slot = call(budget_a, moho_abi::memory_region::RETYPE_OBJECT, kind, 0, 0)
             .unwrap_or_else(|e| panic!("RETYPE_OBJECT {name} refused a WRITE-only budget: {e:?}"))
             as u64;
         assert_eq!(

@@ -37,18 +37,18 @@ fn pack_name_refuses_what_two_words_cannot_hold() {
 }
 
 /// **What a grant can name is wider than what two words hold**: a 20-byte name
-/// like `least_authority_demo` is grantable, and only the packer refuses it.
+/// like `quarterly_report.txt` is grantable, and only the packer refuses it.
 #[test]
 fn a_granted_name_may_be_longer_than_two_words() {
     let long = [b'n'; grant::MAXIMUM_NAME_BYTES];
-    assert!(grant::fits(b"least_authority_demo"));
+    assert!(grant::fits(b"quarterly_report.txt"));
     assert!(grant::fits(&long), "the longest grantable name");
     assert!(
         !grant::fits(&[b'n'; grant::MAXIMUM_NAME_BYTES + 1]),
         "one byte past it"
     );
     assert!(!grant::fits(b""));
-    assert!(grant::pack_name(b"least_authority_demo").is_none());
+    assert!(grant::pack_name(b"quarterly_report.txt").is_none());
     const { assert!(grant::MAXIMUM_WORDS_NAME_BYTES < grant::MAXIMUM_NAME_BYTES) };
     // The spec word's length field is one byte, so the longest name must still be sayable in it.
     assert_eq!(
@@ -178,13 +178,26 @@ fn a_malformed_grant_page_name_is_refused_not_read_as_the_root() {
 /// **START words that still carry a name are told apart from the ones a grant page goes with.**
 #[test]
 fn start_words_carrying_a_name_are_recognized() {
-    let spec = grant::specification(0, 3);
-    assert!(grant::words_carry_no_name(0, 0, spec));
-    assert!(!grant::words_carry_no_name(1, 0, spec));
-    assert!(!grant::words_carry_no_name(0, 1, spec));
+    let specification = grant::specification(0, 3);
+    assert!(grant::words_carry_no_name(0, 0, specification));
+    assert!(!grant::words_carry_no_name(1, 0, specification));
+    assert!(!grant::words_carry_no_name(0, 1, specification));
     assert!(!grant::words_carry_no_name(
         0,
         0,
         grant::specification(4, 3)
     ));
+}
+
+#[test]
+#[should_panic]
+fn a_specification_refuses_a_name_past_the_maximum() {
+    // Masked to the length byte, 256 would read back as `WHOLE_NAMESPACE`.
+    let _ = grant::specification(256, grant::rights::READ);
+}
+
+#[test]
+#[should_panic]
+fn a_specification_refuses_rights_past_the_field() {
+    let _ = grant::specification(1, 1 << 56);
 }

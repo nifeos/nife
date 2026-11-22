@@ -121,7 +121,7 @@ can undo what the capability was for.
 ## Freeing callers a server can no longer answer
 
 A `CALL` caller whose request a server received left every wait queue at the rendezvous. No queue
-links it, and only `ipc_reply` wakes it. `abi::Error::Gone` reaches wait queues and nothing else. So
+links it, and only `ipc_reply` wakes it. `moho_abi::Error::Gone` reaches wait queues and nothing else. So
 without more, a caller stranded by a dead server stayed blocked for the life of the machine. It was
 also a region nobody could reclaim. QNX Neutrino has not allowed that since the 1990s: "if the
 server thread fails, exits, or disappears, the client thread becomes READY, with `MsgSend()`

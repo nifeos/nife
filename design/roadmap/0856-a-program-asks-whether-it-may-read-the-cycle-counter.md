@@ -16,7 +16,7 @@ It follows from the block of milestone 353 (the aarch64 half of 74).
 
 **In brief.** calef ruled decision B of milestone 353 as B4 in two steps on 2026-10-07 (UTC). Step
 1 is built: `user_mode_runtime::cycle_reading()` returns a count paired with an
-`abi::cycle_counter::CycleMeaning`. Step 2 is this block: a kernel-provided page or method that
+`moho_abi::cycle_counter::CycleMeaning`. Step 2 is this block: a kernel-provided page or method that
 lets a program ask, before it reads, whether it may, so an ungranted read can fall back instead of
 being killed. calef called it a later system-call-surface fork, so it is written down and not built.
 

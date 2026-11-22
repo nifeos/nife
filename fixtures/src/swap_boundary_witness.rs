@@ -108,7 +108,7 @@ fn converse() -> ! {
         // served, and the endpoint is the operator's and still exists, so ask again. Dead on the
         // healthy channels (milestone 23 (a capability-routed component OS with live replacement)'s
         // hung-component channel only).
-        if got == abi::Error::Gone as i64 as u64 {
+        if got == moho_abi::Error::Gone as i64 as u64 {
             bits |= ck::WAS_GONE;
             let again = call(SVC, hot_swap_contract::OPERATION_PUT, seq);
             got = again.0;
@@ -223,7 +223,7 @@ fn produce() -> ! {
 /// receive, and the whole question here is what happens to one that is not.
 fn try_receive_capability(slot: u64) -> i64 {
     // SAFETY: a plain system call. If it succeeds we have stolen a request, which is the failure.
-    unsafe { user_mode_runtime::invoke(slot, abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) }
+    unsafe { user_mode_runtime::invoke(slot, moho_abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) }
 }
 
 /// **The attacker.** It tries to become the server on the endpoint it is a client of.
@@ -236,7 +236,7 @@ fn usurp() -> ! {
         RPT,
         hot_swap_contract::RPT_ATTACK,
         (-r) as u64,
-        abi::rendezvous::RECEIVE_CAPABILITY,
+        moho_abi::rendezvous::RECEIVE_CAPABILITY,
     );
     // Also say so on the operator's channel, so the operator knows the attack has been made and the
     // run is not simply missing a report. `w1` carries the verdict, mirroring the report's word:
@@ -274,7 +274,7 @@ fn confused_deputy() -> ! {
         RPT,
         hot_swap_contract::RPT_ATTACK,
         (-r) as u64,
-        abi::rendezvous::RECEIVE_CAPABILITY,
+        moho_abi::rendezvous::RECEIVE_CAPABILITY,
     );
     // The deputy call: drive the server to write far past its log page.
     let (d0, d1) = call(

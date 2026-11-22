@@ -12,7 +12,7 @@
 //! is, since a sentinel recognised by a second program is a witness value. Refused
 //! `capability_demo_protocol` (`demo` says why the code exists, not what it is), `demo_words` (the
 //! representation, not the agreement), `capability_demo` (reads as the demo itself), and folding
-//! these into `crates/abi` (fixture constants have no business widening the system call surface).
+//! these into `crates/moho_abi` (fixture constants have no business widening the system call surface).
 
 #![no_std]
 
@@ -50,7 +50,7 @@ pub const USED_WORD: u64 = 0x5A;
 /// **The word is the grant's result.** An ungranted read of `PMCCNTR_EL0` or the `cycle` CSR
 /// traps, and this kernel turns that into a fault that ends the thread, so a program that gets as
 /// far as sending anything is a program the grant reached. Word 1 is the difference of two reads
-/// taken across a yield, and word 2 is what they count, an `abi::cycle_counter::CycleMeaning` as
+/// taken across a yield, and word 2 is what they count, a `moho_abi::cycle_counter::CycleMeaning` as
 /// its word (milestone 353 (the aarch64 half of 74)). The kernel's test checks the meaning on every architecture, and that
 /// the difference moved forward only where the kernel itself says the counter runs (milestone 74 (cycle counters);
 /// the reasoning is on the test).

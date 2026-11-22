@@ -3,10 +3,6 @@
 version = 4
 
 [[package]]
-name = "abi"
-version = "0.1.0"
-
-[[package]]
 name = "address_space_layout"
 version = "0.1.0"
 source = "git+https://github.com/nifeos/address_space_layout?rev=02d497b62915c1fb133ef1de6e76598fa51e67fe#02d497b62915c1fb133ef1de6e76598fa51e67fe"
@@ -159,6 +155,7 @@ dependencies = [
 [[package]]
 name = "grant_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/grant_contract?rev=d4e9ca29d51bc71d678aadaa00411eba953202b3#d4e9ca29d51bc71d678aadaa00411eba953202b3"
 dependencies = [
  "program_argument_contract",
 ]
@@ -166,6 +163,7 @@ dependencies = [
 [[package]]
 name = "grant_plan"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/grant_plan?rev=a5d87c426ec0aeebeb51a13d3ffb116caebd73c9#a5d87c426ec0aeebeb51a13d3ffb116caebd73c9"
 dependencies = [
  "byte_glob",
  "grant_contract",
@@ -219,6 +217,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
+name = "moho_abi"
+version = "0.1.0"
+
+[[package]]
 name = "nu-ansi-term"
 version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -251,6 +253,7 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
 
 [[package]]
 name = "program_table"
@@ -443,12 +446,12 @@ checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
 name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",
+ "moho_abi",
  "socket_contract",
 ]
 

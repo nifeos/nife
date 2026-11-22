@@ -21,7 +21,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use abi::rendezvous;
+use moho_abi::rendezvous;
 use user_mode_runtime::{exit, receive, receive_capability, require, send};
 
 const CHANNEL: u64 = 0;

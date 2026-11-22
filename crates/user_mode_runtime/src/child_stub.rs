@@ -19,13 +19,13 @@
 #[cfg(target_arch = "aarch64")]
 pub const SEND_THEN_EXIT: [u32; 9] = [
     0xD280_0000,
-    0xD280_0001 | ((abi::rendezvous::SEND as u32) << 5), // movz x1, #SEND
-    0xD280_0000 | (1u32 << 5) | 2,                       // movz x2, #1  (the done word)
+    0xD280_0001 | ((moho_abi::rendezvous::SEND as u32) << 5), // movz x1, #SEND
+    0xD280_0000 | (1u32 << 5) | 2,                            // movz x2, #1  (the done word)
     0xD280_0003,
     0xD280_0004,
-    0xD280_0000 | ((abi::SYSTEM_CALL_INVOKE as u32) << 5) | 8,
+    0xD280_0000 | ((moho_abi::SYSTEM_CALL_INVOKE as u32) << 5) | 8,
     0xD400_0001,
-    0xD280_0008 | ((abi::SYSTEM_CALL_EXIT as u32) << 5), // movz x8, #SYSTEM_CALL_EXIT
+    0xD280_0008 | ((moho_abi::SYSTEM_CALL_EXIT as u32) << 5), // movz x8, #SYSTEM_CALL_EXIT
     0xD400_0001,
 ];
 
@@ -34,15 +34,15 @@ pub const SEND_THEN_EXIT: [u32; 9] = [
 /// Each `li aN, imm` is `addi aN, x0, imm` = `(imm << 20) | (reg << 7) | 0x13`; `ecall` is 0x73.
 #[cfg(target_arch = "riscv64")]
 pub const SEND_THEN_EXIT: [u32; 9] = [
-    0x0000_0513,                                            // li a0, 0            (slot 0)
-    0x0000_0593 | ((abi::rendezvous::SEND as u32) << 20),   // li a1, SEND         (method)
-    0x0010_0613,                                            // li a2, 1            (the done word)
-    0x0000_0693,                                            // li a3, 0
-    0x0000_0713,                                            // li a4, 0
-    0x0000_0893 | ((abi::SYSTEM_CALL_INVOKE as u32) << 20), // li a7, SYSTEM_CALL_INVOKE
-    0x0000_0073,                                            // ecall               (SEND)
-    0x0000_0893 | ((abi::SYSTEM_CALL_EXIT as u32) << 20),   // li a7, SYSTEM_CALL_EXIT
-    0x0000_0073,                                            // ecall               (EXIT)
+    0x0000_0513,                                               // li a0, 0            (slot 0)
+    0x0000_0593 | ((moho_abi::rendezvous::SEND as u32) << 20), // li a1, SEND         (method)
+    0x0010_0613, // li a2, 1            (the done word)
+    0x0000_0693, // li a3, 0
+    0x0000_0713, // li a4, 0
+    0x0000_0893 | ((moho_abi::SYSTEM_CALL_INVOKE as u32) << 20), // li a7, SYSTEM_CALL_INVOKE
+    0x0000_0073, // ecall               (SEND)
+    0x0000_0893 | ((moho_abi::SYSTEM_CALL_EXIT as u32) << 20), // li a7, SYSTEM_CALL_EXIT
+    0x0000_0073, // ecall               (EXIT)
 ];
 
 /// `x86_64`: rdi=slot 0, rsi=`SEND`, rdx=1, r10=0, r8=0, rax=`SYSTEM_CALL_INVOKE`, system call; then rax=`SYSTEM_CALL_EXIT`,
@@ -54,9 +54,9 @@ pub const SEND_THEN_EXIT: [u32; 9] = [
 /// registers did not exist on the 386 whose opcode map this still is.
 #[cfg(target_arch = "x86_64")]
 pub const SEND_THEN_EXIT: [u8; 46] = {
-    const SEND_METHOD: u32 = abi::rendezvous::SEND as u32;
-    const INVOKE_NR: u32 = abi::SYSTEM_CALL_INVOKE as u32;
-    const EXIT_NR: u32 = abi::SYSTEM_CALL_EXIT as u32;
+    const SEND_METHOD: u32 = moho_abi::rendezvous::SEND as u32;
+    const INVOKE_NR: u32 = moho_abi::SYSTEM_CALL_INVOKE as u32;
+    const EXIT_NR: u32 = moho_abi::SYSTEM_CALL_EXIT as u32;
     /// The little-endian bytes of a 32-bit immediate, so each row below reads as one instruction
     /// rather than as four hand-computed constants.
     const fn imm(v: u32) -> [u8; 4] {
@@ -99,7 +99,7 @@ mod tests {
             // `mov esi, SEND` carries the method number little-endian.
             assert_eq!(
                 u32::from_le_bytes(SEND_THEN_EXIT[6..10].try_into().unwrap()),
-                abi::rendezvous::SEND as u32
+                moho_abi::rendezvous::SEND as u32
             );
         }
     }

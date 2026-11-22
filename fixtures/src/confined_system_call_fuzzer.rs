@@ -37,14 +37,14 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use abi::{SYSTEM_CALL_EXIT, SYSTEM_CALL_INVOKE, SYSTEM_CALL_YIELD};
 use confined_system_call_fuzzer_contract::{
     ENDOWED, GO, GO_EXIT, NO_CAPABILITY, PLAYGROUND_PAGES, PLAYGROUND_VA, REPORT_VA,
     SYSTEM_CALL_CAPABILITY_DELETE, report,
 };
+use moho_abi::{SYSTEM_CALL_EXIT, SYSTEM_CALL_INVOKE, SYSTEM_CALL_YIELD};
 use user_mode_runtime::{exit, raw_system_call, receive};
 
-const SLOTS: u64 = abi::CAPABILITY_TABLE_SLOTS;
+const SLOTS: u64 = moho_abi::CAPABILITY_TABLE_SLOTS;
 const PAGE: u64 = address_space_layout::PAGE_BYTES;
 
 fn splitmix(x: u64) -> u64 {
@@ -110,9 +110,9 @@ impl Rng {
             7 => 1 + self.below(4), // a page count
             8 => NO_CAPABILITY,
             9 => match self.below(3) {
-                0 => abi::rendezvous::REPLY_DELIVERED,
-                1 => abi::notification::BOUND,
-                _ => (abi::Error::NoSuchSlot as i64) as u64,
+                0 => moho_abi::rendezvous::REPLY_DELIVERED,
+                1 => moho_abi::notification::BOUND,
+                _ => (moho_abi::Error::NoSuchSlot as i64) as u64,
             },
             10 => self.below(1 << 16),
             _ => self.next(),
@@ -139,11 +139,11 @@ fn pick(rng: &mut Rng) -> (u64, [u64; 6]) {
     // rendezvous. Applied whatever the slot holds, which nudges a `SEND_CAPABILITY`'s capability argument
     // off 3 and 5 too; that is the price of not knowing the slot's type.
     if nr == SYSTEM_CALL_INVOKE
-        && words[1] == abi::memory_region::RETYPE_OBJECT
-        && (words[2] == abi::object_type::THREAD_CONTROL_BLOCK
-            || words[2] == abi::object_type::TIMER)
+        && words[1] == moho_abi::memory_region::RETYPE_OBJECT
+        && (words[2] == moho_abi::object_type::THREAD_CONTROL_BLOCK
+            || words[2] == moho_abi::object_type::TIMER)
     {
-        words[2] = abi::object_type::RENDEZVOUS;
+        words[2] = moho_abi::object_type::RENDEZVOUS;
     }
     (nr, words)
 }
@@ -165,12 +165,12 @@ fn draw(rng: &mut Rng) -> (u64, [u64; 6]) {
         // A number no system call answers, or one a little past the last real one (`SYSTEM_CALL_EXIT_THREAD`,
         // 4, since milestone 812 (`std::thread::spawn` runs real threads in one address space)).
         let nr = match rng.below(3) {
-            0 => abi::SYSTEM_CALL_EXIT_THREAD + 1 + rng.below(12),
+            0 => moho_abi::SYSTEM_CALL_EXIT_THREAD + 1 + rng.below(12),
             1 => rng.below(1 << 16),
             _ => rng.next(),
         };
         // Neither exit is drawn: each would end the fuzzer, which teaches the oracle nothing.
-        let nr = if nr == SYSTEM_CALL_EXIT || nr == abi::SYSTEM_CALL_EXIT_THREAD {
+        let nr = if nr == SYSTEM_CALL_EXIT || nr == moho_abi::SYSTEM_CALL_EXIT_THREAD {
             SYSTEM_CALL_YIELD
         } else {
             nr

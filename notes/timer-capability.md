@@ -177,7 +177,7 @@ assumes about it:
   here.
 - The "one spare comparator" claim for aarch64 is about EL1/EL0 only. `CNTHP_*`, `CNTHV_*` and
   `CNTPS_*` exist at EL2 and EL3 and are not this kernel's to give.
-- The scaffold is gone. The variant, the `abi::timer` module, the retype arm, the dispatch bodies,
+- The scaffold is gone. The variant, the `moho_abi::timer` module, the retype arm, the dispatch bodies,
   the expiry table and the tick hook were built to obtain the numbers and deleted. Rebuilding them is
   an hour; shipping them would have settled a system-call-surface fork by accident, which is what
   milestone 106's lane refused to do and what §10 (process) and §16 (revocation) reserve to an

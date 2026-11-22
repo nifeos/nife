@@ -8,7 +8,7 @@ The names are ratified (2026-11-20 UTC). The architect cleared the package on 20
 `nifeos/user_mode_runtime` is approved as `publish = false`, with no tag and no publish. The move to that
 repository is step 3 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md),
-after the contract crates the crate links. It waits until `abi`, `address_space_layout`,
+after the contract crates the crate links. It waits until `moho_abi`, `address_space_layout`,
 `current_cpu_contract` and `socket_contract` have left the tree and are git pins. It describes the crate as `main` plus this branch leaves it. The
 outside review that produced the work is
 [milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1112-user-mode-runtime-outside-review.md).
@@ -36,7 +36,7 @@ block, none is provisional and 42 have no block (the module-block baseline holds
 | edition, `rust-version` | 2024, 1.88, both literals |
 | license | `MIT OR Apache-2.0`, both texts at the crate root, written in the manifest. The crate adapts no source |
 | `publish` | `false`, with the one-sentence reason in the manifest: milestone 1017 keeps moved crates unpublished under §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit) until their release milestone |
-| dependencies | `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` by path, `counter_frequency_contract` by git `rev` outside `aarch64`, and `clock_contract` and `entropy_contract` already by git `rev` |
+| dependencies | `moho_abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` by path, `counter_frequency_contract` by git `rev` outside `aarch64`, and `clock_contract` and `entropy_contract` already by git `rev` |
 | manifest metadata | description, keywords (`no-std`, `runtime`, `system_call`), categories (`no-std`, `embedded`, `os`), `readme`, and `[package.metadata.docs.rs]` for the three targets. The `repository` key waits for the move |
 | size | 14 files under `src`, 2,689 lines |
 | lints | literal `[lints.rust]` and `[lints.clippy]` tables, the same set `current_cpu_contract` carries |
@@ -54,7 +54,7 @@ Every program. Each is a path dependency with `version = "0.1.0"`:
 - The crates `memory_region_heap`, `process_builder`, `hot_swap_server` and `system_initializer`.
 - The `kernel` names it only in a comment (`user_mode_runtime::counter_hertz`); it has no dependency.
 
-In the order of milestone 1017 the crate leaves at step 3, after `abi`, `address_space_layout`,
+In the order of milestone 1017 the crate leaves at step 3, after `moho_abi`, `address_space_layout`,
 `current_cpu_contract` and the contract crates it links, and before `disk-tools` (step 4) leaves,
 because every program of that package depends on it. After the move each of those manifests pins the
 new repository by a full commit.
@@ -82,7 +82,7 @@ version rows.
 | `script/crate-review-packet user_mode_runtime` | facts match this note: the public API, the 100 `unsafe` sites and the dependents above |
 | `script/lint --quick` | passes all sections |
 | `script/test` (host tests, the patched std build, kernel and system tests under QEMU 11.1.2 on `aarch64`, `riscv64` and `x86_64` including OVMF and AMD-Vi, the screen boot tours, the redoxfs image check) | passes, exit 0 |
-| `script/crate-standalone user_mode_runtime` | 12 failures, all for the move lane (P1-8): five path dependencies (`abi`, `address_space_layout`, `clock_contract`, `current_cpu_contract`, `socket_contract`; `clock_contract` has since left for git), the 108 names not yet ratified, 97 citations of the nife tree, milestones and sections, one architect's name, and the build and proofs that follow from the path dependencies |
+| `script/crate-standalone user_mode_runtime` | 12 failures, all for the move lane (P1-8): five path dependencies (`moho_abi`, `address_space_layout`, `clock_contract`, `current_cpu_contract`, `socket_contract`; `clock_contract` has since left for git), the 108 names not yet ratified, 97 citations of the nife tree, milestones and sections, one architect's name, and the build and proofs that follow from the path dependencies |
 | `script/crate-move --dry-run --into <scratch> user_mode_runtime` | the copy, mutation cron, scaffold, name-block removal and patch checks pass, and the README prose caps and passive-voice checks pass after this pull request's README edit. It fails the build (the path dependencies), standalone, the citations and five mentions of nife, the same list as above, and prints the nife-side pull request: thirteen dependents repoint to the repository at the tag |
 
 Not run, and so not claimed:
@@ -100,7 +100,7 @@ Not run, and so not claimed:
 
 | module | items |
 |---|---|
-| crate root | `VERSION`, `INTERFACE_ID`, `CycleMeaning` (re-exported from `abi`), the macros `program_entry!` and `panic_handler!` |
+| crate root | `VERSION`, `INTERFACE_ID`, `CycleMeaning` (re-exported from `moho_abi`), the macros `program_entry!` and `panic_handler!` |
 | `system_call` | `invoke`, `raw_system_call`; both `unsafe` |
 | `process` | `exit`, `trap`, `yield_now`, `require`, and the entry symbol `_start` |
 | `clock` | `counter_ticks`, `counter_hertz`, `counter_hertz_checked`, `cycle_reading` with `CycleReading { count, meaning }`, `current_cpu`, `tick_hertz`, `monotonic_nanoseconds` |
@@ -114,9 +114,9 @@ Not run, and so not claimed:
 | `entropy` | `fill_random_bytes` |
 | `child_stub` | `SEND_THEN_EXIT`, the machine code a child runs |
 
-The one type from another crate in a public signature is `CycleMeaning`, from `abi`, which is a leaf
+The one type from another crate in a public signature is `CycleMeaning`, from `moho_abi`, which is a leaf
 that leaves first. No nife capability type, spawn handoff or nife error enum appears. Return codes
-are `i64` words: a negative value is an `abi::Error`, and the doc of each call says which.
+are `i64` words: a negative value is a `moho_abi::Error`, and the doc of each call says which.
 
 What a stranger may find surprising:
 
@@ -180,8 +180,8 @@ The ratification replaced every provisional block with a ratified one dated 2026
 
 | item | owner |
 |---|---|
-| Wait for `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` to leave the tree, so they become git pins. The package is cleared (2026-11-21 UTC). | the contract crates' move lanes |
-| Convert the four path dependencies (`abi`, `address_space_layout`, `current_cpu_contract`, `socket_contract`) to `git` and `rev` with `version = "0.1.0"`, once each has left (`counter_frequency_contract` is already a git pin). | move lane, after the contract crates |
+| Wait for `moho_abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` to leave the tree, so they become git pins. The package is cleared (2026-11-21 UTC). | the contract crates' move lanes |
+| Convert the four path dependencies (`moho_abi`, `address_space_layout`, `current_cpu_contract`, `socket_contract`) to `git` and `rev` with `version = "0.1.0"`, once each has left (`counter_frequency_contract` is already a git pin). | move lane, after the contract crates |
 | `helpers/template_report_baseline.txt` holds two rows (`abbreviations` 8, `register_names` 1) and `packages/runtime.package.toml` and `crates/externalization-list.txt` list the crate. | move lane |
 | The template's scaffold findings (the pull request template names the architect, `CONTRIBUTING.md` cites a nife path, the commit hook and `deny.toml` mention nife) are listed in the runbook's `BUGS`. | move lane |
 | Every dependent's manifest (the ones listed above) repoints to the new repository by a full commit. | move lane, step 3 of milestone 1017 |
@@ -196,7 +196,7 @@ The ratification replaced every provisional block with a ratified one dated 2026
 
 ## Recommendation
 
-Cleared to move (2026-11-21 UTC, `publish = false`, no tag, no publish). The move waits for `abi`,
+Cleared to move (2026-11-21 UTC, `publish = false`, no tag, no publish). The move waits for `moho_abi`,
 `address_space_layout`, `current_cpu_contract` and `socket_contract` to leave the tree. The crate has a literal manifest, a README for three targets, license files,
 one way to read and write a window and no acronym left unexpanded at its first use. What remains is
 the move lane's text work (P1-8) and the contract crates that leave first.

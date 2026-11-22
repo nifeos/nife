@@ -42,7 +42,7 @@ If another program comes to need the terminal layer before nano does, split it t
 (`notes/roadmap.md`: a dependency on part of a milestone means split it).
 
 The raw-keystroke primitive from milestone 169 (`kilo`: the smallest real text editor),
-`OPERATION_RAWMODE` and `OPERATION_READRAW` in `crates/line_editor`, is what termios sits on.
+`OPERATION_RAWMODE` and `OPERATION_READRAW` in `line_editor`, is what termios sits on.
 
 ## The architect's rulings
 
@@ -89,7 +89,7 @@ and output speak the `line_editor` contract, and `isatty` answers true.
 *Name: provisional.* The `terminal` declaration and `TERMINAL_SLOT` are this block's proposals, and
 the slot's number is assigned when it is built. The alternatives considered were `console` and
 `tty`. `terminal` won because it is the word §21 (the terminal is a userspace component) and
-`crates/line_editor` already use for the same endpoint.
+`line_editor` already use for the same endpoint.
 
 ### `termios.h`
 
@@ -104,7 +104,7 @@ relibc's `ioctl` (`vendor/relibc/header/sys_ioctl/mod.rs`) answers every request
 The terminal contract carries no size (`notes/terminal-contract.md`), which is why a program
 cannot learn the window size.
 
-Per the ruling, `crates/line_editor` gains an operation, `OPERATION_WINDOWSIZE`, that answers rows
+Per the ruling, `line_editor` gains an operation, `OPERATION_WINDOWSIZE`, that answers rows
 and columns. `c_library`'s `ioctl` maps `TIOCGWINSZ` onto it and fills a `struct winsize`. The
 terminal server learns the size from its medium. On a screen it is direct, from the surface it
 draws. On serial it probes with `ESC [6n` after moving the cursor to the far corner, which a
@@ -115,7 +115,7 @@ That keeps `kilo`'s own `ESC [6n` fallback in `getWindowSize` from ever running:
 when `TIOCGWINSZ` fails. ncurses reads the same `ioctl` before `LINES` and `COLUMNS`.
 
 *Name: provisional.* `OPERATION_WINDOWSIZE` follows POSIX's `winsize` and `TIOCGWINSZ`; its opcode
-is the next free one in `crates/line_editor/src/proto.rs` when built. The alternative considered,
+is the next free one in `line_editor`'s `proto` module when built. The alternative considered,
 `OPERATION_SIZE`, does not say what is measured.
 
 ### Signals

@@ -175,3 +175,14 @@ fn a_set_past_maximum_names_reads_as_its_first_maximum_names() {
     assert_eq!(walk.next(), Some((&b"cde"[..], true)));
     assert_eq!(walk.next(), None, "the terminator ends the set");
 }
+
+/// The bounded half of `proofs::the_name_set_walk_ends`: a page of the smallest records stops at
+/// the cap, long before the page's end.
+#[test]
+fn a_page_of_the_smallest_records_walks_to_its_end() {
+    let mut page = [0u8; PAGE_BYTES];
+    for at in (0..PAGE_BYTES - PAGE_BYTES % 3).step_by(3) {
+        page[at..at + 3].copy_from_slice(&[1, 0, b'a']);
+    }
+    assert_eq!(nameset::iter(&page).count(), nameset::MAXIMUM_NAMES);
+}

@@ -101,7 +101,7 @@ than the note assumed.
    proof. B was never built, so its cost is not measured. Its parts are nameable: a new object
    type, create and membership methods on the system call surface, and membership upkeep on the death
    path that §40 (no reaper of last resort) already keeps careful.
-6. How reversible is it, and who has acted on it? `SURVEY` is method 6 on the wire (`crates/abi`)
+6. How reversible is it, and who has acted on it? `SURVEY` is method 6 on the wire (`crates/moho_abi`)
    with a record selector ruled 2026-09-21. `ps`, `pgrep`, `top` and `swapper` read it, through
    `crates/user_mode_runtime` and `crates/grant_plan`. A ruling for A changes none of them. B could
    still be added later beside A without breaking a reader, so the refusal is reversible. What
@@ -118,7 +118,7 @@ offer. Section 6 of the note calls that "neither built nor refused". Milestone 2
 
 ## The wording, fixed with the ruling
 
-`design/roadmap/0126-who-else-is-running.md`, `notes/process-view.md`, `crates/abi`'s `SURVEY`
+`design/roadmap/0126-who-else-is-running.md`, `notes/process-view.md`, `crates/moho_abi`'s `SURVEY`
 rustdoc and `kernel/src/sched.rs`'s `survey_supervised` said "subtree". The ruling settled the word,
 so each now says "domain" (`maintainer/126-followups`, 2026-09-26). This was a documentation edit,
 not a rename: no identifier changed.

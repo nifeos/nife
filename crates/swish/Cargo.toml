@@ -22,8 +22,8 @@ workspace = true
 # The parser and the planner, the manifests, and the program table. Everything this crate renders is
 # one of `grant_plan`'s values (`Refusal`, `Endowment`, `Line`), which is why the split lands here:
 # `grant_plan` decides what a line means and this decides what the user is told about it.
-grant_contract = { version = "0.1.0", path = "../grant_contract" }
-grant_plan = { version = "0.1.0", path = "../grant_plan" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
+grant_plan = { version = "0.1.0", git = "https://github.com/nifeos/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
 program_table = { version = "0.1.0", path = "../program_table" }
 
 # The slot a `std` program finds each authority in (milestone 595 (provisional)), so `caps` names

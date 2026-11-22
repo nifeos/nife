@@ -79,7 +79,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         // and every command a person runs ends in one; a word for those would arrive on the result
         // endpoint behind the child's own answer and the next command's read would take it. So the
         // ordinary path stays exactly as silent as it was.
-        if event == abi::fault::EVENT_FAULT {
+        if event == moho_abi::fault::EVENT_FAULT {
             report();
         }
     }

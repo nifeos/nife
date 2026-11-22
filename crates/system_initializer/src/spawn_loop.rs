@@ -28,12 +28,13 @@ pub(super) fn place_at(tcb: u64, capability: u64, rights: u64, slot: u64) -> boo
 }
 
 // The slot the run-unvouched capability is placed in sits just under the kernel's reserved fault
-// slot; `grant_plan` states the number without depending on `abi`, so the relation is held here.
-const _: () = assert!(spawn_protocol::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
+// slot; `grant_plan` states the number without depending on `moho_abi`, so the relation is held here.
+const _: () =
+    assert!(spawn_protocol::RUN_UNVOUCHED_SLOT == moho_abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 
 /// Turn a `receive_capability` slot into `Some(slot)`, or `None` if the message carried no capability.
 pub(super) fn opt_capability(slot: u64) -> Option<u64> {
-    if slot == abi::rendezvous::NO_CAPABILITY {
+    if slot == moho_abi::rendezvous::NO_CAPABILITY {
         None
     } else {
         Some(slot)
@@ -839,7 +840,7 @@ impl Service<'_> {
                     maps: &[(
                         CHILD_JOB_PAGE_FRAME_VA,
                         fr,
-                        abi::address_space::MAP_READ_WRITE,
+                        moho_abi::address_space::MAP_READ_WRITE,
                     )],
                     stack_pages: CHILD_STACK_PAGES,
                     ..ChildEndowment::new(Retention::Requester {
@@ -1380,7 +1381,7 @@ impl Service<'_> {
                 .or(default_screen)
                 .or(held_output)
                 .unwrap_or(self.c.result_ep),
-            abi::rights::WRITE,
+            moho_abi::rights::WRITE,
         )
     }
 
@@ -1406,32 +1407,32 @@ impl Service<'_> {
         let mut capabilities = [out; 6];
         let mut n = 1usize;
         if let Some(dir_ep) = narrowed {
-            capabilities[0] = (dir_ep, abi::rights::WRITE);
+            capabilities[0] = (dir_ep, moho_abi::rights::WRITE);
             capabilities[1] = out;
             n = 2;
         }
         // The clock and configuration page come before the source and budget, so each is slot 1;
         // that holds only while no manifest declares one with an input (notes/pipes.md's BUGS).
         if wants.clock {
-            capabilities[n] = (clock_page, abi::rights::READ);
+            capabilities[n] = (clock_page, moho_abi::rights::READ);
             n += 1;
         }
         if wants.config {
-            capabilities[n] = (config_page, abi::rights::READ);
+            capabilities[n] = (config_page, moho_abi::rights::READ);
             n += 1;
         }
         if let Some(src) = req.delegated.source {
             // `READ` only, so a pipe's reader cannot write back up its own input.
-            capabilities[n] = (src, abi::rights::READ);
+            capabilities[n] = (src, moho_abi::rights::READ);
             n += 1;
         }
         if let Some(b) = req.delegated.budget {
             // `SPEND_ONLY`, so nothing retyped from it can be lent (milestone 824 (a retype mints no
             // right its budget lacks)); a network holder lends the stack a page per socket from it.
             let rights = if wants.network {
-                abi::rights::ALL
+                moho_abi::rights::ALL
             } else {
-                abi::rights::SPEND_ONLY
+                moho_abi::rights::SPEND_ONLY
             };
             capabilities[n] = (b, rights);
             n += 1;
@@ -1476,7 +1477,7 @@ impl Service<'_> {
         let mut placed_buf = [(0u64, 0u64, 0u64); 9];
         let mut placed_n = 0usize;
         if let (Some(ep), Some(slot)) = (req.delegated.diagnostics.or(default_diag), diag_slot) {
-            placed_buf[placed_n] = (slot, ep, abi::rights::WRITE);
+            placed_buf[placed_n] = (slot, ep, moho_abi::rights::WRITE);
             placed_n += 1;
         }
         if wants.domain {
@@ -1484,35 +1485,43 @@ impl Service<'_> {
             // job's domain is its shell's: the threads of the jobs that shell holds, itself among
             // them, since the progenitor's `deaths` holds none of them (milestone 933).
             let domain = req.delegated.held.map_or(deaths, |(_, exit)| exit);
-            placed_buf[placed_n] = (grant_contract::DOMAIN_SLOT, domain, abi::rights::ENUMERATE);
+            placed_buf[placed_n] = (
+                grant_contract::DOMAIN_SLOT,
+                domain,
+                moho_abi::rights::ENUMERATE,
+            );
             placed_n += 1;
         }
         // `WRITE` alone, the right to `CALL`: `READ` would let it take another client's request,
         // and `GRANT` would let it hand the service on. The network's slot is narrowed the same way.
         if let (true, Some(ep)) = (wants.entropy, entropy) {
-            placed_buf[placed_n] = (grant_contract::ENTROPY_SLOT, ep, abi::rights::WRITE);
+            placed_buf[placed_n] = (grant_contract::ENTROPY_SLOT, ep, moho_abi::rights::WRITE);
             placed_n += 1;
         }
         if let (true, Some(ep)) = (wants.network, network) {
-            placed_buf[placed_n] = (grant_contract::NETWORK_SLOT, ep, abi::rights::WRITE);
+            placed_buf[placed_n] = (grant_contract::NETWORK_SLOT, ep, moho_abi::rights::WRITE);
             placed_n += 1;
         }
-        // The job pool with `ENUMERATE` alone answers `abi::memory_region::USAGE` and nothing that
+        // The job pool with `ENUMERATE` alone answers `moho_abi::memory_region::USAGE` and nothing that
         // spends, splits or destroys.
         if let (true, Some(page)) = (wants.machine, req.delegated.machine_page) {
-            placed_buf[placed_n] = (grant_contract::MACHINE_SLOT, page, abi::rights::READ);
+            placed_buf[placed_n] = (grant_contract::MACHINE_SLOT, page, moho_abi::rights::READ);
             placed_n += 1;
         }
         if wants.share {
             // A held job's share is the shell's budget, which its regions are split from; every
             // other job's is the progenitor's pool.
             let share = req.delegated.share.unwrap_or(jobs_ut);
-            placed_buf[placed_n] = (grant_contract::SHARE_SLOT, share, abi::rights::ENUMERATE);
+            placed_buf[placed_n] = (
+                grant_contract::SHARE_SLOT,
+                share,
+                moho_abi::rights::ENUMERATE,
+            );
             placed_n += 1;
         }
         // `WRITE` alone: the child can invoke the reboot object and cannot hand it on.
         if let (true, Some(r)) = (wants.reboot, reboot) {
-            placed_buf[placed_n] = (grant_contract::REBOOT_SLOT, r, abi::rights::WRITE);
+            placed_buf[placed_n] = (grant_contract::REBOOT_SLOT, r, moho_abi::rights::WRITE);
             placed_n += 1;
         }
         // `WRITE` alone, the right to `CALL` the route, under the same declaration: the route
@@ -1521,12 +1530,12 @@ impl Service<'_> {
             placed_buf[placed_n] = (
                 grant_contract::POWER_MANAGEMENT_CHIP_ROUTE_SLOT,
                 route,
-                abi::rights::WRITE,
+                moho_abi::rights::WRITE,
             );
             placed_n += 1;
         }
         if let Some(f) = sync_ep {
-            placed_buf[placed_n] = (grant_contract::SYNC_SLOT, f, abi::rights::WRITE);
+            placed_buf[placed_n] = (grant_contract::SYNC_SLOT, f, moho_abi::rights::WRITE);
             placed_n += 1;
         }
         (placed_buf, placed_n)
@@ -1549,19 +1558,19 @@ impl Service<'_> {
         let clock_map = [(
             CHILD_CLOCK_VA,
             clock_page,
-            abi::address_space::MAP_READ_ONLY,
+            moho_abi::address_space::MAP_READ_ONLY,
         )];
         let config_map = [(
             CHILD_CONFIG_VA,
             config_page,
-            abi::address_space::MAP_READ_ONLY,
+            moho_abi::address_space::MAP_READ_ONLY,
         )];
         // One page for program, caretaker and file server, sound because every request on both hops
         // is a blocking `CALL`: the program is parked in its own call while the caretaker uses it.
         let dir_map = [(
             FS_CLIENT_PAGE_VA,
             dir.channel.map_or(0, |f| f.page),
-            abi::address_space::MAP_READ_WRITE,
+            moho_abi::address_space::MAP_READ_WRITE,
         )];
         let mut map_buf = [(0u64, 0u64, 0u64); 4];
         let mut map_n = 0usize;
@@ -1581,7 +1590,7 @@ impl Service<'_> {
             map_buf[map_n] = (
                 machine_statistics_contract::PAGE_VIRTUAL_ADDRESS,
                 page,
-                abi::address_space::MAP_READ_ONLY,
+                moho_abi::address_space::MAP_READ_ONLY,
             );
             map_n += 1;
         }

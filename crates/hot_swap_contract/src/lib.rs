@@ -122,8 +122,9 @@ pub const RPT_REFUSED: u64 = 11;
 /// residual). `w1` = how many members the survey reported, `w2` = their states, packed by
 /// [`survey_counts`].
 ///
-/// The operator reads this out of `abi::rendezvous::SURVEY` (milestone 126), which is the only view of
-/// its own children it has. The report exists so the test can assert what the view **cannot** say.
+/// The operator reads this out of `moho_abi::rendezvous::SURVEY`, from milestone 126 (who else is
+/// running), which is the only view of its own children it has. The report exists so the test can
+/// assert what the view **cannot** say.
 pub const RPT_SURVEY: u64 = 12;
 
 /// **The dependency graph's own verdict, before any orchestration acts on it** (milestone 23's
@@ -142,7 +143,7 @@ pub const RPT_DEPENDENTS: u64 = 15;
 pub const RPT_DEPUTY: u64 = 16;
 
 /// **Every member of the domain refused to be collected.** `w1` = how many the operator asked about,
-/// `w2` = how many answered `abi::Error::StillAlive`.
+/// `w2` = how many answered `moho_abi::Error::StillAlive`.
 ///
 /// `Rendezvous::REAP` (DECISIONS §32) is the supervisor's whole vocabulary over its domain, and it
 /// refuses a thread that is not dead, on purpose: collecting a corpse is not killing. A hung
@@ -248,7 +249,7 @@ pub mod client_checks {
     /// call that did not got `ACCEPTED`. Nothing was refused, and the queue never overflowed.
     pub const NONE_REFUSED: u64 = 1 << 6;
     /// **The hung rung only.** One of this client's calls was swallowed by a component that stopped
-    /// answering, and it came back `abi::Error::Gone` when the operator destroyed that
+    /// answering, and it came back `moho_abi::Error::Gone` when the operator destroyed that
     /// component's region (milestone 254 (a caller stranded by a server that died)'s
     /// `sched::strand_callers_of`). Without it the hung run would read as an ordinary swap between
     /// two calls.
@@ -258,7 +259,7 @@ pub mod client_checks {
 }
 
 /// **Pack the survey's state histogram into one report word.** Four counts, a byte each, in the
-/// order `abi::survey` declares them, so a reader of `RPT_SURVEY` needs no second table.
+/// order `moho_abi::survey` declares them, so a reader of `RPT_SURVEY` needs no second table.
 ///
 /// A byte each is enough because this operator's domain is three children, not the kernel's thread
 /// table; a domain wider than a byte would saturate rather than wrap, which is a lie a test would

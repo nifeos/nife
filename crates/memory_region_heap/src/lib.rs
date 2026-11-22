@@ -17,7 +17,7 @@
 //! the whole cap at once.
 //!
 //! **When it refuses.** An allocation returns null at the cap, when the region has no page left
-//! ([`abi::Error::OutOfMemory`]), or after the region refused for any other reason. The first two
+//! ([`moho_abi::Error::OutOfMemory`]), or after the region refused for any other reason. The first two
 //! leave the heap serving what it holds. The third stops growth for good, because a retry would meet
 //! the same refusal and might spend a page each time. [`MemoryRegionHeap::last_refusal`] reports it.
 //!

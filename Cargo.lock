@@ -3,10 +3,6 @@
 version = 4
 
 [[package]]
-name = "abi"
-version = "0.1.0"
-
-[[package]]
 name = "address_space_identifier"
 version = "0.1.0"
 
@@ -169,7 +165,7 @@ dependencies = [
 name = "capability_plan"
 version = "0.1.0"
 dependencies = [
- "abi",
+ "moho_abi",
 ]
 
 [[package]]
@@ -219,7 +215,6 @@ checksum = "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a"
 name = "components"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "block_roster_contract",
  "boot_ladder",
@@ -267,6 +262,7 @@ dependencies = [
  "machine_statistics_contract",
  "measured_boot",
  "memory_region_heap",
+ "moho_abi",
  "network_stack",
  "network_time_protocol",
  "nife_partition_types",
@@ -315,8 +311,8 @@ dependencies = [
 name = "confined_system_call_fuzzer_contract"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
+ "moho_abi",
 ]
 
 [[package]]
@@ -568,7 +564,6 @@ dependencies = [
 name = "fixtures"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "byte_sink_contract",
  "byte_sink_fixture",
@@ -596,6 +591,7 @@ dependencies = [
  "loaded_image_check",
  "login_contract",
  "memory_region_heap",
+ "moho_abi",
  "network_time_protocol",
  "nifefs",
  "primitive_benchmark_contract",
@@ -664,6 +660,7 @@ version = "0.1.0"
 [[package]]
 name = "grant_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/grant_contract?rev=d4e9ca29d51bc71d678aadaa00411eba953202b3#d4e9ca29d51bc71d678aadaa00411eba953202b3"
 dependencies = [
  "program_argument_contract",
 ]
@@ -671,10 +668,9 @@ dependencies = [
 [[package]]
 name = "grant_plan"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/grant_plan?rev=a5d87c426ec0aeebeb51a13d3ffb116caebd73c9#a5d87c426ec0aeebeb51a13d3ffb116caebd73c9"
 dependencies = [
  "byte_glob",
- "file_system_contract",
- "file_system_fixture",
  "grant_contract",
  "program_argument_contract",
 ]
@@ -872,7 +868,6 @@ version = "0.1.0"
 name = "kernel"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_identifier",
  "address_space_layout",
  "base_digest_contract",
@@ -920,6 +915,7 @@ dependencies = [
  "memory_corruption_canary_gate",
  "memory_regions",
  "minicov",
+ "moho_abi",
  "nifefs",
  "page_frames",
  "page_tables",
@@ -958,6 +954,7 @@ checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 [[package]]
 name = "line_editor"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/line_editor?rev=b43cb319b1cf57b8e38680d090348f347408ffa2#b43cb319b1cf57b8e38680d090348f347408ffa2"
 
 [[package]]
 name = "line_editor_component"
@@ -1069,8 +1066,8 @@ dependencies = [
 name = "memory_region_heap"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
+ "moho_abi",
  "talc",
  "user_mode_runtime",
 ]
@@ -1092,6 +1089,10 @@ dependencies = [
  "cc",
  "walkdir",
 ]
+
+[[package]]
+name = "moho_abi"
+version = "0.1.0"
 
 [[package]]
 name = "network_stack"
@@ -1187,8 +1188,8 @@ version = "0.1.0"
 name = "pgrep"
 version = "0.1.0"
 dependencies = [
- "abi",
  "byte_glob",
+ "moho_abi",
  "ps",
 ]
 
@@ -1202,7 +1203,7 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 name = "pmap"
 version = "0.1.0"
 dependencies = [
- "abi",
+ "moho_abi",
 ]
 
 [[package]]
@@ -1240,9 +1241,9 @@ dependencies = [
 name = "process_builder"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "counter_frequency_contract",
+ "moho_abi",
  "startup_page_contract",
  "static_elf",
  "supervision_contract",
@@ -1252,6 +1253,7 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
 
 [[package]]
 name = "program_asks"
@@ -1269,8 +1271,10 @@ dependencies = [
 name = "program_table"
 version = "0.1.0"
 dependencies = [
+ "byte_glob",
  "capability_manifest_note",
  "file_system_contract",
+ "file_system_fixture",
  "grant_contract",
  "grant_plan",
  "primitive_benchmark_contract",
@@ -1281,7 +1285,7 @@ dependencies = [
 name = "ps"
 version = "0.1.0"
 dependencies = [
- "abi",
+ "moho_abi",
 ]
 
 [[package]]
@@ -1575,7 +1579,6 @@ dependencies = [
 name = "system_initializer"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "base_digest_contract",
  "byte_sink_contract",
@@ -1592,6 +1595,7 @@ dependencies = [
  "login_contract",
  "machine_statistics_contract",
  "measured_boot",
+ "moho_abi",
  "nifefs",
  "package_archive",
  "package_index",
@@ -1632,7 +1636,6 @@ dependencies = [
 name = "system_tests"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "block_roster_contract",
  "byte_sink_contract",
@@ -1664,6 +1667,7 @@ dependencies = [
  "machine_discovery",
  "machine_statistics_contract",
  "measured_boot",
+ "moho_abi",
  "network_time_protocol",
  "nifefs",
  "package_archive",
@@ -1698,6 +1702,7 @@ dependencies = [
 [[package]]
 name = "terminal_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/terminal_contract?rev=4a93367e22366b1d6f0ddb149d087ee51a3335a2#4a93367e22366b1d6f0ddb149d087ee51a3335a2"
 
 [[package]]
 name = "test_and_set_lock"
@@ -1834,8 +1839,8 @@ checksum = "009dbb7700f11c55ef83aebbe4c0e9cf1f1ac0844bd8d6f00dc38f302026e13a"
 name = "top"
 version = "0.1.0"
 dependencies = [
- "abi",
  "machine_statistics_contract",
+ "moho_abi",
  "ps",
  "uptime",
 ]
@@ -1943,12 +1948,12 @@ dependencies = [
 name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",
+ "moho_abi",
  "socket_contract",
 ]
 

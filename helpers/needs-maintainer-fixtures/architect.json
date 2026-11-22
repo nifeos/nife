@@ -584,7 +584,7 @@
        ]
       },
       "architectSurface": [
-       "abi-surface: crates/abi/src/lib.rs: pub const X: u64 = 1;"
+       "abi-surface: crates/moho_abi/src/lib.rs: pub const X: u64 = 1;"
       ]
      },
      {

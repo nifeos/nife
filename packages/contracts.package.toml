@@ -8,7 +8,7 @@ name = "contracts"
 kind = "sdk"
 home = { repo = "contracts", status = "provisional" }
 interfaces = [
-    "abi",
+    "moho_abi",
     "primitive_benchmark_contract",
     "capability_witness_contract",
     "confined_system_call_fuzzer_contract",
@@ -29,9 +29,6 @@ interfaces = [
     "std_runtime_contract",
     "supervision_contract",
     "hot_swap_contract",
-    # The terminal's wire words, which the kernel, the terminal and its clients link (milestone
-    # 1098 (`line_editor`: what an outside maintainer would fix before it leaves), decision 1).
-    "terminal_contract",
     "static_elf",
     "measured_boot",
     "package_archive",
@@ -48,10 +45,9 @@ interfaces = [
     "nife_partition_types",
     # `file_allocation_table` lives in the repository `nifeos/file_allocation_table` and is not
     # listed here; the system installer and xtask link it by revision.
-    "grant_plan",
+    # `grant_plan` lives in the repository `nifeos/grant_plan` and is not listed here.
     # The vocabulary a program and its spawner share, and nife's catalog with the spawn protocol
     # the shell and the progenitor speak (milestone 1094 (an outside review of `grant_plan`)).
-    "grant_contract",
     "program_table",
     "capability_plan",
     "capability_manifest_note",
@@ -66,7 +62,6 @@ interfaces = [
     # Where a device-driver process finds its windows, and its spawn words: the kernel and the
     # driver component both link it (milestone 857 (crates released on their own)).
     "driver_process_contract",
-    "program_argument_contract",
     "system_log_contract",
     # The JH7110 clock and reset wire, which the kernel's starters and the server in `drivers`
     # agree on (milestone 1062 (the device control planes leave the kernel), step 2).

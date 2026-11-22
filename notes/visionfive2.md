@@ -290,7 +290,7 @@ The bench history, boot by boot, is in
   to look, not the UART; start by printing `crate::cpu::id()` and the assigned context inside
   `arch::interrupt_controller::target_context` on the board.
 - The shell's input driver (`components/src/input.rs`) reads the UART at the register shape the
-  kernel passes it (`abi::uart`), and read `reboot` typed on the board. It read garbage only
+  kernel passes it (`moho_abi::uart`), and read `reboot` typed on the board. It read garbage only
   while the driver assumed QEMU's byte stride.
 - The `#[test_case]` suite assumes QEMU's synthetic devices. The `skip!()` of milestone 145 (a test that needs hardware the boot doesn't have can say so) covers the
   tests found so far; more may surface.

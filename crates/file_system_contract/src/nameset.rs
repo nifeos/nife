@@ -4,9 +4,8 @@ use super::grant;
 ///
 /// Measured, not chosen: at sixteen names the shell ran off its stack planning one grant, because a
 /// set travels by value through four frames a debug build does not collapse. Exceeding it is a
-/// refusal at the prompt (`grant_plan::Refusal::TooManyNames`), never a truncation, because `caps rm
-/// *.txt` prints the set before anything runs and a grant that quietly took a prefix would be one
-/// nobody checked. ("Why the bound is eight").
+/// refusal at the prompt, never a truncation, because a shell that grants `rm *.txt` prints the set
+/// before anything runs, and a grant that quietly took a prefix would be one nobody checked.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_NAMES: usize = 8;

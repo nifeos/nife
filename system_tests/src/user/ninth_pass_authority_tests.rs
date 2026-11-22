@@ -12,7 +12,7 @@
 //! function. Cross-ISA: untyped retype and split and the capability table are portable kernel code
 //! (DECISIONS §19 (architectural parity is a tenet)).
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Object, Rights, memory_region_capability_rights};
@@ -42,11 +42,11 @@ fn dropping_the_construction_authority_leaves_nothing_to_build_from() {
         .expect("grant the construction authority");
 
     // Positive control 1: the authority can retype a page into a frame.
-    let frame = call(budget, abi::memory_region::RETYPE, 0, 0, 0)
+    let frame = call(budget, moho_abi::memory_region::RETYPE, 0, 0, 0)
         .expect("RETYPE refused a full construction authority") as u64;
 
     // Positive control 2: the authority can split itself into a child budget.
-    let child = call(budget, abi::memory_region::SPLIT, 2, 0, 0)
+    let child = call(budget, moho_abi::memory_region::SPLIT, 2, 0, 0)
         .expect("SPLIT refused a full construction authority") as u64;
     let Object::MemoryRegion(child_region) = current_capability(child)
         .expect("the SPLIT child is gone")
@@ -71,13 +71,13 @@ fn dropping_the_construction_authority_leaves_nothing_to_build_from() {
     // Build again. Both powers are gone, and the slot names nothing: NoSuchSlot, not a restricted
     // success and not a different error.
     assert_eq!(
-        call(budget, abi::memory_region::RETYPE, 0, 0, 0),
+        call(budget, moho_abi::memory_region::RETYPE, 0, 0, 0),
         Err(Error::NoSuchSlot),
         "a RETYPE succeeded through the dropped construction authority: the progenitor could \
          rebuild after promising it had thrown the authority away",
     );
     assert_eq!(
-        call(budget, abi::memory_region::SPLIT, 2, 0, 0),
+        call(budget, moho_abi::memory_region::SPLIT, 2, 0, 0),
         Err(Error::NoSuchSlot),
         "a SPLIT succeeded through the dropped construction authority: the drop left a usable \
          handle behind",

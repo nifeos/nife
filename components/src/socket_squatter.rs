@@ -18,7 +18,7 @@
 
 #![allow(missing_docs)]
 
-use abi::rights;
+use moho_abi::rights;
 use socket_contract::*;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{

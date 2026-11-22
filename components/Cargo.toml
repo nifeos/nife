@@ -590,7 +590,7 @@ test = false
 bench = false
 
 # `pmap` (milestone 126, DECISIONS §114): `ps`'s split one object type over, listing an address
-# space's mappings through `abi::aspace::LIST` gated by `ENUMERATE` rather than `WRITE`. Proven
+# space's mappings through `moho_abi::aspace::LIST` gated by `ENUMERATE` rather than `WRITE`. Proven
 # end to end against a real `Object::Aspace` in `kernel::user::pmap_tests`; not reachable from the
 # interactive shell today, because nothing in this tree delegates an address-space capability to a
 # program other than its own builder (see `crates/pmap`'s BUGS). The listing itself is
@@ -683,13 +683,13 @@ machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 boot_ladder = { version = "0.1.0", git = "https://github.com/nifeos/boot_ladder", rev = "ed235428c6551ddcf673bdb140b972535238fe3b" }
 # What `boot_self_test` and the kernel pass between the two halves of the boot self-test.
 self_test_contract = { version = "0.1.0", path = "../crates/self_test_contract" }
-abi = { version = "0.1.0", path = "../crates/abi" }
+moho_abi = { version = "0.1.0", path = "../crates/moho_abi" }
 # Named here so the first cut's `carry_interfaces!` lists can read these interfaces' ids and
 # versions (milestone 956 (the linked interfaces carry checkable versions)); each program already
 # links them through `user_mode_runtime` or `grant_plan`.
 counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
 current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }
-program_argument_contract = { version = "0.1.0", path = "../crates/program_argument_contract" }
+program_argument_contract = { version = "0.1.0", git = "https://github.com/nifeos/program_argument_contract", rev = "764e0e55a238252391b1c06135e228ef6b9436c8" }
 supervision_contract = { version = "0.1.0", path = "../crates/supervision_contract" }
 process_builder = { version = "0.1.0", path = "../crates/process_builder" }
 # The interactive system, built once (milestone 96). Both inits are a table of the slot numbers
@@ -726,8 +726,8 @@ boot_slot = { version = "0.1.0", path = "../crates/boot_slot" }
 # (thin primitives or whole subsystems); default features off, so no `std`, no `alloc` and no time
 # zone database, only fixed offsets. See notes/calendar.md.
 jiff = { version = "1.0.0", default-features = false }
-grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
-grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
+grant_plan = { version = "0.1.0", git = "https://github.com/nifeos/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # A program's manifest carried in its own bytes (milestone 597 (a program carries its manifest in an
 # ELF note), provisional): the shell reads it out of a file it is asked to run, and a program
@@ -794,10 +794,10 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The aperture arithmetic `framebuffer_driver` copies through: the clipped geometry, the stride and
 # the byte order, host-tested there because this program has no harness of its own.
 screen_console = { version = "0.1.0", path = "../crates/screen_console" }
-line_editor = { version = "0.1.0", path = "../crates/line_editor" }
+line_editor = { version = "0.1.0", git = "https://github.com/nifeos/line_editor", rev = "b43cb319b1cf57b8e38680d090348f347408ffa2" }
 # The terminal contract's two halves: the wire words every terminal, client and driver speak, and
 # what `terminal_supervisor` routes to a `line_editor` it can replace.
-terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
+terminal_contract = { version = "0.1.0", git = "https://github.com/nifeos/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
 line_editor_component = { version = "0.1.0", path = "../crates/line_editor_component" }
 network_time_protocol = { version = "0.1.0", path = "../crates/network_time_protocol" }
 documentation = { version = "0.1.0", path = "../crates/documentation" }

@@ -71,7 +71,7 @@ this one verb.
 Authority: a `ThreadControlBlock` capability with `WRITE`. Delegable, narrowable, and it names exactly one thread
 that the holder was handed. Endpoint-only naming is not breached.
 
-What it costs. A new method number in `abi::tcb`, a `DECISIONS` section for its semantics (§10 (process)'s
+What it costs. A new method number in `moho_abi::tcb`, a `DECISIONS` section for its semantics (§10 (process)'s
 rule), and the widening of what a `ThreadControlBlock` cap means. Existing holders gain a power they were not offered;
 `crates/system_initializer` and every spawn path would need auditing for who ends up holding one after
 `START`.

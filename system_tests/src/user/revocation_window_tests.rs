@@ -17,7 +17,7 @@
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Object, Rights, page_frame_run_capability, page_frame_run_len};
@@ -99,7 +99,7 @@ fn a_revoke_inside_a_send_capability_leaves_the_receiver_no_copy() {
         delegation_pause::arm(sched::current());
         let answer = call(
             ep_slot,
-            abi::rendezvous::SEND_CAPABILITY,
+            moho_abi::rendezvous::SEND_CAPABILITY,
             frame_slot,
             u64::from(Rights::READ.bits()),
             7,
@@ -129,10 +129,10 @@ fn a_revoke_inside_a_send_capability_leaves_the_receiver_no_copy() {
         None
     } else {
         let [_word, slot, ..] = sched::inter_process_communication_receive_capability(ep);
-        let got = (slot != abi::rendezvous::NO_CAPABILITY)
+        let got = (slot != moho_abi::rendezvous::NO_CAPABILITY)
             .then(|| sched::current_capability(slot).ok())
             .flatten();
-        if slot != abi::rendezvous::NO_CAPABILITY {
+        if slot != moho_abi::rendezvous::NO_CAPABILITY {
             let _ = sched::delete_current_capability(slot);
         }
         got
@@ -190,7 +190,7 @@ fn a_revoke_inside_a_capability_insert_leaves_the_embryo_no_copy() {
         delegation_pause::arm(sched::current());
         let answer = call(
             tcb_slot,
-            abi::thread_control_block::CAPABILITY_INSERT,
+            moho_abi::thread_control_block::CAPABILITY_INSERT,
             frame_slot,
             u64::from(Rights::READ.bits()),
             0,
@@ -260,7 +260,7 @@ fn a_reclamation_inside_a_slice_leaves_the_slicer_no_slice() {
         .expect("grant the run");
         SLICER.store(sched::current(), Ordering::SeqCst);
         delegation_pause::arm(sched::current());
-        let answer = call(run_slot, abi::page_frame::SLICE, 1, 1, 0);
+        let answer = call(run_slot, moho_abi::page_frame::SLICE, 1, 1, 0);
         ANSWER.store(encode(answer), Ordering::SeqCst);
         RETURNED.store(true, Ordering::SeqCst);
         if let Ok(slot) = answer {

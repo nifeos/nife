@@ -326,18 +326,18 @@ pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
 }
 
 /// **One figure of a region's spending, for `MemoryRegion::USAGE`** (milestone 126 (the `procps` package), DECISIONS §225 (`free` sees the machine and your share)
-/// part 1). `record` is an `abi::usage` selector the caller has already checked with
-/// `abi::usage::is_known`; `None` for a dead region.
+/// part 1). `record` is a `moho_abi::usage` selector the caller has already checked with
+/// `moho_abi::usage::is_known`; `None` for a dead region.
 pub(crate) fn usage_record(region: u64, record: u64) -> Option<u64> {
     let table = REGIONS.lock();
     let region = typed(region);
     let on = match record {
-        abi::usage::SIZE_PAGES => return table.usage(region).map(|(_, pages)| pages),
-        abi::usage::COMMITTED => return table.usage(region).map(|(spent, _)| spent),
-        abi::usage::FRAMES => PageUse::Frames,
-        abi::usage::RENDEZVOUS => PageUse::Object(ObjectKind::Rendezvous),
-        abi::usage::ADDRESS_SPACES => PageUse::Object(ObjectKind::AddressSpace),
-        abi::usage::THREADS => PageUse::Object(ObjectKind::Thread),
+        moho_abi::usage::SIZE_PAGES => return table.usage(region).map(|(_, pages)| pages),
+        moho_abi::usage::COMMITTED => return table.usage(region).map(|(spent, _)| spent),
+        moho_abi::usage::FRAMES => PageUse::Frames,
+        moho_abi::usage::RENDEZVOUS => PageUse::Object(ObjectKind::Rendezvous),
+        moho_abi::usage::ADDRESS_SPACES => PageUse::Object(ObjectKind::AddressSpace),
+        moho_abi::usage::THREADS => PageUse::Object(ObjectKind::Thread),
         _ => PageUse::Children,
     };
     table.spent(region, on)

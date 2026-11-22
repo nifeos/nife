@@ -18,24 +18,26 @@ pub(super) fn address_space_invoke(
     [a0, a1, a2]: [u64; 3],
 ) -> Result<i64, Error> {
     match method {
-        abi::address_space::MAP_INTO => address_space_layout_into(capability, name, a0, a1, a2),
+        moho_abi::address_space::MAP_INTO => {
+            address_space_layout_into(capability, name, a0, a1, a2)
+        }
         // `ENUMERATE`, not `WRITE`: seeing a space is not shaping it (DECISIONS §114 (`pmap`
         // gets its listing: `ENUMERATE` extends to the address-space object)).
-        abi::address_space::LIST => {
+        moho_abi::address_space::LIST => {
             if !capability.rights.allows(Rights::ENUMERATE) {
                 return Err(Error::NotPermitted);
             }
             address_space_list(frame, name, a0)
         }
         // `WRITE`, the right `MAP_INTO` takes: shaping a space is one right in both directions.
-        abi::address_space::UNMAP => {
+        moho_abi::address_space::UNMAP => {
             if !capability.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             address_space_unmap(name, a0)
         }
         // §269 (how threads share a process) fork 2.
-        abi::address_space::WAIT | abi::address_space::WAKE => {
+        moho_abi::address_space::WAIT | moho_abi::address_space::WAKE => {
             address_space_address_wait(capability.rights, name, method, a0, a1, a2)
         }
         _ => Err(Error::BadMethod),
@@ -83,13 +85,13 @@ fn address_space_layout_into(
             Object::PageFrame(phys, count) => {
                 // Code is W^X (`user_code` is never writable), so it needs only READ.
                 let flags = match a2 {
-                    abi::address_space::MAP_READ_WRITE => {
+                    moho_abi::address_space::MAP_READ_WRITE => {
                         if !frame.rights.allows(Rights::WRITE) {
                             return Err(Error::NotPermitted);
                         }
                         page_tables::Flags::user_data()
                     }
-                    abi::address_space::MAP_CODE => {
+                    moho_abi::address_space::MAP_CODE => {
                         if !frame.rights.allows(Rights::READ) {
                             return Err(Error::NotPermitted);
                         }
@@ -199,7 +201,7 @@ pub(super) fn run_end_virtual_address(va: u64, count: u64) -> Option<u64> {
 
 /// The error a mapping method answers for a page it could not map: `NotPermitted` when the space
 /// already maps the page so that this mapping would make it writable here and executable there
-/// (claim 11; `abi::Error::NotPermitted`'s second case), `OutOfMemory` when page tables or the
+/// (claim 11; `moho_abi::Error::NotPermitted`'s second case), `OutOfMemory` when page tables or the
 /// record could not be paid for, and `BadPointer` for a misaligned, already mapped or wrong-half
 /// address or an unknown space. `MAP_INTO` and `PageFrame::MAP` both answer through it.
 pub(super) fn map_refusal(e: page_tables::MapError) -> Error {
@@ -235,7 +237,7 @@ pub(super) fn unmap_run_prefix(
 }
 
 /// `AddressSpace::WAIT` and `WAKE`: the checks every address wait method shares, then the scheduler.
-/// The order of the refusals is the contract `abi::address_space::WAIT` states: the flags first
+/// The order of the refusals is the contract `moho_abi::address_space::WAIT` states: the flags first
 /// (`BadMethod`, a form this kernel does not answer), then the right (`NotPermitted`), the address
 /// (`BadPointer`), and last whether the space is the caller's own (`WrongObject`).
 #[inline(never)]
@@ -247,7 +249,7 @@ fn address_space_address_wait(
     flags: u64,
     word: u64,
 ) -> Result<i64, Error> {
-    if !abi::address_wait::is_admitted(flags) {
+    if !moho_abi::address_wait::is_admitted(flags) {
         return Err(Error::BadMethod);
     }
     if !rights.allows(Rights::READ) {
@@ -264,7 +266,7 @@ fn address_space_address_wait(
     if !sched::is_current_space(space) {
         return Err(Error::WrongObject);
     }
-    if method == abi::address_space::WAIT {
+    if method == moho_abi::address_space::WAIT {
         // The expected value is the low 32 bits; the size admitted is 32 (§269).
         sched::address_wait(space, va, word as u32).map(|r| r as i64)
     } else {
@@ -281,7 +283,7 @@ fn address_space_list(frame: &mut TrapFrame, name: u64, cursor: u64) -> Result<i
     let Some(root) = crate::user::user_address_space_root(name) else {
         frame.set_arg(1, 0);
         frame.set_arg(2, 0);
-        return Ok(abi::survey::DONE as i64);
+        return Ok(moho_abi::survey::DONE as i64);
     };
     // `list_mapping` checks the caller's cursor under the hold that walks the chain. An entry
     // whose `va` no longer translates (a revoke raced it) is skipped; the log is finite.
@@ -291,7 +293,7 @@ fn address_space_list(frame: &mut TrapFrame, name: u64, cursor: u64) -> Result<i
             crate::revoke::Listing::Done => {
                 frame.set_arg(1, 0);
                 frame.set_arg(2, 0);
-                return Ok(abi::survey::DONE as i64);
+                return Ok(moho_abi::survey::DONE as i64);
             }
             // Only the caller's own word can be foreign; §114's 2026-10-06 addendum answers it
             // `BadPointer`.
@@ -299,11 +301,11 @@ fn address_space_list(frame: &mut TrapFrame, name: u64, cursor: u64) -> Result<i
             crate::revoke::Listing::Entry(next, va) => {
                 if let Some((_, flags)) = crate::arch::mmu::translate_at(root, va) {
                     let kind = if flags.is_user_executable() {
-                        abi::address_space::MAP_CODE
+                        moho_abi::address_space::MAP_CODE
                     } else if flags.is_writable() {
-                        abi::address_space::MAP_READ_WRITE
+                        moho_abi::address_space::MAP_READ_WRITE
                     } else {
-                        abi::address_space::MAP_READ_ONLY
+                        moho_abi::address_space::MAP_READ_ONLY
                     };
                     frame.set_arg(1, va);
                     frame.set_arg(2, kind);

@@ -344,7 +344,7 @@ pub const GO_RUN: u64 = 0;
 pub const GO_BREAKDOWN: u64 = 1;
 
 /// The first word of a subrun report from a task that could not finish it: a job's system call was
-/// refused. The second word is the refusal (a negative `abi::Error` as `u64`) and the third is the
+/// refused. The second word is the refusal (a negative `moho_abi::Error` as `u64`) and the third is the
 /// task's index with the failing kind in bits 32 and up, so the supervisor can say which job on
 /// which task failed rather than stalling on a task that stopped.
 pub const REPORT_FAILED: u64 = u64::MAX;

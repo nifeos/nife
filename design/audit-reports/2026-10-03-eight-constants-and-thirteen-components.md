@@ -22,7 +22,7 @@ two deltas, so the lens is the delta and not the tree.
 
 ### The delta, counted the way `script/audits` counts
 
-ABI constants, by `diff` of the `pub const NAME: u64` lines of `crates/abi/src/lib.rs` between the
+ABI constants, by `diff` of the `pub const NAME: u64` lines of `crates/moho_abi/src/lib.rs` between the
 two commits. Eight new, all from milestone 126 (the `procps` package), ratified by calef on
 2026-09-27 (#1360):
 
@@ -147,7 +147,7 @@ manager's rule working rather than a defect.
 ### 1. MINTED: the plain-`SEND` badge is on the wire and not in §230 (badged endpoint capabilities)
 
 `RECV`'s `x3` changed meaning for every program on 2026-10-02. calef ruled it on #1494; milestone
-634's block and the risk 7 record cite that ruling; `crates/abi` documents it as "milestone 613's
+634's block and the risk 7 record cite that ruling; `crates/moho_abi` documents it as "milestone 613's
 amendment to §230". `grep -n '613\|plain SEND' design/decisions/0230-*.md design/decisions/0242-*.md`
 finds nothing. CLAUDE.md's rule for the surface is that a method's semantics are recorded in
 `design/decisions/`, and §230's table still says the badge rides `CALL` and `SEND_CAP` only. A
@@ -177,11 +177,11 @@ as granted; the grant is wider than the use. Recorded in `graphical_terminal.rs`
 (a badged copy of `term_ep` that the discipline answers only the raw requests on, §230's shape one
 component over) is `design/roadmap/0709-arm-1-holds-only-the-raw-half-of-the-boot-discipline.md`.
 
-### 3. FIXED: `crates/abi` said milestone 634's escape was still open
+### 3. FIXED: `crates/moho_abi` said milestone 634's escape was still open
 
 The `RECV_CAP` BUGS entry, written by milestone 613's lane on 2026-10-03, said the sender-chosen
 `x1` was "not fixed there" and "wants its own lane". The lane came the same day, milestone 634
-landed in `sched.rs`, and the entry did not move (`git log -- crates/abi/src/lib.rs` shows no commit
+landed in `sched.rs`, and the entry did not move (`git log -- crates/moho_abi/src/lib.rs` shows no commit
 from 634). A BUGS entry that reports a closed escape as open is the overclaim in the other
 direction, and the first thing an outside reader of the surface meets. Rewritten to record the fix
 and when the record caught up.
@@ -210,7 +210,7 @@ the table can hold (256 regions, each split from the last); 62 µs for that chai
 rejects every candidate after a full walk. A holder of `ENUMERATE` on any region can repeat the
 call, so this is a bounded interrupt-latency cost a hostile process can impose, of the same shape
 as the reclaim scans and the registry bounds the 2026-09-29 audit accepted. The bound is
-`MAX_REGIONS`, not the caller's. Recorded in `crates/abi`'s `USAGE` BUGS with the numbers.
+`MAX_REGIONS`, not the caller's. Recorded in `crates/moho_abi`'s `USAGE` BUGS with the numbers.
 
 ### 7. ACCEPTED: a death message read through `RECV_CAP` loses `pc`
 
@@ -218,7 +218,7 @@ The kernel's five words are `(event, tid, pc, addr, 0)`. `RECV_CAP`, having no c
 deliver, now returns `(event, NO_CAP, tid, addr, 0)` on both arrival orders; before milestone 634
 the receiver-first order returned `tid` in `x1`, so the two orders disagreed. No supervisor in the
 tree receives deaths this way (every one uses `RECV` through `recv_fault`), and the fix would be a
-third shape for one mailbox read. Recorded in `crates/abi`'s `RECV_CAP` BUGS so the next supervisor
+third shape for one mailbox read. Recorded in `crates/moho_abi`'s `RECV_CAP` BUGS so the next supervisor
 written against it learns there.
 
 ### 8. ACCEPTED: the system log has no per-writer quota and a writer picks its severity
@@ -292,7 +292,7 @@ one per arm. Not a finding.
 
 ## Is any confinement claim false as stated?
 
-No kernel claim. The one false statement met was `crates/abi`'s own BUGS entry reporting a fixed
+No kernel claim. The one false statement met was `crates/moho_abi`'s own BUGS entry reporting a fixed
 escape as open (finding 3). Finding 2 is not a kernel claim failing: the session holds exactly what
 the spawn service granted, and the spawn service's comment shows the width was seen and accepted
 for the prompt's path only.
@@ -326,7 +326,7 @@ proposal carries the options and their costs. This report does not edit `design/
 ## Method, so the negatives can be judged
 
 The delta was taken by `diff` between `2533877d2` and `1d33b27fa` with the same regular expression
-and the same manifests `script/audits` reads, then `git diff` of `crates/abi`, `kernel/src/system_call.rs`
+and the same manifests `script/audits` reads, then `git diff` of `crates/moho_abi`, `kernel/src/system_call.rs`
 and `kernel/src/sched.rs` over the window was read whole. Two delegated surveys read the thirteen
 components for their manifests, grants and reach, with file and line for every claim; every claim
 that became a finding was re-read at its site by this lane first. The delegated reader's failure

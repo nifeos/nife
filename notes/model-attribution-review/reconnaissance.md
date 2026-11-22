@@ -95,7 +95,7 @@ unusually concentrated in exactly those.
 
 | Category | Sonnet commits | Detail |
 |---|---|---|
-| `crates/abi` (the system call surface) | 7 | all of them renames, 649 diff lines across this row and the next two |
+| `crates/moho_abi` (the system call surface) | 7 | all of them renames, 649 diff lines across this row and the next two |
 | `kernel/src/system_call.rs` | 6 | |
 | `crates/*_proto` (wire crates) | 23 | 14 files across 10 protocol crates |
 | Cargo manifests | 14 | 17 manifests, plus 12 commits touching a `Cargo.lock` |

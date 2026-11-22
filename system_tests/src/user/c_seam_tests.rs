@@ -168,7 +168,7 @@ fn a_c_out_of_bounds_write_faults_and_changes_nothing_outside_its_grant() {
             .unwrap_or_else(|| panic!("attempt {attempt} produced no death message"));
         assert_eq!(
             d[2],
-            abi::fault::EVENT_FAULT,
+            moho_abi::fault::EVENT_FAULT,
             "attempt {attempt} did not fault: the out-of-bounds write was tolerated, or the \
              process exited some other way",
         );
@@ -253,7 +253,7 @@ fn the_supervisor_restarts_the_faulted_c_component_and_the_restart_does_real_wor
         .expect("no death messages at all");
     assert_eq!(
         honest_death[2],
-        abi::fault::EVENT_EXIT,
+        moho_abi::fault::EVENT_EXIT,
         "the honest attempt exited cleanly, so its supervisor must see EXIT, not FAULT",
     );
 }
@@ -283,7 +283,7 @@ fn a_c_underrun_below_the_grant_faults_and_changes_nothing_outside_it() {
     // The fault deaths, in attempt order, are the overruns and the underrun (the honest attempt
     // exits cleanly), so the underrun's is the third.
     let underrun_death = of_kind(&msgs, RPT_DEATH)
-        .filter(|d| d[2] == abi::fault::EVENT_FAULT)
+        .filter(|d| d[2] == moho_abi::fault::EVENT_FAULT)
         .nth(2)
         .expect("the underrun attempt produced no fault death");
     assert_ne!(

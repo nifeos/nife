@@ -255,7 +255,7 @@ const REG_CONFIGURATION_GENERATION: u64 = 0x0fc;
 const REG_DEVICE_CONFIG: u64 = 0x100;
 
 /// The transport seam: everything above it speaks virtio-mmio's register vocabulary, the one
-/// `abi::virtual_io` exposes, and a `Transport` answers it on whichever bus the device sits. The mmio
+/// `moho_abi::virtual_io` exposes, and a `Transport` answers it on whichever bus the device sits. The mmio
 /// variant passes through; the pci variant translates to the common-config layout, the ISR byte
 /// and the notify doorbell. See notes/pcie.md, "The transport seam".
 pub(crate) enum Transport {

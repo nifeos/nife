@@ -151,7 +151,7 @@ fn insert(
 
 /// **Disk 0 for `block_device`**: virtio-mmio first, else the PCIe virtio-blk, registered with the
 /// kernel's virtio confinement, its interrupt routed and enabled, and a zeroed DMA page that
-/// records its own physical base (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`).
+/// records its own physical base (`moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`).
 /// The hand-over's file service, installer and surveyor use disks of their own. `None` with no
 /// virtio disk, which is every boot `boot-check` makes and every board, and `None` when the IOMMU
 /// refuses to attach it.

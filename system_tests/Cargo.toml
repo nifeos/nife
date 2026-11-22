@@ -56,7 +56,7 @@ package_archive = { version = "0.1.0", path = "../crates/package_archive" }
 # runner's, by the same predicate the boot uses to tell them apart.
 e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
 coremark = { version = "0.1.0", path = "../crates/coremark" }
-abi = { version = "0.1.0", path = "../crates/abi" }
+moho_abi = { version = "0.1.0", path = "../crates/moho_abi" }
 block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
 byte_sink_contract = { version = "0.1.0", git = "https://github.com/nifeos/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }
 byte_sink_fixture = { version = "0.1.0", path = "../crates/byte_sink_fixture" }
@@ -79,8 +79,8 @@ environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/env
 c_program_fixture = { path = "../crates/c_program_fixture" }
 file_system_contract = { version = "0.1.0", path = "../crates/file_system_contract" }
 file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture" }
-grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
-grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
+grant_plan = { version = "0.1.0", git = "https://github.com/nifeos/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The registration page's layout (milestone 129 (scheduled execution), DECISIONS §222 (who holds a
 # user's schedule)). The timetable test is the registrar until milestone 152 (durable delegation)
@@ -97,7 +97,7 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems)).
 jiff = { version = "1.0.0", default-features = false }
 line_editor_component = { version = "0.1.0", path = "../crates/line_editor_component" }
-terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
+terminal_contract = { version = "0.1.0", git = "https://github.com/nifeos/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
 login_contract = { version = "0.1.0", path = "../crates/login_contract" }
 machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }

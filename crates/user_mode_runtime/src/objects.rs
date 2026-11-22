@@ -30,7 +30,7 @@ pub fn map_page_frame(
     unsafe {
         invoke(
             frame_slot,
-            abi::page_frame::MAP,
+            moho_abi::page_frame::MAP,
             virtual_address,
             writable as u64,
             memory_region_slot,
@@ -57,11 +57,11 @@ pub fn is_granted(slot: u64) -> bool {
     const NO_SUCH_METHOD: u64 = 0xffff;
     // SAFETY: a system call that cannot succeed; the kernel validates the slot before the method.
     let r = unsafe { invoke(slot, NO_SUCH_METHOD, 0, 0, 0) };
-    r != abi::Error::NoSuchSlot as i64
+    r != moho_abi::Error::NoSuchSlot as i64
 }
 
 /// `RETYPE` one page out of the untyped in `memory_region_slot` into a `PageFrame` capability the
-/// caller now holds. Returns the slot the frame landed in, or a negative `abi::Error`
+/// caller now holds. Returns the slot the frame landed in, or a negative `moho_abi::Error`
 /// (`OutOfMemory` when the untyped is exhausted or the caller's table is full).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
@@ -69,11 +69,11 @@ pub fn is_granted(slot: u64) -> bool {
 /// `retype_into_kernel_object`". Refused `retype_page_frame` (round 7's provisional name).
 pub fn retype_into_page_frame(memory_region_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the untyped capability and its remaining budget.
-    unsafe { invoke(memory_region_slot, abi::memory_region::RETYPE, 0, 0, 0) }
+    unsafe { invoke(memory_region_slot, moho_abi::memory_region::RETYPE, 0, 0, 0) }
 }
 
 /// `RETYPE` a run of `pages` contiguous pages into one `PageFrame` capability (a frame names a run
-/// of pages), `0` meaning one. Returns the slot, or a negative `abi::Error`: `OutOfMemory` when the run does not
+/// of pages), `0` meaning one. Returns the slot, or a negative `moho_abi::Error`: `OutOfMemory` when the run does not
 /// fit, in which case the region's budget is untouched.
 ///
 /// **The one call site in this crate that passes a count other than `0`**: every other `RETYPE`
@@ -83,21 +83,29 @@ pub fn retype_into_page_frame(memory_region_slot: u64) -> i64 {
 /// replacement), 2026-09-26).
 pub fn retype_page_frame_run(memory_region_slot: u64, pages: u64) -> i64 {
     // SAFETY: as `retype_into_page_frame`; the kernel checks the count against the remaining budget.
-    unsafe { invoke(memory_region_slot, abi::memory_region::RETYPE, pages, 0, 0) } // run wrapper
+    unsafe {
+        invoke(
+            memory_region_slot,
+            moho_abi::memory_region::RETYPE, // run wrapper
+            pages,
+            0,
+            0,
+        )
+    }
 }
 
 /// **`page_frame::SLICE`: a capability naming `count` pages of the run in `frame_slot`, from page
-/// `first`**, with that capability's rights. The new slot, or a negative `abi::Error`. Needs
+/// `first`**, with that capability's rights. The new slot, or a negative `moho_abi::Error`. Needs
 /// `GRANT`. A loader that reads a package into one run hands the installer a page of it at a time
 /// this way. Name follows the method.
 pub fn slice_page_frame(frame_slot: u64, first: u64, count: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the capability, the range and the right.
-    unsafe { invoke(frame_slot, abi::page_frame::SLICE, first, count, 0) }
+    unsafe { invoke(frame_slot, moho_abi::page_frame::SLICE, first, count, 0) }
 }
 
 /// `RETYPE_OBJECT` one page out of the untyped in `region` into a kernel object of
-/// `object_type` (see [`abi::object_type`]). Returns the slot holding a full-rights capability to the new
-/// object, or a negative `abi::Error` (`BadMethod` for an unknown `object_type`, `OutOfMemory` when the
+/// `object_type` (see [`moho_abi::object_type`]). Returns the slot holding a full-rights capability to the new
+/// object, or a negative `moho_abi::Error` (`BadMethod` for an unknown `object_type`, `OutOfMemory` when the
 /// untyped or either table is exhausted).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
@@ -107,12 +115,20 @@ pub fn slice_page_frame(frame_slot: u64, first: u64, count: u64) -> i64 {
 pub fn retype_into_kernel_object(region: u64, object_type: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the untyped, the object_type and the budget before it
     // touches a page.
-    unsafe { invoke(region, abi::memory_region::RETYPE_OBJECT, object_type, 0, 0) }
+    unsafe {
+        invoke(
+            region,
+            moho_abi::memory_region::RETYPE_OBJECT,
+            object_type,
+            0,
+            0,
+        )
+    }
 }
 
 /// `SPLIT` `pages` off the untyped's unspent budget in `memory_region_slot` into a new child
 /// untyped. Returns the slot holding a full-rights capability to the child, or a negative
-/// `abi::Error` (`NotPermitted` without `WRITE`, `OutOfMemory` when the budget or a table is
+/// `moho_abi::Error` (`NotPermitted` without `WRITE`, `OutOfMemory` when the budget or a table is
 /// exhausted).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
@@ -122,11 +138,19 @@ pub fn retype_into_kernel_object(region: u64, object_type: u64) -> i64 {
 pub fn split_memory_region(memory_region_slot: u64, pages: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE` and the remaining budget before it splits
     // anything off.
-    unsafe { invoke(memory_region_slot, abi::memory_region::SPLIT, pages, 0, 0) }
+    unsafe {
+        invoke(
+            memory_region_slot,
+            moho_abi::memory_region::SPLIT,
+            pages,
+            0,
+            0,
+        )
+    }
 }
 
 /// `DESTROY` the region in `memory_region_slot`: reclaim it and every object retyped from it
-/// (object revocation, the region-owner's half). `0` on success; a negative `abi::Error`
+/// (object revocation, the region-owner's half). `0` on success; a negative `moho_abi::Error`
 /// (`NotPermitted` while a live thread still occupies it, or if it has been `SPLIT` into children,
 /// or without `WRITE`).
 ///
@@ -137,23 +161,39 @@ pub fn split_memory_region(memory_region_slot: u64, pages: u64) -> i64 {
 pub fn destroy_memory_region(memory_region_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE` and that nothing still occupies or splits
     // from the region before it reclaims anything.
-    unsafe { invoke(memory_region_slot, abi::memory_region::DESTROY, 0, 0, 0) }
+    unsafe {
+        invoke(
+            memory_region_slot,
+            moho_abi::memory_region::DESTROY,
+            0,
+            0,
+            0,
+        )
+    }
 }
 
 /// `USAGE`: how many pages of the region in `memory_region_slot` are spent on `record`, one of
-/// [`abi::usage`]'s selectors. The page count, or a negative `abi::Error` (`NotPermitted` without
+/// [`moho_abi::usage`]'s selectors. The page count, or a negative `moho_abi::Error` (`NotPermitted` without
 /// `ENUMERATE`, `BadMethod` for an unknown record).
 ///
 /// Name: ratified 2026-11-20 (UTC). The method and its object, the shape [`split_memory_region`] has.
 pub fn memory_region_usage(memory_region_slot: u64, record: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. USAGE reads one record and writes nothing of the caller's; the kernel
     // validates `ENUMERATE` and the record before it answers.
-    unsafe { invoke(memory_region_slot, abi::memory_region::USAGE, record, 0, 0) }
+    unsafe {
+        invoke(
+            memory_region_slot,
+            moho_abi::memory_region::USAGE,
+            record,
+            0,
+            0,
+        )
+    }
 }
 
 /// `MAP` (untyped): retype one page out of the untyped in `memory_region_slot` and map it,
 /// writable, at `virtual_address` in the caller's own address space, in one step. `0` on success; a negative
-/// `abi::Error` (`OutOfMemory` when the untyped is exhausted).
+/// `moho_abi::Error` (`OutOfMemory` when the untyped is exhausted).
 ///
 /// The one-step twin of [`retype_into_page_frame`] followed by [`map_page_frame`]: this never produces
 /// a `PageFrame` capability the caller can delegate or revoke, it just spends the untyped's budget
@@ -169,7 +209,7 @@ pub fn map_memory_region_page(memory_region_slot: u64, virtual_address: u64) -> 
     unsafe {
         invoke(
             memory_region_slot,
-            abi::memory_region::MAP,
+            moho_abi::memory_region::MAP,
             virtual_address,
             0,
             0,
@@ -178,8 +218,8 @@ pub fn map_memory_region_page(memory_region_slot: u64, virtual_address: u64) -> 
 }
 
 /// `REVOKE` the `PageFrame` in `frame_slot`: un-share it (or, on a device capability, take it back;
-/// see `abi::page_frame::REVOKE`'s own doc for the asymmetry). `0` on success; a negative
-/// `abi::Error` (`NotPermitted` without `GRANT`).
+/// see `moho_abi::page_frame::REVOKE`'s own doc for the asymmetry). `0` on success; a negative
+/// `moho_abi::Error` (`NotPermitted` without `GRANT`).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2). His words: "Ratify `split_memory_region`, `destroy_memory_region`,
@@ -188,12 +228,12 @@ pub fn map_memory_region_page(memory_region_slot: u64, virtual_address: u64) -> 
 pub fn revoke_page_frame(frame_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `GRANT` before it unmaps and deletes every
     // capability to the page.
-    unsafe { invoke(frame_slot, abi::page_frame::REVOKE, 0, 0, 0) }
+    unsafe { invoke(frame_slot, moho_abi::page_frame::REVOKE, 0, 0, 0) }
 }
 
 /// `MAP_INTO`: map the frame in `frame_slot` into the address space named by `virtual_address_space_slot`, at
-/// `virtual_address`, per `mode` (`abi::address_space::MAP_READ_ONLY`/`MAP_READ_WRITE`/`MAP_CODE`). `0` on success; a negative
-/// `abi::Error`.
+/// `virtual_address`, per `mode` (`moho_abi::address_space::MAP_READ_ONLY`/`MAP_READ_WRITE`/`MAP_CODE`). `0` on success; a negative
+/// `moho_abi::Error`.
 ///
 /// Safe for the reason [`map_page_frame`] is: the kernel checks the address-space capability's
 /// `WRITE`, the frame's rights against `mode`, and the address before it touches a page table. A
@@ -214,7 +254,7 @@ pub fn address_space_layout_into(
     unsafe {
         invoke(
             virtual_address_space_slot,
-            abi::address_space::MAP_INTO,
+            moho_abi::address_space::MAP_INTO,
             virtual_address,
             frame_slot,
             mode,
@@ -224,8 +264,8 @@ pub fn address_space_layout_into(
 
 /// `CAPABILITY_INSERT`: copy the capability in the caller's `capability_slot`, narrowed to `rights`, into the
 /// child TCB's capability table. `target = 0` places it in the first free slot; `target = n` places
-/// it in slot `n - 1` (see `abi::thread_control_block::CAPABILITY_INSERT`'s own doc for the supervision-slot
-/// use of an explicit target). Returns the slot it landed in, or a negative `abi::Error`.
+/// it in slot `n - 1` (see `moho_abi::thread_control_block::CAPABILITY_INSERT`'s own doc for the supervision-slot
+/// use of an explicit target). Returns the slot it landed in, or a negative `moho_abi::Error`.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2). His words: "Ratify ... `thread_control_block_capability_insert`,
@@ -243,7 +283,7 @@ pub fn thread_control_block_capability_insert(
     unsafe {
         invoke(
             thread_control_block_slot,
-            abi::thread_control_block::CAPABILITY_INSERT,
+            moho_abi::thread_control_block::CAPABILITY_INSERT,
             capability_slot,
             rights,
             target,
@@ -255,7 +295,7 @@ pub fn thread_control_block_capability_insert(
 /// where EL0 execution begins (`entry`) and on what user stack (`user_stack_pointer`). The capability in
 /// `virtual_address_space_slot` is consumed; the space keeps its name, so a copy made first still names it while
 /// the thread runs. On success, the address of the child's current-CPU page, which lets several
-/// threads share one address space, never negative; a negative `abi::Error` otherwise, `WrongObject` for a space already
+/// threads share one address space, never negative; a negative `moho_abi::Error` otherwise, `WrongObject` for a space already
 /// bound.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
@@ -272,7 +312,7 @@ pub fn thread_control_block_configure(
     unsafe {
         invoke(
             thread_control_block_slot,
-            abi::thread_control_block::CONFIGURE,
+            moho_abi::thread_control_block::CONFIGURE,
             entry,
             user_stack_pointer,
             virtual_address_space_slot,
@@ -283,7 +323,7 @@ pub fn thread_control_block_configure(
 /// `START`: make the TCB in `thread_control_block_slot` runnable. `argument_zero`, `argument_one` and `argument_two` seed the child's first three argument registers (`x0`/`x1`/`x2` on
 /// aarch64, `a0`/`a1`/`a2` on RISC-V) on its first instruction, the kernel-side spelling of "this
 /// thread's input"; the kernel forwards all three unconditionally. Refuses a half-built thread (no bound address space, or no entry). `0` on
-/// success; a negative `abi::Error`.
+/// success; a negative `moho_abi::Error`.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2). His words: "Ratify ... `thread_control_block_capability_insert`,
@@ -300,7 +340,7 @@ pub fn thread_control_block_start(
     unsafe {
         invoke(
             thread_control_block_slot,
-            abi::thread_control_block::START,
+            moho_abi::thread_control_block::START,
             argument_zero,
             argument_one,
             argument_two,
@@ -310,7 +350,7 @@ pub fn thread_control_block_start(
 
 /// `SUSPEND`: stop the thread whose TCB is in `thread_control_block_slot` until a [`thread_control_block_resume`],
 /// keeping its registers. Silent: nobody is told. When this returns 0 the thread
-/// is off every core. `0` on success; a negative `abi::Error`.
+/// is off every core. `0` on success; a negative `moho_abi::Error`.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
 pub fn thread_control_block_suspend(thread_control_block_slot: u64) -> i64 {
@@ -318,7 +358,7 @@ pub fn thread_control_block_suspend(thread_control_block_slot: u64) -> i64 {
     unsafe {
         invoke(
             thread_control_block_slot,
-            abi::thread_control_block::SUSPEND,
+            moho_abi::thread_control_block::SUSPEND,
             0,
             0,
             0,
@@ -327,7 +367,7 @@ pub fn thread_control_block_suspend(thread_control_block_slot: u64) -> i64 {
 }
 
 /// `RESUME`: let the thread whose TCB is in `thread_control_block_slot` run on from where it was suspended
-/// `0` on success, also when it was not suspended; a negative `abi::Error`.
+/// `0` on success, also when it was not suspended; a negative `moho_abi::Error`.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
 pub fn thread_control_block_resume(thread_control_block_slot: u64) -> i64 {
@@ -335,7 +375,7 @@ pub fn thread_control_block_resume(thread_control_block_slot: u64) -> i64 {
     unsafe {
         invoke(
             thread_control_block_slot,
-            abi::thread_control_block::RESUME,
+            moho_abi::thread_control_block::RESUME,
             0,
             0,
             0,
@@ -352,5 +392,10 @@ pub fn thread_control_block_resume(thread_control_block_slot: u64) -> i64 {
 /// `cap_delete` under the capability ruling of 2026-10-06 (UTC).
 pub fn capability_delete(slot: u64) {
     // SAFETY: SYSTEM_CALL_CAPABILITY_DELETE frees a slot in the caller's own capability table, nothing to clean up.
-    let _ = unsafe { trap6(abi::SYSTEM_CALL_CAPABILITY_DELETE, [slot, 0, 0, 0, 0, 0]) };
+    let _ = unsafe {
+        trap6(
+            moho_abi::SYSTEM_CALL_CAPABILITY_DELETE,
+            [slot, 0, 0, 0, 0, 0],
+        )
+    };
 }

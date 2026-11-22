@@ -52,7 +52,7 @@ discipline this session used throughout, will take many passes. Two shapes worth
 the work actually starts, left as a judgment call for whoever begins it rather than decided here:
 
 - Prioritize by exposure, not alphabetically. Crates nearest the system call boundary and most
-  widely depended on (`abi`, `capability`, `inter_process_communication`, `paging`) are the ones a reader meets first and
+  widely depended on (`moho_abi`, `capability`, `inter_process_communication`, `paging`) are the ones a reader meets first and
   most often, so a naming problem there costs more than one in a narrowly-used crate.
 - **Batch mechanically-fine names**, the same way this session batched (or offered to batch, and
   calef chose to walk individually) the nine `_proto` crates. A crate whose `pub fn` set already

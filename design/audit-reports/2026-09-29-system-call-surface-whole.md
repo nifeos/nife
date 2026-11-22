@@ -15,7 +15,7 @@ risks this read confirmed are both recorded ones, and both are stated where a re
 The 2026-09-24 audit named two lenses it had not taken: the system call surface as a whole, and the
 supply chain, the cryptography graph's code. Measured from that audit's landing commit
 (`1007edb1`, 2026-09-24) to this one: 748 commits, 1,704 files, +103,176 and -25,422 lines
-outside `notes/project-metrics`. `crates/abi/src/lib.rs` took +294 against 15 removed and
+outside `notes/project-metrics`. `crates/moho_abi/src/lib.rs` took +294 against 15 removed and
 `kernel/src/system_call.rs` +429 against 20: two new object types (`NOTIFICATION`, `TIMER`), a new
 `rendezvous` method (`BADGE`), and a kernel-written wake tag (`BOUND`), the largest move this
 surface has made since the audit mechanism began. The cryptography graph did not move at all: none
@@ -109,7 +109,7 @@ was weighed and left unproposed, because nothing multi-domain has asked for the 
 `Error` code decodes as that error and the waiter cannot tell. Found by milestone 151 (notification
 objects) while checking §101 (notification objects: async multiplexing without wait-any); the fix
 is a register convention, which every receiver in the tree is written against. The BUGS entries at
-`crates/abi`'s `RECV` and `WAIT` and in milestone 151's block are accurate; this read confirms the
+`crates/moho_abi`'s `RECV` and `WAIT` and in milestone 151's block are accurate; this read confirms the
 wart and the recording, and nothing in the window widened it.
 
 ## Is any confinement claim false as stated?
@@ -132,7 +132,7 @@ is the documentation audit's finding 3, and it is fixed there.
 ## Method, so the negatives can be judged
 
 The window was measured with `git diff --numstat` per directory from `1007edb1`. The surface was
-read from `crates/abi` outward into `kernel/src/system_call.rs` and `kernel/src/sched.rs`, with the
+read from `crates/moho_abi` outward into `kernel/src/system_call.rs` and `kernel/src/sched.rs`, with the
 mailbox writes enumerated at every assignment site rather than trusted from doc comments. The
 designation clamp, the manifest decoder and the TOML consumer were read at their sites. `script/
 verify` was not run; the notification state machine's proofs replay in CI.
