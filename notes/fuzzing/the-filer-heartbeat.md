@@ -33,6 +33,10 @@ line says `unknown`. The line holds counts and timestamps only, and nothing read
 - `fuzz-filer.timer` has its enable switch off.
 - the timer last ran more than two UTC days before the report's day, or never ran.
 
+Parked causes are not a failure of the filer, so they never open `fuzz-loop-broken`. They open the
+separate `fuzz-findings-parked` issue instead, described in
+[`continuous-host.md`](continuous-host.md#when-the-loop-breaks).
+
 A green heartbeat therefore proves a recent release, an ok window, a bounded infrastructure share, an
 enabled filer timer that fired within two days, and no held cause waiting for an advisory. It does not
 prove that an advisory is correct. The maintainer chose the two-day bound and the start day,

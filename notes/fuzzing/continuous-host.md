@@ -188,7 +188,20 @@ with the label `fuzz-loop-broken` when no release exists, when the report shows 
 `infrastructure` windows are half or more of all windows. It opens one when the filer looks dead
 ([what it proves about the filer](the-filer-heartbeat.md)). The issue names the check and the day, and
 no second one opens while one is open. It repairs nothing. A lane fixes anything in the tree; a repair
-of the host is a written spec the architect hands to the homelab agent. While no `fuzz-*` release has
+of the host is a written spec the architect hands to the homelab agent.
+
+A parked cause also notifies a person, by a rule ruled 2026-11-22 (UTC). The filer parks budget and
+hang causes and never files them; each waits for a `file` or `suppress` rule in fuzz-host
+`etc/fuzz-filer/rules.tsv` ([the filer's rules](https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-filer.md#rules)).
+When the report's `Filer:` line shows more parked causes than the count already noticed, the heartbeat
+opens one issue with the label `fuzz-findings-parked` (provisional), or comments on the one already
+open. The count already noticed is a marker in that issue's body, rewritten to the latest count, so
+the workflow keeps no state of its own. The issue carries the count and the release day only, since
+issues are public and the findings stay on the host. A person reads the day's report on the host,
+writes a rule for each parked cause through a fuzz-host pull request, and closes the issue once every
+parked cause has one.
+
+While no `fuzz-*` release has
 ever existed the workflow passes quietly, and it switches on by itself at the first release. The
 maintainer decides the bound, the label and the two-day window, provisionally; reversing costs
 one pull request. See [the proposal](../../design/roadmap/1023-the-fuzz-loop-dead-mans-switch.md).
