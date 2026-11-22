@@ -100,55 +100,36 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 
 ## Finding status
 
-- Item 1, clippy red on `VisionFive 2`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 2 and decision A, the published name: Ruled (§323 ruling 2, 2026-11-14 UTC). Not built:
-  `crates/abi/Cargo.toml` still names the package `abi`, and every `use abi::` waits for the
-  rename to `moho_abi`, which §323 lists as a follow-on for a rename lane after its plan.
-- Item 3, the crate names nife and nife programs: Done,
-  [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 4, twenty-eight references into nife: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 5, the virtio error that does not exist: Done,
-  [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 6, the register convention: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 7, three self-contradictions: Done, (a) and (c) in
-  [#3565](https://github.com/nifeos/nife/pull/3565), (b) in
-  [#3596](https://github.com/nifeos/nife/pull/3596).
-- Item 8, dates and rulings as history: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-  The six `// Index exception (<date>)` comments in `src/lib.rs` keep their dates, which
-  `helpers/parent_index.py` requires.
-- Item 9, README prose gates and badge row: Open.
-  [#3565](https://github.com/nifeos/nife/pull/3565) fixed the prose; the badge row arrives with the
-  move.
-- Item 10, the manifest's publish comment: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 11, the version gate: Open.
-  [#3565](https://github.com/nifeos/nife/pull/3565) added the counting test
-  `every_public_number_is_pinned`; the rule that a pinned number changes only
-  with `ABI_VERSION` moves into the new repository with the crate.
-- Item 12, `futex::admitted` and `Error::from_ret`: Open. Two-way until the first publish, so the
-  maintainer rules it provisionally; the recommendation is `is_admitted` and `impl TryFrom<i64> for
-  Error` with `from_ret` deleted, and calef ratifies the names in the crate's review package.
-- Item 13, names not ready and no package: Open. A lane writes the review package and marks every
-  unmarked public item provisional; the ratification of its names follows in that package.
-- Item 14, `Error` lacks `Display`, `Error` and `Hash`: Done,
-  [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 15, `CapabilitySlot` has no user: Open. Two-way until the first publish, so the maintainer
-  rules it provisionally (use the alias in `invoke`'s signature or delete it), and the review
-  package carries the result.
-- Item 16, `RegisterShape::new`'s parameters: Open. Two-way until the first publish, so the
-  maintainer rules it provisionally (`register_shift` and `access_width_bytes` with the binding's
-  names as `doc(alias)`), and the review package carries the result.
-- Item 17, `CycleMeaning` is not a system call contract: Open. Two-way until the first publish, so the
-  maintainer rules where it lives provisionally, and the review package carries the result.
-- Item 18, doc nits: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 19, `Name:` blocks quote the decider: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Item 20, six survivors with no record: Open. One `mutants-exempts` line per survivor, or a test,
-  after the new repository's first weekly run.
-- Item 21, no machine checks: Open. The bounded `counter_ticks_for` harness attempt and the proofs
-  job's behavior on zero harnesses, after the new repository's first runs.
+- Item 1, P0, clippy red on `VisionFive 2`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Item 2 and decision A, P0, the published name: Waiting on milestone 1121 (the Moho rename plan)
+  step 3, the rename to `moho_abi` that §323 ruling 2 rules.
+- Item 3, P1, the crate names nife and nife programs: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Item 4, P1, twenty-eight references into nife: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Item 5, P1, the virtio error that does not exist: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Item 6, P1, the register convention: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Item 7, P1, three self-contradictions: Done, (a) and (c) in [#3565](https://github.com/nifeos/nife/pull/3565), (b) in [#3596](https://github.com/nifeos/nife/pull/3596).
+- Item 8, P1, dates and rulings as history: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Item 9, P1, README prose gates and badge row: At the move. The move commit adds the badge row
+  with the repository's name; the prose passes the template's gates ([#3565](https://github.com/nifeos/nife/pull/3565), [#3942](https://github.com/nifeos/nife/pull/3942)).
+- Item 10, P1, the manifest's publish comment: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Item 11, P1, the version gate: Done, [#3942](https://github.com/nifeos/nife/pull/3942), on [#3565](https://github.com/nifeos/nife/pull/3565)'s counting test.
+- Item 12, P1, `futex::admitted` and `Error::from_ret`: Done, [#3942](https://github.com/nifeos/nife/pull/3942).
+- Item 13, P1, names not ready and no package: Waiting on a ruling ([#3942](https://github.com/nifeos/nife/pull/3942)), the clearance of
+  [the package](../../notes/crate-reviews/abi.md).
+- Item 14, P2, `Error` lacks `Display`, `Error` and `Hash`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Item 15, P2, `CapabilitySlot` has no user: Done, [#3942](https://github.com/nifeos/nife/pull/3942).
+- Item 16, P2, `RegisterShape::new`'s parameters: Done, [#3942](https://github.com/nifeos/nife/pull/3942).
+- Item 17, P2, `CycleMeaning` is not a system call contract: Done, [#3942](https://github.com/nifeos/nife/pull/3942).
+- Item 18, P2, doc nits: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Item 19, P2, `Name:` blocks quote the decider: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Item 20, P2, six survivors with no record: Waiting on the new repository's first weekly mutation
+  run.
+- Item 21, P2, no machine checks: Waiting on the new repository's first proofs run.
 - Decision B, `console::WRITE` stays reserved: Done, [#3596](https://github.com/nifeos/nife/pull/3596).
-- The move: Open. It waits for the review package and its clearance.
-- Publishing: Open. No first publish happens until the last outside-review milestone closes
-  (ruled 2026-11-18 UTC).
+- Found at the finish, six size names without a unit (`address_wait::SIZE_U8` to `SIZE_U64`,
+  `SIZE_MASK`, `usage::SIZE`): Waiting on a ruling ([#3942](https://github.com/nifeos/nife/pull/3942)), in the package's names.
+- The move: Waiting on a ruling ([#3942](https://github.com/nifeos/nife/pull/3942)), the package's clearance.
+- Publishing: Waiting on the last outside-review milestone closing (ruled 2026-11-18 UTC).
 
 ## Open decisions
 
@@ -157,14 +138,14 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 Background. Before a crate leaves this tree, calef reads its code and its review package and
 clears it; the clearing is also the approval to create its repository. This crate is the binary
 interface every program and the kernel agree on: system call numbers, method numbers, rights bits
-and error codes. It has no review package yet. Item 13 asks a lane to write one, in the shape of
-the socket contract's, listing all 148 public names with their state. This decision is the
-clearing of that package once it exists, under the crate's ruled name `moho_abi`.
+and error codes. Its package is [`notes/crate-reviews/abi.md`](../../notes/crate-reviews/abi.md), which
+lists its 146 public names with their state and six names the template's size rule refuses. This
+decision is the clearing of that package, under the crate's ruled name `moho_abi`.
 
 Recommendation: A.
 
-- A. Clear the review once the package lands and a lane builds the `moho_abi` rename, which approves
-  creating the repository and moving the crate.
+- A. Clear the review once milestone 1121 builds the `moho_abi` rename, which approves creating the
+  repository and moving the crate.
 - B. Clear the review before the rename, and let the move carry it.
 - C. Send the package back, naming what to change first.
 
@@ -183,10 +164,9 @@ Blocks: the move, and through it the tag and the first publish.
 ## Follow-on
 
 - **Done.** Decision B: `console::WRITE` stays as a reserved operation (#3596).
-- **Outstanding.** Decision A's rename to `moho_abi`, ruled by §323 (the binary interface and the
-  names of the layers) and not yet built; checked against `crates/abi/Cargo.toml`.
-- **Outstanding.** The package of item 13 with the provisional rulings of items 12 and 15 to 17,
-  then items 9, 11, 20 and 21 at the move. The finding status above says what each needs.
+- **Outstanding.** Decision A's rename to `moho_abi`, milestone 1121 step 3.
+- **Outstanding.** The package's clearance, then items 9, 20 and 21 at and after the move. The
+  finding status above says what each needs.
 
 ## BUGS
 
