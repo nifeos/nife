@@ -16,7 +16,7 @@
 //!   function directly under the host bridge. A function behind a bridge has its pin rotated by
 //!   each bridge's device number on the way up (PCI-to-PCI Bridge Architecture Specification 1.2,
 //!   section 9), and this module does not compose that rotation, so it would bind such a function
-//!   to the wrong line. Both `virt` boards are flat and the `x86_64` machine routes by MSI-X, so no
+//!   to the wrong line. Both `virt` boards are flat and the `x86_64` machine routes by MSI, so no
 //!   run meets it. The bus server of milestone 1064 (PCI enumeration leaves the kernel)
 //!   owns the bridge route.
 
