@@ -41,6 +41,23 @@ allocator.free_contiguous(run, 8);
 assert_eq!(allocator.stats().free_frames(), TOTAL - 4);
 ```
 
+## What is proven
+
+Nine Kani harnesses, each over an 8-frame bitmap with arbitrary contents unless it says otherwise:
+
+- `containing` rounds every address down to an aligned frame that holds it.
+- `bitmap_bytes` gives enough bytes for every frame count up to 2^40.
+- A frame's address and its bitmap index are inverses, for every aligned base and totals up to 2^20.
+- Two back-to-back allocations never return the same frame.
+- Every frame `alloc` returns lies on a frame boundary inside the allocator's span.
+- `mark_free` frees only frames wholly inside its range, for every aligned base, start and length.
+- `mark_used` claims exactly the frames its range touches, for every aligned base, start and length.
+- After any one of `mark_free`, `mark_used`, `alloc`, `alloc_contiguous` or `free`, the used count
+  equals the number of set bits.
+- A successful `alloc_contiguous` returns a run that was all free and is now all used.
+
+No harness covers `free_contiguous` yet; the host tests pin its refusals and its count.
+
 ## Design
 
 A bitmap, not a free list. A free list links each free frame to the next through the frame itself,
@@ -62,25 +79,8 @@ overwrite the tail of the kernel. `mark_free` frees only the frames wholly insid
 a frame at an unaligned end also holds bytes nobody said were RAM. Either rule wastes at most one
 frame at each end of a region. Getting either one wrong corrupts whatever owns the other bytes.
 
-The bitmap spans from the lowest frame to the highest, holes included. A hole simply never gets
+The bitmap spans from the lowest frame to the highest, holes included. A hole never gets
 freed, and a frame's index stays one subtraction and one division.
-
-## What is proven
-
-Nine Kani harnesses, each over an 8-frame bitmap with arbitrary contents unless it says otherwise:
-
-- `containing` rounds every address down to an aligned frame that holds it.
-- `bitmap_bytes` gives enough bytes for every frame count up to 2^40.
-- A frame's address and its bitmap index are inverses, for every aligned base and totals up to 2^20.
-- Two back-to-back allocations never return the same frame.
-- Every frame `alloc` returns lies on a frame boundary inside the allocator's span.
-- `mark_free` frees only frames wholly inside its range, for every aligned base, start and length.
-- `mark_used` claims exactly the frames its range touches, for every aligned base, start and length.
-- After any one of `mark_free`, `mark_used`, `alloc`, `alloc_contiguous` or `free`, the used count
-  equals the number of set bits.
-- A successful `alloc_contiguous` returns a run that was all free and is now all used.
-
-No harness covers `free_contiguous` yet; the host tests pin its refusals and its count.
 
 ## Building and testing
 
@@ -97,8 +97,8 @@ The tests run on the host and need no emulator.
 
 ### Running the proofs
 
-Install Kani first: `cargo install --locked kani-verifier --version 0.68.0`, then `cargo kani
-setup`. The setup step downloads a model checker, so it needs network access.
+Install Kani first: `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model checker, so it needs network access.
 
 `cargo kani` runs all nine harnesses. On a shared build machine it took about 75 seconds, the first
 build included, with a peak of about 500 megabytes. One harness runs alone with its full path:
