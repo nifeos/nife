@@ -27,7 +27,7 @@ What it costs: one mapped page for each process that starts with a name. On aarc
 page is about 4 percent of a spawn.
 
 Reuse: the one-name set that `rm` already falls back to (`components/src/swish/running.rs`,
-`dir_grant`), `filesystem_contract::nameset`'s encoding and the page it travels on, and the frames
+`dir_grant`), `file_system_contract::nameset`'s encoding and the page it travels on, and the frames
 `vouch` already sends its file on. No new tool and no new crate.
 
 ## What moves
@@ -58,7 +58,7 @@ Reuse: the one-name set that `rm` already falls back to (`components/src/swish/r
 `DirectoryPath` holds eight components of 16 bytes by value, 137 bytes in all. At 252 bytes a
 component the same layout is about 2 KiB. The shell carries one in every `ShellHoldings`, one in
 each of four `BindEntry` values, and several in an `Endowment`, on a stack that milestone 1090 (an
-outside review of `filesystem_contract`) found tight.
+outside review of `file_system_contract`) found tight.
 
 The recommendation is a packed buffer, as `nameset` packs a set. The buffer holds each component as a
 length byte and its bytes, one after another, in one buffer of 512 bytes, with the depth still at most
