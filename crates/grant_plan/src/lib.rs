@@ -41,9 +41,9 @@ pub use escalation::{COOPERATIVE_GRACE_POLLS, Escalation, InterruptAction};
 // used. Not re-exported: each item has one public path, in `grant_contract`.
 pub(crate) use grant_contract::*;
 pub use parsing::{
-    BUILTINS, MAXIMUM_POSITIONALS, ParsedInvocation, UserVerb, check_words, for_each_word,
-    job_operand, kill_operands, line_verb, parse, parse_invocation, tokenize, user_verb,
-    vouch_operand, vouched_name, write_argument_page,
+    BUILTINS, MAXIMUM_POSITIONALS, NoJobNamed, ParsedInvocation, UserVerb, check_words,
+    for_each_word, job_operand, kill_operands, line_verb, parse, parse_invocation, tokenize,
+    user_verb, vouch_operand, vouched_name, write_argument_page,
 };
 pub(crate) use planning::nav_refusal;
 pub use planning::{

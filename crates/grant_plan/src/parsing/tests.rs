@@ -547,9 +547,9 @@ fn a_line_that_exactly_fills_the_argument_page_is_taken() {
 fn a_job_operand_is_two_decimal_digits_at_most() {
     assert_eq!(job_operand(b"%12"), Ok(Some(12)));
     assert_eq!(job_operand(b"99"), Ok(Some(99)));
-    assert_eq!(job_operand(b"%123"), Err(()));
-    assert_eq!(job_operand(b"%"), Err(()));
-    assert_eq!(job_operand(b"%1a"), Err(()));
+    assert_eq!(job_operand(b"%123"), Err(NoJobNamed));
+    assert_eq!(job_operand(b"%"), Err(NoJobNamed));
+    assert_eq!(job_operand(b"%1a"), Err(NoJobNamed));
 }
 
 /// `-9` is the forcible tier only as a word of its own: `kill -9%1` names no job, rather than
@@ -557,7 +557,7 @@ fn a_job_operand_is_two_decimal_digits_at_most() {
 #[test]
 fn kill_reads_dash_nine_only_as_its_own_word() {
     assert_eq!(kill_operands(b"-9 %1"), Ok((true, 1)));
-    assert_eq!(kill_operands(b"-9%1"), Err(()));
+    assert_eq!(kill_operands(b"-9%1"), Err(NoJobNamed));
 }
 
 /// A line with more tokens than `parse_invocation` has room for is refused, not shortened. The seventeenth
