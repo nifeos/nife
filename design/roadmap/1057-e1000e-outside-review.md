@@ -320,6 +320,14 @@ P1-7, the hardware half of P2-4 and P2-9 wait on one cabled I219 run, and this m
 delivered until it happens (decision 5). Every harness verifies on `v0.1.0-pre.3`, which carries
 [`nifeos/e1000e#31`](https://github.com/nifeos/e1000e/pull/31).
 
+## Follow-on
+
+- **Done.** Every finding the finding status marks Done, each with the pull request that carried
+  it.
+- **Outstanding.** The cabled I219 run behind P1-7, the hardware half of P2-4 and P2-9, tracked in
+  `nifeos/e1000e#10` and `#11`. Checked against the open issues of that repository; no consumer
+  has run the part with a cable.
+
 ## Index row
 
 An outside reading of `e1000e`: four items block the baseline tag (the `Hardware` method names,
