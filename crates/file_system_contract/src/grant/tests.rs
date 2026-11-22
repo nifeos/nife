@@ -177,5 +177,9 @@ fn start_words_carrying_a_name_are_recognized() {
     assert!(grant::words_carry_no_name(0, 0, spec));
     assert!(!grant::words_carry_no_name(1, 0, spec));
     assert!(!grant::words_carry_no_name(0, 1, spec));
-    assert!(!grant::words_carry_no_name(0, 0, grant::specification(4, 3)));
+    assert!(!grant::words_carry_no_name(
+        0,
+        0,
+        grant::specification(4, 3)
+    ));
 }
