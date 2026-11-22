@@ -11,10 +11,10 @@ use crate::{Endowment, ParsedInvocation, Program, Refusal, ShellHoldings, Stream
 /// Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1094-grant-plan-split.
 pub fn plan(
     run: &ParsedInvocation<'_>,
-    shell_holdings: ShellHoldings,
-    expanded: expansion::Expansion,
+    shell_holdings: &ShellHoldings,
+    expanded: &expansion::Expansion,
 ) -> Result<(Program, Endowment), Refusal> {
-    plan_stage(run, shell_holdings, expanded, Streams::default())
+    plan_stage(run, shell_holdings, expanded, &Streams::default())
 }
 
 /// **The word that will start an isolated child** (`swish -c <commands>`, milestone 52 (subshells without `fork`), DECISIONS
@@ -34,9 +34,9 @@ pub const ISOLATION_WORD: &[u8] = b"swish";
 /// Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1094-grant-plan-split.
 pub fn plan_stage(
     run: &ParsedInvocation<'_>,
-    shell_holdings: ShellHoldings,
-    expanded: expansion::Expansion,
-    streams: Streams,
+    shell_holdings: &ShellHoldings,
+    expanded: &expansion::Expansion,
+    streams: &Streams,
 ) -> Result<(Program, Endowment), Refusal> {
     if let Some(r) = run.misquoted {
         return Err(r);

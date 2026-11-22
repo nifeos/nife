@@ -70,20 +70,44 @@ pub(super) const fn mounted_job_windows() -> Windows {
     Windows::new(1, fs_operation::CLIENT_WINDOWS as u64)
 }
 
-/// **A directory grant in the second mounted tree, as the disk tree will see it**: the caretaker's
-/// words with `disk/` taken off the name (`program_table::spawn_protocol::in_mounted_tree`), or `None` for
-/// a grant in the first tree.
-pub(super) fn mounted_grant((lo, hi, spec): (u64, u64, u64)) -> Option<(u64, u64, u64)> {
-    use file_system_contract::grant;
-    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
-    let n = grant::unpack_name(lo, hi, grant::specification_len(spec), &mut buf);
-    let rest = spawn_protocol::in_mounted_tree(&buf[..n])?;
-    let (lo, hi) = grant::pack_name(rest)?;
-    Some((
-        lo,
-        hi,
-        grant::specification(rest.len(), grant::specification_rights(spec)),
-    ))
+/// **A directory grant's page as the shell sent it, copied out of the shell's frame**: the granted
+/// directory's name and the name set, read once from this copy, so a shell that rewrites its page
+/// after sending it changes nothing the progenitor decided. `None` is a page whose name does not
+/// decode (`file_system_contract::grant::page_name`), which refuses the grant.
+///
+/// Name: provisional.
+pub(super) struct ShellGrant {
+    page: [u8; file_system_contract::grant::PAGE_USED_BYTES],
+}
+
+impl ShellGrant {
+    /// Copy the page mapped read-only at `theirs` (`receive_args`) and check its name decodes.
+    pub(super) fn read(theirs: u64) -> Option<Self> {
+        let mut page = [0u8; file_system_contract::grant::PAGE_USED_BYTES];
+        // SAFETY: `theirs` is one page mapped read-only by `receive_args`, and `PAGE_USED_BYTES`
+        // is less than a page.
+        unsafe {
+            core::ptr::copy_nonoverlapping(theirs as *const u8, page.as_mut_ptr(), page.len());
+        }
+        file_system_contract::grant::page_name(&page)?;
+        Some(Self { page })
+    }
+
+    /// The granted directory, empty for the root of the shell's namespace.
+    pub(super) fn name(&self) -> &[u8] {
+        // `read` refused a page whose name does not decode.
+        file_system_contract::grant::page_name(&self.page).unwrap_or(&[])
+    }
+
+    /// The name set, `file_system_contract::nameset`'s encoding; one 0 byte for none.
+    pub(super) fn set(&self) -> &[u8] {
+        file_system_contract::grant::page_name_set(&self.page)
+    }
+
+    /// Whether the grant is a set of names rather than the whole directory.
+    pub(super) fn is_set(&self) -> bool {
+        file_system_contract::nameset::count(self.set()) != 0
+    }
 }
 
 /// **A channel of its own for one job behind a grant in the second mounted tree**: [`job_channel`]
@@ -139,40 +163,18 @@ pub(super) fn bound_channel(
     (windows, w): (&mut Windows, u64),
     own_ut: u64,
     mapped: &mut bool,
-    (lo, hi, spec): (u64, u64, u64),
+    (name, rights): (&[u8], u64),
 ) -> Option<Fs> {
     let files = FsCalls::map(Some(fs), own_ut, mapped)?;
-    let mut buf = [0u8; file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES];
-    let n = file_system_contract::grant::unpack_name(
-        lo,
-        hi,
-        file_system_contract::grant::specification_len(spec),
-        &mut buf,
-    );
-    let rights = file_system_contract::grant::specification_rights(spec);
     // An empty name is the root of the shell's namespace, which has no name to descend into: the
     // grant narrows the root handle instead (`file_system::NARROW`, §173 (narrowing the root of the shell's namespace)).
-    let handle = if n == 0 {
+    let handle = if name.is_empty() {
         files.narrow(fs_operation::ROOT, rights)
     } else {
-        let name = core::str::from_utf8(&buf[..n]).ok()?;
+        let name = core::str::from_utf8(name).ok()?;
         files.named(fs_operation::OPENDIR, fs_operation::ROOT, name, rights)
     };
     bind_window(fs, &files, (windows, w), handle)
-}
-
-/// **A caretaker's `START` words for a channel already bound to its directory**: the rights kept,
-/// the name emptied, which tells `fs_nameset_caretaker` its directory is the bound root and there is
-/// nothing to descend into (milestone 946 (a granted file name can be longer than sixteen bytes)).
-///
-/// Name: provisional (milestone 946).
-pub(super) fn at_bound_root((_, _, spec): (u64, u64, u64)) -> (u64, u64, u64) {
-    use file_system_contract::grant;
-    (
-        0,
-        0,
-        grant::specification(0, grant::specification_rights(spec)),
-    )
 }
 
 /// **Bind window `w`'s badge to the directory `handle` names, and hand back the window's page and

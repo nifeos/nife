@@ -1,24 +1,28 @@
 Falsifies `inter_process_communication::verification::send_preserves_the_invariant`.
 
-The defect: a sender with nobody to meet joins the receiver queue. The two queues are twins,
-their pushes differ by one identifier, and `send` and `receive` are written as mirror images of
-each other a few lines apart, which is where this kind of slip lives.
+The defect: taking the last receiver leaves the tag on an empty receiver queue. The pop reads as
+the whole job, and the reset after it is the line a refactor drops, since every later operation
+on an empty queue still answers correctly.
 
-Expected to fail: the harness's `assert!(e.one_queue_invariant_holds())`, on a rendezvous that already
-holds a queued sender, where the blocked sender lands on the other queue and both are then
-non-empty. Every other proof in this module rests on that invariant, and a later receive would
-rendezvous a sender with a sender.
+Expected to fail: the harness's `assert!(e.one_queue_invariant_holds())`, on a rendezvous seeded
+with one receiver, after the send rendezvouses with it. `is_idle` reads the tag, so the rendezvous
+would call itself busy with nobody on it, and an object revocation or a teardown that waits for an
+idle rendezvous would wait for a thread that is not there.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index 845029a65..38a5f02bd 100644
+index 0dcb87d6d..f73469ac1 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -268,7 +268,7 @@ impl<T: Node> Rendezvous<T> {
-         } else if let Some(receiver) = self.receivers.pop_front() {
-             SendVerdict::Rendezvous(receiver, me)
-         } else {
--            self.senders.push_back(me);
-+            self.receivers.push_back(me);
-             SendVerdict::Blocked
-         }
+@@ -325,11 +325,7 @@ impl<T: Node> Rendezvous<T> {
+         let Waiting::Receivers(receivers) = &mut self.waiting else {
+             return None;
+         };
+-        let receiver = receivers.pop_front();
+-        if receivers.is_empty() {
+-            self.waiting = Waiting::Nobody;
+-        }
+-        receiver
++        receivers.pop_front()
      }
+ 
+     /// Pop the first sender, if senders wait here, and return the tag to `Nobody` after the last.

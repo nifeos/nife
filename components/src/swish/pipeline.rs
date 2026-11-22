@@ -23,14 +23,14 @@ const PIPE_REGION_PAGES: u64 = 8;
 pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
     // The names on the ends, resolved against where we stand now, exactly as an operand is.
     let out = match l.output {
-        Some(t) => match grant_plan::output_file_grant(t, holdings(nav)) {
+        Some(t) => match grant_plan::output_file_grant(t, &holdings(nav)) {
             Ok(g) => Some(g),
             Err(r) => return say(Say::Cannot(r)),
         },
         None => None,
     };
     let inp = match l.input {
-        Some(t) => match grant_plan::input_file_grant(t, holdings(nav)) {
+        Some(t) => match grant_plan::input_file_grant(t, &holdings(nav)) {
             Ok(g) => Some(g),
             Err(r) => return say(Say::Cannot(r)),
         },
@@ -38,7 +38,7 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
     };
     // `2>` names one destination for the line: one diagnostic rendezvous serves every declarer.
     let diag_file = match l.diagnostics {
-        Some(t) => match grant_plan::output_file_grant(t, holdings(nav)) {
+        Some(t) => match grant_plan::output_file_grant(t, &holdings(nav)) {
             Ok(g) => Some((g, l.diagnostics_mode())),
             Err(r) => return say(Say::Cannot(r)),
         },
@@ -74,7 +74,7 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
                     source: l.stage_source(i, inp),
                     diagnostics: diag_file,
                 };
-                match program_table::plan_stage(&spec, holdings(nav), expanded, streams) {
+                match program_table::plan_stage(&spec, &holdings(nav), &expanded, &streams) {
                     Ok((program, e)) => {
                         plans[i] = Some(e);
                         rows[i] = Some(program);
@@ -504,9 +504,7 @@ fn spawn_stages(
                 capability_delete(a.frame);
             }
             for w in sets[i + 1..].iter().flatten() {
-                if let Some(p) = w.set {
-                    capability_delete(p.frame);
-                }
+                capability_delete(w.page.frame);
             }
             return false;
         }
@@ -940,8 +938,8 @@ fn spawn_stage(
                 if let Some(a) = argv {
                     capability_delete(a.frame);
                 }
-                if let Some(p) = words.and_then(|w| w.set) {
-                    capability_delete(p.frame);
+                if let Some(w) = words {
+                    capability_delete(w.page.frame);
                 }
                 failed();
                 print(b"  this shell's memory budget is exhausted; nothing left to grant\n");
@@ -967,7 +965,7 @@ fn spawn_stage(
         image: false,
         run_unvouched: false,
         program_arguments: argv.is_some(),
-        nameset: words.is_some_and(|w| w.set.is_some()),
+        nameset: words.is_some_and(|w| w.set),
         machine: machine_wiring(&e),
         // A stage never promises devices (milestone 632 (graphics on demand)):
         // `graphical_terminal`'s manifest refuses every operator that builds a stage.
@@ -987,14 +985,14 @@ fn spawn_stage(
         send(SPAWN, caretaker.0, caretaker.1, caretaker.2);
         send(SPAWN, child.0, child.1, child.2);
     }
-    // **The argv's frame, then the name set's, before every other capability**
-    // (`spawn_protocol::PROGRAM_ARGUMENTS_BIT`, `NAMESET_BIT`), as `spawn` sends them.
+    // **The argv's frame, then the grant page's, before every other capability**
+    // (`spawn_protocol::PROGRAM_ARGUMENTS_BIT`, `DIRECTORY_GRANT_BIT`), as `spawn` sends them.
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
         capability_delete(a.frame);
     }
     if let Some(w) = &words {
-        send_set(w);
+        send_grant_page(w);
     }
     // In the protocol's order, which both sides read out of the same word. A `SEND_CAPABILITY` nobody
     // expects and a `RECEIVE_CAPABILITY` nobody answers both deadlock, so the order is the contract.

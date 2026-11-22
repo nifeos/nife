@@ -12,13 +12,16 @@ use super::*;
 
 /// **Build the caretaker a directory grant is delivered by**, and hand back its endpoint.
 ///
-/// `fs_subtree_caretaker` for a directory, or `fs_nameset_caretaker` with its name set
-/// (`set_seen`, `spawn_protocol::NAMESET_BIT`) on a page from the job's `region`. A set only narrows
-/// the directory it names, so it is taken for any program: a program that hears words is granted
-/// the names its words designated, and `rm` a name too long for its `START` words (milestone 946 (a granted file name can be longer than sixteen bytes)).
-/// For a program that hears words, the rights the shell asked for are clamped to what `manifest`
-/// allows (§170 (how a foreign program is told what to do) clause 4), which for unvouched bytes is
-/// read-only. Out of line so its locals stay off the spawn service's frame.
+/// `fs_subtree_caretaker` for a directory, or `fs_nameset_caretaker` when `set` names any names
+/// (`spawn_protocol::NAMESET_BIT`). Either way the caretaker reads the directory `name` and the set
+/// on a grant page written here from the job's `region` (`file_system_contract::grant::write_page`),
+/// and its `START` words carry only the rights: `care_words` that still carry a name are refused
+/// before anything is built. A set only narrows the directory it names, so it is taken for any
+/// program: a program that hears words is granted the names its words designated, and `rm` the
+/// one operand it was given. For a program that hears words, the rights the shell asked for are
+/// clamped to what `manifest` allows (§170 (how a foreign program is told what to do) clause 4),
+/// which for unvouched bytes is read-only. Out of line so its locals stay off the spawn service's
+/// frame.
 #[inline(never)]
 pub(super) fn build_grant(
     own_ut: u64,
@@ -26,42 +29,61 @@ pub(super) fn build_grant(
     fs: Fs,
     care: &Caretakers,
     care_words: (u64, u64, u64),
-    set_seen: Option<u64>,
+    (name, set): (&[u8], &[u8]),
     manifest: Option<grant_contract::Manifest>,
 ) -> Option<u64> {
-    let words = match manifest.map(|m| m.program_argument) {
-        Some(grant_contract::ProgramArgumentDeclaration::Words(g)) => {
-            use file_system_contract::grant as gr;
-            let rights = gr::specification_rights(care_words.2) & g.rights();
-            (
-                care_words.0,
-                care_words.1,
-                gr::specification(gr::specification_len(care_words.2), rights),
-            )
-        }
-        _ => care_words,
-    };
-    match set_seen {
-        None => care
-            .subtree
-            .as_ref()
-            .and_then(|e| build_caretaker(own_ut, region, e, fs, words, None)),
-        Some(theirs) => {
-            let set = copy_args(own_ut, region, theirs, |_| true)?;
-            let ep = care
-                .nameset
-                .as_ref()
-                .and_then(|e| build_caretaker(own_ut, region, e, fs, words, Some(set)));
-            capability_delete(set);
-            ep
-        }
+    use file_system_contract::grant as gr;
+    if !gr::words_carry_no_name(care_words.0, care_words.1, care_words.2) {
+        return None;
     }
+    let rights = match manifest.map(|m| m.program_argument) {
+        Some(grant_contract::ProgramArgumentDeclaration::Words(g)) => {
+            gr::specification_rights(care_words.2) & g.rights()
+        }
+        _ => gr::specification_rights(care_words.2),
+    };
+    let words = (0, 0, gr::specification(0, rights));
+    let caretaker = if file_system_contract::nameset::count(set) != 0 {
+        care.nameset.as_ref()
+    } else {
+        care.subtree.as_ref()
+    }?;
+    let page = grant_page(own_ut, region, name, set)?;
+    let ep = build_caretaker(own_ut, region, caretaker, fs, words, page);
+    capability_delete(page);
+    ep
+}
+
+/// **Write a caretaker's grant page on a page from the child's `region`**: the directory `name`
+/// and the name `set`, `file_system_contract::grant::write_page`'s layout. `None` when the region
+/// cannot pay for the page or the two do not fit, which the shell's own bounds make unexpected.
+fn grant_page(own_ut: u64, region: u64, name: &[u8], set: &[u8]) -> Option<u64> {
+    let page = retype_page_frame(region).ok()?;
+    // Fresh from the child's region, so reaping the child takes this mapping back.
+    let Ok(ours) = process_builder::map_scratch(page, true, own_ut) else {
+        capability_delete(page);
+        return None;
+    };
+    // SAFETY: `ours` is one page mapped read/write just above, and nothing else reaches it.
+    let out = unsafe {
+        core::slice::from_raw_parts_mut(ours as *mut u8, spawn_protocol::IMAGE_PAGE as usize)
+    };
+    let written = file_system_contract::grant::write_page(name, true, set, out);
+    // Written, and the child's from here: give our window onto it up (milestone 95 (an unmap
+    // primitive), §249 (a running address space stays nameable)).
+    process_builder::give_up_own_page(ours);
+    if written.is_none() {
+        capability_delete(page);
+        return None;
+    }
+    Some(page)
 }
 
 /// **Build a caretaker for one directory grant and hand back its endpoint**, which the program
 /// holds instead of anything naming the file server (DECISIONS §92 (a caretaker is supervised by
 /// the client it serves)). Everything comes from the client's `region`; `care_words` are the
-/// `START` words as the shell packed them. `None` when the descent is refused or the build fails.
+/// `START` words, carrying the rights alone, and `grant` the page [`build_grant`] wrote, mapped
+/// read-only at [`GRANT_PAGE_VA`]. `None` when the descent is refused or the build fails.
 /// See notes/system-initializer/children.md.
 ///
 /// # BUGS
@@ -73,7 +95,7 @@ pub(super) fn build_caretaker(
     care: &static_elf::Elf,
     fs: Fs,
     care_words: (u64, u64, u64),
-    set: Option<u64>,
+    grant: u64,
 ) -> Option<u64> {
     let narrow_ep = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()?;
     let ready = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()?;
@@ -83,11 +105,7 @@ pub(super) fn build_caretaker(
             fs.page,
             abi::address_space::MAP_READ_WRITE,
         ),
-        (
-            NAMESET_PAGE_VA,
-            set.unwrap_or(0),
-            abi::address_space::MAP_READ_ONLY,
-        ),
+        (GRANT_PAGE_VA, grant, abi::address_space::MAP_READ_ONLY),
     ];
     // Its whole authority: no untyped, no clock, no terminal, nothing that names another process.
     let built = build_child(
@@ -100,7 +118,7 @@ pub(super) fn build_caretaker(
                 (narrow_ep, abi::rights::READ),
                 (ready, abi::rights::WRITE),
             ],
-            maps: &maps[..if set.is_some() { 2 } else { 1 }],
+            maps: &maps,
             stack_pages: CARETAKER_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },

@@ -34,6 +34,7 @@ import os
 
 CRATE = "jh7110_entropy"
 CRATE_REPOSITORY = "https://github.com/nifeos/jh7110_entropy"
+# boot-line-head: copy, Python cannot link boot_ladder; matches the banner head
 BANNER = re.compile(r"^nife on ")
 TRNG = re.compile(r"self-test\s+: true_random_number_generator\s+(ok|FAILED|absent)\s+(.*)$")
 STAT = re.compile(r"STAT 0x[0-9a-f]{8} \(([^)]*)\)")
@@ -189,6 +190,7 @@ def selftest():
     def log(*lines):
         out = []
         for line in lines:
+            # boot-line-head: copy, a selftest fixture spells the bytes a log holds
             out += ["nife on RISC-V (rv64, S-mode, Sv39)", line]
         return "\n".join(out)
 

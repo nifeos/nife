@@ -143,7 +143,7 @@ the harness.
 
 The note's own:
 
-`line_editor`'s blob is smaller than `LineDisc`'s buffers, because it does not carry the
+`line_editor`'s blob is smaller than `LineEditor`'s buffers, because it does not carry the
 completed-line snapshot or the browse stash. Measured by `line_editor`'s host test on 2026-09-27: a
 full ring of near-maximal history lines serializes to under 2 KiB, and with four queued lines the
 whole blob is under 4 KiB, so it fits the one page it declares. `MemoryRegion::RETYPE` takes a page

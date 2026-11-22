@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 101, 154
@@ -31,60 +32,60 @@ the items say which.
 
 ## Finding status
 
-Every item not Done blocks the first crates.io publish, which waits until every outside-review
+Every finding not Done blocks the first crates.io publish, which waits until every outside-review
 milestone reaches delivery.
 
-- P0-1, no review package: Done. [`notes/crate-reviews/inter-process-communication.md`](../../notes/crate-reviews/inter-process-communication.md)
-  is the package, with a row in the index (ruled, maintainer, provisional, 2026-11-19 UTC, D6).
-- P0-2, the one dependency has not left and appears in no plan: Ruled (maintainer, provisional,
-  2026-11-19 UTC, D3). Not built: `intrusive_queue` leaves first, under
-  milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release).
-- P0-3, the crate does not stand alone: Open. The move strips every `Name:` block (23 lines
-  under `src/` and one in a patch header) and the citations, and gives the manifest its own `license`, `lints` and `rust-version` in place of
-  `license.workspace` and the allowlist comment.
-- P1-4, a public type named `Send`: Done (ruled, maintainer, provisional, 2026-11-14 UTC,
-  [#3589](https://github.com/nifeos/nife/pull/3589)). The five operation enums are `SendVerdict`,
-  `ReceiveVerdict`, `SignalVerdict`, `WaitVerdict` and `ArmVerdict`, each with a provisional
-  `Name:` block.
+- P0-1, no review package: Done, [#3824](https://github.com/nifeos/nife/pull/3824).
+  [`notes/crate-reviews/inter-process-communication.md`](../../notes/crate-reviews/inter-process-communication.md)
+  is the package, with a row in the index.
+- P0-2, the one dependency has not left and appears in no plan: Done, [#3892](https://github.com/nifeos/nife/pull/3892). `intrusive_queue`
+  left first (D3), and the crate takes `nifeos/intrusive_queue` by `rev`.
+- P0-3, the crate does not stand alone: At the move. The move strips every `Name:` block and the
+  citations, and gives the manifest its own `license`, `lints` and `rust-version` in place of
+  `license.workspace` and `[lints]`, which `Cargo.toml` still inherits.
+- P1-4, a public type named `Send`: Done, [#3824](https://github.com/nifeos/nife/pull/3824). The five operation enums are `SendVerdict`,
+  `ReceiveVerdict`, `SignalVerdict`, `WaitVerdict` and `ArmVerdict` (D1).
 - P1-5a, gate names in the private parts: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-5b, prose spellings: Done. No British form, no `queueing` and no `pa` remains in the crate.
-- P1-5c, gate names in the public parts: Done (ruled, maintainer, provisional, 2026-11-19 UTC, D4).
-  `Rendezvous::one_queue_invariant_holds` and `futex::Key::virtual_address`, each with a
-  provisional `Name:` block.
-- P1-6, the design record does not travel: Open. The move writes `docs/design.md` and the README
-  in place of the links to `notes/inter-process-communication.md`.
-- P1-7, manifest metadata: Open. The move writes the description, repository, keywords and
+- P1-5b, prose spellings: Done, [#3824](https://github.com/nifeos/nife/pull/3824).
+- P1-5c, gate names in the public parts: Done, [#3824](https://github.com/nifeos/nife/pull/3824). `Rendezvous::one_queue_invariant_holds`
+  and `Key::virtual_address` (D4).
+- P1-6, the design record does not travel: At the move. The move writes `docs/design.md` and the
+  README in place of the links to `notes/inter-process-communication.md`.
+- P1-7, manifest metadata: At the move. The move writes the description, repository, keywords and
   categories rows.
 - P1-8, a harness recorded as unfalsifiable: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-9, the mutation record is stale: Open. A full run in the new repository, with the three
+- P1-9, the mutation record is stale: At the move. A full run in the new repository, with the three
   survivors triaged.
-- P2-10, a timer and a futex table in a crate named for inter-process communication: Ruled
-  (maintainer, provisional, 2026-11-14 UTC, [#3589](https://github.com/nifeos/nife/pull/3589)).
-  Not built: the README's first line, which states the shared reason, comes with the move.
-- P2-11, the one-queue invariant could hold by construction: Open. Two-way, and the maintainer
-  rules it after the move; it changes the proofs.
+- P2-10, a timer and a futex table in a crate named for inter-process communication: At the move.
+  The README's first line, which states the shared reason (D2), comes with the move.
+- P2-11, the one-queue invariant could hold by construction: Done,
+  [#3963](https://github.com/nifeos/nife/pull/3963) (maintainer, provisional, 2026-11-22 UTC).
+  `Rendezvous` holds one queue under a `Waiting` tag, five words on a 64-bit target in place of
+  seven. `one_queue_invariant_holds` checks the half the layout leaves open, that a tag names a
+  queue only while a thread is on it, and every rendezvous harness has a falsification patch cut
+  against the new code.
 - P2-12a, `Futexes<T, 0>` panics: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-12b, `Futexes` as a stranger reads it: Done for the names (maintainer, provisional,
-  2026-11-19 UTC, D5): `FutexTable<T, const BUCKETS: usize>`, `len()` with `is_empty()` and
-  `Key::address_space`, each with a provisional `Name:` block. The iterator lands in
-  `intrusive_queue` and is the maintainer's.
-- P2-13, `Timer::deadline` answers with a sentinel: Done (ruled, maintainer, provisional,
-  2026-11-20 UTC, D7). `Timer::deadline` and `earliest` answer `Option<u64>`, and `NEVER` is only
-  the kernel's cache word.
-- P2-14, the pending count's saturation has no host test: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-15, five copies of the test node: Done. `src/test_node.rs` holds the one node, its two token
-  helpers and the two obligations stated once. The futex tests keep their own node, which carries
-  the key it waits on.
+- P2-12b, `Futexes` as a stranger reads it: Done, [#3963](https://github.com/nifeos/nife/pull/3963)
+  and nifeos/intrusive_queue#2, which adds the read-only `Queue::iter` that lets
+  `AddressWaitTable::waiter_count` take `&self`. [#3824](https://github.com/nifeos/nife/pull/3824) built the names (D5),
+  [#3874](https://github.com/nifeos/nife/pull/3874) spelled the type out as `AddressWaitTable`,
+  and [#3883](https://github.com/nifeos/nife/pull/3883) ratified them.
+- P2-13, `Timer::deadline` answers with a sentinel: Done, [#3842](https://github.com/nifeos/nife/pull/3842). `Timer::deadline` and
+  `earliest` answer `Option<u64>` (D7).
+- P2-14, the pending count's saturation has no host test: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-15, five copies of the test node: Done, [#3842](https://github.com/nifeos/nife/pull/3842). `src/test_node.rs` holds the one node; the
+  futex tests keep their own, which carries the key it waits on.
 - P2-16a, documentation details: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-16b, tuples from `debug_counts`: Done. `Rendezvous::debug_counts` returns `RendezvousCounts`
-  and `Notification::debug_counts` returns `NotificationCounts`, both provisional.
+- P2-16b, tuples from `debug_counts`: Done, [#3824](https://github.com/nifeos/nife/pull/3824). `RendezvousCounts` and `NotificationCounts`.
 - P2-17, two Kani toolchain warnings: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Follow-on, the externalization list: Open. `crates/externalization-list.txt` does not name this
-  crate; milestone 1017's list records the pair, `intrusive_queue` first (D3).
-- Follow-on, review clearance and the repository: Ruled (maintainer, provisional, 2026-11-19 UTC,
-  D6). The package comes first; the architect ratifies the provisional names from it and gives the
-  go to create the repository once `intrusive_queue` has left.
+- D1, the names of the verdict enums: Done, [#3824](https://github.com/nifeos/nife/pull/3824), ratified in [#3883](https://github.com/nifeos/nife/pull/3883).
+- D2, whether the timer and the futex table stay in this crate: At the move, with P2-10.
+- D3, which crate leaves first: Done, [#3892](https://github.com/nifeos/nife/pull/3892).
+- D4, two public names the gates refuse: Done, [#3824](https://github.com/nifeos/nife/pull/3824), ratified in [#3883](https://github.com/nifeos/nife/pull/3883).
+- D5, the futex table's names: Done, [#3824](https://github.com/nifeos/nife/pull/3824), ratified in [#3883](https://github.com/nifeos/nife/pull/3883).
+- D6, review clearance and the repository: At the move. [#3883](https://github.com/nifeos/nife/pull/3883) cleared the package and ratified
+  the names; `nifeos/inter_process_communication` does not exist yet.
+- D7, the timer's deadline type: Done, [#3842](https://github.com/nifeos/nife/pull/3842).
 
 ## Open decisions
 
@@ -179,8 +180,9 @@ The rules in force, with their background and prior art, are in
   leaves first, then this crate pins it by git revision on that repository's `main`.
 - D4, two names the gates refuse: the maintainer's provisional ruling of 2026-11-19 (UTC).
   `one_queue_invariant_holds` and `Key::virtual_address`.
-- D5, the futex table's names: the maintainer's provisional ruling of 2026-11-19 (UTC).
-  `FutexTable<T, const BUCKETS: usize>`, `len()` and `Key::address_space`.
+- D5, the futex table's names: the maintainer's provisional ruling of 2026-11-19 (UTC), with the
+  type spelled out by the ruling of 2026-11-21 (UTC) that spells futex out as address wait.
+  `AddressWaitTable<T, const BUCKETS: usize>`, `len()` and `Key::address_space`.
 - D6, review clearance: the maintainer's provisional ruling of 2026-11-19 (UTC). The package is
   written now; no tag and no publication.
 - D7, the timer's deadline type: the maintainer's provisional ruling of 2026-11-20 (UTC).
@@ -189,8 +191,10 @@ The rules in force, with their background and prior art, are in
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open or Ruled and not built under "Finding status", each checked against
-  the crate's sources on main.
+- **Recorded.** Every finding marked At the move under "Finding status" lands with the move, each
+  checked against the crate's sources on main and `nifeos/intrusive_queue`.
+- **Recorded.** `crates/externalization-list.txt` does not name this crate; milestone 1017's list
+  records the pair, `intrusive_queue` first.
 
 ## Done when
 

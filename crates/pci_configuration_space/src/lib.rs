@@ -39,7 +39,7 @@
 /// than three is masked to its field by [`BusDeviceFunction::ecam_offset`] and [`BusDeviceFunction::requester_id`], so it can
 /// never name another bus's or another device's page.
 ///
-/// Name: provisional. The fields were `dev` and `func`; `pci_types::PciAddress` and
+/// Name: ratified 2026-11-20. The fields were `dev` and `func`; `pci_types::PciAddress` and
 /// `virtio-drivers`' `DeviceFunction` both spell them `device` and `function`. The specification
 /// spellings ride as aliases.
 #[doc(alias = "Bdf")]
@@ -84,36 +84,36 @@ impl BusDeviceFunction {
 /// Specification 3.0, section 6.2.1): the vendor in the low half, the device in the high half. A
 /// vendor of `0xffff` means no function answers.
 ///
-/// Name: provisional. Was `VENDOR_ID`; a register offset ends in `_REGISTER`.
+/// Name: ratified 2026-11-20. Was `VENDOR_ID`; a register offset ends in `_REGISTER`.
 pub const VENDOR_ID_REGISTER: u64 = 0x00;
 /// Byte offset of the Command and Status dword (section 6.2.2 and 6.2.3): the command register in
 /// the low half and the status register in the high half. The capability walks read the status
 /// half from this dword.
 ///
-/// Name: provisional. Was `COMMAND`; a register offset ends in `_REGISTER`.
+/// Name: ratified 2026-11-20. Was `COMMAND`; a register offset ends in `_REGISTER`.
 pub const COMMAND_REGISTER: u64 = 0x04;
 /// Byte offset of the Class Code and Revision ID dword (section 6.2.4): the 24-bit class code over
 /// the 8-bit revision id. `read32(bus_device_function, CLASS_REVISION_REGISTER) >> 8` is the class code.
 ///
-/// Name: provisional. Was `CLASS_REVISION`; a register offset ends in `_REGISTER`.
+/// Name: ratified 2026-11-20. Was `CLASS_REVISION`; a register offset ends in `_REGISTER`.
 pub const CLASS_REVISION_REGISTER: u64 = 0x08;
 /// Byte offset of the Header Type byte (section 6.2.5): bits 6:0 give the layout, bit 7 says the
 /// device is multifunction. The byte sits in the dword at `HEADER_TYPE_REGISTER & !3`.
 ///
-/// Name: provisional. Was `HEADER_TYPE`; a register offset ends in `_REGISTER`.
+/// Name: ratified 2026-11-20. Was `HEADER_TYPE`; a register offset ends in `_REGISTER`.
 pub const HEADER_TYPE_REGISTER: u64 = 0x0e;
 /// Byte offset of Base Address Register 0 (section 6.2.5.1); the six BARs of a type-0 header follow
 /// at four-byte steps.
 ///
-/// Name: provisional. Was `BAR0`; a register offset ends in `_REGISTER`.
+/// Name: ratified 2026-11-20. Was `BAR0`; a register offset ends in `_REGISTER`.
 pub const BAR0_REGISTER: u64 = 0x10;
 /// Byte offset of the Capabilities Pointer byte (section 6.7): where the capability list starts.
 ///
-/// Name: provisional. Spelled out from `CAP_PTR`; the register offsets end in `_REGISTER`.
+/// Name: ratified 2026-11-20. Spelled out from `CAP_PTR`; the register offsets end in `_REGISTER`.
 pub const CAPABILITIES_POINTER_REGISTER: u64 = 0x34;
 /// Byte offset of the Interrupt Pin byte (section 6.2.4): 0 for none, then 1 to 4 for INTA to INTD.
 ///
-/// Name: provisional. Was `INTERRUPT_PIN`; a register offset ends in `_REGISTER`.
+/// Name: ratified 2026-11-20. Was `INTERRUPT_PIN`; a register offset ends in `_REGISTER`.
 pub const INTERRUPT_PIN_REGISTER: u64 = 0x3d;
 
 /// **Header type 1: a PCI-to-PCI bridge**, which is what a PCI Express root port and every switch
@@ -131,7 +131,7 @@ pub const HEADER_TYPE_BRIDGE: u8 = 1;
 /// them, and software that does not read them cannot find a device behind a root port. See
 /// [`bridge_buses`].
 ///
-/// Name: provisional. Was `BUS_NUMBERS`; a register offset ends in `_REGISTER`.
+/// Name: ratified 2026-11-20. Was `BUS_NUMBERS`; a register offset ends in `_REGISTER`.
 pub const BUS_NUMBERS_REGISTER: u64 = 0x18;
 
 /// The non-volatile memory express (NVMe) class code: mass storage (0x01), non-volatile memory
@@ -140,7 +140,7 @@ pub const BUS_NUMBERS_REGISTER: u64 = 0x18;
 /// is the one identity the NVM Express Base Specification 1.4, section 3.1 requires of every one
 /// of them.
 ///
-/// Name: provisional. Spelled out from `CLASS_NVME`.
+/// Name: ratified 2026-11-20. Spelled out from `CLASS_NVME`.
 #[doc(alias = "NVMe")]
 pub const CLASS_NON_VOLATILE_MEMORY_EXPRESS: u32 = 0x01_08_02;
 
@@ -150,20 +150,20 @@ pub const CLASS_NON_VOLATILE_MEMORY_EXPRESS: u32 = 0x01_08_02;
 /// is what the eXtensible Host Controller Interface specification 1.2, section 5.2.1 requires of
 /// all of them.
 ///
-/// Name: provisional. Spelled out from `CLASS_XHCI`.
+/// Name: ratified 2026-11-20. Spelled out from `CLASS_XHCI`.
 #[doc(alias = "xHCI")]
 pub const CLASS_EXTENSIBLE_HOST_CONTROLLER_INTERFACE: u32 = 0x0c_03_30;
 
 /// Command register bit 1, Memory Space Enable (PCI Local Bus Specification 3.0, section 6.2.2):
 /// the function responds to memory accesses that hit its BARs.
 ///
-/// Name: provisional. Spelled out from `CMD_MEMORY_SPACE`, with the specification's bit name.
+/// Name: ratified 2026-11-20. Spelled out from `CMD_MEMORY_SPACE`, with the specification's bit name.
 pub const COMMAND_MEMORY_SPACE_ENABLE: u16 = 1 << 1;
 /// Command register bit 2, Bus Master Enable (section 6.2.2). Bus mastering is DMA permission at
 /// the PCI level: without it the function cannot issue a single memory transaction. A caller that
 /// polices where the DMA goes sets this bit last, after its own checks are in place.
 ///
-/// Name: provisional. Spelled out from `CMD_BUS_MASTER`, with the specification's bit name.
+/// Name: ratified 2026-11-20. Spelled out from `CMD_BUS_MASTER`, with the specification's bit name.
 pub const COMMAND_BUS_MASTER_ENABLE: u16 = 1 << 2;
 
 /// Status register bit 4, Capabilities List (PCI Local Bus Specification 3.0, section 6.2.3): this
@@ -172,12 +172,12 @@ const STATUS_CAPABILITIES_LIST: u16 = 1 << 4;
 
 /// virtio's PCI vendor id (Red Hat, 0x1af4), from virtio 1.2, section 4.1.2.
 ///
-/// Name: provisional. Spelled out from `VIRTIO_VENDOR`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_VENDOR`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_VENDOR: u16 = 0x1af4;
 /// The modern virtio block device id: 0x1040 plus device type 2 (virtio 1.2, section 4.1.2.1).
 ///
-/// Name: provisional. Spelled out from `VIRTIO_BLK_MODERN`, which also matches
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_BLK_MODERN`, which also matches
 /// [`VIRTUAL_IO_TYPE_BLOCK`].
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_BLOCK_MODERN: u16 = 0x1042;
@@ -185,20 +185,20 @@ pub const VIRTUAL_IO_BLOCK_MODERN: u16 = 0x1042;
 /// crate does not decode legacy functions, but it recognizes the id so a caller can say "found a
 /// disk, but it is transitional" instead of "no disk".
 ///
-/// Name: provisional. Spelled out from `VIRTIO_BLK_TRANSITIONAL`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_BLK_TRANSITIONAL`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_BLOCK_TRANSITIONAL: u16 = 0x1001;
 
 /// The modern virtio network device id: 0x1040 plus device type 1 (virtio 1.2, section 4.1.2.1).
 ///
-/// Name: provisional. Spelled out from `VIRTIO_NET_MODERN`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_NET_MODERN`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_NETWORK_MODERN: u16 = 0x1041;
 /// The transitional virtio network device id, the legacy twin of [`VIRTUAL_IO_NETWORK_MODERN`]. A
 /// caller that drives modern functions only still reports a transitional one as such rather than
 /// as absent.
 ///
-/// Name: provisional. Spelled out from `VIRTIO_NET_TRANSITIONAL`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_NET_TRANSITIONAL`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_NETWORK_TRANSITIONAL: u16 = 0x1000;
 
@@ -207,7 +207,7 @@ pub const VIRTUAL_IO_NETWORK_TRANSITIONAL: u16 = 0x1000;
 /// virtio-gpu existed, so a GPU is modern or nothing and a caller passes `None` for the legacy id
 /// rather than inventing one. QEMU's `virtio-gpu-pci` presents exactly this id.
 ///
-/// Name: provisional. Spelled out from `VIRTIO_GPU_MODERN`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_GPU_MODERN`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_GPU_MODERN: u16 = 0x1050;
 
@@ -217,7 +217,7 @@ pub const VIRTUAL_IO_GPU_MODERN: u16 = 0x1050;
 /// the device class, not the keyboard**, so a machine with both must read the function's
 /// configuration to tell them apart.
 ///
-/// Name: provisional. Spelled out from `VIRTIO_INPUT_MODERN`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_INPUT_MODERN`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_INPUT_MODERN: u16 = 0x1052;
 
@@ -225,13 +225,13 @@ pub const VIRTUAL_IO_INPUT_MODERN: u16 = 0x1052;
 /// Unlike the GPU and the input device this one **does** have a legacy id, [`VIRTUAL_IO_ENTROPY_TRANSITIONAL`]:
 /// device type 4 is early enough to have been allocated a slot in the 0x1000 to 0x103f space.
 ///
-/// Name: provisional. Spelled out from `VIRTIO_RNG_MODERN`; the virtio specification calls device
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_RNG_MODERN`; the virtio specification calls device
 /// type 4 the entropy device, as [`VIRTUAL_IO_TYPE_ENTROPY`] does.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_ENTROPY_MODERN: u16 = 0x1044;
 /// The transitional virtio entropy device id, the legacy twin of [`VIRTUAL_IO_ENTROPY_MODERN`].
 ///
-/// Name: provisional. Spelled out from `VIRTIO_RNG_TRANSITIONAL`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_RNG_TRANSITIONAL`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_ENTROPY_TRANSITIONAL: u16 = 0x1005;
 
@@ -242,27 +242,27 @@ pub const VIRTUAL_IO_ENTROPY_TRANSITIONAL: u16 = 0x1005;
 ///
 /// Network device.
 ///
-/// Name: provisional. Spelled out from `VIRTIO_TYPE_NET`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_TYPE_NET`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_TYPE_NETWORK: u32 = 1;
 /// The virtio block device type (virtio 1.2, section 5.2).
 ///
-/// Name: provisional. Spelled out from `VIRTIO_TYPE_BLOCK`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_TYPE_BLOCK`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_TYPE_BLOCK: u32 = 2;
 /// The virtio entropy device type (virtio 1.2, section 5.4).
 ///
-/// Name: provisional. Spelled out from `VIRTIO_TYPE_ENTROPY`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_TYPE_ENTROPY`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_TYPE_ENTROPY: u32 = 4;
 /// The virtio GPU device type (virtio 1.2, section 5.7).
 ///
-/// Name: provisional. Spelled out from `VIRTIO_TYPE_GPU`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_TYPE_GPU`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_TYPE_GPU: u32 = 16;
 /// The virtio input device type (virtio 1.2, section 5.8).
 ///
-/// Name: provisional. Spelled out from `VIRTIO_TYPE_INPUT`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_TYPE_INPUT`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_TYPE_INPUT: u32 = 18;
 
@@ -275,7 +275,7 @@ pub const VIRTUAL_IO_TYPE_INPUT: u32 = 18;
 /// `secondary == subordinate`; one firmware never configured at all reads back zeros, which
 /// [`walk`] treats as "nothing behind it" rather than as a second route to bus 0.
 ///
-/// Name: provisional, with every name in this group: this type, [`bridge_buses`], [`Function`],
+/// Name: ratified 2026-11-20, with every name in this group: this type, [`bridge_buses`], [`Function`],
 /// [`walk`], [`BUS_NUMBERS_REGISTER`] and [`HEADER_TYPE_BRIDGE`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BridgeBuses {
@@ -304,7 +304,7 @@ pub fn bridge_buses(
 /// **One function the walk met**, with everything a census needs to print and everything the
 /// walk itself needs to decide where to go next.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Function {
     /// Where the function lives.
@@ -514,7 +514,7 @@ pub fn enumerate(
 /// One decoded Base Address Register: where the register block is, how big, and how wide (PCI
 /// Local Bus Specification 3.0, section 6.2.5.1).
 ///
-/// Name: provisional. `base` and `size` were unqualified and `is_64` did not say what is 64.
+/// Name: ratified 2026-11-20. `base` and `size` were unqualified and `is_64` did not say what is 64.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Bar {
     /// The assigned base address (0 if firmware assigned nothing; the caller must then place it).
@@ -533,7 +533,7 @@ pub struct Bar {
 /// slot were empty, and the reason goes to the caller's `refused` closure so it can say why a
 /// function came up without one.
 ///
-/// Name: provisional, as are its variants.
+/// Name: ratified 2026-11-20, as are its variants.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BarRefusal {
     /// The register answered the probe, but no address bit is writable, so there is no size.
@@ -716,25 +716,25 @@ const CAPABILITY_ID_VENDOR: u8 = 0x09;
 /// The virtio vendor capability's `cfg_type` for the common configuration structure (virtio 1.2,
 /// section 4.1.4).
 ///
-/// Name: provisional. Spelled out from `VIRTIO_CAP_COMMON`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_CAP_COMMON`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_CAPABILITY_COMMON: u8 = 1;
 /// The `cfg_type` for the notification structure: the doorbells (virtio 1.2, section 4.1.4.4).
 ///
-/// Name: provisional. Spelled out from `VIRTIO_CAP_NOTIFY`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_CAP_NOTIFY`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_CAPABILITY_NOTIFY: u8 = 2;
 /// The `cfg_type` for the interrupt status structure (virtio 1.2, section 4.1.4.5): one byte whose
 /// read acknowledges a legacy interrupt.
 ///
-/// Name: provisional. Spelled out from `VIRTIO_CAP_ISR`, with the specification's abbreviation as
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_CAP_ISR`, with the specification's abbreviation as
 /// the alias.
 #[doc(alias = "ISR")]
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_CAPABILITY_INTERRUPT_STATUS: u8 = 3;
 /// The `cfg_type` for the device-specific configuration structure (virtio 1.2, section 4.1.4.6).
 ///
-/// Name: provisional. Spelled out from `VIRTIO_CAP_DEVICE`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_CAP_DEVICE`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_CAPABILITY_DEVICE: u8 = 4;
 
@@ -743,7 +743,7 @@ pub const VIRTUAL_IO_CAPABILITY_DEVICE: u8 = 4;
 /// length). `notify_offset_multiplier` is meaningful only for the notify capability: the doorbell
 /// for queue N is at `offset + queue_notify_off * notify_offset_multiplier`.
 ///
-/// Name: provisional. Spelled out from `VirtioCap`. `configuration_type` and
+/// Name: ratified 2026-11-20. Spelled out from `VirtioCap`. `configuration_type` and
 /// `notify_offset_multiplier` spell out the specification's `cfg_type` and `notify_off_multiplier`,
 /// which stay as aliases because they are the specification's own field names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -774,7 +774,7 @@ pub struct VirtualIoCapability {
 /// multiplier). One that states less is bad data, and the fields past its end belong to the next
 /// entry, so it is skipped.
 ///
-/// Name: provisional. Spelled out from `virtio_caps`.
+/// Name: ratified 2026-11-20. Spelled out from `virtio_caps`.
 #[doc(alias = "virtio")]
 pub fn virtual_io_capabilities(
     bus_device_function: BusDeviceFunction,
@@ -820,19 +820,19 @@ pub fn virtual_io_capabilities(
 /// interrupt routing table is not the count: neither of them consults one, because the *function*
 /// is told where to deliver.
 ///
-/// Name: provisional. Spelled out from `MsixCap`; `pending_bit_array_*` spell out `pba_*`.
+/// Name: ratified 2026-11-20. Spelled out from `MsixCap`; `pending_bit_array_*` spell out `pba_*`.
 #[doc(alias = "message signaled interrupt extended")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MsixCapability {
     /// Where the capability structure starts in config space, so [`MESSAGE_CONTROL_REGISTER`]
     /// can be written to enable the function's MSI-X.
     ///
-    /// Name: provisional. Spelled out from `cap_offset`.
+    /// Name: ratified 2026-11-20. Spelled out from `cap_offset`.
     pub capability_offset: u64,
     /// How many table entries the function has. At least 1, at most 2048, by the field's own
     /// encoding (it holds the count minus one in eleven bits).
     ///
-    /// Name: provisional. Was `table_size`; a count names the things counted.
+    /// Name: ratified 2026-11-20. Was `table_size`; a count names the things counted.
     pub table_entries: u16,
     /// Which BAR the vector table lives in (the table BIR, 0 to 7 by the field's width).
     pub table_bar: u8,
@@ -849,13 +849,13 @@ pub struct MsixCapability {
 /// The MSI-X capability id in a config-space capability list (PCI Local Bus Specification 3.0,
 /// section 6.8.2).
 ///
-/// Name: provisional. Spelled out from `CAP_ID_MSIX`.
+/// Name: ratified 2026-11-20. Spelled out from `CAP_ID_MSIX`.
 pub const CAPABILITY_ID_MSIX: u8 = 0x11;
 
 /// The MSI capability id in a config-space capability list (PCI Local Bus Specification 3.0,
 /// section 6.8.1).
 ///
-/// Name: provisional. Spelled out from `CAP_ID_MSI`.
+/// Name: ratified 2026-11-20. Spelled out from `CAP_ID_MSI`.
 pub const CAPABILITY_ID_MSI: u8 = 0x05;
 
 /// MSI Message Control bit 0: **MSI Enable** (PCI Local Bus Specification 3.0, section 6.8.1.3).
@@ -874,13 +874,13 @@ pub const MSI_64_BIT: u16 = 1 << 7;
 /// config space rather than in a BAR, so a driver that maps every page of its BAR still cannot
 /// reach them.
 ///
-/// Name: provisional. Spelled out from `MsiCap`; `is_64` was `is_64` and did not say what is 64.
+/// Name: ratified 2026-11-20. Spelled out from `MsiCap`; `is_64` was `is_64` and did not say what is 64.
 #[doc(alias = "message signaled interrupt")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MsiCapability {
     /// Where the capability starts in config space.
     ///
-    /// Name: provisional. Spelled out from `cap_offset`.
+    /// Name: ratified 2026-11-20. Spelled out from `cap_offset`.
     pub capability_offset: u64,
     /// Whether the message address is 64 bits.
     pub is_64_bit: bool,
@@ -890,7 +890,7 @@ impl MsiCapability {
     /// Config-space offset of the Message Address register's low dword (PCI Local Bus
     /// Specification 3.0, section 6.8.1.4).
     ///
-    /// Name: provisional. Was `address_low`; the specification's name is "Message Address".
+    /// Name: ratified 2026-11-20. Was `address_low`; the specification's name is "Message Address".
     #[doc(alias = "Message Address")]
     pub const fn message_address_low(&self) -> u64 {
         self.capability_offset + 4
@@ -907,7 +907,7 @@ impl MsiCapability {
 /// and [`virtual_io_capabilities`]: at most 64 entries, so a cycle in the list ends the walk, and an
 /// offset that is a multiple of four, since the list's pointers drop their low two bits.
 ///
-/// Name: provisional. Spelled out from `msi_cap`.
+/// Name: ratified 2026-11-20. Spelled out from `msi_cap`.
 pub fn msi_capability(
     bus_device_function: BusDeviceFunction,
     read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
@@ -931,7 +931,7 @@ pub fn msi_capability(
 /// a driver writes it with a 32-bit config write that also rewrites the (read-only) id and
 /// next-pointer bytes, which is what the hardware expects.
 ///
-/// Name: provisional. Was `MESSAGE_CONTROL`; a register offset ends in `_REGISTER`.
+/// Name: ratified 2026-11-20. Was `MESSAGE_CONTROL`; a register offset ends in `_REGISTER`.
 pub const MESSAGE_CONTROL_REGISTER: u64 = 0x02;
 
 /// Message Control bit 15: **MSI-X Enable** (PCI Local Bus Specification 3.0, section 6.8.2.3).
@@ -956,7 +956,7 @@ pub const MSIX_ENTRY_MASKED: u32 = 1;
 /// section 4.1.4.3). Written to a queue's vector field it means "raise no MSI-X for this queue",
 /// which is also what a device reset leaves there.
 ///
-/// Name: provisional. Spelled out from `VIRTIO_MSIX_NO_VECTOR`.
+/// Name: ratified 2026-11-20. Spelled out from `VIRTIO_MSIX_NO_VECTOR`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_MSIX_NO_VECTOR: u16 = 0xffff;
 
@@ -969,7 +969,7 @@ pub const VIRTUAL_IO_MSIX_NO_VECTOR: u16 = 0xffff;
 /// translation service takes an event id at its doorbell register. A caller writes whatever pair
 /// the machine hands it and understands neither.
 ///
-/// Name: provisional, with [`MsixCapability`] and [`msix_capability`]. `message_address` was
+/// Name: ratified 2026-11-20, with [`MsixCapability`] and [`msix_capability`]. `message_address` was
 /// `address`; the specification's name is "Message Address".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MsiTarget {
@@ -987,7 +987,7 @@ pub struct MsiTarget {
 /// list is a function-supplied linked list, so a broken or hostile function must terminate the walk
 /// rather than hang the caller that is enumerating it.
 ///
-/// Name: provisional. Spelled out from `msix_cap`.
+/// Name: ratified 2026-11-20. Spelled out from `msix_cap`.
 pub fn msix_capability(
     bus_device_function: BusDeviceFunction,
     read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
@@ -1068,7 +1068,7 @@ pub fn intx_interrupt_number(base: u32, device: u8, pin: u8) -> u32 {
 /// identity window, and both QEMU `virt` boards state identity windows. A ragged length returns
 /// `None` rather than a guess.
 ///
-/// Name: provisional. Was `mem32_window`; the function takes the first 32-bit window that is not
+/// Name: ratified 2026-11-20. Was `mem32_window`; the function takes the first 32-bit window that is not
 /// prefetchable, and `non_prefetchable_memory_window` was considered, since it names the entry
 /// kind it refuses.
 pub fn memory_window_32_bit(ranges: &[u8]) -> Option<(u64, u64)> {

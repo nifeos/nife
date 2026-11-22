@@ -8,6 +8,13 @@
 //! answers every probe with "nobody home", no MMIO touched. How a function's interrupt is chosen
 //! is the machine's answer (notes/pcie.md, "Placing BARs, and routing interrupts"). See
 //! notes/pcie.md and notes/pcie-transport-scope.md.
+//!
+//! # BUGS
+//!
+//! - INTx is routed right only on bus 0: `intx_intid` swizzles by the function's own device number
+//!   and does not compose each bridge's rotation (PCI-to-PCI Bridge Architecture Specification
+//!   1.2, section 9). No run meets it, since both `virt` boards are flat and `x86_64` routes by
+//!   MSI. The bus server of milestone 1064 (PCI enumeration leaves the kernel) owns the route.
 
 use core::sync::atomic::{AtomicU16, AtomicU64, Ordering};
 

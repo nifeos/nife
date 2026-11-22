@@ -93,7 +93,7 @@ fn offer_frame(options: &[u8]) -> Vec<u8> {
     f[transport + 4..transport + 6].copy_from_slice(&(transport_bytes as u16).to_be_bytes());
     let reply_body = transport + 8;
     f[reply_body] = 2; // BOOTREPLY
-    f[reply_body + 4..reply_body + 8].copy_from_slice(&NET_XID.to_be_bytes());
+    f[reply_body + 4..reply_body + 8].copy_from_slice(&NET_TRANSACTION_ID.to_be_bytes());
     f[reply_body + 16..reply_body + 20].copy_from_slice(&[10, 0, 2, 15]);
     f[reply_body + 236..reply_body + 240].copy_from_slice(&0x6382_5363u32.to_be_bytes());
     f[reply_body + 240..].copy_from_slice(options);
@@ -256,7 +256,7 @@ fn find_file_returns_the_start_block_nifefs_recorded() {
         ("scratch", &[0u8; 512]),
         (longest, b"x"),
     ]);
-    let directory = &disk[..BLOCK];
+    let directory = &disk[..DATA_BUFFER_BYTES];
     for name in ["motd", "scratch", longest] {
         assert_eq!(
             find_file(directory, name.as_bytes()),
@@ -276,7 +276,7 @@ fn find_file_refuses_a_name_longer_than_the_field() {
     let longest = "the-thirty-two-byte-name-is-full";
     let disk = image(&[(longest, b"x")]);
     let longer = [longest.as_bytes(), b"!"].concat();
-    assert_eq!(find_file(&disk[..BLOCK], &longer), None);
+    assert_eq!(find_file(&disk[..DATA_BUFFER_BYTES], &longer), None);
 }
 
 /// A directory that claims more entries than the block holds, or a buffer shorter than the
@@ -285,7 +285,7 @@ fn find_file_refuses_a_name_longer_than_the_field() {
 fn find_file_reads_nothing_past_its_slice() {
     let mut disk = image(&[("motd", b"hello")]);
     disk[8..12].copy_from_slice(&u32::MAX.to_le_bytes());
-    let block = &disk[..BLOCK];
+    let block = &disk[..DATA_BUFFER_BYTES];
     assert_eq!(
         find_file(block, b"motd"),
         Some(start_block_of(&image(&[("motd", b"hello")]), "motd"))
@@ -301,10 +301,10 @@ fn find_file_reads_nothing_past_its_slice() {
 /// a block that came back shifted by one byte matches nowhere past the head.
 #[test]
 fn the_write_pattern_opens_with_the_literal_and_moves_with_position() {
-    let pattern: Vec<u8> = (0..BLOCK).map(pattern_byte).collect();
+    let pattern: Vec<u8> = (0..DATA_BUFFER_BYTES).map(pattern_byte).collect();
     assert_eq!(&pattern[..8], b"CRKWRIT1");
     assert_eq!(pattern[8], 8u8.wrapping_mul(31) ^ 0x5A);
-    assert!((8..BLOCK - 1).all(|i| pattern[i] != pattern[i + 1]));
+    assert!((8..DATA_BUFFER_BYTES - 1).all(|i| pattern[i] != pattern[i + 1]));
 }
 
 /// The checksum of `RFC 1071`'s own example words, and of a header with its checksum written in,
@@ -357,7 +357,7 @@ fn the_dhcp_discover_is_a_well_formed_broadcast_request() {
     assert_eq!(&udp[6..8], &[0, 0]);
     let dhcp = &f[42..];
     assert_eq!(&dhcp[0..4], &[1, 1, 6, 0]);
-    assert_eq!(&dhcp[4..8], &NET_XID.to_be_bytes());
+    assert_eq!(&dhcp[4..8], &NET_TRANSACTION_ID.to_be_bytes());
     assert_eq!(&dhcp[8..12], &[0, 0, 0x80, 0]);
     assert!(dhcp[12..28].iter().all(|&b| b == 0));
     assert_eq!(&dhcp[28..34], &NET_MAC);
@@ -366,22 +366,28 @@ fn the_dhcp_discover_is_a_well_formed_broadcast_request() {
     assert_eq!(&dhcp[240..], &[53, 1, 1, 55, 3, 1, 3, 6, 255]);
 }
 
-/// Every descriptor of a chain but the last carries `VIRTQ_DESC_F_NEXT` and links to the one after it; the last
+/// Every descriptor of a chain but the last carries `DESCRIPTOR_FLAG_NEXT` and links to the one after it; the last
 /// keeps only its own flags and links nowhere, and a one-descriptor chain is its own last.
 #[test]
 fn a_chain_links_each_descriptor_to_the_next_and_ends_at_the_last() {
-    assert_eq!(chained(0, 3, 0), (VIRTQ_DESC_F_NEXT, 1));
+    assert_eq!(chained(0, 3, 0), (DESCRIPTOR_FLAG_NEXT, 1));
     assert_eq!(
-        chained(1, 3, VIRTQ_DESC_F_WRITE),
-        (VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE, 2)
+        chained(1, 3, DESCRIPTOR_FLAG_DEVICE_WRITES),
+        (DESCRIPTOR_FLAG_NEXT | DESCRIPTOR_FLAG_DEVICE_WRITES, 2)
     );
-    assert_eq!(chained(2, 3, VIRTQ_DESC_F_WRITE), (VIRTQ_DESC_F_WRITE, 0));
     assert_eq!(
-        chained(0, 1, VIRTQ_DESC_F_INDIRECT),
-        (VIRTQ_DESC_F_INDIRECT, 0)
+        chained(2, 3, DESCRIPTOR_FLAG_DEVICE_WRITES),
+        (DESCRIPTOR_FLAG_DEVICE_WRITES, 0)
     );
-    assert_eq!(chained(0, 2, 0), (VIRTQ_DESC_F_NEXT, 1));
-    assert_eq!(chained(1, 2, VIRTQ_DESC_F_WRITE), (VIRTQ_DESC_F_WRITE, 0));
+    assert_eq!(
+        chained(0, 1, DESCRIPTOR_FLAG_INDIRECT),
+        (DESCRIPTOR_FLAG_INDIRECT, 0)
+    );
+    assert_eq!(chained(0, 2, 0), (DESCRIPTOR_FLAG_NEXT, 1));
+    assert_eq!(
+        chained(1, 2, DESCRIPTOR_FLAG_DEVICE_WRITES),
+        (DESCRIPTOR_FLAG_DEVICE_WRITES, 0)
+    );
 }
 
 /// The completion wait skips wakeups that leave the used index where it was, returns on the first
@@ -463,20 +469,23 @@ fn a_configuration_read_holds_only_inside_one_generation() {
 fn a_device_without_version_1_is_refused_and_only_offered_features_are_accepted() {
     // No VERSION_1 offered: refused, whatever else is offered.
     assert_eq!(acknowledged_high_features(0), None);
-    assert_eq!(acknowledged_high_features(F_ACCESS_PLATFORM_HI), None);
+    assert_eq!(
+        acknowledged_high_features(FEATURE_ACCESS_PLATFORM_HIGH_WORD),
+        None
+    );
 
     // Offered: acknowledged, with ACCESS_PLATFORM only when it was offered too.
     assert_eq!(
-        acknowledged_high_features(F_VERSION_1_HI),
-        Some(F_VERSION_1_HI)
+        acknowledged_high_features(FEATURE_VERSION_1_HIGH_WORD),
+        Some(FEATURE_VERSION_1_HIGH_WORD)
     );
     assert_eq!(
-        acknowledged_high_features(F_VERSION_1_HI | F_ACCESS_PLATFORM_HI),
-        Some(F_VERSION_1_HI | F_ACCESS_PLATFORM_HI)
+        acknowledged_high_features(FEATURE_VERSION_1_HIGH_WORD | FEATURE_ACCESS_PLATFORM_HIGH_WORD),
+        Some(FEATURE_VERSION_1_HIGH_WORD | FEATURE_ACCESS_PLATFORM_HIGH_WORD)
     );
 
     // A bit the device did not offer is never acknowledged.
-    let offered = F_VERSION_1_HI | (1 << 5);
+    let offered = FEATURE_VERSION_1_HIGH_WORD | (1 << 5);
     let acknowledged = acknowledged_high_features(offered).unwrap();
     assert_eq!(acknowledged & !offered, 0);
 }

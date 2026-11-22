@@ -19,9 +19,9 @@ There were three candidate shapes, and this was a real fork rather than a formal
   would trade that program's one strong property for a switch, and put a forget-a-verb surface in
   the caretaker that most deliberately has none.
 - A third caretaker. Taken. It also has a structural reason and not only a stylistic one: the
-  two grants have different shapes. One name rides in two `START` argument words; a set does not
-  fit in any number of registers, so this program is started with a frame as well. Bolting that onto
-  `fs_subtree_caretaker` would make every subtree grant carry machinery it does not use.
+  two grants serve different shapes. A subtree is one directory, all of it; a set is a list of names
+  checked on every request. Bolting that onto `fs_subtree_caretaker` would make every subtree grant
+  carry machinery it does not use.
 
 The honest cost is about thirty lines of handle table duplicated from `fs_subtree_caretaker`. That
 is the price of keeping "this caretaker checks nothing" true of the one that says so.

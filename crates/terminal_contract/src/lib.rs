@@ -7,8 +7,7 @@
 //! linking the editor that serves them. The editing engine is the `line_editor` crate, and what a
 //! supervisor routes to a terminal it can replace is `line_editor_component`.
 //!
-//! Name: provisional (`terminal_contract`, the `_contract` suffix design/naming.md gives a wire
-//! contract); its published name waits on the naming-layers decision.
+//! Name: ratified 2026-11-19 (UTC).
 
 #![no_std]
 

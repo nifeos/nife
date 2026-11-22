@@ -6,10 +6,10 @@ and indexes one past the end of a per-core array.
 Expected to fail: the harness's `assert_eq!(page.cpu(), None)`, on a word equal to `CPU_ID_BOUND`.
 
 diff --git a/crates/current_cpu_contract/src/lib.rs b/crates/current_cpu_contract/src/lib.rs
-index 8db0fc66b..874fcb977 100644
+index 5fbeb834b..7c4b6f85d 100644
 --- a/crates/current_cpu_contract/src/lib.rs
 +++ b/crates/current_cpu_contract/src/lib.rs
-@@ -328,7 +328,7 @@ impl CurrentCpuPage {
+@@ -344,7 +344,7 @@ impl CurrentCpuPage {
      pub fn cpu(&self) -> Option<usize> {
          match self.word(CPU_OFFSET)? {
              UNSCHEDULED => None,

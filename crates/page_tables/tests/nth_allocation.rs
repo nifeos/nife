@@ -47,7 +47,20 @@ impl FailingPool {
     fn frame(&self) -> u64 {
         let p = Box::into_raw(Box::new(PageTable::new()));
         self.owned.borrow_mut().push(p);
-        p as u64
+        p.addr() as u64
+    }
+
+    /// The frame this pool owns at `physical_address`, as the pointer `Box::into_raw` returned, so
+    /// every write through it keeps its provenance and Miri has no integer-to-pointer cast to warn
+    /// about. Panics on any other address: a walk into a frame nothing allocated is a loud test
+    /// bug, not a segfault.
+    fn pointer(&self, physical_address: u64) -> *mut PageTable {
+        self.owned
+            .borrow()
+            .iter()
+            .copied()
+            .find(|p| p.addr() as u64 == physical_address)
+            .unwrap_or_else(|| panic!("no frame of this pool sits at {physical_address:#x}"))
     }
 
     fn alloc(&self) -> Option<u64> {
@@ -65,10 +78,18 @@ impl FailingPool {
     fn mapper<F: PageFormat>(
         &self,
         root: u64,
-    ) -> Mapper<impl FnMut() -> Option<u64> + '_, fn(u64) -> *mut PageTable, F> {
-        // SAFETY: `root` is fresh, zeroed and 4 KiB-aligned; `physical_to_pointer` is the identity, right
-        // because these "physical" addresses are host addresses.
-        unsafe { Mapper::new(root, Half::Low, move || self.alloc(), physical_to_pointer) }
+    ) -> Mapper<impl FnMut() -> Option<u64> + '_, impl Fn(u64) -> *mut PageTable + '_, F> {
+        // SAFETY: `root` is fresh, zeroed and 4 KiB-aligned; `pointer` returns the pool's own
+        // pointer to every frame it holds, right because these "physical" addresses are host
+        // addresses.
+        unsafe {
+            Mapper::new(
+                root,
+                Half::Low,
+                move || self.alloc(),
+                move |physical_address| self.pointer(physical_address),
+            )
+        }
     }
 }
 
@@ -79,10 +100,6 @@ impl Drop for FailingPool {
             unsafe { drop(Box::from_raw(p)) };
         }
     }
-}
-
-fn physical_to_pointer(physical_address: u64) -> *mut PageTable {
-    physical_address as *mut PageTable
 }
 
 /// One leaf as the tables hold it: where it starts, how much it covers, what it maps to.
@@ -104,13 +121,19 @@ struct Walk {
 /// **Read the tables back the way the hardware would**, independently of `Mapper`, which is the
 /// thing under test. Low half only, which is all this file maps. Returns whether `table` reaches a
 /// leaf, so empty tables can be counted.
-fn walk_table<F: PageFormat>(table: u64, level: usize, base: u64, out: &mut Walk) -> bool {
+fn walk_table<F: PageFormat>(
+    pool: &FailingPool,
+    table: u64,
+    level: usize,
+    base: u64,
+    out: &mut Walk,
+) -> bool {
     out.tables.insert(table);
     let span = PAGE_SIZE << (9 * (F::LEVELS - 1 - level));
     let mut any = false;
     for i in 0..512u64 {
         // SAFETY: `table` is a frame this file's pool owns, reached through a present table entry.
-        let entry = unsafe { (*physical_to_pointer(table)).entries[i as usize] };
+        let entry = unsafe { (*pool.pointer(table)).entries[i as usize] };
         if !F::is_present(entry) {
             continue;
         }
@@ -124,6 +147,7 @@ fn walk_table<F: PageFormat>(table: u64, level: usize, base: u64, out: &mut Walk
             any = true;
         } else {
             any |= walk_table::<F>(
+                pool,
                 F::entry_physical_address(entry),
                 level + 1,
                 virtual_address,
@@ -137,13 +161,13 @@ fn walk_table<F: PageFormat>(table: u64, level: usize, base: u64, out: &mut Walk
     any
 }
 
-fn walk<F: PageFormat>(root: u64) -> Walk {
+fn walk<F: PageFormat>(pool: &FailingPool, root: u64) -> Walk {
     let mut w = Walk {
         tables: BTreeSet::new(),
         leaves: Vec::new(),
         empty_tables: 0,
     };
-    walk_table::<F>(root, 0, 0, &mut w);
+    walk_table::<F>(pool, root, 0, 0, &mut w);
     w
 }
 
@@ -159,7 +183,7 @@ fn check<F: PageFormat>(
     result: Result<(), MapError>,
     full: Option<&[Leaf]>,
 ) -> (bool, Walk) {
-    let w = walk::<F>(root);
+    let w = walk::<F>(pool, root);
     let handed: BTreeSet<u64> = pool.handed.borrow().iter().copied().collect();
     let mut expected = handed.clone();
     expected.insert(root);
@@ -340,9 +364,14 @@ fn a_failed_domain_build_leaves_a_prefix<F: PageFormat>() {
     ];
     let (failures, _) = sweep::<F>("build_identity_domain", |root, pool| {
         // SAFETY: `root` and every frame `alloc` returns are fresh, zeroed and page-aligned, and
-        // the identity is the right `physical_to_pointer` for host frames.
+        // `pointer` returns the pool's own pointer to every frame it holds.
         unsafe {
-            build_identity_domain::<_, _, F>(root, || pool.alloc(), physical_to_pointer, &regions)
+            build_identity_domain::<_, _, F>(
+                root,
+                || pool.alloc(),
+                |physical_address| pool.pointer(physical_address),
+                &regions,
+            )
         }
     });
     assert!(

@@ -28,7 +28,7 @@ fn capabilities_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks
             panic!("not an invocation")
         };
         let m = declared.unwrap_or(NO_NOTE_MANIFEST);
-        let e = grant_plan::plan_against(&spec, m, ShellHoldings::default(), Expansion::none())
+        let e = grant_plan::plan_against(&spec, m, &ShellHoldings::default(), &Expansion::none())
             .unwrap();
         let mut said = Vec::new();
         super::write_image_capabilities(

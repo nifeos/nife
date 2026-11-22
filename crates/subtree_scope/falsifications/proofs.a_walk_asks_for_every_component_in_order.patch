@@ -1,0 +1,19 @@
+Falsifies `subtree_scope::proofs::a_walk_asks_for_every_component_in_order`.
+
+The defect: `walk` skips the first component of the path and never asks `lookup` for it.
+
+Expected to fail: the assertion that a walk that succeeded left no component unasked, and the
+assertion that each step begins where the one before it ended.
+
+diff --git a/crates/subtree_scope/src/lib.rs b/crates/subtree_scope/src/lib.rs
+--- a/crates/subtree_scope/src/lib.rs
++++ b/crates/subtree_scope/src/lib.rs
+@@ -164,7 +164,7 @@
+         None => return Ok((start, rights, path)),
+     };
+     let (mut node, mut rights) = (start, rights);
+-    for step in directories.split(|&b| b == b'/') {
++    for step in directories.split(|&b| b == b'/').skip(1) {
+         if !rights.allows(directory::rights::DESCEND) {
+             return Err(Refusal::NotFound.into());
+         }

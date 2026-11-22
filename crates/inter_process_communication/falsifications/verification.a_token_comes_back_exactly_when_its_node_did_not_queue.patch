@@ -11,15 +11,15 @@ handed the receiver's, so one thread would hold two tokens for the same node: th
 token exists to make impossible.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index 845029a65..649e6d195 100644
+index 0dcb87d6d..0ef2ebbcb 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -281,7 +281,7 @@ impl<T: Node> Rendezvous<T> {
+@@ -400,7 +400,7 @@ impl<T: Node> Rendezvous<T> {
              self.pending -= 1;
              ReceiveVerdict::Signal(me)
-         } else if let Some(sender) = self.senders.pop_front() {
+         } else if let Some(sender) = self.take_sender() {
 -            ReceiveVerdict::FromSender(sender, me)
 +            ReceiveVerdict::FromSender(me, sender)
          } else {
-             self.receivers.push_back(me);
+             self.queue_receiver(me);
              ReceiveVerdict::Blocked

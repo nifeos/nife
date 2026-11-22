@@ -3,7 +3,7 @@
 //! The reader goes through the program headers, not the section headers, so a binary stripped of
 //! its section headers (`strip --strip-section-headers`, `sstrip`) keeps its notes. A program that
 //! carries a description of itself in a note, for a launcher to read before it runs the program, is
-//! the case it was built for. Every public name here is provisional.
+//! the case it was built for.
 //!
 //! Nothing here runs inside [`Elf::parse`]. A whole-image reader uses [`Elf::note`]; a streaming
 //! reader uses [`NoteSegments::from_head`] and feeds each segment to one [`NoteSearch`]. Both
@@ -16,12 +16,14 @@ use super::{
 };
 
 /// `p_type` for a segment of notes.
-const PT_NOTE: u32 = 4;
+pub(crate) const PT_NOTE: u32 = 4;
 
 /// The three header words.
 const NHDR_SIZE: usize = 12;
 
-/// Why a note lookup refused the file. Provisional name.
+/// Why a note lookup refused the file.
+///
+/// Name: ratified 2026-11-21 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NoteError {
     /// The first bytes are not a little-endian ELF64 header whose program header table lies inside
@@ -29,7 +31,9 @@ pub enum NoteError {
     NotReadable,
     /// A `PT_NOTE` whose file range is not inside the file.
     SegmentOutOfBounds,
-    /// A `PT_NOTE` whose `p_align` is not 0, 1, 4 or 8.
+    /// A `PT_NOTE` whose `p_align` is not 0, 1, 4 or 8. The reader pads notes to 8 bytes under
+    /// `p_align` 8 and to 4 bytes under the other three, as the reader in LLVM (the compiler toolkit
+    /// behind Clang) does, which accepts 0 for Linux core dumps and still accepts 1.
     BadAlignment,
     /// A note header, name or descriptor (with its padding) runs past the end of its segment.
     Truncated,
@@ -51,7 +55,9 @@ impl core::fmt::Display for NoteError {
 
 impl core::error::Error for NoteError {}
 
-/// **Where one `PT_NOTE` lies in its file.** Provisional name.
+/// **Where one `PT_NOTE` lies in its file.**
+///
+/// Name: ratified 2026-11-21 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NoteSegment {
     /// `p_offset`: where the segment's bytes start in the file.
@@ -85,13 +91,14 @@ impl NoteSegment {
     }
 }
 
-/// **Every `PT_NOTE` in a program header table**, read from a file's first bytes. Provisional
-/// name.
+/// **Every `PT_NOTE` in a program header table**, read from a file's first bytes.
 ///
 /// It checks only what it needs to find the table: the magic, 64-bit, little-endian, an entry size
 /// of at least 56 bytes, at most 64 entries, and a table that lies wholly inside `head`. It does not
 /// check the machine or the file type, because it does not load anything; [`Elf::parse`] does that
 /// for the bytes that are run.
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub struct NoteSegments<'a> {
     table: &'a [u8],
     phentsize: usize,
@@ -205,9 +212,10 @@ fn align_up(x: usize, align: usize) -> Option<usize> {
     Some(x.checked_add(mask)? & !mask)
 }
 
-/// `p_align` to note padding, by LLVM's `Elf_Note_Iterator` rule: the gABI says 8-byte padding for
-/// ELF64, toolchains write 4 except under `p_align` 8. Alignments 0 and 1 read as 4-byte padding for
-/// any segment, where LLVM accepts 0 only for an empty segment and refuses 1.
+/// `p_align` to note padding, by LLVM's rule (`ELFFile::notes_begin`): the gABI says 8-byte padding
+/// for ELF64, toolchains write 4 except under `p_align` 8. LLVM accepts `p_align` 0, 1, 4 and 8 for
+/// any segment and pads to the larger of `p_align` and 4, so 0 and 1 read as 4-byte padding there
+/// and here.
 fn padding(p_align: u64) -> Result<usize, NoteError> {
     match p_align {
         0 | 1 | 4 => Ok(4),
@@ -254,11 +262,13 @@ fn find_in_segment<'a>(
     Ok(found)
 }
 
-/// **One lookup, fed a segment at a time.** Provisional name.
+/// **One lookup, fed a segment at a time.**
 ///
 /// What [`Elf::note`] does over a whole image, for a reader that holds one segment at a time, such
 /// as one streaming a file a page at a time. Every segment must be fed, in table order, for "the
 /// same note twice" to be caught; a caller that stops at the first match has read a different rule.
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub struct NoteSearch<'o> {
     owner: &'o [u8],
     kind: u32,
@@ -291,7 +301,7 @@ impl<'o> NoteSearch<'o> {
 
 impl<'a> Elf<'a> {
     /// **The descriptor of the one note owned by `owner` with type `kind`**, or `None` if the file
-    /// has no such note. Provisional name.
+    /// has no such note.
     ///
     /// `owner` is the name without its NUL (`b"GNU"`). Every `PT_NOTE` segment is walked in full,
     /// so a malformed note anywhere refuses the lookup, and so does a second copy of the one asked
@@ -388,7 +398,8 @@ mod verification {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{EXECUTABLE, NATIVE_MACHINE, READABLE};
+    use crate::forge::Builder;
+    use crate::{EXECUTABLE, READABLE};
     extern crate std;
     use std::vec;
     use std::vec::Vec;
@@ -413,47 +424,11 @@ mod tests {
 
     /// A one-`PT_LOAD` ELF plus one `PT_NOTE` per entry of `notes`, each `(p_align, bytes)`.
     fn image(notes: &[(u64, Vec<u8>)]) -> Vec<u8> {
-        let phnum = 1 + notes.len();
-        let mut body_off = 64 + phnum * 56;
-        let mut v = vec![0u8; 64];
-        v[0..4].copy_from_slice(&[0x7f, b'E', b'L', b'F']);
-        v[4] = 2;
-        v[5] = 1;
-        v[6] = 1;
-        v[16..18].copy_from_slice(&2u16.to_le_bytes());
-        v[18..20].copy_from_slice(&NATIVE_MACHINE.to_le_bytes());
-        v[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
-        v[32..40].copy_from_slice(&64u64.to_le_bytes());
-        v[54..56].copy_from_slice(&56u16.to_le_bytes());
-        v[56..58].copy_from_slice(&(phnum as u16).to_le_bytes());
-
-        let code = [0xaau8; 16];
-        let mut ph = vec![0u8; 56];
-        ph[0..4].copy_from_slice(&1u32.to_le_bytes());
-        ph[4..8].copy_from_slice(&(READABLE | EXECUTABLE).to_le_bytes());
-        ph[8..16].copy_from_slice(&(body_off as u64).to_le_bytes());
-        ph[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
-        ph[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
-        ph[32..40].copy_from_slice(&16u64.to_le_bytes());
-        ph[40..48].copy_from_slice(&16u64.to_le_bytes());
-        v.extend_from_slice(&ph);
-        body_off += code.len();
-
-        let mut body = code.to_vec();
-        for (align, bytes) in notes {
-            let mut ph = vec![0u8; 56];
-            ph[0..4].copy_from_slice(&PT_NOTE.to_le_bytes());
-            ph[4..8].copy_from_slice(&READABLE.to_le_bytes());
-            ph[8..16].copy_from_slice(&(body_off as u64).to_le_bytes());
-            ph[32..40].copy_from_slice(&(bytes.len() as u64).to_le_bytes());
-            ph[40..48].copy_from_slice(&(bytes.len() as u64).to_le_bytes());
-            ph[48..56].copy_from_slice(&align.to_le_bytes());
-            v.extend_from_slice(&ph);
-            body.extend_from_slice(bytes);
-            body_off += bytes.len();
+        let mut forge = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16);
+        for (alignment, bytes) in notes {
+            forge = forge.note_segment(*alignment, bytes);
         }
-        v.extend_from_slice(&body);
-        v
+        forge.build()
     }
 
     #[test]

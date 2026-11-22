@@ -28,6 +28,8 @@ pub use note::{NoteError, NoteSearch, NoteSegment, NoteSegments};
 mod verification;
 
 #[cfg(test)]
+mod forge;
+#[cfg(test)]
 mod tests;
 
 mod error;

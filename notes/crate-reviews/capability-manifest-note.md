@@ -64,10 +64,10 @@ workspace and the move gives the crate its own (item 8 of the milestone). The we
 stays off, and the project's own host fuzzes the crate.
 
 Dependencies. Two, both the organization's own and approved in advance: `grant_contract` (the type a
-note carries) and `domain_name_resolution_contract` (the zone limits and spelling). Dev-dependencies:
-`interfaces_note`, which holds the two notes to one header, and `program_table`, whose catalog the
-round-trip test encodes. Each is a path dependency with a `version`, and the move converts each to
-`git` and `rev`.
+note carries) and `domain_name_resolution_contract` (the zone limits and spelling). Each is a path
+dependency with a `version`, and the move converts each to `git` and `rev`. One dev-dependency,
+`interfaces_note`, holds the two notes to one header, by `git` and `rev`. The tests build their
+manifests from `grant_contract` alone; the catalog round trip lives in `program_table`.
 
 Dependents in nife: `components`, `program_asks`, `system_initializer`, `fixtures`, `fuzz`, `jig`,
 `redoxfs_server`, `std_exerciser`, `xtask`, and `program_table` (dev). None names the macros'
@@ -99,14 +99,15 @@ removed from 3 files and the 7 falsification patches regenerated for `-p1` and a
 a `git` dependency with a `version`. The `prose caps` step refuses the README at 1382 words, and
 the `passive voice` step finds 8 passives in 1520 words across 12 lines (the README is first). The
 `mentions nife` step reports none, and the nife-side steps are the workspace member and the
-mutation baseline row. The fuzz target links other crates of the tree, so it moves with the crate's own
-`fuzz/` workspace (item 8).
+mutation baseline row. The fuzz target names the crate and the crate's own two dependencies alone, so
+the dry run stages it in the crate's own `fuzz/` workspace with its 14 seeds, and the seed test reads
+`fuzz/corpus/` (item 8).
 
 Open items before the move. These are in the milestone and belong to the move lane:
 
 - P0-2: the stranger run, recorded in `docs/stranger-test.md` of the new repository.
-- P1-8: the crate's own `fuzz/` workspace with the target and its 14 seeds, the seed test reading
-  `CARGO_MANIFEST_DIR`, and the target dropped from nife's workspace.
+- P1-8: the nife-side removals `script/crate-move` prints for the moved target (its `[[bin]]`, the
+  target, its seeds and its `script/fuzz` entry).
 - The README under the template's prose caps and passive-voice ratchet (1382 words; 8 passives in 1520).
 - The consumers' lines converted from path dependencies to `git` and `rev` with `version = "0.1.0"`.
 

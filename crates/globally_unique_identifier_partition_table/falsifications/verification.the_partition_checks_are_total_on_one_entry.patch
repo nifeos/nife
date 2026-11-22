@@ -1,0 +1,19 @@
+Falsifies `globally_unique_identifier_partition_table::verification::the_partition_checks_are_total_on_one_entry`.
+
+The defect: the partition check tests only the start of a used entry against the usable range,
+so an entry that starts inside the range and ends past its last block is accepted, and a
+partition written there would overwrite the backup entry array.
+
+Expected to fail: the assertion that an accepted used entry ends at or before the last usable
+block.
+diff --git a/crates/globally_unique_identifier_partition_table/src/table.rs b/crates/globally_unique_identifier_partition_table/src/table.rs
+--- a/crates/globally_unique_identifier_partition_table/src/table.rs
++++ b/crates/globally_unique_identifier_partition_table/src/table.rs
+@@ -596,7 +596,6 @@
+             return Err(Error::PartitionRange { index: i });
+         }
+         if e.first_logical_block_address < header.first_usable_logical_block_address
+-            || e.last_logical_block_address > header.last_usable_logical_block_address
+         {
+             return Err(Error::PartitionOutsideUsable { index: i });
+         }

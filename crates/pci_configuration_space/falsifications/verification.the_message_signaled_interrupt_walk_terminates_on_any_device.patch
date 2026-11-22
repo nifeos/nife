@@ -1,4 +1,4 @@
-Falsifies `pci::verification::the_message_signaled_interrupt_walk_terminates_on_any_device`.
+Falsifies `pci_configuration_space::verification::the_message_signaled_interrupt_walk_terminates_on_any_device`.
 
 The defect: the MSI walk's hop bound is raised from 64 to 65, the off-by-one a later edit that
 "rounds the bound up to be safe" would make. The walk still terminates, but it reads one more
@@ -9,7 +9,7 @@ Expected to fail: the harness's `assert!(reads <= 66)`, on a device whose list n
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -636,7 +636,7 @@
+@@ -698,7 +698,7 @@
          return;
      }
      let mut at = (read32(bus_device_function, CAPABILITIES_POINTER_REGISTER) & 0xfc) as u64;

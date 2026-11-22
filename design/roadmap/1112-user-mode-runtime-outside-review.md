@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -42,6 +43,7 @@ crate's own reasons.
 
 ## Finding status
 
+
 - P0-1, `MappedWindow::read<T>` and `write<T>` take any type at any offset: Done, [#3580](https://github.com/nifeos/nife/pull/3580). They
   take the sealed `WindowInteger`, and a misaligned address panics.
 - P0-2, two barriers declared `nomem`: Done, [#3527](https://github.com/nifeos/nife/pull/3527).
@@ -55,9 +57,10 @@ crate's own reasons.
 - P0-5, build scripts reach `link.ld` by a relative path: Done, [#3611](https://github.com/nifeos/nife/pull/3611).
 - P1-6, a zero `CNTFRQ_EL0` divides by zero: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-7, the aarch64 child stub hard-codes two `abi` constants: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
-- P1-8, text that speaks to a reader inside nife: Open. Nine source files cite a section, about 64
-  lines cite a milestone, and 29 mention `notes/`. `notes/user-mode-runtime.md` and its directory
-  move into the crate's `docs/`, and the externalized-crates ceiling falls to zero.
+- P1-8, text that speaks to a reader inside nife: Done, [#3981](https://github.com/nifeos/nife/pull/3981).
+  The sources state each rule instead of citing a section, a milestone or a note, the two notes
+  live in the crate's `docs/` as `design.md` and `time.md`, and the crate has no row in the
+  externalized-crates ceiling.
 - P1-9, twenty-four acronyms not expanded at first use: Done,
   [#3815](https://github.com/nifeos/nife/pull/3815) (maintainer, provisional, 2026-11-19 UTC). The
   `prose_acronyms` and `readme_acronyms` rows left the template baseline.
@@ -70,81 +73,23 @@ crate's own reasons.
 - P2-16, a stale reason for `socket_frame` living here: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - P2-17, no wrapper for `SYSTEM_CALL_EXIT_THREAD`: Done, [#3629](https://github.com/nifeos/nife/pull/3629) (maintainer, provisional,
   2026-11-15 UTC); the docs of `exit` say why none is needed.
-- Decision 1, the rename table: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional, 2026-11-14 UTC).
-- Decision 1, the sized accessors: Done, [#3815](https://github.com/nifeos/nife/pull/3815)
-  (maintainer, recommendation B, provisional, 2026-11-19 UTC). the maintainer removed `read_u8` to `write_u64`
-  and every call site uses `read::<T>` and `write::<T>`; a two-way door until the first tag.
-- Decision 1, ratifying the names: Done, ruled 2026-11-20 UTC. The names stand as built with the short
+- Decision 1, the names a stranger meets: Done. [#3611](https://github.com/nifeos/nife/pull/3611)
+  built the rename table (maintainer, provisional, 2026-11-14 UTC).
+  [#3815](https://github.com/nifeos/nife/pull/3815) removed the sized accessors `read_u8` to
+  `write_u64`, and every call site uses `read::<T>` and `write::<T>` (maintainer, recommendation B,
+  provisional, 2026-11-19 UTC). The names were ratified on 2026-11-20 UTC as built, with the short
   forms spelled out (`header_length`, `fill_random_bytes`, `read_volatile`, `write_volatile`,
-  `reap_thread`, `counter_ticks`, and spelled-out parameters), the old spellings kept as `doc(alias)`,
-  and every `Name:` block in the crate ratified.
+  `reap_thread`, `counter_ticks`, and spelled-out parameters), the old spellings kept as
+  `doc(alias)`, and every `Name:` block in the crate ratified.
 - Decision 2, `link.ld` on the link search path: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional,
   2026-11-14 UTC). A two-way door until `disk-tools` leaves (milestone 1017 step 4), so not calef's
   until then.
 - Decision 3, one `Message` and one `Received`: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional,
   2026-11-14 UTC).
-- Review package: Done, [#3815](https://github.com/nifeos/nife/pull/3815): the package is
-  `notes/crate-reviews/user-mode-runtime.md`, with its index row.
-- Clearing the review package, which approves the repository and the move: Done, ruled 2026-11-21 UTC,
-  option A. The repository `nifeos/user_mode_runtime` is approved as `publish = false`, with no tag and no
-  publish. The move waits until `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract`
-  have left the tree. The thin machine checks are a recorded limitation (the package lists them), and a
-  first tag needs its own ruling.
 
 ## Open decisions
 
-### Ratify the names of `user_mode_runtime`
-
-Background. This crate is what every nife program links: the system call wrapper, the entry macro, the
-panic handler and typed windows over memory the kernel hands a process. It leaves nife for its own
-repository, and a crate leaves with ratified names. The maintainer ruled the renames on 2026-11-14
-(UTC), provisionally, and #3611 built them; each renamed name carried a provisional `Name:` block until the ruling below.
-The maintainer ruled on 2026-11-19 UTC, provisionally, to remove the sized window accessors
-`read_u8` to `write_u64`, and #3815 built it, so a window has one spelling, `read::<T>` and
-`write::<T>` (now `read_volatile` and `write_volatile`). After the first tag a name is a published surface. The package
-(`notes/crate-reviews/user-mode-runtime.md`) lists every public name with its status and a
-proposal.
-
-Recommendation: A. Ratify the names as built, from the package's tables.
-
-- A. Ratify the names as built.
-- B. Ratify them except the rows the architect names, which keep their provisional blocks.
-
-Door: one-way at the first tag. Before it every name is two-way; after it, a rename or a removal is
-a breaking release for every program that links the crate.
-
-Prior art. Linux spells one function per width (`readb`, `readl`, `readq`), and OpenBSD does the
-same (`bus_space_read_1` to `_8`), because C has no generic. `tock-registers` and the `volatile`
-crate take one generic over an integer trait (`UIntLike`, from memory), as `WindowInteger` does
-here. nife differs from Linux and OpenBSD in having the generic already, so the sized forms are a second
-spelling of the same call. Concrete example: `window.read_u32(0x70)` and `window.read::<u32>(0x70)`
-read the same register before the ruling; now only the second compiles.
-
-What it blocks: the move, and with it the tag.
-
-### Clear the review package
-
-Background. A crate leaves nife only after calef clears its review package, and clearing approves
-its repository (the rule of 2026-11-01 UTC). The package exists
-(`notes/crate-reviews/user-mode-runtime.md`). Every nife program and `disk-tools` depend on this crate, so it leaves at step 3 of milestone
-1017, after the contract crates it links.
-
-Ruled 2026-11-21 UTC: A.
-
-Recommendation: A, clear the package, now that it and P0-3 have landed; milestone 1017 step 3 times the move.
-
-- A. Clear when the package and the manifest work land.
-- B. Clear only after P1-8 and P1-9 land as well, so the repository opens with no nife-facing text.
-- C. Keep the crate in nife. Refused: `disk-tools` and every program outside the kernel use it, and
-  a crate used by more than one repository leaves.
-
-Door: one-way. Clearing creates a public repository, and nife, basalt and `disk-tools` then pin it.
-
-Prior art. `cortex-m-rt` lives in its own repository and every embedded binary pins it, which is
-the shape Decision 2 copied for `link.ld`. nife cleared its xHCI, e1000e and FAT packages one
-approval each. Concrete example: each program's manifest pins the new repository by a full commit.
-
-What it blocks: the move, and with it `disk-tools` leaving (milestone 1017 step 4).
+None.
 
 ## What was checked, and how
 
@@ -280,7 +225,11 @@ has no caller outside the crate. Item 15 is the work.
 
 ## Follow-on
 
-- **Outstanding.** The findings marked Open in Finding status.
+- **Milestone 1017.** Its step 3 moves the crate to `nifeos/user_mode_runtime`, cleared
+  2026-11-21 UTC as `publish = false` with no tag and no publish, once `abi`,
+  `address_space_layout`, `current_cpu_contract` and `socket_contract` have left the tree. The
+  thin machine checks are a recorded limitation (the package lists them), and a first tag needs its
+  own ruling.
 
 ## Done when
 

@@ -1,11 +1,10 @@
-//! **Fill a buffer from the entropy service**, the client half of `entropy_contract` (milestone 56
-//! (secrets, credentials, and the entropy to make them safe), §44 (entropy is a capability),
-//! notes/entropy.md).
+//! **Fill a buffer from the entropy service**, the client half of `entropy_contract`. Entropy is a
+//! capability: a program reads random bytes only through an endpoint it was granted.
 //!
 //! The loop, where the refusals live, is `entropy_contract::fill_with`, host-tested there; this
 //! module supplies the `CALL` as a closure, so the contract does not depend on this runtime. Scoped
 //! to a module because only a program granted an entropy endpoint has a use for it. See
-//! notes/user-mode-runtime.md.
+//! `docs/design.md`.
 
 //! # BUGS
 //!
