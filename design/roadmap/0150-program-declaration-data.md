@@ -224,9 +224,9 @@ milestone 117's handoff."
 - **Recorded.** The stale `SWISH_CHECK_SCRIPT` line a removal leaves, the textual removal gate, the
   wire-id pin's cut-off date, and the four-key `[[bin]]` reader, in `notes/adding-a-program.md`'s
   `BUGS`.
-- **Recorded.** `PROG_COUNT` keeps its name with a changed meaning (one past the highest wire id,
-  not a count of programs), stated in its doc comment in `crates/grant_plan/src/lib.rs`. A rename is
-  a naming decision and is an architect's.
+- **Recorded.** `PROGRAM_COUNT` means one past the highest wire id, not a count of programs, stated
+  in its doc comment in `crates/program_table/src/program/catalog.rs`. A rename is a naming
+  decision and is an architect's.
 - **Done.** `memory_grant_depleter` had no `SWISH_CHECK_SCRIPT` line; the new coverage test found
   it and it has one.
 
