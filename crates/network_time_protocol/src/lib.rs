@@ -773,24 +773,32 @@ mod tests {
     /// only proves we agree with whatever produced it).
     ///
     /// It describes a stratum 2 server synchronized to 17.253.14.251, with a 50.8 ms root delay and
-    /// 23.4 ms root dispersion, replying to a request sent at 2026-07-30 12:00:00 UTC (plus a random
-    /// nonce fraction) with a server clock 0.5 s ahead of ours.
+    /// 23.4 ms root dispersion, replying to a request sent at 2026-07-30 12:00:00 UTC (plus a
+    /// fraction) with a server clock 0.5 s ahead of ours. Its origin field echoes `TEST_NONCE`.
     const REPLY: [u8; PACKET_BYTES] = [
         0x24, 0x02, 0x06, 0xe9, 0x00, 0x00, 0x0d, 0x01, // LI/VN/mode, stratum, poll, prec
         0x00, 0x00, 0x05, 0xfe, 0x11, 0xfd, 0x0e, 0xfb, // root delay, root dispersion, refid
         0xee, 0x15, 0xba, 0xb7, 0x1c, 0x8a, 0x3d, 0x00, // reference
-        0xee, 0x15, 0xbb, 0x40, 0x5b, 0x3f, 0x7a, 0x91, // origin (T1, our nonce)
+        0x6a, 0x09, 0xe6, 0x67, 0xf3, 0xbc, 0xc9, 0x08, // origin (TEST_NONCE, echoed)
         0xee, 0x15, 0xbb, 0x40, 0xde, 0x31, 0x24, 0x8d, // receive (T2)
         0xee, 0x15, 0xbb, 0x40, 0xde, 0x4b, 0x5b, 0x70, // transmit (T3)
     ];
 
-    /// T1, as it appears in the packet above.
+    /// T1: our clock when the request left. Only the offset arithmetic reads it; it never goes on
+    /// the wire.
     const T1: Timestamp = Timestamp::from_bits(0xee15_bb40_5b3f_7a91);
+    /// **A fixed nonce, for these tests only.** The packet above echoes it, so a test can check a
+    /// reply against a known request. A real client never uses a constant here: it draws 64 fresh
+    /// bits from the entropy service for every request (`components/src/network_time_client.rs`),
+    /// because a nonce an attacker can predict lets an off-path one forge the reply. The value is
+    /// the fractional part of the square root of 2 (SHA-512's first initial hash word), chosen so
+    /// that it visibly hides nothing and shares no bits with T1.
+    const TEST_NONCE: Timestamp = Timestamp::from_bits(0x6a09_e667_f3bc_c908);
     /// T4: the reply arrived 23.1 ms after we sent, on our clock.
     const T4: Timestamp = Timestamp::from_bits(0xee15_bb40_6129_5c42);
 
     fn query() -> Query {
-        Query::with_nonce(T1, T1)
+        Query::with_nonce(T1, TEST_NONCE)
     }
 
     /// Mutate a copy of the good reply, so every rejection test differs from an acceptance by
@@ -891,7 +899,7 @@ mod tests {
         assert_eq!(p.root_delay, ShortFormat::from_bits(0x0D01));
         assert_eq!(p.root_dispersion, ShortFormat::from_bits(0x05FE));
         assert_eq!(p.reference_id, [17, 253, 14, 251]);
-        assert_eq!(p.origin, T1);
+        assert_eq!(p.origin, TEST_NONCE);
         // 0x0D01 in 16.16 is 3329/65536 s = 50.796 ms.
         assert_eq!(p.root_delay.nanoseconds(), 50_796_508);
         // The reference timestamp is 137 s before T1: the server last corrected itself at 11:57:43.
@@ -973,10 +981,11 @@ mod tests {
         let t4 = Timestamp::from_bits(0x0000_0001_0000_0000);
 
         let mut p = Packet::parse(&REPLY).unwrap();
-        p.origin = t1;
         p.receive = t2;
         p.transmit = t3;
-        let s = Query::with_nonce(t1, t1).accept(&p.to_bytes(), t4).unwrap();
+        let s = Query::with_nonce(t1, TEST_NONCE)
+            .accept(&p.to_bytes(), t4)
+            .unwrap();
         assert_eq!(s.delay.nanoseconds(), 1_500_000_000);
         assert_eq!(s.offset.nanoseconds(), 250_000_000);
         assert_eq!(t2.to_unix().0 + 1, t3.to_unix().0);
@@ -991,14 +1000,18 @@ mod tests {
         // A zero origin (a server that echoed nothing) is not a pass either.
         let w = tweak(|w| w[24..32].fill(0));
         assert_eq!(query().accept(&w, T4), Err(Reject::OriginMismatch));
-        // And the check is against the NONCE, not the send time: with a random nonce, a reply
-        // echoing our true send time is a forgery.
-        let nonce = Timestamp::from_bits(0xdead_beef_0bad_f00d);
-        let q = Query::with_nonce(T1, nonce);
-        assert_eq!(q.accept(&REPLY, T4), Err(Reject::OriginMismatch));
-        // while one echoing the nonce is accepted, and the arithmetic still uses the true T1.
-        let w = tweak(|w| w[24..32].copy_from_slice(&nonce.bits().to_be_bytes()));
-        assert_eq!(q.accept(&w, T4).unwrap().offset.nanoseconds(), 500_149_999);
+        // And the check is against the NONCE, not the send time: a reply echoing our true send
+        // time is a forgery, while the one echoing the nonce is accepted and its arithmetic still
+        // uses the true T1.
+        let w = tweak(|w| w[24..32].copy_from_slice(&T1.bits().to_be_bytes()));
+        assert_eq!(query().accept(&w, T4), Err(Reject::OriginMismatch));
+        assert_eq!(
+            query().accept(&REPLY, T4).unwrap().offset.nanoseconds(),
+            500_149_999
+        );
+        // A reply to one request does not answer another that carries a different nonce.
+        let other = Query::with_nonce(T1, Timestamp::from_bits(TEST_NONCE.bits() ^ 1));
+        assert_eq!(other.accept(&REPLY, T4), Err(Reject::OriginMismatch));
     }
 
     /// A broadcast packet is unsolicited, so nobody should believe it, even carrying our origin
