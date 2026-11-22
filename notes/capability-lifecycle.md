@@ -22,7 +22,7 @@ point (DECISIONS §10 (process model: capability-based, microkernel)): if delega
 `ENUMERATE` is the newest and the one that shows why the count is worth gating rather than retyping.
 It arrived on 2026-08-17 with milestone 126 (the `procps` package), this line still said three bits the next day, and the
 2026-08-17 documentation sweep is what found it. It is the right to learn what exists, as distinct
-from acting on it, the kernel-level twin of `filesystem_contract`'s directory `ENUMERATE`, and
+from acting on it, the kernel-level twin of `file_system_contract`'s directory `ENUMERATE`, and
 `endpoint::SURVEY` is its only consumer today. The argument for a right of its own rather than a
 corner of `READ` is on `capability_table::Rights::ENUMERATE`, where a reader meets it. `READ` on a
 supervision endpoint is what `RECEIVE` and `REAP` take, so a `ps` granted `READ` could reap a child,

@@ -5,10 +5,10 @@
 use super::*;
 
 /// A sync is a write-side authority, and a read-only capability may not ask for one (milestone
-/// 55). This pins the choice argued at `filesystem_contract::fs::SYNC`: a device flush stalls the
+/// 55). This pins the choice argued at `file_system_contract::file_system::SYNC`: a device flush stalls the
 /// queue for every client, and a holder with nothing written has nothing to make durable. It also
 /// pins the shape: either kind of handle, because the answer is about the storage, which is
-/// `STATFS`'s rule and why this goes through `node_at` rather than `file_at`.
+/// `GET_VOLUME_STATISTICS`'s rule and why this goes through `node_at` rather than `file_at`.
 #[test]
 fn a_sync_needs_write_and_takes_a_handle_of_either_kind() {
     let mut fs = FileSystem::create(BlockDisk(VecIo(vec![0u8; 16 * 1024 * 1024])), None, 0, 0)
@@ -24,7 +24,7 @@ fn a_sync_needs_write_and_takes_a_handle_of_either_kind() {
 
     // The bound directory carries every right, so it may ask.
     assert!(
-        srv.sync_permitted(filesystem_contract::fs::ROOT as u32)
+        srv.sync_permitted(file_system_contract::file_system::ROOT as u32)
             .is_ok()
     );
 
@@ -38,9 +38,9 @@ fn a_sync_needs_write_and_takes_a_handle_of_either_kind() {
     // have said yes.
     let ro = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::ENUMERATE | directory::READ | directory::DESCEND,
+            directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
         )
         .expect("open sub read-only");
     assert_eq!(
@@ -61,7 +61,7 @@ fn a_sync_needs_write_and_takes_a_handle_of_either_kind() {
 #[test]
 fn setting_mtime_to_now_twice_observes_two_different_times_and_neither_is_the_callers_choice() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
 
     let before = srv
         .mtime(root, &named("motd"))
@@ -96,15 +96,15 @@ fn setting_mtime_to_now_twice_observes_two_different_times_and_neither_is_the_ca
 #[test]
 fn setting_an_arbitrary_mtime_round_trips_exactly_and_is_not_now() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
 
     // The same instant the kernel-booted witness asserts with a real `touch -t` command line
-    // (`filesystem_fixture::tree::NAVIGATION_TOUCH_AT_UNIX_SECONDS`), reused here rather than a second
+    // (`file_system_fixture::tree::NAVIGATION_TOUCH_AT_UNIX_SECONDS`), reused here rather than a second
     // literal so the two round-trip checks (this one in-process, that one over the real wire)
     // are provably checking the same claim. Nowhere near this server's own advancing clock
     // (which starts at 1 and has moved by single digits by the time this test runs), so a
     // fallback to "now" cannot coincidentally pass.
-    const ASSERTED: u64 = filesystem_fixture::tree::NAVIGATION_TOUCH_AT_UNIX_SECONDS;
+    const ASSERTED: u64 = file_system_fixture::tree::NAVIGATION_TOUCH_AT_UNIX_SECONDS;
     srv.set_mtime_at(root, &named("motd"), ASSERTED)
         .expect("write an arbitrary mtime with full rights");
     assert_eq!(
@@ -143,7 +143,7 @@ fn a_touch_after_a_write_never_lands_earlier_even_across_a_clock_step_backward()
     let reading = alloc::rc::Rc::new(core::cell::Cell::new(None));
     let mut srv = server_with_tree();
     srv.set_wall_clock(alloc::boxed::Box::new(FakeClock(reading.clone())));
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
 
     // Unknown clock: the counter, in seconds, with no nanoseconds.
     assert_eq!(srv.stamp(), (2, 0));

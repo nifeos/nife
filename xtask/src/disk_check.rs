@@ -21,7 +21,7 @@ use crate::host::capture;
 /// - The table is not checked against the image's size (`check_disk_size`); the protective MBR's
 ///   size field is the only check of the disk's size here.
 pub(crate) fn blank_check_after_run() -> bool {
-    use filesystem_fixture::blank;
+    use file_system_fixture::blank;
     use globally_unique_identifier_partition_table::PartitionTable;
 
     let path = blank_disk_path();
@@ -144,11 +144,11 @@ pub(crate) fn redoxfs_crash_check_after_run() -> bool {
             "--",
             "cat",
             &crash_disk_path(),
-            filesystem_fixture::crash::NAME,
+            file_system_fixture::crash::NAME,
         ],
     );
-    let want_a = filesystem_fixture::crash::A;
-    let want_b = filesystem_fixture::crash::B;
+    let want_a = file_system_fixture::crash::A;
+    let want_b = file_system_fixture::crash::B;
     match out.as_deref() {
         Some(s) if s.as_bytes() == want_a => {
             eprintln!(
@@ -183,10 +183,10 @@ pub(crate) fn redoxfs_crash_check_after_run() -> bool {
 /// fake: the guest read its own write back through the same FS server, but this reopens the image
 /// with a different process and the pinned engine.
 pub(crate) fn redoxfs_check_after_run() -> bool {
-    redoxfs_reads_back(filesystem_fixture::MOTD_NAME, filesystem_fixture::MOTD)
+    redoxfs_reads_back(file_system_fixture::MOTD_NAME, file_system_fixture::MOTD)
         && redoxfs_reads_back(
-            filesystem_fixture::SCRATCH_NAME,
-            filesystem_fixture::WRITE_PATTERN,
+            file_system_fixture::SCRATCH_NAME,
+            file_system_fixture::WRITE_PATTERN,
         )
         && redoxfs_subtree_was_confined()
         && redoxfs_glob_grant_took_exactly_the_match()
@@ -202,7 +202,7 @@ pub(crate) fn redoxfs_check_after_run() -> bool {
 /// *set*. The unmatched directory still holds its file, since a set capability with no `-r` cannot
 /// look inside even one it matched. See notes/glob-grant/tests.md.
 fn redoxfs_glob_grant_took_exactly_the_match() -> bool {
-    use filesystem_fixture::tree;
+    use file_system_fixture::tree;
     let img = redoxfs_disk_path();
     let Some(globset) = redoxfs_ls(&img, tree::GLOBSET) else {
         eprintln!("milestone-47 glob check: `{}` did not list", tree::GLOBSET);
@@ -275,7 +275,7 @@ fn redoxfs_glob_grant_took_exactly_the_match() -> bool {
 ///   (`made-by-std`), and an exact match would manufacture failures (§27 (the filesystem service)).
 ///   A leaked name matching neither fixture prefix slips past.
 fn redoxfs_subtree_was_confined() -> bool {
-    use filesystem_fixture::tree;
+    use file_system_fixture::tree;
     let img = redoxfs_disk_path();
 
     let (Some(root), Some(sub)) = (redoxfs_ls(&img, "/"), redoxfs_ls(&img, tree::SUB)) else {
@@ -356,7 +356,7 @@ fn redoxfs_subtree_was_confined() -> bool {
 /// second `touch` does not truncate) is checked in-guest, since this file has no run index to
 /// rebuild the exact name `redoxfs_reads_back` would need. See notes/shell-navigation.md.
 fn shell_navigation_landed(root: &[String], home: &[String]) -> bool {
-    use filesystem_fixture::tree;
+    use file_system_fixture::tree;
     let count = |dir: &[String], prefix: &str| dir.iter().filter(|n| n.starts_with(prefix)).count();
 
     if count(home, tree::NAVIGATION_KEPT) == 0 || count(home, tree::NAVIGATION_DIRECTORY) == 0 {

@@ -2400,7 +2400,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 345	247	context	at-creation	2026-09-19	2026-09-19	**Status: NOT-STARTED.** Filed 2026-09-03 as an unnumbered proposal by the M-247 sweep,
 345	68	context	at-creation	2026-09-19	2026-09-19	from M-68's block; numbered 2026-09-19 by M-433. **Premise re-checked 2026-09-19 and
 345	433	context	at-creation	2026-09-19	2026-09-19	from M-68's block; numbered 2026-09-19 by M-433. **Premise re-checked 2026-09-19 and
-345	51	context	later	2026-09-14	2026-09-19	crates went missing from the host selection by M-51, `filesystem_contract`, `compositor`,
+345	51	context	later	2026-09-14	2026-09-19	crates went missing from the host selection by M-51, `file_system_contract`, `compositor`,
 345	117	context	later	2026-09-03	2026-09-19	clean x86_64 checkout found it eleven days later, on M-117's first run, which is principle 3
 345	68	context	later	2026-09-03	2026-09-19	five crates whose examples can rot unnoticed inside the gate M-68 exists to be."*
 345	285	context	later	2026-09-13	2026-09-19	`user_rt` is `user_mode_runtime` since 2026-09-13 (M-285). The quotation keeps the name

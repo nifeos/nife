@@ -45,7 +45,7 @@ region, so neither verdict is known.
 | documentation | 5 | 2 | 12 | 5 | 0 |
 | line_editor | 4 | 2 | 16 | 13 | 0 |
 | memory_corruption_canary_gate | 2 | 2 | 0 | 0 | 0 |
-| filesystem_contract | 33 | 1 | 23 | 5 | 1 |
+| file_system_contract | 33 | 1 | 23 | 5 | 1 |
 | capability | 10 | 1 | 3 | 2 | 1 |
 | free | 5 | 1 | 0 | 0 | 0 |
 | sealed_pair | 4 | 1 | 2 | 0 | 0 |

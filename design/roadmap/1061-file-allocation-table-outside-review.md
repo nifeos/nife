@@ -13,8 +13,8 @@ Raised by the lane `milestone/1061-file-allocation-table-outside-review`. A revi
 exposure to this project read `nifeos/file_allocation_table` at commit `8622b02` (`main`, after its
 pull request #16), against [the review package](../../notes/crate-reviews/file-allocation-table.md)
 and [its public API appendix](../../notes/crate-reviews/file-allocation-table-public-api.md). This
-block cites files and symbols at that commit. Each finding ends with a status line, and this file
-is the one record of where every finding and decision stands. Every item below is work for a lane
+block cites files and symbols at that commit. Its `Finding status` is the one record of where every
+finding stands. Every item below is work for a lane
 there, except where an item names nife's own callers.
 
 The review package and milestone 813 (`file_allocation_table`: a proven FAT crate, released on its
@@ -63,11 +63,51 @@ power-loss findings.
 
 Effort sizes: S is an afternoon for a lane, M a lane, L several lanes.
 
+## Finding status
+
+One line per finding, in the review's order. Each state was read against
+`nifeos/file_allocation_table` at `faaf13f`, its `main`.
+
+- P0-1, no full mutation run: Done, `nifeos/file_allocation_table#21`, `#22` and `#53`; full
+  mutation run 44049789540 is green at `6f8aa1d`, the `v0.1.0-pre.2` commit.
+- P0-2, template pin behind the one-shard fix: Done, `nifeos/file_allocation_table#17`, `#21` and
+  `#23`; `nifeos/file_allocation_table#54` moved every caller to the template's release v8.
+- P0-3, first-publish token: Waiting on the go to publish, which waits for every outside review
+  milestone to close (ruled 2026-11-18 UTC). The `crates-io` environment holds no secret.
+- P1-1, directory grown before zeroing: Done, `nifeos/file_allocation_table#24`.
+- P1-2, crash-ordering claim and `rename`: Done, `nifeos/file_allocation_table#24`; the README's
+  `BUGS` and the crate overview state the rename exception.
+- P1-3, ruleset lacks `check / mutation-diff`: Done; the `main` ruleset requires it, and weekly run
+  43906126610 has `settings drift` green.
+- P1-4, default cluster size: Done, `nifeos/file_allocation_table#25`; the specification's tables
+  are the default (the maintainers' provisional call).
+- P1-5, `VolumeLayoutOptions`: Done, `nifeos/file_allocation_table#19`; names ratified 2026-11-16
+  UTC.
+- P1-6, checked `CivilDateTime`: Done, `nifeos/file_allocation_table#18`; names ratified 2026-11-16
+  UTC.
+- P1-7, `trim_ascii_end`: Done, `nifeos/file_allocation_table#18`; name ratified 2026-11-16 UTC.
+- P1-8, `DirectoryCluster`: Done, `nifeos/file_allocation_table#18`; names ratified 2026-11-16 UTC.
+- P1-9, `OpenError<E>`: Done, `nifeos/file_allocation_table#18`; names ratified 2026-11-16 UTC.
+- P2-1, lower-case flags: Done, `nifeos/file_allocation_table#27`.
+- P2-2, untailed alias: Done, `nifeos/file_allocation_table#32`.
+- P2-3, lenient open: Done, `nifeos/file_allocation_table#31`.
+- P2-4, fuzz seeds: Done, `nifeos/file_allocation_table#20` (seeds under `fuzz/seeds/<target>/`)
+  and `nifeos/crate-workflows#58` (the weekly job reads them).
+- P2-5, `mtools`: Done, `nifeos/file_allocation_table#30`.
+- P2-6, memory footprint: Done, `nifeos/file_allocation_table#26`.
+- P2-7, `slot_location` walk: Done, `nifeos/file_allocation_table#28`.
+- P2-8, Cargo metadata: Done, `nifeos/file_allocation_table#26`.
+- P2-9, `examples/`: Done, `nifeos/file_allocation_table#29`.
+- P2-10, `embedded-io` feature: Done, `nifeos/file_allocation_table#46`; the `embedded-io-07`
+  feature, off by default (ruled 2026-11-12 UTC).
+- P2-11, comparison paragraph: Done, `nifeos/file_allocation_table#26`.
+- P2-12, `mutants-exempts` header: Done, `nifeos/file_allocation_table#26`.
+- P2-13, stranger-run text: Done, `nifeos/file_allocation_table#26`.
+
 ## Findings, prioritized
 
 P0 blocks any publish. P1 lands before the first release, because changing it afterward breaks or
-surprises a dependent. Pull request numbers in the status lines are in
-`nifeos/file_allocation_table`. P2 follows it, in
+surprises a dependent. P2 follows it, in
 [the appendix](1061-file-allocation-table-outside-review/after-the-first-release.md). A door is
 one-way where something outside the repository acts on it after the release: a public name or
 signature, the bytes a format writes, or the license. The maintainers decide every two-way item
@@ -84,9 +124,6 @@ released commit.
 Change: after P0-2, dispatch `mutation.yml` on `main`, read the survivors, and add a test or a
 reasoned line in `.github/mutants-exempts` for each. Two-way. S to M.
 
-Status: Done in #21, #22 and #53; full mutation run 44049789540 is green at `6f8aa1d`, the
-`v0.1.0-pre.2` commit.
-
 #### P0-2. The template pin predates the one-shard verdict fix
 
 Every caller pins `nifeos/crate-workflows` at `57f2d528`. The template commit `ced625f4` fixes the
@@ -97,16 +134,11 @@ current pin.
 
 Change: the next pin bump, to `e9723181` or the template's next release tag. Two-way. S.
 
-Status: Done in #17, #21 and #23; #54 moved every caller to the template's release v8.
-
 #### P0-3. The first publish needs a token placed once
 
 The `release` caller asks for `id-token: write`. A crate that does not yet exist on crates.io cannot
 use trusted publishing for its first upload, so the first publish needs a crates.io token placed
 once, at the architect's go to publish. Every later release uses trusted publishing. Two-way. S.
-
-Status: Ruled 2026-11-18 UTC: not yet. The token waits for the go to publish, which waits for every
-outside review milestone; the `crates-io` environment holds no secret.
 
 ### P1: before the first release
 
@@ -121,8 +153,6 @@ it, then make it reachable.
 Change: take and mark the cluster, zero it, then link it, and add a test over a device that fails
 after a chosen write count. Two-way. S.
 
-Status: Done in #24.
-
 #### P1-2. The crash-ordering claim does not hold for `rename`
 
 The README's `BUGS` and the crate overview say a crash leaks a cluster and never shares one.
@@ -134,16 +164,11 @@ file on the same crash.
 Change: keep the order, and qualify the claim in both places: a crash during a rename can leave two
 entries on one chain, and every other operation leaks and never shares. Two-way. S.
 
-Status: Done in #24; the README's `BUGS` states the rename exception.
-
 #### P1-3. The `main` ruleset lacks a required check the template now expects
 
 The weekly `settings drift` job is red: the required checks lack `check / mutation-diff`, which
 `check.yml` at the pin defines. Change: an administrator adds the check to the ruleset, through the
 template's apply script. Two-way. S.
-
-Status: Done. The `main` ruleset requires `check / mutation-diff`, and weekly run 43906126610 has
-`settings drift` green.
 
 #### P1-4. The default cluster size is one sector at every volume size
 
@@ -158,8 +183,6 @@ The maintainers' provisional call: default to the specification's tables when th
 cluster size, keep one sector as an explicit choice, and update the pinned-digest test and the
 README's size examples. M.
 
-Status: Done in #25, the specification's tables as the default (the maintainers' provisional call).
-
 #### P1-5. `VolumeLayout::new` takes seven positional parameters
 
 `VolumeLayout::new` in `src/volume.rs` takes three `u64` and two `&str` side by side. A swap of the
@@ -170,8 +193,6 @@ general format's `FormatOptions` is: `VolumeLayoutOptions::new(total_sectors)`,
 `with_hidden_sectors`, `with_volume_id`, `with_label` and `with_file(name, size_bytes)`. nife's two callers, `xtask/src/cloud_image.rs` and
 `components/src/system_installer.rs`, move to the new shape when nife takes the release. One-way
 (signature). S to M.
-
-Status: Done in #19; the names stand as built, ratified 2026-11-16 UTC.
 
 #### P1-6. `CivilDateTime` has public fields and stops at seconds
 
@@ -187,8 +208,6 @@ outside FAT's range. The error is `CivilDateTimeError`. nife's fuzz
 target `fuzz/fuzz_targets/file_allocation_table_writer.rs` builds the value by literal and moves to
 `new`. One-way (shape). S.
 
-Status: Done in #18; the names stand as built, ratified 2026-11-16 UTC.
-
 #### P1-7. `VolumeLabel::trimmed` has a standard-library spelling
 
 `VolumeLabel::trimmed` in `src/label.rs` returns the label without its trailing spaces. The
@@ -198,8 +217,6 @@ whitespace, so the meanings coincide on every value the type holds.
 Ruled 2026-11-10. It takes the name `trim_ascii_end`, with no `doc(alias)` for the old name, since
 the crate has no release. A test pins that the result equals `as_bytes().trim_ascii_end()` for a label
 padded with spaces. One-way (name). S.
-
-Status: Done in #18; the name stands as built, ratified 2026-11-16 UTC.
 
 #### P1-8. A directory is a bare `u32`
 
@@ -211,8 +228,6 @@ Ruled 2026-11-10. A `DirectoryCluster(u32)` type with the associated constant
 `DirectoryCluster::ROOT` replaces the `u32` in every method that takes a directory.
 `NamedEntry::directory_cluster() -> Option<DirectoryCluster>` returns it for a directory entry and
 `None` for a file. One-way (signatures). M.
-
-Status: Done in #18; the names stand as built, ratified 2026-11-16 UTC.
 
 #### P1-9. `open_file_reader` cannot report a device error
 
@@ -229,8 +244,6 @@ both return it. Both verify the directory slot at open. A test pins that
 stale-entry entry in the README's `BUGS` shrinks to looking the entry up again after a write. nife's fuzz target
 `fuzz/fuzz_targets/file_allocation_table_boot_sector.rs` matches the new error. One-way (shape). S
 to M.
-
-Status: Done in #18; the names stand as built, ratified 2026-11-16 UTC.
 
 ## Decisions this block needs
 
@@ -293,10 +306,9 @@ The checks are in [the done-when appendix](1061-file-allocation-table-outside-re
 
 Pull request numbers are in `nifeos/file_allocation_table` unless named otherwise.
 
-- **Done.** Every P0, P1 and P2 finding except P0-3, each closed by the pull request its status line
-  names; the P2 items are in [the appendix](1061-file-allocation-table-outside-review/after-the-first-release.md).
-  The second stranger run is #50, with its gaps closed in #51. nife's callers build against
-  `v0.1.0-pre.2` through `nifeos/nife#3568`. `main` at `faaf13f` has `check` run 44400592122 and
+- **Done.** Every finding except P0-3, as `Finding status` lists. The second stranger run is #50,
+  with its gaps closed in #51. nife's callers build against `v0.1.0-pre.2` through
+  `nifeos/nife#3568`. `main` at `faaf13f` has `check` run 44400592122 and
   `proofs` run 44400592156 green.
 - **Outstanding.** P0-3, the first-publish token: ruled not yet, and the `crates-io` environment
   lists no secret, read through the GitHub API.

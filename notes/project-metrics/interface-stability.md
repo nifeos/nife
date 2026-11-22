@@ -7,7 +7,7 @@
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
 | `grant_plan` | 806 | 353 | 1087 | 1466 | 289 | 226 (78%) |
-| `filesystem_contract` | 118 | 125 | 408 | 587 | 168 | 143 (85%) |
+| `file_system_contract` | 118 | 125 | 408 | 587 | 168 | 143 (85%) |
 | `calendar` | 118 | 6 | 118 | 6 | 11 | 11 (100%) |
 | `globally_unique_identifier_partition_table` | 84 | 72 | 184 | 353 | 77 | 56 (73%) |
 | `line_editor` | 75 | 4 | 92 | 146 | 75 | 58 (77%) |
@@ -140,16 +140,16 @@ Read at `67b9b6c837c2` against the week before. Each line is one removed or chan
 > - `environment_contract`: removed `ConfigPage::new`
 > - `environment_contract`: removed `ConfigPage::term`
 > - `environment_contract`: removed `ConfigPage::tz`
-> - `filesystem_contract`: removed `PAGE`
-> - `filesystem_contract`: removed `blk::BLOCK_SIZE`
-> - `filesystem_contract`: removed `blk::FLUSH`
-> - `filesystem_contract`: removed `blk::INTERFACE_ID`
-> - `filesystem_contract`: removed `blk::READ`
-> - `filesystem_contract`: removed `blk::SECTORS_PER_BLOCK`
-> - `filesystem_contract`: removed `blk::SECTOR_BYTES`
-> - `filesystem_contract`: removed `blk::SIZE`
-> - `filesystem_contract`: removed `blk::TRANSFER_BLOCKS`
-> - `filesystem_contract`: removed `blk::TRANSFER_MAXIMUM`
+> - `file_system_contract`: removed `PAGE`
+> - `file_system_contract`: removed `blk::BLOCK_SIZE`
+> - `file_system_contract`: removed `blk::FLUSH`
+> - `file_system_contract`: removed `blk::INTERFACE_ID`
+> - `file_system_contract`: removed `blk::READ`
+> - `file_system_contract`: removed `blk::SECTORS_PER_BLOCK`
+> - `file_system_contract`: removed `blk::SECTOR_BYTES`
+> - `file_system_contract`: removed `blk::SIZE`
+> - `file_system_contract`: removed `blk::TRANSFER_BLOCKS`
+> - `file_system_contract`: removed `blk::TRANSFER_MAXIMUM`
 > - `globally_unique_identifier_partition_table`: changed `BackupMismatch`
 > - `globally_unique_identifier_partition_table`: removed `BackupMismatch::AlternateLba`
 > - `globally_unique_identifier_partition_table`: removed `BackupMismatch::EntryArrayLba`
@@ -208,7 +208,7 @@ Read at `67b9b6c837c2` against the week before. Each line is one removed or chan
 > - `counter_frequency_contract`: and 7 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
 > - `entropy_contract`: and 20 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
 > - `environment_contract`: and 36 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
-> - `filesystem_contract`: and 92 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
+> - `file_system_contract`: and 92 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
 > - `globally_unique_identifier_partition_table`: and 71 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
 > - `grant_plan`: and 762 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
 > - `machine_statistics_contract`: and 8 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)

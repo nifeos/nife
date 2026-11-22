@@ -284,5 +284,5 @@ previous request's value. A completion with status 0 says the device finished th
 prove the hardware under the device is honest, and nothing at this layer could. Unlike a transfer, a
 refused flush does not panic the server. Its death would block every client of the filesystem, so
 `VIRTIO_BLK_S_UNSUPP` comes back as an error. A device that never offered the feature makes the
-server answer EOPNOTSUPP rather than a false yes (see `filesystem_contract::blk::FLUSH`), and a
+server answer EOPNOTSUPP rather than a false yes (see `file_system_contract::blk::FLUSH`), and a
 completed flush returns a count so a client can tell a round trip from a constant.

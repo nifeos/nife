@@ -139,14 +139,14 @@ attempt knew it had not solved, written while the code was in front of someone.
 
 ## Paths, names and space
 
-- A path costs one descent per component, on every call. `open("a\\b\\c")` is two `fs::OPENDIR`s and
-  an `fs::OPEN`, and the two directory handles are opened and closed again for the next call. There
+- A path costs one descent per component, on every call. `open("a\\b\\c")` is two `file_system::OPENDIR`s and
+  an `file_system::OPEN`, and the two directory handles are opened and closed again for the next call. There
   is no cache, because a cache here would have to be invalidated by every other client of the same FS
   server, and this adapter cannot see them. Reads and writes are unaffected: they go through the
   handle CREATE minted.
 - Free space is a forecast, not a reservation. The numbers are the image's now. But two clients
   writing concurrently both see a count that was true when it was read, and a write past the real end
-  still fails with `STATUS_DISK_FULL` at the write. That is what `statfs` is everywhere. `STATFS`
+  still fails with `STATUS_DISK_FULL` at the write. That is what `statfs` is everywhere. `GET_VOLUME_STATISTICS`
   answers about the whole image, never about a subtree. So a share served over a narrow directory
   capability still reports the volume's free space; there are no quotas in this filesystem, so there
   is no smaller number that would be true.

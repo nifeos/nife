@@ -104,7 +104,7 @@ would stop the terminal until a `CTL_RESUME` nobody sends. `line_editor`'s whole
   of a limit `OPERATION_WRITE` has that is easy to miss: it reads from the client's output page, and
   there is exactly one of those. The progenitor maps a single frame into the terminal read-only and into the
   shell read/write, so a second page-based client would need a second frame and a page index in
-  every request. That is `filesystem_contract`'s one-page-two-clients problem (DECISIONS §55 (the file behind a `>` is the shell itself, because one page cannot serve two clients)) arriving in a
+  every request. That is `file_system_contract`'s one-page-two-clients problem (DECISIONS §55 (the file behind a `>` is the shell itself, because one page cannot serve two clients)) arriving in a
   second contract.
 
   Register-only sidesteps it: `components/src/terminal_sink_caretaker.rs` turns the sink contract into terminal

@@ -52,7 +52,7 @@ of taste.
 
 ### The same shape, one crate along
 
-`filesystem_contract::a_grandchild_is_bounded_by_the_root` is `attenuate_never_widens` at depth two.
+`file_system_contract::a_grandchild_is_bounded_by_the_root` is `attenuate_never_widens` at depth two.
 `attenuate` is a single `&`, so the only claim the second harness adds is that AND is associative,
 and there is no plausible defect that breaks it while leaving the depth-one harness green. Both go
 red on the same one-character patch (`&` becoming `|`). Recorded in the patch prose rather than

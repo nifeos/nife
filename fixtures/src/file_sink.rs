@@ -49,7 +49,7 @@
 #![no_main]
 
 use byte_sink_fixture as fixture;
-use filesystem_contract::fs;
+use file_system_contract::file_system;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, exit, receive, send};
 
@@ -65,7 +65,7 @@ const REPORT: u64 = 2;
 /// The page shared with the FS server. Matches `fs_service`'s `FILE_VA_CLIENT`.
 const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the FS contract's transfer unit.
-const PAGE: usize = filesystem_contract::PAGE_BYTES;
+const PAGE: usize = file_system_contract::PAGE_BYTES;
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
@@ -94,17 +94,27 @@ fn fs_call(w0: u64, w1: u64) -> i64 {
 fn open_for_writing() -> u64 {
     let name = fixture::SINK_NAME.as_bytes();
     put(name);
-    let created = fs_call(fs::request(fs::CREATE, fs::ROOT, name.len() as u64), 0);
+    let created = fs_call(
+        file_system::request(file_system::CREATE, file_system::ROOT, name.len() as u64),
+        0,
+    );
     if created >= 0 {
         return created as u64;
     }
     put(name);
-    let opened = fs_call(fs::request(fs::OPEN, fs::ROOT, name.len() as u64), 0);
+    let opened = fs_call(
+        file_system::request(file_system::OPEN, file_system::ROOT, name.len() as u64),
+        0,
+    );
     if opened < 0 {
         send(REPORT, fixture::BAD, opened as u64, 0);
         exit();
     }
-    if fs_call(fs::request(fs::TRUNCATE, opened as u64, 0), 0) < 0 {
+    if fs_call(
+        file_system::request(file_system::TRUNCATE, opened as u64, 0),
+        0,
+    ) < 0
+    {
         send(REPORT, fixture::BAD, opened as u64, 1);
         exit();
     }
@@ -130,7 +140,10 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
             byte_sink_contract::Message::Bytes(0) => {}
             byte_sink_contract::Message::Bytes(n) => {
                 put(&buf[..n]);
-                let wrote = fs_call(fs::request(fs::WRITE, handle, n as u64), off);
+                let wrote = fs_call(
+                    file_system::request(file_system::WRITE, handle, n as u64),
+                    off,
+                );
                 if wrote != n as i64 {
                     // A short write is a lost byte, and a sink that reported DONE after one would
                     // be certifying a file it did not write. Say which request failed and stop.
@@ -147,7 +160,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         }
     }
 
-    let _ = fs_call(fs::request(fs::CLOSE, handle, 0), 0);
+    let _ = fs_call(file_system::request(file_system::CLOSE, handle, 0), 0);
     send(REPORT, fixture::DONE, off, 0);
     exit();
 }

@@ -7,7 +7,7 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_fixture as fixture;
+use file_system_fixture as fixture;
 
 use crate::bench::bench;
 use crate::crash::{crash_driver, crash_verify};
@@ -36,8 +36,8 @@ const ROLE_DIR_ATTACKER: u64 = 5;
 /// nothing; it tries a name the set carries and a name it does not, and reports what got through.
 const ROLE_SET_ATTRS: u64 = 6;
 /// Milestone 38: sequential and random read/write throughput through the FS server, the four
-/// phases `filesystem_fixture::throughput` names. The `--real --smp` bench boot spawns it after
-/// [`ROLE_BENCH`], on the service that role already wired. The number lives in `filesystem_contract` because
+/// phases `file_system_fixture::throughput` names. The `--real --smp` bench boot spawns it after
+/// [`ROLE_BENCH`], on the service that role already wired. The number lives in `file_system_contract` because
 /// the kernel passes it and this program matches on it, which is rule 7's case exactly.
 const ROLE_THROUGHPUT: u64 = fixture::throughput::ROLE;
 /// Milestone 154: the confined program that holds **two** directory capabilities at once, one at

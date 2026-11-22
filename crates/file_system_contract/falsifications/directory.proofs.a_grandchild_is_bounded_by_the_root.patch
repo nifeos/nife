@@ -1,0 +1,24 @@
+Falsifies `file_system_contract::directory::Rights::a_grandchild_is_bounded_by_the_root`.
+
+The defect: `attenuate` computes `self.0 | requested` instead of `self.0 & requested`, so a child
+carries every bit it asked for and the root's mask bounds nothing. It is the same one-character
+change that falsifies `attenuate_never_widens`, and that is the honest finding about this harness:
+the depth-2 claim is implied by the depth-1 claim plus the associativity of `&`, so no defect
+reaches one without the other. This record exists so the harness is no longer `unfalsified` while
+being red under a real defect, which `attenuate_never_widens`'s own patch already said it was.
+
+Expected to fail: `assert_eq!(grandchild.bits() & !root.bits(), 0, "a grandchild carries a bit the
+root did not")`, whenever `a` or `b` holds a right the root does not.
+
+diff --git a/crates/file_system_contract/src/directory.rs b/crates/file_system_contract/src/directory.rs
+--- a/crates/file_system_contract/src/directory.rs
++++ b/crates/file_system_contract/src/directory.rs
+@@ -177,7 +177,7 @@
+     /// silently given less than it asked for, but that refusal is about telling the truth and
+     /// this line is about the property.
+     pub const fn attenuate(self, requested: u64) -> Self {
+-        Rights(self.0 & requested)
++        Rights(self.0 | requested)
+     }
+ 
+     /// Whether this set carries **every** right in `needed`. Written as "all of", not "any of",

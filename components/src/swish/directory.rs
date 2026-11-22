@@ -17,7 +17,7 @@ pub(super) const FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0
 // touches no memory; every caller of `put_page`/`get_page` already runs behind a `dir.is_some()`
 // check, which is only true in that wiring, matching the comment this replaces.
 pub(super) const FS_WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(FS_VA, filesystem_contract::PAGE_BYTES as u64) };
+    unsafe { MappedWindow::new(FS_VA, file_system_contract::PAGE_BYTES as u64) };
 
 /// The directory capability's slot in the navigating wiring (`fs_service::start_granted_dir` grants
 /// it at 0). A shell that was granted none has no such slot at all, which is why [`Nav::dir`] is an
@@ -51,7 +51,7 @@ pub(super) fn echo(nav: &mut Nav, text: &[u8], out: &mut dyn FnMut(&[u8])) -> Sa
 pub(super) fn put_page(bytes: &[u8]) {
     for (i, &b) in bytes
         .iter()
-        .take(filesystem_contract::PAGE_BYTES)
+        .take(file_system_contract::PAGE_BYTES)
         .enumerate()
     {
         FS_WINDOW.write_volatile::<u8>(i as u64, b);

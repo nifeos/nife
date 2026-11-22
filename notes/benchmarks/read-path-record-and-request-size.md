@@ -108,7 +108,7 @@ in [steps 4 and 2](read-path-block-contract-and-metadata-cache.md).)*
 - `fs_record_read` reads at multiples of 128 KiB and the record is now 8 KiB. That is still a record
   boundary, the only property the phase needs, and keeping the constant keeps every figure the phase
   has produced comparable across the sweep. It is no longer named after the record size. Before this
-  step `filesystem_contract` called the mismatch "the one soft spot in this module" and nothing checked
+  step `file_system_contract` called the mismatch "the one soft spot in this module" and nothing checked
   it; `redoxfs_server` now asserts at compile time that the two divide.
 - Only levels 5, 1 and 0 were measured here. The six-point sweep establishes the line; this run
   confirms two points on it and one off it, and would not have caught a non-linearity at 2, 3 or 4.
@@ -123,7 +123,7 @@ Taken before step 2, deliberately. Step 1 measured a write's fixed term at 690 u
 the request, and step 2's read cache does not touch a write. Only this step does, and a backup is
 writes.
 
-`filesystem_contract::fs::TRANSFER_PAGES` goes from an unwritten 1 to 16. The region a client and the
+`file_system_contract::file_system::TRANSFER_PAGES` goes from an unwritten 1 to 16. The region a client and the
 FS server share is 64 KiB of contiguous pages, and a `READ` or `WRITE` may carry all of it in one
 request. Nothing in the packed request word changed: the length field has been 40 bits since
 milestone 32 (a real filesystem), and the page was always what bounded a transfer.
@@ -169,7 +169,7 @@ Step 1's residual became the whole problem. Step 3's residual changed owner:
 | after (sixteen pages, per request) | 778,354 ns | 204,076 (**26%**) | **574,278 (74%)** |
 
 That is step 1's table read backwards. A read is now dominated by sixteen single-block trips through
-`filesystem_contract::blk`. That is the block contract's one-page limit, which notes/fs-server.md's
+`file_system_contract::blk`. That is the block contract's one-page limit, which notes/fs-server.md's
 BUGS section has recorded as a ~100 MiB/s ceiling since milestone 38. `fs_seq_read` now measures
 80.30 MiB/s, 80% of that ceiling.
 
@@ -217,5 +217,5 @@ one command: `sh bench/record-level-sweep.sh 3 0 1 5` with `TRANSFER_PAGES` at 1
 - These are still not apples to apples with a buffered Linux read. 64 KiB is the buffer size milestone
   38's ext4 comparison used, so the transfer-size half of the mismatch is now closed and the page-cache
   half is not. Buffered ext4 remains three orders of magnitude away, for a structural reason.
-- The write comparison is `O_DSYNC`-shaped, unchanged. Every `filesystem_contract` write still commits
+- The write comparison is `O_DSYNC`-shaped, unchanged. Every `file_system_contract` write still commits
   a RedoxFS transaction before it replies; what changed is how much payload one commit covers.

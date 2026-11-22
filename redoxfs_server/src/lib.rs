@@ -15,8 +15,8 @@
 
 //! # The directory capability (milestone 47)
 //!
-//! The bound directory is [`filesystem_contract::fs::ROOT`], handle 0, an ordinary table entry. A
-//! directory handle carries a [`filesystem_contract::directory::Rights`] set, and [`Server::open_dir`]
+//! The bound directory is [`file_system_contract::file_system::ROOT`], handle 0, an ordinary table entry. A
+//! directory handle carries a [`file_system_contract::directory::Rights`] set, and [`Server::open_dir`]
 //! gives a child the parent's rights intersected with the request. That intersection is the only
 //! constructor for a non-root rights set, so no descendant carries a right its ancestor lacked. A
 //! file handle inherits its directory's read and write bits. The table is per server, not per
@@ -25,7 +25,7 @@
 //! # The error boundary
 //!
 //! Every method here returns `syscall::error::Result`, RedoxFS's own error type, unmapped. The
-//! translation to the wire (a negated errno, `filesystem_contract::reply_err`) happens once, at the
+//! translation to the wire (a negated errno, `file_system_contract::error::word`) happens once, at the
 //! process boundary, and nowhere else: there is no ABI type in here to leak.
 
 #![cfg_attr(not(test), no_std)]
@@ -53,8 +53,8 @@ use alloc::vec::Vec;
 
 pub use block::{BLOCK, BlockDisk, BlockIo, CACHE_SLOTS, CachedDisk};
 pub use dispatch::ServeEdges;
-use filesystem_contract::directory::{self, Rights};
-use filesystem_contract::extended_attribute;
+use file_system_contract::directory::{self, Rights};
+use file_system_contract::extended_attribute;
 use redoxfs::{Disk, FileSystem, Node, Transaction, TreePtr};
 use subtree_scope::NodeKind;
 /// **The engine's error type, for a host caller that implements [`redoxfs::Disk`]** (a fuzz target's

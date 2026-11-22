@@ -170,11 +170,11 @@ pub(crate) fn mkredoxfs_of(mebibytes: &str) -> bool {
         return true;
     }
     // Stage the fixture contents in temp files (the host tool's `put` takes a host file), then load
-    // them. The contents live in filesystem_fixture, shared with the client and the fixture's readers.
+    // them. The contents live in file_system_fixture, shared with the client and the fixture's readers.
     let motd = workspace_root().join("target/redoxfs-motd.tmp");
     let scratch = workspace_root().join("target/redoxfs-scratch.tmp");
-    if std::fs::write(&motd, filesystem_fixture::MOTD).is_err()
-        || std::fs::write(&scratch, filesystem_fixture::SCRATCH_PLACEHOLDER).is_err()
+    if std::fs::write(&motd, file_system_fixture::MOTD).is_err()
+        || std::fs::write(&scratch, file_system_fixture::SCRATCH_PLACEHOLDER).is_err()
     {
         eprintln!("mkredoxfs: cannot stage the fixture files");
         return false;
@@ -183,11 +183,11 @@ pub(crate) fn mkredoxfs_of(mebibytes: &str) -> bool {
     let scratch = scratch.display().to_string();
     // The shared-frame witness's two files (milestone 599 (a frame per filesystem client channel), provisional): same-length names, distinct
     // bodies, so a name substituted in the shared page shows up as the wrong body. Staged the same
-    // way motd is, from the shared `filesystem_fixture` constants.
+    // way motd is, from the shared `file_system_fixture` constants.
     let witness_victim = workspace_root().join("target/redoxfs-witness-victim.tmp");
     let witness_usurper = workspace_root().join("target/redoxfs-witness-usurper.tmp");
-    if std::fs::write(&witness_victim, filesystem_fixture::SHARED_VICTIM_BODY).is_err()
-        || std::fs::write(&witness_usurper, filesystem_fixture::SHARED_USURPER_BODY).is_err()
+    if std::fs::write(&witness_victim, file_system_fixture::SHARED_VICTIM_BODY).is_err()
+        || std::fs::write(&witness_usurper, file_system_fixture::SHARED_USURPER_BODY).is_err()
     {
         eprintln!("mkredoxfs: cannot stage the shared-frame witness files");
         return false;
@@ -198,18 +198,18 @@ pub(crate) fn mkredoxfs_of(mebibytes: &str) -> bool {
         return false;
     };
     redoxfs_host(&["mkfs", &img, mebibytes])
-        && redoxfs_host(&["put", &img, filesystem_fixture::MOTD_NAME, &motd])
-        && redoxfs_host(&["put", &img, filesystem_fixture::SCRATCH_NAME, &scratch])
+        && redoxfs_host(&["put", &img, file_system_fixture::MOTD_NAME, &motd])
+        && redoxfs_host(&["put", &img, file_system_fixture::SCRATCH_NAME, &scratch])
         && redoxfs_host(&[
             "put",
             &img,
-            filesystem_fixture::SHARED_VICTIM_NAME,
+            file_system_fixture::SHARED_VICTIM_NAME,
             &witness_victim,
         ])
         && redoxfs_host(&[
             "put",
             &img,
-            filesystem_fixture::SHARED_USURPER_NAME,
+            file_system_fixture::SHARED_USURPER_NAME,
             &witness_usurper,
         ])
         && doc_store().is_some()
@@ -967,7 +967,7 @@ pub(crate) const INDEXED_ONLY_VERSION: &str = "0.3.0";
 /// of notes/host-recovery.md's argument for `extract`. The staging directory is rebuilt each time:
 /// a name left by an older fixture would fail the post-run `ls /` check for an unrelated reason.
 fn stage_subtree() -> Option<String> {
-    use filesystem_fixture::tree;
+    use file_system_fixture::tree;
     let root = workspace_root().join("target/redoxfs-tree");
     let _ = std::fs::remove_dir_all(&root);
     let sub = root.join(tree::SUB);
@@ -1029,7 +1029,7 @@ fn stage_subtree() -> Option<String> {
         eprintln!("mkredoxfs: cannot stage milestone 835's directory");
         return None;
     }
-    let walk = root.join(filesystem_fixture::walk::ROOT);
+    let walk = root.join(file_system_fixture::walk::ROOT);
     if let Err(e) = walk_pricing::stage(&walk) {
         eprintln!("mkredoxfs: cannot stage milestone 121's priced tree: {e}");
         return None;
@@ -1058,13 +1058,13 @@ pub(crate) fn crash_disk_path() -> String {
 pub(crate) fn mkredoxfs_crash() -> bool {
     let img = crash_disk_path();
     let initial = workspace_root().join("target/redoxfs-crash-initial.tmp");
-    if std::fs::write(&initial, filesystem_fixture::crash::INITIAL).is_err() {
+    if std::fs::write(&initial, file_system_fixture::crash::INITIAL).is_err() {
         eprintln!("mkredoxfs_crash: cannot stage the fixture file");
         return false;
     }
     let initial = initial.display().to_string();
     redoxfs_host(&["mkfs", &img, "16"])
-        && redoxfs_host(&["put", &img, filesystem_fixture::crash::NAME, &initial])
+        && redoxfs_host(&["put", &img, file_system_fixture::crash::NAME, &initial])
 }
 
 /// Where the GPT-partitioned test image is written. The runners derive exactly this name from
@@ -1175,7 +1175,7 @@ pub(crate) fn mknvmedisk() -> bool {
 /// not apply here for the same reason it does not apply to the crash image.
 pub(crate) fn mkblankdisk() -> bool {
     let path = blank_disk_path();
-    let bytes = std::vec![0u8; (filesystem_fixture::blank::DISK_BLOCKS * filesystem_fixture::blank::LOGICAL_BLOCK_BYTES) as usize];
+    let bytes = std::vec![0u8; (file_system_fixture::blank::DISK_BLOCKS * file_system_fixture::blank::LOGICAL_BLOCK_BYTES) as usize];
     if let Err(e) = std::fs::write(&path, &bytes) {
         eprintln!("mkblankdisk: could not write {path}: {e}");
         return false;

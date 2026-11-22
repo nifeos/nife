@@ -30,7 +30,7 @@ The tree's usual split, with the driver in two processes from one program:
   `arg0`. Its `_admin` module resets the controller, sets up the admin rings, runs IDENTIFY and
   Create I/O Queue, grants the data plane its pages, and stays alive to retire the controller. Its
   `_data_plane` module copies commands into the I/O submission ring, rings the doorbell, polls the
-  completion ring's phase tag, and serves `filesystem_contract::blk`. The program shares the
+  completion ring's phase tag, and serves `file_system_contract::blk`. The program shares the
   crate's name, which calef ruled on 2026-09-18: a `_server` suffix would not fit `nifefs`'s 32-byte
   `NAME_LEN`, and a separate admin program would not either.
 - **`crates/driver_process_contract/src/non_volatile_memory_express.rs`**: what the three agree
@@ -62,7 +62,7 @@ in the driver's space except what commands point it at.
    because an SQ names its CQ at creation). Admin commands and I/O commands are the same wire
    shape through the same rings, so bring-up itself exercises the transfer machinery.
 
-The driver serves whole 4096-byte filesystem blocks, `filesystem_contract::blk`'s unit, and exposes exactly
+The driver serves whole 4096-byte filesystem blocks, `file_system_contract::blk`'s unit, and exposes exactly
 the blk-IPC verbs as methods: `read_block`, `write_block`, `size_bytes`. A block is one to eight
 logical blocks depending on the namespace's LBA format (QEMU's default is 512-byte LBAs, so eight);
 IDENTIFY tells the driver the format and `IdentifyNamespace::blocks_per` does the arithmetic.

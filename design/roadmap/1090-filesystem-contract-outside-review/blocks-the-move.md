@@ -41,7 +41,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
    Door: two-way. Effort: XS.
 
 3. The falsification patches carry nife's path, and the README's command with them.
-   Finding: all three patches diff `a/crates/filesystem_contract/src/dir.rs`
+   Finding: all three patches diff `a/crates/file_system_contract/src/dir.rs`
    (`falsifications/*.patch`, the `diff --git` lines). The template's `proofs / falsify` applies
    each patch crate-relative with `git apply -p1`, so after the move none applies and the job is
    red. The doc comments at `src/dir.rs` line 227, `:248` and `:266` name the same path, and
@@ -55,7 +55,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
 4. `check / coverage` is red on `src/rm.rs`.
    Finding: `rm::status` is never called inside the crate; the standalone lcov reports 0 of 3
    lines, under the per-file floor of 85 that `coverage-floor.sh` applies to every file with an
-   executable line. The function's callers are the `rm` program and `filesystem_fixture`'s tests.
+   executable line. The function's callers are the `rm` program and `file_system_fixture`'s tests.
    Change: resolved by item 5 if the module leaves; otherwise one test that `status(errno)` is the
    errno and `OK` is 0.
    Door: two-way. Effort: XS.
@@ -67,7 +67,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
    refuses `xattr::spec`, `spec_kind` and `spec_value_len` (`src/xattr.rs` line 82, `:86`, `:90`).
    It also refuses seven `is_dir` and `spec` bindings in tests. `register_names` (ceiling 0): `blk::SIZE` (`src/blk.rs` line 27, an opcode, so a false
    positive), `BLOCK_SIZE` (`src/blk.rs` line 43), `MAXIMUM_LENGTH_OR_OFFSET` (`src/fs.rs` line 309,
-   ratified), `statfs::LEN` (`src/statfs.rs` line 3). `question_shape`: `in_opcode_order`
+   ratified), `volume_statistics::LEN` (`src/statfs.rs` line 3). `question_shape`: `in_opcode_order`
    (`src/verb.rs` line 319). The naming worklist inside nife lists the same ten wire-or-format names.
    `GETMTIME`, `SETMTIME` and `SETMTIME_AT` (`src/fs.rs` line 193, `:204`, `:214`) contain `mtime`,
    which the spelled-out list expands, and the gate does not split `GETMTIME` into components, so

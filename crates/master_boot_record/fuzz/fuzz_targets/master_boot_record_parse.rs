@@ -13,6 +13,7 @@
 use libfuzzer_sys::fuzz_target;
 use master_boot_record::MasterBootRecord;
 
+/// The master boot record's own fixed sector, 512 bytes by the format; no logical block size.
 const SECTOR_BYTES: usize = 512;
 const ENTRY_TABLE_OFFSET: usize = 446;
 const ENTRY_BYTES: usize = 16;

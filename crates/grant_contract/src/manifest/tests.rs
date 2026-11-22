@@ -5,14 +5,17 @@ use crate::*;
 /// **The rights a word grant asks for are the filesystem contract's bits** (milestone 205).
 /// `WordGrant::rights` spells them as numbers because this crate does not link the contract.
 #[test]
-fn word_rights_are_the_filesystem_contracts() {
-    use filesystem_contract::directory;
-    let read = directory::ENUMERATE | directory::READ | directory::DESCEND;
+fn word_rights_are_the_file_system_contracts() {
+    use file_system_contract::directory;
+    let read = directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND;
     assert_eq!(WordGrant::ReadOnly.rights(), read);
-    assert_eq!(WordGrant::ReadWrite.rights(), read | directory::WRITE);
+    assert_eq!(
+        WordGrant::ReadWrite.rights(),
+        read | directory::rights::WRITE
+    );
     assert_eq!(
         WordGrant::Create.rights(),
-        read | directory::WRITE | directory::CREATE
+        read | directory::rights::WRITE | directory::rights::CREATE
     );
 }
 
@@ -22,13 +25,13 @@ fn word_rights_are_the_filesystem_contracts() {
 /// that could write, or a writing one that could not create, fails here.
 #[test]
 fn the_index_store_opens_with_a_word_grants_rights() {
-    use filesystem_contract::directory;
-    let read = directory::ENUMERATE | directory::READ | directory::DESCEND;
+    use file_system_contract::directory;
+    let read = directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND;
     assert_eq!(IndexStoreDeclaration::Forbidden.rights(), None);
     assert_eq!(IndexStoreDeclaration::ReadOnly.rights(), Some(read));
     assert_eq!(
         IndexStoreDeclaration::ReadWrite.rights(),
-        Some(read | directory::WRITE | directory::CREATE)
+        Some(read | directory::rights::WRITE | directory::rights::CREATE)
     );
 }
 

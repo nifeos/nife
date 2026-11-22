@@ -12,7 +12,7 @@ binary's IO are in [caches-and-io.md](caches-and-io.md). Crash injection is in
 
 ## The handle table
 
-Slot 0 is the bound directory, [`filesystem_contract::fs::ROOT`]. `Server::open` installs it with
+Slot 0 is the bound directory, [`file_system_contract::file_system::ROOT`]. `Server::open` installs it with
 every right, through `Rights::root`, whose only caller that is. This server is the whole image's
 authority, and narrowing happens at the endpoint above it, never here. Slot 0 makes the directory an
 endpoint designates an ordinary handle, so there is no separate current-directory field for a verb
@@ -22,7 +22,7 @@ Rights ride on the handle rather than on the session. A child directory handle i
 authority from its parent, held at the same time by the same client. A session-wide field could not
 express that. The server attenuates a file handle to `READ | WRITE` at the moment of minting, so the
 handle inherits the direction its directory was granted with and can never widen it. That is also
-why the three mtime verbs take a name under a directory handle: `SETTIME` could never be checked
+why the three mtime verbs take a name under a directory handle: `SET_MODIFICATION_TIME_AT` could never be checked
 against a file handle's rights.
 
 The table is per server, not per client. Two clients sharing an endpoint share these handles, and a
@@ -66,9 +66,9 @@ holds. It refuses to hand back less than was asked for without saying so, which 
 silent degradation. `MKDIR` needs `DESCEND` as well as `CREATE`, because making a directory you could
 not have walked into would mint a capability out of a right that was withheld.
 
-### `STATFS` and `SYNC`
+### `GET_VOLUME_STATISTICS` and `SYNC`
 
-`STATFS` validates the handle and then ignores it. Holding any minted handle is what entitles a
+`GET_VOLUME_STATISTICS` validates the handle and then ignores it. Holding any minted handle is what entitles a
 caller to ask, and the answer is about the one image behind all of them. It reads `header.size()` and
 `allocator().free()` outside a transaction, because opening one to answer a question would put a
 commit in the path of a read-only verb. RedoxFS's own `clone` computes free space from the same pair.
@@ -78,7 +78,7 @@ time.
 `Server::sync_permitted` is the permission half of `SYNC` and performs no flush. The flush is a
 `blk::FLUSH` to the block server, so it lives in the binary with the rest of the IO. RedoxFS's `Disk`
 trait has no sync method, and this tree does not modify vendored code to add one. It takes a handle
-of either kind, as `STATFS` does, and needs `WRITE`: a flush stalls the queue for every client, and a
+of either kind, as `GET_VOLUME_STATISTICS` does, and needs `WRITE`: a flush stalls the queue for every client, and a
 read-only holder has nothing outstanding to make durable.
 
 ## Names
@@ -160,7 +160,7 @@ It needs `REMOVE` on the source directory and `CREATE` on the destination, both 
 for a rename within it.
 
 A directory may be renamed in place but not moved between directories (`EINVAL`;
-`filesystem_contract::fs::RENAME` has the cycle argument). Keeping the parent fixed is what makes the
+`file_system_contract::file_system::RENAME` has the cycle argument). Keeping the parent fixed is what makes the
 in-place case safe without an ancestry walk.
 
 Replacing a destination of a different kind is `EISDIR` or `ENOTDIR`, and that check is ours. The
@@ -175,7 +175,7 @@ freed id and nothing else learns that a node died.
 The server has no real-time clock. `clock` is a logical counter that every mutating verb advances
 and stamps. `SETMTIME`'s "now" is that counter, so two touches in sequence observe increasing times,
 which is what a staleness check depends on. It need not agree with a wall clock. `SETMTIME` needs
-only `WRITE`, because the value is one the server observed. `SETMTIME_AT` needs `SETTIME` as well,
+only `WRITE`, because the value is one the server observed. `SETMTIME_AT` needs `SET_MODIFICATION_TIME_AT` as well,
 because the value is the caller's assertion about history (§112 (`touch`'s two behaviors need two
 rights)). It takes any value: an implausible history is the same authority as a surprising one.
 

@@ -61,7 +61,7 @@ boot with no filesystem still reaches the prompt (`crates/system_initializer`, t
 
 | Step | What exists | What is missing |
 |---|---|---|
-| 1. Write a partition table | `components/src/disk_partitioner.rs` (milestone 57 (partitioning and formatting a real drive, and extended attributes)): writes a GPT with both copies, draws GUIDs from an entropy endpoint, holds one disk and nothing else | It writes **one hard-coded layout** for a 64 MiB disk (`filesystem_contract::fixture::blank`: ESP, a Linux partition, nife data). A layout computed from the disk's size |
+| 1. Write a partition table | `components/src/disk_partitioner.rs` (milestone 57 (partitioning and formatting a real drive, and extended attributes)): writes a GPT with both copies, draws GUIDs from an entropy endpoint, holds one disk and nothing else | It writes **one hard-coded layout** for a 64 MiB disk (`file_system_contract::fixture::blank`: ESP, a Linux partition, nife data). A layout computed from the disk's size |
 | 2. Make the data filesystem | `redoxfs_server/src/bin/mkfs.rs` (milestone 57): finds the nife data partition by §45's type GUID and creates RedoxFS inside it, bounded by a `PartitionDisk` | Nothing for step 2 itself |
 | 3. Put `BOOTX64.EFI` on the EFI system partition | Nothing: there is no FAT writer (milestone 140's FAT32 stratum is `NOT-STARTED` and read-first) | Both the bytes of the file and a way to write FAT |
 | 4. Make the firmware boot the disk | Nothing | A boot entry, or reliance on the firmware's fallback path |

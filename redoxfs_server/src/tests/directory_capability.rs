@@ -12,7 +12,7 @@ fn names(srv: &mut Server<DiskMemory>, handle: u32) -> Vec<(String, bool)> {
 /// up once to fill the memo, changes the namespace, and checks that neither answer is stale.
 #[test]
 fn a_memoized_listing_follows_every_namespace_change() {
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
     let mut srv = server_with(&[("a", b"alpha")]);
     assert_eq!(names(&mut srv, root), [("a".into(), false)]);
 
@@ -27,11 +27,13 @@ fn a_memoized_listing_follows_every_namespace_change() {
         .expect("a created name opens");
     srv.close(h).unwrap();
 
-    let d = srv.make_dir(root, &named("d"), directory::ALL).unwrap();
+    let d = srv
+        .make_dir(root, &named("d"), directory::rights::ALL)
+        .unwrap();
     srv.close(d).unwrap();
     assert!(names(&mut srv, root).contains(&("d".into(), true)));
     let d = srv
-        .open_dir(root, &named("d"), directory::ALL)
+        .open_dir(root, &named("d"), directory::rights::ALL)
         .expect("a made directory opens");
     srv.close(d).unwrap();
 
@@ -51,7 +53,7 @@ fn a_memoized_listing_follows_every_namespace_change() {
         Some(ENOENT)
     );
     assert_eq!(
-        srv.open_dir(root, &named("d"), directory::ALL)
+        srv.open_dir(root, &named("d"), directory::rights::ALL)
             .err()
             .map(|e| e.errno),
         Some(ENOENT)
@@ -67,10 +69,18 @@ fn a_path_opens_what_the_walk_opens() {
     let mut srv = server_with_tree();
     let walked = {
         let sub = srv
-            .open_dir(0, &named("sub"), directory::DESCEND | directory::READ)
+            .open_dir(
+                0,
+                &named("sub"),
+                directory::rights::DESCEND | directory::rights::READ,
+            )
             .unwrap();
         let deeper = srv
-            .open_dir(sub, &named("deeper"), directory::DESCEND | directory::READ)
+            .open_dir(
+                sub,
+                &named("deeper"),
+                directory::rights::DESCEND | directory::rights::READ,
+            )
             .unwrap();
         let f = srv.open_file_at(deeper, &named("leaf")).unwrap();
         srv.close(sub).unwrap();
@@ -78,7 +88,7 @@ fn a_path_opens_what_the_walk_opens() {
         f
     };
     let pathed = srv
-        .open_file_path(0, &named("sub/deeper/leaf"), directory::READ)
+        .open_file_path(0, &named("sub/deeper/leaf"), directory::rights::READ)
         .unwrap();
     for h in [walked, pathed] {
         let mut buf = [0u8; 32];
@@ -90,7 +100,7 @@ fn a_path_opens_what_the_walk_opens() {
         .open_file_path(
             0,
             &named("sub/deeper/leaf"),
-            directory::READ | directory::WRITE,
+            directory::rights::READ | directory::rights::WRITE,
         )
         .unwrap();
     assert_eq!(
@@ -107,26 +117,32 @@ fn a_path_opens_what_the_walk_opens() {
 fn a_path_reaches_nothing_the_walk_could_not() {
     let mut srv = server_with_tree();
     let read_only = srv
-        .open_dir(0, &named("sub"), directory::DESCEND | directory::READ)
+        .open_dir(
+            0,
+            &named("sub"),
+            directory::rights::DESCEND | directory::rights::READ,
+        )
         .unwrap();
     let errno = |r: Result<u32>| r.err().map(|e| e.errno);
     assert_eq!(
         errno(srv.open_file_path(
             read_only,
             &named("deeper/leaf"),
-            directory::READ | directory::WRITE
+            directory::rights::READ | directory::rights::WRITE
         )),
         Some(EPERM),
         "a step asking for more than its parent holds is refused, not narrowed"
     );
     assert!(
-        srv.open_file_path(read_only, &named("deeper/leaf"), directory::READ)
+        srv.open_file_path(read_only, &named("deeper/leaf"), directory::rights::READ)
             .is_ok()
     );
 
-    let no_descend = srv.open_dir(0, &named("sub"), directory::READ).unwrap();
+    let no_descend = srv
+        .open_dir(0, &named("sub"), directory::rights::READ)
+        .unwrap();
     assert_eq!(
-        errno(srv.open_file_path(no_descend, &named("deeper/leaf"), directory::READ)),
+        errno(srv.open_file_path(no_descend, &named("deeper/leaf"), directory::rights::READ)),
         Some(ENOENT)
     );
     assert!(
@@ -142,22 +158,22 @@ fn a_path_reaches_nothing_the_walk_could_not() {
         "sub/./inner",
     ] {
         assert_eq!(
-            errno(srv.open_file_path(0, &named(bad), directory::READ)),
+            errno(srv.open_file_path(0, &named(bad), directory::rights::READ)),
             Some(EINVAL),
             "{bad}"
         );
         assert_eq!(
-            errno(srv.open_dir(0, &named(bad), directory::READ)),
+            errno(srv.open_dir(0, &named(bad), directory::rights::READ)),
             Some(EINVAL),
             "{bad}"
         );
     }
     assert_eq!(
-        errno(srv.open_file_path(0, &named("motd/x"), directory::READ)),
+        errno(srv.open_file_path(0, &named("motd/x"), directory::rights::READ)),
         Some(ENOTDIR)
     );
     assert_eq!(
-        errno(srv.open_file_path(0, &named("sub/deeper"), directory::READ)),
+        errno(srv.open_file_path(0, &named("sub/deeper"), directory::rights::READ)),
         Some(EISDIR)
     );
 }
@@ -168,7 +184,7 @@ fn a_path_reaches_nothing_the_walk_could_not() {
 fn opendir_takes_a_path_and_narrows_to_the_request() {
     let mut srv = server_with_tree();
     let h = srv
-        .open_dir(0, &named("sub/deeper"), directory::ENUMERATE)
+        .open_dir(0, &named("sub/deeper"), directory::rights::ENUMERATE)
         .unwrap();
     assert_eq!(list(&mut srv, h, 4096).unwrap(), [("leaf".into(), false)]);
     assert_eq!(
@@ -176,7 +192,7 @@ fn opendir_takes_a_path_and_narrows_to_the_request() {
         Some(ENOENT)
     );
     assert_eq!(
-        srv.open_dir(0, &named("sub/inner"), directory::ENUMERATE)
+        srv.open_dir(0, &named("sub/inner"), directory::rights::ENUMERATE)
             .err()
             .map(|e| e.errno),
         Some(ENOTDIR)
@@ -190,16 +206,16 @@ fn opendir_takes_a_path_and_narrows_to_the_request() {
 #[test]
 fn the_parent_rights_sentinel_asks_for_whatever_the_parent_holds() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
     let errno = |r: Result<u32>| r.err().map(|e| e.errno);
     let held = |srv: &mut Server<DiskMemory>, h: u32| {
         // What a handle carries, read by what it can do: the rights are not reported on the wire.
         let mut seen = 0;
-        for right in [directory::ENUMERATE, directory::DESCEND] {
+        for right in [directory::rights::ENUMERATE, directory::rights::DESCEND] {
             let ok = match right {
-                directory::ENUMERATE => srv.read_dir(h, 0, &mut [0u8; 4096]).is_ok(),
+                directory::rights::ENUMERATE => srv.read_dir(h, 0, &mut [0u8; 4096]).is_ok(),
                 _ => srv
-                    .open_dir(h, &named("deeper"), directory::PARENT_RIGHTS)
+                    .open_dir(h, &named("deeper"), directory::rights::PARENT_RIGHTS)
                     .map(|d| srv.close(d).unwrap())
                     .is_ok(),
             };
@@ -212,11 +228,11 @@ fn the_parent_rights_sentinel_asks_for_whatever_the_parent_holds() {
 
     // Under a full grant the sentinel is everything, where a client used to have to say `ALL`.
     let all = srv
-        .open_dir(root, &named("sub"), directory::PARENT_RIGHTS)
+        .open_dir(root, &named("sub"), directory::rights::PARENT_RIGHTS)
         .unwrap();
     assert_eq!(
         held(&mut srv, all),
-        directory::ENUMERATE | directory::DESCEND
+        directory::rights::ENUMERATE | directory::rights::DESCEND
     );
 
     // Under a narrowed grant, `ALL` is refused and the sentinel is not.
@@ -224,26 +240,26 @@ fn the_parent_rights_sentinel_asks_for_whatever_the_parent_holds() {
         .open_dir(
             root,
             &named("sub"),
-            directory::ENUMERATE | directory::DESCEND,
+            directory::rights::ENUMERATE | directory::rights::DESCEND,
         )
         .unwrap();
     assert_eq!(
-        errno(srv.open_dir(narrow, &named("deeper"), directory::ALL)),
+        errno(srv.open_dir(narrow, &named("deeper"), directory::rights::ALL)),
         Some(EPERM)
     );
     let child = srv
-        .open_dir(narrow, &named("deeper"), directory::PARENT_RIGHTS)
+        .open_dir(narrow, &named("deeper"), directory::rights::PARENT_RIGHTS)
         .unwrap();
     // `deeper` was reached with exactly the narrowed rights: it can list and cannot read.
     assert!(srv.read_dir(child, 0, &mut [0u8; 4096]).is_ok());
     assert_eq!(errno(srv.open_file_at(child, &named("leaf"))), Some(ENOENT));
     // A path takes it at every hop.
     let deep = srv
-        .open_dir(root, &named("sub/deeper"), directory::PARENT_RIGHTS)
+        .open_dir(root, &named("sub/deeper"), directory::rights::PARENT_RIGHTS)
         .unwrap();
     assert!(srv.open_file_at(deep, &named("leaf")).is_ok());
     let deep_narrow = srv
-        .open_dir(narrow, &named("deeper"), directory::PARENT_RIGHTS)
+        .open_dir(narrow, &named("deeper"), directory::rights::PARENT_RIGHTS)
         .unwrap();
     assert_eq!(
         errno(srv.open_file_at(deep_narrow, &named("leaf"))),
@@ -253,22 +269,22 @@ fn the_parent_rights_sentinel_asks_for_whatever_the_parent_holds() {
     // MKDIR takes it too, and gets the parent's rights back: listable here, since `narrow` can
     // create only if it carries CREATE, which it does not.
     assert_eq!(
-        errno(srv.make_dir(narrow, &named("made"), directory::PARENT_RIGHTS)),
+        errno(srv.make_dir(narrow, &named("made"), directory::rights::PARENT_RIGHTS)),
         Some(EROFS)
     );
     let creator = srv
         .open_dir(
             root,
             &named("sub"),
-            directory::CREATE | directory::DESCEND | directory::ENUMERATE,
+            directory::rights::CREATE | directory::rights::DESCEND | directory::rights::ENUMERATE,
         )
         .unwrap();
     let made = srv
-        .make_dir(creator, &named("made"), directory::PARENT_RIGHTS)
+        .make_dir(creator, &named("made"), directory::rights::PARENT_RIGHTS)
         .unwrap();
     assert!(srv.read_dir(made, 0, &mut [0u8; 4096]).is_ok());
     assert_eq!(
-        errno(srv.make_dir(made, &named("x"), directory::ALL)),
+        errno(srv.make_dir(made, &named("x"), directory::rights::ALL)),
         Some(EPERM)
     );
 
@@ -277,7 +293,7 @@ fn the_parent_rights_sentinel_asks_for_whatever_the_parent_holds() {
         errno(srv.open_dir(
             narrow,
             &named("deeper"),
-            directory::PARENT_RIGHTS | directory::ALL
+            directory::rights::PARENT_RIGHTS | directory::rights::ALL
         )),
         Some(EPERM)
     );
@@ -293,14 +309,14 @@ fn the_parent_rights_sentinel_asks_for_whatever_the_parent_holds() {
 #[test]
 fn narrowing_the_root_grants_exactly_the_requested_rights() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
     let errno = |r: Result<u32>| r.err().map(|e| e.errno);
 
-    let held = filesystem_contract::directory::Rights::root(directory::ALL);
-    let expected = held.attenuate(directory::REMOVE);
-    assert_eq!(expected.bits(), directory::REMOVE);
+    let held = file_system_contract::directory::Rights::root(directory::rights::ALL);
+    let expected = held.attenuate(directory::rights::REMOVE);
+    assert_eq!(expected.bits(), directory::rights::REMOVE);
 
-    let narrowed = srv.narrow(root, directory::REMOVE).unwrap();
+    let narrowed = srv.narrow(root, directory::rights::REMOVE).unwrap();
     assert_ne!(narrowed, root, "a second handle, not the first again");
     assert_eq!(
         srv.read_dir(narrowed, 0, &mut [0u8; 4096])
@@ -322,23 +338,32 @@ fn narrowing_the_root_grants_exactly_the_requested_rights() {
         "the name went from the directory both handles name"
     );
     assert!(
-        srv.open_file_path(root, &named("sub/deeper/leaf"), directory::READ)
+        srv.open_file_path(root, &named("sub/deeper/leaf"), directory::rights::READ)
             .is_ok()
     );
 
     // Narrowing a narrowed handle cannot widen it, and a request wider than the handle is refused.
-    assert_eq!(errno(srv.narrow(narrowed, directory::ALL)), Some(EPERM));
-    assert_eq!(errno(srv.narrow(narrowed, directory::READ)), Some(EPERM));
-    let again = srv.narrow(narrowed, directory::REMOVE).unwrap();
+    assert_eq!(
+        errno(srv.narrow(narrowed, directory::rights::ALL)),
+        Some(EPERM)
+    );
+    assert_eq!(
+        errno(srv.narrow(narrowed, directory::rights::READ)),
+        Some(EPERM)
+    );
+    let again = srv.narrow(narrowed, directory::rights::REMOVE).unwrap();
     srv.close(again).unwrap();
 
     // A file handle has nothing to narrow.
     let file = srv
-        .open_file_path(root, &named("sub/deeper/leaf"), directory::READ)
+        .open_file_path(root, &named("sub/deeper/leaf"), directory::rights::READ)
         .unwrap();
-    assert_eq!(errno(srv.narrow(file, directory::READ)), Some(ENOTDIR));
+    assert_eq!(
+        errno(srv.narrow(file, directory::rights::READ)),
+        Some(ENOTDIR)
+    );
     // A handle nobody minted.
-    assert_eq!(errno(srv.narrow(999, directory::READ)), Some(EBADF));
+    assert_eq!(errno(srv.narrow(999, directory::rights::READ)), Some(EBADF));
 }
 
 /// **A badge the server has no window for reaches nothing** (milestone 726 (an unknown badge fails closed in subtree_scope), calef's ruling of
@@ -348,7 +373,7 @@ fn narrowing_the_root_grants_exactly_the_requested_rights() {
 fn a_badge_with_no_window_is_refused() {
     let mut srv = server_with_tree();
     let outside = srv.open_file(&named("motd")).unwrap();
-    let windows = filesystem_contract::fs::CLIENT_WINDOWS as u64;
+    let windows = file_system_contract::file_system::CLIENT_WINDOWS as u64;
     for badge in [windows, windows + 1, u64::MAX] {
         assert_eq!(
             srv.admit(badge, outside as u64).err().map(|e| e.errno),
@@ -362,7 +387,7 @@ fn a_badge_with_no_window_is_refused() {
 }
 
 /// A sync-only badge answers `SYNC` and refuses every other verb (milestone 805 (`reboot` at the
-/// prompt), `fs::BIND_SYNC`), through [`Server::handle`], the dispatch the EL0 binary runs: every
+/// prompt), `file_system::BIND_SYNC`), through [`Server::handle`], the dispatch the EL0 binary runs: every
 /// verb from `OPEN` to `UNBIND`, on `ROOT` and on a real handle, is `EPERM` and reaches no device,
 /// and `SYNC` reaches the device once and answers its count. An unbound badge's `SYNC` still needs
 /// a handle with `WRITE`, as it always did.
@@ -384,23 +409,29 @@ fn a_sync_only_badge_answers_sync_and_refuses_everything_else() {
     let file = srv.open_file(&named("motd")).unwrap() as u64;
     srv.bind_sync_only(0, 3).unwrap();
     assert!(srv.is_sync_only(3));
-    let mut window = vec![0u8; filesystem_contract::fs::MAXIMUM_TRANSFER_BYTES];
+    let mut window = vec![0u8; file_system_contract::file_system::MAXIMUM_TRANSFER_BYTES];
     window[..4].copy_from_slice(b"motd");
     let mut edges = Flushes(0);
-    use filesystem_contract::fs;
-    for code in 0..=fs::BIND_SYNC {
-        if code == fs::SYNC {
+    use file_system_contract::file_system;
+    for code in 0..=file_system::BIND_SYNC {
+        if code == file_system::SYNC {
             continue;
         }
-        for handle in [fs::ROOT, file] {
-            let (r0, _) = srv.handle(3, fs::request(code, handle, 4), 0, &mut window, &mut edges);
+        for handle in [file_system::ROOT, file] {
+            let (r0, _) = srv.handle(
+                3,
+                file_system::request(code, handle, 4),
+                0,
+                &mut window,
+                &mut edges,
+            );
             assert_eq!(r0, -(EPERM as i64), "opcode {code} on handle {handle}");
         }
     }
     assert_eq!(edges.0, 0, "a refused verb reached the device");
     let (r0, _) = srv.handle(
         3,
-        fs::request(fs::SYNC, fs::ROOT, 0),
+        file_system::request(file_system::SYNC, file_system::ROOT, 0),
         0,
         &mut window,
         &mut edges,
@@ -413,7 +444,7 @@ fn a_sync_only_badge_answers_sync_and_refuses_everything_else() {
     assert!(!srv.is_sync_only(3));
     let (r0, _) = srv.handle(
         3,
-        fs::request(fs::SYNC, fs::ROOT, 0),
+        file_system::request(file_system::SYNC, file_system::ROOT, 0),
         0,
         &mut window,
         &mut edges,
@@ -431,16 +462,18 @@ fn a_bound_badge_reaches_its_grant_and_what_it_minted() {
         .open_dir(
             0,
             &named("sub"),
-            directory::ENUMERATE | directory::READ | directory::DESCEND,
+            directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
         )
         .unwrap();
     let outside = srv.open_file(&named("motd")).unwrap();
     srv.bind(0, grant, 3).unwrap();
 
-    let root = srv.admit(3, filesystem_contract::fs::ROOT).unwrap();
+    let root = srv
+        .admit(3, file_system_contract::file_system::ROOT)
+        .unwrap();
     assert_eq!(root, grant, "a bound badge's ROOT is its grant");
     let f = srv
-        .open_file_path(root, &named("deeper/leaf"), directory::READ)
+        .open_file_path(root, &named("deeper/leaf"), directory::rights::READ)
         .unwrap();
     srv.claim(f, 3);
     assert_eq!(
@@ -465,7 +498,9 @@ fn a_bound_badge_reaches_its_grant_and_what_it_minted() {
         "an unbound badge is open"
     );
 
-    let other = srv.open_dir(0, &named("other"), directory::READ).unwrap();
+    let other = srv
+        .open_dir(0, &named("other"), directory::rights::READ)
+        .unwrap();
     assert_eq!(
         srv.bind(3, other, 4).err().map(|e| e.errno),
         Some(EPERM),
@@ -479,7 +514,7 @@ fn a_bound_badge_reaches_its_grant_and_what_it_minted() {
 
     srv.unbind(0, 3).unwrap();
     assert_eq!(
-        errno(srv.admit(3, filesystem_contract::fs::ROOT)),
+        errno(srv.admit(3, file_system_contract::file_system::ROOT)),
         Some(EBADF),
         "revoked"
     );
@@ -505,7 +540,11 @@ fn a_bound_badge_reaches_its_grant_and_what_it_minted() {
 fn a_write_past_the_last_offset_is_refused() {
     let mut srv = server_with_tree();
     let f = srv
-        .open_file_path(0, &named("motd"), directory::READ | directory::WRITE)
+        .open_file_path(
+            0,
+            &named("motd"),
+            directory::rights::READ | directory::rights::WRITE,
+        )
         .unwrap();
     for offset in [u64::MAX, u64::MAX - 3, u64::MAX - 6] {
         assert_eq!(
@@ -536,7 +575,11 @@ fn a_write_past_the_last_offset_is_refused() {
 fn a_file_never_reaches_past_the_tree() {
     let mut srv = server_with_tree();
     let f = srv
-        .open_file_path(0, &named("motd"), directory::READ | directory::WRITE)
+        .open_file_path(
+            0,
+            &named("motd"),
+            directory::rights::READ | directory::rights::WRITE,
+        )
         .unwrap();
     let errno = |r: Result<()>| r.err().map(|e| e.errno);
     // Just past the tree for this build's 8 KiB records: the band that panicked.
@@ -580,7 +623,7 @@ fn a_grant_root_cannot_be_closed_while_bound() {
         .open_dir(
             0,
             &named("sub"),
-            directory::ENUMERATE | directory::READ | directory::DESCEND,
+            directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
         )
         .unwrap();
     srv.bind(0, grant, 3).unwrap();
@@ -591,7 +634,9 @@ fn a_grant_root_cannot_be_closed_while_bound() {
     );
     let other = srv.open_file(&named("motd")).unwrap();
     assert_ne!(other, grant, "the grant's slot was reused");
-    let root = srv.admit(3, filesystem_contract::fs::ROOT).unwrap();
+    let root = srv
+        .admit(3, file_system_contract::file_system::ROOT)
+        .unwrap();
     let mut buf = [0u8; 16];
     assert_ne!(
         srv.read(root, 0, &mut buf).map(|n| buf[..n].to_vec()).ok(),
@@ -628,15 +673,15 @@ fn a_symbolic_link_is_never_followed_or_opened() {
     let errno = |r: Result<u32>| r.err().map(|e| e.errno);
     let eloop = subtree_scope::Refusal::Symlink.errno();
     assert_eq!(
-        errno(srv.open_file_path(0, &named("sub/link/secret"), directory::READ)),
+        errno(srv.open_file_path(0, &named("sub/link/secret"), directory::rights::READ)),
         Some(eloop)
     );
     assert_eq!(
-        errno(srv.open_file_path(0, &named("sub/link"), directory::READ)),
+        errno(srv.open_file_path(0, &named("sub/link"), directory::rights::READ)),
         Some(eloop)
     );
     assert_eq!(
-        errno(srv.open_dir(0, &named("sub/link"), directory::READ)),
+        errno(srv.open_dir(0, &named("sub/link"), directory::rights::READ)),
         Some(eloop)
     );
 }
@@ -646,7 +691,7 @@ fn a_symbolic_link_is_never_followed_or_opened() {
 /// the image does at each step and never as it did.
 #[test]
 fn a_name_found_without_a_listing_follows_changes() {
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
     let mut srv = server_with(&[("a", b"alpha")]);
     let h = srv.open_file_at(root, &named("a")).unwrap();
     srv.close(h).unwrap();
@@ -659,14 +704,16 @@ fn a_name_found_without_a_listing_follows_changes() {
         srv.open_file_at(root, &named("a")).err().map(|e| e.errno),
         Some(ENOENT)
     );
-    let d = srv.make_dir(root, &named("a"), directory::ALL).unwrap();
+    let d = srv
+        .make_dir(root, &named("a"), directory::rights::ALL)
+        .unwrap();
     srv.close(d).unwrap();
     assert_eq!(
         srv.open_file_at(root, &named("a")).err().map(|e| e.errno),
         Some(EISDIR)
     );
     let d = srv
-        .open_dir(root, &named("a"), directory::ALL)
+        .open_dir(root, &named("a"), directory::rights::ALL)
         .expect("the new directory opens");
     srv.close(d).unwrap();
 }
@@ -675,9 +722,11 @@ fn a_name_found_without_a_listing_follows_changes() {
 /// directory is not a file and a file is not a directory.
 #[test]
 fn a_memoized_listing_answers_lookups_as_the_engine_does() {
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
     let mut srv = server_with(&[("a", b"alpha")]);
-    let d = srv.make_dir(root, &named("d"), directory::ALL).unwrap();
+    let d = srv
+        .make_dir(root, &named("d"), directory::rights::ALL)
+        .unwrap();
     srv.close(d).unwrap();
     names(&mut srv, root); // memoize
     assert_eq!(
@@ -691,13 +740,13 @@ fn a_memoized_listing_answers_lookups_as_the_engine_does() {
         Some(EISDIR)
     );
     assert_eq!(
-        srv.open_dir(root, &named("a"), directory::ALL)
+        srv.open_dir(root, &named("a"), directory::rights::ALL)
             .err()
             .map(|e| e.errno),
         Some(ENOTDIR)
     );
     assert_eq!(
-        srv.open_dir(root, &named("nope"), directory::ALL)
+        srv.open_dir(root, &named("nope"), directory::rights::ALL)
             .err()
             .map(|e| e.errno),
         Some(ENOENT)
@@ -743,9 +792,9 @@ fn a_child_directory_handle_names_only_what_is_in_it() {
     let mut srv = server_with_tree();
     let sub = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::ALL,
+            directory::rights::ALL,
         )
         .unwrap();
 
@@ -765,14 +814,14 @@ fn a_child_directory_handle_names_only_what_is_in_it() {
     }
     // And the same for descending: the sibling directory is real and is not reachable from here.
     assert_eq!(
-        srv.open_dir(sub, &named("other"), directory::ALL)
+        srv.open_dir(sub, &named("other"), directory::rights::ALL)
             .err()
             .map(|e| e.errno),
         Some(syscall::error::ENOENT),
     );
     // `..` never resolves, at any rights, because it is not a component this contract accepts.
     assert_eq!(
-        srv.open_dir(sub, &named(".."), directory::ALL)
+        srv.open_dir(sub, &named(".."), directory::rights::ALL)
             .err()
             .map(|e| e.errno),
         Some(EINVAL),
@@ -786,13 +835,18 @@ fn a_child_directory_handle_names_only_what_is_in_it() {
 fn a_child_directory_cannot_carry_a_right_the_parent_lacked() {
     let mut srv = server_with_tree();
     // A parent that may descend and read, and may not create, write or remove.
-    let narrow = directory::DESCEND | directory::READ | directory::ENUMERATE;
+    let narrow =
+        directory::rights::DESCEND | directory::rights::READ | directory::rights::ENUMERATE;
     let sub = srv
-        .open_dir(filesystem_contract::fs::ROOT as u32, &named("sub"), narrow)
+        .open_dir(
+            file_system_contract::file_system::ROOT as u32,
+            &named("sub"),
+            narrow,
+        )
         .unwrap();
 
     assert_eq!(
-        srv.open_dir(sub, &named("deeper"), narrow | directory::CREATE)
+        srv.open_dir(sub, &named("deeper"), narrow | directory::rights::CREATE)
             .err()
             .map(|e| e.errno),
         Some(EPERM),
@@ -831,48 +885,63 @@ fn each_rung_of_the_ladder_gates_exactly_its_own_verb() {
     // leave it reachable and the sweep would be asserting the wrong thing (it did, first time).
     for &(withheld, needed, ok, refusal) in &[
         (
-            directory::ENUMERATE,
-            directory::ENUMERATE,
+            directory::rights::ENUMERATE,
+            directory::rights::ENUMERATE,
             "enumerate",
             EPERM,
         ),
         (
-            directory::READ | directory::WRITE,
-            directory::READ,
+            directory::rights::READ | directory::rights::WRITE,
+            directory::rights::READ,
             "open",
             syscall::error::ENOENT,
         ),
-        (directory::CREATE, directory::CREATE, "create", EROFS),
         (
-            directory::DESCEND,
-            directory::DESCEND,
+            directory::rights::CREATE,
+            directory::rights::CREATE,
+            "create",
+            EROFS,
+        ),
+        (
+            directory::rights::DESCEND,
+            directory::rights::DESCEND,
             "descend",
             syscall::error::ENOENT,
         ),
         // `rm`'s rung. Until `unlink` existed only `rename` consulted REMOVE, and a rename
         // needs CREATE as well, so this is the first probe that isolates this one.
-        (directory::REMOVE, directory::REMOVE, "unlink", EROFS),
+        (
+            directory::rights::REMOVE,
+            directory::rights::REMOVE,
+            "unlink",
+            EROFS,
+        ),
         // `touch`'s three rungs (milestone 47, DECISIONS §112). `mtime` is a naming right like
         // `open`'s, so its refusal is `ENOENT` rather than `EROFS`: a holder that may not read
         // a name's time must not learn whether the name is there.
         (
-            directory::READ,
-            directory::READ,
+            directory::rights::READ,
+            directory::rights::READ,
             "mtime",
             syscall::error::ENOENT,
         ),
         // Bare `touch`: WRITE alone, and nothing more, is what DECISIONS §112 says it should
-        // take. `settime_at` below reuses this same "without" (WRITE present, SETTIME absent)
+        // take. `settime_at` below reuses this same "without" (WRITE present, SET_MODIFICATION_TIME_AT absent)
         // to prove the reverse: WRITE does not smuggle in the arbitrary-time authority.
-        (directory::WRITE, directory::WRITE, "settime_now", EROFS),
+        (
+            directory::rights::WRITE,
+            directory::rights::WRITE,
+            "settime_now",
+            EROFS,
+        ),
         // `touch -t`: this is the rung DECISIONS §112 added, and the interesting failure this
         // sweep exists to catch is WRITE alone being enough, which the entry above's "without"
-        // side already rules out for `settime_now`. Isolating SETTIME here (withheld is just
-        // SETTIME, so `without` still carries WRITE) proves the arbitrary half needs the extra
+        // side already rules out for `settime_now`. Isolating SET_MODIFICATION_TIME_AT here (withheld is just
+        // SET_MODIFICATION_TIME_AT, so `without` still carries WRITE) proves the arbitrary half needs the extra
         // grant even when the plain half is satisfied.
         (
-            directory::SETTIME,
-            directory::WRITE | directory::SETTIME,
+            directory::rights::SET_MODIFICATION_TIME_AT,
+            directory::rights::WRITE | directory::rights::SET_MODIFICATION_TIME_AT,
             "settime_at",
             EROFS,
         ),
@@ -882,16 +951,16 @@ fn each_rung_of_the_ladder_gates_exactly_its_own_verb() {
         // when it should fail.
         let without = srv
             .open_dir(
-                filesystem_contract::fs::ROOT as u32,
+                file_system_contract::file_system::ROOT as u32,
                 &named("sub"),
-                directory::ALL & !withheld,
+                directory::rights::ALL & !withheld,
             )
             .unwrap();
         let with = srv
             .open_dir(
-                filesystem_contract::fs::ROOT as u32,
+                file_system_contract::file_system::ROOT as u32,
                 &named("sub"),
-                needed | directory::READ,
+                needed | directory::rights::READ,
             )
             .unwrap();
 
@@ -935,9 +1004,9 @@ fn unlink_takes_the_name_and_leaves_the_object_for_whoever_holds_it() {
     let mut srv = server_with_tree();
     let sub = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::ALL,
+            directory::rights::ALL,
         )
         .unwrap();
 
@@ -1002,9 +1071,9 @@ fn rmdir_removes_an_empty_directory_and_refuses_one_with_a_name_in_it() {
     let mut srv = server_with_tree();
     let sub = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::ALL,
+            directory::rights::ALL,
         )
         .unwrap();
 
@@ -1025,7 +1094,9 @@ fn rmdir_removes_an_empty_directory_and_refuses_one_with_a_name_in_it() {
     );
 
     // Empty it the way `rm -r` does: from the bottom, one safe step at a time.
-    let deeper = srv.open_dir(sub, &named("deeper"), directory::ALL).unwrap();
+    let deeper = srv
+        .open_dir(sub, &named("deeper"), directory::rights::ALL)
+        .unwrap();
     srv.unlink(deeper, &named("leaf")).expect("unlink the leaf");
     srv.close(deeper).expect("close before removing the name");
     srv.rmdir(sub, &named("deeper"))
@@ -1038,7 +1109,7 @@ fn rmdir_removes_an_empty_directory_and_refuses_one_with_a_name_in_it() {
         .collect();
     assert!(!names.iter().any(|n| n == "deeper"), "listing: {names:?}");
     assert_eq!(
-        srv.open_dir(sub, &named("deeper"), directory::ALL)
+        srv.open_dir(sub, &named("deeper"), directory::rights::ALL)
             .err()
             .map(|e| e.errno),
         Some(syscall::error::ENOENT),
@@ -1057,9 +1128,9 @@ fn rmdir_refuses_a_file_a_missing_name_a_path_and_a_capability_without_remove() 
     let mut srv = server_with_tree();
     let sub = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::ALL,
+            directory::rights::ALL,
         )
         .unwrap();
 
@@ -1084,9 +1155,9 @@ fn rmdir_refuses_a_file_a_missing_name_a_path_and_a_capability_without_remove() 
 
     let ro = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::ALL & !directory::REMOVE,
+            directory::rights::ALL & !directory::rights::REMOVE,
         )
         .unwrap();
     assert_eq!(
@@ -1113,7 +1184,7 @@ fn rmdir_refuses_a_file_a_missing_name_a_path_and_a_capability_without_remove() 
 #[test]
 fn a_recursive_removal_is_a_loop_of_individually_safe_steps() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
 
     assert_eq!(
         srv.rmdir(root, &named("sub")).err().map(|e| e.errno),
@@ -1122,8 +1193,12 @@ fn a_recursive_removal_is_a_loop_of_individually_safe_steps() {
     );
 
     // Depth first, exactly as the program does it.
-    let sub = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
-    let deeper = srv.open_dir(sub, &named("deeper"), directory::ALL).unwrap();
+    let sub = srv
+        .open_dir(root, &named("sub"), directory::rights::ALL)
+        .unwrap();
+    let deeper = srv
+        .open_dir(sub, &named("deeper"), directory::rights::ALL)
+        .unwrap();
     for (name, is_dir) in list(&mut srv, deeper, 256).unwrap() {
         assert!(!is_dir, "the fixture's bottom level holds only files");
         srv.unlink(deeper, &named(&name))
@@ -1159,9 +1234,9 @@ fn unlink_refuses_a_directory_a_missing_name_and_a_path() {
     let mut srv = server_with_tree();
     let sub = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::ALL,
+            directory::rights::ALL,
         )
         .unwrap();
 
@@ -1188,9 +1263,9 @@ fn unlink_refuses_a_directory_a_missing_name_and_a_path() {
     // must answer the same word.
     let ro = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::ALL & !directory::REMOVE,
+            directory::rights::ALL & !directory::rights::REMOVE,
         )
         .unwrap();
     assert_eq!(
@@ -1214,9 +1289,9 @@ fn a_file_handle_carries_the_direction_of_the_directory_it_came_from() {
 
     let ro = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::DESCEND | directory::READ,
+            directory::rights::DESCEND | directory::rights::READ,
         )
         .unwrap();
     let h = srv.open_file_at(ro, &named("inner")).unwrap();
@@ -1235,9 +1310,9 @@ fn a_file_handle_carries_the_direction_of_the_directory_it_came_from() {
 
     let wo = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::DESCEND | directory::WRITE,
+            directory::rights::DESCEND | directory::rights::WRITE,
         )
         .unwrap();
     let h = srv.open_file_at(wo, &named("inner")).unwrap();
@@ -1258,9 +1333,9 @@ fn a_listing_holds_exactly_the_names_in_that_directory() {
     let mut srv = server_with_tree();
     let sub = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::ALL,
+            directory::rights::ALL,
         )
         .unwrap();
 
@@ -1274,8 +1349,12 @@ fn a_listing_holds_exactly_the_names_in_that_directory() {
 
     // The root's own listing has the sibling in it, which is what makes the assertion above a
     // statement about the capability rather than about an empty directory.
-    let mut root =
-        list(&mut srv, filesystem_contract::fs::ROOT as u32, 256).expect("enumerate the root");
+    let mut root = list(
+        &mut srv,
+        file_system_contract::file_system::ROOT as u32,
+        256,
+    )
+    .expect("enumerate the root");
     root.sort();
     assert!(root.iter().any(|(n, d)| n == "other" && *d));
 }
@@ -1286,7 +1365,7 @@ fn a_listing_holds_exactly_the_names_in_that_directory() {
 #[test]
 fn a_listing_larger_than_the_buffer_is_paged_without_tearing_a_name() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
     for i in 0..12 {
         srv.create_file_at(root, &named(&format!("entry-{i:02}-with-a-longish-name")))
             .unwrap();
@@ -1305,13 +1384,17 @@ fn a_listing_larger_than_the_buffer_is_paged_without_tearing_a_name() {
 fn mkdir_returns_a_capability_no_wider_than_the_one_that_made_it() {
     let mut srv = server_with_tree();
     // No REMOVE, so nothing made below may remove either.
-    let held = directory::DESCEND
-        | directory::CREATE
-        | directory::READ
-        | directory::WRITE
-        | directory::ENUMERATE;
+    let held = directory::rights::DESCEND
+        | directory::rights::CREATE
+        | directory::rights::READ
+        | directory::rights::WRITE
+        | directory::rights::ENUMERATE;
     let sub = srv
-        .open_dir(filesystem_contract::fs::ROOT as u32, &named("sub"), held)
+        .open_dir(
+            file_system_contract::file_system::ROOT as u32,
+            &named("sub"),
+            held,
+        )
         .unwrap();
 
     let made = srv.make_dir(sub, &named("logs"), held).expect("mkdir");
@@ -1328,7 +1411,7 @@ fn mkdir_returns_a_capability_no_wider_than_the_one_that_made_it() {
         .expect("create in it");
     assert_eq!(srv.write(f, 0, b"a log line\n").unwrap(), 11);
     assert_eq!(
-        srv.make_dir(sub, &named("wider"), directory::ALL)
+        srv.make_dir(sub, &named("wider"), directory::rights::ALL)
             .err()
             .map(|e| e.errno),
         Some(EPERM),
@@ -1348,9 +1431,9 @@ fn a_write_grant_without_create_can_write_and_cannot_make_a_name() {
     let mut srv = server_with_tree();
     let logs = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::DESCEND | directory::READ | directory::WRITE,
+            directory::rights::DESCEND | directory::rights::READ | directory::rights::WRITE,
         )
         .unwrap();
     let h = srv.open_file_at(logs, &named("inner")).unwrap();
@@ -1372,8 +1455,10 @@ fn a_write_grant_without_create_can_write_and_cannot_make_a_name() {
 #[test]
 fn a_directory_handle_and_a_file_handle_refuse_each_others_verbs() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
-    let sub = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
+    let root = file_system_contract::file_system::ROOT as u32;
+    let sub = srv
+        .open_dir(root, &named("sub"), directory::rights::ALL)
+        .unwrap();
     let file = srv.open_file_at(sub, &named("inner")).unwrap();
     let mut buf = [0u8; 32];
 

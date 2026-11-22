@@ -48,7 +48,7 @@ one line.
   when calef ruled that a domain names its members and does not act on them. There was no second
   decision to wait for, and the deferral was buying nothing.
 
-  The fix is `capability_table::Rights::ENUMERATE`, the kernel-level twin of `filesystem_contract`'s directory
+  The fix is `capability_table::Rights::ENUMERATE`, the kernel-level twin of `file_system_contract`'s directory
   `ENUMERATE`, and it is the same argument one layer down. `SURVEY` takes it; `RECEIVE` and `REAP`
   still take `READ`; `system_initializer` grants a viewer `ENUMERATE` alone. So a `ps` does not
   get refused a reap, it cannot name one, which is the ladder's top rung in place of an argument

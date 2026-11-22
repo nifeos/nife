@@ -41,7 +41,7 @@ is never published, so the public API holds the wire and nothing else.
 | kind | where |
 |---|---|
 | path dependency with a `version` key | `components`, `crates/primitive_benchmark_contract`, `crates/system_initializer`, `crates/system_log`, `fixtures`, `kernel`; `system_tests` as a development dependency; `fuzz` with a path and no `version` key; the in-tree crate `byte_sink_fixture` |
-| source copied into `std` | `cargo xtask std-src` copies `src/lib.rs` into the patched standard library as `sys/pal/nife/sinkproto.rs` (`xtask/src/farm/copied.rs`), so `println!` and every sink share one definition. The move must keep that source reachable (see What still blocks the move) |
+| source copied into `std` | `cargo xtask std-src` copies `src/lib.rs` into the patched standard library as `sys/pal/nife/sinkproto.rs` (`xtask/src/farm/copied.rs`), so `println!` and every sink share one definition. The farm reads the source from the pinned checkout cargo fetches (`copied_package_directories`) |
 | prose and tables | `crates/externalization-list.txt`, `packages/contracts.package.toml`, `helpers/trust_boundary_crates.tsv`, `helpers/interface_stability.py`, the comments in `uefi_loader/Cargo.toml`, `system_tests/Cargo.toml` and `crates/std_runtime_contract/Cargo.toml` |
 | users of `byte_sink_fixture` | `fixtures/src/sink_transcript_writer.rs`, `file_sink.rs`, `file_source.rs`, and the kernel-side `system_tests/src/user/sink_tests.rs` and `system_log_tests.rs`; `fixtures` and `system_tests` depend on it in their manifests |
 
@@ -101,14 +101,14 @@ The three items the milestone says the clearance waits for, verified by reading 
 | item | state | evidence |
 |---|---|---|
 | P1-3, `fixture` out of the published crate | landed ([#3873](https://github.com/nifeos/nife/pull/3873)) | no `fixture` module in `crates/byte_sink_contract/src/lib.rs`; `crates/byte_sink_fixture` holds the six items, has `publish = false`, and depends on the contract crate; the five consumers use it |
-| P1-8, end-of-stream words reserved | landed | `unpack` returns `EndOfStream` only for `(end_of_stream(), 0, 0)`, with a doctest and a Kani harness (`an_end_of_stream_decodes_exactly_from_its_one_message`); the crate root's "What it does not carry" and `OPERATION_END_OF_STREAM` say the words are reserved and refused; `rm`'s verdict has its own endpoint (`filesystem_contract::rm::VERDICT_SLOT`, slot 2) |
+| P1-8, end-of-stream words reserved | landed | `unpack` returns `EndOfStream` only for `(end_of_stream(), 0, 0)`, with a doctest and a Kani harness (`an_end_of_stream_decodes_exactly_from_its_one_message`); the crate root's "What it does not carry" and `OPERATION_END_OF_STREAM` say the words are reserved and refused; `rm`'s verdict has its own endpoint (`file_system_contract::rm::VERDICT_SLOT`, slot 2) |
 | P1-9, names a later rule reopens | landed | `MAXIMUM_INLINE_BYTES`, `first_word`, `Message` and the `classify` parameter `returned` replace the old names, with no alias |
 
 The other P1 and P2 items:
 
 | item | state |
 |---|---|
-| P0-1, the crate stands alone | open; the move carries it (README, both licenses, literal `license`, `lints` and `rust-version`, the scaffold, the `Name:` strip, the `b"nife"` payload) |
+| P0-1, the crate stands alone | done; the move commit in nifeos/byte_sink_contract carries the README, both licenses, literal `license`, `lints` and `rust-version`, and the scaffold, with no `Name:` block ([#3900](https://github.com/nifeos/nife/pull/3900)) |
 | P0-2, `VERSION` text | done |
 | P1-4, `abi` dev-dependency | done; the crate has no dependency |
 | P1-5, proofs | done, six harnesses each with a patch that fails it |
@@ -118,7 +118,7 @@ The other P1 and P2 items:
 | P2-11, narrow `usize` | done; `unpack` compares the count as `u64` |
 | P2-12, `first_word` typed parameters | done (ruled 2026-11-21 UTC); `first_word` takes a `u8` opcode and a `u32` length, and the opcodes are `u8` |
 | P2-13, a words struct for `pack` | done (ruled 2026-11-21 UTC); `pack` returns `(MessageWords, taken)` and `unpack` takes the struct |
-| P2-14, mutant exemptions | open; they go into the new repository's `.github/mutants-exempts` |
+| P2-14, mutant exemptions | waiting on nifeos/byte_sink_contract#1, which lists the four survivors the repository's first mutation run names |
 | P2-15, severity on any first word | done |
 
 ## Names
@@ -131,7 +131,7 @@ The architect ratified every name below on 2026-11-21 (UTC), except `MessageWord
 | `first_word` | ratified | a `SEND` has no request and no reply; the function packs the first of three words |
 | `Message` | ratified | spelled out |
 | `returned` (parameter of `classify`) | ratified | the naming rules cover parameters; `return` is a keyword |
-| `byte_sink_fixture` (crate) | ratified | follows `filesystem_fixture` and `socket_fixture`; never published |
+| `byte_sink_fixture` (crate) | ratified | follows `file_system_fixture` and `socket_fixture`; never published |
 | `VERSION`, `INTERFACE_ID` | ratified, values frozen | the identity pair every contract carries |
 | `MessageWords` (struct and `new`) | provisional, for release review | names the three words a `SEND` carries; the fields take the names of the parameters they replace |
 | `word_zero`, `word_one`, `word_two` | ratified | the three message registers, spelled out; doc comments keep the register names where they help |
@@ -141,17 +141,11 @@ The architect ratified every name below on 2026-11-21 (UTC), except `MessageWord
 
 The std copy (`sys/pal/nife/sinkproto.rs`) is copied from `src/lib.rs` by `cargo xtask std-src`.
 
-## What still blocks the move
+## The move
 
-All of these belong to the move itself. No in-tree item blocks it.
-
-| item | owner |
-|---|---|
-| P0-1: README in the template's section order, both licenses, literal `license`, `lints` and `rust-version`, the scaffold, the `Name:` strip, the `b"nife"` test payload, the path in `verification.rs` line 3. | move lane |
-| The `std` farm must read the pinned checkout's source; until then the move breaks the platform layer's build. | maintainer |
-| Convert the path dependencies (and `fuzz`'s, and `byte_sink_fixture`'s) to `git` and `rev` with `version = "0.1.0"`, and read every file `script/crate-move --dry-run` lists. | move lane |
-| The four mutant exemptions (P2-14). | move lane |
-| Run the stranger test and the template's workflows in the new repository. | move lane |
+The crate lives in nifeos/byte_sink_contract, and nife depends on it by `git` and `rev`
+([#3900](https://github.com/nifeos/nife/pull/3900)). The repository's `check` and `proofs` workflows
+pass on its main branch.
 
 ## Recommendation
 

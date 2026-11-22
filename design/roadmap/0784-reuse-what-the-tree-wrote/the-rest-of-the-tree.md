@@ -108,7 +108,7 @@ Two records disagree with what was measured here:
   library started from relibc).
 - `bitmap_font`: §100 chose an original drawing. `noto-sans-mono-bitmap` 0.3.2 is another face.
 - `glyph_atlas`: its rasteriser is §166's question.
-- `filesystem_fixture`, `walk_pricing`, `loaded_image_check`, `confined_system_call_fuzzer_contract`:
+- `file_system_fixture`, `walk_pricing`, `loaded_image_check`, `confined_system_call_fuzzer_contract`:
   test fixtures and measuring tools.
 - The 45 programs in `components/src/` that 784 does not name (transports, caretakers, supervisors,
   the resolver, the time client): each is nife's capability plumbing (rule 3). The ones that parse

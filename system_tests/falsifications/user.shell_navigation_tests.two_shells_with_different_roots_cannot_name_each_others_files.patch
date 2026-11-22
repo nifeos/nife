@@ -5,7 +5,7 @@ Architecture: aarch64, riscv64, x86_64
 The defect is the caretaker serving the filesystem server's own root instead of the narrowed
 handle it was just given. `fs_subtree_caretaker` opens the subtree it was named, receives back
 a handle `r0` that reaches that subtree and nothing above it, and then serves `r0` as its
-client's slot-0 "root of my namespace". Serving `fs::ROOT` instead gives the shell a namespace
+client's slot-0 "root of my namespace". Serving `file_system::ROOT` instead gives the shell a namespace
 rooted at the whole image, which is precisely the authority §50 says it must not have.
 
 Expected to fail, and it does, at `system_tests/src/user/shell_navigation_tests.rs:99` on 2026-09-16:
@@ -43,8 +43,8 @@ Replayed on all three ISAs. The hunk is portable code, so one patch serves every
 
 Re-cut 2026-10-15 (UTC) by the milestone 886 (the filesystem test fixture moves to its own crate)
 lane: the hunk's
-context line names the readiness word, which moved from `filesystem_contract::fixture::READY`
-to `filesystem_contract::READY`. The mutation is unchanged. Replayed red on aarch64
+context line names the readiness word, which moved from `file_system_contract::fixture::READY`
+to `file_system_contract::READY`. The mutation is unchanged. Replayed red on aarch64
 the same day, at the vacuity guard this record predicts, then reverted.
 
 diff --git a/components/src/fs_subtree_caretaker.rs b/components/src/fs_subtree_caretaker.rs
@@ -53,9 +53,9 @@ diff --git a/components/src/fs_subtree_caretaker.rs b/components/src/fs_subtree_
 @@ -287,7 +287,7 @@ pub extern "C" fn _start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
      }
  
-     send(REPORT, filesystem_contract::READY, 0, 0);
+     send(REPORT, file_system_contract::READY, 0, 0);
 -    serve(r0);
-+    serve(fs::ROOT);
++    serve(file_system::ROOT);
  }
  
  user_mode_runtime::panic_handler!();

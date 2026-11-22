@@ -9,9 +9,9 @@ each with the control that must fail.
 ## The layer and the engine
 
 Host, milliseconds, no emulator. The whole of the layer's semantics is pure functions over a
-byte slice (`filesystem_contract::xattr::store`). So what replaces what, which ceiling refuses, and
+byte slice (`file_system_contract::xattr::store`). So what replaces what, which ceiling refuses, and
 what a truncated blob means are all tested without a filesystem. There are seven tests in
-`filesystem_contract`, including a sweep that cuts a blob at every byte and asserts it reads back
+`file_system_contract`, including a sweep that cuts a blob at every byte and asserts it reads back
 *short rather than wrong*. Ten more in `redoxfs_server` drive the real engine against a
 `DiskMemory` image. They cover:
 

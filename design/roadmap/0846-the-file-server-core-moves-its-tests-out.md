@@ -118,7 +118,7 @@ Found with `grep` at `0435a9aeb`.
 1. `redoxfs_server/src/lib.rs` is under 2,000 lines, and no new file is over 2,000.
 2. The 77 host tests pass with no test body changed, and so do the crate's integration tests.
 3. No Rust file outside `redoxfs_server/src/` changes, and no item's visibility widens. As built,
-   one comment in `crates/filesystem_contract` follows the const assertions to their new path, and
+   one comment in `crates/file_system_contract` follows the const assertions to their new path, and
    the test fake `VecIo` is `pub(crate)` so the block tests can reach it (§275).
 4. `script/test` passes on aarch64, riscv64 and x86_64.
 

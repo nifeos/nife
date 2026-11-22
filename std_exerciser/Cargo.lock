@@ -126,14 +126,14 @@ version = "0.1.0"
 source = "git+https://github.com/nifeos/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
 
 [[package]]
-name = "filesystem_contract"
+name = "file_system_contract"
 version = "0.1.0"
 
 [[package]]
-name = "filesystem_fixture"
+name = "file_system_fixture"
 version = "0.1.0"
 dependencies = [
- "filesystem_contract",
+ "file_system_contract",
 ]
 
 [[package]]
@@ -354,8 +354,8 @@ dependencies = [
  "capability_manifest_note",
  "domain_name_resolution_contract",
  "domain_name_resolution_fixture",
- "filesystem_contract",
- "filesystem_fixture",
+ "file_system_contract",
+ "file_system_fixture",
  "grant_contract",
  "program_table",
  "rayon",
@@ -462,7 +462,7 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 name = "walk_pricing"
 version = "0.1.0"
 dependencies = [
- "filesystem_fixture",
+ "file_system_fixture",
 ]
 
 [[package]]

@@ -244,7 +244,7 @@ added. A measurement quotes the boot log's line beside its number.
 ### D2. One raw-disk grant serves every raw-access program
 
 A single shell-manifest grant delivers the existing one-disk block-service endpoint
-(`filesystem_contract::blk`) to a shell-launched program. The server enforces one of three modes:
+(`file_system_contract::blk`) to a shell-launched program. The server enforces one of three modes:
 read, write within a declared window, or write the whole disk. The person typing the command picks
 the disk, per command.
 

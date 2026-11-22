@@ -24,7 +24,11 @@ impl documentation::index::Pages for Shard {
     fn page(&mut self, index: u64, out: &mut [u8; documentation::index::PAGE]) -> bool {
         let got = call(
             self.dir,
-            fs::request(fs::READ, self.handle, documentation::index::PAGE as u64),
+            file_system::request(
+                file_system::READ,
+                self.handle,
+                documentation::index::PAGE as u64,
+            ),
             index * documentation::index::PAGE as u64,
         )
         .0 as i64;
@@ -73,8 +77,8 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
 
     let store = nav.name_call_in(
         t,
-        fs::OPENDIR,
-        fs::ROOT,
+        file_system::OPENDIR,
+        file_system::ROOT,
         index::STORE_DIR.as_bytes(),
         t.rights,
     );
@@ -86,14 +90,14 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
     // The manifest, copied out of the shared page before anything else touches it: every `OPENDIR`
     // below stages a name in that same page.
     let mut names = [0u8; MANIFEST_MAXIMUM];
-    let handle = nav.name_call_in(t, fs::OPEN, store, index::MANIFEST.as_bytes(), 0);
+    let handle = nav.name_call_in(t, file_system::OPEN, store, index::MANIFEST.as_bytes(), 0);
     if handle < 0 {
         nav.close_in(t, store);
         return Say::Failed(-handle as i32);
     }
     let got = call(
         dir,
-        fs::request(fs::READ, handle as u64, MANIFEST_MAXIMUM as u64),
+        file_system::request(file_system::READ, handle as u64, MANIFEST_MAXIMUM as u64),
         0,
     )
     .0 as i64;
@@ -112,12 +116,12 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
     let mut trouble = 0i32;
     let mut unreadable = false;
     index::bundles(&names[..got], |bundle| {
-        let at = nav.name_call_in(t, fs::OPENDIR, store, bundle, t.rights);
+        let at = nav.name_call_in(t, file_system::OPENDIR, store, bundle, t.rights);
         if at < 0 {
             trouble = -at as i32;
             return;
         }
-        let shard = nav.name_call_in(t, fs::OPEN, at as u64, index::SHARD.as_bytes(), 0);
+        let shard = nav.name_call_in(t, file_system::OPEN, at as u64, index::SHARD.as_bytes(), 0);
         if shard < 0 {
             trouble = -shard as i32;
         } else {

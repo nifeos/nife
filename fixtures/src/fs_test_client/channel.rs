@@ -9,7 +9,7 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::fs;
+use file_system_contract::file_system;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, exit, require, send};
 
@@ -20,19 +20,19 @@ pub(crate) const FILE: u64 = 0;
 pub(crate) const REPORT: u64 = 1;
 /// The base of the client's mapping of the channel it shares with the FS server.
 ///
-/// **It is `filesystem_contract::fs::MAXIMUM_TRANSFER_BYTES` bytes wide, not one page** (milestone 138
+/// **It is `file_system_contract::file_system::MAXIMUM_TRANSFER_BYTES` bytes wide, not one page** (milestone 138
 /// (close the read gap: a 4 KiB request must stop moving 128 KiB) step 3), and the kernel's wiring
 /// maps every page of it here (`kernel/src/user/fs_service/channel.rs`, `map_channel`). A client
 /// may not ask for more than it mapped, and this one maps all of it, which is what lets the
 /// throughput role measure the contract's own ceiling rather than a page.
 const FILE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
-// SAFETY: the kernel's wiring maps every page of the fs::MAXIMUM_TRANSFER_BYTES-byte channel at FILE_VA
+// SAFETY: the kernel's wiring maps every page of the file_system::MAXIMUM_TRANSFER_BYTES-byte channel at FILE_VA
 // before this program runs (milestone 139 round 2; see `user_mode_runtime::mapped_window`, which is what
 // collapsed the five hand-rolled read_volatile/write_volatile loops below into bounds-checked
 // calls).
 pub(crate) const WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(FILE_VA, fs::MAXIMUM_TRANSFER_BYTES as u64) };
+    unsafe { MappedWindow::new(FILE_VA, file_system::MAXIMUM_TRANSFER_BYTES as u64) };
 
 /// Copy `bytes` into the shared page (a name to open, or data to write).
 pub(crate) fn put_page(bytes: &[u8]) {
@@ -60,7 +60,11 @@ pub(crate) fn get_page(n: usize, out: &mut [u8]) {
 /// forged request) is REPORTED, not trapped, so the server's reason survives the failure.
 pub(crate) fn open(name: &str) -> u64 {
     put_page(name.as_bytes());
-    let (r0, _) = call(FILE, fs::request(fs::OPEN, 0, name.len() as u64), 0);
+    let (r0, _) = call(
+        FILE,
+        file_system::request(file_system::OPEN, 0, name.len() as u64),
+        0,
+    );
     if (r0 as i64) < 0 {
         fail(STAGE_OPEN, r0);
     }
@@ -78,7 +82,7 @@ pub(crate) const STAGE_WRITE: u64 = 3;
 /// compared against `SUCCESS`.
 ///
 /// `w0` is the raw reply word, `w1` is `0xBADD_0000 | stage << 12 | errno`. The errno is recovered
-/// with `filesystem_contract::reply_errno`'s rule (a negative reply is a negated errno). Note the known
+/// with `file_system_contract::error::code`'s rule (a negative reply is a negated errno). Note the known
 /// reply-space overlap (notes/std/fs.md): the kernel's own `invoke` errors are -1..-8, so a small value
 /// here is ambiguous between "the server returned this errno" and "the IPC itself failed". The raw
 /// word travels in `w0` precisely so that ambiguity is visible rather than hidden.
@@ -97,7 +101,7 @@ pub(crate) fn write(handle: u64, offset: u64, data: &[u8]) {
     put_page(data);
     let (r0, _) = call(
         FILE,
-        fs::request(fs::WRITE, handle, data.len() as u64),
+        file_system::request(file_system::WRITE, handle, data.len() as u64),
         offset,
     );
     if (r0 as i64) < 0 {
@@ -108,7 +112,11 @@ pub(crate) fn write(handle: u64, offset: u64, data: &[u8]) {
 
 /// Read up to `n` bytes from `handle` at `offset` into the shared page; returns the count.
 pub(crate) fn read(handle: u64, offset: u64, n: usize) -> usize {
-    let (r0, _) = call(FILE, fs::request(fs::READ, handle, n as u64), offset);
+    let (r0, _) = call(
+        FILE,
+        file_system::request(file_system::READ, handle, n as u64),
+        offset,
+    );
     if (r0 as i64) < 0 {
         fail(STAGE_READ, r0);
     }
@@ -118,13 +126,23 @@ pub(crate) fn read(handle: u64, offset: u64, n: usize) -> usize {
 /// `OPEN` a name under a directory handle; the raw reply, so a refusal is a value rather than a trap.
 pub(crate) fn dir_open(parent: u64, name: &str) -> i64 {
     put_page(name.as_bytes());
-    call(FILE, fs::request(fs::OPEN, parent, name.len() as u64), 0).0 as i64
+    call(
+        FILE,
+        file_system::request(file_system::OPEN, parent, name.len() as u64),
+        0,
+    )
+    .0 as i64
 }
 
 /// `CREATE` a name under a directory handle.
 pub(crate) fn dir_create(parent: u64, name: &str) -> i64 {
     put_page(name.as_bytes());
-    call(FILE, fs::request(fs::CREATE, parent, name.len() as u64), 0).0 as i64
+    call(
+        FILE,
+        file_system::request(file_system::CREATE, parent, name.len() as u64),
+        0,
+    )
+    .0 as i64
 }
 
 /// `OPENDIR`: descend, asking for `rights`. The requested rights ride in the second word.
@@ -132,7 +150,7 @@ pub(crate) fn dir_descend(parent: u64, name: &str, rights: u64) -> i64 {
     put_page(name.as_bytes());
     call(
         FILE,
-        fs::request(fs::OPENDIR, parent, name.len() as u64),
+        file_system::request(file_system::OPENDIR, parent, name.len() as u64),
         rights,
     )
     .0 as i64
@@ -143,7 +161,7 @@ pub(crate) fn dir_mkdir(parent: u64, name: &str, rights: u64) -> i64 {
     put_page(name.as_bytes());
     call(
         FILE,
-        fs::request(fs::MKDIR, parent, name.len() as u64),
+        file_system::request(file_system::MKDIR, parent, name.len() as u64),
         rights,
     )
     .0 as i64
@@ -153,7 +171,12 @@ pub(crate) fn dir_mkdir(parent: u64, name: &str, rights: u64) -> i64 {
 /// rather than a trap. The witness uses it to clean up after itself and to provoke a node's death.
 pub(crate) fn dir_unlink(parent: u64, name: &str) -> i64 {
     put_page(name.as_bytes());
-    call(FILE, fs::request(fs::UNLINK, parent, name.len() as u64), 0).0 as i64
+    call(
+        FILE,
+        file_system::request(file_system::UNLINK, parent, name.len() as u64),
+        0,
+    )
+    .0 as i64
 }
 
 /// `RENAME`: two directories and two names, so both names go into the page back to back (source
@@ -163,8 +186,8 @@ pub(crate) fn dir_rename(src_dir: u64, src: &str, dst_dir: u64, dst: &str) -> i6
     put_page_at(src.len(), dst.as_bytes());
     call(
         FILE,
-        fs::request(fs::RENAME, src_dir, src.len() as u64),
-        fs::rename_destination(dst_dir, dst.len() as u64),
+        file_system::request(file_system::RENAME, src_dir, src.len() as u64),
+        file_system::rename_destination(dst_dir, dst.len() as u64),
     )
     .0 as i64
 }

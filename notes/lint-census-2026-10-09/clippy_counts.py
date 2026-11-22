@@ -28,7 +28,7 @@ PARSERS = {
     'device-supplied': ['device_tree_blob', 'machine_discovery', 'pci', 'usb',
                         'extensible_host_controller_interface', 'e1000e', 'designware_ethernet',
                         'designware_mobile_storage', 'non_volatile_memory_express', 'virtio'],
-    'peer-process contracts': ['filesystem_contract', 'system_log_contract', 'byte_sink_contract',
+    'peer-process contracts': ['file_system_contract', 'system_log_contract', 'byte_sink_contract',
                                'graphics_contract', 'compositor', 'login_contract',
                                'credential_contract', 'supervision_protocol', 'hot_swap_contract'],
 }

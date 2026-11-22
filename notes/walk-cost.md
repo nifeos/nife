@@ -9,7 +9,7 @@ went, what was fixed inside the file-service contract, and the wire changes cale
 close the rest, each with its measured number.
 
 The walk is the one milestone 121 (`ripgrep` on nife: enumeration as a capability) priced:
-`walk_pricing::walk` over `filesystem_contract::fixture::walk`, 153 entries and 141 files, read
+`walk_pricing::walk` over `file_system_contract::fixture::walk`, 153 entries and 141 files, read
 whole. [What a directory walk costs](walk-pricing.md) describes the
 tree and the instrument.
 
@@ -108,12 +108,12 @@ server, exactly as the hop-by-hop walk would. Every directory on the way is a de
 comes up short. `OPEN`'s second word carries that request, so a file opened for reading still
 carries only `READ`. Every component is checked before any is resolved. An older server answers
 `EINVAL`, and the PAL then walks hop by hop and stops asking. `fs_nameset_caretaker` checks the
-first component of a path against its set. `filesystem_contract::fs::OPEN` and `OPENDIR` hold the
+first component of a path against its set. `file_system_contract::file_system::OPEN` and `OPENDIR` hold the
 rule.
 
 **B, ruled 07:06Z in its second form and built.** `OPEN`'s reply carries the file's size in its
 second word, and 0 means "not given". The PAL keeps it as `File::open_size_hint`, and the std
-overlay routes the buffer sizing of `fs::read`, `fs::read_to_string` and `read_to_end` through it
+overlay routes the buffer sizing of `file_system::read`, `file_system::read_to_string` and `read_to_end` through it
 (`std_patch_size_hint` in `xtask/src/farm.rs`). `metadata()` still always asks the server. calef's
 reason: a stale hint costs at most one resize, and a stale `metadata()` lies to the program.
 
@@ -133,7 +133,7 @@ Half. The server can tell which endpoint a request came through, since milestone
 filesystem client channel): `rendezvous::BADGE` mints a badged copy of an endpoint capability, and
 `RECEIVE_CAPABILITY` returns the badge in x3. So the premise that it cannot is false.
 
-The other half, that the caretaker is where confinement is enforced, is only partly true. The rights arithmetic is already the server's, with three Kani harnesses in `filesystem_contract` (`attenuate_never_widens`,
+The other half, that the caretaker is where confinement is enforced, is only partly true. The rights arithmetic is already the server's, with three Kani harnesses in `file_system_contract` (`attenuate_never_widens`,
 `a_grandchild_is_bounded_by_the_root`, `a_root_carries_nothing_undefined`). What the subtree
 caretaker adds is handle scoping. The server's handle table is one per server, and handle 0 is the
 image root with every right. The caretaker keeps its own 64-slot table, so a client can only name
@@ -150,7 +150,7 @@ No kernel change. The kernel pieces all came with milestone 599: `BADGE`, the ba
    it, and `script/verify`'s table has the row. A step is one name; a walk never widens, never goes
    through a symbolic link, never crosses a mount; a bound badge reaches its root and what it
    minted; a badge once bound is never open again.
-2. Two control verbs, `BIND` and `UNBIND` (`filesystem_contract::fs`, numbers 64 and 65,
+2. Two control verbs, `BIND` and `UNBIND` (`file_system_contract::file_system`, numbers 64 and 65,
    provisional). They sit outside the verb table on purpose, so no caretaker forwards them. Only a
    caller whose own badge is unbound may use them. The badge still names the client's window
    (§230), and a grant is bound to that same index.
@@ -222,7 +222,7 @@ What verification exists or is feasible:
 
 It can, at a larger price. `fs_nameset_caretaker` filters every name-taking verb in the granted
 directory against a set of names. Under D the server would hold each badge's name set as well and
-apply `filesystem_contract::nameset::contains` on those verbs. The set is variable-length, so
+apply `file_system_contract::nameset::contains` on those verbs. The set is variable-length, so
 `BIND` would carry it through the channel page. That is a second, larger piece of policy moving into
 the server, with no walk measurement behind it: glob grants are the shell's and are rarely on a
 walk's path. D for subtrees alone is the smaller step.

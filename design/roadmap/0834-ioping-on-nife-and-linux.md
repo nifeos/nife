@@ -72,7 +72,7 @@ ioping -D -c 1000 -i 0 -s 4k -S 64m -o 1m n1
 ```
 
 Reuse: the disk tree is written. Nothing in the tree or in a dependency serves a raw block range
-over the file contract, and the server is a namespace of two names over `filesystem_contract::blk`.
+over the file contract, and the server is a namespace of two names over `file_system_contract::blk`.
 
 The names `/disk`, `nvme0`, `n1` and `disk_tree` are provisional.
 

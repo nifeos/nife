@@ -2,11 +2,11 @@
 //! DECISIONS §27, notes/grant-expression.md).
 //!
 //! It holds the FS service's directory capability ([`FS`]), opens the granted name once at startup,
-//! and serves the same [`filesystem_contract::fs`] protocol on [`CLIENT`] with a namespace of
+//! and serves the same [`file_system_contract::file_system`] protocol on [`CLIENT`] with a namespace of
 //! exactly one name and a direction it cannot widen. The confined program holds an endpoint to this
 //! process and nothing that names the FS server, so the boundary is an address space, not a branch.
 //! `start_granted` in `kernel/src/user/fs_service/file_grant.rs` wires its slots and passes the
-//! name and direction in the three `START` words ([`filesystem_contract::grant`]). Why it is a
+//! name and direction in the three `START` words ([`file_system_contract::grant`]). Why it is a
 //! process and not a check in the FS server is in notes/grant-expression/per-file-grants.md.
 
 //! Name: ratified 2026-08-01 (calef, milestone 61), replacing `fwarden`. Refused `fwarden` and the
@@ -28,7 +28,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use filesystem_contract::{fs, grant, operation, reply_err, reply_errno};
+use file_system_contract::{error, file_system, grant, operation};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{Reply, call, receive_request, send};
 
@@ -43,14 +43,14 @@ const REPORT: u64 = 2;
 
 /// `EBADF`: a handle this capability never minted, or a verb this contract does not carry. One
 /// number and one refusal site, so a forged handle and a forged opcode are refused alike.
-const EBADF: i32 = filesystem_contract::verb::file_grant::EBADF;
+const EBADF: i32 = file_system_contract::verb::file_grant::EBADF;
 
 /// The one page, shared with the FS server above and the client below. One frame for three parties
 /// is sound because every request on both hops is a blocking `CALL`: the client is parked inside its
 /// call for the whole time this process uses the page, so the two uses cannot interleave.
 const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the contract's transfer unit.
-const PAGE: usize = filesystem_contract::PAGE_BYTES;
+const PAGE: usize = file_system_contract::PAGE_BYTES;
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
@@ -89,13 +89,13 @@ fn reply(to: Reply, r0: i64) {
 /// `handle` is the FS server's handle for the granted file, which the client never learns: it sends
 /// [`grant::HANDLE`] and this substitutes, so a client guessing handle numbers guesses in a space
 /// with one inhabitant. `name` is the granted name and `writable` the grant's direction. Each verb's
-/// answer is its row in [`filesystem_contract::verb::file_grant::POLICY`], and a verb with no row
-/// fails to compile. A mutating verb ([`filesystem_contract::verb::Verb::mutates`]) under a
+/// answer is its row in [`file_system_contract::verb::file_grant::POLICY`], and a verb with no row
+/// fails to compile. A mutating verb ([`file_system_contract::verb::Verb::mutates`]) under a
 /// read-only grant is [`grant::EROFS`] by one rule, and `CREATE` is [`grant::ENOTDIR`] because a
 /// file capability is not a directory. See notes/grant-expression/per-file-grants.md.
 fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
-    use filesystem_contract::verb::file_grant::Policy;
-    use filesystem_contract::verb::{self};
+    use file_system_contract::verb::file_grant::Policy;
+    use file_system_contract::verb::{self};
 
     loop {
         // A CALL-only contract: a plain SEND or a client's SEND_CAPABILITY has nobody waiting, so it does
@@ -106,14 +106,14 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
         let Some(reply_slot) = req.delivered.into_reply() else {
             continue;
         };
-        let len = fs::request_length_bytes(w0).min(PAGE);
-        let asked = fs::request_handle(w0);
+        let len = file_system::request_length_bytes(w0).min(PAGE);
+        let asked = file_system::request_handle(w0);
         let code = operation(w0);
 
         // One refusal site: an opcode this contract does not carry gets `EBADF`, as a forged
         // handle does.
         let (Some(v), Some(policy)) = (verb::of(code), verb::file_grant::of(code)) else {
-            reply(reply_slot, reply_err(EBADF));
+            reply(reply_slot, error::word(EBADF));
             continue;
         };
 
@@ -122,7 +122,7 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
             // buffer is `grant::MAXIMUM_WORDS_NAME_BYTES` bytes, the granted name's own bound, because this
             // process runs on the one stack page `run` maps, so a length mismatch is refused
             // before any copy.
-            Policy::Local if code == fs::OPEN => {
+            Policy::Local if code == file_system::OPEN => {
                 let mut asked_name = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
                 if len == name.len() {
                     get(&mut asked_name[..len]);
@@ -130,26 +130,26 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
                 if len == name.len() && &asked_name[..len] == name {
                     grant::HANDLE as i64
                 } else {
-                    reply_err(2) // ENOENT
+                    error::word(2) // ENOENT
                 }
             }
             // CLOSE is answered, not forwarded: this process owns the underlying handle for its
             // whole life, so a client's CLOSE must not make the next request fail.
             Policy::Local if asked == grant::HANDLE => 0,
             // A CLOSE of a handle this capability never minted.
-            Policy::Local => reply_err(EBADF),
+            Policy::Local => error::word(EBADF),
             // The client's handle is checked and then replaced by this process's, so a request
             // that gets through names the granted file whatever the client meant. Extended
             // attributes ride here too, and `mutates()` refuses changing them read-only.
-            Policy::Forward if asked != grant::HANDLE => reply_err(EBADF),
-            Policy::Forward if v.mutates() && !writable => reply_err(grant::EROFS),
+            Policy::Forward if asked != grant::HANDLE => error::word(EBADF),
+            Policy::Forward if v.mutates() && !writable => error::word(grant::EROFS),
             Policy::Forward => {
                 let n = if v.carries_len() { len as u64 } else { 0 };
                 let second = if v.carries_w1 { w1 } else { 0 };
-                forward(fs::request(code, handle, n), second)
+                forward(file_system::request(code, handle, n), second)
             }
             // Not offered: the row's errno says which "no", ENOTDIR for every directory verb.
-            Policy::Refused(errno) => reply_err(errno),
+            Policy::Refused(errno) => error::word(errno),
         };
         reply(reply_slot, r);
     }
@@ -165,12 +165,12 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // Open the granted name once. If it is not there, die rather than serve a hole, so the
     // failure lands at the grant rather than at the first read.
     put(name);
-    let (r0, _) = call(FS, fs::request(fs::OPEN, 0, n as u64), 0);
-    if reply_errno(r0 as i64).is_some() {
+    let (r0, _) = call(FS, file_system::request(file_system::OPEN, 0, n as u64), 0);
+    if error::code(r0 as i64).is_some() {
         panic!();
     }
 
-    send(REPORT, filesystem_contract::READY, 0, 0);
+    send(REPORT, file_system_contract::READY, 0, 0);
     serve(r0, name, grant::is_writable(spec));
 }
 

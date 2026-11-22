@@ -1,4 +1,4 @@
-# `STATFS`: how much room the store behind a capability has
+# `GET_VOLUME_STATISTICS`: how much room the store behind a capability has
 
 An appendix to [notes/fs-server.md](../fs-server.md). It holds op 18, from milestone 54 (a network
 file service a Mac can actually mount): the wire, three choices worth disagreeing with, the right it
@@ -11,24 +11,24 @@ a 64 MiB constant, with a `BUGS` entry explaining that nothing in the stack coul
 
 ## The wire
 
-`fs::request(fs::STATFS, handle, 0)`, with the second word 0. The reply fills the shared page with
-`filesystem_contract::statfs`'s record, and `r0` is its length. The record is three little-endian
+`file_system::request(file_system::GET_VOLUME_STATISTICS, handle, 0)`, with the second word 0. The reply fills the shared page with
+`file_system_contract::volume_statistics`'s record, and `r0` is its length. The record is three little-endian
 `u64`s: the allocation unit in bytes, the volume's size in those units, and how many are free. That
 is `READDIR`'s and `LISTXATTR`'s existing shape rather than a new one, and it is forced. A reply word
 carries one `i64`, and two 64-bit counts do not fit in one however they are packed.
 
 ## Three choices worth disagreeing with rather than skipping past
 
-- The allocation unit is a field, not `filesystem_contract::PAGE`. They are the same number today
+- The allocation unit is a field, not `file_system_contract::PAGE`. They are the same number today
   (4096), and they are not the same *thing*: one is the filesystem's granularity, the other is a
   page. A client that assumed they were equal would mis-size a volume the day a filesystem with
   64 KiB records is served through this contract. The IPC transfer unit stopped being either of them
   at milestone 138 (close the read gap: a 4 KiB request must stop moving 128 KiB) step 3. It is now
-  `filesystem_contract::fs::TRANSFER_MAXIMUM`, which is the same distinction arriving a second time
+  `file_system_contract::file_system::TRANSFER_MAXIMUM`, which is the same distinction arriving a second time
   and proving the field was worth having.
 - The record's length is its version. A later field extends the record and raises `LEN`. A client
   written against this version reads its prefix correctly, because it checks `r0 >= LEN` for the
-  fields it knows, which is how `statfs::decode` is written. There is deliberately no version word,
+  fields it knows, which is how `volume_statistics::decode` is written. There is deliberately no version word,
   because the length already is one, and a second one is a thing to keep in sync.
 - No inode count. POSIX `statfs` carries `f_files`/`f_ffree`, and SMB's volume classes carry neither,
   so nothing above this contract has asked. Adding them extends the record.
@@ -41,7 +41,7 @@ image behind all of them, so `EBADF` for a handle nobody minted is the whole che
 validates the handle and then does not use it, which looks odd in the code and is the point.
 Demanding `dir::READ` would have left a write-only grant unable to answer the one question it has:
 whether its next write fits. So the verb table's row is `needs_all: 0`, beside `FSTAT` and `CLOSE`.
-`verb::file_grant::POLICY` forwards it. `STATFS` is the one directory-shaped question that means
+`verb::file_grant::POLICY` forwards it. `GET_VOLUME_STATISTICS` is the one directory-shaped question that means
 something through a file capability.
 
 ## Honest limits, both recorded at the verb

@@ -37,10 +37,10 @@ pub(super) fn page_frame() -> u64 {
 
 /// How many pages the file channel spans, straight from the contract, so this wiring cannot
 /// disagree with the two programs that speak it.
-pub(super) const FILE_PAGES: usize = filesystem_contract::fs::TRANSFER_PAGES;
+pub(super) const FILE_PAGES: usize = file_system_contract::file_system::TRANSFER_PAGES;
 
 /// How many pages the blk channel spans, straight from the contract, as [`FILE_PAGES`] is.
-pub(super) const BLK_PAGES: usize = filesystem_contract::block::TRANSFER_BLOCKS;
+pub(super) const BLK_PAGES: usize = file_system_contract::block::TRANSFER_BLOCKS;
 
 /// Every client window at once: [`CLIENT_WINDOWS`] channels of [`FILE_PAGES`] frames, one
 /// contiguous zeroed run, returned by its base. Window 0 is the first [`FILE_PAGES`] of it, so a
@@ -68,7 +68,7 @@ pub(super) fn file_channel() -> u64 {
 /// it" rule lives in one place rather than in each of them.
 ///
 /// `pages` is how much of the channel this party maps: a client may map less than [`FILE_PAGES`]
-/// (`filesystem_contract::fs::TRANSFER_PAGES` says so), and the FS server maps all of it. Visible
+/// (`file_system_contract::file_system::TRANSFER_PAGES` says so), and the FS server maps all of it. Visible
 /// to the rest of `user`, so every driver's spawn shares this one spelling of the rule.
 pub(in crate::user) fn map_channel(
     maps: &mut [Mapping],

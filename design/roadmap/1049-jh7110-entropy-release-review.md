@@ -29,6 +29,44 @@ should carry. The items below say what stands between the repository as it is an
 What the review ran or read on a host, and what it did not run, is in the
 [evidence appendix](1049-jh7110-entropy-release-review/review-evidence.md).
 
+## Finding status
+
+Each line was checked against `nifeos/jh7110_entropy` at `2bf731c`, the head of its `main`.
+
+- Item 1 (P0), the publishing hold: Waiting on the publishing hold, which lasts until every outside
+  review milestone is delivered. 0.3.0 is the first published version.
+- Item 2 (P0), the manifest refuses to publish: Waiting on the publishing hold. The comment beside
+  `publish = false` already says the line comes out in the release pull request; that pull request
+  removes it and `allow-unpublished: true`.
+- Item 3 (P0), the first-publish token: Waiting on the publishing hold. A person creates the token
+  and approves the `crates-io` environment once the hold lifts.
+- Item 4 (P0), the published tree on the board: Done, `nifeos/jh7110_entropy#22`, `#23` and `#25`,
+  with [#3701](https://github.com/nifeos/nife/pull/3701).
+- Item 5 (P1), the template pin: Done, `nifeos/jh7110_entropy#26`, `#27`, `#30` and `#33`. The
+  ruleset on `main` requires `check / mutation-diff` and `proofs / loom`.
+- Item 6 (P1), the output width: Done, `nifeos/jh7110_entropy#19`.
+- Item 7 (P1), work in flight: Done, `nifeos/jh7110_entropy#19`.
+- Item 8 (P1), `Pool` copied and printed: Done, `nifeos/jh7110_entropy#19`.
+- Item 9 (P1), `Pool`'s names and answer shape: Done, `nifeos/jh7110_entropy#19`.
+- Item 10 (P1), proofs of `Pool`: Done, `nifeos/jh7110_entropy#19` and `#29`.
+- Item 11 (P1), package contents: Done, `nifeos/jh7110_entropy#20`.
+- Item 12 (P1), crates.io metadata: Done, `nifeos/jh7110_entropy#20`.
+- Item 13 (P1), changelog order: Done, `nifeos/jh7110_entropy#19`.
+- Item 14 (P2), README shape: Done, `nifeos/jh7110_entropy#20`.
+- Item 15 (P2), the two private alarm bits: Done, `nifeos/jh7110_entropy#21`.
+- Item 16 (P2), the build registers and the reseed-state field: Done, `nifeos/jh7110_entropy#21`.
+- Item 17 (P2), a rand_core adapter: Won't fix. An optional feature nobody uses is API without
+  evidence, and the contract layer reaches the interface through `getrandom`. Ruled 2026-11-09.
+- Item 18 (P2), fuzz or say why not: Done, `nifeos/jh7110_entropy#21`.
+- Item 19 (P2), the minimum Rust version: Done, `nifeos/jh7110_entropy#27`.
+- The twelve names added since the last ratification: Done,
+  [#3769](https://github.com/nifeos/nife/pull/3769).
+- The measured poll times in the README: Done, `nifeos/jh7110_entropy#34`.
+- Whether a reseed clears `LFSR_LOCKUP`: Waiting on a board run. No lockup appeared in either run.
+- `STATUS_SEEDED`, `LAST_RESEED` and `BCONF` bit 3 at the silicon's reset state: Waiting on a board
+  run. Both runs read the state the bootloader leaves. The same read settles which value of
+  `BUILD_CONFIGURATION_OUTPUT_WIDTH_AFTER_RESET` means 256 bits.
+
 ## The items
 
 Each item carries the finding, its evidence and the recommended change. It also says which door it is and gives an effort size. A one-way door is a public API shape, a name, a register layout or the license; everything else is two-way. Sizes: XS under an hour, S a few hours, M a day or two. P0 blocks any publish, P1
@@ -38,8 +76,6 @@ lands before the first release, P2 can follow it.
 
 #### Item 1: The publishing hold
 
-Status: Ruled, held. 0.3.0 is the first published version; it waits on the publishing hold, which lasts until every outside review milestone is delivered.
-
 A standing ruling holds every crates.io publish from this organization
 until several crates have left and a review has decided whether any of them combine. No work in
 this repository changes that; the block records it so nobody reads a green gate as permission.
@@ -48,8 +84,6 @@ hold. One-way (a published version is permanent). Ruled. Effort none.
 
 #### Item 2: The manifest refuses to publish, by design
 
-Status: Ruled, held. The comment beside `publish = false` already says the line comes out in the release pull request; both lines come out there, after the hold.
-
 `Cargo.toml` carries `publish = false` and
 `.github/workflows/ci.yml` passes `allow-unpublished: true`. Both come out in the release
 pull request. The comment beside `publish = false` ("release step 7 removes this line") is
@@ -57,8 +91,6 @@ rewritten to say what a reader of this repository can act on: the line comes out
 crate publishes. Two-way. Effort XS.
 
 #### Item 3: The first publish needs a token
-
-Status: Held. A person's step after the hold lifts; no question is open until then.
 
 crates.io binds a trusted publisher only to a crate that
 exists, so the template's release path uses the `crates-io` environment secret
@@ -69,21 +101,15 @@ environment approval wait for the publishing hold to lift. Effort S.
 
 #### Item 4: The published tree ran on the board twice, at one commit
 
-Status: Done. Landed in `nifeos/jh7110_entropy#22` and `#23` (`ee0bde8`) and `#25` (`v0.3.0-pre.1`, `497d3ec`, nife #3701). Two bench questions stay open, under *What remains*.
-
 The finding as raised is in the [evidence appendix](1049-jh7110-entropy-release-review/review-evidence.md).
 
 ### P1
 
 #### Item 5: Bump the template pin and adopt what the template now expects
 
-Status: Done. Landed in `nifeos/jh7110_entropy#26`, `#27`, `#30` and `#33`. The ruleset on `main` requires `check / mutation-diff` and `proofs / loom`.
-
 The finding as raised is in the [evidence appendix](1049-jh7110-entropy-release-review/review-evidence.md).
 
 #### Item 6: The decode ignores the output width
-
-Status: Done. Landed in `nifeos/jh7110_entropy#19` (harness `a_128_bit_answer_is_never_served`).
 
 `generation_outcome` answers
 `Ready([u8; 32])` whenever `RAND_RDY` shows on a seeded core. It never looks at `STATUS_256_BIT_OUTPUT`, although `status` is in hand, and the doc comments
@@ -96,13 +122,9 @@ README's bring-up paragraph points at it. Adding a variant to an enum that is no
 
 #### Item 7: The decode ignores a generation or reseed in flight
 
-Status: Done. Landed in `nifeos/jh7110_entropy#19` (harness `work_in_flight_is_always_not_ready`).
-
 The finding as raised is in the [evidence appendix](1049-jh7110-entropy-release-review/review-evidence.md).
 
 #### Item 8: `Pool` can be copied and printed
-
-Status: Done. Landed in `nifeos/jh7110_entropy#19`.
 
 `Pool` holds the 32 bytes and derives `Clone, Copy, Debug`. A copy serves the same bytes twice, which is the one property
 `no_byte_is_served_twice_across_refills` and the README promise; `Debug`
@@ -112,8 +134,6 @@ nothing zeroes the buffer on drop. Ruled: `Pool` loses `Clone` and `Copy`, gets 
 implementation is breaking, so one-way. Effort XS.
 
 #### Item 9: `Pool`'s names and answer shape at the release review
-
-Status: Done. Landed in `nifeos/jh7110_entropy#19`, with the ratified names.
 
 `Pool::remaining`
 returns a count of bytes and the units rule says a length carries its unit.
@@ -126,13 +146,9 @@ names predate the units rule, and the release review reopens them. Ratified: `Po
 
 #### Item 10: `Pool` has no proof
 
-Status: Done. Landed in `nifeos/jh7110_entropy#19`; `nifeos/jh7110_entropy#29` moved both harnesses onto `take_into`.
-
 The finding as raised is in the [evidence appendix](1049-jh7110-entropy-release-review/review-evidence.md).
 
 #### Item 11: The package ships the repository's plumbing
-
-Status: Done. Landed in `nifeos/jh7110_entropy#20`.
 
 `cargo package --list` includes `.github/`
 (workflows, templates, budgets, exemptions), `.githooks/`, `.cargo/mutants.toml`,
@@ -144,8 +160,6 @@ those. Two-way. Effort XS.
 
 #### Item 12: Manifest metadata for crates.io
 
-Status: Done. Landed in `nifeos/jh7110_entropy#20`.
-
 `Cargo.toml` has `keywords = ["no-std", "kani",
 "driver"]` and no `documentation` field. Recommended: `documentation =
 "https://docs.rs/jh7110_entropy"`, keywords a searcher types (`jh7110`, `trng`, `starfive`,
@@ -154,8 +168,6 @@ three present (the slug exists). Metadata can change in a later version, so two-
 first version's page is what a search engine indexes first. Effort XS.
 
 #### Item 13: The changelog's order
-
-Status: Done. Landed in `nifeos/jh7110_entropy#19`; the header promises no dates.
 
 `CHANGELOG.md` has an `## Unreleased` section holding "First
 version" below `## 0.1.1`, while the tags `v0.1.0`, `v0.1.1` and `v0.2.0` exist, and the
@@ -167,8 +179,6 @@ Effort XS.
 
 #### Item 14: README shape per the template's report-only checks
 
-Status: Done. Landed in `nifeos/jh7110_entropy#20`; the report-only README checks list nothing on `main`.
-
 The README states the minimum
 Rust version as a bare line where the template's section order wants `## Minimum Rust
 version`. `## EXAMPLES` and `## What is proven` come after sections of the crate's own; the
@@ -179,8 +189,6 @@ Two-way. Effort XS.
 
 #### Item 15: Two named bits are private
 
-Status: Done. Landed in `nifeos/jh7110_entropy#21`.
-
 `INTERRUPT_STATUS_AGE_ALARM` and
 `INTERRUPT_STATUS_REQUEST_ALARM` are `pub(crate)`, yet both sit in
 the public `INTERRUPT_STATUS_DOCUMENTED_BITS_MASK` and the mask's doc comment tells a driver to
@@ -189,8 +197,6 @@ on the mask argues that a bit with no name leaves a status word undecodable.
 Recommended: make both `pub`. Additive, two-way. Effort XS.
 
 #### Item 16: Decode the read-only build registers and the reseed-state field
-
-Status: Done. Landed in `nifeos/jh7110_entropy#21`; the new names stand as ruled, under *Open decisions*.
 
 NetBSD names
 `FEATURES` bits (`MM_RESET_STATE` 3, `RAND_SEED_AVAIL` 2, `MAX_RAND_LENGTH` 1:0) and `BCONF`
@@ -202,8 +208,6 @@ Two-way. Effort S.
 
 #### Item 17: A rand_core adapter behind a feature. Declined
 
-Status: Declined.
-
 A user of the embedded Rust ecosystem may
 reach for `rand_core::TryRng` (0.10) and find nothing here to implement it. There is no
 `rand_core` feature in 0.3.0. nife reaches the interface through `getrandom` at the contract
@@ -212,8 +216,6 @@ asks or the contract layer needs the interface. Two-way (additive later). No eff
 
 #### Item 18: Fuzz, or say why not
 
-Status: Done. Landed in `nifeos/jh7110_entropy#21`; the README's `BUGS` says why there is no fuzz target.
-
 The template's `fuzz.yml` caller is absent. The crate parses two
 byte strings (`interrupt_line`, `is_status_okay`), both trivial, and holds no `unsafe`, so
 public crash inputs fit the opt-in rule. Either add the caller with one
@@ -221,8 +223,6 @@ target over both decoders or record in `BUGS` that the crate has nothing worth f
 Two-way. Effort XS.
 
 #### Item 19: State why `rust-version` is 1.88
-
-Status: Done. Landed in `nifeos/jh7110_entropy#27`, which lowers `rust-version` to 1.85.
 
 The source needs edition 2024 (1.85) and
 `Option::is_none_or` (1.82); nothing read asks for 1.88. Either lower to 1.85 and let the
@@ -272,23 +272,10 @@ The review claims none of the hardware checks.
 
 ## Follow-on
 
-Each item above carries its status. What is still open:
-
-- **Outstanding.** Items 1 to 3, the publication steps: publish 0.3.0, remove `publish = false` and
-  `allow-unpublished: true` in the release pull request, then pass `cargo publish --dry-run`, and
-  create the first-publish token. All wait on the publishing hold; checked on `main`, where the
-  manifest still refuses to publish.
-- **Outstanding.** The README's bring-up paragraph gives the measured poll times, a done-when check
-  the README contradicted; carried by `nifeos/jh7110_entropy#34`.
-- **Done.** `weekly` is green on `main` (run `44470342339`), with the `proofs / loom` check its
-  `settings drift` job asked for now required by the ruleset.
-- **Outstanding.** Bench: whether a reseed clears `LFSR_LOCKUP`, since no lockup appeared in either
-  board run.
-- **Outstanding.** Bench: `STATUS_SEEDED`, `LAST_RESEED` and `BCONF` bit 3 at the silicon's reset
-  state rather than after the bootloader. That read also settles which value of
-  `BUILD_CONFIGURATION_OUTPUT_WIDTH_AFTER_RESET` means 256 bits.
-- **Done.** The other checks of the [done-when appendix](1049-jh7110-entropy-release-review/done-when.md)
-  hold on `main`, as its closing paragraph lists.
+- **Outstanding.** Items 1 to 3, on the publishing hold; checked on the crate's `main`, where
+  `Cargo.toml` still carries `publish = false` and crates.io has no such crate.
+- **Outstanding.** Two questions on a board run, under *Finding status*; checked against both
+  board runs, which saw no lockup and read only the state the bootloader leaves.
 
 ## Index row
 

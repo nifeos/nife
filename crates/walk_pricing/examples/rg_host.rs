@@ -5,7 +5,7 @@
 //! cargo run --release -p walk_pricing --example rg_host -- <path to rg> [runs]
 //! ```
 //!
-//! The words are `filesystem_fixture::walk::RG_SEARCH` split by nife's argv builder,
+//! The words are `file_system_fixture::walk::RG_SEARCH` split by nife's argv builder,
 //! `grant_plan::for_each_word`, run in the staged tree with output to a drained pipe (a host's nearest
 //! thing to nife's byte sink). It prints ripgrep's own `seconds` line and spawn-to-exit beside it.
 
@@ -18,7 +18,7 @@
 use std::process::Command;
 use std::time::Instant;
 
-use filesystem_fixture::walk as tree;
+use file_system_fixture::walk as tree;
 
 /// `rg --stats`'s last line, `<seconds> seconds`, in nanoseconds.
 fn rg_seconds(text: &str) -> Option<u128> {

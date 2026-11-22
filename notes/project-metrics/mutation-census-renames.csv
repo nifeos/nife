@@ -64,7 +64,7 @@ current_cpu_protocol,current_cpu_contract,3e58ecf3,2026-10-18
 name_resolution_protocol,domain_name_resolution_contract,3e58ecf3,2026-10-18
 entropy_protocol,entropy_contract,3e58ecf3,2026-10-18
 environment_protocol,environment_contract,3e58ecf3,2026-10-18
-filesystem_protocol,filesystem_contract,3e58ecf3,2026-10-18
+filesystem_protocol,file_system_contract,3e58ecf3,2026-10-18
 graphics_protocol,graphics_contract,3e58ecf3,2026-10-18
 swap_protocol,hot_swap_contract,3e58ecf3,2026-10-18
 login_protocol,login_contract,3e58ecf3,2026-10-18

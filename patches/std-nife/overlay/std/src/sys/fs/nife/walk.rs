@@ -110,7 +110,7 @@ impl Drop for At {
 /// capability, so asking for more than the operation needs breaks under every narrowed grant while
 /// passing every test that grants the root's full rights, which is the mistake `readdir` records
 /// having nearly shipped. An object that is held rather than used for one verb has no minimum, and
-/// asks for `fsproto::directory::PARENT_RIGHTS` (§98), the parent's rights whatever they are.
+/// asks for `fsproto::directory::rights::PARENT_RIGHTS` (§98), the parent's rights whatever they are.
 pub(super) fn descend(p: &mut Page, parent: &At, name: &str, want: u64) -> io::Result<At> {
     p.put(name.as_bytes());
     let handle = request(proto::request(proto::OPENDIR, parent.0, name.len() as u64), want)?;
@@ -122,7 +122,7 @@ pub(super) fn descend(p: &mut Page, parent: &At, name: &str, want: u64) -> io::R
 /// `File::open("a/b/c")` is `OPENDIR a`, `OPENDIR b`, then `OPEN c` against `b`'s handle: the
 /// contract's `openat` semantics with a path-shaped std on top (milestone 122's option A; [`Dir`]
 /// is the other interface). Every hop asks for `DESCEND | needs`, where `needs` is what the *final*
-/// verb requires on the directory it lands in (`filesystem_contract::verb::TABLE`; [`open_rights`]
+/// verb requires on the directory it lands in (`file_system_contract::verb::TABLE`; [`open_rights`]
 /// resolves `OPEN`'s "READ or WRITE"). That is not a widening: a child's rights are its parent's
 /// intersected with the request, so the walk asks for exactly the most the grant could give at that
 /// depth. **At most two handles are open at once**, because the assignment in the loop drops, and
@@ -142,7 +142,7 @@ pub(super) fn walk<'a>(p: &mut Page, from: u64, path: &'a Path, needs: u64) -> i
         if seen == total {
             return Ok((at, name));
         }
-        at = descend(p, &at, name, fsproto::directory::DESCEND | needs)?;
+        at = descend(p, &at, name, fsproto::directory::rights::DESCEND | needs)?;
     }
     // `count_names` counted the same components this loop walks, so the return above always fires.
     Err(io::const_error!(

@@ -136,7 +136,7 @@ less than that. It names one file, so it must grant one file.
 
 The narrowing is a caretaker, Mark Miller's pattern: a process that holds the wider capability,
 exports a narrower one, and is the only path between them. `components/src/fs_file_caretaker.rs` opens the
-granted name once at startup and then serves the *same* `filesystem_contract::fs` contract on its own endpoint:
+granted name once at startup and then serves the *same* `file_system_contract::file_system` contract on its own endpoint:
 
 ```text
   FS server ──file IPC──► fs_file_caretaker ──narrowed file IPC──► the confined program
@@ -156,7 +156,7 @@ refusal, because there is no policy here to consult:
 ### The verb surface is part of what the capability is (milestone 61)
 
 A file capability is a different protocol from a directory, so which verbs exist is what the
-capability is, written down in `filesystem_contract::verb::file_grant::POLICY`, one row per opcode.
+capability is, written down in `file_system_contract::verb::file_grant::POLICY`, one row per opcode.
 Each row is `Local`, `Forward` or `Refused(errno)`, and the errno says which kind of "no" it is.
 Milestone 61 (caretakers) made the attribute verbs reachable through it ([xattr.md](xattr.md)).
 #### BUGS

@@ -152,7 +152,7 @@ moving 64 KiB rather than 4 KiB into the client's pages: sixteen pages is 13 us 
   is the problem.**
 
 The wall behind all three is new. `IpcDisk::read_at` chunks every record into one
-`filesystem_contract::blk` request per 4 KiB block, because the block contract shares exactly one
+`file_system_contract::blk` request per 4 KiB block, because the block contract shares exactly one
 page with the block server, the same limit the file contract has. A 128 KiB record read is therefore
 32 device round trips rather than one 128 KiB transfer. So 39.0 us is the price of a round trip, not
 of the bytes. At that price no request size and no record level can exceed about 100 MiB/s. Linux
@@ -172,7 +172,7 @@ lives there, one layer below the one milestone 138 is about.
 - The record-aligned phase stays aligned by luck rather than by design. `fs_record_read` reads at
   multiples of 128 KiB, a multiple of every record size at or below level 5, so it means the same
   thing at every point in this sweep. It would stop meaning it if anyone swept above level 5, and
-  nothing checks that; `filesystem_contract::fixture::throughput::RECORD` says so in its own comment.
+  nothing checks that; `file_system_contract::fixture::throughput::RECORD` says so in its own comment.
 - The machine was not quiet, and the headline figures are the normalized ones, not raw. The method
   and the raw minimums are above. Both agree with the two runs taken at an ordinary load, which is
   weaker evidence than a quiet machine would have been.
@@ -183,4 +183,4 @@ lives there, one layer below the one milestone 138 is about.
   image, which is not the allocator's own answer. A block a record has vacated keeps its old bytes, so
   the count would drift upward on a rewritten image. These images were made, imported into once and
   never written again, the case where count and allocation agree. RedoxFS's own free-block count
-  (`filesystem_contract::fs::STATFS`) would be exact and needs a guest or a verb the host tool lacks.
+  (`file_system_contract::file_system::GET_VOLUME_STATISTICS`) would be exact and needs a guest or a verb the host tool lacks.

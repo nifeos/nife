@@ -180,7 +180,7 @@ pub const GET: u64 = 1;
 
 /// A crate root split into module files generates the text it did as one file: milestone 845 (the
 /// filesystem-protocol crate root is split along its seams) relies on this to split
-/// `filesystem_contract` without changing what std builds.
+/// `file_system_contract` without changing what std builds.
 #[test]
 fn an_out_of_line_module_is_inlined_as_it_was_written_inline() {
     let split = "/// Docs.\npub mod fs;\n\nmod private;\npub const PAGE: usize = 4096;";

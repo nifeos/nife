@@ -155,7 +155,7 @@ exclude_globs = [
 # not at all.
 exclude_re = [
     # The Kani harness modules: 18 `mod verification` blocks and 3 `mod proofs` (credential_contract,
-    # filesystem_contract, regions), every one behind `#[cfg(kani)]`, so `cargo test` never compiles them: a
+    # file_system_contract, regions), every one behind `#[cfg(kani)]`, so `cargo test` never compiles them: a
     # mutant there always "survives", and the first full run reported dozens of exactly that (whole
     # harnesses, mutated to `()`, "missed"). Their checker is script/verify, not
     # the test suite, and mutating the proof rather than the code under proof measures nothing this

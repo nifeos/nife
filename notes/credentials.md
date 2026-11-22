@@ -265,7 +265,7 @@ the shared frame left all zero. Each test and what it pins is listed in
   branch nothing reaches. A real deployment with a fourth person edits a constant and rebuilds.
 - One verify page means one client at a time. The page is per service, not per channel, so two
   clients sharing the endpoint would share the frame each writes its presented secret into. Nothing
-  detects that. `filesystem_contract`'s answer (one page per channel) is the shape to copy when a second client
+  detects that. `file_system_contract`'s answer (one page per channel) is the shape to copy when a second client
   exists; today the intended client is the single SMB adapter.
 - No rate limit, no lockout, no attempt counter. A client holding the verify endpoint can guess
   as fast as it can `CALL`. Each guess costs the service one Argon2id derivation, which is the only

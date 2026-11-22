@@ -27,9 +27,9 @@ documentation = { version = "0.1.0", path = "../crates/documentation", features 
 # stage 1: files, clock and memory)).
 c_program_fixture = { path = "../crates/c_program_fixture" }
 # The FS wire contract's crate stays out: everything xtask read from it was the test fixture,
-# which is crates/filesystem_fixture since milestone 886 (the filesystem test fixture moves to
+# which is crates/file_system_fixture since milestone 886 (the filesystem test fixture moves to
 # its own crate).
-filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" }
+file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture" }
 # Milestone 121 (`ripgrep` on nife: enumeration as a capability)'s priced tree: the image builder stages it with the same function a host
 # comparison stages it with, so the two cannot be walks over different shapes.
 walk_pricing = { version = "0.1.0", path = "../crates/walk_pricing" }

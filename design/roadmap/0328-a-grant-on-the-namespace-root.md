@@ -11,7 +11,7 @@ needs_person: no
 # 328. A grant on the root of the shell's namespace
 
 §173 (narrowing the root of the shell's namespace) ruled option A, and
-this milestone builds it. `filesystem_contract::fs::NARROW`, verb 23, takes a held directory handle
+this milestone builds it. `file_system_contract::file_system::NARROW`, verb 23, takes a held directory handle
 and a rights mask, mints a second handle through `Rights::attenuate`, and resolves no name. The
 server's `narrow` calls `Rights::attenuate` and refuses a short intersection with `EPERM`, as
 `OPENDIR` does; nothing restates the arithmetic. A caretaker or the progenitor's bound channel that
@@ -21,7 +21,7 @@ directory it filters (`Verb::reissues_handle`), since the new handle would carry
 gate.txt` at the top prompt gets `REMOVE` alone, as `rm rmtree/rm-solo` does. The shell's root
 does not move.
 
-Gates: `filesystem_contract` and `redoxfs_server` host tests (the narrowed handle can remove and
+Gates: `file_system_contract` and `redoxfs_server` host tests (the narrowed handle can remove and
 cannot look, open or widen), and `script/swish-check` on every architecture it covers, where
 `caps rm gate.txt`, `rm -v gate.txt` and `wc gate.txt` replace the old refusal.
 
@@ -32,15 +32,15 @@ The name `NARROW` is provisional (an architect's to ratify).
 Milestone 31 (a capability shell: designation is authorization) claims that typing a name is the grant. The top of a namespace is where anyone
 starts, so a grant that worked one level down and failed at the top would have been the first hole
 a newcomer met. `NARROW` closes it with the proved `Rights::attenuate`, a new row in
-`filesystem_contract::verb::TABLE`, and no change to what any relative path means.
+`file_system_contract::verb::TABLE`, and no change to what any relative path means.
 
 `notes/dir-capability.md` carries the sibling limitation: a grant more than one level down is a
 chain of caretakers and is still a refusal.
 
 ## Index row
 
-A grant on the root of the shell's namespace is narrowed by `fs::NARROW`, verb 23 on
-`filesystem_contract`: a held directory handle and a rights mask in, a second handle out through
+A grant on the root of the shell's namespace is narrowed by `file_system::NARROW`, verb 23 on
+`file_system_contract`: a held directory handle and a rights mask in, a second handle out through
 `Rights::attenuate`, no name resolved. `rm gate.txt` at the top prompt gets `REMOVE` alone, as
 `rm rmtree/rm-solo` is, and `script/swish-check` gates both on every architecture it covers.
 

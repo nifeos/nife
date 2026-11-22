@@ -13,7 +13,7 @@ use super::*;
 /// straight from the contract so this wiring and the server agree. Window 0 is [`FILE_SHARED`], the
 /// unbadged default every legacy single-client path maps; windows 1.. are the pool [`claim_window`]
 /// hands out, one per additional live client, each its own frame and its own badge.
-pub(super) const CLIENT_WINDOWS: usize = filesystem_contract::fs::CLIENT_WINDOWS;
+pub(super) const CLIENT_WINDOWS: usize = file_system_contract::file_system::CLIENT_WINDOWS;
 
 /// The physical base of each window's [`FILE_PAGES`]-frame run. `WINDOWS[0]` is [`FILE_SHARED`];
 /// the rest are allocated once when the service is wired and mapped into the FS server. Plain
