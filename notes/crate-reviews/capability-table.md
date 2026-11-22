@@ -96,8 +96,8 @@ No nife type appears in a public signature. What a stranger may find surprising:
   target, not a truncated index.
 - `highest_seen` is one process-wide value across every table of every size, which suits a kernel
   and surprises a library user, so it is behind the `peak` feature, off by default (finding P2-11).
-- `Capability<O>` has no niche, so `Option<Capability<O>>` costs extra bytes (finding P2-16,
-  optional).
+- `Rights` keeps a marker bit in a `NonZeroU32`, so `Option<Capability<O>>` is no larger than
+  `Capability<O>` (finding P2-16, nifeos/capability_table#2).
 
 ## Rulings
 
@@ -154,9 +154,7 @@ defines these names.
 
 All are two-way until the first release, and the maintainer rules them provisionally.
 
-1. An `Option<Capability<O>>` niche (P2-16). Optional; it changes the input domain of every rights
-   harness, so a lane measures it before it takes it. Effort M.
-2. A pedantic-clippy pass for `# Errors` sections and `#[must_use]`, which the milestone counted
+1. A pedantic-clippy pass for `# Errors` sections and `#[must_use]`, which the milestone counted
    at eight and twelve findings. Effort XS.
 
 ## Open questions

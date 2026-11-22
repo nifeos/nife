@@ -99,8 +99,8 @@ becomes a store.
 You need a Rust toolchain at or above the minimum version at the foot of this page (`rustup` is the
 usual way to get one) and a git checkout. From the crate root:
 
-- `cargo build` and `cargo test` run on the host and need nothing else. The tests are 50 unit
-  tests and 2 doctests.
+- `cargo build` and `cargo test` run on the host and need nothing else. `cargo test` runs the
+  unit tests and the doctests, this README's example among them.
 - The crate also builds for bare metal. Add the three targets with `rustup target add
   riscv64imac-unknown-none-elf aarch64-unknown-none-softfloat x86_64-unknown-none`. Then run
   `cargo build --lib --target <target>` for each. CI does exactly this.
@@ -112,11 +112,11 @@ usual way to get one) and a git checkout. From the crate root:
 
 ## BUGS
 
-- No board has confirmed the bring-up end to end. The PMIC reset path in particular
-  (`standard_mode_100_kilohertz` at the input clock `inter_integrated_circuit_5_clock_frequency`
-  computes, and `POWER_MANAGEMENT_CHIP_RESET_REGISTER` with its reset bit) has run only in host
-  tests. No board has run the timing this release computes: 198 high counts and 297 low counts at
-  49.5 megahertz (MHz). The crate makes no claim about a board.
+- One board, a VisionFive 2, has reset itself through the PMIC reset path. It ran the timing
+  `standard_mode_100_kilohertz` computes at the input clock
+  `inter_integrated_circuit_5_clock_frequency` gives, 198 high counts and 297 low counts at 49.5
+  megahertz (MHz), and then wrote `POWER_MANAGEMENT_CHIP_RESET_REGISTER` with its reset bit. The
+  crate makes no claim about any other board.
 - `Step`, `BringUpReport`, `PowerManagementChipBus`, `DevicePlan` and `WindowLocation` are
   `#[non_exhaustive]`, so a later release can add a step kind or a field without a breaking change.
   Build a `BringUpReport` with `BringUpReport::default()` and assign its fields, and match a `Step`

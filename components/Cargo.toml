@@ -739,7 +739,7 @@ interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfac
 system_log = { version = "0.1.0", path = "../crates/system_log" }
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }
 clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
-environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "b4925221c6d33163c6217aa2b118ba29f0be5379" }
+environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "4778d5937460ef1e43e39113721422dd573a3306" }
 credentialer = { version = "0.1.0", path = "../crates/credentialer" }
 credential_contract = { version = "0.1.0", path = "../crates/credential_contract" }
 login_contract = { version = "0.1.0", path = "../crates/login_contract" }
@@ -784,7 +784,7 @@ non_volatile_memory_express = { version = "0.1.0-pre.3", git = "https://github.c
 e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
 # radon's Ethernet port's ring logic (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): `net_stack`'s designware_ethernet_transport.rs is the volatile shell over it.
-designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "0e8f92bf67e58016983164cb52bf274e08e1d7ef" }
+designware_ethernet = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/designware_ethernet", rev = "d6730d2218edead38fac3fe96703eaa1e5e92ee2" }
 # usb_keyboard_driver.rs is the volatile shell over these two (milestone 242 (USB host and HID)):
 # descriptors and boot reports, and the xHCI ring and context arithmetic. What it agrees on with the
 # kernel (the handoff, the register window and the bring-up report) is in `driver_process_contract`.
