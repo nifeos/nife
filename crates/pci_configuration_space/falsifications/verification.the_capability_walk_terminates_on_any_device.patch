@@ -1,4 +1,4 @@
-Falsifies `pci::verification::the_capability_walk_terminates_on_any_device`.
+Falsifies `pci_configuration_space::verification::the_capability_walk_terminates_on_any_device`.
 
 The defect: the hop bound is one too many, `0..65` in place of `0..64`. The walk still
 terminates, so the property a reader checks first survives; what breaks is the exact bound the
@@ -14,7 +14,7 @@ patch ever reports something else.
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -636,7 +636,7 @@
+@@ -698,7 +698,7 @@
          return;
      }
      let mut at = (read32(bus_device_function, CAPABILITIES_POINTER_REGISTER) & 0xfc) as u64;

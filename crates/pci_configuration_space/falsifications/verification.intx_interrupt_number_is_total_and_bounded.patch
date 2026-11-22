@@ -1,4 +1,4 @@
-Falsifies `pci::verification::intx_interrupt_number_is_total_and_bounded`.
+Falsifies `pci_configuration_space::verification::intx_interrupt_number_is_total_and_bounded`.
 
 The defect: the pin is decremented without saturating, `pin as u32 - 1` in place of
 `(pin as u32).saturating_sub(1)`. This is the defect the property was written against rather
@@ -14,7 +14,7 @@ vetted.
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -975,7 +975,7 @@
+@@ -1051,7 +1051,7 @@
      // saturating_sub means a (contract-violating) pin of 0 behaves as INTA instead of
      // underflowing, and the saturating_add means a nonsense base cannot wrap. The callers all
      // check pin == 0 before calling; this is defence in depth, not an invitation.
