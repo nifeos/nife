@@ -80,8 +80,8 @@ them is one we contribute to upstream until it meets them.
 
 | condition | `rsext4` 0.9.2 | what closes it |
 |---|---|---|
-| a safety argument on every use of `unsafe` | none on the two casts; the CRC32C paths are not yet read | the review below, landed upstream |
-| proofs that match ours | none | the harnesses below, upstream where they fit, here otherwise |
+| a safety argument on every use of `unsafe` | none on the two casts, and none on five of the nine CRC32C uses | the review below, landed upstream |
+| proofs that match ours | none upstream; eight Kani harnesses here, against its public API | the harnesses below, upstream where they fit, here otherwise |
 | aarch64, riscv64 and x86_64 | builds for all three; hardware CRC32C on two, a software path on riscv64 | the oracle suite passing on each |
 | maintained | active in `tgoskits`; at least 24 commits by six people from 2026-08-04 to 2026-11-08 | a crates.io release that carries our fixes |
 
@@ -247,10 +247,16 @@ it. That ruling is not the adoption ruling above, which stays open.
 
 - **Done.** The plan: this block and its survey appendix name the crate, the measurements, the
   upstream work, our own tests and the conditions above.
-- **Outstanding.** The upstream round: the two bug fixes, the recovery-flag order, the safety
-  arguments, the cast replacement, the fuzz targets, the Kani harnesses, the mount's error report
-  and whole times in `InodeInfo`. Each text goes to the
+- **Outstanding.** The upstream round: the two bug fixes, the recovery-flag order, the fuzz
+  targets, the mount's error report and whole times in `InodeInfo`. Each text goes to the
   architect before anyone files it.
+- **Outstanding.** Items 5 and 6 await review. The
+  [unsafe review](0190-ext4-read-write/upstream/5-unsafe-review.md) holds the safety arguments and
+  the cast replacement as a patch, and the
+  [Kani harnesses draft](0190-ext4-read-write/upstream/6-kani-harnesses.md) offers the harnesses
+  as an issue that asks whether upstream wants them. Neither goes upstream until the architect
+  clears its text. The harnesses run here meanwhile, in
+  `tools/ext4_oracle/tests/parser_proofs.rs`, as `script/verify`'s `ext4_oracle` row.
 - **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the
