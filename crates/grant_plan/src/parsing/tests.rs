@@ -39,7 +39,7 @@ fn tokenize_stops_at_its_buffer_and_at_trailing_whitespace() {
     assert_eq!(tokenize(b"a b c", &mut two), [&b"a"[..], &b"b"[..]]);
 }
 
-/// **Whitespace inside quotes is not a separator** (milestone 67), which is what makes a name
+/// **Whitespace inside quotes is not a separator**, which is what makes a name
 /// with a space in it a single token and therefore a single designation.
 #[test]
 fn a_quoted_span_is_one_token_however_many_spaces_are_in_it() {
@@ -182,7 +182,7 @@ fn help_is_a_builtin_and_everything_else_is_a_program() {
         }),
         "bare `touch` needs a name"
     );
-    // DECISIONS §112's arbitrary-instant form: two words after the flag, the RFC 3339 text
+    // The arbitrary-instant form: two words after the flag, the RFC 3339 text
     // (kept exactly as typed, unparsed) and the name.
     assert_eq!(
         parse(b"touch -t 2030-01-01T00:00:00Z logs"),
@@ -233,10 +233,10 @@ fn help_is_a_builtin_and_everything_else_is_a_program() {
     assert_eq!(parse(b"apropos"), CommandLine::Apropos(b""));
 }
 
-/// **`vouch` takes one file and records it by its last component** (DECISIONS §221). A bare
+/// **`vouch` takes one file and records it by its last component**. A bare
 /// name is not a file by the prompt's rule, and a name the installed-programs table could not read back
 /// as itself is refused before anything is sent.
-/// **`user` takes a verb and one name** (milestone 152's §108 ruling), and anything else is
+/// **`user` takes a verb and one name**, and anything else is
 /// [`UserVerb::Usage`], so a line the list could not hold never reaches it.
 #[test]
 fn user_takes_suspend_or_resume_and_one_name() {
@@ -397,8 +397,7 @@ fn capabilities_previews_the_command_you_would_have_typed() {
     );
 }
 
-/// **`time` runs the command you typed, so its tail has to parse back to that command**
-/// (milestone 86).
+/// **`time` runs the command you typed, so its tail has to parse back to that command**.
 ///
 /// The same property `caps` has, and asserted the same way, because it is the same claim: the
 /// tail is the line with the prefix word taken off, so what is timed and what would have run
@@ -443,7 +442,7 @@ fn refused(line: &[u8]) -> Refusal {
     write_argument_page(line, &mut [0u8; program_argument_contract::PAGE_BYTES]).unwrap_err()
 }
 
-/// **Every word arrives as it was typed, and none is classified** (§170). An option the shell
+/// **Every word arrives as it was typed, and none is classified**. An option the shell
 /// never heard of, a `--long=value`, an integer, and a quoted phrase with the quotes off; the
 /// name first, as `argv[0]`. Past `parse_invocation`'s sixteen tokens too, because nothing is placed.
 #[test]
@@ -459,8 +458,8 @@ fn argv_carries_every_word_as_typed() {
     assert_words(&many, &[&b"w"[..]; 40]);
 }
 
-/// **An unquoted pattern is refused, not expanded and not passed through** (§170: the words
-/// carry no authority, so expanding one would hand over names and nothing they name). The same
+/// **An unquoted pattern is refused, not expanded and not passed through**: the words carry no
+/// authority, so expanding one would hand over names and nothing they name. The same
 /// bytes quoted are one word.
 #[test]
 fn argv_refuses_an_unquoted_pattern_and_passes_a_quoted_one() {
@@ -520,7 +519,7 @@ fn a_line_that_exactly_fills_the_argument_page_is_taken() {
 
 /// A job number is read in base ten and bounded at two digits, so `%12` is job twelve and `%123`
 /// names no job rather than wrapping or being truncated to one. Each case here is one an
-/// off-by-one in the bound or the digit sum would get wrong (milestone 48 (job control)).
+/// off-by-one in the bound or the digit sum would get wrong.
 #[test]
 fn a_job_operand_is_two_decimal_digits_at_most() {
     assert_eq!(job_operand(b"%12"), Ok(Some(12)));

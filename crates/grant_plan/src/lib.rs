@@ -1,13 +1,13 @@
-//! **`grant_plan`: the grant-expression logic of the capability shell** (milestone 31, phase 1).
+//! **`grant_plan`: the grant-expression logic of a capability shell**.
 //!
-//! On a nife command line *designation is authorization* (Mark Miller's principle): naming a
-//! resource in a command is how you grant it. The crate performs no IO and makes no system call.
+//! On this shell's command line *designation is authorization* (Mark Miller's principle): naming
+//! a resource in a command is how you grant it. The crate performs no input or output and makes no
+//! system call.
 //! [`parse`] turns a line of bytes into a [`CommandLine`]. For a program invocation, [`plan_against`]
 //! places its tokens into the slots a program's [`Manifest`] declares and yields an [`Endowment`],
 //! exactly what to grant the child, or a typed [`Refusal`] the shell prints at the prompt. The
 //! manifest is the caller's to supply: this crate knows no program, and the declarations it plans
-//! against are `grant_contract`'s. See notes/grant-expression.md, its appendix
-//! grant-expression/grant-plan-crate.md, and notes/program-manifest.md.
+//! against are `grant_contract`'s.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `capsh`. Refused `capsh` (Linux's
 //! `capsh(1)` is a different tool). Refused `designation`, `designate` and `designator` (the user

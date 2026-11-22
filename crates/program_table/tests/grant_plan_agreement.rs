@@ -8,14 +8,23 @@
 #[test]
 fn the_planner_bounds_match_the_file_system_contract() {
     use file_system_contract::{grant, nameset};
-    assert_eq!(grant_plan::MAXIMUM_FILE_NAME_BYTES, grant::MAXIMUM_NAME_BYTES);
-    assert_eq!(grant_plan::MAXIMUM_WORDS_NAME_BYTES, grant::MAXIMUM_WORDS_NAME_BYTES);
+    assert_eq!(
+        grant_plan::MAXIMUM_FILE_NAME_BYTES,
+        grant::MAXIMUM_NAME_BYTES
+    );
+    assert_eq!(
+        grant_plan::MAXIMUM_WORDS_NAME_BYTES,
+        grant::MAXIMUM_WORDS_NAME_BYTES
+    );
     assert_eq!(grant_plan::expansion::MAXIMUM_NAMES, nameset::MAXIMUM_NAMES);
     assert_eq!(
         grant_plan::expansion::MAXIMUM_NAME_SET_BYTES,
         nameset::MAXIMUM_NAME_SET_BYTES
     );
-    assert_eq!(grant_plan::expansion::MAXIMUM_NAME_BYTES, grant::MAXIMUM_NAME_BYTES);
+    assert_eq!(
+        grant_plan::expansion::MAXIMUM_NAME_BYTES,
+        grant::MAXIMUM_NAME_BYTES
+    );
 }
 
 /// **The widest set the planner can plan fits the buffer the contract sizes for it**: every name

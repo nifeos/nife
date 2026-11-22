@@ -1,12 +1,10 @@
-//! **The two-tier interrupt escalation policy**, §24 (interrupting the foreground process):
-//! what the shell does at each step of watching a foreground job for `^C`.
+//! **The two-tier interrupt escalation policy**: what the shell does at each step of watching a foreground job for `^C`.
 //!
-//! The crate root re-exports every public item (§272 (the grant-plan crate root splits into
-//! private modules)).
+//! The crate root re-exports every public item.
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
-// ---- the two-tier interrupt escalation policy (DECISIONS §24) ----
+// ---- the two-tier interrupt escalation policy ----
 
 /// What the shell should do this step of watching a foreground job for `^C`.
 ///
@@ -22,7 +20,7 @@ pub enum InterruptAction {
 }
 
 /// Poll ticks the shell waits for a cooperative exit after the first `^C` before it escalates on a
-/// timeout. This is the "shell-side timeout" DECISIONS §24 left to the shell: a job that ignores the
+/// timeout. This is the shell-side timeout: a job that ignores the
 /// cooperative signal is still torn down without needing a second keystroke. In ticks (the shell's
 /// own watch loop iterations), not wall time, so it is deterministic and testable without a clock.
 ///
@@ -30,8 +28,8 @@ pub enum InterruptAction {
 pub const COOPERATIVE_GRACE_POLLS: u32 = 200;
 
 /// The two-tier escalation policy, as a small state machine the shell drives while a foreground job
-/// runs. It holds where `^C` routing lives (DECISIONS §24: in the shell, userspace, because job
-/// control is the shell's knowledge). Pure logic, host-tested, so the counts and the grace window
+/// runs. It holds where `^C` routing lives: in the shell, in userspace, because job control is the
+/// shell's knowledge. Pure logic, host-tested, so the counts and the grace window
 /// are pinned without an emulator.
 ///
 /// The shell feeds it two events: [`on_interrupt`](Escalation::on_interrupt) when it observes a

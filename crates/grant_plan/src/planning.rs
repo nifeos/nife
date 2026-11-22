@@ -1,8 +1,7 @@
 //! **Whether a line can be granted**: `plan` and its variants, the stream checks,
 //! `check_chain`, and the placing of a line's tokens into the slots a manifest declares.
 //!
-//! The crate root re-exports every public item (§272 (the grant-plan crate root splits into
-//! private modules)).
+//! The crate root re-exports every public item.
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
@@ -37,15 +36,14 @@ pub struct Streams {
 /// grant, or the [`Refusal`] to print. The whole authority decision lives here: after this returns
 /// `Ok`, the shell grants precisely what the `Endowment` names and the child can reach nothing
 /// else. The caller resolves the program and supplies its manifest; a composer passes a
-/// component's own (milestone 23 (a capability-routed component OS)). `expanded` is what the
+/// component's own. `expanded` is what the
 /// line's patterns matched, since the endowment is the set; [`Expansion::none`] for a line with no
-/// pattern. See notes/glob-grant.md.
+/// pattern.
 ///
 /// **This is where the positional tokens acquire meaning**, in the order typed: the integer
 /// argument first if the manifest declares one, then the file. A token past the last declared slot
 /// is a refusal. Placement is by index, and the [`Expansion`] is keyed to it: a pattern with no
 /// expansion is [`Refusal::Unexpanded`], and a token with no magic never consults the expansion.
-/// See notes/glob-grant.md ("The shell expands before it plans").
 ///
 /// The holdings, the expansion and the streams arrive by reference: each is a kilobyte or more on a
 /// `no_std` stack, and the size test in this crate pins them. Taking them by reference is
@@ -70,7 +68,7 @@ pub fn plan_against_with_streams(
     expanded: &Expansion,
     streams: &Streams,
 ) -> Result<Endowment, Refusal> {
-    // **A line whose quotes do not make sense is answered before anything else** (milestone 67),
+    // **A line whose quotes do not make sense is answered before anything else**,
     // because every other refusal below is a sentence about a word, and this is the one that says
     // the words could not be read. Ordering it after "no such program" would name a program the
     // user did not type.
@@ -81,7 +79,7 @@ pub fn plan_against_with_streams(
     // A flag nothing knows, or a token past what any manifest could hold. Nothing about this
     // program's declaration can rescue it, so it is answered before the slots are filled.
     //
-    // **Not for a program that hears words** (§170): its line is its argv, a flag-shaped token is
+    // **Not for a program that hears words**: its line is its argv, a flag-shaped token is
     // one of its words, and the shell has no business refusing an option it never had to know.
     let words = m.program_argument.hears_words();
     if run.unexpected.is_some() && !words {
@@ -124,19 +122,16 @@ pub fn plan_against_with_streams(
         expanded,
     )?;
 
-    // **A program that hears words is granted what its words designate** (milestone 205, §170
-    // (how a foreign program is told what to do) clauses 2 to 5): one directory grant at the
+    // **A program that hears words is granted what its words designate**: one directory grant at the
     // shell's current directory, filtered to the designated names, or the whole directory when a
-    // word was `.`. A line that designated nothing grants nothing (calef's N1 ruling,
-    // 2026-09-27T06:27Z). What the grant may do is the manifest's [`WordGrant`], which the shell
+    // word was `.`. A line that designated nothing grants nothing. What the grant may do is the manifest's [`WordGrant`], which the shell
     // turns into rights and the progenitor clamps to the manifest it endows.
     let directory = words_directory_grant(&m, shell_holdings, expanded, directory)?;
 
     // The input operand: `wc report.txt` is `wc < report.txt` with the operator left out, which is
     // unambiguous because no manifest declares both a file and an input
     // (`no_program_declares_both_a_file_and_an_input`). An argument and an input compose by fixed
-    // order. An explicit `<` wins, and the operand is then unplaceable below. See
-    // notes/grant-expression/per-file-grants.md ("`wc report.txt`: the input operand").
+    // order. An explicit `<` wins, and the operand is then unplaceable below.
     let mut streams = *streams;
     plan_input_operand(
         &m,
@@ -386,7 +381,7 @@ fn plan_memory_grant(run: &ParsedInvocation<'_>, m: &Manifest) -> Result<u64, Re
     Ok(memory_pages)
 }
 
-/// **Resolve an output redirection's name into the grant that backs it** (milestone 50 (pipes and redirection)).
+/// **Resolve an output redirection's name into the grant that backs it**.
 ///
 /// `> report.txt` designates a file the same way an operand does: the leading path is walked against
 /// where the shell stands **now**, once, and the result is a value. So this is `designate` with the
@@ -435,8 +430,7 @@ fn redirection_file_grant(
 /// **Output**: a `Words` or `Silent` program has no bytes for `>` or `|` to substitute. **Input**:
 /// a program that reads a stream and is handed none would block forever, and one that reads nothing
 /// and is handed one would hold authority for no reason. A `2>` at a program declaring no second
-/// stream is [`Refusal::NoDiagnosticStream`] (DECISIONS §67 (a program's second stream is a
-/// declaration)). Returns where the second stream goes: none, the shell's printing, or a file.
+/// stream is [`Refusal::NoDiagnosticStream`]. Returns where the second stream goes: none, the shell's printing, or a file.
 fn check_streams(m: Manifest, streams: Streams) -> Result<line::Diagnostics, Refusal> {
     if !matches!(streams.sink, Sink::Report) && !m.output.is_byte_stream() {
         return Err(Refusal::NotAByteStream);
@@ -464,9 +458,7 @@ fn check_streams(m: Manifest, streams: Streams) -> Result<line::Diagnostics, Ref
 ///
 /// A process has one wait point, so a shell feeding a chain cannot also receive from it. The line
 /// runs if a stage declaring [`InputDeclaration::Required::writes_while_reading`] `false` absorbs
-/// the stream first, or if its unredirected tail goes to `terminal_sink_caretaker` (DECISIONS §106
-/// (take the `terminal_sink_caretaker` narrowing)); a `>` tail comes back here (DECISIONS §55 (the
-/// file behind a `>` is the shell itself)) and is refused. See notes/pipes/one-wait-point.md.
+/// the stream first, or if its unredirected tail goes to the terminal sink; a `>` tail comes back here and is refused.
 pub fn check_chain(shell_feeds_head: bool, plans: &[Option<Endowment>]) -> Result<(), Refusal> {
     if !shell_feeds_head {
         return Ok(());
@@ -505,7 +497,7 @@ fn designate(
     expanded: &Expansion,
 ) -> Result<(navigation::GrantSide, navigation::DirectoryPath, NameSet), Refusal> {
     // Refuses a pattern anywhere but the last component before anything else looks at the token,
-    // because `a*/b` is not a smaller question than `a*`, it is a different one (notes/glob.md).
+    // because `a*/b` is not a smaller question than `a*`, it is a different one.
     let magic = expansion::last_component_has_magic(token)?;
     let parsed = navigation::path(token).map_err(nav_refusal)?;
     let (lead, last) = parsed
@@ -532,8 +524,7 @@ fn designate(
         // A name that was typed always designates itself. The expansion is not consulted, so a
         // caller cannot substitute a set for a literal and have the grant differ from the line.
         //
-        // Its type bit reads as "not a directory" because nothing enumerated it; see the BUGS note
-        // in notes/glob-grant.md. Only a set the shell expanded carries types it observed.
+        // Its type bit reads as "not a directory" because nothing enumerated it. Only a set the shell expanded carries types it observed.
         NameSet::one(last, false).ok_or(Refusal::FileNotNameable)?
     };
     Ok((side, directory, names))

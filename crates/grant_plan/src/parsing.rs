@@ -1,9 +1,8 @@
 //! **Reading a line**: `tokenize`, `write_argument_page`, `parse`, the `user` and `vouch` verbs, `parse_invocation`,
 //! and `ParsedInvocation`. `parse_invocation` is the only thing that builds a `ParsedInvocation`, so its fields stay private
-//! here (§272, fork 3).
+//! here.
 //!
-//! The crate root re-exports every public item (§272 (the grant-plan crate root splits into
-//! private modules)).
+//! The crate root re-exports every public item.
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
@@ -18,7 +17,7 @@ use crate::{
 /// first of them rather than losing it, so a caller that needs every token reads a line it knows
 /// to be short, or walks it one token at a time as `for_each_word` does.
 ///
-/// **Whitespace inside quotes is not a separator** (milestone 67). The quotes stay on the token,
+/// **Whitespace inside quotes is not a separator**. The quotes stay on the token,
 /// because this function's job is where a token ends and [`word::read`]'s is what it means; a
 /// caller that wants the name rather than the spelling asks for it. That split is what lets
 /// [`parse_invocation`] refuse `a"b"` in one place instead of every scanner having to.
@@ -51,8 +50,8 @@ fn split_tokens<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> (&'b [&'a [u
     (&out[..n], &line[i..])
 }
 
-/// **Assemble the argv of a program that hears words** (milestone 205 (how a foreign program is
-/// told what to do), DECISIONS §170; see [`ProgramArgumentDeclaration::Words`](crate::ProgramArgumentDeclaration::Words)), onto `page`, and return how many
+/// **Assemble the argument vector of a program that hears words** (see
+/// [`ProgramArgumentDeclaration::Words`](crate::ProgramArgumentDeclaration::Words)) onto `page`, and return how many
 /// words it carries.
 ///
 /// `line` is one command: the program's name and its words, no operator. Every word is read as
@@ -94,7 +93,7 @@ pub fn check_words(line: &[u8]) -> Result<(), Refusal> {
 
 /// Every word of `line`, quotes off, with an unquoted pattern refused. The one walk [`write_argument_page`] and
 /// [`check_words`] share, so the check and the page cannot disagree about what a word is, and the
-/// shell's designation walks it too (milestone 205), so it designates from the same words the
+/// shell's designation walks it too, so it designates from the same words the
 /// program hears.
 ///
 /// Name: ratified 2026-11-20 (UTC).
@@ -118,8 +117,7 @@ pub fn for_each_word(
         f(w.text)?;
     }
 }
-/// **Every word [`parse`] answers as a builtin**, for the shell's Tab completion (milestone 47
-/// (navigation and naming), DECISIONS §227 (how Tab reaches the shell)). A builtin added to
+/// **Every word [`parse`] answers as a builtin**, for the shell's Tab completion. A builtin added to
 /// `parse` and not here still works; it only is not offered on Tab. The test beside `parse` holds
 /// the other direction: everything listed here is a builtin.
 ///
@@ -209,7 +207,7 @@ pub fn parse(line: &[u8]) -> CommandLine<'_> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NoJobNamed;
 
-/// **Which job an operand names** (milestone 48): `%N` or a bare `N`, counted from one. `Ok(None)`
+/// **Which job an operand names**: `%N` or a bare `N`, counted from one. `Ok(None)`
 /// is an empty operand (every job to `wait`, the newest to `fg`); [`NoJobNamed`] is any other
 /// operand.
 ///
@@ -240,7 +238,7 @@ pub fn job_operand(tail: &[u8]) -> Result<Option<usize>, NoJobNamed> {
     if n == 0 { Err(NoJobNamed) } else { Ok(Some(n)) }
 }
 
-/// **`kill`'s operands** (milestone 48 (job control)): whether `-9` asked for the forcible tier, and
+/// **`kill`'s operands**: whether `-9` asked for the forcible tier, and
 /// the job, which is required rather than guessed.
 ///
 /// Name: ratified 2026-11-20 (UTC).
@@ -264,7 +262,7 @@ pub fn kill_operands(tail: &[u8]) -> Result<(bool, usize), NoJobNamed> {
     }
 }
 
-/// **What `user` was asked to do** (milestone 152, calef's §108 ruling of 2026-09-26).
+/// **What `user` was asked to do.**
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum UserVerb<'a> {
     /// `user suspend <name>`: list the identity as suspended.
@@ -433,8 +431,8 @@ pub const MAXIMUM_POSITIONALS: usize = 4;
 ///
 /// **The positional tokens are deliberately unclassified here.** The parser knows the shape of a
 /// token, not what it means: which one is the integer argument and which is the file is a question
-/// only the program's [`Manifest`](crate::Manifest) can answer, and milestone 47 removed the `file:` prefix precisely
-/// because the manifest was already answering it. Keeping them in order and letting [`plan_against`](crate::plan_against)
+/// only the program's [`Manifest`](crate::Manifest) can answer, and a line needs no `file:` prefix
+/// because the manifest already answers it. Keeping them in order and letting [`plan_against`](crate::plan_against)
 /// place them is what makes that true in the code rather than only in the prose.
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
@@ -443,9 +441,8 @@ pub struct ParsedInvocation<'a> {
     /// The program name as typed (may not resolve).
     pub program: &'a [u8],
     /// **The whole invocation as it was typed**, which is what a program that hears words is given
-    /// ([`ProgramArgumentDeclaration::Words`], milestone 205). Everything else here is a classification of it, and a
-    /// classification is exactly what §170 (how a foreign program is told what to do) said such a
-    /// program must not get.
+    /// ([`ProgramArgumentDeclaration::Words`]). Everything else here is a classification of it, and a
+    /// classification is exactly what such a program must not get.
     line: &'a [u8],
     /// `--mem N`, if given. Recognized before or after the program name, because with the `run`
     /// verb gone the line reads `memory_grant_depleter --mem 16` the way every other command line does.
