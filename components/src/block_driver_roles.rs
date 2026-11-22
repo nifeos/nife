@@ -1389,9 +1389,16 @@ pub fn run_block_server(direct_memory_access_physical_address: u64) -> ! {
         let request = receive_request(BLOCK_REQUEST_ENDPOINT);
         let (first_word, block) = (request.w0, request.w1);
         let to = request.delivered.into_reply();
-        // Clamp, as `fs_service.rs` does for the file channel: a request is never trusted to stay
-        // inside the shared region just because its packing could spell a larger count.
-        let count = block::request_block_count(first_word).min(block::TRANSFER_BLOCKS) as u64;
+        // Refuse a count past the shared region: a request is never trusted to stay inside it just
+        // because its packing could spell a larger count, and a clamped transfer would move fewer
+        // blocks than asked without saying so.
+        let Some(count) = block::request_block_count(first_word) else {
+            if let Some(to) = to {
+                reply(to, file_system_contract::error::word(22) as u64, 0); // EINVAL
+            }
+            continue;
+        };
+        let count = count as u64;
         let operation = file_system_contract::operation(first_word);
         let answer: i64 = match operation {
             block::READ | block::WRITE => {

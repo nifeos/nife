@@ -21,10 +21,10 @@ fn blk_request_carries_a_block_count_and_defaults_to_one() {
     for blocks in [1usize, 2, block::TRANSFER_BLOCKS] {
         let w0 = block::request(block::READ, blocks);
         assert_eq!(operation(w0), block::READ);
-        assert_eq!(block::request_block_count(w0), blocks);
+        assert_eq!(block::request_block_count(w0), Some(blocks));
     }
     // A single-block caller's word (the plain, one-argument `request`) decodes as one block.
-    assert_eq!(block::request_block_count(request(block::READ)), 1);
+    assert_eq!(block::request_block_count(request(block::READ)), Some(1));
     // `block::request(operation, 1)` and `request(operation)` are wire-identical, which is the compatibility property
     // stated: a caller that upgrades to naming one block explicitly changes nothing on the wire.
     assert_eq!(block::request(block::READ, 1), request(block::READ));
@@ -46,4 +46,25 @@ fn blk_request_refuses_a_count_past_the_transfer_limit() {
 fn a_filesystem_block_is_eight_logical_blocks() {
     assert_eq!(block::BLOCK_BYTES, PAGE_BYTES);
     assert_eq!(block::BLOCK_BYTES as u64 / block::LOGICAL_BLOCK_BYTES, 8);
+}
+
+/// **A count the shared region cannot hold is refused, not clamped**: the eight-bit field spells up
+/// to 256 blocks, and every count past [`block::TRANSFER_BLOCKS`] decodes as `None`.
+#[test]
+fn a_block_count_past_the_region_is_refused() {
+    let last = (block::READ << 56) | (block::TRANSFER_BLOCKS as u64 - 1);
+    assert_eq!(
+        block::request_block_count(last),
+        Some(block::TRANSFER_BLOCKS)
+    );
+    assert_eq!(
+        block::request_block_count(last + 1),
+        None,
+        "one block past the region"
+    );
+    assert_eq!(
+        block::request_block_count((block::READ << 56) | 0xff),
+        None,
+        "the field's largest count"
+    );
 }

@@ -3,7 +3,7 @@
 use crate::test_support::{WITH_DIRECTORY, at, mounted};
 use crate::*;
 
-// ---- milestone 154 (a process that holds two directory capabilities): one tree, a mount ----
+// ---- a shell holding two directory capabilities: one tree, a mount ----
 
 /// A one-grant [`ShellHoldings`] resolves exactly as it always has.
 #[test]
@@ -19,7 +19,7 @@ fn a_one_grant_holdings_resolves_exactly_as_before() {
     );
 }
 
-/// **One tree, with the second mounted in it** (calef, 2026-09-26): a path through the mount
+/// **One tree, with the second mounted in it**: a path through the mount
 /// point is the second tree from its own root, every other path is the first, and `..` from
 /// the mount point is its parent in the first tree, as a Unix mount is.
 #[test]
@@ -66,7 +66,7 @@ fn a_mounted_tree_is_a_path_in_the_one_tree() {
     assert!(MountedTree::mounted_at(navigation::DirectoryPath::root()).is_none());
 }
 
-// ---- `bind` (milestone 47 (navigation and naming): "blocked on a second grant") ----
+// ---- `bind`: a name for a position, which needs a second grant to mean anything ----
 
 /// **A one-grant `ShellHoldings` resolves absolute paths exactly as before when nothing is
 /// bound**, and a bound name is reachable once one is: `bind` is additive, not a new mode.

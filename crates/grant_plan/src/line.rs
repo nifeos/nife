@@ -4,10 +4,8 @@
 //! program's output slot, and `<` in its input slot, so this module yields only [`Sink`] and
 //! [`Source`] values. It refuses a word after a redirection ([`Refusal::WordAfterRedirect`]), a
 //! redirection on the wrong end of a pipeline ([`Refusal::RedirectMidPipeline`]) and a pattern as a
-//! target ([`Refusal::PatternInRedirect`]). `2>` names where a declared second stream goes (§67 (a
-//! program's second stream is a declaration)); planning refuses it for a program declaring none
-//! ([`Refusal::NoDiagnosticStream`]). See notes/pipes.md, and
-//! notes/grant-expression/grant-plan-crate.md for the rest.
+//! target ([`Refusal::PatternInRedirect`]). `2>` names where a declared second stream goes; planning refuses it for a program declaring none
+//! ([`Refusal::NoDiagnosticStream`]).
 
 //! # BUGS
 //!
@@ -32,7 +30,7 @@ pub const MAXIMUM_STAGES: usize = 4;
 ///
 /// The file variant is large because a file grant's name may be 252 bytes, and a `Box` is not an
 /// option: this crate is `no_std` with no `alloc`, so it stays host-testable. The size is paid where
-/// it lands, which notes/glob-grant/xargs.md ("The bytes a set carries") measures.
+/// it lands, and a size test in this crate pins it.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Sink {
@@ -53,7 +51,7 @@ pub enum Sink {
 /// **What a `>` does to the bytes already in the file, which is the whole of `>` versus `>>`.**
 ///
 /// It is a fact about how the **shell** opens the file and not about the stage that writes it
-/// (DECISIONS §55: the file behind a `>` is the shell itself). A sink has no seek and appends by
+/// (the file behind a `>` is the shell itself). A sink has no seek and appends by
 /// construction, so both spellings hand the program the identical capability and differ only in
 /// where the shell's first write lands. That is why this rides beside [`Sink::File`] rather than
 /// inside [`crate::FileGrant`]: the grant is the authority, and this is not part of it.
@@ -68,7 +66,7 @@ pub enum Mode {
     Append,
 }
 
-/// **Where a program's second output goes**, which is the whole of `2>` (DECISIONS §67).
+/// **Where a program's second output goes**, which is the whole of `2>`.
 ///
 /// It is [`Sink`]'s shape with one variant fewer, and the missing one says what the mechanism is:
 /// there is no `Diagnostics::Pipe`, because a diagnostic that flowed down a `|` into a `wc` would be
@@ -80,7 +78,7 @@ pub enum Mode {
 ///
 /// The file variant is large because a file grant's name may be 252 bytes, and a `Box` is not an
 /// option: this crate is `no_std` with no `alloc`, so it stays host-testable. The size is paid where
-/// it lands, which notes/glob-grant/xargs.md ("The bytes a set carries") measures.
+/// it lands, and a size test in this crate pins it.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Diagnostics {
@@ -90,9 +88,9 @@ pub enum Diagnostics {
     None,
     /// The declared default: the shell holds the other end and prints what arrives. This is what
     /// makes `date > when.txt` on a clockless machine print its complaint **and write nothing into
-    /// the file**, which is the loss §67 exists to fix.
+    /// the file**, rather than writing the complaint into it.
     Printed,
-    /// `2>` named a file. The shell backs it exactly as it backs a `>` (DECISIONS §55), so the
+    /// `2>` named a file. The shell backs it exactly as it backs a `>`, so the
     /// program still holds one endpoint per stream and can seek, truncate, re-read and stat
     /// neither.
     File(crate::FileGrant, Mode),
@@ -103,7 +101,7 @@ pub enum Diagnostics {
 ///
 /// The file variant is large because a file grant's name may be 252 bytes, and a `Box` is not an
 /// option: this crate is `no_std` with no `alloc`, so it stays host-testable. The size is paid where
-/// it lands, which notes/glob-grant/xargs.md ("The bytes a set carries") measures.
+/// it lands, and a size test in this crate pins it.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Source {
@@ -221,7 +219,7 @@ impl<'a> Line<'a> {
 }
 
 /// Whether this byte is one of the three single-character operators.
-fn is_op(b: u8) -> bool {
+fn is_operator(b: u8) -> bool {
     b == b'|' || b == b'<' || b == b'>'
 }
 
@@ -232,7 +230,7 @@ fn is_op(b: u8) -> bool {
 /// boundary: `date 2> err` is a redirection, `least_authority_demo 2 > out` is the integer `2` followed by a `>`,
 /// and `wc2>f` writes to a file from a program called `wc2`. Every shell draws the line in the same
 /// place, and drawing it anywhere else would make a program's own argument disappear.
-fn is_diag_op(line: &[u8], i: usize, word_start: usize) -> bool {
+fn is_diagnostic_operator(line: &[u8], i: usize, word_start: usize) -> bool {
     line[i] == b'2'
         && line.get(i + 1) == Some(&b'>')
         && (i == word_start || line[i - 1].is_ascii_whitespace())
@@ -310,7 +308,7 @@ struct Redirects<'a> {
     diags: [Option<&'a [u8]>; MAXIMUM_STAGES],
     // Whether each redirection's name arrived quoted. A quoted name is not a pattern, whatever
     // bytes are in it, so `date > "*.txt"` writes to a file called `*.txt` rather than being
-    // refused for designating a set (milestone 67, notes/swish-language.md).
+    // refused for designating a set.
     in_q: [bool; MAXIMUM_STAGES],
     out_q: [bool; MAXIMUM_STAGES],
     diag_q: [bool; MAXIMUM_STAGES],
@@ -338,12 +336,12 @@ impl Redirects<'_> {
 /// line's end.
 fn scan_command_words(line: &[u8], start: usize) -> Result<usize, Refusal> {
     // The command words: everything up to the first **bare** operator or the end of the line.
-    // Quoted is the whole of what milestone 67 added here: `echo "a > b"` has no redirection on
+    // Quoting is the whole of what changes here: `echo "a > b"` has no redirection on
     // it, because the `>` arrives while the cursor is inside a quote.
     let mut i = start;
     let mut c = word::Cursor::new();
     while i < line.len() {
-        if !c.is_open() && (is_op(line[i]) || is_diag_op(line, i, start)) {
+        if !c.is_open() && (is_operator(line[i]) || is_diagnostic_operator(line, i, start)) {
             break;
         }
         c.step(line[i]);
@@ -363,7 +361,9 @@ fn read_redirections<'a>(
     n: usize,
     r: &mut Redirects<'a>,
 ) -> Result<usize, Refusal> {
-    while i < line.len() && (line[i] == b'<' || line[i] == b'>' || is_diag_op(line, i, i)) {
+    while i < line.len()
+        && (line[i] == b'<' || line[i] == b'>' || is_diagnostic_operator(line, i, i))
+    {
         // Which stream this operator names, and how many characters spell it. `>>` is one
         // operator written with two characters and `2>>` one written with three; the extra
         // characters are consumed here rather than left to be read as operators with empty
@@ -390,12 +390,12 @@ fn read_redirections<'a>(
         while i < line.len() && line[i].is_ascii_whitespace() {
             i += 1;
         }
-        // **The name, which may be quoted** (milestone 67). The scan stops at a *bare*
+        // **The name, which may be quoted**. The scan stops at a *bare*
         // whitespace or operator byte, so `> "my out.txt"` is one name and the space in it is
         // part of what is designated rather than the end of it. That is the correctness gap this
         // shell had: a file with a space in its name could not be written to at all.
         let t = i;
-        i = word::token_end(line, i, &|b| b.is_ascii_whitespace() || is_op(b));
+        i = word::token_end(line, i, &|b| b.is_ascii_whitespace() || is_operator(b));
         if i == t {
             return Err(Refusal::NoRedirectTarget);
         }
@@ -422,7 +422,7 @@ fn read_redirections<'a>(
         while j < line.len() && line[j].is_ascii_whitespace() {
             j += 1;
         }
-        if j < line.len() && !is_op(line[j]) && !is_diag_op(line, j, j) {
+        if j < line.len() && !is_operator(line[j]) && !is_diagnostic_operator(line, j, j) {
             return Err(Refusal::WordAfterRedirect);
         }
         i = j;
@@ -595,7 +595,7 @@ mod tests {
         assert_eq!(l.mode(), Mode::Append);
     }
 
-    /// **`2>` is read as an operator and the `2` never reaches the command** (DECISIONS §67).
+    /// **`2>` is read as an operator and the `2` never reaches the command**.
     ///
     /// The stage text is the assertion. A `2` left in it would arrive at the manifest check as a
     /// positional token, and `date 2> err.txt` would be refused for an argument `date` does not
@@ -730,7 +730,7 @@ mod tests {
         assert!(split(b"wc < f | wc").is_ok());
     }
 
-    /// **`date || wc` was in this list until milestone 67 and is not any more.** `||` is a
+    /// **`date || wc` is not in this list.** `||` is a
     /// connector, and the shell splits on it before this function is reached, so at a prompt that
     /// line is two commands. What it means *here* is unchanged, and that is exactly why the split
     /// has to be outside: this function has no way to tell the two readings apart.
@@ -769,7 +769,7 @@ mod tests {
         assert!(split(b"date > report.txt").is_ok());
     }
 
-    /// **An operator inside quotes is an ordinary byte** (milestone 67), which is what makes
+    /// **An operator inside quotes is an ordinary byte**, which is what makes
     /// `echo "a > b"` print an angle bracket instead of writing a file called `b`.
     #[test]
     fn a_quoted_operator_does_not_split_the_line() {
@@ -795,8 +795,8 @@ mod tests {
         }
     }
 
-    /// **The correctness gap this milestone opened**: a file whose name has a space in it could not
-    /// be written to, so it could not be named, so it could not be granted.
+    /// **A quoted name closes a correctness gap**: without it, a file whose name has a space in it
+    /// could not be written to, so it could not be named, so it could not be granted.
     #[test]
     fn a_redirection_can_name_a_file_with_a_space_in_it() {
         let l = split(b"date > \"my out.txt\"").unwrap();

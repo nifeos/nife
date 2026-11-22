@@ -322,8 +322,8 @@ fn the_subtree_fixture_is_grantable_and_unambiguous() {
 ///
 /// `rm` does not use this word. It declares the sink contract, so it ends its report with the
 /// byte-sink contract's `(end_of_stream(), 0, 0)`, pinned over there by `end_of_stream_is_not_a_byte_count`, and sends
-/// its status and count after that on an endpoint of its own (`file_system_contract::rm`). What is
-/// checked here is the word the attackers and the shell witnesses use.
+/// its status and count after that on an endpoint of its own. What is checked here is the word the
+/// attackers and the shell witnesses use.
 #[test]
 fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
     // A frame's first word is a byte count into the two payload words, so 16 is its ceiling.
@@ -339,21 +339,6 @@ fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
     const _: () = assert!(
         file_system_contract::READY != file_system_contract::DESCENT_REFUSED,
         "a caretaker's two possible answers must not be the same word",
-    );
-    // And a non-zero status is the errno, so the two ends agree about what failed rather than
-    // only that something did.
-    assert_eq!(
-        file_system_contract::rm::status(file_system_contract::directory::EROFS),
-        file_system_contract::directory::EROFS as u64
-    );
-    assert_ne!(
-        file_system_contract::rm::status(file_system_contract::directory::EROFS),
-        file_system_contract::rm::OK
-    );
-    assert_eq!(
-        file_system_contract::rm::OK,
-        0,
-        "success is zero, as every shell expects"
     );
 }
 

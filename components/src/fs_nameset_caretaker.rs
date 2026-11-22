@@ -41,7 +41,7 @@ const REPORT: u64 = 2;
 /// reason: every request on both hops is a blocking `CALL`.
 const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// The read-only grant page: the granted directory's name at offset 0 and the encoded name set at
-/// [`grant::PAGE_NAME_SET_OFFSET`]. Both are copied into locals at startup and never read again, so
+/// [`grant::PAGE_NAME_SET_OFFSET_BYTES`]. Both are copied into locals at startup and never read again, so
 /// nothing that happens to this page afterwards can widen the namespace.
 const SET_VA: u64 = grant::PAGE_VIRTUAL_ADDRESS;
 /// The shared page's size, the contract's transfer unit.

@@ -2,7 +2,7 @@
 
 An appendix to [the milestone](../1098-line-editor-outside-review.md).
 
-- `standalone.py --manifest-dir crates/line_editor` reports nothing. No file in the crate
+- `standalone.py` reports nothing on `line_editor`. No file in the crate
   names a nife path, a milestone, a decision section or a person.
 - `proto` and `component` live in the contract crate the architect names. Every caller points at
   it. `capability_plan` is gone from the manifest. `QUIESCED` has one definition.

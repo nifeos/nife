@@ -794,7 +794,7 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The aperture arithmetic `framebuffer_driver` copies through: the clipped geometry, the stride and
 # the byte order, host-tested there because this program has no harness of its own.
 screen_console = { version = "0.1.0", path = "../crates/screen_console" }
-line_editor = { version = "0.1.0", path = "../crates/line_editor" }
+line_editor = { version = "0.1.0", git = "https://github.com/nifeos/line_editor", rev = "b43cb319b1cf57b8e38680d090348f347408ffa2" }
 # The terminal contract's two halves: the wire words every terminal, client and driver speak, and
 # what `terminal_supervisor` routes to a `line_editor` it can replace.
 terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }

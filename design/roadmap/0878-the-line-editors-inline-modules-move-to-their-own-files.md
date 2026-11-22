@@ -12,7 +12,7 @@ needs_person: no
 
 *(The title and slug are provisional.)*
 
-`crates/line_editor/src/lib.rs` is 2,290 lines at `396187b0b`. §266
+`line_editor`'s `src/lib.rs` is 2,290 lines at `396187b0b`. §266
 (a Rust source file stays under 2,000 lines) sets the ceiling. Milestone 840 (the scheduler file
 is split along its seams) is the model for this block.
 
@@ -130,9 +130,9 @@ Found with `grep` at `396187b0b`. A lane has to carry each one.
 
 ## Done when
 
-1. `crates/line_editor/src/lib.rs` is under 2,000 lines, and no new file is over 1,500.
+1. `line_editor`'s `src/lib.rs` is under 2,000 lines, and no new file is over 1,500.
 2. The crate's 54 host tests and its doc tests pass with no test body changed.
-3. No Rust file outside `crates/line_editor/src/` changes, and no shipped item's visibility widens.
+3. No Rust file outside `line_editor`'s `src/` changes, and no shipped item's visibility widens.
 4. `script/lint` passes with the file-length row gone, and the mutation ledger's keys match
    `cargo mutants --list`.
 5. `cargo doc` for the crate reports no broken intra-doc link.

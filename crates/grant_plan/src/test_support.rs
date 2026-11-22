@@ -1,8 +1,6 @@
 //! **What more than one test file leans on**: shims that plan a line with the expansion and
 //! streams a test does not care about, the holdings most tests plan against, and the paths they
-//! name. Imported by name, because `plan` and `plan_against` here shadow the crate's own. Split
-//! out of the crate root's tests by milestone 842 (the grant-plan crate root is split along its
-//! seams).
+//! name. Imported by name, because `plan` and `plan_against` here shadow the crate's own.
 //!
 //! Name: provisional (milestone 842, 2026-10-11).
 
@@ -177,7 +175,7 @@ pub(crate) fn plan_against(
 
 /// A manifest no shipped program declares yet: one endowed a readable file. Checked through
 /// [`plan_against`] so the `FileGrantDeclaration::Required` logic is live and tested rather than a branch
-/// nothing reaches, which is the same door milestone 23 will come through.
+/// nothing reaches, which is the same door an external manifest comes through.
 pub(crate) const READS_A_FILE: Manifest = Manifest {
     program_argument: ProgramArgumentDeclaration::Forbidden,
     memory_grant: MemoryGrantDeclaration::Forbidden,
@@ -205,7 +203,7 @@ pub(crate) const READS_A_FILE: Manifest = Manifest {
     startup: StartupContract::Native,
 };
 
-/// A shell that WAS granted a directory to narrow, standing at its root.
+/// A shell that *was* granted a directory to narrow, standing at its root.
 pub(crate) const WITH_DIRECTORY: ShellHoldings = ShellHoldings {
     directory: true,
     mounted: None,
@@ -213,7 +211,7 @@ pub(crate) const WITH_DIRECTORY: ShellHoldings = ShellHoldings {
     binds: navigation::Bindings::none(),
 };
 
-// ---- milestone 154 (a process that holds two directory capabilities): one tree, a mount ----
+// ---- a shell holding two directory capabilities: one tree, a mount ----
 
 pub(crate) fn at(components: &[&[u8]]) -> navigation::DirectoryPath {
     let mut c = navigation::DirectoryPath::root();
@@ -231,7 +229,7 @@ pub(crate) fn mounted() -> ShellHoldings {
     }
 }
 
-// ---- milestone 50 (pipes and redirection): the operators, checked against the manifests that ship ----
+// ---- pipes and redirection: the operators, checked against the manifests the tests ship ----
 
 /// Plan one stage of a line with the operators' answer folded in. The shim the operator tests
 /// use, for the reason the other two shims exist: the lines below should read like command

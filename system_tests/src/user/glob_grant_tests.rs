@@ -1,6 +1,7 @@
 use byte_sink_contract::end_of_stream;
-use file_system_contract::{directory, rm as rr};
+use file_system_contract::directory;
 use file_system_fixture::{VERDICT, globbing, tree};
+use grant_plan::rm_report as rr;
 
 use super::*;
 use crate::sched;
@@ -131,7 +132,7 @@ fn run_rm(name_lo: u64, name_hi: u64, flags: u64) -> (u64, u64) {
     for _ in 0..MAXIMUM_MESSAGES {
         let [w0, w1, w2, _, _] = sched::ipc_receive(report);
         // `rm` ends its report with the sink contract's end of stream, its reserved words zero,
-        // and then sends the verdict on its own endpoint (`file_system_contract::rm`). The shell
+        // and then sends the verdict on its own endpoint (`grant_plan::rm_report`). The shell
         // phase reports a `VERDICT` bitmap instead.
         if w0 == end_of_stream() {
             assert_eq!(

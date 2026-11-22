@@ -396,7 +396,7 @@ mod tests {
         assert_eq!(keyboard.event(7, 30, 1), None, "some other event type");
     }
 
-    /// **Each arrow sends the standard `CSI` cursor-key sequence**, which is `crates/line_editor`'s
+    /// **Each arrow sends the standard `CSI` cursor-key sequence**, which is `line_editor`'s
     /// own receiving vocabulary: pointed straight at the pair, so a wrong final byte here fails this
     /// test rather than surfacing three components away as a cursor that moves the wrong direction.
     #[test]
@@ -464,7 +464,7 @@ mod tests {
 
     /// **The cluster edits a line through the real line discipline**, which is the claim the
     /// table above makes and the one a person notices: home, end and delete do what their keycaps
-    /// say at a prompt. Checked against `crates/line_editor` itself rather than against its
+    /// say at a prompt. Checked against `line_editor` itself rather than against its
     /// documentation, the same way the VT engine's interoperability test is.
     #[test]
     fn home_end_and_delete_edit_a_line_through_the_line_discipline() {

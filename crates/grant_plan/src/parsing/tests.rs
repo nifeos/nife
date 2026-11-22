@@ -39,7 +39,7 @@ fn tokenize_stops_at_its_buffer_and_at_trailing_whitespace() {
     assert_eq!(tokenize(b"a b c", &mut two), [&b"a"[..], &b"b"[..]]);
 }
 
-/// **Whitespace inside quotes is not a separator** (milestone 67), which is what makes a name
+/// **Whitespace inside quotes is not a separator**, which is what makes a name
 /// with a space in it a single token and therefore a single designation.
 #[test]
 fn a_quoted_span_is_one_token_however_many_spaces_are_in_it() {
@@ -117,7 +117,7 @@ fn a_misquoted_line_is_refused_ahead_of_everything_else() {
 /// `--mem` at the very end of the line reads no value, and reads no memory past the token
 /// array either; the missing value stays `None` for the plan to refuse.
 #[test]
-fn a_trailing_mem_flag_is_a_missing_value_not_a_read_past_the_line() {
+fn a_trailing_memory_flag_is_a_missing_value_not_a_read_past_the_line() {
     let r = parse_invocation(b"deplete --mem");
     assert_eq!(r.program, b"deplete");
     assert_eq!(r.memory_grant, None);
@@ -127,7 +127,7 @@ fn a_trailing_mem_flag_is_a_missing_value_not_a_read_past_the_line() {
 /// as an operand. The cursor step is the code under test, so the flag sits at index 1, where
 /// stepping by the wrong arithmetic visibly lands somewhere else.
 #[test]
-fn a_mem_flag_consumes_its_value_and_nothing_after_it() {
+fn a_memory_flag_consumes_its_value_and_nothing_after_it() {
     let r = parse_invocation(b"deplete --mem 4");
     assert_eq!(r.memory_grant, Some(4));
     assert!(r.positionals().is_empty(), "the value became an operand");
@@ -182,7 +182,7 @@ fn help_is_a_builtin_and_everything_else_is_a_program() {
         }),
         "bare `touch` needs a name"
     );
-    // DECISIONS §112's arbitrary-instant form: two words after the flag, the RFC 3339 text
+    // The arbitrary-instant form: two words after the flag, the RFC 3339 text
     // (kept exactly as typed, unparsed) and the name.
     assert_eq!(
         parse(b"touch -t 2030-01-01T00:00:00Z logs"),
@@ -233,10 +233,10 @@ fn help_is_a_builtin_and_everything_else_is_a_program() {
     assert_eq!(parse(b"apropos"), CommandLine::Apropos(b""));
 }
 
-/// **`vouch` takes one file and records it by its last component** (DECISIONS §221). A bare
+/// **`vouch` takes one file and records it by its last component**. A bare
 /// name is not a file by the prompt's rule, and a name the installed-programs table could not read back
 /// as itself is refused before anything is sent.
-/// **`user` takes a verb and one name** (milestone 152's §108 ruling), and anything else is
+/// **`user` takes a verb and one name**, and anything else is
 /// [`UserVerb::Usage`], so a line the list could not hold never reaches it.
 #[test]
 fn user_takes_suspend_or_resume_and_one_name() {
@@ -377,7 +377,7 @@ fn a_second_integer_is_unexpected_not_ignored() {
 }
 
 #[test]
-fn mem_flag_must_have_a_numeric_value() {
+fn memory_flag_must_have_a_numeric_value() {
     // `--mem twelve` is a missing grant, not a silent zero: parse_u64 rejects it, so deplete
     // sees "no --mem given" and refuses.
     let CommandLine::Run(r) = parse(b"deplete --mem twelve") else {
@@ -413,8 +413,7 @@ fn capabilities_previews_the_command_you_would_have_typed() {
     );
 }
 
-/// **`time` runs the command you typed, so its tail has to parse back to that command**
-/// (milestone 86).
+/// **`time` runs the command you typed, so its tail has to parse back to that command**.
 ///
 /// The same property `caps` has, and asserted the same way, because it is the same claim: the
 /// tail is the line with the prefix word taken off, so what is timed and what would have run
@@ -459,7 +458,7 @@ fn refused(line: &[u8]) -> Refusal {
     write_argument_page(line, &mut [0u8; program_argument_contract::PAGE_BYTES]).unwrap_err()
 }
 
-/// **Every word arrives as it was typed, and none is classified** (§170). An option the shell
+/// **Every word arrives as it was typed, and none is classified**. An option the shell
 /// never heard of, a `--long=value`, an integer, and a quoted phrase with the quotes off; the
 /// name first, as `argv[0]`. Past `parse_invocation`'s sixteen tokens too, because nothing is placed.
 #[test]
@@ -475,8 +474,8 @@ fn argv_carries_every_word_as_typed() {
     assert_words(&many, &[&b"w"[..]; 40]);
 }
 
-/// **An unquoted pattern is refused, not expanded and not passed through** (§170: the words
-/// carry no authority, so expanding one would hand over names and nothing they name). The same
+/// **An unquoted pattern is refused, not expanded and not passed through**: the words carry no
+/// authority, so expanding one would hand over names and nothing they name. The same
 /// bytes quoted are one word.
 #[test]
 fn argv_refuses_an_unquoted_pattern_and_passes_a_quoted_one() {
@@ -503,11 +502,11 @@ fn argv_refuses_a_line_past_one_page_and_leaves_no_argv() {
 
 #[test]
 fn a_quoted_word_is_known_by_its_position_and_the_last_slot_is_readable() {
-    let spec = parse_invocation(b"rm \"a\" b c d");
-    assert!(spec.is_quoted(0));
-    assert!(!spec.is_quoted(1));
+    let specification = parse_invocation(b"rm \"a\" b c d");
+    assert!(specification.is_quoted(0));
+    assert!(!specification.is_quoted(1));
     assert!(
-        !spec.is_quoted(MAXIMUM_POSITIONALS),
+        !specification.is_quoted(MAXIMUM_POSITIONALS),
         "past the end was not quoted"
     );
 }
@@ -516,16 +515,16 @@ fn a_quoted_word_is_known_by_its_position_and_the_last_slot_is_readable() {
 /// prefix, so the line that fills the page exactly is taken and one byte more is not.
 #[test]
 fn a_line_that_exactly_fills_the_argument_page_is_taken() {
-    let cap = program_argument_contract::MAXIMUM_RECORDS_BYTES;
+    let capability = program_argument_contract::MAXIMUM_RECORDS_BYTES;
     let word = |n: usize| {
         let mut line = [b'a'; 8192];
         line[..n].fill(b'a');
         line
     };
-    let exact = word(cap - 4);
-    assert_eq!(check_words(&exact[..cap - 4]), Ok(()));
+    let exact = word(capability - 4);
+    assert_eq!(check_words(&exact[..capability - 4]), Ok(()));
     assert_eq!(
-        check_words(&exact[..cap - 3]),
+        check_words(&exact[..capability - 3]),
         Err(Refusal::ArgumentsTooLong)
     );
     // The cost is bytes plus four, not four times the bytes: two 1,100-byte words fit.
@@ -536,7 +535,7 @@ fn a_line_that_exactly_fills_the_argument_page_is_taken() {
 
 /// A job number is read in base ten and bounded at two digits, so `%12` is job twelve and `%123`
 /// names no job rather than wrapping or being truncated to one. Each case here is one an
-/// off-by-one in the bound or the digit sum would get wrong (milestone 48 (job control)).
+/// off-by-one in the bound or the digit sum would get wrong.
 #[test]
 fn a_job_operand_is_two_decimal_digits_at_most() {
     assert_eq!(job_operand(b"%12"), Ok(Some(12)));

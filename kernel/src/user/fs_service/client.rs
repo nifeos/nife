@@ -14,10 +14,10 @@ use super::*;
 pub(super) const CLIENT_EXTRA_STACK: usize = 11;
 
 // The slot [`spawn_fs_client`] grants a verdict endpoint at is the one `rm` sends on.
-const _: () = assert!(file_system_contract::rm::VERDICT_SLOT == 2);
+const _: () = assert!(grant_plan::rm_report::VERDICT_SLOT == 2);
 
 /// The pages a granted client's endpoints are retyped from: its caretaker's two, the program's
-/// report, and its verdict endpoint when it asks for one (`rm`'s, `file_system_contract::rm`). One
+/// report, and its verdict endpoint when it asks for one (`rm`'s, `grant_plan::rm_report`). One
 /// page per endpoint, so a grant's whole wiring goes back with one region.
 pub(super) const GRANT_ENDPOINT_PAGES: u64 = 4;
 
@@ -26,7 +26,7 @@ pub(super) const GRANT_ENDPOINT_PAGES: u64 = 4;
 ///
 /// `role`, `arg` and `arg2` are the client's three `START` words. `report` is the caller's, so a
 /// granted client's comes out of the region its caretaker's endpoints do and goes back with them.
-/// `verdict`, when given, is granted at slot 2 (`file_system_contract::rm::VERDICT_SLOT`), the
+/// `verdict`, when given, is granted at slot 2 (`grant_plan::rm_report::VERDICT_SLOT`), the
 /// endpoint `rm` sends its exit status on after its report ends; with `None` slot 2 stays empty.
 ///
 /// `extra_stack` is pages below the one `run` maps, at most [`CLIENT_EXTRA_STACK`]. A shell's need
