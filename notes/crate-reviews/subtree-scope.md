@@ -16,7 +16,7 @@ What a subtree grant can reach, decided in one place a file server links and a p
 resolves a path one name at a time and refuses `.`, `..`, a link, a mount point and any step that
 would widen the grant. `admit` decides whether a request may touch a handle, and `Bindings` keeps
 which badge may use which root, failing closed for a badge it never bound. The crate is `no_std`,
-has no `unsafe`, and has one dependency, `filesystem_contract`, for the rights arithmetic. Five Kani
+has no `unsafe`, and has one dependency, `file_system_contract`, for the rights arithmetic. Five Kani
 harnesses prove that a step is one name, that a walk never widens, follows a link or crosses a
 mount, and that a bound badge reaches only its own root and the handles it minted. Its one consumer
 is `redoxfs_server`. The crate refers to nife by milestone number in its documentation; the move
@@ -32,7 +32,7 @@ lane rewrites that text (P0-2 of the milestone).
 | edition, `rust-version` | 2024; the manifest sets none, the move lane writes 1.88 (P0-1) |
 | license | `license.workspace = true` today; the move lane inlines `MIT OR Apache-2.0` and copies both texts (P0-1) |
 | `publish` | `false`; milestone 1017 keeps moved crates unpublished under §305 (git dependencies on `nifeos/*` only, pinned to a landed commit) until their own release milestone |
-| dependencies | `filesystem_contract` only |
+| dependencies | `file_system_contract` only |
 | size | one `src/lib.rs` of about 800 lines: the library, 12 host tests, 2 doctests and 5 Kani harnesses |
 
 ## Who in nife depends on it
@@ -52,7 +52,7 @@ Beyond that, the tooling and the lists:
   five falsification times.
 - `script/verify` carries its per-crate cost row, which balances the Kani shards.
 - Documents cite it: `notes/walk-cost.md` and milestones 633, 634, 726 and 1110 by number.
-- `crates/capability_manifest_note` and `crates/filesystem_contract` mention the crate in text only.
+- `crates/capability_manifest_note` and `crates/file_system_contract` mention the crate in text only.
 - The fuzz workspace's falsification patch
   `fuzz/falsifications/redoxfs_server_session.unknown_badge_fails_open.patch` edits the crate's
   `Bindings::binding`.
@@ -60,7 +60,7 @@ Beyond that, the tooling and the lists:
 What references back into nife from the crate: its documentation cites milestone numbers, a ruling
 date and the program `fs_subtree_caretaker`, and its doc comment points at `notes/walk-cost.md`.
 Its manifest reads `license.workspace` and `lints.workspace`. It has no path dependency into nife
-beyond `filesystem_contract`, no `include_str!` and no test that reads a nife file.
+beyond `file_system_contract`, no `include_str!` and no test that reads a nife file.
 
 ## What was run
 
@@ -70,13 +70,13 @@ All on the branch's tip, on a loaded shared host.
 |---|---|
 | `cargo test -p subtree_scope` | 12 host tests and 2 doctests pass |
 | `cargo clippy -p subtree_scope --all-targets -- -D warnings`, `cargo doc` with warnings denied | no warning |
-| the crate and `filesystem_contract` copied outside the tree with the lints and license inlined, `cargo +1.88.0 test` | 12 tests and 2 doctests pass on the declared minimum version |
+| the crate and `file_system_contract` copied outside the tree with the lints and license inlined, `cargo +1.88.0 test` | 12 tests and 2 doctests pass on the declared minimum version |
 | Miri over the host tests | passes |
 | `cargo kani`, the five harnesses | verify; the peak stays near the recorded 5.9 GiB |
 | `script/falsifications --check` | every patch of the crate applies |
 | `script/falsifications --sweep subtree_scope` | 5 swept, 0 survivors: every harness fails under its patch (the slowest replay, `a_step_is_one_name`, took 833 s on a loaded host) |
 | `cargo test` in `redoxfs_server` | 95 tests pass with the renames |
-| `script/crate-standalone subtree_scope` | 15 failures, every one move work: the crate name provisional and 21 names not ratified, the `filesystem_contract` path dependency, the inherited `license` and `lints`, no `rust-version`, no README or license files, and the citations of milestones, the architect's name, a nife path and sections in the crate documentation. The build and proofs steps are skipped because the copy does not build without the dependency |
+| `script/crate-standalone subtree_scope` | 15 failures, every one move work: the crate name provisional and 21 names not ratified, the `file_system_contract` path dependency, the inherited `license` and `lints`, no `rust-version`, no README or license files, and the citations of milestones, the architect's name, a nife path and sections in the crate documentation. The build and proofs steps are skipped because the copy does not build without the dependency |
 | `script/crate-move --dry-run subtree_scope` | stages at template `v8`; the five falsification patches apply with no offset and no fuzz; passive voice, history phrases, spelled-out words, unit symbols and file length pass. 8 findings for the move lane: no README, the build (the inherited `license`), the README's prose caps, and the citations in the crate documentation, all P0-1 and P0-2 |
 | `script/lint` | all 149 sections pass |
 
@@ -189,7 +189,7 @@ and it copies no Linux or `cap-std` text.
 
 | item | owner |
 |---|---|
-| P0-3: replace the `filesystem_contract` path dependency with `git` and `rev` and `version = "0.1.0"`; it waits on `filesystem_contract`'s repository at step 2 of milestone 1017. `deny.toml` already admits git sources on the organization. | move lane, after step 2 |
+| P0-3: replace the `file_system_contract` path dependency with `git` and `rev` and `version = "0.1.0"`; it waits on `file_system_contract`'s repository at step 2 of milestone 1017. `deny.toml` already admits git sources on the organization. | move lane, after step 2 |
 | P0-1: the README (`## EXAMPLES`, `## What is proven`, `## BUGS`, `## Minimum Rust version`, `## License`), both license files, the inlined `license`, `rust-version = "1.88"` and lints, and a `publish` comment a stranger can act on | move lane |
 | P0-2: rewrite the crate documentation in the crate's own words (no milestone, no dated ruling, no `fs_subtree_caretaker`), with the hard cases of `notes/walk-cost.md` | move lane |
 | P1-10: put the passive constructions the template counts (26 in 4,081 words, against 8) into the active voice, with P0-2 | move lane |
@@ -201,7 +201,7 @@ and it copies no Linux or `cap-std` text.
 
 1. Clearing the move: answered. The architect cleared this package on 2026-11-20 (UTC) and approved
    the repository `nifeos/subtree_scope` with `publish = false`, no tag and no publish. The move
-   waits on `filesystem_contract`'s repository for the `git` pin of P0-3.
+   waits on `file_system_contract`'s repository for the `git` pin of P0-3.
 2. Whether to spend a prove shard's room on the completeness harness of P1-9. Recommendation: not
    before the move; add it in the new repository, where the crate's own proofs job has the
    budget to itself, and the measurement above sets its cost.

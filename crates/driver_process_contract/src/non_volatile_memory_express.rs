@@ -61,7 +61,7 @@ pub const ADMINISTRATION_PAGES: u64 = 3;
 /// Pages in one client's transfer window: one request's worth of filesystem blocks.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
-pub const TRANSFER_PAGES: u64 = filesystem_contract::block::TRANSFER_BLOCKS as u64;
+pub const TRANSFER_PAGES: u64 = file_system_contract::block::TRANSFER_BLOCKS as u64;
 /// Pages the data plane is granted, from [`ADMINISTRATION_PAGES`] on: the I/O submission ring, the I/O
 /// completion ring, then one [`TRANSFER_PAGES`] window per client.
 ///
@@ -127,7 +127,7 @@ pub mod administration_slots {
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
 pub mod data_plane_slots {
-    /// `READ`: the request endpoint the data plane serves `filesystem_contract::block` on.
+    /// `READ`: the request endpoint the data plane serves `file_system_contract::block` on.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
     pub const REQUEST: u64 = 0;
@@ -283,7 +283,7 @@ impl AdministrationReport {
 }
 
 /// **How many transfer windows the EL0 server keeps, one per client.** Each window is
-/// `filesystem_contract::block::TRANSFER_BLOCKS` pages of the DMA region, and the server stages a
+/// `file_system_contract::block::TRANSFER_BLOCKS` pages of the DMA region, and the server stages a
 /// request in window `badge`, the badge on the endpoint capability the client called (one frame
 /// per client channel), so two clients staging at once cannot overwrite each other.
 ///

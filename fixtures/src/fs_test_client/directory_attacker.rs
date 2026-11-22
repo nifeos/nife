@@ -7,8 +7,8 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{directory, extended_attribute, fs};
-use filesystem_fixture as fixture;
+use file_system_contract::{directory, extended_attribute, file_system};
+use file_system_fixture as fixture;
 use fixture::{directory_escape as esc, tree};
 use user_mode_runtime::{call, exit, send};
 
@@ -32,28 +32,30 @@ pub(crate) fn dir_attacker(run: u64) -> ! {
 
     // 1. The parent. `motd` is in the granted directory's parent and is not in the granted
     //    directory, so this must find nothing. Not a refusal: in this scope there is no such name.
-    if dir_open(fs::ROOT, fixture::MOTD_NAME) >= 0 {
+    if dir_open(file_system::ROOT, fixture::MOTD_NAME) >= 0 {
         v |= esc::REACHED_PARENT;
     }
     // 2. The sibling, by both routes: descending into it and naming the file inside it.
-    if dir_descend(fs::ROOT, tree::OTHER, directory::ALL) >= 0
-        || dir_open(fs::ROOT, tree::SECRET) >= 0
+    if dir_descend(file_system::ROOT, tree::OTHER, directory::rights::ALL) >= 0
+        || dir_open(file_system::ROOT, tree::SECRET) >= 0
     {
         v |= esc::REACHED_SIBLING;
     }
     // 3. `..`, which is not a component this contract accepts, at any rights.
-    if dir_descend(fs::ROOT, "..", directory::ALL) >= 0 || dir_open(fs::ROOT, "..") >= 0 {
+    if dir_descend(file_system::ROOT, "..", directory::rights::ALL) >= 0
+        || dir_open(file_system::ROOT, "..") >= 0
+    {
         v |= esc::WALKED_UP;
     }
 
     // 4. The control: the file inside the grant. A capability that reaches nothing is trivially
     //    unescapable, so without this bit every refusal above proves nothing.
-    let own = dir_open(fs::ROOT, tree::INNER);
+    let own = dir_open(file_system::ROOT, tree::INNER);
     if own >= 0 {
         v |= esc::OPENED_ITS_OWN;
         let (n, _) = call(
             FILE,
-            fs::request(fs::READ, own as u64, tree::INNER_BODY.len() as u64),
+            file_system::request(file_system::READ, own as u64, tree::INNER_BODY.len() as u64),
             0,
         );
         get_page(n as usize, &mut buf);
@@ -73,19 +75,24 @@ pub(crate) fn dir_attacker(run: u64) -> ! {
     //    `mkdir` needs DESCEND too, because a directory you could not have walked into would be a
     //    way to mint a capability out of a right that was withheld.
     let made = run_name(tree::MADE, run);
-    let created = dir_create(fs::ROOT, made_str(&made));
+    let created = dir_create(file_system::ROOT, made_str(&made));
     if created >= 0 {
         v |= esc::CREATED;
         v |= write_what_it_made(created);
     }
     let made_dir = run_name(tree::MADE_DIRECTORY, run);
-    if dir_mkdir(fs::ROOT, made_str(&made_dir), directory::READ) >= 0 {
+    if dir_mkdir(
+        file_system::ROOT,
+        made_str(&made_dir),
+        directory::rights::READ,
+    ) >= 0
+    {
         v |= esc::MADE_A_DIRECTORY;
     }
 
     // 9. Descending inside the grant, which is allowed exactly when DESCEND was granted. Asking for
     //    DESCEND alone, so this probe is about reaching the child rather than about its rights.
-    let child = dir_descend(fs::ROOT, tree::DEEPER, directory::DESCEND);
+    let child = dir_descend(file_system::ROOT, tree::DEEPER, directory::rights::DESCEND);
     if child >= 0 {
         v |= esc::DESCENDED;
     }
@@ -99,7 +106,13 @@ pub(crate) fn dir_attacker(run: u64) -> ! {
     //     capability with no `REMOVE` gets the same refusal whether or not the source is there,
     //     and this program is not told which case it is in.
     let moved = run_name(tree::MOVED, run);
-    if dir_rename(fs::ROOT, made_str(&made), fs::ROOT, made_str(&moved)) >= 0 {
+    if dir_rename(
+        file_system::ROOT,
+        made_str(&made),
+        file_system::ROOT,
+        made_str(&moved),
+    ) >= 0
+    {
         v |= esc::RENAMED;
     }
 
@@ -108,8 +121,14 @@ pub(crate) fn dir_attacker(run: u64) -> ! {
     //     one check.
     let mut guess = 9u64;
     while guess < 16 {
-        if call(FILE, fs::request(fs::READ, guess, 8), 0).0 as i64 >= 0
-            || call(FILE, fs::request(fs::READDIR, guess, 0), 0).0 as i64 >= 0
+        if call(FILE, file_system::request(file_system::READ, guess, 8), 0).0 as i64 >= 0
+            || call(
+                FILE,
+                file_system::request(file_system::READDIR, guess, 0),
+                0,
+            )
+            .0 as i64
+                >= 0
         {
             v |= esc::FORGED_HANDLE;
         }
@@ -132,13 +151,17 @@ fn probe_its_own_attributes(own: i64) -> u64 {
     let mut v = 0u64;
     let mut buf = [0u8; 256];
     // 4b. **Its attributes** (milestone 61). Reading them needs what reading the file needs, so
-    //     every configuration that got here should manage it; writing one needs `directory::WRITE`,
+    //     every configuration that got here should manage it; writing one needs `directory::rights::WRITE`,
     //     and the caretaker checks nothing, so the refusal comes from the FS server acting on
     //     the rights the caretaker's one `OPENDIR` left on this handle.
     //
     //     The attribute is set on `inner` and then removed, so the post-run host check still
     //     sees the file it pins, byte for byte, with nothing attached.
-    let (l, _) = call(FILE, fs::request(fs::LISTXATTR, own as u64, 0), 0);
+    let (l, _) = call(
+        FILE,
+        file_system::request(file_system::LISTXATTR, own as u64, 0),
+        0,
+    );
     if (l as i64) < 0 {
         v |= esc::GRANTED_ACCESS_FAILED;
     } else {
@@ -149,8 +172,8 @@ fn probe_its_own_attributes(own: i64) -> u64 {
     put_page_at(fixture::attributes::NAME.len(), fixture::attributes::VALUE);
     let (s, _) = call(
         FILE,
-        fs::request(
-            fs::SETXATTR,
+        file_system::request(
+            file_system::SETXATTR,
             own as u64,
             fixture::attributes::NAME.len() as u64,
         ),
@@ -163,8 +186,8 @@ fn probe_its_own_attributes(own: i64) -> u64 {
         put_page(fixture::attributes::NAME);
         let (g, _) = call(
             FILE,
-            fs::request(
-                fs::GETXATTR,
+            file_system::request(
+                file_system::GETXATTR,
                 own as u64,
                 fixture::attributes::NAME.len() as u64,
             ),
@@ -183,8 +206,8 @@ fn probe_its_own_attributes(own: i64) -> u64 {
         put_page(fixture::attributes::NAME);
         let (rm, _) = call(
             FILE,
-            fs::request(
-                fs::REMOVEXATTR,
+            file_system::request(
+                file_system::REMOVEXATTR,
                 own as u64,
                 fixture::attributes::NAME.len() as u64,
             ),
@@ -203,14 +226,18 @@ fn probe_enumeration() -> u64 {
     let mut buf = [0u8; 256];
     // 5. Enumeration, and what it is allowed to contain. A listing is a rendering of authority, so
     //    a name from outside the grant appearing in one is an escape even though nothing was opened.
-    let (n, _) = call(FILE, fs::request(fs::READDIR, fs::ROOT, 0), 0);
+    let (n, _) = call(
+        FILE,
+        file_system::request(file_system::READDIR, file_system::ROOT, 0),
+        0,
+    );
     if (n as i64) >= 0 {
         v |= esc::ENUMERATED;
         // Clamped to the local buffer: the page is sixteen times larger, and indexing past the
         // buffer with a length the server chose would be a panic this program cannot report.
         let n = (n as usize).min(buf.len());
         get_page(n, &mut buf);
-        for (name, _) in filesystem_contract::directory_entry::iter(&buf[..n]) {
+        for (name, _) in file_system_contract::directory_entry::iter(&buf[..n]) {
             for stranger in [
                 fixture::MOTD_NAME,
                 fixture::SCRATCH_NAME,
@@ -235,14 +262,22 @@ fn write_what_it_made(created: i64) -> u64 {
     put_page(tree::MADE_BODY);
     let (w, _) = call(
         FILE,
-        fs::request(fs::WRITE, created as u64, tree::MADE_BODY.len() as u64),
+        file_system::request(
+            file_system::WRITE,
+            created as u64,
+            tree::MADE_BODY.len() as u64,
+        ),
         0,
     );
     if (w as i64) >= 0 {
         v |= esc::WROTE;
         let (rb, _) = call(
             FILE,
-            fs::request(fs::READ, created as u64, tree::MADE_BODY.len() as u64),
+            file_system::request(
+                file_system::READ,
+                created as u64,
+                tree::MADE_BODY.len() as u64,
+            ),
             0,
         );
         get_page(tree::MADE_BODY.len(), &mut buf);
@@ -262,9 +297,14 @@ fn probe_widening(created: i64) -> u64 {
     //
     //   (a) A child asked for NOTHING must be able to do nothing. If a zero-rights directory
     //       capability opens, lists or creates, rights are not being carried on the handle at all.
-    let nothing = dir_descend(fs::ROOT, tree::DEEPER, 0);
+    let nothing = dir_descend(file_system::ROOT, tree::DEEPER, 0);
     if nothing >= 0 {
-        let listed = call(FILE, fs::request(fs::READDIR, nothing as u64, 0), 0).0 as i64;
+        let listed = call(
+            FILE,
+            file_system::request(file_system::READDIR, nothing as u64, 0),
+            0,
+        )
+        .0 as i64;
         if dir_open(nothing as u64, tree::LEAF) >= 0
             || dir_create(nothing as u64, "smuggled") >= 0
             || listed >= 0
@@ -274,7 +314,7 @@ fn probe_widening(created: i64) -> u64 {
     }
     //   (b) A child cannot carry what the parent did not. If creating in the grant was refused, the
     //       grant has no CREATE, so a descent that asks for CREATE must be refused too.
-    if created < 0 && dir_descend(fs::ROOT, tree::DEEPER, directory::ALL) >= 0 {
+    if created < 0 && dir_descend(file_system::ROOT, tree::DEEPER, directory::rights::ALL) >= 0 {
         v |= esc::WIDENED;
     }
     v

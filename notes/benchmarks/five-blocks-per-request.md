@@ -39,7 +39,7 @@ files and a `motd` share blocks 1 through 4 and differ only in block 5.
 
 A `Disk` implementation over an in-memory image logs every `read_at`. It was built as a temporary
 probe in `redoxfs_server`'s host tests and reverted before this note was committed (reproduction
-below). `BlockDisk` splits a `Disk` call into whole-block transfers, one `filesystem_contract::blk`
+below). `BlockDisk` splits a `Disk` call into whole-block transfers, one `file_system_contract::blk`
 request each, exactly as `IpcDisk` does on device. So `ceil(len / 4096)` per call is the number of
 block-server round trips the request costs on the machine. The block numbers differ on device (a
 different image, behind a partition offset); the counts and the repetition do not.
@@ -159,7 +159,7 @@ per-file level out of reach today:
   `read_block` allocates its buffer through `T::empty(ptr.addr().level())`. So lowering the constant
   makes every record already stored at a higher level unreadable, with `ENOENT`, on an image that was
   good before.
-- Nothing in `filesystem_contract` can name a level, so the FS server would have nothing to pass down
+- Nothing in `file_system_contract` can name a level, so the FS server would have nothing to pass down
   even if the engine took one.
 
 So option 2 has two shapes, and they are different decisions. Lowering the default is one line and a
@@ -173,8 +173,8 @@ the block priced.
 ### The workload question, answered by reading
 
 *The code quoted below changed on 2026-08-19 (milestone 55 (Time Machine)). The section stands because its
-reasoning makes the change legible.* `smb_server`'s two `min`s now read `fs::TRANSFER_MAXIMUM`
-rather than `filesystem_contract::PAGE`, so a Mac writing a megabyte arrives as 16 requests rather
+reasoning makes the change legible.* `smb_server`'s two `min`s now read `file_system::TRANSFER_MAXIMUM`
+rather than `file_system_contract::PAGE`, so a Mac writing a megabyte arrives as 16 requests rather
 than 256. Measured through a real SMB client: write 4.8x, read 2.4x, against the 8.02x and 5.67x
 step 3 measured on the contract itself ([steps 1 and 3](read-path-record-and-request-size.md)). The
 residual is now owned by the socket contract's own 4080-byte chunking. The table and reasoning are
@@ -185,12 +185,12 @@ Milestone 138 asks whether 4 KiB is the atypical case. A Time Machine backup wri
 are large and sequential, and a 128 KiB record is plausibly right for those.
 
 It is not the atypical case. It is the only case this system has. `user/src/smb_server.rs` chunks
-every SMB read and every SMB write into `filesystem_contract::PAGE`-sized requests, in a loop,
-because that is what a `filesystem_contract` request carries:
+every SMB read and every SMB write into `file_system_contract::PAGE`-sized requests, in a loop,
+because that is what a `file_system_contract` request carries:
 
 ```rust
-let want = (out.len() - done).min(filesystem_contract::PAGE);      // read
-let chunk = (data.len() - done).min(filesystem_contract::PAGE);    // write
+let want = (out.len() - done).min(file_system_contract::PAGE);      // read
+let chunk = (data.len() - done).min(file_system_contract::PAGE);    // write
 ```
 
 A Mac writing a megabyte into a band file therefore arrives at the store as 256 separate 4 KiB

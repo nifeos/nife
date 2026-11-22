@@ -60,8 +60,8 @@ pointing at a block that never landed. What is guaranteed is that this is never 
 Half of that gap was ours, and it is closed, 2026-08-18, by the durability half of milestone 55
 (Time Machine). Our block server used to issue no `VIRTIO_BLK_T_FLUSH`, so the last acknowledged
 write's durability was the device's word rather than ours. It now issues one.
-`filesystem_contract::blk::FLUSH` (op 4) is a real device flush the block server waits on.
-`filesystem_contract::fs::SYNC` (op 19) is the file-service verb that asks for it. A device that
+`file_system_contract::blk::FLUSH` (op 4) is a real device flush the block server waits on.
+`file_system_contract::file_system::SYNC` (op 19) is the file-service verb that asks for it. A device that
 never offered `VIRTIO_BLK_F_FLUSH` gets `EOPNOTSUPP` all the way up, rather than a quiet success.
 That is the part that matters: the old problem was less the missing flush than that nothing above it
 could tell.

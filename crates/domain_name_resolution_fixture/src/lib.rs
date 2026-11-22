@@ -12,7 +12,7 @@
 //!
 //! Name: ratified 2026-11-20 (UTC) (block 1086): `domain_name_resolution_fixture`, the crate that
 //! holds what `domain_name_resolution_contract` held as its `fixture` module. It takes its
-//! contract's name, as `filesystem_fixture` and `socket_fixture` do. Refused
+//! contract's name, as `file_system_fixture` and `socket_fixture` do. Refused
 //! `name_resolver_fixture`, after the program.
 
 use domain_name_resolution_contract::{reject_code, status};

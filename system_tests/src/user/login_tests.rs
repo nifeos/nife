@@ -38,11 +38,11 @@ fn install_scheduled_program() {
 }
 
 /// `EEXIST`, matching `identity_provisioner.rs`'s own local constant: `fs_proto` does not re-export
-/// it under a name (that file's own comment), so every direct caller of `fs::MKDIR` names it again.
+/// it under a name (that file's own comment), so every direct caller of `file_system::MKDIR` names it again.
 const EEXIST: i32 = 17;
 
 /// Ensure `name` exists as a subtree under `fs_ep`'s root, as `identity_provisioner.rs`'s
-/// `mkdir_home` does: [`filesystem_contract::fs::MKDIR`] with [`filesystem_contract::directory::ALL`] and
+/// `mkdir_home` does: [`file_system_contract::file_system::MKDIR`] with [`file_system_contract::directory::rights::ALL`] and
 /// the identity string as the name (DECISIONS §117 (a principal's subtree is named by its identity
 /// string)). The FS root is the whole test binary's shared fixture and another suite may have made
 /// the name already, so `EEXIST` is tolerated.
@@ -57,22 +57,22 @@ fn ensure_home_subtree(fs_ep: sched::RendezvousId, fs_page_frame: u64, name: &[u
     let page = unsafe {
         core::slice::from_raw_parts_mut(
             mmu::phys_to_virt(fs_page_frame) as *mut u8,
-            filesystem_contract::PAGE_BYTES,
+            file_system_contract::PAGE_BYTES,
         )
     };
     page[..name.len()].copy_from_slice(name);
     let r = sched::ipc_call(
         fs_ep,
         [
-            filesystem_contract::fs::request(
-                filesystem_contract::fs::MKDIR,
-                filesystem_contract::fs::ROOT,
+            file_system_contract::file_system::request(
+                file_system_contract::file_system::MKDIR,
+                file_system_contract::file_system::ROOT,
                 name.len() as u64,
             ),
-            filesystem_contract::directory::ALL,
+            file_system_contract::directory::rights::ALL,
         ],
     );
-    match filesystem_contract::reply_errno(r[0] as i64) {
+    match file_system_contract::error::code(r[0] as i64) {
         Some(errno) => assert_eq!(
             errno,
             EEXIST,
@@ -84,7 +84,11 @@ fn ensure_home_subtree(fs_ep: sched::RendezvousId, fs_page_frame: u64, name: &[u
             let _ = sched::ipc_call(
                 fs_ep,
                 [
-                    filesystem_contract::fs::request(filesystem_contract::fs::CLOSE, r[0], 0),
+                    file_system_contract::file_system::request(
+                        file_system_contract::file_system::CLOSE,
+                        r[0],
+                        0,
+                    ),
                     0,
                 ],
             );
@@ -479,7 +483,7 @@ fn the_login_service_serves_past_the_old_capability_table_ceiling() {
 /// fixture and not another identity's.
 ///
 /// `alice` and `bob` each `CREATE` a marker naming themselves ([`ls::WRITE_MARKER`]) and confirm
-/// [`filesystem_fixture::tree::INNER`] is absent, so neither landed in the shared fixture tree.
+/// [`file_system_fixture::tree::INNER`] is absent, so neither landed in the shared fixture tree.
 /// `alice` then logs in again ([`ls::READ_MARKER`]) and must read her own marker: one identity's
 /// sessions share a subtree, and it is not `bob`'s, whose write would otherwise have replaced it.
 /// `identity_provisioning_tests` proves the tool makes the subtree; this proves `login` finds it.
@@ -506,7 +510,7 @@ fn login_scopes_each_identity_to_its_own_provisioned_subtree() {
         r_alice[1] & ls::F_NOT_SHARED_SUBTREE,
         ls::F_NOT_SHARED_SUBTREE,
         "alice's granted directory carries the old shared fixture's own file \
-         (filesystem_fixture::tree::INNER), so it is not a subtree of alice's own",
+         (file_system_fixture::tree::INNER), so it is not a subtree of alice's own",
     );
     let a_alice = sched::ipc_receive(w.audit);
     assert_eq!(
@@ -528,7 +532,7 @@ fn login_scopes_each_identity_to_its_own_provisioned_subtree() {
         r_bob[1] & ls::F_NOT_SHARED_SUBTREE,
         ls::F_NOT_SHARED_SUBTREE,
         "bob's granted directory carries the old shared fixture's own file \
-         (filesystem_fixture::tree::INNER), so it is not a subtree of bob's own",
+         (file_system_fixture::tree::INNER), so it is not a subtree of bob's own",
     );
     let a_bob = sched::ipc_receive(w.audit);
     assert_eq!(

@@ -82,7 +82,7 @@ An appendix to [the milestone](../1089-environment-contract-outside-review.md).
    `keywords` or `categories`, and its `publish = false` comment points at
    `crates/publish-allowlist.txt`. There is no README, `LICENSE-MIT` or `LICENSE-APACHE`.
    `src/lib.rs` cites `notes/env-config.md` (`:7`), three decision sections, two milestones,
-   `script/lint`, `clock_contract::MAGIC`, `clock_contract::status`, `filesystem_contract`,
+   `script/lint`, `clock_contract::MAGIC`, `clock_contract::status`, `file_system_contract`,
    `PageFrame`, `init` and "the `std` PAL", and its `Name:` blocks name the architect, which the
    template's `standalone` check refuses as a finding of its own. The template refuses a fuzz opt-in
    for a crate with `unsafe`, and this crate has three sites (`new`, `bytes`, the `Send`/`Sync`

@@ -8,8 +8,8 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{directory, extended_attribute, fs};
-use filesystem_fixture as fixture;
+use file_system_contract::{directory, extended_attribute, file_system};
+use file_system_fixture as fixture;
 use user_mode_runtime::{call, exit, send};
 
 use crate::channel::{FILE, REPORT, dir_descend, dir_open, get_page, put_page, put_page_at};
@@ -28,7 +28,7 @@ pub(crate) fn set_attrs() -> ! {
     let mut buf = [0u8; 128];
 
     // The name the set designates. Everything below hangs off this, so its failure is the control.
-    let own = dir_open(fs::ROOT, tree::INNER);
+    let own = dir_open(file_system::ROOT, tree::INNER);
     if own < 0 {
         v |= esc::GRANTED_ACCESS_FAILED;
     } else {
@@ -37,7 +37,11 @@ pub(crate) fn set_attrs() -> ! {
         // A listing: a read, so it needs what reading the file needs and nothing more. Zero
         // attributes is a successful listing, which is what tells "forwarded and there were none"
         // apart from "the caretaker refused it".
-        let (l, _) = call(FILE, fs::request(fs::LISTXATTR, own as u64, 0), 0);
+        let (l, _) = call(
+            FILE,
+            file_system::request(file_system::LISTXATTR, own as u64, 0),
+            0,
+        );
         if (l as i64) < 0 {
             v |= esc::GRANTED_ACCESS_FAILED;
         } else {
@@ -51,8 +55,8 @@ pub(crate) fn set_attrs() -> ! {
         put_page_at(fixture::attributes::NAME.len(), fixture::attributes::VALUE);
         let (s, _) = call(
             FILE,
-            fs::request(
-                fs::SETXATTR,
+            file_system::request(
+                file_system::SETXATTR,
                 own as u64,
                 fixture::attributes::NAME.len() as u64,
             ),
@@ -65,8 +69,8 @@ pub(crate) fn set_attrs() -> ! {
             put_page(fixture::attributes::NAME);
             let (g, _) = call(
                 FILE,
-                fs::request(
-                    fs::GETXATTR,
+                file_system::request(
+                    file_system::GETXATTR,
                     own as u64,
                     fixture::attributes::NAME.len() as u64,
                 ),
@@ -85,8 +89,8 @@ pub(crate) fn set_attrs() -> ! {
             put_page(fixture::attributes::NAME);
             let (rm, _) = call(
                 FILE,
-                fs::request(
-                    fs::REMOVEXATTR,
+                file_system::request(
+                    file_system::REMOVEXATTR,
                     own as u64,
                     fixture::attributes::NAME.len() as u64,
                 ),
@@ -103,8 +107,8 @@ pub(crate) fn set_attrs() -> ! {
     // The naming question, by both routes: a file the set does not carry, and a directory it does
     // not carry. Both are really in the granted directory and the caretaker one hop up could open
     // either on any request it liked, so each refusal is a fact about the set.
-    if dir_open(fs::ROOT, tree::DEEPER) >= 0
-        || dir_descend(fs::ROOT, tree::DEEPER, directory::READ) >= 0
+    if dir_open(file_system::ROOT, tree::DEEPER) >= 0
+        || dir_descend(file_system::ROOT, tree::DEEPER, directory::rights::READ) >= 0
     {
         v |= esc::REACHED_AN_UNMATCHED_NAME;
     }

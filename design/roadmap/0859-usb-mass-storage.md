@@ -30,7 +30,7 @@ read for hardware facts only.
 A driver for USB mass-storage devices using the bulk-only transport (BOT) with the SCSI transparent
 command set: INQUIRY, TEST UNIT READY, READ CAPACITY, READ(10 or 16) and WRITE(10 or 16), with
 REQUEST SENSE after a failed status. It runs as a confined EL0 server in the shape of the NVMe and
-virtio block servers, speaking `filesystem_contract::blk` to its client. It sits on top of the
+virtio block servers, speaking `file_system_contract::blk` to its client. It sits on top of the
 xHCI driver milestone 242 builds and asks it for bulk endpoints; it does not touch the controller.
 USB Attached SCSI (UAS) is out of scope until a drive that needs it exists, since BOT works on
 every drive and UAS drives fall back to it.

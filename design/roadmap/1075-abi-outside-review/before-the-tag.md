@@ -19,7 +19,7 @@ An appendix to [the milestone](../1075-abi-outside-review.md).
    `cap::CAPABILITY_TABLE_SLOTS` (`src/lib.rs` line 95), `capability_table::Rights::ALL`, `::BIND` and
    `::ENUMERATE` (`src/lib.rs` line 210, `src/rights.rs` line 9, 14, 19). They cite `user_mode_runtime::cycle_reading`,
    `::receive_request` and `::reply` (`src/lib.rs` line 226, `src/rendezvous.rs` line 108),
-   `std_runtime_contract::SLOTS` (`src/memory_region.rs` line 26). They cite `current_cpu_contract::THREAD_PAGE_SLOTS` (`src/thread_control_block.rs` line 8), `filesystem_contract` (`src/rights.rs` line 9, `src/reboot.rs` line 7) and `crates/byte_sink_contract` (`src/rendezvous.rs` line 10). They also cite `entropy_contract` and `credential_contract`
+   `std_runtime_contract::SLOTS` (`src/memory_region.rs` line 26). They cite `current_cpu_contract::THREAD_PAGE_SLOTS` (`src/thread_control_block.rs` line 8), `file_system_contract` (`src/rights.rs` line 9, `src/reboot.rs` line 7) and `crates/byte_sink_contract` (`src/rendezvous.rs` line 10). They also cite `entropy_contract` and `credential_contract`
    (`src/lib.rs` line 384), `inter_process_communication::timer` (`src/timer.rs` line 41), `sched::last_cpus`
    (`src/survey.rs` line 50), `console::configure_from_dtb` (`src/uart.rs` line 6), "AGENTS.md rule 7"
    (`src/lib.rs` line 227), "claim 11" (`src/page_frame.rs` line 6, `src/address_space.rs` line 8), "(19c)"

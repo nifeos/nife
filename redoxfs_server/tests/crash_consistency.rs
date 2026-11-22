@@ -111,7 +111,7 @@ fn attrs_of<D: redoxfs::Disk>(
 ) -> Result<Attrs, syscall::error::Error> {
     let mut page = [0u8; 4096];
     let n = srv.list_xattr(handle, &mut page)?;
-    let names: Vec<Vec<u8>> = filesystem_contract::extended_attribute::list::iter(&page[..n])
+    let names: Vec<Vec<u8>> = file_system_contract::extended_attribute::list::iter(&page[..n])
         .map(|s| s.to_vec())
         .collect();
     let mut out = Vec::new();
@@ -248,7 +248,7 @@ fn record_workload() -> Recorded {
 
     // The rename: `made` becomes `renamed`, both of which `snapshot` reads, so a recovery that
     // found the file under both names or under neither is a state that never existed.
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
     srv.rename(root, &named("made"), root, &named("renamed"))
         .expect("operation 8");
     mark(&mut srv, &mut states, 8);
@@ -262,7 +262,7 @@ fn record_workload() -> Recorded {
     srv.set_xattr(
         h,
         b"user.DOSATTRIB",
-        filesystem_contract::extended_attribute::RAW,
+        file_system_contract::extended_attribute::RAW,
         b"0x20",
     )
     .expect("operation 9");

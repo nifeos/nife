@@ -9,7 +9,7 @@
 # script rather than a paragraph so the next person can rerun it, and it is the sibling of
 # bench/record-level-sweep.sh in shape on purpose.
 #
-# WHAT IT DOES. `filesystem_contract::fs::TRANSFER_PAGES` is how many contiguous pages the client and the FS
+# WHAT IT DOES. `file_system_contract::file_system::TRANSFER_PAGES` is how many contiguous pages the client and the FS
 # server share, and therefore the most one request can carry. Every party's mapping, the server's
 # clamp and the benchmark's transfer unit all derive from it, so setting it to 1 reproduces the
 # contract exactly as it stood before step 3. This script therefore EDITS THAT CONSTANT IN PLACE,
@@ -56,7 +56,7 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
-LIB=crates/filesystem_contract/src/fs.rs
+LIB=crates/file_system_contract/src/file_system.rs
 SAVED=$(mktemp -t transfer-size-sweep)
 
 restore() {

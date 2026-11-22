@@ -54,7 +54,7 @@ one string that would collide with an unwritten slot in the service's fixed-size
 
 ## The fixtures
 
-`fixture` holds the one login the gates share, in `filesystem_fixture`'s shape and for its reason.
+`fixture` holds the one login the gates share, in `file_system_fixture`'s shape and for its reason.
 Several programs must agree on an account down to the byte, and a second copy would drift into a
 wrong answer that looks like a bug in the code under test. It has four readers.
 `credentialer_test_client`'s provisioner role stores the key. The SMB adapter names the resource it

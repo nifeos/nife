@@ -47,7 +47,7 @@ Reuse: not applicable; this moves code and adds none.
 ## What `fixture` is
 
 Measured at `9532eeb53`. `pub mod fixture` is lines 2566 to 3806 of
-`crates/filesystem_contract/src/lib.rs`: 1,241 lines, 842 of them comments, 255 public items. It
+`crates/file_system_contract/src/lib.rs`: 1,241 lines, 842 of them comments, 255 public items. It
 holds the names and contents of the files the test image ships, the witnesses' verdict words and
 the shapes of the `walk` and `throughput` benchmarks. It also holds the layout of the blank disk
 that milestone 57 (partitioning and formatting a real drive) writes.
@@ -117,15 +117,15 @@ four roadmap blocks, six notes and two falsification patches under `system_tests
    naming it. Show the shorter `fsproto.rs` in the pull request.
 2. The protocol words in the table above move to the crate root or a module of their own, name
    provisional, and their users follow.
-3. The rest becomes a crate, `crates/filesystem_fixture` (provisional), with `fixture.rs` as its
+3. The rest becomes a crate, `crates/file_system_fixture` (provisional), with `fixture.rs` as its
    `lib.rs` and `fixture/tests.rs` as its tests. It is `no_std` and depends on
    `filesystem_protocol` alone.
-4. Each user changes `filesystem_protocol::fixture` to `filesystem_fixture`. A file that says
-   `fixture::` bare imports `filesystem_fixture as fixture`, so its body does not change.
+4. Each user changes `filesystem_protocol::fixture` to `file_system_fixture`. A file that says
+   `fixture::` bare imports `file_system_fixture as fixture`, so its body does not change.
 
 ## The name
 
-`filesystem_fixture` is the proposal. It is the module's existing name lifted to a crate, so every
+`file_system_fixture` is the proposal. It is the module's existing name lifted to a crate, so every
 call site reads the same after the prefix, and a reader who knew the module finds the crate. It
 does not end in `_protocol`, because it is not a wire contract; that suffix is for contract crates
 since milestone 265 (`_proto` is a truncation). `filesystem_test_image` was considered and is
@@ -151,7 +151,7 @@ benchmark shapes. calef names crates.
 1. `filesystem_protocol` has no `fixture` module, and no test data remains in it.
 2. The generated `fsproto.rs` has no `fixture` module, and the std farm builds.
 3. The kernel, `virtio` and `system_initializer` do not depend on the new crate. (The kernel's one
-   exception, recorded: `filesystem_fixture` is an optional dependency, on only under
+   exception, recorded: `file_system_fixture` is an optional dependency, on only under
    `--features bench`, whose filesystem benchmark speaks the throughput and walk shapes. No
    booting image sets the feature; `cargo tree` shows the crate absent from every default graph.)
 4. Every host test and doc test that passed before passes with no test body changed, and so does

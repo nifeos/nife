@@ -94,7 +94,7 @@ measured); and a build-time "live" flag, which the installed copy would inherit.
 
 ### G3: a filesystem in memory, recommended
 
-A block server over RAM, serving the `filesystem_contract::blk` wire, with `mkfs` run on it at boot. `redoxfs_server` and `mkfs` are reused unchanged. The live session then has a writable
+A block server over RAM, serving the `file_system_contract::blk` wire, with `mkfs` run on it at boot. `redoxfs_server` and `mkfs` are reused unchanged. The live session then has a writable
 filesystem that is gone at power-off. A provisional name for the server: `memory_disk`.
 
 Size: 256 MiB, provisional; the lane sizes it from the memory map. Prior art, read: Redox's

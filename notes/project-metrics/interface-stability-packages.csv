@@ -35,7 +35,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W31,crate,credential_contract,4,4,3,3,3
 2026W31,crate,credentialer,3,3,3,2,2
 2026W31,crate,direct_memory_access_validator,4,4,4,3,3
-2026W31,crate,filesystem_contract,28,27,18,24,23
+2026W31,crate,file_system_contract,28,27,18,24,23
 2026W31,crate,fuzz,2,2,1,2,2
 2026W31,crate,globally_unique_identifier_partition_table,2,1,0,2,1
 2026W31,crate,grant_plan,21,15,11,18,12
@@ -81,7 +81,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W32,crate,credentialer,10,9,7,6,5
 2026W32,crate,direct_memory_access_validator,6,6,6,2,2
 2026W32,crate,documentation,5,5,3,5,5
-2026W32,crate,filesystem_contract,10,8,8,6,4
+2026W32,crate,file_system_contract,10,8,8,6,4
 2026W32,crate,fuzz,1,1,1,0,0
 2026W32,crate,globally_unique_identifier_partition_table,13,9,9,9,5
 2026W32,crate,grant_plan,19,16,16,15,12
@@ -132,7 +132,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W33,crate,cpu_set,4,3,3,3,2
 2026W33,crate,direct_memory_access_validator,1,1,1,0,0
 2026W33,crate,documentation,2,2,2,0,0
-2026W33,crate,filesystem_contract,6,6,4,4,4
+2026W33,crate,file_system_contract,6,6,4,4,4
 2026W33,crate,fuzz,4,4,4,2,2
 2026W33,crate,globally_unique_identifier_partition_table,3,2,2,0,0
 2026W33,crate,grant_plan,4,3,3,2,1
@@ -186,7 +186,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W34,crate,direct_memory_access_validator,3,3,3,1,1
 2026W34,crate,documentation,18,8,7,15,5
 2026W34,crate,entropy_backend,2,2,1,1,1
-2026W34,crate,filesystem_contract,20,18,17,15,13
+2026W34,crate,file_system_contract,20,18,17,15,13
 2026W34,crate,fuzz,2,1,1,1,0
 2026W34,crate,globally_unique_identifier_partition_table,2,2,2,0,0
 2026W34,crate,grant_plan,14,12,12,10,8
@@ -242,7 +242,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W35,crate,capability_plan,2,2,2,0,0
 2026W35,crate,compositor,2,2,2,0,0
 2026W35,crate,credentialer,1,1,1,0,0
-2026W35,crate,filesystem_contract,4,4,4,2,2
+2026W35,crate,file_system_contract,4,4,4,2,2
 2026W35,crate,fuzz,1,1,1,0,0
 2026W35,crate,grant_plan,10,10,10,6,6
 2026W35,crate,graphics_contract,7,7,7,5,5
@@ -296,7 +296,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W36,crate,credentialer,3,3,2,1,1
 2026W36,crate,direct_memory_access_validator,3,3,2,2,2
 2026W36,crate,documentation,3,2,2,2,1
-2026W36,crate,filesystem_contract,6,6,3,4,4
+2026W36,crate,file_system_contract,6,6,3,4,4
 2026W36,crate,globally_unique_identifier_partition_table,1,1,1,0,0
 2026W36,crate,grant_plan,2,2,2,2,2
 2026W36,crate,inter_process_communication,4,3,3,3,2
@@ -350,7 +350,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W37,crate,credentialer,4,2,2,2,0
 2026W37,crate,documentation,10,4,2,7,2
 2026W37,crate,entropy_backend,1,1,1,0,0
-2026W37,crate,filesystem_contract,1,1,1,0,0
+2026W37,crate,file_system_contract,1,1,1,0,0
 2026W37,crate,fixtures,6,5,5,1,0
 2026W37,crate,grant_plan,12,12,11,2,2
 2026W37,crate,graphics_contract,2,2,2,0,0
@@ -422,7 +422,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W38,crate,direct_memory_access_validator,2,2,2,1,1
 2026W38,crate,documentation,4,2,2,2,0
 2026W38,crate,entropy_backend,3,2,1,2,1
-2026W38,crate,filesystem_contract,7,5,5,5,3
+2026W38,crate,file_system_contract,7,5,5,5,3
 2026W38,crate,firmware_configuration,3,3,2,3,3
 2026W38,crate,fixtures,27,22,21,16,11
 2026W38,crate,fuzz,4,4,4,1,1
@@ -505,7 +505,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W39,crate,current_cpu_contract,3,2,2,2,1
 2026W39,crate,direct_memory_access_validator,4,3,3,2,1
 2026W39,crate,documentation,11,6,5,9,4
-2026W39,crate,filesystem_contract,12,12,12,7,7
+2026W39,crate,file_system_contract,12,12,12,7,7
 2026W39,crate,fixtures,25,24,24,17,16
 2026W39,crate,fuzz,5,5,5,4,4
 2026W39,crate,globally_unique_identifier_partition_table,3,3,3,2,2
@@ -592,7 +592,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W40,crate,cryptography_exerciser,1,1,1,1,1
 2026W40,crate,current_cpu_contract,2,1,1,2,1
 2026W40,crate,documentation,4,0,0,3,0
-2026W40,crate,filesystem_contract,4,2,2,1,0
+2026W40,crate,file_system_contract,4,2,2,1,0
 2026W40,crate,firmware_configuration,1,1,1,1,1
 2026W40,crate,fixtures,15,14,14,12,11
 2026W40,crate,free,3,3,3,1,1
@@ -688,7 +688,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W41,crate,direct_memory_access_validator,5,4,4,3,2
 2026W41,crate,documentation,1,1,1,0,0
 2026W41,crate,domain_name_resolution_contract,4,4,3,3,3
-2026W41,crate,filesystem_contract,8,6,5,6,4
+2026W41,crate,file_system_contract,8,6,5,6,4
 2026W41,crate,fixtures,26,22,21,18,14
 2026W41,crate,free,1,1,1,0,0
 2026W41,crate,fuzz,1,1,1,1,1
@@ -796,8 +796,8 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W42,crate,documentation,10,7,7,5,2
 2026W42,crate,domain_name_resolution_contract,14,11,11,8,5
 2026W42,crate,entropy_backend,2,2,2,0,0
-2026W42,crate,filesystem_contract,17,17,17,6,6
-2026W42,crate,filesystem_fixture,7,6,6,2,1
+2026W42,crate,file_system_contract,17,17,17,6,6
+2026W42,crate,file_system_fixture,7,6,6,2,1
 2026W42,crate,firmware_configuration,3,3,3,0,0
 2026W42,crate,fixtures,51,46,46,28,24
 2026W42,crate,free,5,5,5,1,1
@@ -923,8 +923,8 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W43,crate,domain_name_resolution_contract,4,3,3,3,2
 2026W43,crate,driver_process_contract,1,1,1,0,0
 2026W43,crate,entropy_backend,3,3,3,2,2
-2026W43,crate,filesystem_contract,9,6,6,8,5
-2026W43,crate,filesystem_fixture,2,1,1,2,1
+2026W43,crate,file_system_contract,9,6,6,8,5
+2026W43,crate,file_system_fixture,2,1,1,2,1
 2026W43,crate,firmware_configuration,1,0,0,1,0
 2026W43,crate,fixtures,32,14,14,25,7
 2026W43,crate,free,2,1,1,2,1
@@ -1055,8 +1055,8 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W44,crate,documentation,7,7,7,0,0
 2026W44,crate,domain_name_resolution_contract,9,9,9,0,0
 2026W44,crate,driver_process_contract,26,24,20,22,20
-2026W44,crate,filesystem_contract,17,17,17,8,8
-2026W44,crate,filesystem_fixture,11,10,8,5,4
+2026W44,crate,file_system_contract,17,17,17,8,8
+2026W44,crate,file_system_fixture,11,10,8,5,4
 2026W44,crate,fixtures,31,31,30,10,10
 2026W44,crate,fuzz,34,26,17,24,16
 2026W44,crate,globally_unique_identifier_partition_table,11,10,9,1,0
@@ -1173,8 +1173,8 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W45,crate,device_tree_patch,2,1,0,2,1
 2026W45,crate,direct_memory_access_validator,4,1,0,3,0
 2026W45,crate,driver_process_contract,5,5,5,3,3
-2026W45,crate,filesystem_contract,3,3,3,2,2
-2026W45,crate,filesystem_fixture,2,2,2,1,1
+2026W45,crate,file_system_contract,3,3,3,2,2
+2026W45,crate,file_system_fixture,2,2,2,1,1
 2026W45,crate,fixtures,2,2,2,0,0
 2026W45,crate,free,1,0,0,1,0
 2026W45,crate,fuzz,7,4,4,6,3
@@ -1267,8 +1267,8 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W46,crate,device_tree_patch,3,1,1,2,0
 2026W46,crate,domain_name_resolution_contract,8,4,4,7,3
 2026W46,crate,driver_process_contract,34,30,25,29,25
-2026W46,crate,filesystem_contract,11,5,3,10,4
-2026W46,crate,filesystem_fixture,7,3,3,6,2
+2026W46,crate,file_system_contract,11,5,3,10,4
+2026W46,crate,file_system_fixture,7,3,3,6,2
 2026W46,crate,fixtures,27,25,24,10,8
 2026W46,crate,free,1,1,1,0,0
 2026W46,crate,fuzz,20,17,17,13,10
@@ -1387,8 +1387,8 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W47,crate,domain_name_resolution_fixture,3,3,3,1,1
 2026W47,crate,driver_process_contract,15,14,14,10,9
 2026W47,crate,ext4_oracle,5,3,0,5,3
-2026W47,crate,filesystem_contract,11,8,8,3,1
-2026W47,crate,filesystem_fixture,5,5,5,0,0
+2026W47,crate,file_system_contract,11,8,8,3,1
+2026W47,crate,file_system_fixture,5,5,5,0,0
 2026W47,crate,fixtures,35,35,35,11,11
 2026W47,crate,free,2,2,2,0,0
 2026W47,crate,fuzz,42,40,37,21,19

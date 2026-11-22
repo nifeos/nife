@@ -165,7 +165,7 @@ weeks ago. There were 205 on 2026-09-19 and 206 on 2026-09-21, and none of them 
 
 The first amber half: seven crates regressed, and three of the baseline's five perfect crates lost
 that score. `memory_regions` 100% to 88.9%, `elf` 100% to 94.2%, `capability` 97.4% to 88.2%, with
-`clock_contract`, `swish`, `dtb` and `filesystem_contract` behind them. Each is a property that used
+`clock_contract`, `swish`, `dtb` and `file_system_contract` behind them. Each is a property that used
 to hold and no longer does, which is a different object from a crate that was never covered. A
 sample cannot surface these at all, because it cannot tell an absent mutant from a killed one, so
 this is the first time in the project's life that the question has been askable.

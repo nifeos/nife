@@ -26,7 +26,7 @@ const RG_HEAP_PAGES: u64 = 512;
 /// mapped where the PAL reads it, and the argument page. Everything comes back before this
 /// returns. `None` when this boot has no file service.
 fn run_rg_as_process(rights: u64, line: &str, out: &mut [u8]) -> Option<(usize, u32, u64)> {
-    use filesystem_fixture::walk as tree;
+    use file_system_fixture::walk as tree;
 
     use super::std_threads_tests::{Setup, run_as_process_with};
     let image = program("rg")?;
@@ -77,7 +77,7 @@ fn run_rg_as_process(rights: u64, line: &str, out: &mut [u8]) -> Option<(usize, 
 /// **`text` is exactly the fixture's match lines, each once, then `rg`'s stats.** Order is not
 /// checked: the parallel walker prints each file as its worker finishes it.
 fn assert_the_fixture_lines(text: &str, line: &str) {
-    use filesystem_fixture::walk as tree;
+    use file_system_fixture::walk as tree;
     let body = core::str::from_utf8(tree::SMALL_BODY)
         .expect("ASCII")
         .trim_end();
@@ -144,10 +144,10 @@ impl Line {
 
 /// One threaded run and its verdict: the lines, and `1 + workers` threads started.
 fn threaded_run(line: &str, workers: usize, before_counting: impl FnOnce()) {
-    use filesystem_contract::directory;
+    use file_system_contract::directory;
     let mut got = [0u8; 8192];
     let Some((len, started, spent)) = run_rg_as_process(
-        directory::ENUMERATE | directory::READ | directory::DESCEND,
+        directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
         line,
         &mut got,
     ) else {
@@ -199,7 +199,7 @@ macro_rules! skip_without_rg {
 /// rows build.
 #[test_case]
 fn ripgrep_walks_on_every_online_core_by_default() {
-    use filesystem_fixture::walk as tree;
+    use file_system_fixture::walk as tree;
     skip_without_rg!();
     let online = crate::smp::online_harts_mask().count_ones() as usize;
     // Asked after the run, so a boot with no disk (x86_64's one-core OVMF leg) skips first.
@@ -217,7 +217,7 @@ fn ripgrep_walks_on_every_online_core_by_default() {
 /// Falsification: unfalsified, for [`ripgrep_walks_on_every_online_core_by_default`]'s reason.
 #[test_case]
 fn ripgrep_told_four_threads_starts_four_workers() {
-    use filesystem_fixture::walk as tree;
+    use file_system_fixture::walk as tree;
     skip_without_rg!();
     threaded_run(tree::RG_SEARCH_FOUR_THREADS, tree::RG_FOUR, || {});
 }

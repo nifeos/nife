@@ -89,7 +89,7 @@ impl File {
     pub fn file_attr(&self) -> io::Result<FileAttr> {
         let size = request(proto::request(proto::FSTAT, self.handle, 0), 0)?;
         // Anything that got as far as a handle came through `OPEN`, which refuses a directory
-        // (`EISDIR`), so this is a file by construction. No mtime: `GET_MODIFICATION_TIME` takes a name and a
+        // (`EISDIR`), so this is a file by construction. No mtime: `GET_MODIFICATION_TIME_UNIX_SECONDS` takes a name and a
         // handle has none ([`Mtime`] says why the PAL does not re-resolve the one it was opened by).
         Ok(FileAttr { size, dir: false, mtime: Mtime::Unnamed })
     }
@@ -126,7 +126,7 @@ impl File {
     }
 
     /// **`File::set_len`** (milestone 64, rank 8). The contract's `TRUNCATE` is POSIX `ftruncate` in
-    /// both directions already (`filesystem_contract::fs::TRUNCATE` says so and the server implements it), and
+    /// both directions already (`file_system_contract::file_system::TRUNCATE` says so and the server implements it), and
     /// the size rides in the second word. This was refused here for the same reason the five verbs
     /// in milestone 64's first pass were: the binding was never written, not the verb missing.
     ///
@@ -221,7 +221,7 @@ impl File {
 
     /// **The size `OPEN` reported, as a buffer-sizing hint** (milestone 606, calef's ruling B, form
     /// 2, 2026-09-27). The overlay's patch to `std::fs` asks this before `metadata()` when it sizes
-    /// the buffer for `fs::read`, `fs::read_to_string` and `read_to_end`, which is what saves the
+    /// the buffer for `file_system::read`, `file_system::read_to_string` and `read_to_end`, which is what saves the
     /// `FSTAT` in front of every whole-file read. It is never used to answer `metadata()`: calef's
     /// reason is that a stale hint costs at most one resize, while a stale `metadata()` lies.
     pub fn open_size_hint(&self) -> Option<u64> {
@@ -251,7 +251,7 @@ impl File {
         unsupported()
     }
 
-    /// **Refused**: `SET_MODIFICATION_TIME_AT` (milestone 47) takes a **name under a directory**, and an open
+    /// **Refused**: `SET_MODIFICATION_TIME_AT_UNIX_SECONDS` (milestone 47) takes a **name under a directory**, and an open
     /// file has a handle and no name. Stamping whatever holds the name this file was opened by
     /// would set the wrong file's time after a rename, a silent wrong answer rather than a refusal
     /// ([`Mtime`] has the argument). `std::fs::set_times(path, ..)` is bound and is what a caller

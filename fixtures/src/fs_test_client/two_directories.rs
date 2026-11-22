@@ -8,8 +8,8 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::fs;
-use filesystem_fixture as fixture;
+use file_system_contract::file_system;
+use file_system_fixture as fixture;
 use grant_plan::navigation::{GrantSide, TwoRoots};
 use user_mode_runtime::{call, exit, send};
 
@@ -24,7 +24,7 @@ use crate::channel::put_page;
 /// by `TwoRoots::resolve` before any request is sent; and neither caretaker's tree is reachable
 /// through the other's endpoint, asked directly of each (notes/dir-capability.md).
 pub(crate) fn two_dir() -> ! {
-    use filesystem_fixture::endpoint_boundary as t;
+    use file_system_fixture::endpoint_boundary as t;
     use fixture::tree;
 
     /// Grant A's endpoint: `fs_service::start_granted_two_dirs`' slot 0.
@@ -43,7 +43,7 @@ pub(crate) fn two_dir() -> ! {
     // `/a/inner`: resolves to grant A, one component deep, and opens through slot 0.
     match namespace.resolve(b"/a/inner") {
         Ok((GrantSide::First, working_directory)) if working_directory.depth() == 1 => {
-            if dir_open_on(FILE_A, fs::ROOT, working_directory.component(0)) >= 0 {
+            if dir_open_on(FILE_A, file_system::ROOT, working_directory.component(0)) >= 0 {
                 v |= t::OPENED_A;
             } else {
                 v |= t::GRANTED_ACCESS_FAILED;
@@ -55,7 +55,7 @@ pub(crate) fn two_dir() -> ! {
     // `/b/secret`: the same claim, through the second grant and slot 1.
     match namespace.resolve(b"/b/secret") {
         Ok((GrantSide::Second, working_directory)) if working_directory.depth() == 1 => {
-            if dir_open_on(FILE_B, fs::ROOT, working_directory.component(0)) >= 0 {
+            if dir_open_on(FILE_B, file_system::ROOT, working_directory.component(0)) >= 0 {
                 v |= t::OPENED_B;
             } else {
                 v |= t::GRANTED_ACCESS_FAILED;
@@ -74,10 +74,10 @@ pub(crate) fn two_dir() -> ! {
     // holds nothing that names grant B's tree, and the reverse. `secret` is real, on the image,
     // and one directory entry away from the caretaker one hop up; a capability to `sub` reaching
     // it would be an escape whether or not any namespace logic tried to stop it.
-    if dir_open_on(FILE_A, fs::ROOT, tree::SECRET.as_bytes()) >= 0 {
+    if dir_open_on(FILE_A, file_system::ROOT, tree::SECRET.as_bytes()) >= 0 {
         v |= t::REACHED_B_VIA_A;
     }
-    if dir_open_on(FILE_B, fs::ROOT, tree::INNER.as_bytes()) >= 0 {
+    if dir_open_on(FILE_B, file_system::ROOT, tree::INNER.as_bytes()) >= 0 {
         v |= t::REACHED_A_VIA_B;
     }
 
@@ -90,5 +90,10 @@ pub(crate) fn two_dir() -> ! {
 /// [`FILE`](crate::channel::FILE) and this is the one role that holds two.
 fn dir_open_on(ep: u64, parent: u64, name: &[u8]) -> i64 {
     put_page(name);
-    call(ep, fs::request(fs::OPEN, parent, name.len() as u64), 0).0 as i64
+    call(
+        ep,
+        file_system::request(file_system::OPEN, parent, name.len() as u64),
+        0,
+    )
+    .0 as i64
 }

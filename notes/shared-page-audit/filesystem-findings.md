@@ -56,7 +56,7 @@ The shell is parked in `receive` on the spawned program's stream for the whole t
 exists. The program is inside a blocking `CALL` whenever the caretaker is forwarding. And the
 caretaker touches the page exactly once at startup and then only relays handles. Init itself never
 writes it at all, worth stating because it holds the capability: it maps the frame into children
-and does not speak `filesystem_contract`.
+and does not speak `file_system_contract`.
 In the kernel test suite several caretaker chains do coexist on the one frame, but each is blocked on
 `receive_capability` between tests, and the confined clients `exit()` after reporting.
 

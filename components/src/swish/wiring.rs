@@ -124,7 +124,7 @@ const _: () = {
     let fixed: [(u64, u64); 6] = [
         (OUT_VA, PAGE),
         (LINE_VA, PAGE),
-        (FS_VA, filesystem_contract::PAGE_BYTES as u64),
+        (FS_VA, file_system_contract::PAGE_BYTES as u64),
         (SH_CLOCK_VA, PAGE),
         (grant_contract::SHELL_CONFIGURATION_VIRTUAL_ADDRESS, PAGE),
         // The argv and name-set pages, and the image window above them (DECISIONS §219 option D).

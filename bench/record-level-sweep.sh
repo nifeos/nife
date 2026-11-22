@@ -8,7 +8,7 @@
 #
 # WHAT IT DOES, AND THE ONE UGLY PART. RedoxFS stores the record level per node
 # (`node.rs: pub record_level: Le<u32>`), set once at file creation from the crate constant
-# `RECORD_LEVEL` (`vendor/redoxfs/src/lib.rs`). Nothing in `filesystem_contract` can ask for a different one, so
+# `RECORD_LEVEL` (`vendor/redoxfs/src/lib.rs`). Nothing in `file_system_contract` can ask for a different one, so
 # the only way to create a file at another level today is to rebuild with a different constant. This
 # script therefore EDITS THE VENDORED CONSTANT IN PLACE, builds, measures, and puts it back. It
 # restores on any exit, including a signal. It refuses to start if that file is already dirty, so it
@@ -41,7 +41,7 @@
 # - It rebuilds the whole vendored engine per level, so the first round of each level pays a compile
 #   the others do not. That is outside the guest's timed window and does not touch the numbers, but
 #   it does mean the wall-clock cost of a full sweep is dominated by cargo.
-# - It cannot sweep the TRANSFER size, only the record level, because a `filesystem_contract` request carries at
+# - It cannot sweep the TRANSFER size, only the record level, because a `file_system_contract` request carries at
 #   most one page. That limit is milestone 138's option 1 and this script cannot price it.
 # - It does not check that the machine is quiet; it only records the load so you can tell afterwards.
 set -eu

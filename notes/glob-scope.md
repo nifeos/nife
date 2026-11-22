@@ -24,7 +24,7 @@ is the real one.
   enumeration and granting. Putting `**` in a string matcher hides an authority question inside a
   pure function, which is the exact mistake this OS exists to not make.
 
-So the crate matches **one name**, a single path component, the thing `filesystem_contract`
+So the crate matches **one name**, a single path component, the thing `file_system_contract`
 actually carries. When path syntax is settled, recursive descent lands as a traversal layer above
 the crate, walking directory capabilities and calling `matches()` per component. That layer is
 where `**` belongs, because that is where the authority to descend is.

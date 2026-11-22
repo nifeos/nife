@@ -96,7 +96,7 @@ pub(super) fn run_in_grant(
         fs_service::fs_server_image()?,
         program("fs_subtree_caretaker")?,
         c_program_fixture::ROOT,
-        filesystem_contract::directory::ALL,
+        file_system_contract::directory::rights::ALL,
     )?;
     let region =
         crate::memory_region::create(clock_service::REGION_PAGES).expect("no region for a clock");

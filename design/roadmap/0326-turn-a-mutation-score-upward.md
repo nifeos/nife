@@ -75,7 +75,7 @@ Detail: `notes/mutation-testing/inflow-2026-10-03.md`.
    | `dtb` | 99.7% | 96.6% | 1 to 14 |
    | `clock_contract` | 96.8% | 91.0% | 2 to 6 |
    | `swish` | 94.6% | 89.4% | 3 to 20 |
-   | `filesystem_contract` | 93.1% | 90.1% | 37 to 59 |
+   | `file_system_contract` | 93.1% | 90.1% | 37 to 59 |
 
    `capability` is first inside this list, because it is the crate the capability core's proofs
    are about, and a survivor there is a place the confinement argument could be wrong with every
@@ -150,7 +150,7 @@ Parts 1 and 2 only. Each of these was checked against the tree on 2026-09-19, on
   row. 75 were rows stranded by the 2026-10-18 `_contract` rename and two other renames that day,
   which never reached `notes/project-metrics/mutation-census-renames.csv`; the table now carries
   them, and `helpers/mutation_inflow.py orphans` fails `script/lint` when a triage row names no
-  package. The other 14 are `filesystem_fixture`'s witness bits, both keys equivalent.
+  package. The other 14 are `file_system_fixture`'s witness bits, both keys equivalent.
 
   Two of the nineteen closed on 2026-09-20, and they were the first work this project routed to a
   cheaper model under DECISIONS §202 (mechanical work goes to a cheaper model). Both reproduce on
@@ -181,10 +181,10 @@ Parts 1 and 2 only. Each of these was checked against the tree on 2026-09-19, on
   baseline that names no census or disagrees with the record. `--save-baseline` takes only a
   recorded census, so per-crate run output cannot reach it.
 - **Milestone 250.** `An unviable mutant is a hole that reads as a pass` already owns the other
-  half of what this lane kept meeting. `filesystem_contract` reports 47 unviable and `elf` 21, and
+  half of what this lane kept meeting. `file_system_contract` reports 47 unviable and `elf` 21, and
   no rate here counts them.
 - **Milestone 437.** The fixture
-  bit-set distinctness tests are hand-maintained lists, and `filesystem_contract`'s navigation list
+  bit-set distinctness tests are hand-maintained lists, and `file_system_contract`'s navigation list
   has now gone stale twice, the second time caught by a mutation run rather than a reader. It is
   rung four of AGENTS.md's ladder in a place that has a rung-one answer.
 - **Recorded.** `crates/timetable/src/lib.rs`, in a `BUGS` section on `Unbacked`:
@@ -192,8 +192,8 @@ Parts 1 and 2 only. Each of these was checked against the tree on 2026-09-19, on
   whether `admit` should stop pre-consuming the scheduler's `dir` holding is a behavior change
   rather than a test.
 - **Recorded.** `notes/mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md`,
-  under `filesystem_contract`'s *Two recorded gaps*: `verb`'s compile-time table walk in
-  `crates/filesystem_contract/src/lib.rs` has two mutants no `cargo test` can kill, because its
+  under `file_system_contract`'s *Two recorded gaps*: `verb`'s compile-time table walk in
+  `crates/file_system_contract/src/lib.rs` has two mutants no `cargo test` can kill, because its
   checker is `rustc`. The same object as the Kani harnesses, without a module path to exclude by.
 
 - **Done.** *`machine_discovery`, 2026-09-19: 77 survivors to 19, 86.2% to 95.5% of viable,* on

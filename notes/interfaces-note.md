@@ -51,7 +51,7 @@ Every interface owns a number for good. The one table is the "Interface ids" sec
 milestone's block: `abi` is 1, `address_space_layout` 2, `machine_statistics_contract` 4,
 `byte_sink_contract` 6, `capability_manifest_note` 7, `clock_contract` 8, and so on to
 `user_mode_runtime` at 20 and `interfaces_note` at 21; 3 stays retired (it named `byte_glob`). An interface is the module that holds
-`INTERFACE_ID`, so `filesystem_contract` holds two, `blk` at 14 and `fs` at 15. A new interface
+`INTERFACE_ID`, so `file_system_contract` holds two, `blk` at 14 and `fs` at 15. A new interface
 takes the next unused number by adding a row there, and a number is never reused.
 
 ## What a version bump means

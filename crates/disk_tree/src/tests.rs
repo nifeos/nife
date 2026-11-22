@@ -10,14 +10,22 @@ const SIZE: u64 = 256 << 20;
 const BS: usize = block::BLOCK_BYTES;
 
 fn call(t: &mut Tree, code: u64, handle: u64, name: &[u8], w1: u64) -> Answer {
-    let mut page = [0u8; fs::MAXIMUM_TRANSFER_BYTES];
+    let mut page = [0u8; file_system::MAXIMUM_TRANSFER_BYTES];
     page[..name.len()].copy_from_slice(name);
-    t.handle(fs::request(code, handle, name.len() as u64), w1, &mut page)
+    t.handle(
+        file_system::request(code, handle, name.len() as u64),
+        w1,
+        &mut page,
+    )
 }
 
 fn read(t: &mut Tree, handle: u64, len: u64, offset: u64) -> Answer {
-    let mut page = [0u8; fs::MAXIMUM_TRANSFER_BYTES];
-    t.handle(fs::request(fs::READ, handle, len), offset, &mut page)
+    let mut page = [0u8; file_system::MAXIMUM_TRANSFER_BYTES];
+    t.handle(
+        file_system::request(file_system::READ, handle, len),
+        offset,
+        &mut page,
+    )
 }
 
 fn handle_of(a: Answer) -> u64 {
@@ -30,8 +38,14 @@ fn handle_of(a: Answer) -> u64 {
 /// The walk a C program behind a directory grant of [`DIRECTORY`] makes: its caretaker's one
 /// `OPENDIR`, then `OPEN` of the file, which answers the disk's size in the second word.
 fn opened(t: &mut Tree) -> u64 {
-    let d = handle_of(call(t, fs::OPENDIR, fs::ROOT, DIRECTORY, directory::READ));
-    match call(t, fs::OPEN, d, FILE, 0) {
+    let d = handle_of(call(
+        t,
+        file_system::OPENDIR,
+        file_system::ROOT,
+        DIRECTORY,
+        directory::rights::READ,
+    ));
+    match call(t, file_system::OPEN, d, FILE, 0) {
         Answer::Reply(h, size) if h >= 0 => {
             assert_eq!(size, SIZE);
             h as u64
@@ -45,7 +59,7 @@ fn ioping_at_one_mebibyte_reads_block_256_from_the_device() {
     let mut t = Tree::new(SIZE);
     let f = opened(&mut t);
     assert_eq!(
-        call(&mut t, fs::FSTAT, f, b"", 0),
+        call(&mut t, file_system::FSTAT, f, b"", 0),
         Answer::Reply(SIZE as i64, 0)
     );
     assert_eq!(
@@ -91,7 +105,7 @@ fn a_read_comes_back_short_at_the_window_and_at_the_end() {
     let f = opened(&mut t);
     let window = block::TRANSFER_BLOCKS * BS;
     assert_eq!(
-        read(&mut t, f, fs::MAXIMUM_TRANSFER_BYTES as u64, 10),
+        read(&mut t, f, file_system::MAXIMUM_TRANSFER_BYTES as u64, 10),
         Answer::Read(Read {
             block: 0,
             blocks: block::TRANSFER_BLOCKS,
@@ -116,10 +130,16 @@ fn a_path_reaches_the_file_from_the_root() {
     let mut t = Tree::new(SIZE);
     let path = [DIRECTORY, b"/", FILE].concat();
     assert!(
-        matches!(call(&mut t, fs::OPEN, fs::ROOT, &path, directory::READ), Answer::Reply(h, SIZE) if h > 0)
+        matches!(call(&mut t, file_system::OPEN, file_system::ROOT, &path, directory::rights::READ), Answer::Reply(h, SIZE) if h > 0)
     );
     assert_eq!(
-        call(&mut t, fs::OPEN, fs::ROOT, b"nvme0/../n1", directory::READ),
+        call(
+            &mut t,
+            file_system::OPEN,
+            file_system::ROOT,
+            b"nvme0/../n1",
+            directory::rights::READ
+        ),
         err(directory::EINVAL)
     );
 }
@@ -128,21 +148,30 @@ fn a_path_reaches_the_file_from_the_root() {
 fn nothing_writes() {
     let mut t = Tree::new(SIZE);
     let f = opened(&mut t);
-    for code in [fs::WRITE, fs::TRUNCATE] {
+    for code in [file_system::WRITE, file_system::TRUNCATE] {
         assert_eq!(call(&mut t, code, f, b"", 0), err(directory::EROFS));
     }
     for code in [
-        fs::CREATE,
-        fs::MKDIR,
-        fs::UNLINK,
-        fs::RMDIR,
-        fs::SET_MODIFICATION_TIME,
+        file_system::CREATE,
+        file_system::MKDIR,
+        file_system::UNLINK,
+        file_system::RMDIR,
+        file_system::SET_MODIFICATION_TIME,
     ] {
-        assert_eq!(call(&mut t, code, fs::ROOT, b"x", 0), err(directory::EROFS));
+        assert_eq!(
+            call(&mut t, code, file_system::ROOT, b"x", 0),
+            err(directory::EROFS)
+        );
     }
     // A descent cannot ask for a right the root never had.
     assert_eq!(
-        call(&mut t, fs::OPENDIR, fs::ROOT, DIRECTORY, directory::WRITE),
+        call(
+            &mut t,
+            file_system::OPENDIR,
+            file_system::ROOT,
+            DIRECTORY,
+            directory::rights::WRITE
+        ),
         err(directory::EPERM)
     );
 }
@@ -152,25 +181,33 @@ fn a_grant_without_read_cannot_open_the_file() {
     let mut t = Tree::new(SIZE);
     let d = handle_of(call(
         &mut t,
-        fs::OPENDIR,
-        fs::ROOT,
+        file_system::OPENDIR,
+        file_system::ROOT,
         DIRECTORY,
-        directory::ENUMERATE,
+        directory::rights::ENUMERATE,
     ));
-    assert_eq!(call(&mut t, fs::OPEN, d, FILE, 0), err(ENOENT));
+    assert_eq!(call(&mut t, file_system::OPEN, d, FILE, 0), err(ENOENT));
 }
 
 #[test]
 fn listings_name_what_is_there() {
     let mut t = Tree::new(SIZE);
-    let mut page = [0u8; fs::MAXIMUM_TRANSFER_BYTES];
-    let Answer::Reply(n, _) = t.handle(fs::request(fs::READDIR, fs::ROOT, 0), 0, &mut page) else {
+    let mut page = [0u8; file_system::MAXIMUM_TRANSFER_BYTES];
+    let Answer::Reply(n, _) = t.handle(
+        file_system::request(file_system::READDIR, file_system::ROOT, 0),
+        0,
+        &mut page,
+    ) else {
         panic!()
     };
     let got: std::vec::Vec<_> = directory_entry::iter(&page[..n as usize]).collect();
     assert_eq!(got, [(DIRECTORY, true)]);
     assert_eq!(
-        t.handle(fs::request(fs::READDIR, fs::ROOT, 0), 1, &mut page),
+        t.handle(
+            file_system::request(file_system::READDIR, file_system::ROOT, 0),
+            1,
+            &mut page
+        ),
         Answer::Reply(0, 0)
     );
 }
@@ -181,11 +218,17 @@ fn listings_name_what_is_there() {
 fn the_reachability_probe_is_refused_as_a_bad_handle() {
     let mut t = Tree::new(SIZE);
     assert_eq!(
-        call(&mut t, fs::FSTAT, fs::MAXIMUM_HANDLE, b"", 0),
+        call(
+            &mut t,
+            file_system::FSTAT,
+            file_system::MAXIMUM_HANDLE,
+            b"",
+            0
+        ),
         err(EBADF)
     );
     assert_eq!(
-        call(&mut t, fs::CLOSE, fs::ROOT, b"", 0),
+        call(&mut t, file_system::CLOSE, file_system::ROOT, b"", 0),
         err(directory::EINVAL)
     );
 }
@@ -196,34 +239,70 @@ fn the_reachability_probe_is_refused_as_a_bad_handle() {
 fn only_the_two_names_resolve() {
     let mut t = Tree::new(SIZE);
     assert_eq!(
-        call(&mut t, fs::OPENDIR, fs::ROOT, b"nope", directory::READ),
+        call(
+            &mut t,
+            file_system::OPENDIR,
+            file_system::ROOT,
+            b"nope",
+            directory::rights::READ
+        ),
         err(ENOENT)
     );
     assert_eq!(
-        call(&mut t, fs::OPEN, fs::ROOT, b"n1", directory::READ),
+        call(
+            &mut t,
+            file_system::OPEN,
+            file_system::ROOT,
+            b"n1",
+            directory::rights::READ
+        ),
         err(ENOENT)
     );
     let d = handle_of(call(
         &mut t,
-        fs::OPENDIR,
-        fs::ROOT,
+        file_system::OPENDIR,
+        file_system::ROOT,
         DIRECTORY,
-        directory::READ,
+        directory::rights::READ,
     ));
-    assert_eq!(call(&mut t, fs::OPEN, d, b"nope", 0), err(ENOENT));
+    assert_eq!(call(&mut t, file_system::OPEN, d, b"nope", 0), err(ENOENT));
     assert_eq!(
-        call(&mut t, fs::OPEN, fs::ROOT, DIRECTORY, directory::READ),
+        call(
+            &mut t,
+            file_system::OPEN,
+            file_system::ROOT,
+            DIRECTORY,
+            directory::rights::READ
+        ),
         err(directory::EISDIR)
     );
     // A descent from `nvme0` needs `DESCEND` on it: without, `n1` is not there; with, it is a file.
     assert_eq!(
-        call(&mut t, fs::OPENDIR, d, FILE, directory::READ),
+        call(
+            &mut t,
+            file_system::OPENDIR,
+            d,
+            FILE,
+            directory::rights::READ
+        ),
         err(ENOENT)
     );
-    let walkable = directory::READ | directory::DESCEND;
-    let d = handle_of(call(&mut t, fs::OPENDIR, fs::ROOT, DIRECTORY, walkable));
+    let walkable = directory::rights::READ | directory::rights::DESCEND;
+    let d = handle_of(call(
+        &mut t,
+        file_system::OPENDIR,
+        file_system::ROOT,
+        DIRECTORY,
+        walkable,
+    ));
     assert_eq!(
-        call(&mut t, fs::OPENDIR, d, FILE, directory::READ),
+        call(
+            &mut t,
+            file_system::OPENDIR,
+            d,
+            FILE,
+            directory::rights::READ
+        ),
         err(directory::ENOTDIR)
     );
 }
@@ -235,16 +314,28 @@ fn a_path_is_checked_at_every_step() {
     let mut t = Tree::new(SIZE);
     for name in [&b"."[..], b"..", b"nvme0/", b"../n1", b"./n1", b"/n1"] {
         assert_eq!(
-            call(&mut t, fs::OPEN, fs::ROOT, name, directory::READ),
+            call(
+                &mut t,
+                file_system::OPEN,
+                file_system::ROOT,
+                name,
+                directory::rights::READ
+            ),
             err(directory::EINVAL),
             "{name:?}"
         );
     }
     // Through `nvme0` asking `READ | DESCEND`, the last step needs `DESCEND` on `nvme0`, so the
     // answer is about `n1` being a file rather than about a right the walk dropped.
-    let both = directory::READ | directory::DESCEND;
+    let both = directory::rights::READ | directory::rights::DESCEND;
     assert_eq!(
-        call(&mut t, fs::OPENDIR, fs::ROOT, b"nvme0/n1", both),
+        call(
+            &mut t,
+            file_system::OPENDIR,
+            file_system::ROOT,
+            b"nvme0/n1",
+            both
+        ),
         err(directory::ENOTDIR)
     );
 }
@@ -255,20 +346,34 @@ fn a_name_longer_than_the_buffer_or_the_page_is_refused() {
     let mut t = Tree::new(SIZE);
     let long = [b'x'; 256];
     assert_eq!(
-        call(&mut t, fs::OPEN, fs::ROOT, &long, directory::READ),
+        call(
+            &mut t,
+            file_system::OPEN,
+            file_system::ROOT,
+            &long,
+            directory::rights::READ
+        ),
         err(ENOENT)
     );
     let longer = [b'x'; 257];
     assert_eq!(
-        call(&mut t, fs::OPEN, fs::ROOT, &longer, directory::READ),
+        call(
+            &mut t,
+            file_system::OPEN,
+            file_system::ROOT,
+            &longer,
+            directory::rights::READ
+        ),
         err(directory::EINVAL)
     );
     let mut page = *b"nvme0";
-    let w0 = fs::request(fs::OPENDIR, fs::ROOT, 5);
-    assert!(matches!(t.handle(w0, directory::READ, &mut page), Answer::Reply(h, _) if h > 0));
-    let w0 = fs::request(fs::OPENDIR, fs::ROOT, 6);
+    let w0 = file_system::request(file_system::OPENDIR, file_system::ROOT, 5);
+    assert!(
+        matches!(t.handle(w0, directory::rights::READ, &mut page), Answer::Reply(h, _) if h > 0)
+    );
+    let w0 = file_system::request(file_system::OPENDIR, file_system::ROOT, 6);
     assert_eq!(
-        t.handle(w0, directory::READ, &mut page),
+        t.handle(w0, directory::rights::READ, &mut page),
         err(directory::EINVAL)
     );
 }
@@ -278,26 +383,48 @@ fn a_name_longer_than_the_buffer_or_the_page_is_refused() {
 fn the_other_verbs_answer_what_a_read_only_disk_can_say() {
     let mut t = Tree::new(SIZE);
     let f = opened(&mut t);
-    assert_eq!(call(&mut t, fs::SYNC, f, b"", 0), Answer::Reply(0, 0));
-    assert_eq!(call(&mut t, fs::LISTXATTR, f, b"", 0), Answer::Reply(0, 0));
     assert_eq!(
-        call(&mut t, fs::GETXATTR, f, b"user.x", 0),
+        call(&mut t, file_system::SYNC, f, b"", 0),
+        Answer::Reply(0, 0)
+    );
+    assert_eq!(
+        call(&mut t, file_system::LISTXATTR, f, b"", 0),
+        Answer::Reply(0, 0)
+    );
+    assert_eq!(
+        call(&mut t, file_system::GETXATTR, f, b"user.x", 0),
         err(extended_attribute::ENODATA)
     );
     assert_eq!(
-        call(&mut t, fs::GET_MODIFICATION_TIME, fs::ROOT, DIRECTORY, 0),
+        call(
+            &mut t,
+            file_system::GET_MODIFICATION_TIME_UNIX_SECONDS,
+            file_system::ROOT,
+            DIRECTORY,
+            0
+        ),
         err(EOPNOTSUPP)
     );
     assert_eq!(
-        call(&mut t, fs::FSTAT, fs::ROOT, b"", 0),
+        call(&mut t, file_system::FSTAT, file_system::ROOT, b"", 0),
         Answer::Reply(0, 0)
     );
-    assert_eq!(call(&mut t, 0xfe, fs::ROOT, b"", 0), err(directory::EINVAL));
-    assert_eq!(read(&mut t, fs::ROOT, BS as u64, 0), err(directory::EISDIR));
+    assert_eq!(
+        call(&mut t, 0xfe, file_system::ROOT, b"", 0),
+        err(directory::EINVAL)
+    );
+    assert_eq!(
+        read(&mut t, file_system::ROOT, BS as u64, 0),
+        err(directory::EISDIR)
+    );
     assert_eq!(read(&mut t, f, 0, 0), Answer::Reply(0, 0));
     let mut page = [0u8; 64];
     assert_eq!(
-        t.handle(fs::request(fs::READDIR, f, 0), 0, &mut page),
+        t.handle(
+            file_system::request(file_system::READDIR, f, 0),
+            0,
+            &mut page
+        ),
         err(directory::ENOTDIR)
     );
 }
@@ -308,14 +435,18 @@ fn a_listing_without_enumerate_is_refused() {
     let mut t = Tree::new(SIZE);
     let d = handle_of(call(
         &mut t,
-        fs::OPENDIR,
-        fs::ROOT,
+        file_system::OPENDIR,
+        file_system::ROOT,
         DIRECTORY,
-        directory::READ,
+        directory::rights::READ,
     ));
     let mut page = [0u8; 64];
     assert_eq!(
-        t.handle(fs::request(fs::READDIR, d, 0), 0, &mut page),
+        t.handle(
+            file_system::request(file_system::READDIR, d, 0),
+            0,
+            &mut page
+        ),
         err(directory::EPERM)
     );
 }
@@ -326,15 +457,18 @@ fn a_listing_without_enumerate_is_refused() {
 fn handles_close_and_run_out() {
     let mut t = Tree::new(SIZE);
     let f = opened(&mut t);
-    assert_eq!(call(&mut t, fs::CLOSE, f, b"", 0), Answer::Reply(0, 0));
-    assert_eq!(call(&mut t, fs::FSTAT, f, b"", 0), err(EBADF));
+    assert_eq!(
+        call(&mut t, file_system::CLOSE, f, b"", 0),
+        Answer::Reply(0, 0)
+    );
+    assert_eq!(call(&mut t, file_system::FSTAT, f, b"", 0), err(EBADF));
     let d = handle_of(call(
         &mut t,
-        fs::OPENDIR,
-        fs::ROOT,
+        file_system::OPENDIR,
+        file_system::ROOT,
         DIRECTORY,
-        directory::READ,
+        directory::rights::READ,
     ));
-    while matches!(call(&mut t, fs::OPEN, d, FILE, 0), Answer::Reply(h, _) if h >= 0) {}
-    assert_eq!(call(&mut t, fs::OPEN, d, FILE, 0), err(EMFILE));
+    while matches!(call(&mut t, file_system::OPEN, d, FILE, 0), Answer::Reply(h, _) if h >= 0) {}
+    assert_eq!(call(&mut t, file_system::OPEN, d, FILE, 0), err(EMFILE));
 }

@@ -158,7 +158,7 @@ The top 20 files by comment lines:
 |---|---|---|
 | `kernel/src/sched.rs` | 3,981 | 4,073 |
 | `crates/system_initializer/src/lib.rs` | 2,959 | 3,169 |
-| `crates/filesystem_contract/src/lib.rs` | 2,812 | 2,637 |
+| `crates/file_system_contract/src/lib.rs` | 2,812 | 2,637 |
 | `crates/grant_plan/src/lib.rs` | 2,673 | 4,088 |
 | `components/src/swish.rs` | 1,952 | 3,690 |
 | `kernel/src/user.rs` | 1,888 | 1,737 |

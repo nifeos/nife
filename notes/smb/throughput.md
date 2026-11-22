@@ -25,8 +25,8 @@ So a Mac writing 64 KiB arrived at the store as sixteen separate 4 KiB writes. I
 fixed term that milestone 138 step 1 measured at 87% of a 4 KiB write. The contract had permitted a
 bigger request since step 3; this program had not asked for one.
 
-The fix is two `min`s and a mapping. Both clamps read `fs::TRANSFER_MAXIMUM` from the contract
-rather than a number of their own. So a future change to `fs::TRANSFER_PAGES` reaches this program
+The fix is two `min`s and a mapping. Both clamps read `file_system::TRANSFER_MAXIMUM` from the contract
+rather than a number of their own. So a future change to `file_system::TRANSFER_PAGES` reaches this program
 without anyone editing it. The kernel wiring maps all sixteen pages at `FS_VA`, because nothing
 checks that a client asked for no more than it mapped (that constant's marked foot gun).
 
@@ -36,7 +36,7 @@ serve loop clamps those to one page precisely so they cannot land in a client's 
 
 ## Measured, through a real client
 
-`bench/smb-throughput.sh` sweeps `fs::TRANSFER_PAGES` around a leg in xtask's SMB prober. A host
+`bench/smb-throughput.sh` sweeps `file_system::TRANSFER_PAGES` around a leg in xtask's SMB prober. A host
 process, over the forwarded TCP connection, writes 1 MiB and reads it back in
 `smb_proto::MAX_TRANSACT`-sized messages. Two rounds at each point, aarch64, debug build under QEMU.
 
@@ -64,7 +64,7 @@ It is the same defect as milestone 138 step 3's, one contract over, with the sam
 already demonstrated. The region is one page because nobody declared it otherwise, and the wire
 already carries a length. See the BUGS entry, which is where the promotion trigger sits.
 
-And SMB's own ceiling is 64 KiB, so raising `fs::TRANSFER_PAGES` past 16 buys this path nothing.
+And SMB's own ceiling is 64 KiB, so raising `file_system::TRANSFER_PAGES` past 16 buys this path nothing.
 `smb_proto::MAX_TRANSACT` is the one value this server answers for `MaxTransactSize`, `MaxReadSize`
 and `MaxWriteSize`, and no client asks for more than it is told. Any future transfer-size work that
 means to help a mounted share has to raise both numbers. The reason 64 KiB is what `MAX_TRANSACT` says
