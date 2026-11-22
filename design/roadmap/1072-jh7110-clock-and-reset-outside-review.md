@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
 milestone_dependencies: 1019, 1062
 decision_dependencies: 320
@@ -185,80 +185,61 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
 
 ## BUGS
 
-- Item 8's databook minimums come from memory. The fix that raises the floors waits on the databook
-  or on a permissively licensed driver that states them; Linux's driver does not.
+- Item 8's floors take a spike suppression length of 1, since the crate does not program
+  `IC_FS_SPKLEN`. A controller whose reset value is longer needs higher floors, which only an input
+  clock under 2 MHz would reach.
 - Item 4 states that a v1.2A assigns no parent; it does not state what parent a v1.2A needs. Only
   that board, or its schematic, answers.
-- The review read items 3, 9 and 10 and did not execute them; each is a few lines and its test is
-  its proof.
-- The review built `main`. Pull request #3475 adds two lines to the crate and two callers; the
-  review read the diff and did not compile or test it.
 - The review did not replay seven falsification patches and trusts the review package's run.
 
 ## Finding status
 
-- Item 1, `clippy` red standing alone: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
-- Item 2, `standalone` refusals: Done, [#3572](https://github.com/nifeos/nife/pull/3572) and
-  [#3625](https://github.com/nifeos/nife/pull/3625).
-- Item 3, 12-byte `reg`: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
-- Item 4, one board's transmit parent: Done, [#3572](https://github.com/nifeos/nife/pull/3572) and
-  [#3625](https://github.com/nifeos/nife/pull/3625).
-- Item 5, stale mutation record: Open. The census of run 43876176886 tested 254 mutants and missed
-  6. Left: a `.github/mutants-exempts` written from it with one reason per survivor, and the
-  retirement of the crate's rows in `notes/project-metrics/mutation-triage.csv`. Those rows still
-  name `every_reset_released`, `i2c5_ic_clk` and `PmicBus::from_nodes`.
-- Item 6, fractional PLL2: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
-- Item 7, `was_already_up`: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
-- Item 8, I2C count margin and floor: Open. The doc states the margin; the floor stays 1 and the
-  test keeps its name until a source confirms the databook minimums (BUGS below).
-- Item 9, `name_index`: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
-- Item 10, fallback addresses: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
-- Item 11, fetch dates: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
-- Item 12, README sections: Done, [#3625](https://github.com/nifeos/nife/pull/3625); the badge row
-  arrives with the move.
-- Item 13, manifest and repository plumbing: Open. The manifest carries its fields
-  ([#3625](https://github.com/nifeos/nife/pull/3625)); the repository files (`.github/accepted-words`
-  with `jh`, the caller workflows, the `-p1` patches) arrive with the move.
-- Item 14, README prose: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
-- Decision 1, `POWER_MANAGEMENT_CHIP_BUS_BRING_UP`: Done,
-  [#3572](https://github.com/nifeos/nife/pull/3572).
+- Item 1 (P0), `clippy` red standing alone: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
+- Item 2 (P0), `standalone` refusals: Done, [#3572](https://github.com/nifeos/nife/pull/3572) and [#3625](https://github.com/nifeos/nife/pull/3625).
+- Item 3 (P1), 12-byte `reg`: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
+- Item 4 (P1), one board's transmit parent: Done, [#3572](https://github.com/nifeos/nife/pull/3572) and [#3625](https://github.com/nifeos/nife/pull/3625).
+- Item 5 (P1), stale mutation record: At the move. The census of run 43876176886 tested every
+  mutant and missed six algebraic equivalents, and [#3936](https://github.com/nifeos/nife/pull/3936) retires the stale triage rows for
+  five that reason about the current body. The move writes `.github/mutants-exempts` from those
+  rows, and the crate repository's first full `mutation / mutation` run tests the mutants added
+  since the census.
+- Item 6 (P2), fractional PLL2: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
+- Item 7 (P2), `was_already_up`: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
+- Item 8 (P2), I2C count margin and floor: Done, [#3625](https://github.com/nifeos/nife/pull/3625) and [#3936](https://github.com/nifeos/nife/pull/3936).
+- Item 9 (P2), `name_index`: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
+- Item 10 (P2), fallback addresses: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
+- Item 11 (P2), fetch dates: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
+- Item 12 (P2), README sections: At the move. The sections and figures are in [#3625](https://github.com/nifeos/nife/pull/3625), and
+  [#3936](https://github.com/nifeos/nife/pull/3936) drops the test count the template now refuses; the badge row needs the repository's
+  caller workflows.
+- Item 13 (P2), manifest and repository plumbing: At the move. The manifest fields are in
+  [#3625](https://github.com/nifeos/nife/pull/3625); the repository files (`.github/accepted-words` with `jh`, the caller workflows, the
+  `-p1` patches) and the strip of the `Name:` blocks are the move's.
+- Item 14 (P2), README prose: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
+- Decision 1, `POWER_MANAGEMENT_CHIP_BUS_BRING_UP`: Done, [#3572](https://github.com/nifeos/nife/pull/3572).
 - Decision 2, `size_bytes`: Done, [#3572](https://github.com/nifeos/nife/pull/3572).
-- Decision 3, `power_management_chip_bus_address`: Done,
-  [#3572](https://github.com/nifeos/nife/pull/3572).
-- Decision 4, `SD_IO` and the always-on constants: Done,
-  [#3572](https://github.com/nifeos/nife/pull/3572).
+- Decision 3, `power_management_chip_bus_address`: Done, [#3572](https://github.com/nifeos/nife/pull/3572).
+- Decision 4, `SD_IO` and the always-on constants: Done, [#3572](https://github.com/nifeos/nife/pull/3572).
 - Decision 5, transmit parent from the tree: Done, [#3572](https://github.com/nifeos/nife/pull/3572).
-- The move to nifeos/jh7110_clock_and_reset: Open. The review has its clearance and the
-  repository its approval (2026-11-11 UTC); no lane has created the repository or moved the crate.
-- The server's transmit parent: Open. `jh7110_clock_and_reset_devices` applies the v1.3B parent to
-  the device at `0x1603_0000` on every board, and nothing in the kernel calls
-  `machine_discovery::jh7110::clock_and_reset::first_ethernet_port_transmit_parent`. Both ends are
-  in this tree and unpublished, so the door is two-way and the maintainer rules it provisionally.
-  The recommendation is that the spawner reads the parent with `machine_discovery` and passes it in
-  a startup-page entry or a spawn word, the way the power-management-chip route starter passes its
-  timing (`driver_process_contract::power_management_chip_route`).
-- The board run of the power chip's I2C reset: Open. A board has run it: the bench of
-  [#3499](https://github.com/nifeos/nife/pull/3499) in `bench/radon-2026-11-17/`
-  (`pmic-route-step1-3499.log`) resets the board through the route. It runs this crate's timing:
-  198 high counts and 297 low counts at 49.5 MHz. Left: the crate README's BUGS still says no board has
-  run that timing, and a lane corrects it, citing the log.
-- The `v0.1.0-pre.1` tag: Ruled (decision 6). Left: the move lane places it after the move check
-  and a green release dry run. Nobody has placed it.
-- Publishing: Open. No first publish happens until the last outside-review milestone closes
-  (ruled 2026-11-18 UTC).
+- Decision 6, the `v0.1.0-pre.1` tag: At the move. The move lane places it after the move check
+  and a green release dry run.
 
 ## Open decisions
 
-None. The publishing hold stands.
+None. The publishing hold stands: no first publish happens until the last outside-review milestone
+closes (ruled 2026-11-18 UTC).
 
 ## Follow-on
 
-- **Outstanding.** Item 5's exempts file and triage-ledger cleanup, the move with its repository
-  files (item 13), the `v0.1.0-pre.1` tag once the move check and the dry run pass (decision 6), the server's per-board transmit parent and the README's board sentence. The
-  finding status above says what each needs.
-- **Done.** Decisions 1 to 5 and items 1 to 4, 6, 7 and 9 to 14, built in
-  [#3572](https://github.com/nifeos/nife/pull/3572) and
-  [#3625](https://github.com/nifeos/nife/pull/3625).
+- **The move to nifeos/jh7110_clock_and_reset.** The review has its clearance and the repository
+  its approval (2026-11-11 UTC). The move carries items 5, 12 and 13 and decision 6, as the finding
+  status says.
+- **The server's transmit parent.** `jh7110_clock_and_reset_devices` applies the v1.3B parent to
+  the device at `0x1603_0000` on every board, and its BUGS section records it. The recommended fix
+  is that the spawner reads the parent with
+  `machine_discovery::jh7110::clock_and_reset::first_ethernet_port_transmit_parent` and passes it
+  in a startup-page entry or a spawn word, the way the power-management-chip route starter passes
+  its timing (`driver_process_contract::power_management_chip_route`).
 
 ## Index row
 
