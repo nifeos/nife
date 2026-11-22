@@ -570,8 +570,8 @@ impl Service<'_> {
             .then(|| take_frames(spawn, spawn_protocol::image_len(w0), own_ut));
 
         // The argv's frame, then a directory grant's page (milestone 205 (how a foreign program is
-        // told what to do), milestone 1122): taken whenever announced, whatever the program, so
-        // both sides stay in lockstep.
+        // told what to do), milestone 1122 (every name travels on a page)): taken whenever
+        // announced, whatever the program, so both sides stay in lockstep.
         let args_seen = if wiring.program_arguments {
             receive_args(spawn, own_ut)
         } else {

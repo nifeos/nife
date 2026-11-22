@@ -161,8 +161,7 @@ pub const fn is_writable(w: u64) -> bool {
 /// pair-page window; the progenitor checks it against the map at compile time
 /// (`address_space_layout::pair_page`), so this crate keeps no dependency of its own.
 ///
-/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122 (every
-/// name travels on a page)).
+/// Name: provisional.
 pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0000_0070_0000;
 
 /// **Where a caretaker's grant page holds its name set**, in bytes from the start of the page.
@@ -175,7 +174,7 @@ pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0000_0070_0000;
 /// longest one-name set, a two-byte header, [`MAXIMUM_NAME_BYTES`] and the terminator, so the two
 /// never overlap whatever the name.
 ///
-/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+/// Name: provisional.
 pub const PAGE_NAME_SET_OFFSET: usize = 256;
 
 const _: () = assert!(PAGE_NAME_SET_OFFSET > 2 + MAXIMUM_NAME_BYTES);
@@ -183,7 +182,7 @@ const _: () = assert!(PAGE_NAME_SET_OFFSET > 2 + MAXIMUM_NAME_BYTES);
 /// **How many bytes of its grant page a caretaker reads**: the granted name and the longest set
 /// after it. Far under a page, so one frame carries the whole grant.
 ///
-/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+/// Name: provisional.
 pub const PAGE_USED_BYTES: usize = PAGE_NAME_SET_OFFSET + super::nameset::MAXIMUM_BYTES;
 
 const _: () = assert!(PAGE_USED_BYTES <= super::PAGE_BYTES);
@@ -216,7 +215,7 @@ const _: () = assert!(PAGE_USED_BYTES <= super::PAGE_BYTES);
 /// assert!(nameset::contains(grant::page_name_set(&page), &long));
 /// ```
 ///
-/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+/// Name: provisional.
 pub fn write_page(name: &[u8], is_directory: bool, set: &[u8], out: &mut [u8]) -> Option<()> {
     if out.len() < PAGE_USED_BYTES
         || name.len() > MAXIMUM_NAME_BYTES
@@ -247,7 +246,7 @@ pub fn write_page(name: &[u8], is_directory: bool, set: &[u8], out: &mut [u8]) -
 /// a second record, or a flags byte with a bit [`super::nameset::IS_DIRECTORY`] does not define is
 /// `None`, and the caretaker refuses to start.
 ///
-/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+/// Name: provisional.
 pub fn page_name(page: &[u8]) -> Option<&[u8]> {
     let len = *page.first()? as usize;
     if len == 0 {
@@ -264,7 +263,7 @@ pub fn page_name(page: &[u8]) -> Option<&[u8]> {
 /// [`PAGE_NAME_SET_OFFSET`] to [`PAGE_USED_BYTES`], or nothing when `page` is shorter. A subtree
 /// caretaker's is empty.
 ///
-/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+/// Name: provisional.
 pub fn page_name_set(page: &[u8]) -> &[u8] {
     page.get(PAGE_NAME_SET_OFFSET..PAGE_USED_BYTES)
         .unwrap_or(&[])
@@ -274,7 +273,7 @@ pub fn page_name_set(page: &[u8]) -> &[u8] {
 /// zero and no length in the spec word, so the words carry only the rights. Restrictive first: a
 /// caretaker refuses words that still carry a name, rather than reading one of two places.
 ///
-/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+/// Name: provisional.
 pub const fn words_carry_no_name(name_lo: u64, name_hi: u64, spec: u64) -> bool {
     name_lo == 0 && name_hi == 0 && specification_len(spec) == 0
 }

@@ -60,8 +60,8 @@ const SCREEN_BIT: u64 = 1 << 37;
 /// The one bit here that announces data as well as a capability: two `SEND`s ([`GRANT_WORDS`]),
 /// then, after the argv's frame, one `READ` frame holding the grant page
 /// (`file_system_contract::grant::write_page`): the granted directory's name and the name set,
-/// empty unless [`NAMESET_BIT`] is set. Every name travels on that page (milestone 1122), and the
-/// words carry rights and options alone. The shell's file-service endpoint carries no `GRANT`, so
+/// empty unless [`NAMESET_BIT`] is set. Milestone 1122 (every name travels on a page): the words
+/// carry rights and options alone. The shell's file-service endpoint carries no `GRANT`, so
 /// it cannot delegate what a caretaker needs; it says what the grant is, and the progenitor builds
 /// the rest, copying the page into one from the job's region for [`IMAGE_BIT`]'s reason.
 ///

@@ -75,7 +75,7 @@ pub(super) const fn mounted_job_windows() -> Windows {
 /// after sending it changes nothing the progenitor decided. `None` is a page whose name does not
 /// decode (`file_system_contract::grant::page_name`), which refuses the grant.
 ///
-/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+/// Name: provisional.
 pub(super) struct ShellGrant {
     page: [u8; file_system_contract::grant::PAGE_USED_BYTES],
 }
