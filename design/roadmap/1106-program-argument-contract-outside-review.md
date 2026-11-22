@@ -45,51 +45,43 @@ section number, a milestone or a person in another repository.
   crate's text has no section, milestone or path, and no architect's name or quotation. The move
   strips the `Name:` blocks.
 - P0-4, seven names the spelled-out gate refuses: Done,
-  [#3808](https://github.com/nifeos/nife/pull/3808). The architect ratified `ArgumentPage` and
-  `from_virtual_address` (ruled 2026-11-21 UTC; see "Three public names" below). The crate and the
-  `std` overlay carry the new names, and the generator copies the crate verbatim. The overlay's
-  `args()` is the standard library's own name and stays.
+  [#3808](https://github.com/nifeos/nife/pull/3808), ratified 2026-11-21 (UTC; see "Three public
+  names" below). The crate and the `std` overlay carry the new names. The overlay's `args()` is
+  the standard library's own name and stays.
 - P1-5, `CAPACITY` carries no unit: Done, [#3808](https://github.com/nifeos/nife/pull/3808).
-  The architect ratified `MAXIMUM_RECORDS_BYTES` (ruled 2026-11-21 UTC). `grant_plan` uses it.
+  Ratified 2026-11-21 (UTC).
 - P1-6, no proof: Done, [#3567](https://github.com/nifeos/nife/pull/3567) and
-  [#3978](https://github.com/nifeos/nife/pull/3978). The parser's two harnesses landed first. The
-  round-trip harness proves two arguments of three and two symbolic bytes; the lengths are
-  concrete, which keeps the 4,096-byte page inside the solver's memory, and verifies in under a
-  minute.
+  [#3978](https://github.com/nifeos/nife/pull/3978). The round-trip harness fixes the lengths at
+  three and two bytes, which keeps the page inside the solver's memory.
 - P1-7, the `unsafe` reader has no test: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P1-8, the mutation exemption and the coverage figure: At the move. The exemption belongs in the
-  new repository's `.github/mutants-exempts`. The coverage figure is in
-  [#3978](https://github.com/nifeos/nife/pull/3978).
+- P1-8, the mutation exemption and the coverage figure: At the move. The exemption goes in the new
+  repository's `.github/mutants-exempts`. The tests reach every line and 98 percent of regions.
 - P1-9, the all-or-nothing claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-10, the address truncates on narrow targets: Done,
   [#3978](https://github.com/nifeos/nife/pull/3978) (maintainer, provisional, 2026-11-22 UTC). The
   `# Safety` section of `from_virtual_address` requires the address to fit the target's `usize`,
-  and BUGS states the limit, the review's second alternative. A checked conversion with a panic
-  would add a failure path to a reader whose caller already promises a mapped page.
+  the review's second alternative; a panic would add a failure path to an unchecked reader.
 - P2-11, `EMPTY` unused and its literal duplicated: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-12, the builder takes a fixed array: Done, [#3808](https://github.com/nifeos/nife/pull/3808).
   `PageBuilder::new` takes `&mut [u8]` and refuses any length but `PAGE_BYTES` with
   `WrongPageLength`.
 - P2-13, the layout arithmetic copied in `grant_plan`: Done,
-  [#3808](https://github.com/nifeos/nife/pull/3808). `grant_plan` sums with `record_bytes`. The
-  attributes, `Debug`, `FusedIterator`, the `# Errors` sections and the casts landed with it. `impl
-  IntoIterator for &ArgumentPage` did not: the `std` port copies this file, and there a public trait
-  implementation demands stability attributes, so `iter()` stays the one way in.
+  [#3808](https://github.com/nifeos/nife/pull/3808). `grant_plan` sums with `record_bytes`. `impl
+  IntoIterator` stays out: the `std` port copies this file and would demand stability attributes.
 - P2-14, the data bounds the record walk: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-15, the one-file constraint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - Ruling, the layout leaves as built, with the magic numbered at 994: Waiting on a ruling
   ([#3982](https://github.com/nifeos/nife/pull/3982)) on the numbered magic's spelling.
-  [#3579](https://github.com/nifeos/nife/pull/3579) recorded the layout as built with `VERSION` 1
-  and `INTERFACE_ID` 18. `MAGIC` still reads `b"nifeargv"`.
+  [#3579](https://github.com/nifeos/nife/pull/3579) recorded `VERSION` 1 and `INTERFACE_ID` 18.
 - Ruling, three public names: Done, [#3808](https://github.com/nifeos/nife/pull/3808) and
   [#3978](https://github.com/nifeos/nife/pull/3978), with P0-4 and P1-5.
 - Ruling, the remaining names: Done, [#3885](https://github.com/nifeos/nife/pull/3885).
 
 ## Open decisions
 
-- The numbered magic's spelling, which replaces `nifeargv` now that the layout ruling's condition
-  is met. The question is on [#3982](https://github.com/nifeos/nife/pull/3982).
+- The numbered magic's spelling, which replaces `nifeargv`, on
+  [#3982](https://github.com/nifeos/nife/pull/3982).
 
 ## What was checked, and how
 
@@ -280,9 +272,9 @@ The crate, the `std` overlay and `grant_plan` use the new names.
 
 ### The remaining names
 
-Ruled by the architect, 2026-11-21 (UTC). The crate's other public names are ratified as built.
-`PageBuilder::count` becomes `argument_count` and `Refused` becomes `PushRefused`, since the
-standard library's `count` consumes an iterator and `Refused` does not say what was refused.
+Ruled by the architect, 2026-11-21 (UTC): the crate's other public names stand as built, except
+that `PageBuilder::count` becomes `argument_count` (the standard library's `count` consumes an
+iterator) and `Refused` becomes `PushRefused` (the name says what it refuses).
 
 ### The repository
 
@@ -295,8 +287,7 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 - **Done.** Two milestones meet the layout ruling's condition (maintainer's reading, provisional,
   2026-11-19 UTC): 1115 (the gate builds basalt's delivered programs from the candidate tree) in
   every merge group, and 994 in basalt. The numbered magic lands in one nife pull request, a lane of its own.
-- **Outstanding.** The numbered magic, on [#3982](https://github.com/nifeos/nife/pull/3982)
-  once its spelling is ruled.
+- **Outstanding.** The numbered magic, on [#3982](https://github.com/nifeos/nife/pull/3982).
 - **Outstanding.** The repository (ruled 2026-11-14 UTC), after the numbered magic: a lane creates
   `nifeos/program_argument_contract`, runs the move check and a dry run, and tags `v0.1.0-pre.1`
   with no publish, after the renames and milestone 994.
