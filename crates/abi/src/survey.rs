@@ -1,18 +1,30 @@
+//! Name: provisional.
+
 /// The `next_cursor` that means the survey is complete. It is also the cursor to start one
 /// with, which is not a collision: a caller passes it in once and stops when it comes back.
+///
+/// Name: provisional.
 pub const DONE: u64 = 0;
 
 /// On a run queue, waiting for a CPU.
+///
+/// Name: provisional.
 pub const READY: u64 = 1;
 /// On a CPU right now. On a multi-core machine this may include the surveyor's own thread, if
 /// the surveyor is somehow its own supervisor's child.
+///
+/// Name: provisional.
 pub const RUNNING: u64 = 2;
 /// Blocked in an IPC rendezvous that has not happened.
+///
+/// Name: provisional.
 pub const BLOCKED: u64 = 3;
 /// A corpse: it faulted or exited, its supervisor was told, and it persists
 /// until [`rendezvous::REAP`](super::rendezvous::REAP) collects it. **This is the state a process lister exists to
 /// make visible**, and
 /// it is the one Unix cannot show you without a parent that happens to have called `wait`.
+///
+/// Name: provisional.
 pub const DEAD: u64 = 4;
 
 /// **Which per-thread record a [`SURVEY`](super::rendezvous::SURVEY) asks for.** The selector
@@ -29,6 +41,8 @@ pub mod record {
     /// record `SURVEY` answered before selectors existed, and **0 so that it still does**.
     /// Every caller written against the old three-word contract passed 0 into the then-unused
     /// x1, so it selects this record by accident and keeps working on purpose.
+    ///
+    /// Name: provisional.
     pub const STATE: u64 = 0;
 
     /// **Which core the thread was placed on when it started**: a cpu id, or [`NO_CPU`].
@@ -38,6 +52,8 @@ pub mod record {
     /// it was placed. **The id is a name, not an index**: the online set need not be `0..n` (the
     /// `VisionFive 2`'s is `{1, 2, 3}`), so key a per-core tally by the ids this returns and never
     /// iterate a range. The machine's online set is not available here.
+    ///
+    /// Name: provisional.
     pub const PLACEMENT: u64 = 1;
 
     /// The [`PLACEMENT`] answer for a thread with no placement to report. `u64::MAX` rather
@@ -49,6 +65,8 @@ pub mod record {
     /// domain yet, and a corpse keeps the placement it was started with. It is defined anyway
     /// rather than left to a guess, which is the same posture a scheduler takes with a
     /// `u8::MAX` core id.
+    ///
+    /// Name: provisional.
     pub const NO_CPU: u64 = u64::MAX;
 
     /// **How long the thread has been scheduled on a CPU, in milliseconds**, as Linux's `utime`/
@@ -87,6 +105,8 @@ pub mod record {
     /// the domain, which is why this is a predicate rather than a `match` folded into the
     /// extraction: a bad selector must be refused even when the domain is empty and there is no
     /// thread to extract anything from.
+    ///
+    /// Name: provisional.
     #[must_use]
     pub const fn is_known(record: u64) -> bool {
         matches!(record, STATE | PLACEMENT | CPU_TIME | PROCESS)
