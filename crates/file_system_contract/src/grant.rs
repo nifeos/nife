@@ -161,7 +161,8 @@ pub const fn is_writable(w: u64) -> bool {
 /// pair-page window; the progenitor checks it against the map at compile time
 /// (`address_space_layout::pair_page`), so this crate keeps no dependency of its own.
 ///
-/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122 (every
+/// name travels on a page)).
 pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0000_0070_0000;
 
 /// **Where a caretaker's grant page holds its name set**, in bytes from the start of the page.

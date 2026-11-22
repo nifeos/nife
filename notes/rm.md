@@ -87,7 +87,7 @@ for a literal one, which is the honest state: a single name still travels throug
 the shell grants the set of that one name, and `rm` sweeps it. It means "the operand is your
 namespace", and `rm` learns the names by enumerating the capability it holds, which reveals exactly
 what the command line already printed. No name rides in `rm`'s `START` words, and `rm` refuses words
-that carry one (milestone 1122 (names ride on a page)).
+that carry one (milestone 1122 (every name travels on a page)).
 
 It sweeps in one listing with no rounds, and the contrast with the recursive walk is a fact about
 the namespace rather than an optimization. That walk must re-read from cursor 0, because removing a

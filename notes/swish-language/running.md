@@ -88,7 +88,7 @@ shapes cannot be delivered, and each is refused with nothing spawned rather than
 - A set of more than one name. That grant is a `fs_nameset_caretaker`, and the progenitor builds the
   subtree one for this path. `rm *.txt` is planned, previewed by `caps`, and refused at delivery.
 Every name the grant carries is on the grant page, which `grant_page` writes and the shell sends
-after the argv frame (milestone 1122 (names ride on a page)). `dir_grant` tells `rm`
+after the argv frame (milestone 1122 (every name travels on a page)). `dir_grant` tells `rm`
 `grant::WHOLE_NAMESPACE` instead of a name and grants the set of that one name, so a file name is
 delivered up to `grant::MAXIMUM_NAME_BYTES`. The progenitor builds `fs_nameset_caretaker` for it,
 as for any set. Where the file server binds badges, the caretaker

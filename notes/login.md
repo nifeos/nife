@@ -68,7 +68,7 @@ Two bounds came with that change, and both still hold. An identity longer than
 at all, though `login_contract::MAXIMUM_IDENTITY` (64 bytes) would otherwise accept it.
 `grant::fits_words` refuses it rather than truncate a name two identities agreeing on their first
 16 bytes would share. The subtree caretaker reads its directory from a grant page, so lifting the
-bound is milestone 1122 (names ride on a page)'s next step. And the
+bound is milestone 1122 (every name travels on a page)'s next step. And the
 unprovisioned-subtree fold is a considered answer, not the accident of reusing the fold. A caller
 must not be able to tell "your identity has no home" from "your password is wrong" by comparing
 outcomes across attempts. That would let a caller probe which identities are provisioned without

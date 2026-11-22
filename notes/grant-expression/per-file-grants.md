@@ -43,8 +43,8 @@ capability table, not of a branch it is trusted to take. The boundary is an addr
 reason milestone 36's checker lives outside the component it checks.
 
 The grant costs one page. The direction rides in the caretaker's `START` words, and the name, up to
-`file_system_contract::grant::MAXIMUM_NAME_BYTES`, on its read-only grant page (milestone 1122 (names
-ride on a page)). One file-service frame is shared by all three processes.
+`file_system_contract::grant::MAXIMUM_NAME_BYTES`, on its read-only grant page (milestone 1122 (every
+name travels on a page)). One file-service frame is shared by all three processes.
 That is sound because every request on both hops is a blocking `CALL`: the client is parked inside its own
 call for the whole time the caretaker touches the page.
 

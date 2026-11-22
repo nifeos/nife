@@ -16,8 +16,8 @@ use super::*;
 /// do.
 const ARGV_VA: u64 = IMAGE_WINDOW;
 /// **And the window a stage's grant page is written through** (milestone 205's designation half,
-/// milestone 1122): one page per stage, above the argv pages and below [`IMAGE_VA`], so
-/// [`IMAGE_TABLE_PAGES`] pays for these tables too.
+/// milestone 1122 (every name travels on a page)): one page per stage, above the argv pages and
+/// below [`IMAGE_VA`], so [`IMAGE_TABLE_PAGES`] pays for these tables too.
 const SET_VA: u64 = ARGV_VA + line::MAXIMUM_STAGES as u64 * spawn_protocol::IMAGE_PAGE;
 
 /// **One line's argv, written and waiting to be sent**: the one-page region it was carved from and
