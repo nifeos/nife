@@ -257,8 +257,9 @@ pub enum PageUse {
 ///
 /// A claim dropped without being spent leaks the region's pages quietly: `#[must_use]` catches an
 /// unused result and nothing else, and the crate cannot see a drop. The caller spends every claim
-/// it mints, by [`return_to_parent`](RegionTable::return_to_parent) for a child or by handing the
-/// run back to the allocator for a root.
+/// it mints, by [`return_to_parent`](RegionTable::return_to_parent) for a child, which consumes
+/// it, or by handing the run back to the allocator for a root. The crate does not panic on a
+/// dropped claim, because a panic there would turn a caller's leak into a crash.
 ///
 /// # The two doctests below are a gate
 ///
@@ -342,7 +343,7 @@ impl DestroyClaim {
 /// let claim = table.claim_for_destroy(child).expect("a childless, unpinned region");
 /// assert!(!claim.is_root(), "a split child is not a root");
 /// // ... the kernel revokes claim.base_page()..+claim.pages() here ...
-/// table.return_to_parent(&claim);
+/// table.return_to_parent(claim);
 ///
 /// assert_eq!(table.usage(root), Some((0, 16)));
 /// let claim = table.claim_for_destroy(root).expect("no children left");
@@ -805,11 +806,24 @@ impl<const N: usize> RegionTable<N> {
     /// drops here rather than at the claim, so the parent cannot be reclaimed under this child's
     /// pages.
     ///
+    /// Takes the claim by value, so one claim returns at most once: a second return would drop the
+    /// parent's child count under a live sibling and let the parent be claimed over that sibling's
+    /// pages.
+    ///
+    /// ```compile_fail,E0382
+    /// let mut table = memory_regions::RegionTable::<4>::new();
+    /// let root = table.insert_root(0x1000, 8).unwrap();
+    /// let child = table.split(root, 2).unwrap();
+    /// let claim = table.claim_for_destroy(child).unwrap();
+    /// table.return_to_parent(claim);
+    /// table.return_to_parent(claim);
+    /// ```
+    ///
     /// Cost: one scan of the table per return.
     ///
     /// # BUGS
     /// - A hole under a live child is not reused while that child lives.
-    pub fn return_to_parent(&mut self, claim: &DestroyClaim) {
+    pub fn return_to_parent(&mut self, claim: DestroyClaim) {
         if claim.is_root {
             return;
         }
@@ -870,7 +884,7 @@ mod tests {
         let child = t.split(root, 4).unwrap();
         assert_eq!((t.len(), t.is_empty()), (2, false));
         let claim = t.claim_for_destroy(child).unwrap();
-        t.return_to_parent(&claim);
+        t.return_to_parent(claim);
         assert_eq!((t.len(), t.is_empty()), (1, false));
         assert!(t.claim_for_destroy(root).is_some());
         assert_eq!((t.len(), t.is_empty()), (0, true));
@@ -889,7 +903,7 @@ mod tests {
         assert_eq!(t.usage(root), Some((12, 16)));
 
         let cb = t.claim_for_destroy(b).unwrap();
-        t.return_to_parent(&cb);
+        t.return_to_parent(cb);
         assert_eq!(
             t.usage(root),
             Some((12, 16)),
@@ -897,7 +911,7 @@ mod tests {
         );
 
         let cc = t.claim_for_destroy(c).unwrap();
-        t.return_to_parent(&cc);
+        t.return_to_parent(cc);
         assert_eq!(
             t.usage(root),
             Some((4, 16)),
@@ -927,12 +941,12 @@ mod tests {
 
         // `b` sits at the top, so it un-bumps; `a` does not, so it leaves a hole.
         let cb = t.claim_for_destroy(b).unwrap();
-        t.return_to_parent(&cb);
+        t.return_to_parent(cb);
         assert_eq!(t.usage(root), Some((4, 16)));
         assert!(t.claim_for_destroy(root).is_none(), "`a` is still live");
 
         let ca = t.claim_for_destroy(a).unwrap();
-        t.return_to_parent(&ca);
+        t.return_to_parent(ca);
         assert_eq!(
             t.usage(root),
             Some((0, 16)),
@@ -967,7 +981,7 @@ mod tests {
 
         // `a` is below `_b`, so its return leaves a hole: out of `Children`, still spent.
         let ca = t.claim_for_destroy(a).unwrap();
-        t.return_to_parent(&ca);
+        t.return_to_parent(ca);
         assert_eq!(t.spent(root, PageUse::Children), Some(2));
         assert_eq!(t.usage(root), Some((10, 16)));
         assert_eq!(
@@ -1014,7 +1028,7 @@ mod tests {
         let _b = t.split(root, 4).unwrap();
         let ca = t.claim_for_destroy(a).unwrap();
         assert!(!ca.is_root());
-        t.return_to_parent(&ca);
+        t.return_to_parent(ca);
         assert_eq!(
             t.usage(root),
             Some((8, 16)),
@@ -1032,10 +1046,10 @@ mod tests {
         let a = t.split(root, 4).unwrap();
         let b = t.split(root, 4).unwrap();
         let ca = t.claim_for_destroy(a).unwrap();
-        t.return_to_parent(&ca);
+        t.return_to_parent(ca);
         assert_eq!(t.usage(root), Some((8, 16)), "`b` is live above the hole");
         let cb = t.claim_for_destroy(b).unwrap();
-        t.return_to_parent(&cb);
+        t.return_to_parent(cb);
         assert_eq!(
             t.usage(root),
             Some((0, 16)),
@@ -1060,15 +1074,15 @@ mod tests {
         let c = t.split(root, 4).unwrap();
         let cb = t.claim_for_destroy(b).unwrap(); // in flight: out of the table, not yet returned
         let ca = t.claim_for_destroy(a).unwrap();
-        t.return_to_parent(&ca);
+        t.return_to_parent(ca);
         let cc = t.claim_for_destroy(c).unwrap();
-        t.return_to_parent(&cc);
+        t.return_to_parent(cc);
         assert_eq!(
             t.usage(root),
             Some((8, 16)),
             "`b`'s run, [4, 8), stays spent"
         );
-        t.return_to_parent(&cb);
+        t.return_to_parent(cb);
         assert_eq!(
             t.usage(root),
             Some((0, 16)),
@@ -1089,9 +1103,9 @@ mod tests {
         );
         let b = t.split(root, 4).unwrap();
         let ca = t.claim_for_destroy(a).unwrap();
-        t.return_to_parent(&ca);
+        t.return_to_parent(ca);
         let cb = t.claim_for_destroy(b).unwrap();
-        t.return_to_parent(&cb);
+        t.return_to_parent(cb);
         assert_eq!(
             t.usage(root),
             Some((5, 16)),
@@ -1107,7 +1121,7 @@ mod tests {
         let cc = t.claim_for_destroy(child).unwrap();
         assert!(!cc.is_root(), "a split child is never a root");
         assert_eq!((cc.base_page(), cc.pages()), (0x200, 2));
-        t.return_to_parent(&cc);
+        t.return_to_parent(cc);
         let cr = t.claim_for_destroy(root).unwrap();
         assert!(cr.is_root());
         assert_eq!((cr.base_page(), cr.pages()), (0x200, 8));
@@ -1190,7 +1204,7 @@ mod tests {
         assert!(!t.has_children(child), "a leaf is not its own parent");
 
         let c = t.claim_for_destroy(child).unwrap();
-        t.return_to_parent(&c);
+        t.return_to_parent(c);
         assert!(!t.has_children(root), "the last return empties the count");
         assert!(!t.has_children(child), "and a dead name has no children");
     }
@@ -1250,14 +1264,14 @@ mod tests {
         assert_eq!(t.bounds(high), Some((u64::MAX - 4, 4)));
 
         let claim = t.claim_for_destroy(high).unwrap();
-        t.return_to_parent(&claim);
+        t.return_to_parent(claim);
         assert_eq!(
             t.usage(root),
             Some((4, 8)),
             "the top child gave its pages back"
         );
         let claim = t.claim_for_destroy(low).unwrap();
-        t.return_to_parent(&claim);
+        t.return_to_parent(claim);
         assert_eq!(t.usage(root), Some((0, 8)));
     }
 
@@ -1375,7 +1389,7 @@ mod tests {
         for r in [inner, job] {
             t.unpin(r);
             let claim = t.claim_for_destroy(r).unwrap();
-            t.return_to_parent(&claim);
+            t.return_to_parent(claim);
         }
         for k in 0..COUNTED_KINDS {
             assert_eq!(t.table.get(root).unwrap().live.0[k], 0, "kind {k}");
@@ -1489,7 +1503,7 @@ mod tests {
         );
         assert_eq!(t.usage(root), Some((2, 8)));
         let claim = t.claim_for_destroy(child).unwrap();
-        t.return_to_parent(&claim);
+        t.return_to_parent(claim);
         assert!(!t.has_children(root), "no child count without a child");
         assert_eq!(t.usage(root), Some((0, 8)), "the budget whole again");
         assert!(
@@ -1510,7 +1524,7 @@ mod tests {
         let dead = {
             let spare = t.split(root, 10).unwrap();
             let claim = t.claim_for_destroy(spare).unwrap();
-            t.return_to_parent(&claim);
+            t.return_to_parent(claim);
             spare
         };
         assert_eq!(
@@ -1608,7 +1622,7 @@ mod interleavings {
                 thread::spawn(move || {
                     let claim = table.lock().unwrap().claim_for_destroy(child).unwrap();
                     // The kernel's revoke runs here, with the lock released.
-                    table.lock().unwrap().return_to_parent(&claim);
+                    table.lock().unwrap().return_to_parent(claim);
                 })
             };
             let seen = table.lock().unwrap().spent(parent, PageUse::Children);
@@ -1893,7 +1907,7 @@ mod interleavings {
                     // The kernel revokes the child's run here, lock released.
                     thread::yield_now();
                     let mut guard = shared.lock().unwrap();
-                    guard.0.return_to_parent(&claim);
+                    guard.0.return_to_parent(claim);
                     guard.1 = true;
                 })
             };
