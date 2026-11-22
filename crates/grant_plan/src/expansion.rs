@@ -378,6 +378,12 @@ impl<'a> Expander<'a> {
     /// default is not a compatibility habit here: `rm *` hands a child authority over everything it
     /// matched, so the default reading is the one that **grants less**. A user who wants the
     /// dotfiles asks for them and takes the larger grant deliberately.
+    ///
+    /// `byte_glob` treats `.` and `..` as ordinary names, so `.*` matches both. No listing this
+    /// expander is driven over carries either: RedoxFS stores neither entry, and `disk_tree` refuses
+    /// both names. A server whose listing did carry them would not widen a grant to a parent,
+    /// because neither is a valid file name, and the line refuses with
+    /// [`Refusal::MatchNotNameable`]. That refusal is how such a server shows up here.
     pub fn offer(&mut self, name: &[u8], is_directory: bool) {
         if !byte_glob::matches(self.pattern, name) || self.set.contains(name) {
             return;
@@ -730,6 +736,15 @@ mod tests {
             Some(&b".config"[..]),
             "asking for them by name is how you take the larger grant",
         );
+    }
+
+    /// A listing that offered `.` and `..` would hand `.*` a parent's authority, so the line
+    /// refuses rather than grant either. No listing in this tree carries them.
+    #[test]
+    fn dot_and_dot_dot_in_a_listing_refuse_rather_than_grant() {
+        let listing: [(&[u8], bool); 3] = [(b".", true), (b"..", true), (b".config", false)];
+        assert_eq!(expand(b".*", &listing), Err(Refusal::MatchNotNameable));
+        assert_eq!(expand(b"*", &listing), Err(Refusal::NoMatch));
     }
 
     /// A pattern lives in the **last** component or nowhere, because selecting directories to walk
