@@ -36,42 +36,46 @@ section number, a milestone or a person in another repository.
 
 ## Finding status
 
-- P0-1, the manifest does not stand alone: Done in nife. The move adds `repository`.
-- P0-2, the repository files: Partly done. The README and both license texts are in the crate. The
-  move lane owns the scaffold's other files and the stranger run.
-- P0-3, text that reaches into nife: Done in nife. The crate's text has no section, milestone or
-  path, and no architect's name or quotation. The move strips the `Name:` blocks.
-- P0-4, seven names the spelled-out gate refuses: Done (maintainer, provisional, 2026-11-14 UTC;
-  see "Three public names" below). The crate and the `std` overlay carry the new names, and the
+- P0-1, the manifest does not stand alone: Done, [#3808](https://github.com/nifeos/nife/pull/3808).
+  The move adds `repository`.
+- P0-2, the repository files: At the move. The README and both license texts are in the crate
+  ([#3808](https://github.com/nifeos/nife/pull/3808)). The move lane owns the scaffold's other
+  files and the stranger run.
+- P0-3, text that reaches into nife: Done, [#3808](https://github.com/nifeos/nife/pull/3808). The
+  crate's text has no section, milestone or path, and no architect's name or quotation. The move
+  strips the `Name:` blocks.
+- P0-4, seven names the spelled-out gate refuses: Done,
+  [#3808](https://github.com/nifeos/nife/pull/3808) (maintainer, provisional, 2026-11-14 UTC; see
+  "Three public names" below). The crate and the `std` overlay carry the new names, and the
   generator copies the crate verbatim. The overlay's `args()` is the standard library's own name
   and stays.
-- P1-5, `CAPACITY` carries no unit: Done (maintainer, provisional, 2026-11-14 UTC). `grant_plan`
-  uses `MAXIMUM_RECORDS_BYTES`.
-- P1-6, no proof: Partly done. Two of the three harnesses and their patches landed in
+- P1-5, `CAPACITY` carries no unit: Done, [#3808](https://github.com/nifeos/nife/pull/3808)
+  (maintainer, provisional, 2026-11-14 UTC). `grant_plan` uses `MAXIMUM_RECORDS_BYTES`.
+- P1-6, no proof: Open. Two of the three harnesses and their patches landed in
   [#3567](https://github.com/nifeos/nife/pull/3567). The round-trip harness over the exact-page
   builder ran Kani's solver past 11 GiB and failed, so it did not land; the tests cover the round trip.
 - P1-7, the `unsafe` reader has no test: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P1-8, the mutation exemption and the coverage figure: Open. Both belong to the move.
+- P1-8, the mutation exemption and the coverage figure: At the move.
 - P1-9, the all-or-nothing claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-10, the address truncates on narrow targets: Open. The crate's BUGS states the limit, an
-  alternative the review allowed; the maintainer rules provisionally whether that closes it.
+- P2-10, the address truncates on narrow targets: Waiting on a ruling. The crate's BUGS states the
+  limit, an alternative the review allowed; the maintainer rules provisionally whether that closes
+  it.
 - P2-11, `EMPTY` unused and its literal duplicated: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-12, the builder takes a fixed array: Done (maintainer, provisional, 2026-11-19 UTC).
-  `PageBuilder::new` takes `&mut [u8]` and refuses any length but `PAGE_BYTES` with `WrongPageLength`
-  (a provisional name).
-- P2-13, the layout arithmetic copied in `grant_plan`: Done. `record_bytes` and
+- P2-12, the builder takes a fixed array: Done, [#3808](https://github.com/nifeos/nife/pull/3808)
+  (maintainer, provisional, 2026-11-19 UTC). `PageBuilder::new` takes `&mut [u8]` and refuses any
+  length but `PAGE_BYTES` with `WrongPageLength` (a provisional name).
+- P2-13, the layout arithmetic copied in `grant_plan`: Done,
+  [#3808](https://github.com/nifeos/nife/pull/3808). `record_bytes` and
   `PageBuilder::remaining_bytes` are provisional names, and `grant_plan` sums with `record_bytes`.
 - P2-14, the data bounds the record walk: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-15, the one-file constraint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- Ruling, the layout leaves as built with `VERSION` 1 and `INTERFACE_ID` 18: Done,
-  [#3579](https://github.com/nifeos/nife/pull/3579) (ruled 2026-11-14 UTC; nothing to build).
-- Ruling, a numbered magic replaces `nifeargv`: Ruled (2026-11-14 UTC), condition met (below).
-  Not built: `MAGIC` still reads `b"nifeargv"`.
-- Ruling, three public names: Done (maintainer, provisional, 2026-11-14 UTC), with P0-4 and P1-5.
-- Ruling, the repository: Ruled (2026-11-14 UTC). Not built: a lane creates
-  `nifeos/program_argument_contract`, runs the move check and a dry run, and tags
-  `v0.1.0-pre.1` with no publish, after the renames and milestone 994.
+- Ruling, the layout leaves as built, with the magic unnumbered until 994: Open.
+  [#3579](https://github.com/nifeos/nife/pull/3579) recorded the layout as built with `VERSION` 1
+  and `INTERFACE_ID` 18 (ruled 2026-11-14 UTC). The numbered magic is not built: its condition is
+  met (see Follow-on), and `MAGIC` still reads `b"nifeargv"`.
+- Ruling, three public names: Done, [#3808](https://github.com/nifeos/nife/pull/3808) (maintainer,
+  provisional, 2026-11-14 UTC), with P0-4 and P1-5.
 
 ## Open decisions
 
@@ -272,15 +276,15 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 
 ## Follow-on
 
-- **Done.** The three rulings above, recorded in this block.
 - **Done.** Two milestones meet the layout ruling's condition (maintainer's reading, provisional,
   2026-11-19 UTC): 1115 (the gate builds basalt's delivered programs from the candidate tree) in
   every merge group, and 994 (the cross-repository pair is tested where the pin is) in basalt. The
   numbered magic lands in one nife pull request, a lane of its own.
-- **Done.** The three renames, P0-1, P0-3, P2-12 and P2-13, and part of P0-2.
-- **Outstanding.** Every finding marked Open or Ruled under "Finding status" above, each with what
-  remains, checked against `crates/program_argument_contract` and `crates/grant_plan`.
-- **Outstanding.** The numbered magic, then the repository and its `v0.1.0-pre.1` tag.
+- **Outstanding.** Every finding marked Open or Waiting under "Finding status" above, each with
+  what remains, checked against `crates/program_argument_contract` and `crates/grant_plan`.
+- **Outstanding.** The numbered magic, then the repository (ruled 2026-11-14 UTC): a lane creates
+  `nifeos/program_argument_contract`, runs the move check and a dry run, and tags `v0.1.0-pre.1`
+  with no publish, after the renames and milestone 994.
 
 ## Done when
 
