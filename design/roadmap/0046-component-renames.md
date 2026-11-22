@@ -7,7 +7,7 @@ built: 2026-07-30
 
 **Built 2026-07-30, both ISAs.** Five renames in one mechanical commit: `netd` → `net_stack`,
 `compd` → `compositor`, `gpud` → `display`, `termd` → `line_editor`, and the crate `crates/linedisc` →
-`crates/line_editor`. The scope estimated here at 398 came in at 457 whole-word token replacements
+`line_editor`. The scope estimated here at 398 came in at 457 whole-word token replacements
 across 4 file moves and 1 directory move (`netd` 184, `linedisc` 93, `termd` 77, `gpud` 67,
 `compd` 36). The estimate was measured before milestones 23 and 37 landed and the tree grew under
 it, which is the ordinary way a count like this drifts. The conventions are design/naming.md, indexed in

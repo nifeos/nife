@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # 1098. `line_editor`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only outside review of `crates/line_editor`, read the way a maintainer meeting it
+Raised by a read-only outside review of `line_editor`, read the way a maintainer meeting it
 for the first time would. It changes nothing; it lists what the next lanes change, and it puts the
 one-way doors to the architect.
 
@@ -60,6 +60,10 @@ milestone reaches delivery.
 - Decision 6, review clearance and the repositories: Waiting on a ruling ([#3972](https://github.com/nifeos/nife/pull/3972)),
   the architect's clearance of `notes/crate-reviews/line-editor.md` and
   `notes/crate-reviews/terminal-contract.md`.
+
+- The move: Done. The crate lives in [nifeos/line_editor](https://github.com/nifeos/line_editor),
+  and nife depends on it by git and `rev`, a commit on its `main`, with `version = "0.1.0"`. It keeps
+  `publish = false`; no tag exists, and crates.io holds no release.
 
 ## Open decisions
 

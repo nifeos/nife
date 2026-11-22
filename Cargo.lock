@@ -959,6 +959,7 @@ checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 [[package]]
 name = "line_editor"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/line_editor?rev=b43cb319b1cf57b8e38680d090348f347408ffa2#b43cb319b1cf57b8e38680d090348f347408ffa2"
 
 [[package]]
 name = "line_editor_component"
