@@ -258,7 +258,7 @@ fn the_device_split_partitions_the_mappings() {
         const {
             assert!(
                 moho_abi::address_space::MAP_READ_ONLY != moho_abi::address_space::MAP_READ_WRITE
-            )
+            );
         };
     }
 }
