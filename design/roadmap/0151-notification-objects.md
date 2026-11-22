@@ -187,12 +187,12 @@ implies) is most of the difference.
 - **Milestone 33.** Milestone 33 (a compositor) owns the compositor's per-client endpoints woken by a bound notification, §101's
   table's second row. Its own follow-on, not built here.
 - **Recorded.** No unbind, `WAIT`'s word sharing `x0` with the error encoding, `SIGNAL(0)` as a
-  no-op and the O(queue) unlink, all in this block's `BUGS` and in `crates/moho_abi/src/lib.rs` beside
+  no-op and the O(queue) unlink, all in this block's `BUGS` and in `nifeos/moho_abi`'s `src/lib.rs` beside
   `abi::notification`.
 - **Done.** The latent `w0 = 1` IRQ forgery this lane found: calef ruled B on 2026-09-26 (§101's
   second amendment), and milestone 603 (an interrupt's endpoint refuses every send) built it.
 - **Recorded.** A sender can make a receiver read an error by sending a negative `w0`: beside
-  `abi::rendezvous::RECV` in `crates/moho_abi/src/lib.rs`.
+  `abi::rendezvous::RECV` in `nifeos/moho_abi`'s `src/lib.rs`.
 - **Decision.** The receive tag (option B), ruled by calef on 2026-09-26, is being recorded as an
   amendment to `design/decisions/0101-notification-objects.md` by the maintainer; the method and
   object-type numbers are §101's own.
