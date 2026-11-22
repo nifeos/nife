@@ -1,12 +1,13 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-11-22
+decided: 2026-11-22
+ratified_by: calef
 ---
 
 # 326. The names and numbers of the services' wire error codes
 
-*(The section number and title are provisional until the merge lands them. Every name and number
-below is provisional until ruled.)*
+*(The section number and title are provisional until the merge lands them.)*
 
 Counts are from `nifeos/nife@c9d63ae99`.
 
@@ -15,7 +16,7 @@ Counts are from `nifeos/nife@c9d63ae99`.
 The ruling of 2026-11-22 (UTC) on §325 (the services' wire error vocabulary, #3918): the services
 stop sending negated Linux `errno` and send nife's own codes in `-256..=-4095`, the kernel keeps
 `-1..=-255`, and each server translates once at its boundary. It left the names and the numbers to
-a follow-on ruling, which comes before any code changes. This is that ruling's draft.
+a follow-on ruling, which comes before any code changes. This is that ruling.
 
 §325's table lists 27 `errno` numbers found in the source. Not all of them can reach a reply, and a
 few carry a nife meaning that differs from the POSIX one, so a rename number for number would copy
@@ -23,8 +24,9 @@ both problems into nife's table.
 
 ## The decision
 
-Which codes the services' table holds, the name and number of each, where the table lives, and
-which `errno` values map to each.
+Ruled 2026-11-22 (UTC): the 19-code table below, as drafted, with the map from each `errno`, the
+leaf crate and the decoder's three outcomes. The names `service_error` and `Decoded` stay
+provisional. Whether an unknown verb answers `Unsupported` is its own decision.
 
 ## Is the premise true
 
@@ -47,7 +49,7 @@ reading which engine files nife compiles. `redoxfs_server` builds `vendor/redoxf
 `EROFS` carries two meanings: mostly a capability without the mutating right (`grant.rs`,
 `disk_tree`), and on the SD card and NVMe servers a read-only device.
 
-## Proposal
+## The rule
 
 - One code per meaning that can reach a reply: 19 codes. A name says what went wrong, spelled out.
   It takes `io::ErrorKind`'s spelling where the kind means the same thing, per the ruling of
@@ -124,7 +126,7 @@ vendor update that adds a code fails the test before it reaches a client.
 
 ## The choices inside it
 
-These are the places where the proposal is more than a rename.
+These are the places where the rule is more than a rename.
 
 1. Seven numbers, and the engine's use of `ERANGE`, get no code, since none can reach a reply.
 2. `ERANGE` becomes `InvalidAttributeName`, nife's meaning, at two sites: a name the server
