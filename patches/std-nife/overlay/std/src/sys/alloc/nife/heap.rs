@@ -85,7 +85,7 @@ pub(super) fn grow(inner: &mut Inner, need: u64) -> bool {
             rt::invoke(rt::MEMORY_REGION_SLOT, abi::memory_region::MAP, virtual_address, 0, 0)
         };
         if code != 0 {
-            inner.stopped = abi::Error::from_ret(code) != Some(abi::Error::OutOfMemory);
+            inner.stopped = abi::Error::try_from(code) != Ok(abi::Error::OutOfMemory);
             break;
         }
         got += 1;

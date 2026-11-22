@@ -128,7 +128,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // **Why not, in words** (calef's ruling on §251's amendment, item 3): the kernel answers one
     // of four portable reasons, and the firmware's raw code is on the kernel console above.
     let answer = user_mode_runtime::reboot(REBOOT_SLOT);
-    let reason: &[u8] = match abi::Error::from_ret(answer) {
+    let reason: &[u8] = match abi::Error::try_from(answer).ok() {
         Some(abi::Error::NoResetMechanism) => {
             b"reboot: not restarted: this machine has no reset route the kernel can ask\n"
         }

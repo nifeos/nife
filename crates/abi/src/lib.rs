@@ -390,26 +390,30 @@ pub enum Error {
 }
 
 // Index exception (2026-10-12): the decode of the error above, kept beside it for the same reason.
-impl Error {
-    /// Decode a negative system call return into its `Error`, or `None` for a result or unknown value.
-    /// # Examples
-    /// ```
-    /// use abi::Error;
-    ///
-    /// // A successful `invoke` returning a handle, a count, or nothing.
-    /// assert_eq!(Error::from_ret(0), None);
-    /// assert_eq!(Error::from_ret(4096), None);
-    ///
-    /// // A refusal, decoded on the userspace side of the boundary.
-    /// assert_eq!(Error::from_ret(-1), Some(Error::NoSuchSlot));
-    /// assert_eq!(Error::from_ret(-4), Some(Error::BadPointer));
-    ///
-    /// // A number that is not one of the kernel's errors is not decoded as one. That is what lets a
-    /// // wire contract layered on top tell "no capability" from "no".
-    /// assert_eq!(Error::from_ret(-99), None);
-    /// ```
-    pub fn from_ret(v: i64) -> Option<Error> {
-        Some(match v {
+/// Decode a negative system call return into its `Error`. The refusal is the word itself, handed
+/// back for a result or for a negative this crate does not know.
+///
+/// # Examples
+/// ```
+/// use abi::Error;
+///
+/// // A successful `invoke` returning a handle, a count, or nothing.
+/// assert_eq!(Error::try_from(0), Err(0));
+/// assert_eq!(Error::try_from(4096), Err(4096));
+///
+/// // A refusal, decoded on the userspace side of the boundary.
+/// assert_eq!(Error::try_from(-1), Ok(Error::NoSuchSlot));
+/// assert_eq!(Error::try_from(-4), Ok(Error::BadPointer));
+///
+/// // A number that is not one of the kernel's errors is not decoded as one. That is what lets a
+/// // wire contract layered on top tell "no capability" from "no".
+/// assert_eq!(Error::try_from(-99), Err(-99));
+/// ```
+impl TryFrom<i64> for Error {
+    type Error = i64;
+
+    fn try_from(word: i64) -> Result<Self, i64> {
+        Ok(match word {
             -1 => Error::NoSuchSlot,
             -2 => Error::WrongObject,
             -3 => Error::NotPermitted,
@@ -425,7 +429,7 @@ impl Error {
             -13 => Error::ResetNotSupported,
             -14 => Error::ResetDenied,
             -15 => Error::ResetDidNotHappen,
-            _ => return None,
+            _ => return Err(word),
         })
     }
 }

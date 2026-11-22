@@ -13,6 +13,8 @@ pub const SIZE_MASK: u64 = 3;
 pub const PRIVATE: u64 = 1 << 7;
 
 /// **Is this a `flags` word the kernel answers?** Exactly one today.
-pub const fn admitted(flags: u64) -> bool {
+///
+/// Name: provisional. A function that answers yes or no is named like a question.
+pub const fn is_admitted(flags: u64) -> bool {
     flags == PRIVATE | SIZE_U32
 }

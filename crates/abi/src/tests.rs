@@ -21,7 +21,7 @@ fn a_reset_refusal_maps_to_its_reason_and_survives_the_wire() {
         Error::ResetDidNotHappen,
     ];
     for (i, e) in all.iter().enumerate() {
-        assert_eq!(Error::from_ret(*e as i64), Some(*e), "{e:?}");
+        assert_eq!(Error::try_from(*e as i64), Ok(*e), "{e:?}");
         assert!(!all[i + 1..].contains(e), "{e:?} is listed twice");
     }
 }
@@ -46,13 +46,13 @@ fn usage_records_known_are_exactly_the_seven() {
     assert!(!usage::is_known(u64::MAX));
 }
 
-/// Every variant round-trips through `from_ret`. The enum's `#[repr(i64)]` discriminants and
-/// `from_ret`'s match arms are two lists that must agree, and this crate is the one place a
+/// Every variant round-trips through `TryFrom<i64>`. The enum's `#[repr(i64)]` discriminants and
+/// `try_from`'s match arms are two lists that must agree, and this crate is the one place a
 /// drift between them would not be a compile error: add a variant, forget the match arm, and
-/// userspace decodes a real kernel error as `None`. (The new variant must be added to `ALL`
+/// userspace decodes a real kernel error as no error at all. (The new variant must be added to `ALL`
 /// for this to guard it; that edit is at least in the same file.)
 #[test]
-fn every_error_round_trips_through_from_ret() {
+fn every_error_round_trips_through_try_from() {
     const ALL: &[Error] = &[
         Error::NoSuchSlot,
         Error::WrongObject,
@@ -71,19 +71,18 @@ fn every_error_round_trips_through_from_ret() {
         Error::ResetDidNotHappen,
     ];
     for &e in ALL {
-        assert_eq!(Error::from_ret(e as i64), Some(e));
+        assert_eq!(Error::try_from(e as i64), Ok(e));
     }
 }
 
 /// Success values and out-of-range negatives are not errors. `>= 0` is a result by the ABI's
-/// own rule, and an unknown negative must surface as "not an error I know" rather than being
-/// silently mapped onto the nearest variant.
+/// own rule, and an unknown negative must surface as "not an error I know", handing the word back
+/// unchanged, rather than being silently mapped onto the nearest variant.
 #[test]
-fn non_errors_decode_to_none() {
-    assert_eq!(Error::from_ret(0), None);
-    assert_eq!(Error::from_ret(1), None);
-    assert_eq!(Error::from_ret(-16), None);
-    assert_eq!(Error::from_ret(i64::MIN), None);
+fn non_errors_hand_the_word_back() {
+    for word in [0, 1, 4096, -16, -99, i64::MIN, i64::MAX] {
+        assert_eq!(Error::try_from(word), Err(word));
+    }
 }
 
 /// The rights words are an ABI, not an implementation detail: the kernel tests them with `&`
@@ -128,11 +127,11 @@ fn the_fault_slot_is_inside_the_capability_table() {
 /// and the shared form, is refused.
 #[test]
 fn the_address_wait_admits_only_a_private_32_bit_word() {
-    use crate::address_wait::{PRIVATE, SIZE_U8, SIZE_U16, SIZE_U32, SIZE_U64, admitted};
-    assert!(admitted(PRIVATE | SIZE_U32));
-    assert!(!admitted(SIZE_U32));
+    use crate::address_wait::{PRIVATE, SIZE_U8, SIZE_U16, SIZE_U32, SIZE_U64, is_admitted};
+    assert!(is_admitted(PRIVATE | SIZE_U32));
+    assert!(!is_admitted(SIZE_U32));
     for size in [SIZE_U8, SIZE_U16, SIZE_U64] {
-        assert!(!admitted(PRIVATE | size));
+        assert!(!is_admitted(PRIVATE | size));
     }
 }
 
@@ -342,7 +341,7 @@ fn every_error_is_pinned_to_its_number() {
     ];
     for (error, number) in all {
         assert_eq!(error as i64, number, "{error:?}");
-        assert_eq!(Error::from_ret(number), Some(error), "{error:?}");
+        assert_eq!(Error::try_from(number), Ok(error), "{error:?}");
     }
 }
 
