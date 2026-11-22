@@ -1,4 +1,4 @@
-//! **Running a program**: the argv and name-set pages, the words grant, `run_image` and the
+//! **Running a program**: the argv and grant pages, the words grant, `run_image` and the
 //! manifest note, `dir_grant`, `spawn`, draining what a child prints and its second stream, and
 //! `outcome`.
 //!
@@ -12,11 +12,11 @@ use super::*;
 
 /// **The window a line's argvs are written through** (milestone 205 (how a foreign program is told
 /// what to do), DECISIONS §170): one page per pipeline stage at the bottom of [`IMAGE_WINDOW`], below
-/// the name sets and the image, so their page tables come from [`IMAGE_TABLE_PAGES`] as the image's
+/// the grant pages and the image, so their page tables come from [`IMAGE_TABLE_PAGES`] as the image's
 /// do.
 const ARGV_VA: u64 = IMAGE_WINDOW;
-/// **And the window a stage's name set is written through** (milestone 205's designation half,
-/// `spawn_protocol::NAMESET_BIT`): one page per stage, above the argv pages and below [`IMAGE_VA`], so
+/// **And the window a stage's grant page is written through** (milestone 205's designation half,
+/// milestone 1122): one page per stage, above the argv pages and below [`IMAGE_VA`], so
 /// [`IMAGE_TABLE_PAGES`] pays for these tables too.
 const SET_VA: u64 = ARGV_VA + line::MAXIMUM_STAGES as u64 * spawn_protocol::IMAGE_PAGE;
 
@@ -51,7 +51,7 @@ pub(super) fn assemble_argv(cmd: &[u8], stage: usize) -> Result<Argv, Option<Ref
 }
 
 /// **A fresh one-page region and its frame, mapped read/write at `va`**, or `None` if this shell's
-/// budget cannot pay for it. What an argv and a name set are each written on.
+/// budget cannot pay for it. What an argv and a grant page are each written on.
 fn fresh_page(va: u64) -> Option<Argv> {
     if !prime_image_window() {
         return None;
@@ -71,19 +71,22 @@ fn fresh_page(va: u64) -> Option<Argv> {
     }
 }
 
-/// **A directory grant for a program that hears words, ready to send** (milestone 205, §170 clauses
-/// 2 to 5): the two `START` word triples every directory grant travels as, and, when the grant is a
-/// set of names rather than the whole directory, the page the set is written on.
+/// **A directory grant, ready to send** (milestone 205, §170 clauses 2 to 5, milestone 1122): the
+/// two `START` word triples every directory grant travels as, the page the granted directory and
+/// any name set are written on, and whether the grant is a set of names rather than the whole
+/// directory (`spawn_protocol::NAMESET_BIT`).
 #[derive(Clone, Copy)]
 pub(super) struct WordsGrant {
     pub(super) words: DirWords,
-    pub(super) set: Option<Argv>,
+    pub(super) page: Argv,
+    pub(super) set: bool,
 }
 
-/// **Turn a word designation into what the progenitor builds it from**, through set window `stage`.
+/// **Turn a word designation into what the progenitor builds it from**, through grant window
+/// `stage`.
 ///
 /// The caretaker descends into the current directory with `grant`'s rights, clamped by the
-/// progenitor: a `fs_nameset_caretaker` with the set on a page, or for `.` a
+/// progenitor: a `fs_nameset_caretaker` with the set on the grant page, or for `.` a
 /// `fs_subtree_caretaker`. `Err(Some(sentence))` is undeliverable and `Err(None)` the budget.
 ///
 /// # BUGS
@@ -110,7 +113,7 @@ pub(super) fn words_grant(
     };
     // **A directory in the mounted tree is named through the mount** (milestone 834 (ioping on nife and Linux)): the
     // progenitor builds the caretaker against the tree `spawn_protocol::in_mounted_tree` says.
-    let mut routed = [0u8; file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES + 1];
+    let mut routed = [0u8; file_system_contract::grant::MAXIMUM_NAME_BYTES];
     let dir = match g.side {
         grant_navigation::GrantSide::First => dir,
         grant_navigation::GrantSide::Second => {
@@ -118,7 +121,7 @@ pub(super) fn words_grant(
             let n = mount.len() + 1 + dir.len();
             if n > routed.len() {
                 return Err(Some(
-                    b"  that name does not fit in a grant's two argument words\n",
+                    b"  that directory's name, with the mount's in front, is longer than a granted name may be\n",
                 ));
             }
             routed[..mount.len()].copy_from_slice(mount);
@@ -127,46 +130,52 @@ pub(super) fn words_grant(
             &routed[..n]
         }
     };
-    let Some((dir_lo, dir_hi)) = file_system_contract::grant::pack_name(dir) else {
-        return Err(Some(
-            b"  that name does not fit in a grant's two argument words\n",
-        ));
-    };
     let words = DirWords {
         caretaker: (
-            dir_lo,
-            dir_hi,
-            file_system_contract::grant::specification(dir.len(), grant.rights()),
+            0,
+            0,
+            file_system_contract::grant::specification(0, grant.rights()),
         ),
         child: (0, 0, 0),
     };
-    if g.names.is_empty() {
-        return Ok(WordsGrant { words, set: None });
-    }
+    let set = !g.names.is_empty();
     Ok(WordsGrant {
         words,
-        set: Some(set_page(g, stage)?),
+        page: grant_page(dir, g, set, stage)?,
+        set,
     })
 }
 
-/// **Write a grant's names onto a fresh page**, through set window `stage`, in
-/// `file_system_contract::nameset`'s encoding: what the progenitor maps into `fs_nameset_caretaker`.
-/// `Err(Some(sentence))` is a set the encoding refuses, which the planner's own bounds make
-/// unexpected, and `Err(None)` the budget.
-fn set_page(g: &GrantDir, stage: usize) -> Result<Argv, Option<&'static [u8]>> {
+/// **Write a grant's directory and, when `with_names`, its names onto a fresh page**, through grant
+/// window `stage`, as `file_system_contract::grant::write_page` lays it out: what the progenitor
+/// copies into the caretaker. `Err(Some(sentence))` is a page the encoding refuses, which the
+/// planner's own bounds make unexpected, and `Err(None)` the budget. Out of line, so the set it
+/// encodes stays off its callers' frames.
+#[inline(never)]
+fn grant_page(
+    dir: &[u8],
+    g: &GrantDir,
+    with_names: bool,
+    stage: usize,
+) -> Result<Argv, Option<&'static [u8]>> {
     let va = SET_VA + stage as u64 * spawn_protocol::IMAGE_PAGE;
     let page = fresh_page(va).ok_or(None)?;
     let mut list = [(&b""[..], false); file_system_contract::nameset::MAXIMUM_NAMES];
     let mut n = 0;
-    for (name, is_dir) in g.names.iter() {
-        list[n] = (name, is_dir);
-        n += 1;
+    if with_names {
+        for (name, is_dir) in g.names.iter() {
+            list[n] = (name, is_dir);
+            n += 1;
+        }
     }
+    let mut set = [0u8; file_system_contract::nameset::MAXIMUM_BYTES];
     // SAFETY: `va` is one page this shell just mapped read/write, fresh, and nothing else reaches
     // it until the frame is sent; the borrow ends before this function returns.
     let out = unsafe { &mut *(va as *mut [u8; spawn_protocol::IMAGE_PAGE as usize]) };
-    match file_system_contract::nameset::encode(&list[..n], out) {
-        Some(_) => Ok(page),
+    let written = file_system_contract::nameset::encode(&list[..n], &mut set)
+        .and_then(|len| file_system_contract::grant::write_page(dir, true, &set[..len], out));
+    match written {
+        Some(()) => Ok(page),
         None => {
             release_argv(page, true);
             Err(Some(
@@ -176,19 +185,15 @@ fn set_page(g: &GrantDir, stage: usize) -> Result<Argv, Option<&'static [u8]>> {
     }
 }
 
-/// Send a words grant's set page, `READ` only (`spawn_protocol::NAMESET_BIT`), after the argv's.
-pub(super) fn send_set(w: &WordsGrant) {
-    if let Some(p) = w.set {
-        user_mode_runtime::send_capability(SPAWN, p.frame, abi::rights::READ, 0);
-        capability_delete(p.frame);
-    }
+/// Send a directory grant's page, `READ` only (`spawn_protocol::DIRECTORY_GRANT_BIT`), after the argv's.
+pub(super) fn send_grant_page(w: &WordsGrant) {
+    user_mode_runtime::send_capability(SPAWN, w.page.frame, abi::rights::READ, 0);
+    capability_delete(w.page.frame);
 }
 
-/// Give back a words grant's page, if it has one.
+/// Give back a directory grant's page.
 pub(super) fn release_words_grant(w: &WordsGrant, unsent: bool) {
-    if let Some(p) = w.set {
-        release_argv(p, unsent);
-    }
+    release_argv(w.page, unsent);
 }
 
 /// Give back an argv's region, and its frame's slot if it was never sent.
@@ -282,7 +287,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
             run_unvouched: holds_run_unvouched,
             program_arguments: argv.is_some(),
             directory_grant: set_grant.is_some(),
-            nameset: set_grant.is_some_and(|w| w.set.is_some()),
+            nameset: set_grant.is_some_and(|w| w.set),
             ..spawn_protocol::Wiring::default()
         },
     );
@@ -300,7 +305,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
         capability_delete(a.frame);
     }
     if let Some(w) = &set_grant {
-        send_set(w);
+        send_grant_page(w);
     }
     if let Some(slot) = mem_slot {
         // Every right: the progenitor builds the child from it, and since milestone 824 (a retype
@@ -802,40 +807,40 @@ pub(super) fn refuse(spec: ParsedInvocation, refusal: Refusal) {
     swish::write_refusal(&spec, refusal, &mut print);
 }
 
-/// One process's three `START` argument words, packed by this shell and forwarded by the progenitor without
-/// being read. `file_system_contract::grant`'s layout: two words of name, and a spec carrying the length plus
-/// either a rights mask (a caretaker's) or an option mask (a program's).
+/// One process's three `START` argument words, written by this shell and forwarded by the
+/// progenitor without being read. `file_system_contract::grant`'s layout: two words of name, both
+/// zero since every name travels on the grant page, and a spec carrying either a rights mask (a
+/// caretaker's) or an option mask (a program's).
 type StartWords = (u64, u64, u64);
 
 /// **What a directory grant travels as**: one process's `START` words each, for the two processes a
 /// grant is made of.
 ///
 /// Named rather than a bare pair of tuples because the order is the wire's, and getting it backwards
-/// would start `rm` with a directory's name and a caretaker with a file's, which comes up serving a
-/// namespace nobody meant. `spawn_protocol::GRANT_WORDS` is the count on the other side.
+/// would start `rm` with a caretaker's rights as its options. `spawn_protocol::GRANT_WORDS` is the
+/// count on the other side.
 #[derive(Clone, Copy)]
 pub(super) struct DirWords {
-    /// The `fs_subtree_caretaker`'s: the granted directory, and the rights to ask for.
+    /// The caretaker's: the rights to ask for. The directory is on the grant page.
     pub(super) caretaker: StartWords,
-    /// The confined program's: the operand inside that directory, and the options typed with it.
+    /// The confined program's: the options typed with it. Its operands are the set it is granted.
     pub(super) child: StartWords,
 }
 
-/// **Turn a planned directory grant into the two triples the progenitor needs**, or into the
-/// sentence that says why it cannot be delivered (milestone 31 (a capability shell: designation is
-/// authorization) phase 3).
+/// **Turn a planned directory grant into the two triples the progenitor needs**, and the directory
+/// the grant page names, or into the sentence that says why it cannot be delivered (milestone 31
+/// (a capability shell: designation is authorization) phase 3).
 ///
-/// `Ok` is `(the caretaker's START words, the program's)`: the directory and the
-/// `file_system_contract::directory` rights (`REMOVE`, or `REMOVE_TREE` with `-r`), then the operand and
-/// `flags`, plus whether the operand rides a name set rather than the words. A name longer than
-/// two words hold (`grant::MAXIMUM_WORDS_NAME_BYTES`, milestone 946 (a granted file name can be longer than sixteen bytes)) does: the program is told
-/// `grant::WHOLE_NAMESPACE` and the grant becomes a set of that one name, which
-/// `fs_nameset_caretaker` serves and [`spawn_dir_grant`] writes on a page. Nothing between here and
-/// the process decodes the words. The namespace root travels as an empty directory name, which the caretaker narrows with `file_system::NARROW` (§173 (narrowing the root of the shell's namespace)). Refused with nothing spawned: a second tree,
-/// a directory deeper than one level, a set of more than one name, and a directory whose name does
-/// not fit in a grant's two argument words. See `notes/swish-language/running.md`, "The directory
-/// grant".
-pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'static [u8]> {
+/// `Ok` is `(the caretaker's START words, the program's, the directory)`: the
+/// `file_system_contract::directory` rights (`REMOVE`, or `REMOVE_TREE` with `-r`), then `flags`.
+/// The operand always rides a set of that one name (milestone 1122), which `fs_nameset_caretaker`
+/// serves and [`spawn_dir_grant`] writes on the grant page, and the program is told
+/// `grant::WHOLE_NAMESPACE`. Nothing between here and the process decodes the words. The namespace
+/// root travels as an empty directory name, which the caretaker narrows with `file_system::NARROW`
+/// (§173 (narrowing the root of the shell's namespace)). Refused with nothing spawned: a second
+/// tree, a directory deeper than one level, and a set of more than one name. See
+/// `notes/swish-language/running.md`, "The directory grant".
+pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, &[u8]), &'static [u8]> {
     // **A grant in a two-grant shell's second tree** (milestone 154). The progenitor builds the
     // caretaker by descending from the root of the one filesystem it holds, which is the first
     // tree's; the words below say nothing about which tree, so sending them for the second would
@@ -860,19 +865,11 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
             );
         }
     };
-    let Some(name) = g.names.only() else {
+    if g.names.only().is_none() {
         return Err(
             b"  a set of names is delivered by a nameset caretaker, and the progenitor builds the subtree \n  one; name a single file\n",
         );
-    };
-    let (dir_lo, dir_hi) = if dir.is_empty() {
-        (0, 0)
-    } else {
-        let Some(words) = file_system_contract::grant::pack_name(dir) else {
-            return Err(b"  that name does not fit in a grant's two argument words\n");
-        };
-        words
-    };
+    }
     // What `-r` buys, stated as the difference between two capabilities rather than as a branch in
     // the program: REMOVE alone cannot even look at what is under the directory.
     let rights = if g.subtree {
@@ -880,37 +877,19 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
     } else {
         file_system_contract::directory::rights::REMOVE
     };
-    // `fs_subtree_caretaker::_start(name_lo, name_hi, spec)`, or `fs_nameset_caretaker`'s, which
-    // takes the same words.
-    let caretaker = (
-        dir_lo,
-        dir_hi,
-        file_system_contract::grant::specification(dir.len(), rights),
-    );
+    // `fs_nameset_caretaker::_start(name_lo, name_hi, spec)`, the rights alone.
+    let caretaker = (0, 0, file_system_contract::grant::specification(0, rights));
     // `rm::_start(spec, name_lo, name_hi)`, whose spec carries the options where a caretaker's
     // carries rights: both are "what this process was started with".
-    let (child, set) = match file_system_contract::grant::pack_name(name) {
-        Some((name_lo, name_hi)) => (
-            (
-                file_system_contract::grant::specification(name.len(), flags),
-                name_lo,
-                name_hi,
-            ),
-            false,
+    let child = (
+        file_system_contract::grant::specification(
+            file_system_contract::grant::WHOLE_NAMESPACE,
+            flags,
         ),
-        None => (
-            (
-                file_system_contract::grant::specification(
-                    file_system_contract::grant::WHOLE_NAMESPACE,
-                    flags,
-                ),
-                0,
-                0,
-            ),
-            true,
-        ),
-    };
-    Ok((DirWords { caretaker, child }, set))
+        0,
+        0,
+    );
+    Ok((DirWords { caretaker, child }, dir))
 }
 
 /// **What this shell holds of a job it starts** (milestone 933 (every job is built the way a
@@ -1026,7 +1005,7 @@ pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Op
         &e,
         argv.is_some(),
         dir_words.is_some(),
-        set_grant.is_some_and(|w| w.set.is_some()),
+        set_grant.is_some_and(|w| w.set),
         held.as_ref().map(|_| background.is_some()),
     );
     send(SPAWN, w0, w1, w2);
@@ -1046,9 +1025,9 @@ pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Op
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
         capability_delete(a.frame);
     }
-    // The name set's frame follows the argv's (`spawn_protocol::NAMESET_BIT`).
+    // The grant page's frame follows the argv's (`spawn_protocol::DIRECTORY_GRANT_BIT`).
     if let Some(w) = &set_grant {
-        send_set(w);
+        send_grant_page(w);
     }
 
     // A held job's region and exit lead the delegation, after the interrupt pair a supervised job
@@ -1143,14 +1122,14 @@ fn spawn_dir_grant(
             }
         }
         (Some(g), _) => match dir_grant(&g, e.short_options) {
-            Ok((words, false)) => Some(words),
-            // **A name longer than two words hold rides a set of one** (milestone 946): the same
-            // page a words grant's names are written on.
-            Ok((words, true)) => match set_page(&g, 0) {
+            // **The operand rides a set of one** (milestone 1122), on the page the directory is
+            // written on.
+            Ok((words, dir)) => match grant_page(dir, &g, true, 0) {
                 Ok(page) => {
                     set_grant = Some(WordsGrant {
                         words,
-                        set: Some(page),
+                        page,
+                        set: true,
                     });
                     Some(words)
                 }

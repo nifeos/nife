@@ -35,6 +35,41 @@ pub(super) fn page_frame() -> u64 {
         .physical_address()
 }
 
+/// Where every caretaker maps its read-only grant page (`components/src/fs_subtree_caretaker.rs`'s
+/// `GRANT_VA`, `fs_nameset_caretaker.rs`'s `SET_VA`, `fs_file_caretaker.rs`'s `GRANT_VA`).
+pub(super) const GRANT_VA_CARETAKER: u64 = 0x0000_0000_0070_0000;
+
+/// A caretaker's grant page, written before anything can see it: `name` at offset 0 and `names`,
+/// the set, after it ([`file_system_contract::grant::write_page`]). Returns its frame, which the
+/// caller maps read-only at [`GRANT_VA_CARETAKER`], since a writable page would let the caretaker
+/// widen its own grant.
+///
+/// Panics on a name or a set the page cannot hold: the shell refuses both at the prompt, so one
+/// arriving here means the wiring built a grant no command line could have named.
+pub(super) fn grant_page(name: &[u8], is_directory: bool, names: &[(&[u8], bool)]) -> u64 {
+    let mut set = [0u8; file_system_contract::nameset::MAXIMUM_BYTES];
+    let n = if names.is_empty() {
+        0
+    } else {
+        file_system_contract::nameset::encode(names, &mut set)
+            .expect("this set does not fit one grant, so no command line could have named it")
+    };
+    let mut page = [0u8; file_system_contract::grant::PAGE_USED_BYTES];
+    file_system_contract::grant::write_page(name, is_directory, &set[..n], &mut page)
+        .expect("this name does not fit a grant page, so no command line could have named it");
+    let phys = page_frame();
+    // SAFETY: a fresh frame of FRAME_BYTES bytes reachable through the direct map, and the page is
+    // grant::PAGE_USED_BYTES, which is far smaller.
+    unsafe {
+        core::ptr::copy_nonoverlapping(
+            page.as_ptr(),
+            mmu::phys_to_virt(phys) as *mut u8,
+            page.len(),
+        );
+    };
+    phys
+}
+
 /// How many pages the file channel spans, straight from the contract, so this wiring cannot
 /// disagree with the two programs that speak it.
 pub(super) const FILE_PAGES: usize = file_system_contract::file_system::TRANSFER_PAGES;

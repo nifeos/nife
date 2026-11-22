@@ -57,10 +57,13 @@ const SCREEN_BIT: u64 = 1 << 37;
 /// **A directory grant follows, and the progenitor is to build a caretaker for it** (milestone 31
 /// phase 3).
 ///
-/// The one bit here that announces data rather than a capability: two `SEND`s ([`GRANT_WORDS`]),
-/// not a `SEND_CAPABILITY`. The shell's file-service endpoint carries no `GRANT`, so it cannot delegate
-/// what a `fs_subtree_caretaker` needs; it says what the grant is, and the progenitor builds the
-/// rest.
+/// The one bit here that announces data as well as a capability: two `SEND`s ([`GRANT_WORDS`]),
+/// then, after the argv's frame, one `READ` frame holding the grant page
+/// (`file_system_contract::grant::write_page`): the granted directory's name and the name set,
+/// empty unless [`NAMESET_BIT`] is set. Every name travels on that page (milestone 1122), and the
+/// words carry rights and options alone. The shell's file-service endpoint carries no `GRANT`, so
+/// it cannot delegate what a caretaker needs; it says what the grant is, and the progenitor builds
+/// the rest, copying the page into one from the job's region for [`IMAGE_BIT`]'s reason.
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 const DIRECTORY_GRANT_BIT: u64 = 1 << 36;
@@ -263,14 +266,12 @@ pub fn in_mounted_tree(name: &[u8]) -> Option<&[u8]> {
         .filter(|rest| !rest.is_empty())
 }
 
-/// **The directory grant is a set of names, and the set follows as one frame** (milestone 205 (how
-/// a foreign program is told what to do), §170 clauses 2 to 5). Meaningful with
-/// [`Wiring::directory_grant`]: the progenitor builds `fs_nameset_caretaker` rather than
-/// `fs_subtree_caretaker` for the grant, and maps it the set, `file_system_contract::nameset`'s
-/// encoding, read-only. The shell sends the frame `READ`-only after the argv's, before every other
-/// delegated capability; the progenitor copies it, for [`IMAGE_BIT`]'s reason, into a page from the
-/// job's region. A program that hears words gets exactly the names its words designated and no
-/// sibling; nothing sends it for `rm *.txt` yet.
+/// **The directory grant is a set of names** (milestone 205 (how a foreign program is told what
+/// to do), §170 clauses 2 to 5). Meaningful with [`Wiring::directory_grant`]: the progenitor builds
+/// `fs_nameset_caretaker` rather than `fs_subtree_caretaker` for the grant, and the grant page's
+/// set, `file_system_contract::nameset`'s encoding, is not empty. A page whose set disagrees with
+/// this bit is refused. A program that hears words gets exactly the names its words designated and
+/// no sibling, and `rm` gets its one operand; nothing sends it for `rm *.txt` yet.
 ///
 /// Name: provisional (milestone 205, 2026-09-27).
 const NAMESET_BIT: u64 = 1 << 43;
@@ -784,14 +785,14 @@ pub const IMAGE_PAGE: u64 = 4096;
 
 /// **The two messages after a [`Wiring::directory_grant`] request**, in order, three words each:
 ///
-/// 1. **the caretaker's `START` words**, passed to `fs_subtree_caretaker` verbatim: the granted
-///    directory's name and the `file_system_contract::directory` rights the subtree capability carries;
+/// 1. **the caretaker's `START` words**: the `file_system_contract::directory` rights the subtree
+///    capability carries, with both name words zero, since the directory is on the grant page
+///    ([`DIRECTORY_GRANT_BIT`]);
 /// 2. **the confined program's `START` words**, passed to the program verbatim: for `rm`, the
-///    operand's name and the options that were typed.
+///    options that were typed, its name words zero too.
 ///
-/// Opaque here: they are `file_system_contract::grant`'s packing, which this crate does not link.
-/// Two messages because the two processes start with different names; six words do not fit in
-/// three.
+/// Opaque here: they are `file_system_contract::grant`'s layout, which this crate does not link.
+/// Two messages because the two processes start with different words; six do not fit in three.
 pub const GRANT_WORDS: usize = 2;
 
 /// **Where the shell's operators end up on the wire**, alongside the parts of the endowment that
@@ -809,9 +810,9 @@ pub struct Wiring {
     pub source: bool,
     /// The child declares a second output stream, so one more endpoint follows (DECISIONS §67).
     pub diagnostics: bool,
-    /// **A directory grant follows as two data messages** ([`GRANT_WORDS`]), and the progenitor is
-    /// to build a `fs_subtree_caretaker` for it before it builds the child. The only entry here
-    /// that announces data instead of a capability; see `DIRECTORY_GRANT_BIT`.
+    /// **A directory grant follows as two data messages** ([`GRANT_WORDS`]) and its grant page,
+    /// and the progenitor is to build a caretaker for it before it builds the child. See
+    /// `DIRECTORY_GRANT_BIT`.
     pub directory_grant: bool,
     /// **A second directory grant follows, as two more data messages** (milestone 154). See
     /// `SECOND_DIRECTORY_GRANT_BIT`. Meaningless unless `directory_grant` is also set, which
@@ -831,8 +832,8 @@ pub struct Wiring {
     /// **The line's argv follows as one `READ` frame** (DECISIONS §170). See
     /// `PROGRAM_ARGUMENTS_BIT`.
     pub program_arguments: bool,
-    /// **The directory grant is a set of names, which follows as one `READ` frame** (milestone
-    /// 205). See `NAMESET_BIT`.
+    /// **The directory grant is a set of names**, on the grant page (milestone 205). See
+    /// `NAMESET_BIT`.
     pub nameset: bool,
     /// **The machine statistics page follows as the last delegated capability** (milestone 126).
     /// See `MACHINE_BIT`.

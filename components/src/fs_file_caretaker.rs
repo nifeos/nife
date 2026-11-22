@@ -5,8 +5,9 @@
 //! and serves the same [`file_system_contract::file_system`] protocol on [`CLIENT`] with a namespace of
 //! exactly one name and a direction it cannot widen. The confined program holds an endpoint to this
 //! process and nothing that names the FS server, so the boundary is an address space, not a branch.
-//! `start_granted` in `kernel/src/user/fs_service/file_grant.rs` wires its slots and passes the
-//! name and direction in the three `START` words ([`file_system_contract::grant`]). Why it is a
+//! `start_granted` in `kernel/src/user/fs_service/file_grant.rs` wires its slots, maps the name on
+//! a read-only grant page at [`GRANT_VA`] and passes the direction in the `START` words
+//! ([`file_system_contract::grant`]). Why it is a
 //! process and not a check in the FS server is in notes/grant-expression/per-file-grants.md.
 
 //! Name: ratified 2026-08-01 (calef, milestone 61), replacing `fwarden`. Refused `fwarden` and the
@@ -56,6 +57,13 @@ const PAGE: usize = file_system_contract::PAGE_BYTES;
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
 // write_volatile loops below).
 const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
+/// The read-only grant page: the granted file's name at offset 0, as [`grant::write_page`] lays it
+/// out. Read once at startup.
+const GRANT_VA: u64 = address_space_layout::pair_page(0x0000_0000_0070_0000);
+// SAFETY: the wiring maps one page read-only at GRANT_VA before this program runs, and
+// grant::PAGE_USED_BYTES is less than a page.
+const GRANT_WINDOW: MappedWindow =
+    unsafe { MappedWindow::new(GRANT_VA, grant::PAGE_USED_BYTES as u64) };
 
 /// Copy `bytes` into the shared page.
 fn put(bytes: &[u8]) {
@@ -119,11 +127,10 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
 
         let r: i64 = match policy {
             // Any name but the granted one is ENOENT: in this scope there is no such name. The
-            // buffer is `grant::MAXIMUM_WORDS_NAME_BYTES` bytes, the granted name's own bound, because this
-            // process runs on the one stack page `run` maps, so a length mismatch is refused
-            // before any copy.
+            // buffer is `grant::MAXIMUM_NAME_BYTES` bytes, the granted name's own bound, and a
+            // length mismatch is refused before any copy.
             Policy::Local if code == file_system::OPEN => {
-                let mut asked_name = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
+                let mut asked_name = [0u8; grant::MAXIMUM_NAME_BYTES];
                 if len == name.len() {
                     get(&mut asked_name[..len]);
                 }
@@ -158,9 +165,23 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
 user_mode_runtime::program_entry!(start);
 
 fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
-    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
-    let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
-    let name = &buf[..n];
+    // The name is copied off the read-only grant page before anything else, and START words that
+    // still carry a name are refused rather than read beside it. A file grant always names a file,
+    // so an empty name, a malformed one or a set is a wiring that is wrong.
+    let mut page = [0u8; grant::PAGE_USED_BYTES];
+    for (i, b) in page.iter_mut().enumerate() {
+        *b = GRANT_WINDOW.read_volatile::<u8>(i as u64);
+    }
+    if !grant::words_carry_no_name(name_lo, name_hi, spec)
+        || grant::page_name_set(&page).first() != Some(&0)
+    {
+        panic!();
+    }
+    let name = match grant::page_name(&page) {
+        Some(name) if !name.is_empty() => name,
+        _ => panic!(),
+    };
+    let n = name.len();
 
     // Open the granted name once. If it is not there, die rather than serve a hole, so the
     // failure lands at the grant rather than at the first read.
