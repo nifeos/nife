@@ -9,14 +9,14 @@ the closing `!matches!(e.receive(me), ReceiveVerdict::FromSender(..))`, because 
 collects the parked sender and wakes holding its words.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index 8872449..f1b737e 100644
+index c26669cca..765518c81 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -202,9 +202,7 @@ impl<T: Node> Rendezvous<T> {
+@@ -230,9 +230,7 @@ impl<T: Node> Rendezvous<T> {
      /// Name: ratified 2026-11-21 (UTC).
      pub fn bind_to_interrupt(&mut self, mut refuse: impl FnMut(Unqueued<T>)) {
          self.bound_to_interrupt = true;
--        while let Some(sender) = self.senders.pop_front() {
+-        while let Some(sender) = self.take_sender() {
 -            refuse(sender);
 -        }
 +        let _ = &mut refuse;

@@ -57,10 +57,12 @@ milestone reaches delivery.
   survivors triaged.
 - P2-10, a timer and a futex table in a crate named for inter-process communication: At the move.
   The README's first line, which states the shared reason (D2), comes with the move.
-- P2-11, the one-queue invariant could hold by construction: Waiting on the maintainer's ruling,
-  a two-way door: take the one-tag layout before the move, or decline it. Taking it rewrites
-  `seed`, four invariant harnesses and their falsification patches, and leaves
-  `one_queue_invariant_holds` true by construction.
+- P2-11, the one-queue invariant could hold by construction: Done,
+  [#3963](https://github.com/nifeos/nife/pull/3963) (maintainer, provisional, 2026-11-22 UTC).
+  `Rendezvous` holds one queue under a `Waiting` tag, five words on a 64-bit target in place of
+  seven. `one_queue_invariant_holds` checks the half the layout leaves open, that a tag names a
+  queue only while a thread is on it, and every rendezvous harness has a falsification patch cut
+  against the new code.
 - P2-12a, `Futexes<T, 0>` panics: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-12b, `Futexes` as a stranger reads it: Waiting on nifeos/intrusive_queue#2, which adds the
   read-only `Queue::iter` that lets `AddressWaitTable::waiter_count` take `&self`.

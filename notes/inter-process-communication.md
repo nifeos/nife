@@ -174,8 +174,10 @@ are kept. The host tests keep the same two, with each node in a `Box` declared b
 
 ### The rendezvous harnesses
 
-`seed` makes the arbitrary state: at most one queue holding one waiter, a symbolic pending count,
-and a symbolic interrupt binding. Every harness therefore covers a bound rendezvous, including one
+`seed` makes the arbitrary state: nobody waiting, or one sender or one receiver under its tag, a
+symbolic pending count, and a symbolic interrupt binding. The layout keeps senders and receivers
+from waiting at once, so the invariant harnesses check what it leaves open: the last pop from a
+queue returns the tag to `Nobody`, and `is_idle`, which reads the tag, is never wrong. Every harness therefore covers a bound rendezvous, including one
 bound after a sender queued.
 
 - The send harness folds the interrupt refusal in, as the same decision's other branch. Removing

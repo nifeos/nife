@@ -1,24 +1,28 @@
 Falsifies `inter_process_communication::verification::receive_preserves_the_invariant`.
 
-The defect: a receiver with nothing to collect joins the sender queue, the mirror of the slip
-`send_preserves_the_invariant.patch` injects and in the mirror function. Kept as its own record
-rather than folded into one, because each harness is evidence about its own operation and a
-shared patch would leave either one unable to say it had been falsified.
+The defect: collecting the last sender leaves the tag on an empty sender queue, the mirror of the
+slip `send_preserves_the_invariant.patch` injects and in the mirror function. Kept as its own
+record rather than folded into one, because each harness is evidence about its own operation and
+a shared patch would leave either one unable to say it had been falsified.
 
-Expected to fail: the harness's `assert!(e.one_queue_invariant_holds())`, on a rendezvous already
-holding a queued receiver: both queues end up non-empty, and a later send would hand a receiver a
-receiver as its rendezvous partner.
+Expected to fail: the harness's `assert!(e.one_queue_invariant_holds())`, on a rendezvous seeded
+with one sender and no pending signal, after the receive collects it. The rendezvous would call
+itself busy with nobody on it.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index 845029a65..95d8ee0d6 100644
+index c26669cca..050e06ab6 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -283,7 +283,7 @@ impl<T: Node> Rendezvous<T> {
-         } else if let Some(sender) = self.senders.pop_front() {
-             ReceiveVerdict::FromSender(sender, me)
-         } else {
--            self.receivers.push_back(me);
-+            self.senders.push_back(me);
-             ReceiveVerdict::Blocked
-         }
+@@ -354,11 +354,7 @@ impl<T: Node> Rendezvous<T> {
+         let Waiting::Senders(senders) = &mut self.waiting else {
+             return None;
+         };
+-        let sender = senders.pop_front();
+-        if senders.is_empty() {
+-            self.waiting = Waiting::Nobody;
+-        }
+-        sender
++        senders.pop_front()
      }
+ 
+     /// Queue `me` as a sender. Called only after [`take_receiver`](Self::take_receiver) found

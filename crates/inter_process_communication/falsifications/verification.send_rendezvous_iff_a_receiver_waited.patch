@@ -1,23 +1,24 @@
 Falsifies `inter_process_communication::verification::send_rendezvous_iff_a_receiver_waited`.
 
-The defect: `send` looks for its partner on the sender queue. The local is still called
-`receiver` and the code around it is unchanged, so the function reads correctly; only the queue
-it consults is wrong, and on an idle rendezvous (both queues empty) the behavior is identical.
+The defect: `send` looks for its partner among the senders. The local is still called `receiver`
+and the code around it is unchanged, so the function reads correctly; only the side it takes from
+is wrong, and on an idle rendezvous the behavior is identical.
 
-Expected to fail: the harness's `assert!(had_receiver)` inside the `SendVerdict::Rendezvous` arm, on a
-rendezvous holding a queued sender and no receiver. Two senders would be told they had met each
-other, so one thread's message is delivered to a thread that never asked for one and both are
-released as though a transfer happened.
+Expected to fail: the harness's `assert!(had_receiver && !bound)` inside the
+`SendVerdict::Rendezvous` arm, on a rendezvous holding a queued sender and no receiver. Two
+senders would be told they had met each other, so one thread's message is delivered to a thread
+that never asked for one and both are released as though a transfer happened.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
+index c26669cca..d73c29dfb 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -251,7 +251,7 @@ impl<T: Node> Rendezvous<T> {
+@@ -399,7 +399,7 @@ impl<T: Node> Rendezvous<T> {
          // words is the forgery the refusal exists to stop.
          if self.bound_to_interrupt {
              SendVerdict::Refused(me)
--        } else if let Some(receiver) = self.receivers.pop_front() {
-+        } else if let Some(receiver) = self.senders.pop_front() {
+-        } else if let Some(receiver) = self.take_receiver() {
++        } else if let Some(receiver) = self.take_sender() {
              SendVerdict::Rendezvous(receiver, me)
          } else {
-             self.senders.push_back(me);
+             self.queue_sender(me);
