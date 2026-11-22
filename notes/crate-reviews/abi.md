@@ -100,11 +100,11 @@ Four names come from the outside review's items, set provisionally by the mainta
   `reg-shift` and `reg-io-width` as aliases (item 16).
 - `CapabilitySlot` is gone: nothing named it (item 15).
 
-Six names fail the template's rule that a size carries its unit, so the new repository's `check`
-job would be red on them. Each is in use across the kernel, the runtime, the `std` overlay and the
-system tests. The recommendation, for the architect to ratify or replace:
+Six names failed the template's rule that a size carries its unit. The architect ratified their
+replacements on 2026-11-22 (UTC), and the rename pass of pull request 3998 carries them across the
+kernel, the runtime, the `std` overlay and the system tests. No number changes.
 
-| name | what it is | recommended |
+| name in the code | what it is | ratified |
 |---|---|---|
 | `address_wait::SIZE_U8`, `SIZE_U16`, `SIZE_U32`, `SIZE_U64` | the width of the waited word, in the flags word | `WIDTH_8_BITS`, `WIDTH_16_BITS`, `WIDTH_32_BITS`, `WIDTH_64_BITS` |
 | `address_wait::SIZE_MASK` | the two bits that hold the width | `WIDTH_MASK` |
@@ -115,14 +115,15 @@ system tests. The recommendation, for the architect to ratify or replace:
 | item | owner |
 |---|---|
 | The rename to `moho_abi` | milestone 1121, step 3 |
-| The six size names above | a rename lane after the architect rules them |
+| The six ratified size names above | pull request 3998 |
 | The README's badge row, with the repository's name (item 9) | the move commit |
 | Convert the fifteen manifests and the `std` farm's copy to the pinned repository | the move lane's nife-side pull request |
 | One `mutants-exempts` line or one test per survivor of the first weekly run (item 20) | the move lane, in the new repository |
 | The proofs job with no harness, and the bounded `counter_ticks_for` harness attempt (item 21) | the move lane, after the repository's first runs |
 
-## Recommendation
+## Clearance
 
-Clear the review once milestone 1121 builds the `moho_abi` rename, and treat that clearance as the
-go to create the repository with `publish = false`, no tag and no publish. The provisional names
-above stay provisional until the architect ratifies them.
+Rule in force, ruled 2026-11-22 (UTC), option A of milestone 1075's open decision: the review
+clears once step 3 of milestone 1121 (the `moho_abi` rename) lands. That clearance is the go to
+create the repository with `publish = false`, no tag and no publish. The six names above read
+ratified as of the same ruling.

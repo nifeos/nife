@@ -68,8 +68,7 @@ The P2 items are in [the appendix](1075-abi-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-The architect ruled decision A, and decision B is the maintainer's provisional ruling. The decisions still
-open are under "Open decisions" below.
+The architect ruled decisions A and C, and decision B is the maintainer's provisional ruling.
 
 ### A. The published name (ruled)
 
@@ -94,6 +93,24 @@ serves is not done, and changing the meaning of a number a kernel serves owes th
 changed `ABI_VERSION`; it is unchanged. A test (`reserved_numbers_are_never_reused`) holds the
 reservation, and the crate's docs state the rule beside `ABI_VERSION` and in the README.
 
+### C. Clearing the review package (ruled)
+
+Rule in force, ruled 2026-11-22 (UTC), option A: the review of
+[the package](../../notes/crate-reviews/abi.md) clears once step 3 of milestone 1121 (the Moho
+rename: the order in which the binary interface takes its name) lands the `moho_abi` rename. The
+clearance is the go to create the repository with `publish = false`, no tag and no publish. The
+same ruling ratifies six names: `address_wait::SIZE_U8`, `SIZE_U16`, `SIZE_U32` and `SIZE_U64`
+become `WIDTH_8_BITS`, `WIDTH_16_BITS`, `WIDTH_32_BITS` and `WIDTH_64_BITS`,
+`address_wait::SIZE_MASK` becomes `WIDTH_MASK`, and `usage::SIZE` becomes `SIZE_PAGES`. No number
+changes.
+
+Prior art. Linux keeps its system call numbers in `arch/*/include/uapi`, reviewed on the kernel's
+own mailing lists, and never renumbers one once a release carries it. nife differs in that the
+numbers leave the kernel's tree as a crate of their own, with a counting test that refuses a
+changed number without a changed `ABI_VERSION`. Example: `block_roster_contract` cleared on
+2026-11-09 (UTC) and lives in a repository of its own, which nife pins at the commit of a
+pre-release tag.
+
 ## Done when
 
 The checks are in [the appendix](1075-abi-outside-review/done-when.md).
@@ -115,8 +132,8 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 - Item 10, P1, the manifest's publish comment: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Item 11, P1, the version gate: Done, [#3942](https://github.com/nifeos/nife/pull/3942), on [#3565](https://github.com/nifeos/nife/pull/3565)'s counting test.
 - Item 12, P1, `futex::admitted` and `Error::from_ret`: Done, [#3942](https://github.com/nifeos/nife/pull/3942).
-- Item 13, P1, names not ready and no package: Waiting on a ruling ([#3942](https://github.com/nifeos/nife/pull/3942)), the clearance of
-  [the package](../../notes/crate-reviews/abi.md).
+- Item 13, P1, names not ready and no package: Done, [#3942](https://github.com/nifeos/nife/pull/3942); decision C clears
+  [the package](../../notes/crate-reviews/abi.md) once the rename lands.
 - Item 14, P2, `Error` lacks `Display`, `Error` and `Hash`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Item 15, P2, `CapabilitySlot` has no user: Done, [#3942](https://github.com/nifeos/nife/pull/3942).
 - Item 16, P2, `RegisterShape::new`'s parameters: Done, [#3942](https://github.com/nifeos/nife/pull/3942).
@@ -128,46 +145,18 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 - Item 21, P2, no machine checks: Waiting on the new repository's first proofs run.
 - Decision B, `console::WRITE` stays reserved: Done, [#3596](https://github.com/nifeos/nife/pull/3596).
 - Found at the finish, six size names without a unit (`address_wait::SIZE_U8` to `SIZE_U64`,
-  `SIZE_MASK`, `usage::SIZE`): Waiting on a ruling ([#3942](https://github.com/nifeos/nife/pull/3942)), in the package's names.
-- The move: Waiting on a ruling ([#3942](https://github.com/nifeos/nife/pull/3942)), the package's clearance.
+  `SIZE_MASK`, `usage::SIZE`): ratified under decision C; the rename pass is [#3998](https://github.com/nifeos/nife/pull/3998).
+- The move: Waiting on step 3 of milestone 1121, after which decision C clears the package and the
+  repository may be created.
 - Publishing: Waiting on the last outside-review milestone closing (ruled 2026-11-18 UTC).
-
-## Open decisions
-
-### Clearing the review package
-
-Background. Before a crate leaves this tree, calef reads its code and its review package and
-clears it; the clearing is also the approval to create its repository. This crate is the binary
-interface every program and the kernel agree on: system call numbers, method numbers, rights bits
-and error codes. Its package is [`notes/crate-reviews/abi.md`](../../notes/crate-reviews/abi.md), which
-lists its 146 public names with their state and six names the template's size rule refuses. This
-decision is the clearing of that package, under the crate's ruled name `moho_abi`.
-
-Recommendation: A.
-
-- A. Clear the review once milestone 1121 builds the `moho_abi` rename, which approves creating the
-  repository and moving the crate.
-- B. Clear the review before the rename, and let the move carry it.
-- C. Send the package back, naming what to change first.
-
-Door: one-way. A public repository is an outward step, and every number in this crate becomes what
-a stranger's program compiles against.
-
-Prior art. Linux keeps its system call numbers in `arch/*/include/uapi`, reviewed on the kernel's
-own mailing lists, and never renumbers one once a release carries it. Redox publishes its numbers
-as the `redox_syscall` crate (recalled, not read here). nife differs in that the numbers leave the
-kernel's tree as a crate of their own, with a counting test that refuses a changed number without
-a changed `ABI_VERSION`. Example: `block_roster_contract` had its clearance on 2026-11-09 (UTC) and
-now lives in a repository of its own, which nife pins at the commit of a pre-release tag.
-
-Blocks: the move, and through it the tag and the first publish.
 
 ## Follow-on
 
 - **Done.** Decision B: `console::WRITE` stays as a reserved operation (#3596).
 - **Outstanding.** Decision A's rename to `moho_abi`, milestone 1121 step 3.
-- **Outstanding.** The package's clearance, then items 9, 20 and 21 at and after the move. The
-  finding status above says what each needs.
+- **Outstanding.** The six ratified names in the code (#3998).
+- **Outstanding.** The repository, once step 3 lands, then items 9, 20 and 21 at and after the move.
+  The finding status above says what each needs.
 
 ## BUGS
 
