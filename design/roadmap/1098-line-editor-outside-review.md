@@ -58,9 +58,9 @@ milestone reaches delivery.
   ruled 2026-11-19 (UTC), A, and frozen 2026-11-22 (UTC) as interface 25, version 1, with no magic.
 - Decision 5, the name `terminal_contract`: Done, [#3965](https://github.com/nifeos/nife/pull/3965),
   ruled 2026-11-19 (UTC), A, in [#3796](https://github.com/nifeos/nife/pull/3796).
-- Decision 6, review clearance and the repositories: Cleared 2026-11-22 (UTC), both
-  `notes/crate-reviews/line-editor.md` and `notes/crate-reviews/terminal-contract.md`. The
-  repositories are not created yet; each move waits on its own remaining work.
+- Decision 6, review clearance and the repositories: At the move. The architect cleared both
+  `notes/crate-reviews/line-editor.md` and `notes/crate-reviews/terminal-contract.md` on
+  2026-11-22 (UTC). Neither repository exists yet; each move waits on its own remaining work.
 - Decision 7, the reserved bits of the terminal's first request word: Done,
   [#3972](https://github.com/nifeos/nife/pull/3972), ruled 2026-11-22 (UTC), A.
 
@@ -245,7 +245,7 @@ interfaces carry checkable versions).
 
 Background. A request's first word carries the operation in bits 63 to 56 and a length or count in
 bits 31 to 0; bits 55 to 32 are reserved, and a client sends zero there. Both terminal servers
-shifted and masked the bits away, so a request that set one was served as if they were zero. Once a
+shifted and masked the bits away, so they served a request that set one as if the bits were zero. Once a
 client outside nife builds against the published crate, a later version could not give those bits
 a meaning without breaking it.
 
@@ -253,7 +253,7 @@ a meaning without breaking it.
 - B. Keep ignoring the bits, and state that a future version may not give them a meaning.
 
 Prior art. `entropy_contract` refuses an unknown operation and any reserved bit (decision 2 of
-milestone 1071), and Linux's `openat2` and `clone3` refuse unknown flag bits with `EINVAL` so the
+milestone 1071 (`entropy_contract`: what an outside maintainer would fix before 0.1.0)), and Linux's `openat2` and `clone3` refuse unknown flag bits with `EINVAL` so the
 bits stay usable. Where nife differs: the refusal is the protocol's existing `BAD_REQUEST` reply, so
 it adds no reply. Example: `terminal_contract::decode(req(OPERATION_WRITE, 5) | 1 << 32)` is `None`.
 
