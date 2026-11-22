@@ -89,9 +89,10 @@ recorded `greedy_agrees_with_exhaustive_search_over_every_short_pattern` failing
 `checked = 43,720`; that run caught the file mid-edit, with the Miri stride applied but the
 completeness pin not yet updated. The finished edit passes under Miri and natively.
 
-`page_tables`' host tests hand the mapper host addresses as "physical" ones, and each pool turns
-an address back into the pointer it allocated rather than casting the integer, so the mapper writes
-through pointers that keep their provenance and Miri has no integer-to-pointer cast to warn about.
+`page_tables`' host tests hand the mapper host addresses as "physical" ones. Each pool turns an
+address back into the pointer it allocated rather than casting the integer. The mapper therefore
+writes through pointers that keep their provenance, and Miri has no integer-to-pointer cast to warn
+about.
 
 ## "Miri-clean" means the sampled paths
 

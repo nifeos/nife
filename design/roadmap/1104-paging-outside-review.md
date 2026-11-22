@@ -1,5 +1,6 @@
 ---
 status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: none
 decision_dependencies: none
@@ -283,7 +284,7 @@ The checks are in [the appendix](1104-paging-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** The move to `nifeos/page_tables`, which takes items 1, 3, 4, 9 and 11 and the
+- **Recorded.** The move to `nifeos/page_tables`, which takes items 1, 3, 4, 9 and 11 and the
   README lines of items 15 and 18.
 
 ## Index row
