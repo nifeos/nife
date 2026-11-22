@@ -35,14 +35,13 @@ the crate's own reasons.
 
 ## Finding status
 
-
 - P0-1, the crate does not stand alone: At the move. The README, both license files, the inlined
   `license`, lints and `rust-version`, and a `publish` comment a stranger can act on remain.
 - P0-2, the shipped text speaks to this tree: At the move. The module doc still opens with a
   milestone, a dated ruling and `fs_subtree_caretaker`; the rewrite in the crate's own words takes
   the hard-cases prose of `notes/walk-cost.md`.
-- P0-3, the dependency on `filesystem_contract` has nowhere to point: Waiting on
-  `filesystem_contract`'s repository (milestone 1017 step 2). The template half
+- P0-3, the dependency on `file_system_contract` has nowhere to point: Waiting on
+  `file_system_contract`'s repository (milestone 1017 step 2). The template half
   landed in [nifeos/crate-workflows#66](https://github.com/nifeos/crate-workflows/pull/66), so
   `deny.toml` admits git sources on the organization; the `git` and `rev` pin needs the repository,
   and the contract crates leave in the order milestone 1017 gives.
@@ -84,7 +83,7 @@ the crate's own reasons.
 Ruled 2026-11-20 (UTC): the architect cleared the
 [review package](../../notes/crate-reviews/subtree-scope.md) and approved the repository
 `nifeos/subtree_scope` with `publish = false`, no tag and no publish. The move waits on
-`filesystem_contract`'s repository for P0-3's `git` pin. The package holds the ratified names.
+`file_system_contract`'s repository for P0-3's `git` pin. The package holds the ratified names.
 
 ## What was checked, and how
 
@@ -137,10 +136,10 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
    bounds". `fs_subtree_caretaker` goes.
    Door: two-way. Effort: M.
 
-3. The dependency on `filesystem_contract` has nowhere to point yet. PARTIAL: the template's rule landed (nifeos/crate-workflows#66). LEFT: `filesystem_contract`'s repository, then the pin.
-   Finding: the only dependency is `filesystem_contract` by path. The runbook's bottom-up rule
+3. The dependency on `file_system_contract` has nowhere to point yet. PARTIAL: the template's rule landed (nifeos/crate-workflows#66). LEFT: `file_system_contract`'s repository, then the pin.
+   Finding: the only dependency is `file_system_contract` by path. The runbook's bottom-up rule
    (`notes/crate-move.md`, "A crate leaves only when nothing it depends on is still in this
-   tree") holds the move until `filesystem_contract` has its own repository, which step 2 of
+   tree") holds the move until `file_system_contract` has its own repository, which step 2 of
    milestone 1017 schedules. The scaffold's `deny.toml` admits git sources on the organization
    (nifeos/crate-workflows#66), and the maintainers hold publishing to crates.io, so the
    dependency takes a `git` and `rev` pin. This is the first moved crate to depend on another
@@ -150,9 +149,9 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
    table.
    Change: in the template, an `allow-git` entry for `https://github.com/nifeos/` so a crate may
    depend on a sibling by `git` and `rev` during the soak, with the rule written beside it; this
-   block names the dependency on the blocked side. In the crate, once `filesystem_contract` has
-   its tag: `filesystem_contract = { version = "0.1.0", git =
-   "https://github.com/nifeos/filesystem_contract", rev = "<commit of the tag>" }`. The
+   block names the dependency on the blocked side. In the crate, once `file_system_contract` has
+   its tag: `file_system_contract = { version = "0.1.0", git =
+   "https://github.com/nifeos/file_system_contract", rev = "<commit of the tag>" }`. The
    alternative cuts the dependency by making `walk` generic over a rights trait. This review does
    not recommend it. The walk's one job is the contract's rights arithmetic, and a second spelling
    of `DESCEND` would be a second place for it to be wrong.
@@ -206,13 +205,13 @@ The checks are in [the appendix](1110-subtree-scope-outside-review/done-when.md)
 ## Follow-on
 
 - **Milestone 1017.** The crate moves at its step 9; the move lane takes the items marked At the
-  move, and P0-3's pin waits on `filesystem_contract`'s repository at step 2.
+  move, and P0-3's pin waits on `file_system_contract`'s repository at step 2.
 - **Outstanding.** Item 9, which needs a Kani run of about 6 GiB.
 
 ## Index row
 
 An outside review of `subtree_scope` before it leaves. Three findings block the move (the
-manifest and files, the in-tree vocabulary of its text, and a dependency on `filesystem_contract`
+manifest and files, the in-tree vocabulary of its text, and a dependency on `file_system_contract`
 that has nowhere to point yet). Seven land before the first tag, and five wait for later. The seven
 cover an `EISDIR` arm left to the caller, a handle-0 sentinel in `unbind`, a 32-bit badge
 truncation, eight names, the missing examples, a walk-completeness proof and the passive-voice

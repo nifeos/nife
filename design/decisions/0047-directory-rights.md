@@ -7,8 +7,8 @@ ratified_by: calef
 
 # 47. A directory capability carries six rights, and a child can never exceed its parent
 
-Extended to seven rights 2026-08-24 (DECISIONS §112, `SETTIME`, `touch -t`'s arbitrary-mtime
-authority): everything below describes the original six and is still accurate about them: §112
+Extended to seven rights 2026-08-24 by DECISIONS §112 (`touch`'s two behaviors need two rights). The seventh is `SET_MODIFICATION_TIME_AT`, `touch -t`'s arbitrary-mtime
+authority. Everything below describes the original six and is still accurate about them: §112
 adds a rung, it does not change any of these six or their refusals.
 
 Built 2026-07-31 (milestone 47's keystone). Concept note: notes/dir-capability.md.

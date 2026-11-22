@@ -12,7 +12,7 @@
 //! # BUGS
 //!
 //! - One verify page means one client at a time (today `login`); a second needs a page per
-//!   channel, as `filesystem_contract` has.
+//!   channel, as `file_system_contract` has.
 //! - Nothing survives a reboot. No rate limit or lockout: a guess costs one Argon2id derivation.
 //! - Revocation is per holder, not per secret: the sealed store has no way to remove a record, so
 //!   rotating one means reprovisioning.

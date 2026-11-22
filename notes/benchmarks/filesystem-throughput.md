@@ -29,14 +29,14 @@ cost at 39.0 us per block plus a fixed ~208 us per request. The parity claim sur
 
 ### What one transfer is, and why that is most of the story
 
-A `filesystem_contract` `READ` or `WRITE` moves its payload through the one page the client shares
+A `file_system_contract` `READ` or `WRITE` moves its payload through the one page the client shares
 with the server. So 4096 bytes is the protocol's ceiling per request. Every figure below is a request
 rate wearing throughput's clothes, and a system whose client may pass a 64 KiB buffer is answering an
 easier question. The ext4 table below prices that, the way bench/host/pipe_throughput.rs prices
 `pipe_16` against `pipe_64k`.
 
 *Correction, 2026-08-19: milestone 138 (close the read gap) step 3 raised the request to 64 KiB
-(`fs::TRANSFER_PAGES` = 16). See [steps 1 and 3](read-path-record-and-request-size.md). The one-page
+(`file_system::TRANSFER_PAGES` = 16). See [steps 1 and 3](read-path-record-and-request-size.md). The one-page
 ceiling describes the build measured here.*
 
 The workload is 256 transfers of 4 KiB, so 1 MiB per phase, over one file, in four phases:
@@ -134,7 +134,7 @@ with the same flags and a unit a real program would use, in ns per 64 KiB transf
 
 A 64 KiB request costs about what a 4 KiB one does, so sixteen times the payload arrives for the same
 price: 600 to 900 MiB/s against 40 to 80. That is the prize a multi-page transfer on
-`filesystem_contract` would chase.
+`file_system_contract` would chase.
 
 One ordering artifact moves a number. The `rawdev` rows run last, after the 64 KiB variant has
 written 16 MiB, so the host is still flushing when they start. They are an upper bound on the device
@@ -188,7 +188,7 @@ cache anywhere reads a hot file at device speed.
 The map bench's tie and the spawn bench's "lighter object than a Unix process" are the model: a
 figure quoted without its caveats is worth less than no figure.
 
-1. The 4 KiB unit is ours by constraint and theirs by choice. A `filesystem_contract` request
+1. The 4 KiB unit is ours by constraint and theirs by choice. A `file_system_contract` request
    cannot carry more than a page. The 64 KiB row prices that, at about sixteen times. *(Step 3's 64 KiB
    request lifts this limit; see [steps 1 and 3](read-path-record-and-request-size.md).)*
 2. We have no cache and they have several. No `DiskCache`, no readahead, no metadata cache; the
@@ -196,10 +196,10 @@ figure quoted without its caveats is worth less than no figure.
    `F_NOCACHE` remove the page cache on the other side, but not the in-kernel metadata caching that
    lets ext4 map a block without reading one. *(Step 2's `CachedDisk` now supplies the metadata
    cache; see [steps 4 and 2](read-path-block-contract-and-metadata-cache.md).)*
-3. Our write is between Linux's two. Every `filesystem_contract` write goes through a RedoxFS
+3. Our write is between Linux's two. Every `file_system_contract` write goes through a RedoxFS
    transaction that commits to the header ring before the reply. So the filesystem's own state is
    durable per request, the way `O_DSYNC` makes ext4's. But nothing issues a `VIRTIO_BLK_T_FLUSH`
-   unless a client asks (`filesystem_contract::fs::SYNC`, milestone 55 (Time Machine)), so the bytes
+   unless a client asks (`file_system_contract::file_system::SYNC`, milestone 55 (Time Machine)), so the bytes
    sit where `O_DIRECT` alone leaves them. Both rows appear in the output and neither is the
    comparison.
 4. The copy counts differ, in our favor. A completed read lands in the page the client already

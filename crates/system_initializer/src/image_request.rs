@@ -723,7 +723,7 @@ fn with_live_table<R>(
         fs_operation::OPENDIR,
         fs_operation::ROOT,
         installed_programs::DIRECTORY,
-        directory::READ,
+        directory::rights::READ,
     );
     if d < 0 {
         return None;

@@ -184,8 +184,8 @@ see the machine, rather than show a machine of zero bytes.
 `reboot` and `sync` go to any spawn whose manifest declares them, and exactly one program does. The
 kernel grants the progenitor the one reboot object there is. It syncs nothing, and neither does the
 kernel (§251 (restarting the machine is a kernel object the progenitor hands out)), so `reboot` also
-declares `sync`. That is a capability badged and bound by `filesystem_contract::fs::BIND_SYNC`, which
-answers `fs::SYNC` and refuses every other verb. A sync stalls every client's queue, so it goes only
+declares `sync`. That is a capability badged and bound by `file_system_contract::file_system::BIND_SYNC`, which
+answers `file_system::SYNC` and refuses every other verb. A sync stalls every client's queue, so it goes only
 to the program about to restart the machine. A boot with no writable filesystem leaves its slot
 empty. A boot whose file server could not make one refuses the spawn rather than start `reboot`
 unable to sync.

@@ -98,7 +98,7 @@ const IMAGE_BIT: u64 = 1 << 39;
 /// What follows depends on the verb: an install's or a vouch's frames as [`IMAGE_BIT`]'s, with word
 /// 0 the file's length; for a vouch, then the name as one data message; for a remove, that name
 /// message alone; for a rollback, nothing, with names packed by
-/// `filesystem_contract::grant::pack_name`. notes/grant-expression/spawn-protocol.md says why.
+/// `file_system_contract::grant::pack_name`. notes/grant-expression/spawn-protocol.md says why.
 ///
 /// Name: provisional (2026-09-26).
 const ACTIVATION_BIT: u64 = 1 << 40;
@@ -240,7 +240,7 @@ pub const MOUNTED_TREE_NAME: &[u8] = b"disk";
 
 /// **The rights the second mounted tree's root carries**: list, walk, read. The disk tree answers
 /// nothing that writes, so a shell that asked for more could not `cd` there (`OPENDIR` refuses a
-/// request it cannot meet in full). `filesystem_contract::directory`'s `ENUMERATE | READ | DESCEND`,
+/// request it cannot meet in full). `file_system_contract::directory`'s `ENUMERATE | READ | DESCEND`,
 /// spelled as a number because this crate does not link the contract; a host test pins the two.
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
@@ -266,7 +266,7 @@ pub fn in_mounted_tree(name: &[u8]) -> Option<&[u8]> {
 /// **The directory grant is a set of names, and the set follows as one frame** (milestone 205 (how
 /// a foreign program is told what to do), §170 clauses 2 to 5). Meaningful with
 /// [`Wiring::directory_grant`]: the progenitor builds `fs_nameset_caretaker` rather than
-/// `fs_subtree_caretaker` for the grant, and maps it the set, `filesystem_contract::nameset`'s
+/// `fs_subtree_caretaker` for the grant, and maps it the set, `file_system_contract::nameset`'s
 /// encoding, read-only. The shell sends the frame `READ`-only after the argv's, before every other
 /// delegated capability; the progenitor copies it, for [`IMAGE_BIT`]'s reason, into a page from the
 /// job's region. A program that hears words gets exactly the names its words designated and no
@@ -536,7 +536,7 @@ pub const fn answered_console() -> (u64, u64, u64) {
 }
 
 /// The approval's three trailer messages: the kind, the approval's name packed as a removal's
-/// name is (`filesystem_contract::grant::pack_name`, sixteen bytes at most), then the file's
+/// name is (`file_system_contract::grant::pack_name`, sixteen bytes at most), then the file's
 /// digest the records bind to, thirty-two raw bytes over two messages. The name is the approval
 /// file's own `approval` key; a longer name is refused at compile time, before this is built.
 ///
@@ -557,7 +557,7 @@ pub fn answered_approval(name: &str, digest: &[u8; 32]) -> [(u64, u64, u64); 3] 
 }
 
 /// The name packed the way a removal's name is: sixteen bytes, little-endian words, zero-padded
-/// (`filesystem_contract::grant::pack_name`'s rule, spelled here because this crate does not link
+/// (`file_system_contract::grant::pack_name`'s rule, spelled here because this crate does not link
 /// the contract; the test pins the two).
 fn pack_name(name: &[u8]) -> (u64, u64) {
     let mut bytes = [0u8; 16];
@@ -785,11 +785,11 @@ pub const IMAGE_PAGE: u64 = 4096;
 /// **The two messages after a [`Wiring::directory_grant`] request**, in order, three words each:
 ///
 /// 1. **the caretaker's `START` words**, passed to `fs_subtree_caretaker` verbatim: the granted
-///    directory's name and the `filesystem_contract::directory` rights the subtree capability carries;
+///    directory's name and the `file_system_contract::directory` rights the subtree capability carries;
 /// 2. **the confined program's `START` words**, passed to the program verbatim: for `rm`, the
 ///    operand's name and the options that were typed.
 ///
-/// Opaque here: they are `filesystem_contract::grant`'s packing, which this crate does not link.
+/// Opaque here: they are `file_system_contract::grant`'s packing, which this crate does not link.
 /// Two messages because the two processes start with different names; six words do not fit in
 /// three.
 pub const GRANT_WORDS: usize = 2;
@@ -1189,10 +1189,10 @@ mod tests {
 
     #[test]
     fn the_mounted_trees_rights_are_list_walk_and_read() {
-        use filesystem_contract::directory;
+        use file_system_contract::directory;
         assert_eq!(
             MOUNTED_TREE_RIGHTS,
-            directory::ENUMERATE | directory::READ | directory::DESCEND
+            directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND
         );
     }
 
@@ -1278,12 +1278,12 @@ mod tests {
     }
 
     /// **The answered trailer round-trips**, console and approval alike, and the packing is the
-    /// removal name's rule (`filesystem_contract::grant::pack_name`), which this crate spells
+    /// removal name's rule (`file_system_contract::grant::pack_name`), which this crate spells
     /// because it does not link the contract. A kind word this reader does not know spells
     /// nothing.
     #[test]
     fn an_answered_trailer_round_trips() {
-        use filesystem_contract::grant;
+        use file_system_contract::grant;
         let (lo, hi) = grant::pack_name(b"lab-runner").unwrap();
         assert_eq!(
             pack_name(b"lab-runner"),

@@ -8,7 +8,7 @@ made the board a Time Machine target, and Samba stores Apple's metadata as exten
 (`streams_xattr`), which RedoxFS lacks. That premise is gone: milestone 55 was removed on 2026-08-30,
 when its customer chose borg over SSH. The layer is built and works, on nobody's critical path.
 
-The contract is `filesystem_contract::xattr`; the layer is `redoxfs_server/src/lib.rs`; the mechanism was decided
+The contract is `file_system_contract::xattr`; the layer is `redoxfs_server/src/lib.rs`; the mechanism was decided
 in DECISIONS §34's 2026-07-31 amendment. Every test behind it is listed in
 [`xattr/`](xattr/README.md).
 
@@ -69,9 +69,9 @@ capability's meaning cannot change out from under its holder.
 
 On Linux, layering metadata above a filesystem is worthless: anything can `open(2)` the file
 directly and walk around the layer. Here nothing can. Every path to these bytes goes through
-`filesystem_contract`, so a layer above the filesystem is as authoritative as the filesystem.
+`file_system_contract`, so a layer above the filesystem is as authoritative as the filesystem.
 
-The argument that actually decided it was reversibility (DECISIONS §34). `filesystem_contract` hides which
+The argument that actually decided it was reversibility (DECISIONS §34). `file_system_contract` hides which
 implementation was chosen, so if attributes later prove central enough to justify diverging from a
 pinned upstream, or if the change is accepted into RedoxFS, the implementation moves and no client
 changes. Choosing the layer is therefore low-regret rather than a bet.
@@ -188,7 +188,7 @@ through rather than an inconsistency:
 
 | caretaker | who refuses a write through a read-only grant |
 |---|---|
-| `fs_file_caretaker` | **the caretaker.** It holds one handle opened with the *directory's* rights, so the grant's direction lives only in this process. `SETXATTR` and `REMOVEXATTR` are refused with `EROFS`, by the same rule that refuses `WRITE` and `TRUNCATE`, derived from `filesystem_contract::verb`'s `mutates()` rather than from a list |
+| `fs_file_caretaker` | **the caretaker.** It holds one handle opened with the *directory's* rights, so the grant's direction lives only in this process. `SETXATTR` and `REMOVEXATTR` are refused with `EROFS`, by the same rule that refuses `WRITE` and `TRUNCATE`, derived from `file_system_contract::verb`'s `mutates()` rather than from a list |
 | `fs_subtree_caretaker` | **the FS server.** The caretaker performs no checks at all; a file handle inherits `READ`/`WRITE` from the directory it was opened through, so a read-only subtree grant is refused on the handle the server minted |
 | `fs_nameset_caretaker` | **the FS server**, as above. The caretaker filters *directory names*, and an attribute name is not one, so it passes the filter without being compared against the set |
 
@@ -196,7 +196,7 @@ through rather than an inconsistency:
 every verb whose operand is a name in the granted directory, and the four attribute verbs carry a
 name in the shared page that is not such a name. Filtering it would have refused a program its
 own file's attributes on the grounds that `user.com.apple.metadata` is not a name the pattern
-matched. The distinction is a variant of `filesystem_contract::verb::Operand` (`Name` versus `Payload`) rather
+matched. The distinction is a variant of `file_system_contract::verb::Operand` (`Name` versus `Payload`) rather
 than a comment, so it is checked by a host test instead of remembered.
 
 It is proven on both ISAs by three witnesses, a per-file, a subtree and a name-set grant, each
@@ -226,13 +226,13 @@ The same thing on the wire, which is what `fixtures/src/fs_test_client/extended_
 // type code ride packed in the second word.
 put_page(name);
 put_page_at(name.len(), value);
-call(FILE, fs::request(fs::SETXATTR, handle, name.len() as u64),
+call(FILE, fs::request(file_system::SETXATTR, handle, name.len() as u64),
      xattr::spec(kind, value.len() as u64));
 
 // GET: the name goes out on the page and the value comes back on it, so the reply carries the
 // kind and the length and the bytes are read out of the page afterwards.
 put_page(name);
-let (r0, _) = call(FILE, fs::request(fs::GETXATTR, handle, name.len() as u64), 0);
+let (r0, _) = call(FILE, fs::request(file_system::GETXATTR, handle, name.len() as u64), 0);
 let (kind, len) = (xattr::reply_kind(r0 as i64), xattr::reply_value_len(r0 as i64));
 ```
 

@@ -87,7 +87,7 @@ fn a_write_persists_and_reads_back() {
 /// The payload for pass `n` of the repeat-write test: a fixed 64 bytes, tagged with the pass and
 /// position-dependent after that, so every pass has the same length (no truncation confusion) and
 /// a stale or shifted read cannot match. Shared with the on-device client through
-/// `filesystem_fixture` where that matters.
+/// `file_system_fixture` where that matters.
 pub(super) fn repeat_write_payload(pass: u8) -> [u8; 64] {
     let mut p = [0u8; 64];
     p[..8].copy_from_slice(b"CRKRPT__");

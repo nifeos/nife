@@ -9,7 +9,7 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
    this tree and a wrong answer for any other caller. A refusal enum with a hole in it is a trap a
    stranger falls into on the first file server that is not this one.
    Evidence: `crates/subtree_scope/src/lib.rs` lines 145 to 147; `redoxfs_server/src/server.rs`
-   lines 102 to 106; `filesystem_contract/src/dir.rs` line 88 (`EISDIR` is 21).
+   lines 102 to 106; `file_system_contract/src/dir.rs` line 88 (`EISDIR` is 21).
    Change: add `Refusal::IsADirectory` with errno 21, return it from that arm, delete the comment
    and the server's special case (the server's own copy of the rule goes, the behavior stays).
    Adding a variant to a public enum is one-way after the first release, so it lands before the

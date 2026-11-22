@@ -7,13 +7,13 @@
 /// matcher rather than asserted twice.
 ///
 /// The kernel test states its set literally (a `[(&[u8], bool); 2]` it hands to
-/// [`filesystem_contract::nameset::encode`]), which is the only way to build a grant without an
+/// [`file_system_contract::nameset::encode`]), which is the only way to build a grant without an
 /// enumeration. That literal is only trustworthy if it *is* the expansion, so this pins it: the pattern matches the
 /// two names in the set and neither of the two controls, over the fixture as staged.
 #[test]
 fn the_glob_fixture_is_matched_by_the_pattern_it_is_staged_for() {
-    use filesystem_contract::grant;
-    use filesystem_fixture::tree;
+    use file_system_contract::grant;
+    use file_system_fixture::tree;
     let p = tree::GLOB_PATTERN;
     for name in [tree::GLOB_ONE, tree::GLOB_TWO] {
         assert!(
@@ -44,12 +44,12 @@ fn the_glob_fixture_is_matched_by_the_pattern_it_is_staged_for() {
 /// The shell gate asserts two literal strings at a real prompt, and a literal is only
 /// worth asserting if it is the answer rather than a second opinion about it. So this pins all
 /// three claims: the pattern matches every name and not the control, there are more names than
-/// one grant can carry, and the batch boundary falls where [`filesystem_fixture::tree::MANY_FIRST_BATCH`]
+/// one grant can carry, and the batch boundary falls where [`file_system_fixture::tree::MANY_FIRST_BATCH`]
 /// says it does.
 #[test]
 fn the_batching_fixture_is_over_the_bound_and_splits_where_the_gate_says() {
-    use filesystem_contract::{grant, nameset};
-    use filesystem_fixture::tree;
+    use file_system_contract::{grant, nameset};
+    use file_system_fixture::tree;
     let p = tree::MANY_PATTERN;
     for name in tree::MANY_NAMES {
         assert!(

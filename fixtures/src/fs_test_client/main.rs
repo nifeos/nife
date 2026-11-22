@@ -14,7 +14,7 @@
 //!   `CALL`s here).
 //! - **slot 1**: the report endpoint, `WRITE`.
 //! - **`channel::FILE_VA`**: the base of the channel shared with the FS server (a name out, file bytes
-//!   both ways). `filesystem_contract::fs::TRANSFER_PAGES` pages, all of them mapped by this client's wiring,
+//!   both ways). `file_system_contract::file_system::TRANSFER_PAGES` pages, all of them mapped by this client's wiring,
 //!   because the throughput role asks for the whole of it in one request.
 //!
 

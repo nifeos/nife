@@ -69,7 +69,7 @@ and it pays for named units, which here would be ambient names.
 
 Each has a recommendation, and each is cheap to reverse until a second program speaks the protocol.
 
-1. Transport. The document goes in a shared page, the shape `filesystem_contract` already uses
+1. Transport. The document goes in a shared page, the shape `file_system_contract` already uses
    for names and file bytes. A document holds at most `MAXIMUM_ENTRIES` (8) entries, and the shipped
    one is 200 bytes once comments are stripped, so one 4096-byte page is ample. The reply is one
    word of verdicts, eight bits per entry, with the printed plan in the page.

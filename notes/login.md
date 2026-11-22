@@ -64,7 +64,7 @@ creating it on a principal's first login). An authenticated identity with no pro
 refused, folded into the same `DENIED` a wrong password gets.
 
 Two bounds came with that change, and both still hold. An identity longer than
-`filesystem_contract::grant::WORDS_NAME` (16 bytes) cannot get a per-identity subtree in this slice
+`file_system_contract::grant::WORDS_NAME` (16 bytes) cannot get a per-identity subtree in this slice
 at all, though `login_contract::MAXIMUM_IDENTITY` (64 bytes) would otherwise accept it. The grant
 name travels in two `START` argument words. `grant::pack_name` refuses rather than truncate a
 name two identities agreeing on their first 16 bytes would share. Lifting it means a frame for the

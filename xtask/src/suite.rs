@@ -1361,7 +1361,7 @@ pub(crate) fn kernel_test_elf_with(
 /// `xtask` (safe pixel arithmetic, about seven minutes under Miri); `serial_console` (about 55
 /// minutes, and ten tests reach the host filesystem or wall-clock timeouts); `stick_maker`
 /// (isolation refuses `statx`, its `unsafe` is FFI; `measured_boot` stays in); `walk_pricing`
-/// (`lstat` refused, a timing instrument; `filesystem_fixture` stays in). Extra args are forwarded
+/// (`lstat` refused, a timing instrument; `file_system_fixture` stays in). Extra args are forwarded
 /// but do not narrow the run; check one crate with `cargo miri test -p <crate>`.
 pub(crate) fn undefined_behavior_check() -> bool {
     eprintln!("--- host tests under Miri (aliasing, provenance, uninitialized reads) ---");

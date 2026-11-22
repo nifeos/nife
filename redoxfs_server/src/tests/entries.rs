@@ -8,9 +8,13 @@ use super::*;
 #[test]
 fn a_rename_moves_a_name_within_a_directory_and_between_two() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
-    let sub = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
-    let deeper = srv.open_dir(sub, &named("deeper"), directory::ALL).unwrap();
+    let root = file_system_contract::file_system::ROOT as u32;
+    let sub = srv
+        .open_dir(root, &named("sub"), directory::rights::ALL)
+        .unwrap();
+    let deeper = srv
+        .open_dir(sub, &named("deeper"), directory::rights::ALL)
+        .unwrap();
 
     // Within one directory: `sub/inner` becomes `sub/renamed`, contents intact.
     srv.rename(sub, &named("inner"), sub, &named("renamed"))
@@ -56,10 +60,14 @@ fn a_rename_moves_a_name_within_a_directory_and_between_two() {
 #[test]
 fn a_rename_needs_remove_where_it_takes_from_and_create_where_it_puts() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
     // Everything but REMOVE: milestone 47's motivating sentence, "add to this, destroy nothing".
     let append = srv
-        .open_dir(root, &named("sub"), directory::ALL & !directory::REMOVE)
+        .open_dir(
+            root,
+            &named("sub"),
+            directory::rights::ALL & !directory::rights::REMOVE,
+        )
         .unwrap();
     assert_eq!(
         srv.rename(append, &named("inner"), append, &named("elsewhere"))
@@ -80,7 +88,11 @@ fn a_rename_needs_remove_where_it_takes_from_and_create_where_it_puts() {
     // Everything but CREATE: it may give a name up and has nowhere to put one.
     let mut srv = server_with_tree();
     let taker = srv
-        .open_dir(root, &named("sub"), directory::ALL & !directory::CREATE)
+        .open_dir(
+            root,
+            &named("sub"),
+            directory::rights::ALL & !directory::rights::CREATE,
+        )
         .unwrap();
     assert_eq!(
         srv.rename(taker, &named("inner"), taker, &named("elsewhere"))
@@ -92,7 +104,9 @@ fn a_rename_needs_remove_where_it_takes_from_and_create_where_it_puts() {
     // With both, the same request through the same code succeeds, so the refusals above are
     // statements about the rights rather than about a verb that never works.
     let mut srv = server_with_tree();
-    let full = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
+    let full = srv
+        .open_dir(root, &named("sub"), directory::rights::ALL)
+        .unwrap();
     srv.rename(full, &named("inner"), full, &named("elsewhere"))
         .expect("REMOVE and CREATE together must be enough");
 }
@@ -103,12 +117,18 @@ fn a_rename_needs_remove_where_it_takes_from_and_create_where_it_puts() {
 #[test]
 fn a_cross_directory_rename_consults_both_directories_rights() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
-    let src = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
+    let root = file_system_contract::file_system::ROOT as u32;
+    let src = srv
+        .open_dir(root, &named("sub"), directory::rights::ALL)
+        .unwrap();
     // A destination with no CREATE. Reached by descending twice so it is a genuinely different
     // capability rather than the same handle spelled differently.
     let dst = srv
-        .open_dir(src, &named("deeper"), directory::ALL & !directory::CREATE)
+        .open_dir(
+            src,
+            &named("deeper"),
+            directory::rights::ALL & !directory::rights::CREATE,
+        )
         .unwrap();
     assert_eq!(
         srv.rename(src, &named("inner"), dst, &named("landed"))
@@ -121,7 +141,9 @@ fn a_cross_directory_rename_consults_both_directories_rights() {
     // to make impossible.
     assert!(srv.open_file_at(src, &named("inner")).is_ok());
 
-    let wide = srv.open_dir(src, &named("deeper"), directory::ALL).unwrap();
+    let wide = srv
+        .open_dir(src, &named("deeper"), directory::rights::ALL)
+        .unwrap();
     srv.rename(src, &named("inner"), wide, &named("landed"))
         .expect("rename");
     assert!(srv.open_file_at(wide, &named("landed")).is_ok());
@@ -132,8 +154,10 @@ fn a_cross_directory_rename_consults_both_directories_rights() {
 #[test]
 fn a_rename_replaces_a_file_and_refuses_to_cross_kinds() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
-    let sub = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
+    let root = file_system_contract::file_system::ROOT as u32;
+    let sub = srv
+        .open_dir(root, &named("sub"), directory::rights::ALL)
+        .unwrap();
     let tmp = srv.create_file_at(sub, &named("tmp")).unwrap();
     srv.write(tmp, 0, b"the new contents").unwrap();
 
@@ -169,7 +193,7 @@ fn a_rename_replaces_a_file_and_refuses_to_cross_kinds() {
     );
     // And a non-empty destination directory survives, which is the engine's ENOTEMPTY.
     let d = srv
-        .make_dir(sub, &named("empty-dir"), directory::ALL)
+        .make_dir(sub, &named("empty-dir"), directory::rights::ALL)
         .unwrap();
     let _ = d;
     assert_eq!(
@@ -188,13 +212,15 @@ fn a_rename_replaces_a_file_and_refuses_to_cross_kinds() {
 #[test]
 fn a_directory_renames_in_place_and_refuses_to_move_between_directories() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
-    let sub = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
+    let root = file_system_contract::file_system::ROOT as u32;
+    let sub = srv
+        .open_dir(root, &named("sub"), directory::rights::ALL)
+        .unwrap();
 
     srv.rename(sub, &named("deeper"), sub, &named("renamed-dir"))
         .expect("a directory renames in place");
     let d = srv
-        .open_dir(sub, &named("renamed-dir"), directory::ALL)
+        .open_dir(sub, &named("renamed-dir"), directory::rights::ALL)
         .expect("and it is still a directory, with its contents");
     assert!(srv.open_file_at(d, &named("leaf")).is_ok());
 
@@ -222,8 +248,10 @@ fn a_directory_renames_in_place_and_refuses_to_move_between_directories() {
 #[test]
 fn a_rename_refuses_what_every_other_name_taking_verb_refuses() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
-    let sub = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
+    let root = file_system_contract::file_system::ROOT as u32;
+    let sub = srv
+        .open_dir(root, &named("sub"), directory::rights::ALL)
+        .unwrap();
 
     for bad in ["..", ".", "", "a/b", "/abs", "with:colon"] {
         assert_eq!(
@@ -278,9 +306,9 @@ fn a_rename_survives_a_reopen() {
         let mut srv = Server::open(disk).expect("open");
         let sub = srv
             .open_dir(
-                filesystem_contract::fs::ROOT as u32,
+                file_system_contract::file_system::ROOT as u32,
                 &named("sub"),
-                directory::ALL,
+                directory::rights::ALL,
             )
             .unwrap();
         srv.rename(sub, &named("inner"), sub, &named("survivor"))
@@ -290,9 +318,9 @@ fn a_rename_survives_a_reopen() {
     let mut srv = Server::open(disk).expect("reopen");
     let sub = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::ALL,
+            directory::rights::ALL,
         )
         .unwrap();
     assert_eq!(
@@ -318,12 +346,14 @@ fn a_subtree_built_through_directory_handles_survives_a_reopen() {
         let mut srv = Server::open(disk).expect("open");
         let sub = srv
             .open_dir(
-                filesystem_contract::fs::ROOT as u32,
+                file_system_contract::file_system::ROOT as u32,
                 &named("sub"),
-                directory::ALL,
+                directory::rights::ALL,
             )
             .unwrap();
-        let made = srv.make_dir(sub, &named("made"), directory::ALL).unwrap();
+        let made = srv
+            .make_dir(sub, &named("made"), directory::rights::ALL)
+            .unwrap();
         let f = srv.create_file_at(made, &named("note")).unwrap();
         srv.write(f, 0, b"written two levels down").unwrap();
         disk = srv.fs.disk; // no unmount, as a dying process leaves it
@@ -331,13 +361,13 @@ fn a_subtree_built_through_directory_handles_survives_a_reopen() {
     let mut srv = Server::open(disk).expect("reopen");
     let sub = srv
         .open_dir(
-            filesystem_contract::fs::ROOT as u32,
+            file_system_contract::file_system::ROOT as u32,
             &named("sub"),
-            directory::ALL,
+            directory::rights::ALL,
         )
         .unwrap();
     let made = srv
-        .open_dir(sub, &named("made"), directory::ALL)
+        .open_dir(sub, &named("made"), directory::rights::ALL)
         .expect("the made directory");
     let f = srv
         .open_file_at(made, &named("note"))
@@ -346,7 +376,7 @@ fn a_subtree_built_through_directory_handles_survives_a_reopen() {
     let n = srv.read(f, 0, &mut buf).unwrap();
     assert_eq!(&buf[..n], b"written two levels down");
 }
-// --- STATFS (milestone 54) ---
+// --- GET_VOLUME_STATISTICS (milestone 54 (a network file service a Mac can actually mount)) ---
 
 /// **The volume's numbers are the image's, and writing to it moves the free count.**
 ///
@@ -358,7 +388,9 @@ fn a_subtree_built_through_directory_handles_survives_a_reopen() {
 fn statfs_reports_the_image_and_a_write_takes_space_out_of_it() {
     let mut srv = server_with(&[("small", b"x")]);
 
-    let (block, total, free) = srv.statfs(filesystem_contract::fs::ROOT as u32).unwrap();
+    let (block, total, free) = srv
+        .statfs(file_system_contract::file_system::ROOT as u32)
+        .unwrap();
     assert_eq!(
         block,
         redoxfs::BLOCK_SIZE,
@@ -366,7 +398,7 @@ fn statfs_reports_the_image_and_a_write_takes_space_out_of_it() {
     );
     // `server_with` builds a 16 MiB DiskMemory; the filesystem is that minus the reservation
     // RedoxFS makes at the front, so the assertion is a range rather than an equality.
-    let bytes = filesystem_contract::statfs::total_bytes(block, total);
+    let bytes = file_system_contract::volume_statistics::total_bytes(block, total);
     assert!(
         (8 * 1024 * 1024..=16 * 1024 * 1024).contains(&bytes),
         "a 16 MiB image reported {bytes} bytes",
@@ -375,7 +407,9 @@ fn statfs_reports_the_image_and_a_write_takes_space_out_of_it() {
 
     let h = srv.create_file(&named("big")).unwrap();
     srv.write(h, 0, &[7u8; 1024 * 1024]).unwrap();
-    let (_, after_total, after_free) = srv.statfs(filesystem_contract::fs::ROOT as u32).unwrap();
+    let (_, after_total, after_free) = srv
+        .statfs(file_system_contract::file_system::ROOT as u32)
+        .unwrap();
     assert_eq!(after_total, total, "the image did not change size");
     assert!(
         after_free < free,
@@ -388,16 +422,16 @@ fn statfs_reports_the_image_and_a_write_takes_space_out_of_it() {
     assert_eq!(srv.statfs(9999).err().map(|e| e.errno), Some(EBADF));
 }
 
-/// **No right is demanded**, which is the row `filesystem_contract::verb::TABLE` carries and the thing a
+/// **No right is demanded**, which is the row `file_system_contract::verb::TABLE` carries and the thing a
 /// narrowed capability depends on: a grant that may write but not read still has to be able to
 /// find out whether its next write fits.
 #[test]
 fn statfs_answers_through_a_capability_that_carries_nothing() {
     let mut srv = server_with_tree();
-    let root = filesystem_contract::fs::ROOT as u32;
+    let root = file_system_contract::file_system::ROOT as u32;
     // A child directory holding one right, and not one of the ones a read would need.
     let narrow = srv
-        .open_dir(root, &named("sub"), directory::DESCEND)
+        .open_dir(root, &named("sub"), directory::rights::DESCEND)
         .unwrap();
     assert!(
         srv.read_dir(narrow, 0, &mut [0u8; 64]).is_err(),
@@ -406,7 +440,7 @@ fn statfs_answers_through_a_capability_that_carries_nothing() {
     assert_eq!(
         srv.statfs(narrow).unwrap().0,
         redoxfs::BLOCK_SIZE,
-        "STATFS asks for no right; see filesystem_contract::fs::STATFS",
+        "GET_VOLUME_STATISTICS asks for no right; see file_system_contract::file_system::GET_VOLUME_STATISTICS",
     );
 }
 

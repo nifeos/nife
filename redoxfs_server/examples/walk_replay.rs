@@ -11,8 +11,8 @@
 
 use std::time::Instant;
 
-use filesystem_contract::directory;
-use filesystem_fixture::walk as tree;
+use file_system_contract::directory;
+use file_system_fixture::walk as tree;
 use redoxfs::{DiskMemory, FileSystem};
 use redoxfs_server::walk_model::{self, Counting};
 use redoxfs_server::{CachedDisk, NameCopy, Server};
@@ -30,7 +30,7 @@ fn main() {
     let disk = DiskMemory::new(32 * 1024 * 1024);
     let fs = FileSystem::create(disk, None, 0, 0).expect("create");
     let mut srv = Server::open(fs.disk).expect("open");
-    walk_model::stage(&mut srv, filesystem_contract::fs::ROOT as u32).expect("stage");
+    walk_model::stage(&mut srv, file_system_contract::file_system::ROOT as u32).expect("stage");
     let disk = srv.into_disk();
     let mut srv = Server::open(CachedDisk::new(
         Counting::new(disk),
@@ -41,7 +41,7 @@ fn main() {
         .open_dir(
             0,
             &named(tree::ROOT),
-            directory::ENUMERATE | directory::READ | directory::DESCEND,
+            directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
         )
         .expect("open the tree");
 

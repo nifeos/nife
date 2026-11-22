@@ -1,5 +1,5 @@
-use filesystem_contract::directory;
-use filesystem_fixture::directory_escape as esc;
+use file_system_contract::directory;
+use file_system_fixture::directory_escape as esc;
 
 use super::*;
 use crate::sched;
@@ -24,7 +24,7 @@ pub(super) fn attack_a_subtree(rights: u64, run: u64) -> Option<u64> {
             .expect("no fs_subtree_caretaker program in the initial ramdisk"),
         program("fs_test_client").expect("no fs_test_client program in the initial ramdisk"),
         fs_service::DirGrant {
-            name: filesystem_fixture::tree::SUB,
+            name: file_system_fixture::tree::SUB,
             rights,
             role: 5, // ROLE_DIR_ATTACKER
             arg: run,
@@ -44,7 +44,7 @@ pub(super) fn attack_a_subtree(rights: u64, run: u64) -> Option<u64> {
     held.release_or_fail("a granted directory and its attacker");
     assert_eq!(
         tag,
-        filesystem_fixture::VERDICT,
+        file_system_fixture::VERDICT,
         "the attacker's report is not a verdict word",
     );
     Some(verdict)
@@ -127,7 +127,7 @@ fn a_read_only_directory_capability_reaches_its_subtree_and_nothing_above_it() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
     let Some(v) = attack_a_subtree(
-        directory::DESCEND | directory::READ | directory::ENUMERATE,
+        directory::rights::DESCEND | directory::rights::READ | directory::rights::ENUMERATE,
         1,
     ) else {
         crate::testing::skip!("no RedoxFS disk attached");
@@ -152,7 +152,7 @@ fn a_full_directory_capability_does_everything_inside_and_nothing_outside() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(v) = attack_a_subtree(directory::ALL, 2) else {
+    let Some(v) = attack_a_subtree(directory::rights::ALL, 2) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_verdict(
@@ -184,8 +184,10 @@ fn an_append_only_directory_capability_adds_and_cannot_walk_or_list() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(v) = attack_a_subtree(directory::READ | directory::WRITE | directory::CREATE, 3)
-    else {
+    let Some(v) = attack_a_subtree(
+        directory::rights::READ | directory::rights::WRITE | directory::rights::CREATE,
+        3,
+    ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_verdict(
@@ -205,7 +207,7 @@ fn an_append_only_directory_capability_adds_and_cannot_walk_or_list() {
 /// `fs_nameset_caretaker` inspects a name on every request, so its four attribute verbs could go
 /// wrong either way. Filtering the attribute name against the set would hide what is attached to a
 /// matched file (`READ_ATTRIBUTES` and `SET_AN_ATTRIBUTE` catch it). Not filtering the directory names would
-/// unmake the set (`REACHED_AN_UNMATCHED_NAME` catches it, through `directory::READ` verbs `rm` never
+/// unmake the set (`REACHED_AN_UNMATCHED_NAME` catches it, through `directory::rights::READ` verbs `rm` never
 /// sends). The set is one name in `sub`, so `deeper` is one entry away and reachable one hop up.
 #[test_case]
 fn a_name_set_capability_reads_its_attributes_and_still_names_only_its_set() {
@@ -219,10 +221,10 @@ fn a_name_set_capability_reads_its_attributes_and_still_names_only_its_set() {
             .expect("no fs_nameset_caretaker program in the initial ramdisk"),
         program("fs_test_client").expect("no fs_test_client program in the initial ramdisk"),
         fs_service::SetGrant {
-            dir: filesystem_fixture::tree::SUB,
+            dir: file_system_fixture::tree::SUB,
             // Exactly one name, and `deeper` deliberately left out of it.
-            names: &[(filesystem_fixture::tree::INNER.as_bytes(), false)],
-            rights: directory::READ | directory::WRITE | directory::DESCEND,
+            names: &[(file_system_fixture::tree::INNER.as_bytes(), false)],
+            rights: directory::rights::READ | directory::rights::WRITE | directory::rights::DESCEND,
             role: 6, // ROLE_SET_ATTRS
             arg: 0,
             arg2: 0,
@@ -236,7 +238,7 @@ fn a_name_set_capability_reads_its_attributes_and_still_names_only_its_set() {
     held.release_or_fail("a name-set grant and its witness");
     assert_eq!(
         tag,
-        filesystem_fixture::VERDICT,
+        file_system_fixture::VERDICT,
         "the name-set witness's report is not a verdict word",
     );
     assert_verdict(

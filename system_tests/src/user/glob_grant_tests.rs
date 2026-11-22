@@ -1,6 +1,6 @@
 use byte_sink_contract::end_of_stream;
-use filesystem_contract::{directory, rm as rr};
-use filesystem_fixture::{VERDICT, globbing, tree};
+use file_system_contract::{directory, rm as rr};
+use file_system_fixture::{VERDICT, globbing, tree};
 
 use super::*;
 use crate::sched;
@@ -12,7 +12,7 @@ const ROLE_GLOB: u64 = 2;
 /// [`rm_program_tests`] bounds it and for the same reason.
 const MAXIMUM_MESSAGES: usize = 64;
 
-/// The set `gl-*.txt` matches in the fixture, which `filesystem_contract`'s host test pins against the
+/// The set `gl-*.txt` matches in the fixture, which `file_system_contract`'s host test pins against the
 /// matcher. Stated literally here because building a grant is the one thing the kernel can do
 /// without an enumeration, and proved to *be* the expansion over there.
 const MATCHED: [(&[u8], bool); 2] = [
@@ -55,13 +55,15 @@ fn shell_expanded() -> Option<u64> {
         program("swish").expect("no swish program in the initial ramdisk"),
         fs_service::DirGrant {
             name: tree::GLOBSET,
-            rights: directory::ENUMERATE | directory::DESCEND | directory::READ,
+            rights: directory::rights::ENUMERATE
+                | directory::rights::DESCEND
+                | directory::rights::READ,
             role: ROLE_GLOB,
             // The shell is told what its capability carries, for notes/shell-navigation.md's
             // reason: nothing on this wire reports what a handle holds.
-            arg: filesystem_contract::grant::specification(
+            arg: file_system_contract::grant::specification(
                 0,
-                directory::ENUMERATE | directory::DESCEND | directory::READ,
+                directory::rights::ENUMERATE | directory::rights::DESCEND | directory::rights::READ,
             ),
             arg2: 0,
             // A measurement: six pages ran within a few dozen bytes of the guard once `ShellHoldings`
@@ -98,11 +100,11 @@ fn assert_shell_agreed(v: u64) {
 
 /// Run `rm` once behind a `fs_nameset_caretaker` holding [`MATCHED`] inside `globset`.
 ///
-/// `name` empty means [`filesystem_contract::grant::WHOLE_NAMESPACE`]: the operand is the set, and `rm`
+/// `name` empty means [`file_system_contract::grant::WHOLE_NAMESPACE`]: the operand is the set, and `rm`
 /// learns it by enumerating the capability it was handed.
 fn run_rm(name: &str, flags: u64) -> (u64, u64) {
     // An empty name is the whole namespace, which packs as two zero words.
-    let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes()).unwrap_or((0, 0));
+    let (lo, hi) = file_system_contract::grant::pack_name(name.as_bytes()).unwrap_or((0, 0));
     let (report, verdict, held) = fs_service::start_granted_set(
         dir_capability_tests::blk_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),
@@ -115,8 +117,8 @@ fn run_rm(name: &str, flags: u64) -> (u64, u64) {
             // `REMOVE` and nothing else: `rm *.txt` may not read, write, create beside or walk
             // under its names. Listing the set needs no right; the caretaker answers it from the
             // grant.
-            rights: directory::REMOVE,
-            role: filesystem_contract::grant::specification(name.len(), flags),
+            rights: directory::rights::REMOVE,
+            role: file_system_contract::grant::specification(name.len(), flags),
             arg: lo,
             arg2: hi,
             stack_pages: 6,
@@ -129,7 +131,7 @@ fn run_rm(name: &str, flags: u64) -> (u64, u64) {
     for _ in 0..MAXIMUM_MESSAGES {
         let [w0, w1, w2, _, _] = sched::ipc_receive(report);
         // `rm` ends its report with the sink contract's end of stream, its reserved words zero,
-        // and then sends the verdict on its own endpoint (`filesystem_contract::rm`). The shell
+        // and then sends the verdict on its own endpoint (`file_system_contract::rm`). The shell
         // phase reports a `VERDICT` bitmap instead.
         if w0 == end_of_stream() {
             assert_eq!(

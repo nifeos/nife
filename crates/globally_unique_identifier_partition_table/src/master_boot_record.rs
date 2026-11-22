@@ -50,7 +50,8 @@ pub fn validate(block: &[u8], block_count: u64) -> Result<(), Error> {
     ::master_boot_record::protective::validate(sector, block_count).map_err(Error::MasterBootRecord)
 }
 
-/// The MBR's length: the first 512 bytes of the first block, whatever the block size.
+/// The MBR's own fixed sector, 512 bytes by the master boot record format: the first 512 bytes of
+/// the first block, whatever the logical block size the table counts in.
 const SECTOR_BYTES: usize = 512;
 
 /// The first 512 bytes of an accepted block, or the block-size refusal.

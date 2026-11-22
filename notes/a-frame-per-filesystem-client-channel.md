@@ -27,7 +27,7 @@ client side only. The server is the other holder of every channel, and it:
 - learns nothing about its caller. `RECEIVE_CAPABILITY` hands it two words and a one-shot Reply capability,
   and the serve loop's own comment says so: "endpoint-only naming means we never learn who they
   are, only how to answer";
-- maps one window at `FILE_PAGE`, `fs::TRANSFER_PAGES` (16) pages wide, and reads every name and
+- maps one window at `FILE_PAGE`, `file_system::TRANSFER_PAGES` (16) pages wide, and reads every name and
   every `WRITE` payload from its start.
 
 So if two clients each had a private frame, the server would read one window, and there is
@@ -64,7 +64,7 @@ the witness test's job, and it is the next piece of this milestone either way.
 
 All costs below are computed from constants in the tree, not measured on a boot, except where a
 benchmark note is cited. The per-channel figure is the same under A, C and D: one channel is
-`fs::TRANSFER_PAGES` = 16 pages, 64 KiB of physically contiguous memory per concurrent client,
+`file_system::TRANSFER_PAGES` = 16 pages, 64 KiB of physically contiguous memory per concurrent client,
 where today the whole boot shares one 64 KiB channel. A directory job's region is
 `DIR_JOB_REGION_PAGES` = 96 pages (384 KiB), so carving the channel from the job's own region adds
 about 17% to it.
@@ -76,7 +76,7 @@ A derived endpoint capability carries a badge word the kernel delivers to the re
 TRANSFER_MAXIMUM`. The progenitor holds a pool of K (badged endpoint, frame) pairs and hands one to
 each caretaker chain, taking it back at reap.
 
-- `filesystem_contract`'s message layout and opcodes do not change.
+- `file_system_contract`'s message layout and opcodes do not change.
 - The system call surface does. A method to mint a badged endpoint, and a fourth return value from
   `RECEIVE_CAPABILITY` (it already returns the first word, the Reply slot and the second word).
 - Per request: nothing added. No extra rendezvous, no copy.
@@ -94,7 +94,7 @@ kernel remaps the receiver's `FILE_PAGE` window to that frame before the server 
 classic L4's receive window for map items (recalled from memory of the L4 X.2 and Fiasco
 specifications, not read for this note), which seL4 did not keep.
 
-- `filesystem_contract` unchanged, the server's code unchanged, one `FILE_PAGE` as today.
+- `file_system_contract` unchanged, the server's code unchanged, one `FILE_PAGE` as today.
 - A new kernel semantics on endpoints, outside the model §10 (process model: capability-based, microkernel) established: a capability that
   changes the receiver's address space as a side effect of IPC.
 - Per request: 16 page-table entries rewritten and a TLB invalidation for the window, on the IPC
@@ -106,7 +106,7 @@ Each confined program gets a private frame shared only with its caretaker. The c
 request into the server's page and the reply out of it. It holds a token (a rendezvous used as a
 lock) from before staging until after the copy-out, so no two writers of the server page overlap.
 
-- `filesystem_contract` unchanged, the kernel unchanged. The token convention is new, and under
+- `file_system_contract` unchanged, the kernel unchanged. The token convention is new, and under
   rule 7 it is a crate, since every writer of the server page must agree on it.
 - Per request: two extra rendezvous (take and return the token), about 0.7 to 1.4 µs at the 337 to
   705 ns round trips `notes/benchmarks/cross-os-primitives.md` and
@@ -186,7 +186,7 @@ client, and passes the server a capability to it.
 
 - It cannot use the server's fixed windows. Those are mapped into the server at spawn, and a frame
   retyped later is a different frame. So the server must learn about new frames at run time: a new
-  `filesystem_contract` verb that carries a frame capability, which the server maps with
+  `file_system_contract` verb that carries a frame capability, which the server maps with
   `PageFrame::MAP` into a window it manages. That is a wire change, and a dynamic window table in a
   server that has none today.
 - Cost: 64 KiB per client out of whatever region funds it (about 17% of a 96-page directory job), one
@@ -250,7 +250,7 @@ window is free.
   `notes/benchmarks/calibration-against-sel4.md`). One more process, estimated at a caretaker's size
   (a stack page, `CARETAKER_STACK_PAGES` of four more, and its tables), about 32 KiB. Estimated, not
   measured.
-- No system call change and no change to `filesystem_contract`. It adds a small protocol between two
+- No system call change and no change to `file_system_contract`. It adds a small protocol between two
   in-tree programs, which rule 7 puts in a crate.
 - §102 does not speak to it.
 - Reversibility: a protocol between two programs is on the tenet's expensive list, but both parties

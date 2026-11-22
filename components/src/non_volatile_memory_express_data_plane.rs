@@ -7,7 +7,7 @@
 //! # Capability contract
 //!
 //! The data plane holds, the complete list: `data_plane_slots::REQUEST`, the request endpoint
-//! (`filesystem_contract::block`, as the virtio block server speaks); `READY`, a readiness endpoint;
+//! (`file_system_contract::block`, as the virtio block server speaks); `READY`, a readiness endpoint;
 //! `GRANTS`, where the admin process's handoff and grants arrive; `OWN_SPACE`, its own address
 //! space; and the two grants, held without `GRANT`, mapped where the spawn's second and third
 //! arguments say: the data-plane run (the two I/O rings and one window of [`TRANSFER_BLOCKS`]
@@ -36,7 +36,7 @@ use driver_process_contract::non_volatile_memory_express::{
     Handoff, IO_COMPLETION_QUEUE_PAGE, IO_SUBMISSION_QUEUE_PAGE, client_window, data_plane_slots,
     take_completion,
 };
-use filesystem_contract::block;
+use file_system_contract::block;
 use non_volatile_memory_express::{
     Command, Completion, CompletionQueue, Direction, Doorbell, Namespace, SubmissionQueue,
 };
@@ -95,7 +95,7 @@ impl Placement {
 
 /// The bring-up step words this server reports on its readiness endpoint, in the `0xDEAD_..`
 /// shape `entropy_contract::bring_up_failure` established, so a boot transcript reads the same way
-/// across services. A report of [`filesystem_contract::READY`] means a command went to
+/// across services. A report of [`file_system_contract::READY`] means a command went to
 /// the controller and came back.
 const STEP_BAD_HANDOFF: u64 = 0xDEAD_0001;
 const STEP_FIRST_READ: u64 = 0xDEAD_0002;
@@ -112,7 +112,7 @@ struct Plane {
     cid: u16,
     /// How many device flushes have completed, answered back on every successful `block::FLUSH`.
     /// A strictly increasing count is what makes that verb's success falsifiable; see the
-    /// contract's own argument at `filesystem_contract::block::FLUSH`.
+    /// contract's own argument at `file_system_contract::block::FLUSH`.
     flushes: i64,
 }
 
@@ -309,7 +309,7 @@ pub(crate) fn run(data_address: u64, doorbell_address: u64) -> ! {
     // that asks is answered. It is also the only end-to-end check here, since `CSTS` is unmapped.
     let first = plane.transfer(0, 0, 0, false);
     let report = if first.is_ok() {
-        filesystem_contract::READY
+        file_system_contract::READY
     } else {
         STEP_FIRST_READ
     };
@@ -326,7 +326,7 @@ pub(crate) fn run(data_address: u64, doorbell_address: u64) -> ! {
     serve(plane)
 }
 
-/// The serve loop: one endpoint, one wait point, forever. `filesystem_contract::block`, the same
+/// The serve loop: one endpoint, one wait point, forever. `file_system_contract::block`, the same
 /// four verbs the virtio block server answers, so the FS server and the disk tools cannot tell
 /// which kind of disk is underneath.
 ///
@@ -350,18 +350,18 @@ fn serve(mut plane: Plane) -> ! {
         // allows a larger number to be spelled.
         let count = block::request_block_count(w0).min(TRANSFER_BLOCKS);
         let Some(window) = client_window(req.badge) else {
-            reply(reply_to, filesystem_contract::reply_err(22) as u64, 0); // EINVAL
+            reply(reply_to, file_system_contract::error::word(22) as u64, 0); // EINVAL
             continue;
         };
-        let op = filesystem_contract::operation(w0);
+        let op = file_system_contract::operation(w0);
         if (op == block::WRITE || op == block::FLUSH) && !can_write(req.badge) {
-            reply(reply_to, filesystem_contract::reply_err(30) as u64, 0); // EROFS
+            reply(reply_to, file_system_contract::error::word(30) as u64, 0); // EROFS
             continue;
         }
         let r0: i64 = match op {
             block::READ => transfer_range(&mut plane, block, window, count, false),
             block::WRITE => transfer_range(&mut plane, block, window, count, true),
-            block::SIZE => plane.handoff.size_bytes as i64,
+            block::GET_SIZE_BYTES => plane.handoff.size_bytes as i64,
             block::FLUSH => {
                 let cid = plane.next_cid();
                 match plane.transact(Command::flush(cid, NSID)) {
@@ -372,10 +372,10 @@ fn serve(mut plane: Plane) -> ! {
                         plane.flushes += 1;
                         plane.flushes
                     }
-                    Err(_) => filesystem_contract::reply_err(5), // EIO
+                    Err(_) => file_system_contract::error::word(5), // EIO
                 }
             }
-            _ => filesystem_contract::reply_err(22), // EINVAL: an opcode this server has no verb for
+            _ => file_system_contract::error::word(22), // EINVAL: an opcode this server has no verb for
         };
         reply(reply_to, r0 as u64, 0);
     }
@@ -423,7 +423,7 @@ fn transfer_range(plane: &mut Plane, block: u64, window: usize, count: usize, wr
             .transfer(block.saturating_add(i as u64), window, i, write)
             .is_err()
         {
-            return filesystem_contract::reply_err(5); // EIO
+            return file_system_contract::error::word(5); // EIO
         }
     }
     0
