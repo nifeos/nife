@@ -258,8 +258,6 @@ The checks are in [the appendix](1109-spin-lock-outside-review/done-when.md).
 ## Follow-on
 
 - **Milestone 1017.** The crate moves in its order; the move lane takes the items marked move work.
-- **Outstanding.** Item 7: the move commit adds the loom patch that the template's `proofs / loom`
-  replays.
 - **Refused.** Item 16: `try_lock` already answers `is_locked`, and a `lock_api` impl is a new
   dependency.
 
