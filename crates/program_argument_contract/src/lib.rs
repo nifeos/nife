@@ -65,8 +65,8 @@ pub const HEADER_BYTES: usize = 16;
 
 /// The bytes of records one page holds, each argument's four-byte length prefix included.
 ///
-/// Name: provisional, renamed from `CAPACITY` so the name carries its unit. `PAGE_CONTENT_BYTES`
-/// is not used: elsewhere in the contract family it counts the header too.
+/// Name: ratified 2026-11-21 (UTC). `PAGE_CONTENT_BYTES` is not used: elsewhere in the contract
+/// family it counts the header too.
 pub const MAXIMUM_RECORDS_BYTES: usize = PAGE_BYTES - HEADER_BYTES;
 
 /// The bytes one argument of `argument_bytes` bytes takes in the records: its four-byte length
@@ -296,7 +296,7 @@ impl<'a> ArgumentPage<'a> {
 
     /// Read the page mapped at `virtual_address`.
     ///
-    /// Name: provisional, renamed from `from_va` so the address is spelled out.
+    /// Name: ratified 2026-11-21 (UTC).
     ///
     /// # Safety
     ///
