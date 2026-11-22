@@ -44,10 +44,10 @@ in prose, across nife, its `std` overlay and the kernel.
 
 - The message words a call sends or a receive delivers are an array: `send(slot, words: [u64; 3])`,
   `call(slot, words: [u64; 2])`, `Message { words: [u64; 3], badge, label, delivered }`.
-- Result words are never an array. The first result word is always signed (an error, or a value),
-  so results are a tuple whose first element is `i64`, as SBI's `sbiret` is a struct:
-  `call(..) -> (i64, u64)`, `reply(to, results: (i64, u64))`, and `survey` keeps
-  `(i64, u64, u64)`. The 11 local `reply` helpers that take `r0: i64` already follow this.
+- Result words are never an array. This decision adopts a rule: the first result word carries a sign,
+  a negative error or a value, so results are a tuple whose first element is `i64`, as SBI's
+  `sbiret` is a struct: `call(..) -> (i64, u64)`, `reply(to, results: (i64, u64))`, and `survey`
+  keeps `(i64, u64, u64)`.
 - A value the code has decoded takes the name of what it is, as design/naming.md already requires:
   `let (handle, length) = call(slot, request);`, or `let [operation, offset, _] = message.words;`.
 - A function that decodes one word takes a parameter named by meaning, or plain `word`.
@@ -89,8 +89,8 @@ git grep -I -o -P "$P" 830de0623 -- ':!vendor' ':!bench' ':!*.s' ':!*.S' ':!*.sv
 git grep -I -l -P "$P" 830de0623 -- ':!vendor' ':!bench' ':!*.s' ':!*.S' ':!*.svg' | wc -l   # 257
 ```
 
-The split comes from a heuristic classifier posted on the pull request, so each row may be off by
-a few uses. It also counts the excluded paths as foreign, so its rows add up to more than 2245.
+A heuristic classifier, posted on the pull request, made the split; a row may be off by a few
+uses. It counts the excluded paths as foreign, so its rows add up to more than 2245.
 
 | Kind | Uses | Files |
 |---|---:|---:|
@@ -110,9 +110,7 @@ a few uses. It also counts the excluded paths as foreign, so its rows add up to 
 | Falsification patches and a metrics file, which quote the code above | 47 | 16 |
 | Foreign: aarch64 assembly, disassembly in notes, bench logs, SVG namespace URLs | 108 | 9 |
 
-- Code identifiers are 1183 message-word uses and 405 result-word uses. `survey_record` and
-  `virtual_address_space_list` bind `let (r0, w1, w2, ..)`, all three result words (8 uses), and a
-  `program_table` test binds a request's first word as `r0` (2 uses).
+- Code identifiers are 1183 message-word uses and 405 result-word uses.
 - The public API is 61 names: 55 `pub fn` parameters in 16 files, the `pub` fields of `Message`
   and `Request`, and `filesystem_contract`'s `Verb::carries_w1`.
 - About 130 further lines spell the words out (`word_zero`, `argument_zero`, `first_word`), and the
@@ -185,8 +183,13 @@ As set out under the recommendation. Where an array fits badly:
 - **`Message` is not all words.** `x0` to `x2` are the sender's, `x3` the badge, `x4` the kernel's
   account of what arrived and `x5` a label. Only the first three form the array; the rest keep
   names by meaning, so the array index matches the register only up to 2.
-- **The first result word is signed.** So results are a tuple, never an array, as set out above.
-  `call` and `reply` change type from `u64` to `i64` for that word.
+- **A signed first word is a rule, not yet a fact.** Four local `reply` helpers
+  take `r0: i64` (`fs_file_caretaker`, `fs_nameset_caretaker`, `fs_subtree_caretaker`,
+  `redoxfs_server`); other servers cast, `reply(to, r0 as u64, ..)`, on 21 lines in 16 files. Two
+  first words are not signed: the clock's `page.read().state` and the resolver's
+  `outcome.word()`, a packed status below 2^24. Both are non-negative, so both pass as an `i64`
+  unchanged, and `Outcome::from_word` takes an `i64` and refuses a negative one, the kernel error
+  its doc already describes.
 - **The kernel writes `x4`.** It is never a sender's word, so it stays outside the array as
   `delivered`.
 - **A capability moves the words.** `receive_capability` documents its return as
@@ -205,14 +208,15 @@ As set out under the recommendation. Where an array fits badly:
   | Build | aarch64 | riscv64 | x86_64 |
   |---|---:|---:|---:|
   | `opt-level=3`, wrappers inlined | identical | identical | identical |
-  | `opt-level=3`, not inlined | 22 / 27 | 27 / 36 | 25 / 29 |
-  | `opt-level=0` (debug), not inlined | 44 / 51 | 39 / 49 | 42 / 51 |
+  | `opt-level=3`, not inlined | 22 / 27 | 27 / 35 | 25 / 30 |
+  | `opt-level=0` (debug), not inlined | 44 / 49 | 39 / 46 | 42 / 47 |
 
-  Not inlined, a `[u64; 3]` argument travels by pointer and a `[u64; 2]` result through memory.
+  The array form measured is the one proposed: `call(slot, words: [u64; 2]) -> (i64, u64)`. Not
+  inlined, a `[u64; 3]` or `[u64; 2]` argument travels by pointer.
   The wrappers carry no `#[inline]` and the release profile sets no LTO, so release callers pay
   this today. `script/board-image` packs debug programs, and `user_mode_runtime` builds there at
   `opt-level=0`. Even with the wrappers forced `#[inline(always)]`, the aarch64 debug caller grows
-  from 178 to 192 instructions and from a 624-byte to a 688-byte frame. That cost stays: a debug
+  from 178 to 188 instructions and from a 624-byte to a 672-byte frame. That cost stays: a debug
   image pays a few instructions per call for (g). The rename lane marks the wrappers `#[inline]`
   and checks a release build's assembly before and after.
 
@@ -245,8 +249,9 @@ to `tenth`). Measured on Rust code outside `vendor/`, comments and strings blank
   `spawn_one` (spawn a single one). A pattern for predicates and units covers 11 of the 132
   ending names; once the sentence-style test names are set aside, 52 names (279 uses) remain to
   judge one at a time.
-- **`second` the unit of time.** 44 names (154 uses) say `NANOSECONDS_PER_SECOND` and the like. That
-  is not an ordinal, so the rule allows `second` after `per`.
+- **`second` the unit of time.** 7 names (113 uses) say `NANOSECONDS_PER_SECOND` and the like.
+  That is not an ordinal, so the rule allows `second` after `per`, and only there. `one_second`,
+  a unit too, goes with the quantities.
 
 The ruling refuses ordinals, so the rule refuses `first_` everywhere, including the 167 names where
 it marks the start of a range or the earliest event (`first_logical_block_address`,
@@ -303,10 +308,11 @@ parameter is `word_1` and the reply's word is `result_word_0`.
 ## Effort, stated plainly
 
 (a) is a mechanical rename. About 10 files hold both `w1` and `word_one`, so each needs reading for
-a shadowed name, and rustfmt rewraps the lines that grow. (g) is larger: the 197 group sites change
-shape, every caller of `send`, `call` and `receive` changes, and the single-word sites still need
-names by meaning chosen one at a time. Under both, `byte_sink_contract` changes first in its own
-repository and nife bumps its pin, and the 16 falsification patches are regenerated and replayed.
+a shadowed name, and rustfmt rewraps the lines that grow. (g) is larger. The 197 group sites change
+shape, and every caller of `send`, `call` and `receive` changes. The typed first word reaches 113
+`let (..) = call(` bindings and 112 `reply(` calls in 43 files. The single-word sites still need
+names by meaning, chosen one at a time. Under both, `byte_sink_contract` changes first in its own
+repository and nife bumps its pin, and the lane regenerates and replays the 16 falsification patches.
 The Kani harnesses and mutation baselines name functions, not parameters; the lane checks that.
 One lane, in commits by area, after the in-flight renames of the same files land.
 
