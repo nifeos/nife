@@ -1700,6 +1700,7 @@ dependencies = [
 [[package]]
 name = "terminal_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/terminal_contract?rev=4a93367e22366b1d6f0ddb149d087ee51a3335a2#4a93367e22366b1d6f0ddb149d087ee51a3335a2"
 
 [[package]]
 name = "test_and_set_lock"
