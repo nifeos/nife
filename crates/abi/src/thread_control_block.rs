@@ -56,7 +56,7 @@ pub const SET_THREAD_POINTER: u64 = 3;
 pub const SUSPEND: u64 = 4;
 
 /// `invoke(capability, RESUME, _, _, _)` -> 0 (seL4's `TCB_Resume`). **Let a suspended
-/// thread run on from where it stopped**: the saved PC, every register as it was. Not a re-run.
+/// thread run on from where it stopped**: the saved program counter, every register as it was. Not a re-run.
 /// Needs `WRITE`.
 ///
 /// Resuming a thread that is not suspended is 0 and changes nothing. An embryo is `WrongObject`; a thread that

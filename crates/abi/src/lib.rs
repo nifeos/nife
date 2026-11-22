@@ -124,7 +124,7 @@ pub const CAPABILITY_TABLE_SLOTS: u64 = 64;
 /// ever takes it.
 pub mod console;
 
-/// Methods on a `Rendezvous` capability. **This is IPC.**
+/// Methods on a `Rendezvous` capability. **This is inter-process communication (IPC).**
 ///
 /// A rendezvous names a synchronous meeting point, and the two methods are the two sides of it.
 /// Which one you may call is a matter of *rights*, not of the rendezvous: a capability with
@@ -168,7 +168,7 @@ pub mod object_type;
 pub mod reboot;
 
 /// Methods on a `Notification` capability: **a doorbell, not a meeting.** Created by [`memory_region::RETYPE_OBJECT`]
-/// with [`object_type::NOTIFICATION`]. A signaller ORs bits into its word and never blocks; a waiter
+/// with [`object_type::NOTIFICATION`]. A signaller sets bits in its word with a bitwise or and never blocks; a waiter
 /// takes what has accumulated. [`BIND`](notification::BIND) attaches it to one thread, so a signal
 /// can also end that thread's receive on an endpoint, told apart by [`BOUND`](notification::BOUND).
 ///
@@ -250,7 +250,7 @@ pub mod cycle_counter;
 pub mod interrupt;
 
 /// Methods on a `VirtualIo` capability. **How a driver operates a device it cannot point out of its
-/// own DMA region.** The kernel owns the queue addresses and the notify; the driver builds
+/// own direct memory access (DMA) region.** The kernel owns the queue addresses and the notify; the driver builds
 /// requests in its DMA region and submits through here.
 #[doc(alias = "virtio")]
 pub mod virtual_io;
@@ -275,12 +275,12 @@ pub mod page_frame;
 /// of x86 I/O ports a driver holds.**
 ///
 /// A `PortRange` capability is not invoked to *use* the ports: the holder executes `in`/`out`
-/// directly, and the kernel enforces the grant through the TSS I/O permission bitmap at context
+/// directly, and the kernel enforces the grant through the I/O permission bitmap of the task state segment (TSS) at context
 /// switch, with no system call on the data path. The one method is administrative, mirroring
 /// [`page_frame::REVOKE`]'s take-back meaning on a `DeviceFrame`.
 pub mod port_range;
 
-/// **How far apart the console UART's registers are**. Not a capability's methods: the start word the kernel passes the progenitor,
+/// **How far apart the registers of the console's universal asynchronous receiver-transmitter (UART) are**. Not a capability's methods: the start word the kernel passes the progenitor,
 /// and the progenitor its console and input drivers.
 pub mod uart;
 
@@ -374,7 +374,8 @@ pub enum Error {
     /// are the reboot object's only answers, because a reset that works never returns. One name
     /// per concept.
     NoResetMechanism = -12,
-    /// **`Reboot::REBOOT`: the firmware does not offer a reset** (PSCI or SBI `NOT_SUPPORTED`).
+    /// **`Reboot::REBOOT`: the firmware does not offer a reset**: `NOT_SUPPORTED` from the Power State
+    /// Coordination Interface (PSCI) or the Supervisor Binary Interface (SBI).
     ResetNotSupported = -13,
     /// **`Reboot::REBOOT`: the firmware refused this caller** (PSCI or SBI `DENIED`).
     ResetDenied = -14,

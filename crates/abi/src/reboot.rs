@@ -1,6 +1,7 @@
 /// `invoke(capability, REBOOT, _, _, _)`. **On success it does not return**: the kernel asks the firmware
-/// for a cold reset (PSCI `SYSTEM_RESET` on aarch64, SBI SRST type 1 on riscv64, and on `x86_64`
-/// the FADT reset register, then port `0xCF9`, then the 8042). When every route was refused it
+/// for a cold reset (PSCI `SYSTEM_RESET` on aarch64, the SBI's system reset (SRST) extension,
+/// type 1, on riscv64, and on `x86_64` the reset register that the firmware's Advanced
+/// Configuration and Power Interface (ACPI) tables describe, then port `0xCF9`, then the 8042). When every route was refused it
 /// returns the reason, one of the four `Reset…` values of [`crate::Error`], and the firmware's raw
 /// code is on the kernel console just before.
 ///
@@ -10,7 +11,7 @@
 pub const REBOOT: u64 = 0;
 
 /// **Why the machine did not restart, from PSCI**:
-/// `SYSTEM_RESET`'s return (ARM DEN 0022) as the error `REBOOT` answers. `NOT_SUPPORTED` (-1) is
+/// `SYSTEM_RESET`'s return (Arm document `DEN0022`) as the error `REBOOT` answers. `NOT_SUPPORTED` (-1) is
 /// [`super::Error::ResetNotSupported`], `DENIED` (-3) is [`super::Error::ResetDenied`], and any
 /// other code means the reset was asked for and the machine is still running. The raw code is
 /// on the kernel console. *(Name provisional.)*

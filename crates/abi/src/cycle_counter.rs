@@ -9,21 +9,22 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u64)]
 pub enum CycleMeaning {
-    /// **aarch64: core cycles at EL0 and EL1, not EL2.** `PMCCNTR_EL0` under the
+    /// **aarch64: core cycles at the user and kernel exception levels (EL), EL0 and EL1, not
+    /// EL2**, the hypervisor's. `PMCCNTR_EL0` under the
     /// `PMCCFILTR_EL0` value of zero the kernel writes on every core.
     /// User plus kernel, the quantity the other two architectures count.
     CoreCyclesUserAndKernel = 1,
     /// **riscv64: core cycles in every privilege mode**, M-mode firmware included. The
-    /// `cycle` CSR, the user-mode shadow of `mcycle`, opened by `scounteren.CY`.
+    /// `cycle` control and status register (CSR), the user-mode shadow of `mcycle`, opened by `scounteren.CY`.
     ///
     /// **Not necessarily the counter the kernel's own bench probe reads.** The kernel asks
-    /// firmware for a cycle counter through SBI PMU, and firmware may answer with a
+    /// firmware for a cycle counter through the SBI's performance monitoring unit (PMU) extension, and firmware may answer with a
     /// programmable one (`hpmcounter3` on QEMU's `rva23s64` model) rather than `mcycle`.
     /// Both count core cycles, but a program comparing its own reads with the kernel's
     /// `bench-probe` lines cannot tell from this value whether they are one counter. Saying
     /// so needs the kernel to tell the process, which no channel does today.
     CoreCyclesEveryMode = 2,
-    /// **`x86_64`: constant-rate reference cycles, not core cycles.** The TSC, read with
+    /// **`x86_64`: constant-rate reference cycles, not core cycles.** The time stamp counter (TSC), read with
     /// `rdtsc`, ambient in ring 3 (who may read the cycle counter is a separate question of
     /// authority). It ticks at a fixed rate whatever the
     /// core's frequency, so a difference of two reads is time in reference cycles, and a

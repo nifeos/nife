@@ -36,7 +36,7 @@ pub const fn counter_ticks_for(seconds: u64, nanoseconds: u32, hertz: u64) -> u6
 
 /// **Tested, not proved, and the reason is a measurement.** A Kani harness over this function
 /// did not finish in ten minutes with a symbolic rate, nor in five with five concrete rates
-///: a symbolic 64-bit divide is the expensive thing for CBMC whatever the
+///: a symbolic 64-bit divide is the expensive thing for the bounded model checker under Kani, whatever the
 /// divisor. The deadline arithmetic that *is* proved is the kernel's
 /// deadline arithmetic, where a wrong answer is a missed wake for everyone;
 /// a wrong answer here is one sleep one tick short, and the tests below pin the boundaries

@@ -88,7 +88,7 @@ fn non_errors_hand_the_word_back() {
 /// The rights words are an ABI, not an implementation detail: the kernel tests them with `&`
 /// and userspace builds masks with `|`, so each must be a distinct single bit, and the exact
 /// values are load-bearing on both sides of the system call boundary. A mutation run
-/// showed nothing pinned them (`1 << 1` could become `1 >> 1`, which is zero, and WRITE would
+/// showed nothing pinned them (`1 << 1` could become `1 >> 1`, which is zero, and `WRITE` would
 /// silently mean nothing). A test that enumerates is a claim about a set, so a new right joins
 /// this list in the change that defines it.
 #[test]
@@ -138,7 +138,7 @@ fn the_address_wait_admits_only_a_private_32_bit_word() {
 /// **The JH7110's line status register is at 0x14, read 32 bits wide**. Every
 /// QEMU machine this tree boots has byte registers, so no emulator run can tell a driver that
 /// honors the shape from one that assumes QEMU's: radon's console did the second and waited
-/// forever on LSR at 0x05. This pins the board's offsets through the word the kernel sends, and
+/// forever on the line status register at 0x05. This pins the board's offsets through the word the kernel sends, and
 /// that the zero word aarch64 and `x86_64` send is byte access.
 #[test]
 fn the_jh7110_shape_survives_the_start_word_and_puts_lsr_at_0x14() {

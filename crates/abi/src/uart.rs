@@ -1,6 +1,6 @@
 //! **The console UART's register shape, carried as one start word**.
 //!
-//! The NS16550's register stride is the machine's: one byte on QEMU `virt`, four with 32-bit
+//! The `NS16550`'s register stride is the machine's: one byte on QEMU `virt`, four with 32-bit
 //! access on the JH7110 (`reg-shift = <2>`, `reg-io-width = <4>`), where a driver assuming QEMU's
 //! would read line status from the wrong register and wait forever. The kernel reads it from the
 //! device tree and passes it to the progenitor as its first start

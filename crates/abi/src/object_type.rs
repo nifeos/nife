@@ -14,7 +14,7 @@ pub const RENDEZVOUS: u64 = 1;
 /// project deliberately did not copy.
 pub const ADDRESS_SPACE: u64 = 2;
 
-/// A thread: the retyped page holds the TCB, and the object is born an
+/// A thread: the retyped page holds the thread control block (TCB), and the object is born an
 /// **embryo**, in no queue and not runnable. It becomes a running thread only through
 /// [`crate::thread_control_block::CONFIGURE`] (bind an address space, set entry and stack) and [`crate::thread_control_block::START`], with
 /// [`crate::thread_control_block::CAPABILITY_INSERT`] granting its initial authority in between. A half-built TCB can never

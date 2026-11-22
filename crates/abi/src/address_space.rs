@@ -10,7 +10,7 @@
 pub const MAP_INTO: u64 = 0;
 
 /// `MAP_INTO`'s third argument: how to map the frame. Read-only, read/write, or executable
-/// code. Code is W^X: mapped RX,
+/// code. Code is W^X: mapped read and execute,
 /// never writable, and the kernel makes the I-cache coherent with the loader's data writes.
 ///
 /// Name: ratified 2026-11-11 (UTC). Spelled out under design/naming.md's rule that a name this
@@ -22,7 +22,7 @@ pub const MAP_READ_ONLY: u64 = 0;
 /// Name: ratified 2026-11-11 (UTC), with [`MAP_READ_ONLY`]; the value stays 1. Refused `MAP_RW`
 /// (abbreviates "read write").
 pub const MAP_READ_WRITE: u64 = 1;
-/// Map executable code: RX, never writable (W^X).
+/// Map executable code: readable and executable, never writable (W^X).
 pub const MAP_CODE: u64 = 2;
 
 /// `invoke(capability, LIST, cursor, 0, 0) -> (next_cursor, va, kind)` : list this space's
@@ -41,7 +41,7 @@ pub const LIST: u64 = 1;
 /// - One page per call; unmapping one page of a run leaves the rest mapped.
 /// - A `va` with nothing mapped, misaligned or in the kernel half is [`crate::Error::BadPointer`]
 ///   and changes nothing. Not idempotent, deliberately. No capability is consumed or changed.
-/// - The page is gone from every core's TLB and from the mapping record before this returns.
+/// - The page is gone from every core's translation lookaside buffer (TLB) and from the mapping record before this returns.
 /// - It reaches a running space: the capability keeps naming a space after a thread runs in it.
 pub const UNMAP: u64 = 2;
 
