@@ -14,7 +14,8 @@ time, resolves paths against the person's current directory and bindings, and re
 `Refusal` that carries its own sentence. It is `no_std` with no allocator and no `unsafe`. It
 depends on the leaf `grant_contract` (the manifest types and the slot constants a program links),
 on `byte_glob` and on `program_argument_contract`. The catalog of nife's programs stays in
-`program_table`, which depends on it only in tests.
+`program_table`, which depends on it; `grant_plan` has no edge back, and its tests plan against
+rows of their own.
 
 ## Identity
 
