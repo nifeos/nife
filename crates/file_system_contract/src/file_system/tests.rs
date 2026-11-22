@@ -40,6 +40,34 @@ fn a_handle_never_collides_with_the_opcode_or_length() {
     );
 }
 
+#[test]
+#[should_panic]
+fn a_request_refuses_a_handle_past_the_field() {
+    let _ = file_system::request(file_system::READ, file_system::MAXIMUM_HANDLE + 1, 0);
+}
+
+#[test]
+#[should_panic]
+fn a_request_refuses_a_length_past_the_field() {
+    let _ = file_system::request(
+        file_system::READ,
+        3,
+        file_system::MAXIMUM_LENGTH_BYTES + 1,
+    );
+}
+
+#[test]
+#[should_panic]
+fn a_rename_destination_refuses_a_handle_past_the_field() {
+    let _ = file_system::rename_destination(file_system::MAXIMUM_HANDLE + 1, 1);
+}
+
+#[test]
+#[should_panic]
+fn a_rename_destination_refuses_a_length_past_the_field() {
+    let _ = file_system::rename_destination(1, file_system::MAXIMUM_LENGTH_BYTES + 1);
+}
+
 // --- The directory capability ---
 
 /// `ROOT` stays 0 because every client that ever sent an `OPEN` sent 0 in that field.

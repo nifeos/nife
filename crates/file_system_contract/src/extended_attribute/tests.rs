@@ -455,3 +455,9 @@ fn a_record_with_a_kind_past_the_maximum_ends_the_walk() {
     );
     assert!(store::get(&blob, b"bad").is_none());
 }
+
+#[test]
+#[should_panic]
+fn a_specification_refuses_a_length_past_32_bits() {
+    let _ = extended_attribute::specification(extended_attribute::RAW, 1 << 32);
+}
