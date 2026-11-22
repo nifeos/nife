@@ -248,7 +248,7 @@ uptime prose_acronyms 2
 uptime readme_acronyms 2
 uptime register_names 2
 user_mode_runtime abbreviations 8
-user_mode_runtime register_names 2
+user_mode_runtime register_names 1
 video_terminal abbreviations 189
 video_terminal prose_acronyms 17
 video_terminal readme_acronyms 4

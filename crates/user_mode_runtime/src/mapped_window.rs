@@ -5,7 +5,7 @@
 //! bounds-checks every access against it, so a wrong offset panics instead of reading or writing
 //! past the page. [`MappedWindow::as_slice`] and [`as_mut_slice`](MappedWindow::as_mut_slice) hand
 //! the whole page to a parser or serializer. [`doorbell_barrier`] orders device-visible stores. See
-//! notes/user-mode-runtime.md.
+//! `docs/design.md`.
 
 //! # Examples
 //! Bare-metal only, like the rest of this crate, so the first example is `no_run`.
@@ -157,7 +157,7 @@ impl MappedWindow {
     /// Not volatile, and safe anyway: no reference is formed. What a peer or device reads afterwards
     /// is ordered by the fence and the call the caller makes to publish the bytes, as for its
     /// volatile writes; a peer writing the same bytes meanwhile makes the result a mix of both. See
-    /// notes/user-mode-runtime.md.
+    /// `docs/design.md`.
     ///
     /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-20 (UTC) by lane/2451-cpu-matrix-rv64-budget, for
     /// [`slice::copy_within`], whose argument order it keeps.
@@ -183,7 +183,7 @@ impl MappedWindow {
     /// driver that reads a descriptor's ownership bit, then [`doorbell_barrier`], then this,
     /// reads the buffer after the bit. A peer or device writing the range during the copy makes
     /// the result a mix of old and new bytes; the caller's protocol rules that out. See
-    /// notes/user-mode-runtime.md.
+    /// `docs/design.md`.
     ///
     /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-25 (UTC) by lane milestone/53-radon-receive-drain, for
     /// [`slice::copy_from_slice`] seen from the slice's side.
@@ -268,7 +268,7 @@ impl MappedWindow {
 /// For a driver whose doorbell is a direct store to a device-typed page in its own address space,
 /// with no system call between the ring stores and it: `dmb sy` on aarch64, `fence` on riscv64,
 /// `mfence` on x86_64. Stronger than [`crate::virtual_io::virtual_io_ring_barrier`], whose drivers notify
-/// through a system call, and not to be merged with it. See notes/user-mode-runtime.md.
+/// through a system call, and not to be merged with it. See `docs/design.md`.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted by the lane for milestone 494 (a driver for the network card) on 2026-10-04.
 pub fn doorbell_barrier() {

@@ -41,9 +41,9 @@ What a stranger may find surprising:
 
 - Every operation answers with a verdict enum and hands back the caller's `Unqueued<T>` token when
   its node did not queue. The kernel owns the nodes; this crate only links and unlinks them.
-- `Rendezvous` holds two queues and a pending count, and the proofs say at most one queue is
-  non-empty. A single queue with a tag would hold that by construction (milestone 1095 (`inter_process_communication`: what an outside maintainer would fix before it leaves), P2-11,
-  open after the move).
+- `Rendezvous` holds one queue under a tag that says whether senders or receivers wait on it, as
+  seL4's endpoint does, so the two never wait at once by construction. The proofs check the rest:
+  a tag names a queue only while a thread is on it.
 - `Timer::deadline` and `earliest` answer `Option<u64>`, `None` when nothing is armed. `NEVER`
   (`u64::MAX`) is only the word a kernel stores for its cached earliest (P2-13; maintainer, provisional, 2026-11-20 UTC, D7).
 - `debug_counts` on `Rendezvous` and `Notification` answers a struct with field names.

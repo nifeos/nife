@@ -64,7 +64,7 @@ fn double_free_panics() {
 }
 
 #[test]
-#[should_panic(expected = "don't own")]
+#[should_panic(expected = "do not own")]
 fn freeing_a_foreign_frame_panics() {
     let mut bits = [0u8; 8];
     let mut a = allocator(&mut bits);
@@ -137,7 +137,7 @@ fn regions_outside_our_range_are_ignored() {
     let mut bits = [0u8; 8];
     let mut a = allocator(&mut bits);
 
-    // The device tree can describe reserved regions in memory we don't manage (MMIO,
+    // The device tree can describe reserved regions in memory we do not manage (MMIO,
     // secure-world firmware). Clamping rather than panicking is the whole point.
     a.mark_used(0, FRAME_BYTES); // below our base
     a.mark_used(BASE + 1000 * FRAME_BYTES, FRAME_BYTES); // above our top
@@ -280,6 +280,75 @@ fn alloc_contiguous_of_everything_works_exactly_once() {
 }
 
 #[test]
+fn free_contiguous_returns_the_whole_run() {
+    let mut bits = [0u8; 8];
+    let mut a = allocator(&mut bits);
+
+    let before = a.stats();
+    let first = a.alloc_contiguous(8).unwrap();
+    a.free_contiguous(first, 8);
+    assert_eq!(a.stats(), before);
+    assert_eq!(a.largest_free_run(), 64);
+
+    // The freed run is the lowest free frame again, so the next allocation starts there.
+    assert_eq!(a.alloc(), Some(first));
+}
+
+#[test]
+fn free_contiguous_of_nothing_frees_nothing() {
+    let mut bits = [0u8; 8];
+    let mut a = allocator(&mut bits);
+
+    let before = a.stats();
+    a.free_contiguous(PageFrame::from_physical_address(BASE), 0);
+    assert_eq!(a.stats(), before);
+}
+
+#[test]
+#[should_panic(expected = "double free")]
+fn free_contiguous_refuses_a_run_with_a_free_frame() {
+    let mut bits = [0u8; 8];
+    let mut a = allocator(&mut bits);
+
+    let first = a.alloc_contiguous(2).unwrap();
+    a.free_contiguous(first, 3);
+}
+
+/// A refused run leaves the bitmap as it was: the check runs over the whole run before any frame
+/// is freed, so a frame earlier in the run is still used after the panic.
+#[test]
+fn a_refused_free_contiguous_frees_no_frame() {
+    let mut bits = [0u8; 8];
+    let mut a = allocator(&mut bits);
+
+    let first = a.alloc_contiguous(2).unwrap();
+    let refused = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        a.free_contiguous(first, 3);
+    }));
+    assert!(refused.is_err());
+    assert_eq!(a.is_used(first), Some(true));
+    assert_eq!(a.stats().used_frames, 2);
+}
+
+#[test]
+#[should_panic(expected = "reaches past")]
+fn free_contiguous_refuses_a_run_past_the_end() {
+    let mut bits = [0u8; 8];
+    let mut a = allocator(&mut bits);
+
+    let first = a.alloc_contiguous(64).unwrap();
+    a.free_contiguous(first, 65);
+}
+
+#[test]
+#[should_panic(expected = "do not own")]
+fn free_contiguous_refuses_a_foreign_run() {
+    let mut bits = [0u8; 8];
+    let mut a = allocator(&mut bits);
+    a.free_contiguous(PageFrame::from_physical_address(0xdead_0000), 1);
+}
+
+#[test]
 fn bitmap_sizing() {
     assert_eq!(PageFrameAllocator::bitmap_bytes(0), 0);
     assert_eq!(PageFrameAllocator::bitmap_bytes(1), 1);
@@ -287,7 +356,7 @@ fn bitmap_sizing() {
     assert_eq!(PageFrameAllocator::bitmap_bytes(9), 2);
 
     // 128 MiB of RAM (a common size for a small virtual machine) is 32768 frames, so 4 KiB of bitmap.
-    // One frame's worth of overhead to manage 128 MiB. That's the deal.
+    // One frame's worth of overhead to manage 128 MiB. That is the deal.
     assert_eq!(PageFrameAllocator::page_frames_in(0x800_0000), 32768);
     assert_eq!(PageFrameAllocator::bitmap_bytes(32768), 4096);
 }

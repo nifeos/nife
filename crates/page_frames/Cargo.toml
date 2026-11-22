@@ -2,8 +2,36 @@
 name = "page_frames"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.87"
+description = "A physical page frame allocator over a borrowed bitmap, where every frame stays used until it is declared RAM"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+documentation = "https://docs.rs/page_frames"
+keywords = ["no-std", "allocator", "page-frame", "bitmap"]
+categories = ["no-std", "no-std::no-alloc", "memory-management"]
+publish = false     # stays false until the release that publishes this crate
 
-[lints]
-workspace = true
+# The bottom of a kernel's memory hierarchy: one bit per 4 KiB frame of physical memory, in a
+# bitmap the caller owns. Pure logic with no `unsafe` and no dependencies, so its tests and proofs
+# run on the host.
+
+[package.metadata.docs.rs]
+targets = [
+    "x86_64-unknown-none",
+    "aarch64-unknown-none-softfloat",
+    "riscv64imac-unknown-none-elf",
+]
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

@@ -5,27 +5,27 @@ It is the ordering a reader would choose on its own merits, because a synchronou
 thread blocked behind it looks more urgent than a count, and the function's own doc comment is
 the only place saying otherwise.
 
-Expected to fail: the harness's `assert_eq!(unsafe { e.receive(...) }, ReceiveVerdict::Signal)` when
+Expected to fail: the harness's `assert!(matches!(outcome, ReceiveVerdict::Signal(_)))` when
 `pending > 0` and a sender is queued. The signal is not dropped, but it waits behind a
 rendezvous, which is the loss this ordering exists to prevent: a signal delivered with nobody
 waiting must not be overtaken by a sender that arrived later.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index 8872449..877f44b 100644
+index 0dcb87d6d..74f132ba9 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -325,11 +325,11 @@ impl<T: Node> Rendezvous<T> {
+@@ -396,11 +396,11 @@ impl<T: Node> Rendezvous<T> {
      ///
      /// Name: ratified 2026-11-21 (UTC).
      pub fn receive(&mut self, me: Unqueued<T>) -> ReceiveVerdict<T> {
 -        if self.pending > 0 {
-+        if let Some(sender) = self.senders.pop_front() {
++        if let Some(sender) = self.take_sender() {
 +            ReceiveVerdict::FromSender(sender, me)
 +        } else if self.pending > 0 {
              self.pending -= 1;
              ReceiveVerdict::Signal(me)
--        } else if let Some(sender) = self.senders.pop_front() {
+-        } else if let Some(sender) = self.take_sender() {
 -            ReceiveVerdict::FromSender(sender, me)
          } else {
-             self.receivers.push_back(me);
+             self.queue_receiver(me);
              ReceiveVerdict::Blocked

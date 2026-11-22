@@ -45,41 +45,43 @@ section number, a milestone or a person in another repository.
   crate's text has no section, milestone or path, and no architect's name or quotation. The move
   strips the `Name:` blocks.
 - P0-4, seven names the spelled-out gate refuses: Done,
-  [#3808](https://github.com/nifeos/nife/pull/3808) (maintainer, provisional, 2026-11-14 UTC; see
-  "Three public names" below). The crate and the `std` overlay carry the new names, and the
-  generator copies the crate verbatim. The overlay's `args()` is the standard library's own name
-  and stays.
-- P1-5, `CAPACITY` carries no unit: Done, [#3808](https://github.com/nifeos/nife/pull/3808)
-  (maintainer, provisional, 2026-11-14 UTC). `grant_plan` uses `MAXIMUM_RECORDS_BYTES`.
-- P1-6, no proof: Open. Two of the three harnesses and their patches landed in
-  [#3567](https://github.com/nifeos/nife/pull/3567). The round-trip harness over the exact-page
-  builder ran Kani's solver past 11 GiB and failed, so it did not land; the tests cover the round trip.
+  [#3808](https://github.com/nifeos/nife/pull/3808), ratified 2026-11-21 (UTC; see "Three public
+  names" below). The crate and the `std` overlay carry the new names. The overlay's `args()` is
+  the standard library's own name and stays.
+- P1-5, `CAPACITY` carries no unit: Done, [#3808](https://github.com/nifeos/nife/pull/3808).
+  Ratified 2026-11-21 (UTC).
+- P1-6, no proof: Done, [#3567](https://github.com/nifeos/nife/pull/3567) and
+  [#3978](https://github.com/nifeos/nife/pull/3978). The round-trip harness fixes the lengths at
+  three and two bytes, which keeps the page inside the solver's memory.
 - P1-7, the `unsafe` reader has no test: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P1-8, the mutation exemption and the coverage figure: At the move.
+- P1-8, the mutation exemption and the coverage figure: At the move. The exemption goes in the new
+  repository's `.github/mutants-exempts`. The tests reach every line and 98 percent of regions.
 - P1-9, the all-or-nothing claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-10, the address truncates on narrow targets: Waiting on a ruling. The crate's BUGS states the
-  limit, an alternative the review allowed; the maintainer rules provisionally whether that closes
-  it.
+- P2-10, the address truncates on narrow targets: Done,
+  [#3978](https://github.com/nifeos/nife/pull/3978) (maintainer, provisional, 2026-11-22 UTC). The
+  `# Safety` section of `from_virtual_address` requires the address to fit the target's `usize`,
+  the review's second alternative; a panic would add a failure path to an unchecked reader.
 - P2-11, `EMPTY` unused and its literal duplicated: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-12, the builder takes a fixed array: Done, [#3808](https://github.com/nifeos/nife/pull/3808)
-  (maintainer, provisional, 2026-11-19 UTC). `PageBuilder::new` takes `&mut [u8]` and refuses any
-  length but `PAGE_BYTES` with `WrongPageLength` (a provisional name).
+- P2-12, the builder takes a fixed array: Done, [#3808](https://github.com/nifeos/nife/pull/3808).
+  `PageBuilder::new` takes `&mut [u8]` and refuses any length but `PAGE_BYTES` with
+  `WrongPageLength`.
 - P2-13, the layout arithmetic copied in `grant_plan`: Done,
-  [#3808](https://github.com/nifeos/nife/pull/3808). `record_bytes` and
-  `PageBuilder::remaining_bytes` are provisional names, and `grant_plan` sums with `record_bytes`.
+  [#3808](https://github.com/nifeos/nife/pull/3808). `grant_plan` sums with `record_bytes`. `impl
+  IntoIterator` stays out: the `std` port copies this file and would demand stability attributes.
 - P2-14, the data bounds the record walk: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-15, the one-file constraint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- Ruling, the layout leaves as built, with the magic unnumbered until 994: Open.
-  [#3579](https://github.com/nifeos/nife/pull/3579) recorded the layout as built with `VERSION` 1
-  and `INTERFACE_ID` 18 (ruled 2026-11-14 UTC). The numbered magic is not built: its condition is
-  met (see Follow-on), and `MAGIC` still reads `b"nifeargv"`.
-- Ruling, three public names: Done, [#3808](https://github.com/nifeos/nife/pull/3808) (maintainer,
-  provisional, 2026-11-14 UTC), with P0-4 and P1-5.
+- Ruling, the layout leaves as built, with the magic numbered at 994: Waiting on a ruling
+  ([#3982](https://github.com/nifeos/nife/pull/3982)) on the numbered magic's spelling.
+  [#3579](https://github.com/nifeos/nife/pull/3579) recorded `VERSION` 1 and `INTERFACE_ID` 18.
+- Ruling, three public names: Done, [#3808](https://github.com/nifeos/nife/pull/3808) and
+  [#3978](https://github.com/nifeos/nife/pull/3978), with P0-4 and P1-5.
+- Ruling, the remaining names: Done, [#3885](https://github.com/nifeos/nife/pull/3885).
 
 ## Open decisions
 
-None.
+- The numbered magic's spelling, which replaces `nifeargv`, on
+  [#3982](https://github.com/nifeos/nife/pull/3982).
 
 ## What was checked, and how
 
@@ -257,16 +259,22 @@ four bytes.
 
 ### Three public names
 
-Ruled by the maintainer, 2026-11-14 (UTC), as provisional. This is a two-way door, and the names stay
-provisional until an architect ratifies them.
+Ruled by the architect, 2026-11-21 (UTC), ratifying the maintainer's provisional names as built.
 
-- `ArgumentPage` for `ArgPage`.
+- `ArgumentPage` for `ArgPage`, matching the sibling page types.
 - `from_virtual_address(virtual_address)` for `from_va(va)`.
-- `MAXIMUM_RECORDS_BYTES` for `CAPACITY`. The name `PAGE_CONTENT_BYTES` is not used: in the
+- `MAXIMUM_RECORDS_BYTES` for `CAPACITY`. The 4,080 bytes count each argument's four-byte prefix,
+  so they are bytes of records, as `record_bytes` says. `PAGE_CONTENT_BYTES` is not used: in the
   contract family it is the number of bytes the page content occupies, header included (see
-  `crates/base_digest_contract/src/lib.rs`), and the capacity here is the space for records alone.
+  `crates/base_digest_contract/src/lib.rs`).
 
 The crate, the `std` overlay and `grant_plan` use the new names.
+
+### The remaining names
+
+Ruled by the architect, 2026-11-21 (UTC): the crate's other public names stand as built, except
+that `PageBuilder::count` becomes `argument_count` (the standard library's `count` consumes an
+iterator) and `Refused` becomes `PushRefused` (the name says what it refuses).
 
 ### The repository
 
@@ -279,9 +287,8 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 - **Done.** Two milestones meet the layout ruling's condition (maintainer's reading, provisional,
   2026-11-19 UTC): 1115 (the gate builds basalt's delivered programs from the candidate tree) in
   every merge group, and 994 in basalt. The numbered magic lands in one nife pull request, a lane of its own.
-- **Outstanding.** Every finding marked Open or Waiting under "Finding status" above, each with
-  what remains, checked against `crates/program_argument_contract` and `crates/grant_plan`.
-- **Outstanding.** The numbered magic, then the repository (ruled 2026-11-14 UTC): a lane creates
+- **Outstanding.** The numbered magic, on [#3982](https://github.com/nifeos/nife/pull/3982).
+- **Outstanding.** The repository (ruled 2026-11-14 UTC), after the numbered magic: a lane creates
   `nifeos/program_argument_contract`, runs the move check and a dry run, and tags `v0.1.0-pre.1`
   with no publish, after the renames and milestone 994.
 
@@ -291,10 +298,8 @@ The checks are in [the appendix](1106-program-argument-contract-outside-review/d
 
 ## BUGS
 
-- The round-trip harness fails for memory, not for a property: with item 12's exact-page builder
-  it ran past 11 GiB.
-- Nobody measured the coverage floor. The two unreached public lines have names; the percentage
-  does not.
+- The round-trip harness covers one pair of lengths, three bytes and two. With symbolic lengths
+  over the exact-page builder the solver ran past 11 GiB.
 - The mutation figures are the weekly census's, read from the metrics files. This review ran no
   census.
 - Items 1 to 15 can land in nife before the move, and most should, since each is cheaper inside
@@ -309,5 +314,5 @@ An outside review of `program_argument_contract` before it leaves. Four items bl
 manifest and a repository that do not stand alone, text that reaches back into nife, and seven names
 the template's gate refuses). Five land before the first tag (the content-length name, three Kani
 harnesses, a test for the one `unsafe` function, the mutation exemption, and an honest statement of
-what all-or-nothing covers), and six come later. This block records three rulings:
-the layout leaves as built with the magic unnumbered, three provisional public names, and the repository.
+what all-or-nothing covers), and six come later. This block records four rulings:
+the layout leaves as built with the magic numbered later, three public names, the remaining names, and the repository.

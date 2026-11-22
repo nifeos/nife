@@ -18,8 +18,8 @@ decodes the virtio vendor capabilities, MSI and MSI-X, the legacy interrupt swiz
 32-bit window of a host bridge's `ranges`. Every volatile access stays in the kernel. A function that answers every read with
 garbage leaves the caller with a bounded, well-formed answer or `None`. The crate is `no_std`, has no
 dependency of any kind and forbids `unsafe`. Ten Kani harnesses prove the hostile-input properties and
-each has a falsification patch. Nothing in it points back into nife. Every renamed public name is
-provisional, so the move waits on the architect's ratification of the table under "Names".
+each has a falsification patch. Nothing in it points back into nife. The architect ratified every
+renamed public name in the table under "Names".
 
 ## Identity
 
@@ -82,8 +82,8 @@ Not run, and so not claimed:
   in its decomposed form.
 - Mutation. The first run happens in the new repository, which exempts the 11 equivalent survivors the
   baseline row already counts.
-- The stranger test, the fuzz targets (an opt-in that waits for the repository) and
-  `cargo-semver-checks` (a first release has no baseline).
+- The stranger test, the weekly fuzz run of the targets in `fuzz/` (an opt-in that waits for the
+  repository) and `cargo-semver-checks` (a first release has no baseline).
 - The template's workflows, which run in the repository.
 
 ## Public API
@@ -111,7 +111,7 @@ What a stranger may find surprising:
 - `read_bars` returns `[None; 6]` for a header that is not type 0, `None` for a non-contiguous size
   mask, and `None` for a 64-bit BAR in the last slot or whose upper half does not probe cleanly.
 - `intx_interrupt_number` is the swizzle for a function on bus 0. The routing through a bridge is a
-  recorded limitation (BUGS in the milestone), not a function of this crate yet.
+  recorded limitation (BUGS in `kernel/src/pci.rs`), not a function of this crate yet.
 
 ## Proofs
 
@@ -176,12 +176,10 @@ specification section 4.1.4 for the vendor capabilities, and the device tree spe
 
 | item | owner |
 |---|---|
-| Wait for the virtio to `virtual_io` sweep (draft #3854) to land, because the crate has `VirtioCapability` and virtio constants. | the sweep lane |
-| Strip the provisional `Name:` blocks of the ratified names, as part of the move. | move lane |
 | Run `script/crate-move` for real: it stages the tree at the newest template, rewrites the `Name:` blocks, patch paths and record positions, and makes the repository's first commit. | move lane |
 | Convert the four path dependencies in nife (`kernel`, `driver_process_contract`, `jh7110_pci_express`, `machine_discovery`) to `git` and `rev` with `version = "0.1.0"` once the repository exists. | move lane |
 | Move the rows of `helpers/template_report_baseline.txt` and the verification notes with the crate; add the first weekly mutation run's exemptions for the 11 equivalent survivors. | move lane |
-| Land the milestone's remaining P2 items that belong in the repository: fuzz targets for `memory_window_32_bit` and the walks (opt-in), and the `intx_interrupt_number` bridge precondition with its `BUGS` entry in `kernel/src/pci.rs`. | move lane |
+| Turn on the weekly fuzz opt-in for the targets in `fuzz/`, since the crate has no `unsafe`. | move lane |
 | Run the stranger test and the template's workflows in the new repository. | move lane |
 
 ## Open questions

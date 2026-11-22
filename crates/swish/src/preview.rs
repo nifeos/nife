@@ -36,7 +36,7 @@ pub struct Vouched {
 /// let grant_plan::CommandLine::Run(spec) = grant_plan::parse(b"./a.out") else { panic!() };
 /// let m = grant_contract::Manifest { network: true, ..program_table::NO_NOTE_MANIFEST };
 /// let holds = grant_plan::ShellHoldings::default();
-/// let e = grant_plan::plan_against(&spec, m, holds, grant_plan::expansion::Expansion::none()).unwrap();
+/// let e = grant_plan::plan_against(&spec, m, &holds, &grant_plan::expansion::Expansion::none()).unwrap();
 /// let mut said = Vec::new();
 /// swish::write_image_capabilities(b"./a.out", b"sha256:ab12", None, true, Some(m), &e, &holds, &mut |b| said.extend_from_slice(b));
 /// let said = String::from_utf8(said).unwrap();
@@ -197,21 +197,21 @@ pub fn write_capabilities(
         Err(r) => return write_say(Say::Cannot(r), out),
     };
     let sink_file = match l.output {
-        Some(t) => match grant_plan::output_file_grant(t, holdings) {
+        Some(t) => match grant_plan::output_file_grant(t, &holdings) {
             Ok(g) => Some(g),
             Err(r) => return write_say(Say::Cannot(r), out),
         },
         None => None,
     };
     let source_file = match l.input {
-        Some(t) => match grant_plan::input_file_grant(t, holdings) {
+        Some(t) => match grant_plan::input_file_grant(t, &holdings) {
             Ok(g) => Some(g),
             Err(r) => return write_say(Say::Cannot(r), out),
         },
         None => None,
     };
     let diag_file = match l.diagnostics {
-        Some(t) => match grant_plan::output_file_grant(t, holdings) {
+        Some(t) => match grant_plan::output_file_grant(t, &holdings) {
             Ok(g) => Some((g, l.diagnostics_mode())),
             Err(r) => return write_say(Say::Cannot(r), out),
         },
@@ -233,7 +233,7 @@ pub fn write_capabilities(
             source: l.stage_source(i, source_file),
             diagnostics: diag_file,
         };
-        match program_table::plan_stage(&spec, holdings, expanded, streams) {
+        match program_table::plan_stage(&spec, &holdings, &expanded, &streams) {
             Err(refusal) => return write_refusal(&spec, refusal, out),
             Ok((program, e)) => {
                 // Narrowed by the line's verb, as the progenitor narrows it reading the same word

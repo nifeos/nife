@@ -10,8 +10,9 @@
 /// **The one trap in this crate**, one per architecture, used by every system call: the number in
 /// `x8`/`a7`/`rax` and six words in both directions. No register survives: the kernel writes the
 /// first on every system call and some methods write up to the sixth, which goes in as zero so
-/// [`receive_message`] reads `0` unless the kernel labelled a death (§148 (resolves by asking the
-/// kernel)). `helpers/system_call_asm.py` gates every userspace trap. See notes/user-mode-runtime.md.
+/// [`receive_message`] reads `0` unless the kernel labelled a death. Declared as an input only, the
+/// sixth register would let the compiler keep a live value in it across the trap. See
+/// `docs/design.md`.
 ///
 /// # Safety
 /// `svc`/`ecall` traps to the kernel. The kernel validates the capability and the method before
@@ -22,8 +23,8 @@
 #[cfg(target_arch = "aarch64")]
 pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
     let (mut w0, mut w1, mut w2, mut w3, mut w4, mut w5): (u64, u64, u64, u64, u64, u64);
-    // SAFETY: see the function doc; `x8` selects the system call (DECISIONS §10 (process model:
-    // capability-based, microkernel)), `x0..x5` carry the six-word ABI in both directions. `asm!`
+    // SAFETY: see the function doc; `x8` selects the system call, `x0..x5` carry the six-word ABI
+    // in both directions. `asm!`
     // is unsafe because the compiler cannot check that, not because a caller can get it wrong.
     unsafe {
         core::arch::asm!(
@@ -54,7 +55,7 @@ pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64
 #[cfg(target_arch = "riscv64")]
 pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
     let (mut w0, mut w1, mut w2, mut w3, mut w4, mut w5): (u64, u64, u64, u64, u64, u64);
-    // SAFETY: see the function doc; `a7` selects the system call (DECISIONS §10), `a0..a5` carry the
+    // SAFETY: see the function doc; `a7` selects the system call, `a0..a5` carry the
     // six-word ABI in both directions.
     unsafe {
         core::arch::asm!(
@@ -74,9 +75,9 @@ pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64
 
 /// The raw six-register round trip (`x86_64`). See the aarch64 twin's doc for the contract; only
 /// the trap instruction and register file differ: `syscall`, the number in `rax`, the words in
-/// `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9` (§124 (ratify the x86_64 system call ABI)). `system_call`
-/// writes `rcx` and `r11`, so both are declared clobbered, and `r10` replaces the C ABI's `rcx`.
-/// `options(nostack)` holds: `system_call` does not push. See notes/user-mode-runtime.md.
+/// `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`. `system_call` writes `rcx` and `r11`, so both are
+/// declared clobbered, and `r10` replaces the C ABI's `rcx`. `options(nostack)` holds:
+/// `system_call` does not push. See `docs/design.md`.
 ///
 /// # Safety
 /// `system_call` traps to the kernel, which validates the capability and method before acting. Same
@@ -87,8 +88,8 @@ pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64
 #[cfg(target_arch = "x86_64")]
 pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
     let (mut w0, mut w1, mut w2, mut w3, mut w4, mut w5): (u64, u64, u64, u64, u64, u64);
-    // SAFETY: see the function doc; `rax` selects the system call (DECISIONS §10, §124 (the `x86_64`
-    // system call ABI)), and the six argument registers carry the six-word ABI in both directions.
+    // SAFETY: see the function doc; `rax` selects the system call, and the six argument registers
+    // carry the six-word ABI in both directions.
     unsafe {
         core::arch::asm!(
             "syscall",
@@ -108,9 +109,8 @@ pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64
 }
 
 /// **One system call with every register the caller's to choose**: `trap6`, public, for the one
-/// program that must be able to say anything to the kernel (milestone 779 (fuzz the surface a
-/// confined process can reach)). `fixtures/src/confined_system_call_fuzzer.rs` draws the
-/// number and all six words at random, unknown numbers included, which no typed wrapper here can
+/// program that must be able to say anything to the kernel: a fuzzer of the surface a confined
+/// process can reach, which draws the number and all six words at random, unknown numbers included, which no typed wrapper here can
 /// express. Every other caller wants a typed wrapper, and this is not one.
 ///
 /// # Safety

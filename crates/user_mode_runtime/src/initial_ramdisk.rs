@@ -1,10 +1,10 @@
 //! **The initial ramdisk archive slice every program receives at spawn.**
 //!
 //! An initial ramdisk is a filesystem image the bootloader leaves in RAM before the kernel starts,
-//! readable before any storage driver exists. Inside this tree it is the initial ramdisk; the
-//! device tree's `linux,initrd-start` and QEMU's `-initrd` spellings stop at the boundary
-//! (`design/naming.md`). [`bytes`] holds the one assertion that the kernel mapped it, so each
-//! `_start` does not write its own. See notes/user-mode-runtime.md.
+//! readable before any storage driver exists. This crate calls it the initial ramdisk; the
+//! device tree's `linux,initrd-start` and QEMU's `-initrd` spellings stop at the boundary.
+//! [`bytes`] holds the one assertion that the kernel mapped it, so each `_start` does not write
+//! its own. See `docs/design.md`.
 
 //! Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 //! question 2), with [`bytes`]. His words: "Yes". Refused `initrd` (round 6's provisional name).
@@ -34,7 +34,8 @@ pub use address_space_layout::INITIAL_RAMDISK_VIRTUAL_ADDRESS;
 /// The kernel maps `length` bytes of the archive, read-only, at [`INITIAL_RAMDISK_VIRTUAL_ADDRESS`], before
 /// this process's `_start` runs, for the whole lifetime of the process; that reserved RAM outlives
 /// every process, which is what makes the `'static` lifetime honest. The caller must pass the
-/// `length` its own `_start` actually received: no type can check that (notes/unsafe-obligations.md).
+/// `length` its own `_start` actually received: no type can check that, so the obligation stays a
+/// sentence rather than an `assert!`.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with its module. His words: "Yes". Refused `initrd_bytes` (round 6's provisional

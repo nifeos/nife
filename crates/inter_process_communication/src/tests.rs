@@ -411,3 +411,24 @@ fn binding_to_an_interrupt_is_visible_and_one_way() {
     e.bind_to_interrupt(|_| panic!("nobody was queued"));
     assert!(e.is_bound_to_interrupt(), "binding twice does not undo it");
 }
+
+/// One tagged queue: its three words, the tag, and the count with the flag, five words on a 64-bit
+/// target, two fewer than a pair of queues would take.
+#[test]
+#[cfg(target_pointer_width = "64")]
+fn a_rendezvous_is_five_words() {
+    assert_eq!(core::mem::size_of::<Rendezvous<N>>(), 5 * 8);
+}
+
+/// **A tag that names an empty queue breaks the invariant**, and the check says so. The public
+/// operations never leave this state, so the test builds it by hand: the check is what the
+/// harnesses lean on, and a check that always answers yes would prove nothing.
+#[test]
+fn a_tag_naming_an_empty_queue_breaks_the_invariant() {
+    let mut e: Rendezvous<N> = Rendezvous::new();
+    assert!(e.one_queue_invariant_holds());
+    e.waiting = rendezvous::Waiting::Senders(Queue::new());
+    assert!(!e.one_queue_invariant_holds());
+    e.waiting = rendezvous::Waiting::Receivers(Queue::new());
+    assert!(!e.one_queue_invariant_holds());
+}

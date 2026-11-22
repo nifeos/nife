@@ -41,19 +41,19 @@ pub use escalation::{COOPERATIVE_GRACE_POLLS, Escalation, InterruptAction};
 // used. Not re-exported: each item has one public path, in `grant_contract`.
 pub(crate) use grant_contract::*;
 pub use parsing::{
-    BUILTINS, MAXIMUM_POSITIONALS, ParsedInvocation, UserVerb, check_words, for_each_word,
-    job_operand, kill_operands, line_verb, parse, parse_invocation, tokenize, user_verb,
-    vouch_operand, vouched_name, write_argument_page,
+    BUILTINS, MAXIMUM_POSITIONALS, NoJobNamed, ParsedInvocation, UserVerb, check_words,
+    for_each_word, job_operand, kill_operands, line_verb, parse, parse_invocation, tokenize,
+    user_verb, vouch_operand, vouched_name, write_argument_page,
 };
 pub(crate) use planning::nav_refusal;
 pub use planning::{
     Streams, check_chain, input_file_grant, output_file_grant, plan_against,
     plan_against_with_streams,
 };
-// The rows the tests plan against, as a caller would pass them (see the dev dependency's comment).
-#[cfg(test)]
-use program_table::Program;
 pub use refusal::{CapabilityKind, Refusal};
+// The rows the tests plan against, as a caller would pass them.
+#[cfg(test)]
+use test_support::rows;
 
 mod lexing;
 

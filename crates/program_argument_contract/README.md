@@ -54,9 +54,12 @@ Two Kani harnesses cover the parser, over a symbolic 48-byte page that carries t
 yields exactly `len()` arguments, with `is_empty` agreeing.
 `a_parsed_page_holds_exactly_what_its_header_states` proves that a page which parses holds exactly
 `count` arguments whose four-byte prefixes and bytes add up to `total`. Each has a falsification
-patch in `falsifications/` that turns it red. No harness covers the builder's round trip: a
-proof over its 4,096-byte buffer exhausted the checker's memory, so the tests cover it. No proof covers the
-caller's promise that the address names a mapped page, because Kani cannot see a mapping.
+patch in `falsifications/` that turns it red.
+`the_builder_and_the_parser_round_trip_two_arguments` proves that two arguments of three and two
+symbolic bytes, written over a 4,096-byte page of stale bytes, read back exactly as `PageBuilder`
+wrote them. Its falsification patch is in `falsifications/` too. Each harness verifies in under a
+minute. No proof covers the caller's promise that the address names a mapped page,
+because Kani cannot see a mapping.
 
 ## Building and testing
 
@@ -73,13 +76,15 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
   checksum. No single-field damage yields a partial argv. The page has one writer and maps
   read-only, so this is a property of the format under corruption and not an attack surface.
 - `from_virtual_address` reads through a `usize` pointer, so on a target narrower than 64 bits an
-  address above 4 GiB would read a different page. No target built here is that narrow.
+  address above 4 GiB would read a different page. Its `# Safety` section makes a fitting address
+  the caller's promise. No target built here is that narrow.
 - A secret on a command line is plain bytes on this page.
 - This crate is one file, `src/lib.rs`, because the nife repository's `std` port copies it by
   name. A test checks that `src/` holds no other file.
 - `PageBuilder::new` takes a slice of exactly 4,096 bytes, so a proof over the builder needs the
-  whole page. A round-trip harness over one built page ran Kani's solver past 11 GiB and failed,
-  so no proof covers the builder.
+  whole page. With symbolic argument lengths the solver ran past 11 GiB and failed, so the
+  round-trip proof fixes the lengths at three and two bytes and leaves the bytes symbolic. The
+  tests cover other lengths, the empty argument included.
 
 ## Minimum Rust version
 
