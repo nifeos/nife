@@ -612,6 +612,8 @@ pub fn free(frame: PageFrame) {
 /// Return the `count` frames from `first` that one [`alloc_contiguous`] or
 /// [`alloc_contiguous_zeroed`] of `count` handed out. Panics, with the bitmap unchanged, on a run
 /// the allocator does not own whole or that holds a free frame.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by lane 1103-finish-review, after the crate's own.
 pub fn free_contiguous(first: PageFrame, count: usize) {
     let mut guard = ALLOCATOR.lock();
     let allocator = guard

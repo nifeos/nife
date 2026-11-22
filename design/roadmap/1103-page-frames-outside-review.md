@@ -1,6 +1,7 @@
 ---
 status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: 1034
 decision_dependencies: none
 machine_requirements: none
@@ -236,7 +237,7 @@ The checks are in [the appendix](1103-page-frames-outside-review/done-when.md).
 
 ## Follow-on
 
-- **The move.** Item 17 is the move lane's, and the review package has its clearance.
+- **Outstanding.** Item 17 is the move lane's, and the review package has its clearance.
 
 ## BUGS
 
