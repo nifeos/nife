@@ -13,7 +13,7 @@ device_tree_blob = { version = "0.1.0", git = "https://github.com/nifeos/device_
 # The JH7110 device crates take plain values and read no tree; `jh7110` finds each block for them
 # and fills in their types, so it names them. `designware_mobile_storage` has no type here: its
 # slot is this crate's own `jh7110::designware_mobile_storage::Slot`, plain values.
-designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "0e8f92bf67e58016983164cb52bf274e08e1d7ef" }
+designware_ethernet = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/designware_ethernet", rev = "d6730d2218edead38fac3fe96703eaa1e5e92ee2" }
 jh7110_clock_and_reset = { version = "0.1.0", path = "../jh7110_clock_and_reset" }
 # `pci_express` fills `jh7110_pci_express`'s `Port`, and reads `ranges` with
 # `pci_configuration_space`'s decoder.
