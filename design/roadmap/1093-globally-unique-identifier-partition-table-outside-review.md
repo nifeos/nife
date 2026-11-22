@@ -1,6 +1,7 @@
 ---
 status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: 1017
 decision_dependencies: none
 machine_requirements: none
@@ -288,7 +289,7 @@ The checks are in [the appendix](1093-globally-unique-identifier-partition-table
 
 ## Follow-on
 
-- **Outstanding.** The move lane: P0-1, P1-11, P1-12 and the fuzz target of P2-14, which need the
+- **Recorded.** The move lane: P0-1, P1-11, P1-12 and the fuzz target of P2-14, which need the
   new repository. The new repository's `proofs.yml` passes `kani-args: -Z stubbing`, which the
   `parse` totality harnesses need. The template fixes its `prose_acronyms` false positives.
 
