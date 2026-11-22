@@ -63,13 +63,9 @@ creation was chosen over
 creating it on a principal's first login). An authenticated identity with no provisioned subtree is
 refused, folded into the same `DENIED` a wrong password gets.
 
-Two bounds came with that change, and both still hold. An identity longer than
-`file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES` (16 bytes) cannot get a per-identity subtree in this slice
-at all, though `login_contract::MAXIMUM_IDENTITY` (64 bytes) would otherwise accept it.
-`grant::fits_words` refuses it rather than truncate a name two identities agreeing on their first
-16 bytes would share. The subtree caretaker reads its directory from a grant page, so lifting the
-bound is milestone 1122 (every name travels on a page)'s next step. And the
-unprovisioned-subtree fold is a considered answer, not the accident of reusing the fold. A caller
+Any identity `login_contract::MAXIMUM_IDENTITY` (64 bytes) accepts gets its subtree: the subtree
+caretaker reads its directory whole from its grant page (milestone 1122 (every name travels on a
+page)), so no name is cut short. The unprovisioned-subtree fold is a considered answer, not the accident of reusing the fold. A caller
 must not be able to tell "your identity has no home" from "your password is wrong" by comparing
 outcomes across attempts. That would let a caller probe which identities are provisioned without
 ever presenting a right password for one (`login_contract::DENIED`'s own doc gives the reasoning).
