@@ -38,7 +38,7 @@ fn a_view_of_a_region_learns_what_it_spent_and_can_spend_nothing() {
     let region = crate::memory_region::create(8).expect("an 8-page region");
     let view = hold(region, Rights::ENUMERATE);
 
-    assert_eq!(call(view, abi::memory_region::USAGE, usage::SIZE), 8);
+    assert_eq!(call(view, abi::memory_region::USAGE, usage::SIZE_PAGES), 8);
     assert_eq!(call(view, abi::memory_region::USAGE, usage::COMMITTED), 0);
 
     crate::memory_region::retype_page(region).expect("one plain page");
@@ -72,7 +72,7 @@ fn a_budget_without_enumerate_is_refused_and_an_unknown_record_is_refused_first(
     let region = crate::memory_region::create(4).expect("a 4-page region");
     let spend = hold(region, Rights::WRITE);
     assert_eq!(
-        call(spend, abi::memory_region::USAGE, usage::SIZE),
+        call(spend, abi::memory_region::USAGE, usage::SIZE_PAGES),
         Error::NotPermitted as i64
     );
     let view = hold(region, Rights::ENUMERATE);
@@ -85,7 +85,7 @@ fn a_budget_without_enumerate_is_refused_and_an_unknown_record_is_refused_first(
     // A reclaimed region's view is stale, and says `Gone` rather than answering zero.
     crate::memory_region::destroy(region);
     assert_eq!(
-        call(view, abi::memory_region::USAGE, usage::SIZE),
+        call(view, abi::memory_region::USAGE, usage::SIZE_PAGES),
         Error::Gone as i64
     );
     let _ = sched::delete_current_capability(spend);

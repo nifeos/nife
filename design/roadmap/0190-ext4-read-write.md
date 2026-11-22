@@ -52,12 +52,15 @@ public API:
   `inline_data` refuses to mount. The tables are in
   [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - Write, bug 1. When a directory grows past its inline extents into a level-1 extent leaf, the
-  directory's `i_blocks` comes out 16 sectors short. It reproduces at every size tried from 300 to
-  3,000 entries. `e2fsck -fn` exits 4 ("i_blocks is 488, should be 504"). The directory's contents
-  are correct.
+  directory's `i_blocks` comes out 16 sectors short. `e2fsck -fn` exits 4 ("i_blocks is 488,
+  should be 504"). The directory's contents are correct.
 - Write, bug 2. `truncate_inode` on a file whose extent tree has depth 2 returns
   `Corrupted { op: "extent:empty_index" }` in 2 of 8 seeds. It is not atomic: when it fails, the
   bytes from the new end of file to the end of that block are already zeroed.
+- Write, bug 3. At 1 KiB blocks `rsext4` leaves clear the padding of an inode bitmap it
+  initializes, and `e2fsck -fn` exits 4.
+- Write oracle, 2026-11-22 (UTC). Sixteen cases, extended attributes included, fail only on bugs
+  1 to 3 ([the write-oracle appendix](0190-ext4-read-write/write-oracle.md)).
 - Journal. It writes descriptor, revoke and commit blocks with journal checksum v3, and Linux's
   `e2fsck` replays them. Across two images, 158 power-cut points all recovered to a clean volume.
   It commits only on `sync()` or unmount. In 2 of 79 cuts on one image the `needs_recovery` flag was
@@ -70,7 +73,7 @@ public API:
   through rsext4, under milestone 37's crash injector). Nothing has run it under nife.
 
 Not yet tested: a mount or a read by the kernel rather than `e2fsck` and `debugfs`, writes reordered between flushes,
-extended attribute writes, volumes over 1 GiB, concurrent callers, `orphan_file`, hostile images,
+volumes over 1 GiB, concurrent callers, `orphan_file`, hostile images,
 and performance.
 
 ## The bar, and where rsext4 stands
@@ -240,6 +243,7 @@ it. That ruling is not the adoption ruling above, which stays open.
   give a reader the time Linux wrote until that lands.
 - `write_file` fails with `Corrupted { op: "extent:parent_key" }` when 1,500 single-block extents
   arrive shuffled, in 0.9.2 and on `dev`; in ascending order the file builds. No upstream draft yet.
+- Bug 3 above has no upstream item yet.
 - The read oracle compares against `debugfs`, which is libext2fs, not the Linux kernel; this host
   could not mount a loop device.
 - No phase is priced. The honest estimate comes after the corpus survey and the first upstream
@@ -259,9 +263,11 @@ it. That ruling is not the adoption ruling above, which stays open.
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the
   sector-size report as a test, and the CI job `ext4-read-oracle` on an x86_64 host.
+- **Done.** The oracle's write half in `tools/ext4_oracle/` and the `ext4-read-oracle` job, bugs
+  1 to 3 held as expected outcomes.
 - **Outstanding.** Our side: the oracle on aarch64 and riscv64 hosts, the kernel as a
-  second read oracle, a volume over 1 GiB, the oracle's write half, the write-reordering and
-  power-cut sweeps, hostile-image fuzzing, and `ext4_server` itself.
+  second read oracle, a volume over 1 GiB, the write-reordering and power-cut sweeps,
+  hostile-image fuzzing, an upstream item and reproducer for bug 3, and `ext4_server` itself.
 - **Outstanding.** The adoption ruling under §46 (thin primitives or whole subsystems), which no lane can give.
 
 ## Index row

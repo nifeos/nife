@@ -1,12 +1,14 @@
-//! The line discipline engine: a sans-IO editor for a serial terminal.
+//! The line discipline engine: an editor for a serial terminal that does no input or output of its
+//! own.
 //!
-//! [`LineEditor`] takes one byte at a time and emits echo bytes and completed lines; it does no IO,
-//! IPC, UART or endpoint work, so the `line_editor` component only wires it up. It edits at a
-//! cursor, moves by control characters and ANSI sequences, kills and yanks, keeps [`HISTORY_LINES`] lines of
-//! history, ends a line on CR, LF or CRLF, and reports ^C, ^D, ^Z and Tab as an [`Event`]. Output
-//! newline translation is the free function [`expand_output`], and [`handoff`] carries the editor's
-//! state across a replacement. See notes/line-discipline.md for the bindings and what it leaves
-//! out, and notes/terminal-contract.md for the contract its echo implements.
+//! [`LineEditor`] takes one byte at a time and emits echo bytes and completed lines; it does no
+//! input or output (IO), inter-process communication (IPC), universal asynchronous
+//! receiver-transmitter (UART) or endpoint work, so the program that runs it only wires it
+//! up. It edits at a cursor, moves by control characters and ANSI (American National Standards
+//! Institute) sequences, kills and yanks, keeps [`HISTORY_LINES`] lines of history, ends a line on
+//! a carriage return (CR), a line feed (LF) or both (CRLF), and reports ^C, ^D, ^Z and Tab as an
+//! [`Event`]. Output newline translation is the free function [`expand_output`], and [`handoff`]
+//! carries the editor's state across a replacement of the program that runs it.
 //!
 //! Name: ratified 2026-07-30 (calef) for the word and 2026-08-01 for the spelling, replacing
 //! `linedisc` and then `lineedit`. Refused `linedisc` (a Unix term of art from the model this OS
@@ -85,8 +87,7 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
-// The crate root is an index (§282 (when a file is split, the parent becomes an index)): the
-// engine, the raw queue and the output side are private modules re-exported here by name. The
+// The crate root is an index: the engine, the raw queue and the output side are private modules re-exported here by name. The
 // public module keeps its docs on its `pub mod` line below.
 
 mod line_disc;
@@ -97,9 +98,8 @@ pub use line_disc::{Event, HISTORY_LINES, LineEditor, MAXIMUM_LINE_BYTES, MAXIMU
 pub use output::{Sink, expand_output};
 pub use raw_queue::{MAXIMUM_RAW_QUEUE_BYTES, RawQueue};
 
-/// The line editor's state as a handoff blob (milestone 23 (a capability-routed component OS
-/// with live replacement); §209 (state handoff is an opaque blob over a granted frame, and it is
-/// optional)).
+/// The line editor's state as a handoff blob, which a running program passes to the program that
+/// replaces it.
 ///
 /// It carries what a replacement `line_editor` needs to carry on: the half-typed line and its
 /// cursor, the kill buffer, the history ring and the prompt. It leaves out state that lasts one

@@ -5,7 +5,7 @@
 //! **A program written by somebody else hears its arguments as bytes, and the bytes carry no
 //! authority.** Whether `rg foo src` may read `src` is decided by the access the line granted and
 //! the program's own manifest, so nothing on this page is validated for meaning. The page is
-//! length-prefixed, not delimited, so any byte (a NUL, a newline, `0xff`) may appear in an argument.
+//! length-prefixed, not delimited, so any byte (a zero byte, a newline, `0xff`) may appear in an argument.
 //! It holds `argv[0]` too, since programs such as `ripgrep` skip the first element and `clap` treats
 //! it as the program's name. It is one page because an argument line that does not fit one frame is
 //! refused whole rather than truncated.
@@ -13,7 +13,7 @@
 //! # The layout
 //! ```text
 //!   offset  size  field
-//!   0       8     MAGIC, b"nifeargv"
+//!   0       8     MAGIC, b"PROGARG2"
 //!   8       4     count, little-endian u32: how many arguments
 //!   12      4     total, little-endian u32: how many bytes of records follow
 //!   16      ...   count records, each a little-endian u32 length and then that many bytes
@@ -30,6 +30,14 @@
 //! `count` and `total` both describe a prefix of the records is a shorter, consistent argv and reads
 //! as one (see BUGS below).
 
+//! # Versions
+//!
+//! - 2, 2026-11-22 (UTC): the magic became the page's name and the version's digit. The fields
+//!   after it did not move. A reader migrates by comparing the new magic. A reader built for
+//!   version 1 refuses the new magic and reads no arguments, so the writer and every reader move
+//!   in one change.
+//! - 1: the layout above, under an unnumbered magic.
+
 //! # BUGS
 //!
 //! - A secret on a command line is plain bytes on this page. The layout accepts that cost, because
@@ -42,7 +50,7 @@
 //! - [`ArgumentPage::from_virtual_address`] reads through a `usize` pointer, so on a target
 //!   narrower than 64 bits an address above 4 GiB would read a different page. Its `# Safety`
 //!   section makes a fitting address the caller's promise. No target built here is that narrow.
-//! - This crate is one file, `src/lib.rs`: the nife repository's `std` port copies it by name, so a
+//! - This crate is one file, `src/lib.rs`: a standard library port copies it by name, so a
 //!   module split, or an inner attribute the port cannot carry, breaks that build and not this one.
 //!   A test checks that `src/` holds no other file.
 //! - The environment does not ride on this page.
@@ -87,15 +95,21 @@ const LENGTH_PREFIX_BYTES: usize = 4;
 // enough that no stored number truncates.
 const _: () = assert!(MAXIMUM_RECORDS_BYTES <= u32::MAX as usize);
 
-/// The first eight bytes of an assembled page. Provisional, with the rest of the layout.
-pub const MAGIC: [u8; 8] = *b"nifeargv";
+/// The first eight bytes of an assembled page: the page's name and then the digit of its
+/// [`VERSION`], so a reader that meets a later layout refuses it at the first comparison.
+///
+/// Name: ratified 2026-11-22 (UTC), with `VERSION` 2.
+pub const MAGIC: [u8; 8] = *b"PROGARG2";
 
-/// The page layout's version. The magic carries no digits, so this constant records the version
-/// the layout now carries: a break to the layout is a new version, and the magic changes in the
-/// same coordinated change.
+// The magic's last byte is the version's digit, so the two cannot drift apart.
+#[allow(clippy::cast_possible_truncation)]
+const _: () = assert!(MAGIC[7] == b'0' + VERSION as u8);
+
+/// The page layout's version, the digit that ends [`MAGIC`]: a break to the layout is a new
+/// version, and the magic's digit changes in the same coordinated change.
 ///
 /// Name: ratified 2026-11-21 (UTC).
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 
 /// This interface's identity in a program's `INTERFACES` note: 18, naming the argument page. The
 /// number is this interface's for good: no other interface takes it, and a format change is a new
@@ -484,8 +498,8 @@ mod tests {
         assert!(text.contains("used: "));
     }
 
-    /// Any byte survives, which is the reason the layout is length-prefixed: a NUL and a `0xff`
-    /// in the middle of an argument, and an argument that is empty.
+    /// Any byte survives, which is the reason the layout is length-prefixed: a zero byte and a
+    /// `0xff` in the middle of an argument, and an argument that is empty.
     #[test]
     fn every_byte_round_trips() {
         let all: Vec<u8> = (0..=255).collect();

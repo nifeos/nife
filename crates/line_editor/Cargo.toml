@@ -2,11 +2,28 @@
 name = "line_editor"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
-
-[lints]
-workspace = true
+rust-version = "1.88"
+description = "An allocation-free line editor for a serial terminal that does no input or output of its own"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nifeos/line_editor"
+readme = "README.md"
+keywords = ["no-std", "line-editor", "terminal", "readline", "kani"]
+categories = ["no-std", "command-line-interface", "text-editors"]
+publish = false     # stays until the release that publishes
 
 # None: the engine links nothing of the system it serves.
 [dependencies]
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

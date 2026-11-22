@@ -9,8 +9,8 @@ One read-only 4 KiB page that carries a program's argv as length-prefixed bytes.
 program writes it with `PageBuilder`, and the program's runtime reads it with `ArgumentPage`. `no_std`,
 no dependencies, so the writer and the reader share one definition and cannot drift on the layout.
 
-The bytes carry no authority. What a program may read or write is decided by the access it was
-granted, never by what its arguments say, so nothing on the page is validated for meaning.
+The bytes carry no authority. The access a program holds decides what it may read or write, never
+what its arguments say, so nothing checks the page's bytes for meaning.
 
 ## The contract
 
@@ -21,8 +21,8 @@ granted, never by what its arguments say, so nothing on the page is validated fo
 - The first argument is `argv[0]`, because programs such as `ripgrep` skip it and `clap` treats it
   as the program's name.
 - The records have room for `MAXIMUM_RECORDS_BYTES` (4,080) bytes, each argument's `record_bytes`
-  (its four-byte prefix and its bytes) included. A line that does not fit is refused whole with
-  `PushRefused::TooLong`, and nothing is truncated.
+  (its four-byte prefix and its bytes) included. When a line does not fit, `PageBuilder` refuses all
+  of it with `PushRefused::TooLong` and truncates nothing.
 - A page that does not parse reads as no arguments: a wrong magic, a zeroed frame, a count that
   disagrees with the records, or a length that overruns the page. The reader never returns a partial
   argv, because a program that sees half its arguments would act on a line nobody typed.
@@ -79,7 +79,7 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
   address above 4 GiB would read a different page. Its `# Safety` section makes a fitting address
   the caller's promise. No target built here is that narrow.
 - A secret on a command line is plain bytes on this page.
-- This crate is one file, `src/lib.rs`, because the nife repository's `std` port copies it by
+- This crate is one file, `src/lib.rs`, because a standard library port copies it by
   name. A test checks that `src/` holds no other file.
 - `PageBuilder::new` takes a slice of exactly 4,096 bytes, so a proof over the builder needs the
   whole page. With symbolic argument lengths the solver ran past 11 GiB and failed, so the
