@@ -27,51 +27,62 @@ Reuse: the template and its scaffold, loom, Kani, cargo-mutants, cargo-llvm-cov.
 
 ## Finding status
 
-- 1, template naming and prose gates: Done. The renames landed in
-  [#3640](https://github.com/nifeos/nife/pull/3640) and
-  [#3727](https://github.com/nifeos/nife/pull/3727); the acronyms, the badge row and the private
-  `take_claim` in [#3784](https://github.com/nifeos/nife/pull/3784); `cmos`, `pl` and `unix` in
-  `.github/accepted-words` in
-  [nifeos/clock_contract#1](https://github.com/nifeos/clock_contract/pull/1).
-- 2, clippy `doc_markdown` outside nife: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
-- 3, mutation exemptions and loom in the tests job: Done. The first `mutation` run on `main` named
-  the survivors, exempted with reasons in
-  [nifeos/clock_contract#4](https://github.com/nifeos/clock_contract/pull/4); the template's
+Read against nifeos/clock_contract `main` at `0aa2107` and nife `main`.
+
+- P0-1, template naming and prose gates: Done,
+  [#3640](https://github.com/nifeos/nife/pull/3640),
+  [#3727](https://github.com/nifeos/nife/pull/3727),
+  [#3784](https://github.com/nifeos/nife/pull/3784) and
+  [nifeos/clock_contract#1](https://github.com/nifeos/clock_contract/pull/1). The renames, the
+  expanded acronyms, the badge row and the private `take_claim` are in the source, and
+  `.github/accepted-words` keeps `cmos`, `pl` and `unix` with their reasons.
+- P0-2, clippy `doc_markdown` outside nife: Done,
+  [#3640](https://github.com/nifeos/nife/pull/3640). The crate's `clippy.toml` adds `VisionFive`
+  to `doc-valid-idents`.
+- P1-3, mutation exemptions and loom: Done,
+  [nifeos/clock_contract#4](https://github.com/nifeos/clock_contract/pull/4) and
+  [nifeos/clock_contract#5](https://github.com/nifeos/clock_contract/pull/5). The survivors the
+  first `mutation` run named carry reasons in `.github/mutants-exempts`, and the template's
   `proofs / loom` job runs loom under `--cfg loom`.
-- 4, the manifest outside nife: Done. The `publish` comment names no nife file
-  ([#3640](https://github.com/nifeos/nife/pull/3640)), and `Cargo.toml` carries `repository`.
-- 5, a reader never waits on a writer: Done, [#3576](https://github.com/nifeos/nife/pull/3576).
-- 6, `initialize` on every start: Done, [#3559](https://github.com/nifeos/nife/pull/3559), carried
-  onto the two-copy layout by [#3576](https://github.com/nifeos/nife/pull/3576).
-- 7, doc comments that assume nife: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
-- 8, 64-bit atomics: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
-- 9, two Kani harnesses with falsifications: Done,
-  [#3640](https://github.com/nifeos/nife/pull/3640).
-- 10, `propose::request` truncates silently: Done,
-  [#3640](https://github.com/nifeos/nife/pull/3640).
-- 11, `ClockPage::new` takes an integer: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
-- 12, a test name that claims more than it checks: Done,
+- P1-4, the manifest outside nife: Done,
+  [#3640](https://github.com/nifeos/nife/pull/3640) and the move
+  ([#3781](https://github.com/nifeos/nife/pull/3781)). The `publish` comment names no nife file,
+  and `Cargo.toml` carries `repository`.
+- P1-5, a reader never waits on a writer: Done,
   [#3576](https://github.com/nifeos/nife/pull/3576).
-- 13, `initialize` relies on a zeroed frame: Done,
+- P1-6, `initialize` on every start: Done, [#3559](https://github.com/nifeos/nife/pull/3559) and
+  [#3576](https://github.com/nifeos/nife/pull/3576), which carried it onto the two-copy layout.
+- P1-7, doc comments that assume nife: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
+- P1-8, 64-bit atomics: Done, [#3640](https://github.com/nifeos/nife/pull/3640). A
+  `compile_error!` refuses a target without them, and the README says so.
+- P1-9, two Kani harnesses with falsifications: Done,
   [#3640](https://github.com/nifeos/nife/pull/3640).
-- 14, `offset_for` saturates to zero: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
-- 15, who can use the crate: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
+- P2-10, `propose::request` truncates silently: Done,
+  [#3640](https://github.com/nifeos/nife/pull/3640).
+- P2-11, `ClockPage::new` takes an integer: Done,
+  [#3640](https://github.com/nifeos/nife/pull/3640). The parameter stays a `u64` named
+  `virtual_address`, and the doc says it is an address, not a pointer.
+- P2-12, a test name that claims more than it checks: Done,
+  [#3576](https://github.com/nifeos/nife/pull/3576).
+- P2-13, `initialize` relies on a zeroed frame: Done,
+  [#3640](https://github.com/nifeos/nife/pull/3640).
+- P2-14, `offset_for` saturates to zero: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
+- P2-15, who can use the crate: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
 - Decision 1, two copies and a publish count: Done,
   [#3576](https://github.com/nifeos/nife/pull/3576).
 - Decision 2, identity 8, 1, `CLOCKv01`: Done, [#3576](https://github.com/nifeos/nife/pull/3576).
-- Decision 3, the public names: Done (ruled 2026-11-19 UTC, option A). Built
-  ([#3640](https://github.com/nifeos/nife/pull/3640),
-  [#3727](https://github.com/nifeos/nife/pull/3727)) and ratified as built.
-- Review package: Done. [The package](../../notes/crate-reviews/clock-contract.md) names the
-  ratified spellings.
-- Review clearance: Done (ruled 2026-11-19 UTC, option A), as
-  [Decision 4](#decision-4-the-review-is-cleared-and-the-crate-moves) records.
-- The move: Done. The crate lives at `nifeos/clock_contract`, with `publish = false` and no tag,
-  and nife pins it by commit.
-- Stranger test: Done. The record is `docs/stranger-test.md` in the new repository
-  ([nifeos/clock_contract#2](https://github.com/nifeos/clock_contract/pull/2)), and
-  [nifeos/clock_contract#3](https://github.com/nifeos/clock_contract/pull/3) closed its README
-  findings.
+- Decision 3, the public names: Done, [#3640](https://github.com/nifeos/nife/pull/3640) and
+  [#3727](https://github.com/nifeos/nife/pull/3727), ratified as built (ruled 2026-11-19 UTC).
+- Review package: Done, [#3779](https://github.com/nifeos/nife/pull/3779).
+  [The package](../../notes/crate-reviews/clock-contract.md) names the ratified spellings.
+- Review clearance: Done, [#3779](https://github.com/nifeos/nife/pull/3779) (ruled 2026-11-19
+  UTC), as [Decision 4](#decision-4-the-review-is-cleared-and-the-crate-moves) records.
+- The move: Done, [#3781](https://github.com/nifeos/nife/pull/3781). The crate lives at
+  `nifeos/clock_contract`, with `publish = false` and no tag, and nife pins it by commit.
+- Stranger test: Done,
+  [nifeos/clock_contract#2](https://github.com/nifeos/clock_contract/pull/2) and
+  [nifeos/clock_contract#3](https://github.com/nifeos/clock_contract/pull/3). The record is
+  `docs/stranger-test.md` in the crate's repository.
 
 ## Goal
 

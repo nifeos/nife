@@ -1471,6 +1471,16 @@ echo "==> roadmap status"
 # cannot know whether the pull request is a draft. Its fixtures can still prove it fails.
 "$(dirname "$0")/roadmap" --selftest >/dev/null
 
+# Every crate review's `## Finding status` keeps one closed set of states, so that
+# script/review-status can derive the inventory and no document carries a total that goes stale
+# (ruled 2026-11-03 UTC). A Done line cites its pull request, a Will not fix line its ruling date,
+# and a review whose every finding is settled is BUILT. The selftest plants each refusal.
+echo "==> crate reviews keep one closed set of finding states"
+# lint-scope: both
+# lint-quick
+# lint-id: review-status
+"$(dirname "$0")/review-status" --selftest >/dev/null
+"$(dirname "$0")/review-status" --check
 
 # Intra-doc links, denied when broken. This codebase leans unusually hard on `[`Item`]` links to
 # stitch the code to itself and to the notes, which is deliberate (see CLAUDE.md on commenting) and
@@ -3118,6 +3128,19 @@ if bad:
 print(f"proof-only modules: {len(files)} riscv64 file(s) on the aarch64 prover host, every "
       "crate::arch reference recorded")
 PY
+
+# 5c. **A boot-line head is spelled once** (milestone 1078 (`boot_ladder`: what an outside
+#     maintainer would fix before it leaves), item 7; helpers/boot_line_heads.py, name
+#     provisional). The kernel, the shell and every reader build the heads from
+#     `boot_ladder::Heads`, and `serial_console::heads::HEADS` is nife's value of it. A gate that
+#     spells a head by hand passes every unit test after a wording change and then fails as a
+#     timeout. Test modules, fixtures and a copy marked `boot-line-head: copy, <reason>` pass;
+#     the helper's header says what it cannot see. Fixtures first, because a green run looks the
+#     same as a check that cannot fire.
+echo "==> a boot-line head is spelled once"
+# lint-scope: code
+python3 "$(dirname "$0")/../helpers/boot_line_heads.py" --selftest
+python3 "$(dirname "$0")/../helpers/boot_line_heads.py"
 
 # 6. **`notes/` and `design/` markdown filenames are lowercase and hyphenated** (CLAUDE.md).
 #    They are URL slugs the moment any of this is published, and a hyphen is a word separator in a
