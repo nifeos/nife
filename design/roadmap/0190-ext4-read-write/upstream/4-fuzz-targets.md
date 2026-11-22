@@ -90,7 +90,7 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
 
 ### Reasoning of each step
 
-- The targets call only the crate's public interface and do not change `rsext4`, so no behaviour
+- The targets call only the crate's public interface and do not change `rsext4`, so no behavior
   changes; this adds a way to check it.
 - The fuzz crate has its own `[workspace]` and stays out of the repository workspace. `cargo fuzz`
   needs the nightly toolchain and sanitizer flags, and joining the workspace would make every
@@ -103,7 +103,7 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
   inputs at the block-size step.
 - The walk has a bound because a damaged image can make a directory cycle or claim a huge file, and
   without a bound one iteration could time out and hide the real problem. The bound limits only
-  the target's work, not the crate's behaviour.
+  the target's work, not the crate's behavior.
 - The script writes the journal seed's committed transaction itself (a descriptor block, two data
   blocks and a commit block) and marks the filesystem as needing recovery, because `debugfs`'s
   journal-writing commands leave no committed transaction in this version. The script confirms the
@@ -136,7 +136,7 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
 `#[repr(C)]` with `u32` fields, so its alignment is 4, and the function checks only the length,
 not the alignment. The safe public constructor `BlockGroupDescTable::new` accepts any `&[u8]`, so a
 caller passing a misaligned slice (`&bytes[1..]`, for example) gets a misaligned reference, and
-Rust leaves the behaviour of forming one undefined. Also, without the `64bit` feature a descriptor
+Rust leaves the behavior of forming one undefined. Also, without the `64bit` feature a descriptor
 is 32 bytes while `Ext4GroupDesc` is 64, so for every descriptor but the last the high-half fields read the next
 descriptor's bytes. The fuzz target always passes an aligned slice, so it did not trigger this,
 and this pull request does not change it; inside the crate only `test_contracts.rs` calls
@@ -163,14 +163,14 @@ Each target's 600-second run (`-print_final_stats=1`; coverage, features and cor
 status line):
 
 ```text
-target                  runs      seconds  final status                         crashes
-superblock              6952314   601      cov: 867 ft: 870 corp: 27/26Kb       0
-group_descriptor_table  6459995   601      cov: 602 ft: 1212 corp: 42/56Kb      0
-extent_tree             45019720  601      cov: 136 ft: 286 corp: 44/6284b      0
-directory_block         32870447  601      cov: 186 ft: 508 corp: 90/28Kb       0
-mount_and_walk          273613    601      cov: 2853 ft: 6287 corp: 230/63Mb    0
-htree_lookup            66171     603      cov: 3159 ft: 7828 corp: 174/79Mb    0
-journal_replay          33066     601      cov: 3657 ft: 6068 corp: 37/73Mb     0
+target                  runs      seconds  final status                             crashes
+superblock              6952314   601      cov: 867 features: 870 corp: 27/26Kb     0
+group_descriptor_table  6459995   601      cov: 602 features: 1212 corp: 42/56Kb    0
+extent_tree             45019720  601      cov: 136 features: 286 corp: 44/6284b    0
+directory_block         32870447  601      cov: 186 features: 508 corp: 90/28Kb     0
+mount_and_walk          273613    601      cov: 2853 features: 6287 corp: 230/63Mb  0
+htree_lookup            66171     603      cov: 3159 features: 7828 corp: 174/79Mb  0
+journal_replay          33066     601      cov: 3657 features: 6068 corp: 37/73Mb   0
 ```
 
 The seed check, with the uncommitted program:

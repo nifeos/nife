@@ -79,7 +79,7 @@ size, and mount reports `Io` rather than `InvalidMagic`.
   `BadSuperblock`. Checking the magic first keeps "this is not ext4" ahead of "this ext4's
   geometry does not fit", and spares the three call sites from each repeating the same check.
 - The test reuses the existing `ErrorMockDevice` (4,096-byte sectors). The two cases share one
-  test because together they prove one behaviour: a refused mount reports its real reason.
+  test because together they prove one behavior: a refused mount reports its real reason.
 
 ### Verification
 
@@ -106,7 +106,7 @@ size, and mount reports `Io` rather than `InvalidMagic`.
 - **Design choice upstream might refuse.** The error kind a caller sees changes: `Io` becomes
   `BadSuperblock` or `InvalidMagic`, and mkfs's read-back reports `InvalidMagic` where it reported
   `Corrupted`. A caller that matched on `Io` to mean "this device cannot hold this filesystem"
-  would change behaviour. We found none in the repository.
+  would change behavior. We found none in the repository.
 - "An external read comparison tool" is our `tools/ext4_oracle`, run through a local, uncommitted
   `[patch]` of `rsext4`. When the fix lands upstream and we move to it, the oracle's
   `expected.txt` lines for those three image and sector pairings change with it.

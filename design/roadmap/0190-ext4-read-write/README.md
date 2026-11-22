@@ -11,9 +11,13 @@ main page's prose budget has no room for.
 - [`read-oracle.md`](read-oracle.md): phase 1's read oracle, the generated corpus, what `rsext4`
   reads equal to `debugfs` and what it does not, and why 1 KiB and 2 KiB blocks are refused on
   4,096-byte sectors.
+- [`upstream/`](upstream/README.md): the drafts of the upstream round, one text and one patch per
+  submission, each awaiting the architect's review before anyone files it.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default,
 `design/roadmap/X/` beside `design/roadmap/X.md`. calef names directories.*
 
 - `survey` Name: provisional. For the candidates and refusals the parent cites. calef names files.
 - `read-oracle` Name: provisional. For the measurement the parent's phase 1 cites. calef names files.
+- `upstream` Name: provisional. For the drafts of the parent's upstream round. calef names
+  directories.
