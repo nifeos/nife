@@ -48,7 +48,19 @@ impl Pool {
         self.budget.set(self.budget.get() - 1);
         let p = Box::into_raw(Box::new(PageTable::new()));
         self.tables.borrow_mut().push(p);
-        Some(p as u64)
+        Some(p.addr() as u64)
+    }
+
+    /// The table this pool owns at `physical_address`, as the pointer `Box::into_raw` returned, so
+    /// the mapper writes through a pointer that keeps its provenance and Miri has no
+    /// integer-to-pointer cast to warn about. Panics on any other address.
+    fn pointer(&self, physical_address: u64) -> *mut PageTable {
+        self.tables
+            .borrow()
+            .iter()
+            .copied()
+            .find(|p| p.addr() as u64 == physical_address)
+            .unwrap_or_else(|| panic!("no table of this pool sits at {physical_address:#x}"))
     }
 
     /// How many tables the mapper has taken, root included.
@@ -60,17 +72,17 @@ impl Pool {
     fn mapper<F: PageFormat>(
         &self,
         half: Half,
-    ) -> Mapper<impl FnMut() -> Option<u64> + '_, fn(u64) -> *mut PageTable, F> {
+    ) -> Mapper<impl FnMut() -> Option<u64> + '_, impl Fn(u64) -> *mut PageTable + '_, F> {
         let root = self.fresh().expect("no budget for a root");
-        // SAFETY: `root` is fresh, zeroed and 4 KiB-aligned; `physical_to_pointer` is the identity, which
-        // is right because these "physical" addresses are host addresses.
+        // SAFETY: `root` is fresh, zeroed and 4 KiB-aligned; `pointer` returns the pool's own
+        // pointer to every table it holds, which is right because these "physical" addresses are
+        // host addresses.
         unsafe {
             Mapper::new(
                 root,
                 half,
                 move || self.fresh(),
-                (|physical_address| physical_address as *mut PageTable)
-                    as fn(u64) -> *mut PageTable,
+                move |physical_address| self.pointer(physical_address),
             )
         }
     }
