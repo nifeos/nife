@@ -222,19 +222,20 @@ As set out under the recommendation. Where an array fits badly:
 
 ## The follow-on: a check that refuses spelled numbers and ordinals
 
-The ruling says the tree must not permit these spellings, so the naming check gains a rule. Two
-further rulings of 2026-11-22 set its scope:
+The ruling says the tree must not permit these spellings, so the naming check gains a rule. Three
+further rulings of 2026-11-22 set its scope: the check refuses positions and instances, and allows
+range boundaries and quantities.
 
-- `first` and `last` are allowed only as a range or sequence boundary, the meaning of std's
-  `slice::first` and `split_first` and of UEFI's `FirstLBA`. Every position sense is refused: the
-  check refuses `first_` or `last_` before a position noun (`word`, `register`, `argument`,
-  `parameter`, `result`, `field`, `operand`), and any ordinal past `first`. `second` after `per`,
-  the unit of time, stays allowed. Where the check cannot tell the sense, the name carries a
+- `first` and `last` stay only as a range or sequence boundary, as in std's `slice::first` and
+  UEFI's `FirstLBA`. The check refuses `first_` or `last_` before a position noun (`word`,
+  `register`, `argument`, `parameter`, `result`, `field`, `operand`), and any ordinal past
+  `first`, except `second` after `per`. A name whose sense the check cannot tell carries a
   reviewed exemption.
-- Ordinals that tell instances of one kind apart are refused everywhere, tests and locals
-  included: `second_region`, `second_mount`, `second_directory_grant`, `second_boot`,
-  `first_ethernet_port_transmit_parent`. The replacement names the role (`remounted`,
-  `after_reboot`, `narrowed_grant`, `parent` and `child`); where no role exists, `_0` and `_1`.
+- No ordinal tells instances of one kind apart, tests and locals included: not `second_region`,
+  `second_boot` or `first_ethernet_port_transmit_parent`. The replacement names the role
+  (`remounted`, `after_reboot`, `parent`); where no role exists, `_0` and `_1`.
+- Number words that state a quantity stay: `twice`, `once`, `half`, `power_of_two`, and a count
+  before a noun (`two_halves`, `one_tree`).
 
 Measured on Rust code outside `vendor/`, comments and strings blanked, on `main` at `08d17a3b0`,
 by a script posted on the pull request:
@@ -258,9 +259,8 @@ by a script posted on the pull request:
 - **Instances.** The 109 later ordinals are the instance sweep; 61 are test names written as
   sentences (`a_second_bind_of_a_bound_space_is_refused`). `first` in an instance sense
   (`first_partition`) hides among the 283 boundary names, so the sweep reads those by hand.
-- **Quantities, an open question.** 106 names (289 uses) use a number as an amount:
-  `is_power_of_two`, `ONE_GIBIBYTE`, `split_once`, `draw_twice`. They stay until that separate
-  question is ruled.
+- **Quantities, allowed.** 106 names (289 uses) use a number as an amount: `is_power_of_two`,
+  `ONE_GIBIBYTE`, `split_once`, `draw_twice`. The check passes them.
 
 ## Prior art
 
@@ -327,6 +327,6 @@ not change under any option.
 ## What waits on this
 
 - The rename lane for (a) or (g).
-- The naming check above, and its separate question on quantity words.
+- The naming check above.
 - The name reviews of every contract that still writes `w0` (`filesystem_contract`,
   `credential_contract`, `terminal_contract`, `program_table`'s spawn protocol and the rest).
