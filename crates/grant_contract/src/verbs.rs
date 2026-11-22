@@ -1,4 +1,4 @@
-//! **Authorities by verb** (milestone 809 (the package client becomes a program), its option V2): a
+//! **Authorities by verb**: a
 //! program's manifest narrowed by the word a line gives after its name, so one program holds, per
 //! line, only what that verb needs. `jig list` reads the catalog; `jig install` also holds the
 //! installer and the network. The spawner holds each program's table, and
@@ -8,15 +8,14 @@
 
 use crate::{IndexStoreDeclaration, Manifest};
 
-/// **The authorities a verb table may hand out**, as bits (milestone 809 (the package client
-/// becomes a program), option V2). Each names one of [`Manifest`]'s fields the progenitor endows
+/// **The authorities a verb table may hand out**, as bits. Each names one of [`Manifest`]'s fields the progenitor endows
 /// from the manifest rather than from the line: nothing a person designates, so a verb is the only
 /// thing on the line that can choose among them. A verb never widens: [`narrow_by_verb`] keeps a
 /// field only when the manifest declares it **and** the verb names it.
 ///
 /// Name: ratified 2026-10-18 (calef: "Yes"), for the type, its `authorities` field in
-/// [`VerbGrant`] and its `CONFIGURATION` bit. The bit positions are provisional (milestone 809),
-/// and `capability_manifest_note`'s verb record carries them.
+/// [`VerbGrant`] and its `CONFIGURATION` bit. The bit positions are provisional, and
+/// `capability_manifest_note`'s verb record carries them.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ManifestAuthorities(u16);
 
@@ -61,7 +60,7 @@ impl ManifestAuthorities {
     ///
     /// Name: ratified 2026-11-20 (UTC).
     pub const CATALOG: ManifestAuthorities = ManifestAuthorities(1 << 8);
-    /// [`Manifest::indexes`], read only (milestone 801 (packages over the internet)).
+    /// [`Manifest::indexes`], read only.
     ///
     /// Name: ratified 2026-11-20 (UTC).
     pub const INDEXES: ManifestAuthorities = ManifestAuthorities(1 << 9);
@@ -71,7 +70,7 @@ impl ManifestAuthorities {
     /// Name: ratified 2026-11-20 (UTC).
     pub const INDEXES_WRITE: ManifestAuthorities = ManifestAuthorities(1 << 10);
     /// [`Manifest::activation_directory`]: `activation/`, read only, in place of the index store
-    /// (milestone 809, `jig list -u`).
+    /// (`jig list -u`).
     ///
     /// Name: ratified 2026-11-20 (UTC).
     pub const ACTIVATION: ManifestAuthorities = ManifestAuthorities(1 << 11);
@@ -113,7 +112,7 @@ impl ManifestAuthorities {
     }
 }
 
-/// **One verb and what it is granted** (milestone 809, option V2): `jig list` reads the catalog and
+/// **One verb and what it is granted**: `jig list` reads the catalog and
 /// nothing else; `jig install` also holds the installer and the network. A list of these pairs is
 /// the whole of a verb table, in the spawner's row for a program or in its note (`capability_manifest_note`'s
 /// verb record, which is the same list as bytes).
@@ -134,14 +133,13 @@ pub struct VerbGrant {
 /// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_VERB_BYTES: usize = 16;
 
-/// **A manifest narrowed by the verb a line used** (milestone 809 (the package client becomes a
-/// program), option V2, which calef's "One program." ruling of 2026-10-06 kept): with an empty
+/// **A manifest narrowed by the verb a line used**, so one program can serve every verb: with an empty
 /// `verbs` the manifest is returned as it is, and otherwise each field [`ManifestAuthorities`] names is kept only
 /// when the manifest declares it and the verb's entry names it. A `verb` not in the table, or none,
 /// keeps none of them: the program runs holding only what no verb chooses, and says what it takes.
 ///
-/// So `jig list` cannot reach the installer or the network, which is what 281 (`watch` holds
-/// exactly what `ps` holds)'s test asks of two programs. The shell calls this to plan and preview,
+/// So `jig list` cannot reach the installer or the network, just as `watch` holds exactly what
+/// `ps` holds when they are two programs. The shell calls this to plan and preview,
 /// and the progenitor to endow, each with the word it read from the same argv, so they agree.
 ///
 /// Name: ratified 2026-11-20 (UTC).
@@ -165,8 +163,7 @@ pub fn narrow_by_verb(m: &Manifest, verbs: &[VerbGrant], verb: Option<&[u8]>) ->
         installer: m.installer && g.contains(ManifestAuthorities::INSTALLER),
         catalog: m.catalog && g.contains(ManifestAuthorities::CATALOG),
         activation_directory: m.activation_directory && g.contains(ManifestAuthorities::ACTIVATION),
-        // **Standard input rides with the installer** (milestone 892 (a std program at the
-        // prompt holds the network and a resolver)): the owner's yes at install is the one thing
+        // **Standard input rides with the installer**: the owner's yes at install is the one thing
         // read through it, so a verb that holds no installer reads nothing typed.
         console_input: m.console_input && g.contains(ManifestAuthorities::INSTALLER),
         indexes: match m.indexes {
@@ -215,8 +212,8 @@ pub fn verb_key<'o>(
     Some(&out[..len])
 }
 
-/// **The approval a delegated line asks to act within** (milestone 911 (scripted installs grant
-/// only what the owner's approval file allows)): the word after `--within` on the argument page,
+/// **The approval a delegated line asks to act within** (a scripted install is granted only
+/// what the owner's approval file allows): the word after `--within` on the argument page,
 /// copied into `out`, its length returned. `None` when the line says no `--within`, when the
 /// name is empty, or when it is longer than thirty-two bytes, which is the store's component
 /// bound. The progenitor reads this when it places the installer endpoint, and the badge
@@ -238,8 +235,8 @@ pub fn verb_key<'o>(
 ///
 /// Name: ratified 2026-11-20 (UTC).
 pub fn delegated_identity(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
-    let args = program_argument_contract::ArgumentPage::parse(page);
-    let mut words = args.iter().skip(1);
+    let arguments = program_argument_contract::ArgumentPage::parse(page);
+    let mut words = arguments.iter().skip(1);
     while let Some(word) = words.next() {
         if word == b"--within" {
             let name = words.next()?;
@@ -260,8 +257,8 @@ pub fn delegated_identity(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
 ///
 /// Name: ratified 2026-11-20 (UTC).
 pub fn page_verb<'o>(page: &[u8], out: &'o mut [u8; MAXIMUM_VERB_BYTES]) -> Option<&'o [u8]> {
-    let args = program_argument_contract::ArgumentPage::parse(page);
-    let mut words = args.iter().skip(1);
+    let arguments = program_argument_contract::ArgumentPage::parse(page);
+    let mut words = arguments.iter().skip(1);
     let verb = words.next()?;
     verb_key(verb, words.next(), out)
 }
