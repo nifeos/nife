@@ -35,18 +35,19 @@ proof the crate has runs somewhere after the move.
 
 ## Finding status
 
+
 - P0-1, the only proof runs nowhere after the move: Done, the template's `proofs / loom`
   ([nifeos/crate-workflows#65](https://github.com/nifeos/crate-workflows/pull/65)).
-- P0-2, the crate does not stand alone: Open. [#3636](https://github.com/nifeos/nife/pull/3636)
+- P0-2, the crate does not stand alone: At the move. [#3636](https://github.com/nifeos/nife/pull/3636)
   added the README, the license files and the manifest literals; the `Name:` blocks, the citations
-  of paths in this tree and the manifest's `repository` remain, all move work.
+  of paths in this tree and the manifest's `repository` remain.
 - P0-3, the scaffold's lint table: Done, [#3636](https://github.com/nifeos/nife/pull/3636).
-- P1-4, another crate holds the name on crates.io: Done, the crate is `test_and_set_lock` (see
-  "Open decisions"), which crates.io does not hold.
+- P1-4, another crate holds the name on crates.io: Done, [#3812](https://github.com/nifeos/nife/pull/3812).
+  The crate is `test_and_set_lock` (see "Open decisions"), which crates.io does not hold.
 - P1-5, test modules hidden from cargo-mutants' skip: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
-- P1-6, the `pause` survivor's exemption line: Open. One `.github/mutants-exempts` line with the
-  triage's reason, at the move.
+- P1-6, the `pause` survivor's exemption line: At the move. One `.github/mutants-exempts` line with
+  the triage's reason.
 - P1-7, the second falsification is a hand step: Open. The loom falsification patch here and a
   loom form of the template's falsify gate in nifeos/crate-workflows remain; the README calls the
   step manual.
@@ -61,9 +62,10 @@ proof the crate has runs somewhere after the move.
   tested on it).
 - P2-15, loom's lockfile footprint: Done, [#3636](https://github.com/nifeos/nife/pull/3636) (the
   README says why).
-- P2-16, `is_locked`, `try_lock_weak`, `lock_api` and a fair variant: Declined. `try_lock` answers
-  `is_locked`, nothing calls `try_lock_weak`, and a `lock_api` impl is a third-party dependency
-  that gives loom nothing.
+- P2-16, `is_locked`, `try_lock_weak`, `lock_api` and a fair variant: Will not fix. `try_lock`
+  answers `is_locked`, nothing calls `try_lock_weak`, and a `lock_api` impl is a third-party
+  dependency that gives loom nothing; declined by the maintainer, provisional, ruled 2026-11-19
+  (UTC) in [#3743](https://github.com/nifeos/nife/pull/3743).
 
 ## Open decisions
 
@@ -253,7 +255,7 @@ The checks are in [the appendix](1109-spin-lock-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Milestone 1017.** The crate moves in its order; the move lane takes the items marked move work.
+- **Milestone 1017.** The crate moves in its order; the move lane takes the items marked At the move.
 - **Outstanding.** Item 7: the template's falsify gate cannot replay a loom patch, checked
   against nifeos/crate-workflows' `falsify.py`.
 - **Refused.** Item 16: `try_lock` already answers `is_locked`, and a `lock_api` impl is a new
