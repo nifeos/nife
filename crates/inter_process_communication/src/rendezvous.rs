@@ -5,9 +5,8 @@
 
 use super::*;
 
-/// One IPC rendezvous: one intrusive wait queue tagged with whether senders or receivers wait on
-/// it, and the pending-signal count. Senders and receivers never wait at once, because the tag
-/// has room for one queue. See `notes/inter-process-communication.md`.
+/// One IPC rendezvous: one wait queue, tagged with who waits on it, so senders and receivers never
+/// wait at once, and the pending-signal count. See `notes/inter-process-communication.md`.
 ///
 /// # Examples
 ///
