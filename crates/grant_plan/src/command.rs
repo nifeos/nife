@@ -334,6 +334,9 @@ pub mod rm_report {
 
     /// The exit status of a run in which everything named was removed. `rm(1)`: "exits 0 if all
     /// of the named files or file hierarchies were removed".
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1090-finish-review, which moved it here
+    /// unchanged from the file protocol's crate.
     pub const OK: u64 = 0;
 
     /// A non-zero exit status **is the errno of the first failure**, rather than a generic 1.
@@ -343,6 +346,9 @@ pub mod rm_report {
     /// walk stopped somewhere else than it thought. The `file_system_contract::directory::explain`
     /// sentence for that number is what the program prints as its diagnostic, so the status word
     /// and the text a human reads come from the same decision.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1090-finish-review, which moved it here
+    /// unchanged from the file protocol's crate.
     pub const fn status(errno: i32) -> u64 {
         errno as u64
     }

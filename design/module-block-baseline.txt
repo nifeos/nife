@@ -2213,11 +2213,8 @@ crates/file_system_contract/src/nameset.rs::encode
 
 crates/file_system_contract/src/nameset.rs::iter
 
-crates/file_system_contract/src/rm.rs
 
-crates/file_system_contract/src/rm.rs::OK
 
-crates/file_system_contract/src/rm.rs::status
 
 
 
