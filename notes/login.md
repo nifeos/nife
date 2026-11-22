@@ -65,7 +65,7 @@ refused, folded into the same `DENIED` a wrong password gets.
 
 Any identity `login_contract::MAXIMUM_IDENTITY` (64 bytes) accepts gets its subtree: the subtree
 caretaker reads its directory whole from its grant page (milestone 1122 (every name travels on a
-page)), so no name is cut short. The unprovisioned-subtree fold is a considered answer, not the accident of reusing the fold. A caller
+page)), so nothing cuts a name short. The unprovisioned-subtree fold is a considered answer, not the accident of reusing the fold. A caller
 must not be able to tell "your identity has no home" from "your password is wrong" by comparing
 outcomes across attempts. That would let a caller probe which identities are provisioned without
 ever presenting a right password for one (`login_contract::DENIED`'s own doc gives the reasoning).
