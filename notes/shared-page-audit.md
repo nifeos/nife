@@ -50,7 +50,7 @@ against one.
 | file IPC | FS server | every FS client | `crates/file_system_contract` (`fs`, `xattr`), `redoxfs_server/src/bin/redoxfs_server.rs` |
 | file IPC, narrowed | the three caretakers | one confined program each | `components/src/fs_file_caretaker.rs`, `fs_subtree_caretaker.rs`, `fs_nameset_caretaker.rs` |
 | the sink | `fixtures/src/file_sink.rs`, `fixtures/src/file_source.rs` | a redirected program | `nifeos/byte_sink_contract` |
-| the serial terminal | `components/src/line_editor.rs` | the shell | `crates/line_editor` |
+| the serial terminal | `components/src/line_editor.rs` | the shell | `line_editor` |
 | the console | `components/src/console.rs` | its client | `kernel/src/user/console_service.rs` |
 | the display | `components/src/gpu_driver.rs` | painter, terminal, compositor | `crates/graphics_contract` |
 | the compositor | `components/src/compositor.rs` | window clients, the input source | `crates/compositor` |

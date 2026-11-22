@@ -79,7 +79,7 @@ The grid became a real terminal:
 - UTF-8 decoding in the VT engine (`bitmap_font::glyph` takes `char`);
 - a scrollback ring (`video_terminal::SCROLLBACK_ROWS`) with a viewport and
   `Vt::scroll_up`/`scroll_down`, which changes the damage model and is why milestone 29 deferred it;
-- the arrow-key cluster in the keymap (`CSI A/B/C/D`), the sequence `crates/line_editor` already
+- the arrow-key cluster in the keymap (`CSI A/B/C/D`), the sequence `line_editor` already
   understood on its receiving side.
 
 ### The correction, and the retarget to 132x43
