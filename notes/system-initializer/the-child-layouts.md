@@ -61,7 +61,7 @@ program, the caretaker and the file server. That is sound because every request 
 blocking `CALL`, so the program is parked inside its own call while the caretaker uses the page.
 
 `start_job` starts a program behind a directory grant with the grant's own three words, which the
-progenitor forwards unread. That is `rm`'s shape: a spec of options and two words of name
+progenitor forwards unread. That is `rm`'s shape: a spec of options, and two name words that must be zero
 (`file_system_contract::grant`). Any other native program gets the line's integer. A `std` program
 gets zeros: nife's `_start` ignores all three, and its words arrive on the argument page (§170 (how
 a foreign program is told what to do)).

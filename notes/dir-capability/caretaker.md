@@ -30,8 +30,9 @@ number and forwards the request otherwise unchanged. A client that guesses a han
 a table with a handful of inhabitants, none of which it chose. A number the caretaker never minted
 is `EBADF` from one check.
 
-It costs no memory: the granted name and the rights mask ride in the three `START` argument words
-(`file_system_contract::grant`), and one frame is shared by all three processes.
+It costs one page: the rights mask rides in the `START` specification word, and the granted name on
+a read-only grant page the caretaker's builder writes (`file_system_contract::grant::write_page`).
+One file-service frame is shared by all three processes.
 
 ## The verb table, and how it stayed a translation (milestone 61 (the caretakers: one verb table))
 

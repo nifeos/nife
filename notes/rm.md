@@ -82,12 +82,12 @@ capability could remove anything else in that directory) is closed for a pattern
 for a literal one, which is the honest state: a single name still travels through
 `fs_subtree_caretaker`.
 
-A set does not fit in the two argument words a name rides in, so `rm` is started with a grant whose
-name is zero bytes long (`file_system_contract::grant::WHOLE_NAMESPACE`). So is a literal name longer
-than those two words hold (`grant::WORDS_NAME`, 16 bytes, milestone 946 (a granted file name can be longer than sixteen bytes)): the shell grants the set of
-that one name, and `rm` sweeps it. It means "the operand is your
+`rm` is started with a grant whose name is zero bytes long
+(`file_system_contract::grant::WHOLE_NAMESPACE`), whether the operand is a set or one literal name:
+the shell grants the set of that one name, and `rm` sweeps it. It means "the operand is your
 namespace", and `rm` learns the names by enumerating the capability it holds, which reveals exactly
-what the command line already printed.
+what the command line already printed. No name rides in `rm`'s `START` words, and `rm` refuses words
+that carry one (milestone 1122 (names ride on a page)).
 
 It sweeps in one listing with no rounds, and the contrast with the recursive walk is a fact about
 the namespace rather than an optimization. That walk must re-read from cursor 0, because removing a
@@ -108,9 +108,9 @@ slot 0. The report endpoint is slot 1, and every other program in this tree take
 slot 0. The order is this way round so the two slots mean one thing on both wirings. The kernel's
 `start_granted_dir` puts the narrowed endpoint at slot 0 and a report endpoint at slot 1.
 `system_initializer`'s spawn service puts the caretaker it built at slot 0 and the shell's output
-at slot 1, ahead of every other grant. The name and the options ride in the three `START` argument
-words, packed by `file_system_contract::grant` exactly as a per-file grant's name is. So the program
-costs no extra frame, and holds nothing that names a progenitor, a terminal, or the filesystem
+at slot 1, ahead of every other grant. The options ride in the `START` specification word
+(`file_system_contract::grant`), and the names are on the caretaker's grant page. So the program
+costs no extra frame of its own, and holds nothing that names a progenitor, a terminal, or the filesystem
 above its grant.
 
 The report is a byte sink and ends as every sink stream does, with `(end_of_stream(), 0, 0)`. The exit
