@@ -12,6 +12,8 @@
 //!   crate builds only beside it.
 //! - Much of the crate describes the QEMU test runs of the stack it was written for (the witnesses, the benchmark phases), not
 //!   a filesystem in general. A third party gets the file names and the shapes as examples.
+//! - It ships no harness. The programs that drive the witnesses and the benchmarks live with that
+//!   stack, so a third party gets the vocabulary and nothing to run against it.
 //!
 //! Name: provisional (proposed by block 886, its crate-root name lifted; considered and refused
 //! `filesystem_test_image`, which names the shipped files but not the verdict words or the
