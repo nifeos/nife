@@ -40,38 +40,69 @@ The tools run, the sources read and what was not run are in [the appendix](1071-
 
 The comparison with nearby work is in [the prior art appendix](1071-entropy-contract-outside-review/prior-art.md).
 
-## The items
+## Finding status
 
-Effort: XS is under an hour, S half a day, M a day or two, L longer. A door is one-way
-when somebody outside the repository acts on it after a release (a public name, a published
-behavior, a wire value, a layout, a dependency); everything else is two-way and the maintainer
-decides it. Line numbers are in `crates/entropy_contract/` at `cf1328af`.
+One line per finding, in the review's order. Pull requests are in nifeos/nife unless named
+otherwise; `entropy_contract#N` is nifeos/entropy_contract. Line numbers in the review are in
+`crates/entropy_contract/` at `cf1328af`.
 
-### The ledger
-
-Every item's text is in the pull request that landed it; open ones keep their text here. Pull
-requests are in nifeos/nife unless named otherwise.
-
-| item | status |
-|---|---|
-| 1, 2, 3 | Done (#3512): the README states the proofs, `request` clamps, the passive-voice gate passes |
-| 4 | Done (#3558): badge row, the install lines, the measured Kani time and memory, one harness, one falsification patch with its undo, the alarming output and the minimum-version check. The Kani install's own time, download size and platforms: Open in nifeos/entropy_contract#10, ready for the merge |
-| 5 | Done (#3558): `fill_with` returns `Result<(), Refusal>`; `user_mode_runtime::fill` maps it with `.ok()` |
-| 6 | Done (#3573): decision 2's three rules are in the crate documentation and README; the three service loops keep them (#3616) |
-| 7 | Done (#3558, #3627): the `publish` comment, the categories, `documentation`, and the `allow-unpublished: true` line in the repository's `ci.yml` |
-| 8 | Done (#3531): `readiness` refuses a repeated first draw under `STEP_FIRST_ALL_SAME`; the name is decision 1 |
-| 9 | Done (#3558, #3616): `reply`, a harness and a falsification patch; the three service loops build their replies with it |
-| 10 | Done (#3558): `#[must_use]` on the pure functions |
-| 11 | Done (nifeos/entropy_contract#5): `request` and `bring_up_failure` refuse an out-of-range opcode or step in every build, returning `OperationOutOfRange` or `StepOutOfRange`, with a harness and a patch; decision 4 |
-| 12 | Done (#3531): the readiness harness covers nine-byte draws |
-| 13, 14 | Done: `script/crate-move --dry-run` against the template's `main` exits 0, so the falsification records and the architect's-name lines need no change |
-| 15, 16, 17 | Done (#3558): the `INTERFACE_ID` bullet, the prose pass over the crate documentation, three inert lints deleted |
-
-### Item 6, landed
-
-6. The contract states three rules the services keep: a service answers an unknown opcode with
-   `NO_ENTROPY`; it answers a request word with any of bits 55:8 set with `NO_ENTROPY`; the reply's
-   byte word holds zeros past the delivered count. The reasoning is in decision 2.
+- P0-1, the README denies the crate's proofs: Done, [#3512](https://github.com/nifeos/nife/pull/3512).
+  `## What is proven` names every harness and its falsification patch.
+- P0-2, `request` truncates a byte count instead of clamping it: Done,
+  [#3512](https://github.com/nifeos/nife/pull/3512). `request` clamps to `MAXIMUM_BYTES` and the
+  harness asserts the clamp.
+- P1-3, the README fails the passive-voice gate: Done, [#3512](https://github.com/nifeos/nife/pull/3512).
+- P1-4, no badge row and no path from a clone to a proof: Done,
+  [#3558](https://github.com/nifeos/nife/pull/3558),
+  [entropy_contract#10](https://github.com/nifeos/entropy_contract/pull/10). The README carries the
+  badge row, the install lines, the Kani install's cost, the measured proof time and memory, one
+  harness, one falsification patch with its undo, the alarming output and the minimum-version check.
+- P1-5, `fill_with` folds two failures together: Done, [#3558](https://github.com/nifeos/nife/pull/3558).
+  `fill_with` returns `Result<(), Refusal>`; `user_mode_runtime::fill` maps it with `.ok()`.
+- P1-6, three rules the services keep are unwritten: Done (decision 2, ruled 2026-11-14 UTC),
+  [#3573](https://github.com/nifeos/nife/pull/3573),
+  [#3616](https://github.com/nifeos/nife/pull/3616). The crate documentation and README state them,
+  and the three service loops check `request_is_well_formed`.
+- P1-7, the manifest's `publish` comment, categories and metadata: Done,
+  [#3558](https://github.com/nifeos/nife/pull/3558),
+  [#3627](https://github.com/nifeos/nife/pull/3627). The repository's `ci.yml` passes
+  `allow-unpublished: true`.
+- P1-8, readiness passes a source stuck on a nonzero value: Done (ruled 2026-11-11 UTC),
+  [#3531](https://github.com/nifeos/nife/pull/3531). `readiness` refuses it under
+  `STEP_FIRST_ALL_SAME`, with a harness and a patch.
+- P2-9, a reply builder for the service side: Done, [#3558](https://github.com/nifeos/nife/pull/3558),
+  [#3616](https://github.com/nifeos/nife/pull/3616). The three service loops build their replies
+  with `reply`.
+- P2-10, `#[must_use]` on the pure functions: Done, [#3558](https://github.com/nifeos/nife/pull/3558).
+- P2-11, `request` and `bring_up_failure` accept values past their fields: Done (decision 4),
+  [entropy_contract#5](https://github.com/nifeos/entropy_contract/pull/5). Both return `Err` in
+  every build, with a harness and a patch.
+- P2-12, the readiness proof's bound is below every draw: Done,
+  [#3531](https://github.com/nifeos/nife/pull/3531).
+- P2-13, the `Falsification:` lines sit at the foot of each comment: Done,
+  [#3627](https://github.com/nifeos/nife/pull/3627). The move placed them, and `proofs` is green on
+  the repository's `main`.
+- P2-14, two lines of the crate documentation name the architect: Done,
+  [#3627](https://github.com/nifeos/nife/pull/3627). The move stripped the `Name:` block.
+- P2-15, the README does not name `INTERFACE_ID`: Done, [#3558](https://github.com/nifeos/nife/pull/3558).
+- P2-16, the library's prose is over the caps: Done, [#3558](https://github.com/nifeos/nife/pull/3558).
+- P2-17, lints the crate cannot trip: Done, [#3558](https://github.com/nifeos/nife/pull/3558).
+- Decision 1, the name `STEP_FIRST_ALL_SAME`: Done (maintainer, provisional),
+  [#3531](https://github.com/nifeos/nife/pull/3531).
+- Decision 2, what the contract says a service does: Done (ruled 2026-11-14 UTC),
+  [#3573](https://github.com/nifeos/nife/pull/3573).
+- Decision 3, the names `Refusal`, `NoService`, `ShortReply` and `reply`: Done (maintainer,
+  provisional), [#3558](https://github.com/nifeos/nife/pull/3558).
+- Decision 4, a release build refuses an out-of-range opcode or step: Done (maintainer,
+  provisional), [entropy_contract#5](https://github.com/nifeos/entropy_contract/pull/5).
+- The move: Done, [#3627](https://github.com/nifeos/nife/pull/3627).
+- The stranger run: Done, [entropy_contract#7](https://github.com/nifeos/entropy_contract/pull/7),
+  [entropy_contract#10](https://github.com/nifeos/entropy_contract/pull/10).
+- The pre-release tag `v0.1.0-pre.1`: Waiting on the maintainer's tag (ruled 2026-11-19 UTC). The
+  release workflow's dry run on nifeos/entropy_contract@5c9f8eb comes first, then the tag on that
+  commit.
+- nife's pins: Waiting on the tag. Every `entropy_contract` pin in nife is at
+  nifeos/entropy_contract@7e800fd; a nife pull request moves them to the tagged commit and cites it.
 
 ## Decisions
 
@@ -123,55 +154,36 @@ later release can loosen it and cannot tighten it. The error types `OperationOut
 
 ### The pre-release tag
 
-Ruled by the architect, 2026-11-19 (UTC): a lane tags the repository `v0.1.0-pre.1` once the
-release workflow's dry run is green on `main`; nothing publishes. Not built yet: the manifest already reads
-`0.1.0-pre.1` (nifeos/entropy_contract#8), and the dry run and the tag wait for
-nifeos/entropy_contract#10 to merge so the tag carries it. The pin bump below follows the tag.
+Ruled by the architect, 2026-11-19 (UTC): the repository takes the tag `v0.1.0-pre.1` once the
+release workflow's dry run is green on `main`; nothing publishes. The manifest reads `0.1.0-pre.1`
+(nifeos/entropy_contract#8), and `main` at nifeos/entropy_contract@5c9f8eb carries every finding's
+fix. The dry run and the tag are the maintainer's, and the pin bump follows the tag.
 
 ## Open decisions
 
-None. Every finding and decision has landed, has a ruling or sits under a hold; nothing in this
-milestone waits on a question to the architect. The first publication waits for the publishing
-hold, which lifts only when every outside-review milestone has delivered, and nobody asks it crate
-by crate.
+None. Every finding and decision has landed or has a ruling; nothing in this milestone waits on a
+question to the architect. The first publication waits for the publishing hold, which lifts only
+when every outside-review milestone has delivered, and nobody asks it crate by crate.
 
 ## Done when
 
 The checks are in [the done-when appendix](1071-entropy-contract-outside-review/done-when.md).
-Every check holds on the repository's `main` except the stranger-run clause, which holds once
-nifeos/entropy_contract#10 answers the run's one open gap.
+Every check holds on the repository's `main`.
 
 ## Where this stands
 
-Done: every item and the four decisions (see the ledger), and the move (#3627). In the
-repository: the stranger run, with `Last run:` in `docs/stranger-test.md`
-(nifeos/entropy_contract#7); the template bump to crate-workflows v8 (nifeos/entropy_contract#6);
-and a full mutation run, green on `main` with the two equal clamp mutants exempt
-(nifeos/entropy_contract#9). `check`, `proofs`,
-`mutation` and `weekly` are green on the repository's `main`. The `jh7110_entropy` crate's
-`Pool::take_into` serves bytes into the caller's slice (nifeos/jh7110_entropy#29), and nife's
-JH7110 service loop passes them through `reply`.
-
-Open, in order:
-
-- nifeos/entropy_contract#10: the Kani install's time, download size and platforms in the README.
-  Ready; waits for the maintainer's merge.
-- The tag `v0.1.0-pre.1`: ruled; a lane runs the release dry run on `main` after #10 merges and
-  tags that commit.
-- nife's pin: every `entropy_contract` pin in nife is at nifeos/entropy_contract@7e800fd, behind
-  `main` by #6 to #10. A nife pull request moves them to the tagged commit and cites it.
-- Publishing: held by the publishing hold.
+Every finding, the four decisions, the move and the stranger run are Done (see the finding status).
+`check` and `proofs` are green on nifeos/entropy_contract@5c9f8eb, and `mutation` and `weekly` on
+the commit before it. Two steps remain, in order: the tag `v0.1.0-pre.1` on `main` after a green
+release dry run, then a nife pull request that moves every `entropy_contract` pin from
+nifeos/entropy_contract@7e800fd to the tagged commit. Publishing stays under the publishing hold.
 
 ## Follow-on
 
-- **Done.** The repository's own stranger test (runbook step 12), from a clone of
-  `nifeos/entropy_contract` (nifeos/entropy_contract#7). Its one open gap is #10 above.
-- **Done.** `jh7110_entropy` hands the bytes out through `Pool::take_into`
-  (nifeos/jh7110_entropy#29), and the JH7110 service loop builds the reply with `reply`.
-- **Done.** The move: the repository `nifeos/entropy_contract` holds the crate with the
-  `allow-unpublished: true` line in its `ci.yml`, and nife pins it by commit.
-- **Outstanding.** The pre-release tag, which has its ruling, then the pin bump to the tagged
-  commit.
+- **Done.** The move, the stranger run and the JH7110 service loop's `reply`: see the finding status.
+- **Outstanding.** The tag `v0.1.0-pre.1`, which has its ruling: nifeos/entropy_contract lists no
+  tag (checked through the GitHub API). Then the pin bump: every `entropy_contract` pin in nife
+  reads nifeos/entropy_contract@7e800fd (checked with `grep` over the manifests).
 
 ## BUGS
 
@@ -181,7 +193,7 @@ Open, in order:
 
 ## Index row
 
-An outside review of `entropy_contract` before its move. Every item and the four decisions have
+An outside review of `entropy_contract` before its move. Every finding and the four decisions have
 landed, the crate has moved and the repository holds its own stranger run. The pre-release tag has
-its ruling and waits for one README pull request, then the pin bump. The maintainer's names stay provisional
-until the release review.
+its ruling, then the pin bump follows. The maintainer's names stay provisional until the release
+review.

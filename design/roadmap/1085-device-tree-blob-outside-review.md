@@ -29,50 +29,86 @@ tool.
 
 ## Finding status
 
-The ids are the review's own; P0 and P1 are in [the
-appendix](1085-device-tree-blob-outside-review/before-the-tag.md), P2 in [the later
-items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Ruled decisions](#ruled-decisions).
+One line per finding, in the review's order. The P0 and P1 ids are in [the
+appendix](1085-device-tree-blob-outside-review/before-the-tag.md), the P2 ids in [the later
+items](1085-device-tree-blob-outside-review/later-items.md), and D1 to D6 under [Ruled
+decisions](#ruled-decisions). The crate lives in `nifeos/device_tree_blob`.
 
-- P0-1, the manifest and files do not stand alone: Done, [#3833](https://github.com/nifeos/nife/pull/3833).
-  The manifest carries its license, lints and `rust-version` and reads `publish = false`, and the
-  crate has a README, both license files and a `Name:` block on every name the architect ratified.
-- P0-2, the documentation cites nife: Done, [#3612](https://github.com/nifeos/nife/pull/3612). Only
-  `Name:` blocks cite it, and the move strips them.
-- P0-3, 29 refused names: Done, [#3612](https://github.com/nifeos/nife/pull/3612). The spelled-out
-  and British-spelling checks refuse none over `src/` and `tests/`.
-- P1-1, `node_reg` does not stop at the first match: Done,
+- P0-1, the manifest and files do not stand alone: Done,
+  [#3833](https://github.com/nifeos/nife/pull/3833). The manifest carries its license, lints and
+  `rust-version` and reads `publish = false`; the repository has a README in the template's order
+  and both license files.
+- P0-2, the documentation cites nife: Done, [#3612](https://github.com/nifeos/nife/pull/3612) and
+  [#3833](https://github.com/nifeos/nife/pull/3833). The prose says in the crate's own words what
+  each citation stood for, and the move commit stripped the `Name:` blocks.
+- P0-3, 29 refused names: Done, [#3612](https://github.com/nifeos/nife/pull/3612). The binding is
+  `tree`, and the spelling is American.
+- P1-1, `node_register_regions` does not stop at the first match: Done,
   [#3559](https://github.com/nifeos/nife/pull/3559).
 - P1-2, reserved memory matched at any depth: Done,
   [#3559](https://github.com/nifeos/nife/pull/3559).
 - P1-3, unchecked cursor arithmetic on 32-bit targets: Done,
-  [#3559](https://github.com/nifeos/nife/pull/3559).
+  [#3559](https://github.com/nifeos/nife/pull/3559). Every cursor step is a checked add.
 - P1-4, the walk is not confined to the structure block: Done,
   [#3559](https://github.com/nifeos/nife/pull/3559).
-- P1-5, the fuzz target does not move with the crate: Done, [#3833](https://github.com/nifeos/nife/pull/3833).
-  The target lives in the new repository, and weekly fuzzing stays off there because the crate has
-  `unsafe`.
-- P2-1 to P2-8, the error's shape, cells above two, `memory_regions` and a disabled node, the token
-  loop, the proofs, the reservation overflow, `from_pointer`'s read and `from_bytes`'s trim: Done,
+- P1-5, the fuzz target does not move with the crate: Done,
+  [#3833](https://github.com/nifeos/nife/pull/3833). The target and its corpus live in the crate's
+  `fuzz/`, and its weekly caller keeps `public-crash-inputs: false`.
+- P2-1, `Error::Truncated` names five faults: Done,
+  [#3612](https://github.com/nifeos/nife/pull/3612). `BadValue` and `BadStructure` exist, `Error`
+  has `Display` and `core::error::Error`, and the enum is `#[non_exhaustive]`.
+- P2-2, a cell count above two reads as its low 64 bits: Done,
   [#3612](https://github.com/nifeos/nife/pull/3612).
-- P2-9, one example, and it does not run: Done, [#3612](https://github.com/nifeos/nife/pull/3612) and
-  [#3833](https://github.com/nifeos/nife/pull/3833). The doctests run, and the README's `## EXAMPLES`
-  shows the same code.
-- P2-10 to P2-13, the depth counters, `MAXIMUM_DEPTH`, a trailing partial `reg` pair and private
-  names: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
+- P2-3, `memory_regions` keys on the name and counts a disabled node: Done,
+  [#3612](https://github.com/nifeos/nife/pull/3612).
+- P2-4, one token loop written nine times: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
+  A private `Tokens` walk carries every walker.
+- P2-5, the proofs cover the leaves only: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
+- P2-6, the reservation block gets fewer checks than `reg`: Done,
+  [#3612](https://github.com/nifeos/nife/pull/3612).
+- P2-7, `from_pointer` reads 40 bytes while its contract speaks of 8: Done,
+  [#3612](https://github.com/nifeos/nife/pull/3612).
+- P2-8, `from_bytes` does not say what it trims: Done,
+  [#3612](https://github.com/nifeos/nife/pull/3612).
+- P2-9, one example, and it does not run: Done, [#3612](https://github.com/nifeos/nife/pull/3612)
+  and [#3833](https://github.com/nifeos/nife/pull/3833). The doctests run, and the README's `##
+  EXAMPLES` shows the same code.
+- P2-10, two depth counters: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
+- P2-11, `MAXIMUM_DEPTH` is five local constants: Done,
+  [#3612](https://github.com/nifeos/nife/pull/3612). One public `MAXIMUM_DEPTH`, 64, bounds every
+  lookup.
+- P2-12, a trailing partial `reg` pair drops silently: Done,
+  [#3612](https://github.com/nifeos/nife/pull/3612).
+- P2-13, private names that need a decoder: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
 - P2-14, `cfg_attr(not(test), no_std)`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
-- D1 to D6 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
-- F-size, `Region::size` is a length with no unit: Done, [#3833](https://github.com/nifeos/nife/pull/3833).
-  The field is `size_bytes`, `SIZE_DT_STRUCT_AT` is `STRUCTURE_BLOCK_SIZE_OFFSET_BYTES`, and the gate pass
-  clears the other refused names and the acronyms.
-- F-dtoolkit, the switch to `dtoolkit`: Open, waiting for an upstream release; the wait is ruled,
-  under [Ruled decisions](#take-dtoolkit-once-a-release-carries-the-fixes).
-- F-package, the review package: Done, [the package](../../notes/crate-reviews/device-tree-blob.md).
-- F-clearance, review clearance: Done, ruled 2026-11-20 UTC under [Ruled decisions](#clear-the-device_tree_blob-package-for-the-move).
+- D1, `prop` spelled out as `property`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
+- D2, the needle parameter is `compatible`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
+- D3, `reg` spelled out as the register regions: Done,
+  [#3783](https://github.com/nifeos/nife/pull/3783).
+- D4, the total size limit carries its unit: Done,
+  [#3783](https://github.com/nifeos/nife/pull/3783). The limit is `MAXIMUM_TOTAL_SIZE_BYTES`.
+- D5, the reservation block is `memory_reservations`: Done,
+  [#3612](https://github.com/nifeos/nife/pull/3612).
+- D6, `from_pointer` stays the one `unsafe` function: Done,
+  [#3783](https://github.com/nifeos/nife/pull/3783).
+- The pointer handle, `phandle` spelled out: Done,
+  [#3783](https://github.com/nifeos/nife/pull/3783). The lookup is `pointer_handle_property`.
+- F-size, `Region::size` is a length with no unit: Done,
+  [#3833](https://github.com/nifeos/nife/pull/3833). The field is `size_bytes`.
+- F-dtoolkit, the switch to `dtoolkit`: Waiting on a `dtoolkit` release that carries
+  [google/dtoolkit #111](https://github.com/google/dtoolkit/pull/111) and
+  [#112](https://github.com/google/dtoolkit/pull/112), then the switch's own ruling, as
+  [ruled](#take-dtoolkit-once-a-release-carries-the-fixes). Both are open upstream, and the latest
+  release, 0.5.0, carries neither.
+- F-package, the review package: Done, [#3797](https://github.com/nifeos/nife/pull/3797).
+- F-clearance, review clearance: Done, [#3830](https://github.com/nifeos/nife/pull/3830), as
+  [ruled](#clear-the-device_tree_blob-package-for-the-move).
 - F-move, the repository: Done, [#3833](https://github.com/nifeos/nife/pull/3833). The repository is
-  `nifeos/device_tree_blob`, with `publish = false`, no tag and no publication, and nife pins the
+  `nifeos/device_tree_blob`, with `publish = false`, no tag and no publication, and nife pins a
   commit of its `main`.
-- BUGS-239: Open. Milestone 239 (radon's device tree does not describe the TRNG) gives the depth
-  bound as a `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64. A lane corrects that milestone.
+- BUGS-239, milestone 239 (radon's device tree does not describe the TRNG) gives the depth bound
+  as a `MAX_DEPTH` of 16: Done, [#3954](https://github.com/nifeos/nife/pull/3954). It names
+  `MAXIMUM_DEPTH`, 64.
 
 ## Ruled decisions
 
@@ -237,7 +273,7 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 
 ## Follow-on
 
-- **Outstanding.** The open lines under [Finding status](#finding-status): F-dtoolkit and BUGS-239.
+- **Outstanding.** The one line under [Finding status](#finding-status) that is not Done: F-dtoolkit.
 
 ## BUGS
 
