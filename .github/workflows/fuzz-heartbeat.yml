@@ -1,11 +1,10 @@
 name: fuzz heartbeat
 
-# Observed failing: 2026-11-01, by script: helpers/fuzz-heartbeat.py --selftest drives the failing
-#   arms (no release, no ok window, infrastructure share above the bound) over fixture reports and
-#   checks that each opens one issue and that an open issue stops a second. A real run was not
-#   possible: no fuzz-* release exists yet, and a dispatched run that opened a real issue would be an
-#   external action nobody asked for. The first real failure after the first release is the record
-#   to add.
+# Observed failing: 2026-11-21, run 44954174201: the scheduled run found no fuzz-YYYY-MM-DD release
+#   for 2026-11-21 or 2026-11-20 (the newest was fuzz-2026-11-19) and opened #3912 with the label
+#   fuzz-loop-broken. The run itself ends green by design; the issue is the alarm.
+#   helpers/fuzz-heartbeat.py --selftest still drives the other arms (no ok window, infrastructure
+#   share above the bound, an open issue stopping a second) over fixture reports.
 
 # **Is the continuous fuzz loop still producing?** Asked daily, answered by an issue.
 #

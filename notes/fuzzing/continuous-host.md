@@ -195,13 +195,13 @@ one pull request. See [the proposal](../../design/roadmap/1023-the-fuzz-loop-dea
 
 ## Install, for a person with root
 
-The lane has no root. A person copies the three files in `helpers/systemd/` to
+A person copies the three files in `helpers/systemd/` to
 `/etc/systemd/system/`, tells systemd to reread its unit files, then `enable --now nife-fuzz.service` and
 `enable --now nife-fuzz-publish.timer`.
 
 That installs phase 1: the publish unit writes the day's report and clean ranges to local files and
-publishes nothing. Phase 2 publishes the release. It waits on the key and the installed mint helper
-(the host clone already carries the clean-range fix), and step P7 of [`finishing-the-setup.md`](finishing-the-setup.md)
+publishes nothing. Phase 2 publishes the release. It waits on the key and the installed mint helper,
+and step P7 of [`finishing-the-setup.md`](finishing-the-setup.md)
 gives its drop-in. The unit as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
 `NIFE_FUZZ_PUBLISH=1` the script refuses to publish. It also refuses, by name and before any `gh`
 call, a missing `GH_TOKEN`, a missing or unreadable `GH_TOKEN_EXPIRES_AT`, and a token that has expired
@@ -217,8 +217,7 @@ unit's user. It prints the tag and the assets and publishes nothing.
 ## BUGS
 
 - The windows have been timed one guest at a time, at about 457 seeds per second for the
-  kernel-thread driver and 205 for the confined driver. Nobody has measured four windows at once
-  through this path, so the rates note's four-guest figures stand in for them.
+  kernel-thread driver and 205 for the confined driver.
 - nife owes a measurement at 1, 4 and 8 guests through this path: seeds per second per driver and
   the false-red count at each, beside [the rates note](rates-on-x86-64-under-kvm.md). Until then
   `NIFE_FUZZ_GUESTS` stays at four.
@@ -235,8 +234,10 @@ unit's user. It prints the tag and the assets and publishes nothing.
   the held seed. Only clean rows leave the host, so nothing has leaked; the filer's milestone should
   move held rows' seeds under the held directory.
 - Each move to a newer main idles every slot until the slowest current window ends, and the first
-  window after it rebuilds. Main lands many commits a day, so this costs a share of the rate that
-  nobody has measured.
+  window after it rebuilds. Nobody has measured what that costs at main's rate of merges.
+- Nothing frees the host's disk. The toolchain step installs each pinned nightly and removes
+  none, each slot's `target/` keeps the artifacts of every compiler it used, and the held
+  directory only grows. No check warns before the disk fills.
 - An unfinished run of any required check name keeps the current commit, even the skipped duplicate
   that a push to main starts after the merge queue's run. The next look, 5 minutes later, moves.
 - A person who sets `url.<base>.insteadOf` for GitHub in the fuzz account's git configuration to a
