@@ -372,9 +372,7 @@ impl<'a> PageFrameAllocator<'a> {
         if count == 0 {
             return;
         }
-        let start = self
-            .index_of(first)
-            .expect("freeing a run we do not own");
+        let start = self.index_of(first).expect("freeing a run we do not own");
         let end = start
             .checked_add(count)
             .filter(|&end| end <= self.total)

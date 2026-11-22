@@ -10,7 +10,7 @@ In the kernel that hands out the tail of the image, the frame its last byte shar
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -446,3 +446,3 @@
+@@ -444,3 +444,3 @@
          let lo = (first / FRAME_BYTES) as usize;
 -        let hi = (last.div_ceil(FRAME_BYTES) as usize).min(self.total);
 +        let hi = ((last / FRAME_BYTES) as usize).min(self.total);
