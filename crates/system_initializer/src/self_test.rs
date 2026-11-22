@@ -15,6 +15,7 @@
 //! - The test and benchmark kernels run no self-test and grant no page, and their boots print no
 //!   verdict at all.
 
+use moho_abi::rights;
 use self_test_contract::self_test_program::{
     self as contract, entropy_source, header, image, image_virtual_address, images_fit, message,
     slot,
@@ -176,10 +177,7 @@ fn run_measured(
         built,
         &elf,
         &ChildEndowment {
-            capabilities: &[
-                (budget, moho_abi::rights::ALL),
-                (report, moho_abi::rights::WRITE),
-            ],
+            capabilities: &[(budget, rights::ALL), (report, rights::WRITE)],
             placed: &placed[..n],
             maps: &[
                 (

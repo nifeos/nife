@@ -8,6 +8,8 @@
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
 
+use moho_abi::rights;
+
 use super::*;
 
 /// **The window a line's argvs are written through** (milestone 205 (how a foreign program is told
@@ -1022,7 +1024,7 @@ pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Op
     // (`spawn_protocol::PROGRAM_ARGUMENTS_BIT`), `READ` only: the progenitor copies it and can neither write it nor
     // pass it on. The slot goes now; the region waits for the child's answer.
     if let Some(a) = argv {
-        user_mode_runtime::send_capability(SPAWN, a.frame, moho_abi::rights::READ, 0);
+        user_mode_runtime::send_capability(SPAWN, a.frame, rights::READ, 0);
         capability_delete(a.frame);
     }
     // The grant page's frame follows the argv's (`spawn_protocol::DIRECTORY_GRANT_BIT`).
@@ -1036,23 +1038,17 @@ pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Op
     // rights. The exit goes `READ` for the supervision slot, `WRITE` for an answer, and `GRANT` so
     // the progenitor can badge a copy with the job's label.
     if let Some(m) = &held {
-        delegate(m.region, moho_abi::rights::ALL);
+        delegate(m.region, rights::ALL);
         // `ENUMERATE` too, for a program that declares a process domain (`ps`): its domain is this
         // shell's, the threads of the jobs it holds.
         delegate(
             m.exit,
-            moho_abi::rights::READ
-                | moho_abi::rights::WRITE
-                | moho_abi::rights::GRANT
-                | moho_abi::rights::ENUMERATE,
+            rights::READ | rights::WRITE | rights::GRANT | rights::ENUMERATE,
         );
         // And, for a program that declares a share view, this shell's budget narrowed to the right
         // to enumerate it: `free` and `slabtop` then describe where the job's memory is.
         if spawn_protocol::held_shares(program) {
-            delegate(
-                BUDGET,
-                moho_abi::rights::ENUMERATE | moho_abi::rights::GRANT,
-            );
+            delegate(BUDGET, rights::ENUMERATE | rights::GRANT);
         }
     }
 
@@ -1060,7 +1056,7 @@ pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Op
     if let Some(slot) = mem_slot {
         // Every right: the progenitor builds the child from it, and since milestone 824 (a retype
         // mints no right its budget lacks) what it builds carries the budget's rights.
-        delegate(slot, moho_abi::rights::ALL);
+        delegate(slot, rights::ALL);
         // Our copy is delegated, so free the slot; a held job's budget is kept instead, because
         // this shell destroys it with the job's region and gets the pages back (milestone 933).
         if held.is_none() {
