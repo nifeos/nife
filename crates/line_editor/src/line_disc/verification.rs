@@ -1,5 +1,4 @@
-//! Machine-checked proofs, which §14 (the project's direction) asks of the kernel's neighbours, for
-//! the two pieces of the engine that do index arithmetic on input nobody here chose: the escape
+//! Machine-checked proofs, by the Kani model checker, for the two pieces of the engine that do index arithmetic on input nobody here chose: the escape
 //! parser and the range delete. The editor's
 //! invariant is `cursor <= length <= MAXIMUM_LINE_BYTES`, and every edit has to keep it.
 //!

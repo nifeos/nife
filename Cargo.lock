@@ -661,7 +661,6 @@ version = "0.1.0"
 name = "grant_contract"
 version = "0.1.0"
 dependencies = [
- "file_system_contract",
  "program_argument_contract",
 ]
 

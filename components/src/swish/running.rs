@@ -187,6 +187,25 @@ fn grant_page(
     }
 }
 
+/// **Write `name` alone onto a fresh page**, through grant window 0, as
+/// `file_system_contract::grant::write_page` lays it out: a vouch's name (milestone 1122 (every
+/// name travels on a page)). Window 0 is free, since no line is being started while a vouch is
+/// asked. `None` when the budget cannot pay for the page or the name is longer than a page
+/// carries, which [`vouched_name`](grant_plan::vouched_name) has already ruled out.
+fn name_page(name: &[u8]) -> Option<Argv> {
+    let page = fresh_page(SET_VA)?;
+    // SAFETY: `SET_VA` is one page this shell just mapped read/write, fresh, and nothing else
+    // reaches it until the frame is sent; the borrow ends before this function returns.
+    let out = unsafe { &mut *(SET_VA as *mut [u8; spawn_protocol::IMAGE_PAGE as usize]) };
+    match file_system_contract::grant::write_page(name, false, &[], out) {
+        Some(()) => Some(page),
+        None => {
+            release_argv(page, true);
+            None
+        }
+    }
+}
+
 /// Send a directory grant's page, `READ` only (`spawn_protocol::DIRECTORY_GRANT_BIT`), after the argv's.
 pub(super) fn send_grant_page(w: &WordsGrant) {
     user_mode_runtime::send_capability(SPAWN, w.page.frame, moho_abi::rights::READ, 0);
@@ -783,11 +802,20 @@ pub(super) fn vouch(nav: &mut Nav, path: Option<&[u8]>) {
     send(SPAWN, w0, w1, w2);
     let read_ok = send_frames(t.slot, handle, pages, staging);
     nav.close_in(t, handle);
-    // `vouched_name` held the name to `grant::MAXIMUM_WORDS_NAME_BYTES`, so it packs; the frames are already
-    // sent, so the name message goes whatever happens, and empty words are a name nothing holds.
-    let (lo, hi) = file_system_contract::grant::pack_name(name).unwrap_or((0, 0));
-    send(SPAWN, lo, hi, name.len() as u64);
+    // The name follows on one `READ` frame, laid out as a caretaker's granted name is (milestone
+    // 1122 (every name travels on a page)). The frames are already sent, so something goes in the
+    // name's place whatever happens: a plain message where no page could be made, which the
+    // progenitor reads as a name nothing holds.
+    let page = name_page(name);
+    match page {
+        Some(p) => user_mode_runtime::send_capability(SPAWN, p.frame, rights::READ, 0),
+        None => send(SPAWN, 0, 0, 0),
+    };
     let (r0, r1, _) = receive(RESULT);
+    // The progenitor has copied the name by the time it answers, so the page goes back now.
+    if let Some(p) = page {
+        release_argv(p, true);
+    }
     user_mode_runtime::destroy_memory_region(staging);
     capability_delete(staging);
     if !read_ok {

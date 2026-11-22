@@ -70,8 +70,7 @@ fn raw_queue_wraps_the_ring_in_order() {
 /// **`head` is a ring index after every pop**, not a count that merely reads the same through
 /// `% MAXIMUM_RAW_QUEUE_BYTES` later. `save` and `restore` walk the ring from `head`, and a `head` that
 /// grew by a whole ring each pop would still deliver the same bytes while no longer naming a
-/// slot, so the bytes alone cannot catch it. Mutation survivor triage, milestone 326 (turn a
-/// mutation score upward), batch 3.
+/// slot, so the bytes alone cannot catch it. Mutation testing found the gap.
 #[test]
 fn raw_queue_head_stays_inside_the_ring() {
     let mut q = RawQueue::new();

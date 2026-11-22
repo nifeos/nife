@@ -14,14 +14,18 @@ use user_mode_runtime::{call, counter_ticks, exit, require, send};
 
 use crate::channel::{FILE, REPORT, STAGE_WRITE, WINDOW, fail, open, put_page, read};
 
+/// The transfer unit as a buffer length: `fixture::throughput::UNIT_BYTES`, narrowed once here.
+/// It is `file_system::MAXIMUM_TRANSFER_BYTES`, a `usize`, so the narrowing loses nothing.
+const UNIT_LENGTH: usize = fixture::throughput::UNIT_BYTES as usize;
+
 /// The filesystem throughput benchmark (milestone 38, DECISIONS §34 (RedoxFS is the primary
 /// filesystem, on three conditions) condition 2): six self-timed
 /// phases over one file, each reported as `[ticks, transfers, phase]`, which the bench boot prints
 /// as `fs_seq_write`, `fs_seq_read`, `fs_rand_read`, `fs_record_read`, `fs_rand_write` and
 /// `fs_payload_fill`.
 ///
-/// One request moves at most `file_system::MAXIMUM_TRANSFER_BYTES` bytes (`UNIT`), and each phase moves
-/// `tp::TOTAL` whatever `UNIT` is. The write phase runs first because it creates the file. Random
+/// One request moves at most `file_system::MAXIMUM_TRANSFER_BYTES` bytes (`tp::UNIT_BYTES`), and each phase
+/// moves `tp::TOTAL_BYTES` whatever the unit is. The write phase runs first because it creates the file. Random
 /// offsets come from a fixed seed, page-aligned and inside the file. A read loop issues only the
 /// `CALL`; a write loop repaints the page first. See notes/benchmarks/filesystem-throughput.md.
 pub(crate) fn throughput() -> ! {
@@ -55,40 +59,40 @@ pub(crate) fn throughput() -> ! {
     let start = counter_ticks();
     for k in 0..tp::BLOCKS {
         paint_page(&mut payload);
-        write_unit(handle, k * tp::UNIT_BYTES as u64);
+        write_unit(handle, k * tp::UNIT_BYTES);
     }
     let ticks = counter_ticks().wrapping_sub(start);
     // The file is exactly as long as the phase claims to have written it. Without this a server
     // that answered every write with a short count would still produce a throughput number.
     let (size, _) = call(FILE, file_system::request(file_system::FSTAT, handle, 0), 0);
-    require(size == tp::BLOCKS * tp::UNIT_BYTES as u64);
+    require(size == tp::BLOCKS * tp::UNIT_BYTES);
     send(REPORT, ticks, tp::BLOCKS, tp::SEQUENTIAL_WRITE);
 
     // --- Phase 2: sequential read of what phase 1 left behind. ---
     for _ in 0..tp::WARMUP_TRANSFERS {
-        require(read(handle, 0, tp::UNIT_BYTES) == tp::UNIT_BYTES);
+        require(read(handle, 0, UNIT_LENGTH) == UNIT_LENGTH);
     }
     let start = counter_ticks();
     let mut got = 0u64;
     for k in 0..tp::BLOCKS {
-        got += read(handle, k * tp::UNIT_BYTES as u64, tp::UNIT_BYTES) as u64;
+        got += read(handle, k * tp::UNIT_BYTES, UNIT_LENGTH) as u64;
     }
     let ticks = counter_ticks().wrapping_sub(start);
-    require(got == tp::BLOCKS * tp::UNIT_BYTES as u64);
+    require(got == tp::BLOCKS * tp::UNIT_BYTES);
     send(REPORT, ticks, tp::BLOCKS, tp::SEQUENTIAL_READ);
 
     // --- Phase 3: random read, page-aligned, inside the file. ---
     let mut rng = 0x38F5_7042_1DEA_u64;
     for _ in 0..tp::WARMUP_TRANSFERS {
-        require(read(handle, next_offset(&mut rng), tp::UNIT_BYTES) == tp::UNIT_BYTES);
+        require(read(handle, next_offset(&mut rng), UNIT_LENGTH) == UNIT_LENGTH);
     }
     let start = counter_ticks();
     let mut got = 0u64;
     for _ in 0..tp::BLOCKS {
-        got += read(handle, next_offset(&mut rng), tp::UNIT_BYTES) as u64;
+        got += read(handle, next_offset(&mut rng), UNIT_LENGTH) as u64;
     }
     let ticks = counter_ticks().wrapping_sub(start);
-    require(got == tp::BLOCKS * tp::UNIT_BYTES as u64);
+    require(got == tp::BLOCKS * tp::UNIT_BYTES);
     send(REPORT, ticks, tp::BLOCKS, tp::RANDOM_READ);
 
     // --- Phase 5, out of order on purpose: the cheapest 4 KiB read there is. ---
@@ -96,17 +100,17 @@ pub(crate) fn throughput() -> ! {
     // worth. It runs before the second write phase so that it reads a file no write has touched
     // since the read phases above, and its gap to the sequential read is the record geometry with
     // everything else held identical. See `fixture::throughput::RECORD_READ`.
-    let records = (tp::BLOCKS * tp::UNIT_BYTES as u64) / tp::RECORD_BYTES;
+    let records = (tp::BLOCKS * tp::UNIT_BYTES) / tp::RECORD_BYTES;
     for k in 0..tp::WARMUP_TRANSFERS {
-        require(read(handle, (k % records) * tp::RECORD_BYTES, tp::UNIT_BYTES) == tp::UNIT_BYTES);
+        require(read(handle, (k % records) * tp::RECORD_BYTES, UNIT_LENGTH) == UNIT_LENGTH);
     }
     let start = counter_ticks();
     let mut got = 0u64;
     for k in 0..tp::BLOCKS {
-        got += read(handle, (k % records) * tp::RECORD_BYTES, tp::UNIT_BYTES) as u64;
+        got += read(handle, (k % records) * tp::RECORD_BYTES, UNIT_LENGTH) as u64;
     }
     let ticks = counter_ticks().wrapping_sub(start);
-    require(got == tp::BLOCKS * tp::UNIT_BYTES as u64);
+    require(got == tp::BLOCKS * tp::UNIT_BYTES);
     send(REPORT, ticks, tp::BLOCKS, tp::RECORD_READ);
 
     // --- Phase 4: random write, in place, over blocks that already exist. The offset stream runs
@@ -124,7 +128,7 @@ pub(crate) fn throughput() -> ! {
     let ticks = counter_ticks().wrapping_sub(start);
     // The file did not grow: a random write that appended would be measuring allocation.
     let (size, _) = call(FILE, file_system::request(file_system::FSTAT, handle, 0), 0);
-    require(size == tp::BLOCKS * tp::UNIT_BYTES as u64);
+    require(size == tp::BLOCKS * tp::UNIT_BYTES);
     send(REPORT, ticks, tp::BLOCKS, tp::RANDOM_WRITE);
 
     exit();
@@ -156,13 +160,13 @@ fn write_unit(handle: u64, offset: u64) {
     let unit = fixture::throughput::UNIT_BYTES;
     let (r0, _) = call(
         FILE,
-        file_system::request(file_system::WRITE, handle, unit as u64),
+        file_system::request(file_system::WRITE, handle, unit),
         offset,
     );
     if (r0 as i64) < 0 {
         fail(STAGE_WRITE, r0);
     }
-    require(r0 as usize == unit);
+    require(r0 == unit);
 }
 
 /// **Fill the whole shared page with fresh, incompressible bytes**, advancing `state`. Eight bytes
@@ -170,7 +174,7 @@ fn write_unit(handle: u64, offset: u64) {
 /// (`fs_payload_fill`) because the write phases pay it inside their timed window.
 fn paint_page(state: &mut u64) {
     let mut i = 0;
-    while i < fixture::throughput::UNIT_BYTES {
+    while i < UNIT_LENGTH {
         let mut x = *state;
         x ^= x << 13;
         x ^= x >> 7;
@@ -190,5 +194,5 @@ fn next_offset(state: &mut u64) -> u64 {
     x ^= x >> 7;
     x ^= x << 17;
     *state = x;
-    (x % fixture::throughput::BLOCKS) * fixture::throughput::UNIT_BYTES as u64
+    (x % fixture::throughput::BLOCKS) * fixture::throughput::UNIT_BYTES
 }

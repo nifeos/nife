@@ -5,7 +5,7 @@
 //! **A program written by somebody else hears its arguments as bytes, and the bytes carry no
 //! authority.** Whether `rg foo src` may read `src` is decided by the access the line granted and
 //! the program's own manifest, so nothing on this page is validated for meaning. The page is
-//! length-prefixed, not delimited, so any byte (a NUL, a newline, `0xff`) may appear in an argument.
+//! length-prefixed, not delimited, so any byte (a zero byte, a newline, `0xff`) may appear in an argument.
 //! It holds `argv[0]` too, since programs such as `ripgrep` skip the first element and `clap` treats
 //! it as the program's name. It is one page because an argument line that does not fit one frame is
 //! refused whole rather than truncated.
@@ -50,7 +50,7 @@
 //! - [`ArgumentPage::from_virtual_address`] reads through a `usize` pointer, so on a target
 //!   narrower than 64 bits an address above 4 GiB would read a different page. Its `# Safety`
 //!   section makes a fitting address the caller's promise. No target built here is that narrow.
-//! - This crate is one file, `src/lib.rs`: the nife repository's `std` port copies it by name, so a
+//! - This crate is one file, `src/lib.rs`: a standard library port copies it by name, so a
 //!   module split, or an inner attribute the port cannot carry, breaks that build and not this one.
 //!   A test checks that `src/` holds no other file.
 //! - The environment does not ride on this page.
@@ -498,8 +498,8 @@ mod tests {
         assert!(text.contains("used: "));
     }
 
-    /// Any byte survives, which is the reason the layout is length-prefixed: a NUL and a `0xff`
-    /// in the middle of an argument, and an argument that is empty.
+    /// Any byte survives, which is the reason the layout is length-prefixed: a zero byte and a
+    /// `0xff` in the middle of an argument, and an argument that is empty.
     #[test]
     fn every_byte_round_trips() {
         let all: Vec<u8> = (0..=255).collect();
