@@ -63,7 +63,6 @@ interfaces = [
     # Where a device-driver process finds its windows, and its spawn words: the kernel and the
     # driver component both link it (milestone 857 (crates released on their own)).
     "driver_process_contract",
-    "program_argument_contract",
     "system_log_contract",
     # The JH7110 clock and reset wire, which the kernel's starters and the server in `drivers`
     # agree on (milestone 1062 (the device control planes leave the kernel), step 2).

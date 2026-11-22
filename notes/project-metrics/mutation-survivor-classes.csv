@@ -189,7 +189,7 @@ pci_configuration_space,Bdf::requester_id,replace | with ^,2,or_xor,equivalent,u
 pci_configuration_space,mem32_window,replace | with ^,3,or_xor,none,,unrowed_noise_candidate,
 pci_configuration_space,read_bars,replace | with ^,2,or_xor,equivalent,unclassified,noise,
 pgrep,,replace | with ^,3,or_xor,equivalent,unclassified,noise,
-program_argument_contract,ArgPage<'a>::check,replace < with <=,1,comparison,equivalent,unclassified,algebraic,
+program_argument_contract,ArgPage<'a>::check,replace < with <=,1,comparison,none,,unrowed,
 screen_console,Aperture::copy_wide_screen,replace | with ^,1,or_xor,equivalent,unclassified,noise,
 screen_console,Aperture::to_words,replace | with ^,3,or_xor,equivalent,unclassified,noise_unargued,
 screen_console,ScreenConsole::clear,replace - with +,1,arithmetic,equivalent,unclassified,algebraic,

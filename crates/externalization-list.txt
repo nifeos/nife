@@ -14,7 +14,6 @@ globally_unique_identifier_partition_table
 grant_contract
 grant_plan
 machine_statistics_contract
-program_argument_contract
 socket_contract
 user_mode_runtime
 subtree_scope
