@@ -426,6 +426,29 @@ mod verification {
         }
         assert_eq!(sum, total);
     }
+
+    /// **What the builder writes, the parser reads back**: two arguments of three and two bytes,
+    /// every byte symbolic, written over a page of stale bytes, as the shell writes each line over
+    /// one frame. The lengths are concrete, so every write lands at a known offset; with
+    /// symbolic lengths the 4,096-byte page ran the solver out of memory.
+    /// Falsification: replayable `crates/program_argument_contract/falsifications/verification.the_builder_and_the_parser_round_trip_two_arguments.patch`
+    #[kani::proof]
+    #[kani::unwind(17)]
+    fn the_builder_and_the_parser_round_trip_two_arguments() {
+        let first: [u8; 3] = kani::any();
+        let second: [u8; 2] = kani::any();
+        let mut page = [0xa5u8; PAGE_BYTES];
+        let mut builder = PageBuilder::new(&mut page).unwrap();
+        builder.push(&first).unwrap();
+        builder.push(&second).unwrap();
+        assert_eq!(builder.finish(), 2);
+        let parsed = ArgumentPage::parse(&page);
+        assert_eq!(parsed.len(), 2);
+        let mut read = parsed.iter();
+        assert_eq!(read.next(), Some(&first[..]));
+        assert_eq!(read.next(), Some(&second[..]));
+        assert_eq!(read.next(), None);
+    }
 }
 
 #[cfg(test)]
