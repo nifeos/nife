@@ -185,6 +185,14 @@ Read against `nifeos/generational_table` `main` at `8328360`, the merge of
   `insert_with_name`, `capacity` is `slot_count`, `NEVER_MINTED` stays, and the `Debug` field
   matches.
 
+## Follow-on
+
+- **Milestone 1033.** Items 1, 3 and 13 and the last bullet of Done when wait on the release that
+  publishes, which milestone 1033 (`generational_table`: the fixed-capacity, proved slotmap,
+  released on its own) owns. The finding status above says what each release step does.
+- **Done.** Items 2, 4 to 12, 14 and 15 and the release review's names, in the crate repository
+  pull requests the finding status names.
+
 ## Open decisions
 
 None. Every remaining step is the release that publishes, which the standing publishing hold
