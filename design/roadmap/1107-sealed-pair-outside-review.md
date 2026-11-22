@@ -31,7 +31,6 @@ build and test from.
 
 ## Finding status
 
-
 - P0-1, it cannot leave before `nifefs` and `measured_boot`: Waiting on repositories for `nifefs`
   and `measured_boot`. Decision A ruled the order on 2026-11-16 UTC, and the crate needs nothing
   more.
@@ -55,18 +54,21 @@ build and test from.
 - P2-11, duplicate and non-UTF-8 entries unreported: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580), by the item's own alternative: the crate's
   `BUGS` states the three facts.
-- P2-12, the stick-path haystack contains the archive: Done, [#3810](https://github.com/nifeos/nife/pull/3810). `embedded_archive` returns the
-  archive's span, `card_check` zeroes that span before it judges the rest of the boot file, and a
-  test carries the `progenitor` digest in an archive entry. The `BUGS` line is gone.
+- P2-12, the stick-path haystack contains the archive: Done,
+  [#3810](https://github.com/nifeos/nife/pull/3810). `embedded_archive` returns the archive's
+  span, `card_check` zeroes that span before it judges the rest of the boot file, and a test
+  carries the `progenitor` digest in an archive entry.
 - P2-13, the cost of the `contains` window scan: Done,
   [#3610](https://github.com/nifeos/nife/pull/3610) (about 1.6 ms per MiB).
-- P2-14, no proof: Done, [#3610](https://github.com/nifeos/nife/pull/3610) and [#3810](https://github.com/nifeos/nife/pull/3810). The
-  `contains` harness and the table-comparison harness each carry a falsification patch and share one `script/verify` row.
+- P2-14, no proof: Done, [#3610](https://github.com/nifeos/nife/pull/3610) and
+  [#3810](https://github.com/nifeos/nife/pull/3810). The `contains` harness and the
+  table-comparison harness each carry a falsification patch and share one `script/verify` row.
 - P2-15, `hex_string` and `measured_entries` public with one reader: At the move. Both stay
   public until then; a two-way door the maintainer rules at the move.
 - P2-16, the stale list in `notes/boot-stick.md`: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
-- Decision A, when it leaves: Done, [#3810](https://github.com/nifeos/nife/pull/3810) (ruled 2026-11-16 UTC). Recorded in the `sealed_pair` row of
+- Decision A, when it leaves: Done, [#3810](https://github.com/nifeos/nife/pull/3810) (ruled
+  2026-11-16 UTC). Recorded in the `sealed_pair` row of
   `notes/releasable-crates-2026-10-07/inventory.md` and in milestone 1017's order.
 - Decision B, two public names: Done, [#3610](https://github.com/nifeos/nife/pull/3610)
   (maintainer, provisional, 2026-11-14 UTC).
