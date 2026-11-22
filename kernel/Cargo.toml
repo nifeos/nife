@@ -71,7 +71,7 @@ clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_con
 # kernel-side std program wiring assembles the page (`PageBuilder`) and maps it read-only into a
 # std program the same way it does the clock page, so no party has its own copy of the layout or
 # the validated domains.
-environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "b4925221c6d33163c6217aa2b118ba29f0be5379" }
+environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "4778d5937460ef1e43e39113721422dd573a3306" }
 # The base digest page (milestone 695 (the kernel trusts two digests from the loader), part 1): the
 # kernel writes the loader's `nife.base` digest into it and grants it to the progenitor read-only,
 # and the progenitor reads it through the same crate, so the layout has one definition.
