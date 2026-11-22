@@ -47,7 +47,6 @@ credentialer abbreviations 33
 credentialer prose_acronyms 8
 credentialer readme_acronyms 2
 credentialer register_names 4
-current_cpu_contract abbreviations 2
 designware_inter_integrated_circuit abbreviations 2
 device_tree_patch abbreviations 72
 device_tree_patch prose_acronyms 4
@@ -249,7 +248,7 @@ uptime prose_acronyms 2
 uptime readme_acronyms 2
 uptime register_names 2
 user_mode_runtime abbreviations 8
-user_mode_runtime register_names 2
+user_mode_runtime register_names 1
 video_terminal abbreviations 189
 video_terminal prose_acronyms 17
 video_terminal readme_acronyms 4

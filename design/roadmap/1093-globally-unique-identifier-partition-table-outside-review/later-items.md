@@ -19,7 +19,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
     Door: two-way. Effort: S.
 
 14. The proofs stop short of the hostile-input surface.
-   PARTIAL. DONE: the four harnesses, each with its patch (`the_protective_master_boot_record_check_is_total` in `master_boot_record`, `a_span_always_contains_what_was_asked_for`, `a_name_always_decodes_into_its_documented_buffer`, and `the_header_checks_before_the_crc_are_total` with `the_header_crc_in_pieces_is_the_crc_of_the_whole`). LEFT: the fuzz target moves with the crate.
+   PARTIAL. DONE: the four harnesses, each with its patch (`the_protective_master_boot_record_check_is_total` in `master_boot_record`, `a_span_always_contains_what_was_asked_for`, `a_name_always_decodes_into_its_documented_buffer`, and `the_header_checks_before_the_crc_are_total` with `the_header_crc_in_pieces_is_the_crc_of_the_whole`), and the three that make `parse` total on a 512-byte block and a one-entry array (`the_entry_array_check_is_total`, `the_table_checks_are_total_on_one_entry`, `the_partition_checks_are_total_on_one_entry`). LEFT: the fuzz target moves with the crate.
     Finding: eight harnesses prove the codecs, the CRC's structure at eight bytes, the overlap rule
     and the writer against the reader's rules. Five properties are not proved. First, that
     `Header::decode` is total on any block (the package's open question 1; the CRC chain is what

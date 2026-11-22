@@ -36,14 +36,14 @@ pub fn exit() -> ! {
 
 /// **Die where the mistake was.** Raise a breakpoint (`brk #0`, `ebreak`, `ud2`) the kernel turns
 /// into a fault, which reports `EVENT_FAULT` to a supervisor where [`exit`] reports `EVENT_EXIT`
-/// (§26 (the fault endpoint)), so a panic must take this path. The trailing spin only satisfies
+/// on the fault endpoint, so a panic must take this path. The trailing spin only satisfies
 /// `-> !`; calling `exit` would make an impossible return look like a clean death.
 ///
 /// A verb, like `send`, `receive`, `reap_thread` and `exit`: the naming tenet's noun rule is about crates,
 /// programs and modules, not the things they do.
 ///
 /// # BUGS
-/// - Every trap prints the same fault line (one `pc`); notes/user-mode-runtime.md has the fix.
+/// - Every trap prints the same fault line (one `pc`); `docs/design.md` has the fix.
 pub fn trap() -> ! {
     #[cfg(target_arch = "aarch64")]
     // SAFETY: `brk` traps; the kernel turns a trap from userspace into a kill. The options promise
@@ -61,7 +61,7 @@ pub fn trap() -> ! {
     // SAFETY: `ud2` faults; the kernel turns a fault from ring 3 into a kill. The options promise
     // it touches neither memory nor the stack.
     //
-    // **`ud2` rather than `int3`, and this was measured rather than chosen** (milestone 161).
+    // **`ud2` rather than `int3`, and this was measured rather than chosen.**
     // `int3` is the obvious transliteration of `brk`/`ebreak` and it does not work from ring 3
     // here: a *software* interrupt is refused unless the IDT gate's DPL admits the caller's
     // privilege level, and this kernel's gates are all DPL 0, so `int3` from a process raises
@@ -84,7 +84,7 @@ pub fn trap() -> ! {
     }
 }
 
-/// Require that `condition` holds, or die on the line that does not. The one way a nife program says
+/// Require that `condition` holds, or die on the line that does not. The one way a program says
 /// "no": there is no error value to return, and limping past a failed check turns a detected
 /// mistake into an undetected one, so this [`trap`]s at the call.
 ///
@@ -110,7 +110,7 @@ pub fn require(condition: bool) {
     }
 }
 
-/// **The panic handler every nife program wants**, as a macro so it stays per-final-binary.
+/// **The panic handler every `no_std` program wants**, as a macro so it stays per-final-binary.
 ///
 /// Write `user_mode_runtime::panic_handler!();` once at the top level of a binary and it expands to a
 /// `#[panic_handler]` that calls [`trap`]. A library that defined the handler would force it on
@@ -157,11 +157,10 @@ macro_rules! panic_handler {
 /// enters a new thread with the stack pointer at the top of its stack page, 16-byte aligned. On
 /// `x86_64` the psABI promises `rsp % 16 == 8` at a function's first instruction, the return address
 /// a `call` pushes, so a plain `extern "C" fn _start` would run every frame eight bytes off and
-/// misplace every 16-byte-aligned local. On `x86_64` this expands to a one-`call` shim, as std's own
-/// entry does (`patches/std-nife/overlay/std/src/sys/pal/nife/entry.rs`); aarch64 and riscv64 push
-/// nothing on a call and get a plain `_start`. `loaded_image_check::verify` checks the alignment
-/// from inside a program, and `script/lint` refuses a hand-written `_start` in a program. See
-/// notes/user-mode-runtime.md, "Entering a process".
+/// misplace every 16-byte-aligned local. On `x86_64` this expands to a one-`call` shim, as the
+/// standard library's own entry for the target does; aarch64 and riscv64 push nothing on a call
+/// and get a plain `_start`. A program should use this macro rather than write its own `_start`.
+/// See `docs/design.md`, "Entering a process".
 ///
 /// # Examples
 ///

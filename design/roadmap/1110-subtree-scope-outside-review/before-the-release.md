@@ -71,7 +71,7 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
    carries the first.
    Door: two-way. Effort: S.
 
-9. What the walk proofs leave out, and what they cost. MEASURED, NOT ADDED: the completeness harness costs more than a prove shard has room for (see Finding status).
+9. What the walk proofs leave out, and what they cost. DONE (`a_walk_asks_for_every_component_in_order`, one running offset; the README line on `NotFound` and `Narrowed` is move work).
    Finding: the two walk harnesses state that every step is a name and that a successful walk went
    through directories only and never widened. Neither states that `walk` asks `lookup` for every
    component but the last, in order; a `walk` that skipped a component, or stopped early and

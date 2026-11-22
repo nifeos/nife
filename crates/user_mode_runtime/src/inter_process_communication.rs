@@ -17,7 +17,8 @@ pub fn send(slot: u64, word_zero: u64, word_one: u64, word_two: u64) -> i64 {
     unsafe { invoke(slot, abi::rendezvous::SEND, word_zero, word_one, word_two) }
 }
 
-/// **Collect the corpse of a child this supervision endpoint supervises** (DECISIONS §32).
+/// **Collect the corpse of a child this supervision endpoint supervises**, authorized by the
+/// supervision relationship rather than by the child's memory.
 /// `thread_id` is the thread id the kernel stamped on the death message [`receive_message`] returned. `0` on
 /// success; a negative [`abi::Error`] otherwise, and the three that matter are worth telling apart:
 /// `StillAlive` (not dead yet, so wait or escalate to the owner's `MemoryRegion::DESTROY`),
@@ -35,8 +36,8 @@ pub fn reap_thread(slot: u64, thread_id: u64) -> i64 {
     unsafe { invoke(slot, abi::rendezvous::REAP, thread_id, 0, 0) }
 }
 
-/// **Read one entry of the domain this supervision endpoint supervises** (milestone 126,
-/// `rendezvous::SURVEY`): [`survey_record`] with [`abi::survey::record::STATE`], the run state
+/// **Read one entry of the domain this supervision endpoint supervises**
+/// (`rendezvous::SURVEY`): [`survey_record`] with [`abi::survey::record::STATE`], the run state
 /// every caller wants. Returns `(next_cursor, tid, state)`: start at `cursor = 0`, feed each
 /// `next_cursor` back, and stop when [`abi::survey::DONE`] comes back.
 ///
@@ -46,8 +47,8 @@ pub fn survey(slot: u64, cursor: u64) -> (i64, u64, u64) {
     survey_record(slot, cursor, abi::survey::record::STATE)
 }
 
-/// **Read one entry of a supervised domain, asking for a specific record** (`rendezvous::SURVEY`,
-/// §204 (how userspace asks where a thread runs)). Returns `(next_cursor, tid, word)`, walked as
+/// **Read one entry of a supervised domain, asking for a specific record**
+/// (`rendezvous::SURVEY`), which is also how a thread asks where another thread runs. Returns `(next_cursor, tid, word)`, walked as
 /// [`survey`] is. `record` picks which per-thread fact lands in the third word (see
 /// [`abi::survey::record`]); a caller wanting two facts walks twice and joins on the tid.
 ///
@@ -62,8 +63,8 @@ pub fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
     (r0 as i64, w1, w2)
 }
 
-/// **Read one entry of what this address space has mapped** (milestone 126, `pmap`,
-/// `address_space::LIST`, DECISIONS §114 (`pmap` gets its listing)). Returns `(next_cursor, virtual_address, kind)`: start at `cursor = 0`, feed
+/// **Read one entry of what this address space has mapped** (`address_space::LIST`, what a
+/// process-map tool lists). Returns `(next_cursor, virtual_address, kind)`: start at `cursor = 0`, feed
 /// each `next_cursor` back, and stop when [`abi::survey::DONE`] comes back. [`survey`]'s twin,
 /// same three-word-out-of-one-`invoke` shape, one object type over.
 ///
@@ -116,7 +117,7 @@ pub fn receive(slot: u64) -> (u64, u64, u64) {
 /// message carried none. **For a program receiving a delegation**, whose `capability_slot` it then uses
 /// as the capability it expects. A server that answers a [`call`] receives with [`receive_request`]
 /// instead: `capability_slot` here is whatever the sender chose, a Reply only if the sender `CALL`ed, and
-/// [`reply`] takes the typed [`Reply`] only `receive_request` returns (milestone 706).
+/// [`reply`] takes the typed [`Reply`] only `receive_request` returns.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
 /// `receive_cap` under the capability ruling of 2026-10-06 (UTC).
@@ -126,12 +127,12 @@ pub fn receive_capability(slot: u64) -> (u64, u64, u64) {
     (w0, w1, w2)
 }
 
-/// **Mint a badged copy of the endpoint capability in `slot`** (milestone 599 (a frame per filesystem client channel)):
+/// **Mint a badged copy of the endpoint capability in `slot`**:
 /// `abi::rendezvous::BADGE`. Returns the slot the badged copy landed in, or a negative error
 /// (`NotPermitted` without `GRANT`, or for a zero badge or an already-badged source). The new slot
 /// holds a copy of the endpoint with `badge` stamped on it. The kernel delivers
 /// that badge to a server's [`receive_capability_message`] whenever this copy is used to `CALL` or `SEND_CAPABILITY`,
-/// which is how a client the progenitor built is told apart from its siblings on one endpoint.
+/// which is how a server tells one client apart from its siblings on one endpoint.
 pub fn badge(slot: u64, badge: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the endpoint capability and mints into a free slot.
     unsafe { invoke(slot, abi::rendezvous::BADGE, badge, 0, 0) }
@@ -139,8 +140,7 @@ pub fn badge(slot: u64, badge: u64) -> i64 {
 
 /// **One message a receive returned**: the three words the sender passed, the badge on the endpoint
 /// capability it invoked, the label the kernel stamped, and what came with the first word, typed.
-/// Milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves),
-/// Decision 3, made it one type.
+/// One type for every receive, so the receive functions differ only in the method they invoke.
 ///
 /// The fields are the registers the kernel wrote, so each receive is one projection of the same
 /// words rather than its own return shape:
@@ -168,7 +168,7 @@ pub struct Message {
     /// `x3`: the badge on the capability the sender invoked, `0` when unbadged, or a death
     /// message's faulting address.
     pub badge: u64,
-    /// `x5`: the dead child's label (§148 (resolves by asking the kernel)), `0` when unbadged or
+    /// `x5`: the dead child's label, which a supervisor resolves by asking the kernel, `0` when unbadged or
     /// unstamped. `invoke6` zeroes the register on the way in, so any other receive reads `0`.
     pub label: u64,
     /// What `w1` is, told by the kernel-written `x4`: a [`Reply`], a delegated capability or
@@ -176,8 +176,8 @@ pub struct Message {
     pub delivered: Delivered,
 }
 
-/// **What a receive on a thread with a bound notification returned** (milestone 151 (notification
-/// objects)): an ordinary message, or the bound notification's word.
+/// **What a receive on a thread with a bound notification returned**: an ordinary message, or the
+/// bound notification's word.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Received {
     /// A sender's message.
@@ -212,7 +212,7 @@ impl Received {
 ///
 /// **It tests `x4`, not `x0`**: `x0` is the sender's own first word, so a sender can put
 /// [`abi::notification::BOUND`] there, while `x4` is written only by the kernel. See
-/// `abi::notification::BOUND` and notes/notification-objects.md. A caller with no bound notification
+/// `abi::notification::BOUND`. A caller with no bound notification
 /// takes the message with [`Received::into_message`].
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
@@ -285,8 +285,7 @@ pub fn notification_bind(slot: u64, thread_slot: u64) -> i64 {
     unsafe { invoke(slot, abi::notification::BIND, thread_slot, 0, 0) }
 }
 
-/// `Timer::ARM` (milestone 106 (a wait that ends on either the interrupt or the deadline),
-/// DECISIONS §147 (a timer a userspace service cannot hold)): when the counter
+/// `Timer::ARM`, the kernel's timer, which no user-mode service holds: when the counter
 /// ([`counter_ticks`](crate::counter_ticks)) reaches `deadline`, OR `bits` into the notification in
 /// `notification_slot`. Replaces any pending deadline; a deadline already reached signals at once.
 /// `0`, or a negative [`abi::Error`].
@@ -355,7 +354,7 @@ pub fn sleep_until(timer_slot: u64, notification_slot: u64, deadline: u64) -> i6
 }
 
 /// `CALL` on the endpoint capability in `slot`: send two words and block until the server
-/// replies through the one-shot Reply capability the kernel mints (milestone 12). Returns the
+/// replies through the one-shot Reply capability the kernel mints. Returns the
 /// two reply words. The atomic send-and-wait that makes a request unmistakably answerable.
 ///
 /// # Examples
@@ -382,7 +381,7 @@ pub fn call(slot: u64, word_zero: u64, word_one: u64) -> (u64, u64) {
 
 /// [`call`], also returning the capability the server's reply carried, if it carried one: the slot
 /// a [`reply_capability`] filed in this process's table, or `None` after a plain [`reply`] or when the
-/// table was full (§255 (each socket is its own capability)).
+/// table was full. A socket server answers this way, since each socket is its own capability.
 pub fn call_receiving(slot: u64, word_zero: u64, word_one: u64) -> (u64, u64, Option<u64>) {
     // `NO_CAPABILITY` goes in as the unused third argument: a refused CALL returns without writing x2,
     // so x2 is then this value rather than a 0 that would read as slot 0.
@@ -395,7 +394,7 @@ pub fn call_receiving(slot: u64, word_zero: u64, word_one: u64) -> (u64, u64, Op
 }
 
 /// **`REPLY_CAPABILITY`: answer a caller with two words and a copy of the capability in slot
-/// `capability`** (§255 (each socket is its own capability); name follows the ratified method). The copy keeps the
+/// `capability`**, named for the kernel method. The copy keeps the
 /// rights it has here and needs `GRANT`. `Ok(true)` means the copy is in the caller's table, and
 /// `Ok(false)` that the caller was answered without it (its table was full) or was no longer
 /// waiting. On a refusal nothing was delivered and the Reply is still this server's, so it comes
@@ -423,8 +422,7 @@ pub fn reply_capability(
 /// and wake it. The capability is consumed by the kernel on use (that is what makes it one-shot),
 /// so the slot is free again when this returns, and this takes the [`Reply`] by value to say so.
 ///
-/// **It takes a [`Reply`], not a slot** (milestone 706 (a `CALL` server can tell a Reply from a
-/// delegation), DECISIONS §245 (a `CALL` server tells a Reply from a delegation)). A slot from
+/// **It takes a [`Reply`], not a slot**, so a `CALL` server can tell a Reply from a delegation. A slot from
 /// `RECEIVE_CAPABILITY` may hold anything a client chose to `SEND_CAPABILITY`, and `REPLY` is method `0`, which on a
 /// rendezvous is `SEND`: a server that answered a delegated rendezvous parked itself in that `SEND`
 /// for the life of the machine. A [`Reply`] comes only from [`receive_request`], which built it from
@@ -442,7 +440,7 @@ pub fn reply(to: Reply, result_word_zero: u64, result_word_one: u64) -> i64 {
     }
 }
 
-/// **A `CALL`'s one-shot Reply capability, known to be one** (milestone 706, DECISIONS §245). The only constructor is [`receive_request`]'s reading of the kernel-written
+/// **A `CALL`'s one-shot Reply capability, known to be one.** The only constructor is [`receive_request`]'s reading of the kernel-written
 /// `x4` ([`abi::rendezvous::REPLY_DELIVERED`]), and the only consumer is [`reply`], so a server
 /// cannot answer through a slot a client delegated. Neither `Copy` nor `Clone`, because a Reply
 /// answers once.
@@ -458,8 +456,7 @@ impl Reply {
     }
 }
 
-/// **What a `RECEIVE_CAPABILITY` put in `x1`, told apart by the kernel-written `x4`** (milestone 706,
-/// DECISIONS §245).
+/// **What a `RECEIVE_CAPABILITY` put in `x1`, told apart by the kernel-written `x4`.**
 #[derive(Debug, PartialEq, Eq)]
 pub enum Delivered {
     /// A `CALL`: `x1` is the Reply the kernel minted for this caller, and `x4` said so.
@@ -503,7 +500,7 @@ impl Delivered {
     }
 }
 
-/// **One message a `CALL` server received** (milestone 706, DECISIONS §245): the
+/// **One message a `CALL` server received**: the
 /// two data words, the sender's badge, and what came with it, typed.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Request {
@@ -517,7 +514,7 @@ pub struct Request {
     pub delivered: Delivered,
 }
 
-/// **`RECEIVE_CAPABILITY` for a `CALL` server** (milestone 706, DECISIONS §245): blocks
+/// **`RECEIVE_CAPABILITY` for a `CALL` server**: blocks
 /// until a message arrives and returns it with `x1` typed by the kernel's `x4`. The receive every
 /// server that answers with [`reply`] uses, because it is the only source of a [`Reply`].
 pub fn receive_request(slot: u64) -> Request {

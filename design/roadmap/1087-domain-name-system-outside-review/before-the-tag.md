@@ -4,7 +4,7 @@ An appendix to [the milestone](../1087-domain-name-system-outside-review.md).
 
 ## P1: before the first tag
 
-5. PARTLY DONE (`#![forbid(unsafe_code)]` is in; `script/crate-move` stages the `fuzz/` directory at the move). The fuzz target lives in nife's `fuzz/` workspace, not in the crate, and the crate's doc leans
+5. DONE (`#![forbid(unsafe_code)]`, and the crate's own `fuzz/` since the move). The fuzz target lives in nife's `fuzz/` workspace, not in the crate, and the crate's doc leans
    on it. Finding: `fuzz/fuzz_targets/domain_name_system_reply.rs` asserts the three properties the
    root doc relies on ("`Query::accept` is total, and that is fuzzed", line 651), seeded by
    `tests/fixtures`. The template's `fuzz.yml` fuzzes only a repository with its own
@@ -30,8 +30,7 @@ An appendix to [the milestone](../1087-domain-name-system-outside-review.md).
    the same pull request. Decision 1 settles this. Door: two-way before the first tag. Effort: XS.
 
 7. Public names a stranger cannot read without the specification, and names the template's gate
-   refuses. DONE for parts a, c and d. Part b leaves a private binding and eight test names, and the
-   `.github/accepted-words` entries wait for the move.
+   refuses. DONE, part b in the crate's own repository after the move.
    Finding, part a: `Header::{qdcount, ancount, nscount, arcount}` and `Header::rcode`
    (lines 136 to 143, 179), `Question::{qtype, qclass}` (lines 428 to 430), `Record::{rtype, rdata,
    rdata_off, ttl}` (lines 441 to 449), `FLAG_QR`, `FLAG_TC`, `FLAG_RD`, `RCODE_MASK`,
@@ -73,7 +72,7 @@ An appendix to [the milestone](../1087-domain-name-system-outside-review.md).
    good for the sake of a field the RFC itself says to zero.
    Door: two-way (a behavior fixed before any release). Effort: XS.
 
-9. AT THE MOVE. The three equivalent mutants need a home in the new repository.
+9. DONE (six exemptions, and a green full run on `main`). The three equivalent mutants need a home in the new repository.
    Finding: the census records three survivors (`Name::is_within` `<` to `<=`, two `|` to `^` on
    disjoint bit ranges), each triaged as equivalent with a reason. The template's `mutation`
    workflow goes red on a survivor absent from `.github/mutants-exempts`, and the release gate reads

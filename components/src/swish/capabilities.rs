@@ -132,7 +132,7 @@ fn capabilities_image(nav: &mut Nav, spec: ParsedInvocation) {
             };
         }
     };
-    let e = match grant_plan::plan_against(&spec, m, holdings(nav), expanded) {
+    let e = match grant_plan::plan_against(&spec, m, &holdings(nav), &expanded) {
         Ok(e) => e,
         Err(r) => {
             nav.close(handle);

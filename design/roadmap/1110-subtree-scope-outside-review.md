@@ -35,17 +35,16 @@ the crate's own reasons.
 
 ## Finding status
 
-- P0-1, the crate does not stand alone: Open. The README, both license files, the inlined
-  `license`, lints and `rust-version`, and a `publish` comment a stranger can act on remain, all
-  move work.
-- P0-2, the shipped text speaks to this tree: Open. The module doc still opens with a milestone, a
-  dated ruling and `fs_subtree_caretaker`; the rewrite in the crate's own words, with the
-  hard-cases prose of `notes/walk-cost.md`, is move work.
-- P0-3, the dependency on `file_system_contract` has nowhere to point: Open. The template half
+- P0-1, the crate does not stand alone: At the move. The README, both license files, the inlined
+  `license`, lints and `rust-version`, and a `publish` comment a stranger can act on remain.
+- P0-2, the shipped text speaks to this tree: At the move. The module doc still opens with a
+  milestone, a dated ruling and `fs_subtree_caretaker`; the rewrite in the crate's own words takes
+  the hard-cases prose of `notes/walk-cost.md`.
+- P0-3, the dependency on `file_system_contract` has nowhere to point: Waiting on
+  `file_system_contract`'s repository (milestone 1017 step 2). The template half
   landed in [nifeos/crate-workflows#66](https://github.com/nifeos/crate-workflows/pull/66), so
-  `deny.toml` admits git sources on the organization; the `git` and `rev` pin waits on
-  `file_system_contract`'s repository at step 2 of milestone 1017 (the contract crates leave in this
-  order).
+  `deny.toml` admits git sources on the organization; the `git` and `rev` pin needs the repository,
+  and the contract crates leave in the order milestone 1017 gives.
 - P1-4, `landing` answers `EINVAL` for `EISDIR`: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-5, `unbind` uses handle 0 for nothing to close: Done,
@@ -55,29 +54,29 @@ the crate's own reasons.
 - P1-7, names the rules refuse: Done, [#3813](https://github.com/nifeos/nife/pull/3813). The eight
   renames (`PROOF_PATH_BYTES`, `directories`, `want_directory`, `component`, `NodeKind`,
   `Binding::Unbound`, `check_landing`, `Bindings::binding`) stand in the tree and in
-  `redoxfs_server`, provisional (maintainer, 2026-11-19 UTC). The architect ratifies them from the
-  review package.
-- P1-8, no example anywhere: Open. The doctests on `walk` and `Bindings` landed in
-  [#3580](https://github.com/nifeos/nife/pull/3580); the README's `## EXAMPLES` is move work.
-- P1-9, what the walk proofs leave out and cost: Measured, not added. The completeness harness
-  `a_walk_asks_for_every_component_in_order` verifies at unwind 7, but costs 11 minutes of wall
-  time on a loaded host (658 s of CPU) at a peak of 4.6 GiB, against the crate's whole row of 234
-  seconds. That overruns a prove shard's room, so it stays out of the tree. The package records the
-  measurement and the harness's shape. A lane that makes room in the shards, or shrinks the
-  harness, adds it.
-- P1-10, passive voice over the template's ceiling: Open. The template counts 26 passives in 4,081
-  words against an allowance of 8; the rewrite is move work, with P0-2.
+  `redoxfs_server`, and `walk`'s parameter is `requested_rights`
+  ([#3858](https://github.com/nifeos/nife/pull/3858)). The architect ratified them with the review
+  package on 2026-11-20 UTC.
+- P1-8, no example anywhere: At the move. The doctests on `walk` and `Bindings` landed in
+  [#3580](https://github.com/nifeos/nife/pull/3580); the README's `## EXAMPLES` remains.
+- P1-9, what the walk proofs leave out and cost: Done,
+  [#3980](https://github.com/nifeos/nife/pull/3980). The harness
+  `a_walk_asks_for_every_component_in_order` states that `walk` asks for every component before the
+  last `/`, in order, and keeps one running offset instead of a record of the steps. Its
+  falsification makes `walk` skip the first component. The README's line that the unit tests, not
+  the proofs, cover `NotFound` and `Narrowed` goes with P0-1.
+- P1-10, passive voice over the template's ceiling: At the move. The template counts 26 passives in
+  4,081 words against an allowance of 8; the rewrite goes with P0-2.
 - P2-11, `Refusal::errno` restates the contract's numbers: Done,
   [#3610](https://github.com/nifeos/nife/pull/3610).
 - P2-12, `admit` takes three `u64` words in a row: Done,
   [#3610](https://github.com/nifeos/nife/pull/3610).
 - P2-13, `cfg_attr(not(test), no_std)`: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - P2-14, how the requested rights mask: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
-- P2-15, where the crate is stricter than Linux: Open. The README's section on `openat2` and
-  `cap-std` is move work, with P0-1.
+- P2-15, where the crate is stricter than Linux: At the move. The README's section on `openat2` and
+  `cap-std` goes with P0-1.
 - Decision, the crate's name: Done, [#3589](https://github.com/nifeos/nife/pull/3589) (maintainer,
   provisional, 2026-11-14 UTC; nothing to build).
-- Follow-on, the move into the repository `nifeos/subtree_scope`: Open; it waits on P0-3's pin.
 
 ## Decisions
 
@@ -207,11 +206,8 @@ The checks are in [the appendix](1110-subtree-scope-outside-review/done-when.md)
 
 ## Follow-on
 
-- **Milestone 1017.** The crate moves at its step 9; the move lane takes the items marked move work.
-- **Outstanding.** Item 9, which needs a Kani run of about 6 GiB, and item 7's renames, checked
-  against `crates/subtree_scope/src/lib.rs`.
-- **Outstanding.** The move's clearance, an open decision above; no package exists under
-  `notes/crate-reviews/`.
+- **Milestone 1017.** The crate moves at its step 9; the move lane takes the items marked At the
+  move, and P0-3's pin waits on `file_system_contract`'s repository at step 2.
 
 ## Index row
 

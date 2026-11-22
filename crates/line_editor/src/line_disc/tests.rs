@@ -7,7 +7,7 @@ use std::vec::Vec;
 /// baseline everything else builds on.
 #[test]
 fn plain_typing_makes_a_line() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     let events = feed_all(&mut d, &mut s, b"echo hi\r");
     assert_eq!(events, [Event::Line]);
     assert_eq!(d.line(), b"echo hi");
@@ -15,11 +15,11 @@ fn plain_typing_makes_a_line() {
 }
 
 /// **Tab is reported and changes nothing** (§227 option D): no echo, no edit, and the line in
-/// progress and its cursor are what [`LineDisc::pending`] says. A terminal that ignores the
+/// progress and its cursor are what [`LineEditor::pending`] says. A terminal that ignores the
 /// event therefore behaves exactly as it did when Tab fell into the catch-all.
 #[test]
 fn tab_is_an_event_that_leaves_the_line_alone() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"ls do\x1b[D");
     let before = s.text();
     assert_eq!(feed_all(&mut d, &mut s, b"\t"), [Event::Tab]);
@@ -31,7 +31,7 @@ fn tab_is_an_event_that_leaves_the_line_alone() {
 /// smuggle a control byte into the line: an escape in the text is skipped, not inserted.
 #[test]
 fn inserted_text_lands_at_the_cursor_and_control_bytes_are_refused() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"cat do x\x1b[D\x1b[D");
     d.insert_text(b"cs/\x1b[2J", &mut s);
     assert_eq!(s.text(), "cat docs/[2J x");
@@ -43,20 +43,20 @@ fn inserted_text_lands_at_the_cursor_and_control_bytes_are_refused() {
 /// A repaint after a listing redraws the prompt and the line with the cursor where it was.
 #[test]
 fn repaint_restores_prompt_line_and_cursor() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     d.start_line(b"$ ", &mut s);
     feed_all(&mut d, &mut s, b"ls a\x1b[D");
     let mut fresh = Screen::new();
     d.repaint(&mut fresh);
     assert_eq!(fresh.text(), "$ ls a");
-    assert_eq!(fresh.col, 5);
+    assert_eq!(fresh.column, 5);
 }
 
 /// Backspace erases from the screen as well as the buffer, including mid-line, where the
 /// tail must shift left visibly.
 #[test]
 fn backspace_erases_on_screen() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"ekko");
     feed_all(&mut d, &mut s, &[0x7f, 0x7f, 0x7f]);
     assert_eq!(s.text(), "e");
@@ -68,7 +68,7 @@ fn backspace_erases_on_screen() {
 /// get "hello", and the screen agrees at every step.
 #[test]
 fn arrow_keys_edit_mid_line() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"hllo");
     feed_all(&mut d, &mut s, b"\x1b[D\x1b[D\x1b[D");
     assert_eq!(feed_all(&mut d, &mut s, b"e"), []);
@@ -80,7 +80,7 @@ fn arrow_keys_edit_mid_line() {
 /// SS3 arrows (application cursor mode, `ESC O D`) work exactly like CSI arrows.
 #[test]
 fn ss3_arrows_are_understood() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"ab\x1bODc\r");
     assert_eq!(d.line(), b"acb");
 }
@@ -90,7 +90,7 @@ fn ss3_arrows_are_understood() {
 #[test]
 fn home_and_end_place_the_cursor() {
     for home in [&b"\x1b[H"[..], b"\x1b[1~", b"\x01"] {
-        let (mut d, mut s) = (LineDisc::new(), Screen::new());
+        let (mut d, mut s) = (LineEditor::new(), Screen::new());
         feed_all(&mut d, &mut s, b"bc");
         feed_all(&mut d, &mut s, home);
         feed_all(&mut d, &mut s, b"a");
@@ -104,7 +104,7 @@ fn home_and_end_place_the_cursor() {
 /// Delete (CSI 3~) removes under the cursor; ^D does the same on a non-empty line.
 #[test]
 fn delete_forward_both_ways() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"axbc");
     feed_all(&mut d, &mut s, b"\x1b[D\x1b[D\x1b[D"); // cursor on 'x'
     feed_all(&mut d, &mut s, b"\x1b[3~");
@@ -119,7 +119,7 @@ fn delete_forward_both_ways() {
 /// at the cursor, on screen and in the line.
 #[test]
 fn kill_to_end_and_yank() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"abcdef");
     feed_all(&mut d, &mut s, b"\x02\x02"); // ^B x2, cursor before "ef"
     feed_all(&mut d, &mut s, b"\x0b"); // ^K
@@ -133,7 +133,7 @@ fn kill_to_end_and_yank() {
 /// ^U kills to start; ^W kills the word before the cursor, blanks first.
 #[test]
 fn kill_to_start_and_kill_word() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"rm -rf /\x15"); // ^U
     assert_eq!(s.text(), "");
     feed_all(&mut d, &mut s, b"echo one two");
@@ -147,7 +147,7 @@ fn kill_to_start_and_kill_word() {
 /// browsing past the newest entry restores the line that was in progress.
 #[test]
 fn history_browsing_is_non_destructive() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"first\r");
     feed_all(&mut d, &mut s, b"second\r");
     s = Screen::new();
@@ -166,7 +166,7 @@ fn history_browsing_is_non_destructive() {
 /// entry is not recorded twice (up, up must reach the older command).
 #[test]
 fn history_recall_edits_and_dedups() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"run 9\r");
     feed_all(&mut d, &mut s, b"run 9\r"); // repeat: must not duplicate
     feed_all(&mut d, &mut s, b"help\r");
@@ -178,15 +178,15 @@ fn history_recall_edits_and_dedups() {
     assert_eq!(d.line(), b"run 7");
 }
 
-/// The history ring holds [`HIST`] entries and evicts the oldest.
+/// The history ring holds [`HISTORY_LINES`] entries and evicts the oldest.
 #[test]
 fn history_ring_evicts_the_oldest() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
-    for i in 0..=HIST {
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
+    for i in 0..=HISTORY_LINES {
         feed_all(&mut d, &mut s, std::format!("cmd{i}\r").as_bytes());
     }
     s = Screen::new();
-    for _ in 0..HIST + 5 {
+    for _ in 0..HISTORY_LINES + 5 {
         feed_all(&mut d, &mut s, b"\x1b[A"); // walk to the oldest, then bell
     }
     assert_eq!(s.text(), "cmd1", "cmd0 should have been evicted");
@@ -196,7 +196,7 @@ fn history_ring_evicts_the_oldest() {
 /// ^C discards the line in progress and reports Interrupt; the next line starts clean.
 #[test]
 fn ctrl_c_discards_the_line() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     let events = feed_all(&mut d, &mut s, b"rm -rf\x03");
     assert_eq!(events, [Event::Interrupt]);
     let events = feed_all(&mut d, &mut s, b"ok\r");
@@ -208,7 +208,7 @@ fn ctrl_c_discards_the_line() {
 /// was stored as text would reach the next command (milestone 48 (job control)).
 #[test]
 fn ctrl_z_suspends_and_discards_the_line() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     let events = feed_all(&mut d, &mut s, b"partial\x1a");
     assert_eq!(events, [Event::Suspend]);
     let events = feed_all(&mut d, &mut s, b"ok\r");
@@ -219,7 +219,7 @@ fn ctrl_z_suspends_and_discards_the_line() {
 /// ^D is EOF only on an empty line.
 #[test]
 fn ctrl_d_is_eof_only_when_empty() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     assert_eq!(feed_all(&mut d, &mut s, b"\x04"), [Event::Eof]);
     assert_eq!(feed_all(&mut d, &mut s, b"x\x04"), []);
 }
@@ -228,7 +228,7 @@ fn ctrl_d_is_eof_only_when_empty() {
 /// CRLF senders all behave.
 #[test]
 fn line_endings_cr_lf_crlf() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     let events = feed_all(&mut d, &mut s, b"a\rb\nc\r\nd\r");
     assert_eq!(events.len(), 4, "CRLF must not count as two Enters");
     assert_eq!(d.line(), b"d");
@@ -238,20 +238,20 @@ fn line_endings_cr_lf_crlf() {
 /// walking off the buffer.
 #[test]
 fn overflow_rings_the_bell() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
-    for _ in 0..LINE_MAXIMUM + 3 {
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
+    for _ in 0..MAXIMUM_LINE_BYTES + 3 {
         d.feed(b'a', &mut s);
     }
     assert_eq!(s.bells, 3);
     feed_all(&mut d, &mut s, b"\r");
-    assert_eq!(d.line().len(), LINE_MAXIMUM);
+    assert_eq!(d.line().len(), MAXIMUM_LINE_BYTES);
 }
 
 /// ^L repaints the prompt and the line after clearing, with the cursor where it was:
 /// typing continues mid-line.
 #[test]
 fn ctrl_l_repaints_prompt_and_line() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     d.start_line(b"$ ", &mut s);
     feed_all(&mut d, &mut s, b"ab\x1b[D"); // cursor between a and b
     feed_all(&mut d, &mut s, b"\x0c");
@@ -271,7 +271,7 @@ fn ctrl_l_repaints_prompt_and_line() {
 /// type-ahead: bytes that arrived before the read are not lost.
 #[test]
 fn start_line_shows_type_ahead() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"early");
     let mut s2 = Screen::new();
     d.start_line(b"$ ", &mut s2);
@@ -285,7 +285,7 @@ fn start_line_shows_type_ahead() {
 /// all of it: the promise `FLAG_RETRY` makes to a reader.
 #[test]
 fn a_resumed_read_keeps_the_half_typed_line_and_paints_nothing() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     d.start_line(b"$ ", &mut s);
     feed_all(&mut d, &mut s, b"ech");
     let mut quiet = Screen::new();
@@ -303,7 +303,7 @@ fn a_resumed_read_keeps_the_half_typed_line_and_paints_nothing() {
 /// in the line or on the screen.
 #[test]
 fn unknown_sequences_are_swallowed() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"a\x1b[15~b\x1b[Zc\r"); // F5, shift-tab
     assert_eq!(d.line(), b"abc");
     assert_eq!(s.text(), "abc");
@@ -313,7 +313,7 @@ fn unknown_sequences_are_swallowed() {
 /// buffer alone: a mode switch mid-line must not erase what earlier lines put there.
 #[test]
 fn abandon_clears_the_line_not_the_history() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"first\r"); // one real history entry
     feed_all(&mut d, &mut s, b"x\x02\x0b"); // type 'x', ^B onto it, ^K kills it to end
     feed_all(&mut d, &mut s, b"\x1b[A"); // browse into history
@@ -338,7 +338,7 @@ fn abandon_clears_the_line_not_the_history() {
 /// cover, including ^B at column 0 where there is nowhere to go.
 #[test]
 fn control_key_movement() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"\x02"); // ^B on an empty line: nothing to do
     feed_all(&mut d, &mut s, b"ab");
     feed_all(&mut d, &mut s, b"\x01\x06x"); // ^A, ^F right one, insert mid-line
@@ -352,7 +352,7 @@ fn control_key_movement() {
 /// proves where the cursor actually is (the echo alone would not).
 #[test]
 fn right_arrow_moves_and_stops_at_end() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"ab\x1b[D\x1b[D"); // cursor to column 0
     feed_all(&mut d, &mut s, b"\x1b[Cx"); // right one, insert between a and b
     assert_eq!(s.text(), "axb");
@@ -365,7 +365,7 @@ fn right_arrow_moves_and_stops_at_end() {
 /// parameter: the ';' advances to the second slot instead of aborting the sequence.
 #[test]
 fn csi_second_parameter_is_parsed() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"abc\x01"); // ^A, cursor on 'a'
     feed_all(&mut d, &mut s, b"\x1b[3;2~"); // delete under cursor, modifier ignored
     assert_eq!(s.text(), "bc");
@@ -377,7 +377,7 @@ fn csi_second_parameter_is_parsed() {
 /// cursor back where it was, so the next insertion lands mid-line on screen too.
 #[test]
 fn start_line_restores_mid_line_cursor() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"ab\x02"); // type ahead, cursor between a and b
     let mut s2 = Screen::new();
     d.start_line(b"$ ", &mut s2);
@@ -391,7 +391,7 @@ fn start_line_restores_mid_line_cursor() {
 /// the last real command, not a blank.
 #[test]
 fn empty_lines_stay_out_of_history() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"one\r\r");
     s = Screen::new();
     feed_all(&mut d, &mut s, b"\x1b[A");
@@ -403,7 +403,7 @@ fn empty_lines_stay_out_of_history() {
 /// from two, which is why the bell count is the assertion here.
 #[test]
 fn duplicate_entry_is_stored_once() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"a\ra\r");
     s = Screen::new();
     feed_all(&mut d, &mut s, b"\x1b[A\x1b[A");
@@ -417,7 +417,7 @@ fn duplicate_entry_is_stored_once() {
 /// arithmetic can be wrong without them noticing.
 #[test]
 fn wrapped_ring_walks_correctly_both_ways() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     for i in 0..10 {
         feed_all(&mut d, &mut s, std::format!("cmd{i}\r").as_bytes());
     }
@@ -443,7 +443,7 @@ fn wrapped_ring_walks_correctly_both_ways() {
 /// checked elsewhere; this pins the on-screen column, which only the echo carries.
 #[test]
 fn stash_restores_cursor_column() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"old\r");
     s = Screen::new();
     feed_all(&mut d, &mut s, b"hello\x02\x02"); // cursor after "hel"
@@ -458,7 +458,7 @@ fn stash_restores_cursor_column() {
 /// silently (the bell is reserved for a yank with no room at all).
 #[test]
 fn yank_truncates_to_the_room_left() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     for _ in 0..250 {
         d.feed(b'a', &mut s);
     }
@@ -468,7 +468,7 @@ fn yank_truncates_to_the_room_left() {
     }
     feed_all(&mut d, &mut s, b"\x19\r"); // ^Y: only 246 of the 250 fit
     assert_eq!(s.bells, 0);
-    assert_eq!(d.line().len(), LINE_MAXIMUM);
+    assert_eq!(d.line().len(), MAXIMUM_LINE_BYTES);
     assert_eq!(&d.line()[..10], b"bbbbbbbbbb");
     assert!(d.line()[10..].iter().all(|&b| b == b'a'));
 }
@@ -478,11 +478,11 @@ fn yank_truncates_to_the_room_left() {
 /// distinction is the condition, not just the bell.
 #[test]
 fn yank_bell_needs_a_kill_and_a_full_line() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"\x19"); // empty kill buffer: nothing, no bell
     assert_eq!(s.bells, 0);
     feed_all(&mut d, &mut s, b"x\x15"); // kill buffer now holds "x"
-    for _ in 0..LINE_MAXIMUM {
+    for _ in 0..MAXIMUM_LINE_BYTES {
         d.feed(b'a', &mut s);
     }
     feed_all(&mut d, &mut s, b"\x19"); // no room at all
@@ -493,7 +493,7 @@ fn yank_bell_needs_a_kill_and_a_full_line() {
 /// through both the yank repaint and the next insertion.
 #[test]
 fn yank_mid_line_keeps_the_tail_in_place() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"abcdef\x02\x02\x0b"); // ^K kills "ef"
     feed_all(&mut d, &mut s, b"\x02\x02\x19"); // yank it between "ab" and "cd"
     assert_eq!(s.text(), "abefcd");
@@ -507,7 +507,7 @@ fn yank_mid_line_keeps_the_tail_in_place() {
 /// loop must not walk past the front of the buffer).
 #[test]
 fn word_kill_over_leading_blanks() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"  \x17\r");
     assert_eq!(d.line(), b"");
     assert_eq!(s.text(), "");
@@ -517,7 +517,7 @@ fn word_kill_over_leading_blanks() {
 /// the cursor position's.
 #[test]
 fn word_kill_yank_round_trip() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"ab cd\x17\x19\r");
     assert_eq!(d.line(), b"ab cd");
 }
@@ -527,7 +527,7 @@ fn word_kill_yank_round_trip() {
 /// so the multi-digit encoding path was unexercised.
 #[test]
 fn multi_digit_cursor_move() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"abcdefghijkl\x01X");
     assert_eq!(s.text(), "Xabcdefghijkl");
     feed_all(&mut d, &mut s, b"\r");
@@ -560,7 +560,7 @@ fn a_cursor_move_of_one_elides_its_count_and_ten_spells_it() {
 /// a completion listing) prints it. A resume that forgot the prompt would repaint a bare line.
 #[test]
 fn resuming_a_read_remembers_the_prompt_and_paints_nothing() {
-    let mut d = LineDisc::new();
+    let mut d = LineEditor::new();
     let mut o = Raw(Vec::new());
     d.resume_line(b"$ ");
     assert!(o.0.is_empty());
@@ -568,11 +568,11 @@ fn resuming_a_read_remembers_the_prompt_and_paints_nothing() {
     assert_eq!(o.0, b"$ ");
 }
 
-/// A repaint puts the cursor back where it was: the distance left of the end is `len - cur`,
+/// A repaint puts the cursor back where it was: the distance left of the end is `len - cursor`,
 /// nothing at the end of the line and the whole line at column 0.
 #[test]
 fn a_repaint_leaves_the_cursor_where_it_was() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"abcde\x1b[D\x1b[D");
     let mut o = Raw(Vec::new());
     d.repaint(&mut o);
@@ -591,7 +591,7 @@ fn a_repaint_leaves_the_cursor_where_it_was() {
 /// its final byte with the largest parameter, and the line is untouched by the unknown one.
 #[test]
 fn a_long_control_sequence_parameter_saturates() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"abc");
     // Unknown final with a huge parameter: dropped whole.
     feed_all(&mut d, &mut s, b"\x1b[9999999~");
@@ -611,7 +611,7 @@ fn a_long_control_sequence_parameter_saturates() {
 /// recalls history, where it used to leave `[A` in the line.
 #[test]
 fn a_doubled_escape_is_one_prefix() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"first\r");
     feed_all(&mut d, &mut s, b"\x1b\x1b[A");
     assert_eq!(d.pending().0, b"first");
@@ -621,7 +621,7 @@ fn a_doubled_escape_is_one_prefix() {
 /// typed into the line, whatever the three bytes are, and a key after it is an ordinary key.
 #[test]
 fn a_mouse_report_is_dropped_with_its_payload() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"ab");
     feed_all(&mut d, &mut s, b"\x1b[M #!");
     assert_eq!(d.pending().0, b"ab");
@@ -638,7 +638,7 @@ fn a_mouse_report_is_dropped_with_its_payload() {
 /// A byte at or above 0x80 is dropped without echo: input is ASCII only (the crate `BUGS` says so).
 #[test]
 fn a_byte_above_ascii_is_dropped_without_echo() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"a\xc3\xa9b");
     assert_eq!(d.pending().0, b"ab");
     assert_eq!(s.text(), "ab");
@@ -648,15 +648,15 @@ fn a_byte_above_ascii_is_dropped_without_echo() {
 /// with the kill buffer read in place.
 #[test]
 fn a_yank_into_a_nearly_full_line_inserts_what_fits() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, &[b'x'; 10]);
     feed_all(&mut d, &mut s, b"\x15"); // ^U: the ten bytes are the kill buffer
-    feed_all(&mut d, &mut s, &[b'y'; LINE_MAXIMUM - 4]);
+    feed_all(&mut d, &mut s, &[b'y'; MAXIMUM_LINE_BYTES - 4]);
     feed_all(&mut d, &mut s, b"\x19"); // ^Y: four fit
     let (line, cursor) = d.pending();
-    assert_eq!(line.len(), LINE_MAXIMUM);
-    assert_eq!(cursor, LINE_MAXIMUM);
-    assert_eq!(&line[LINE_MAXIMUM - 4..], b"xxxx");
+    assert_eq!(line.len(), MAXIMUM_LINE_BYTES);
+    assert_eq!(cursor, MAXIMUM_LINE_BYTES);
+    assert_eq!(&line[MAXIMUM_LINE_BYTES - 4..], b"xxxx");
 }
 
 /// Every cursor move the engine can echo, at the largest distance, is one contiguous sequence of
@@ -670,7 +670,7 @@ fn the_largest_cursor_move_is_a_whole_sequence() {
         }
     }
     let mut out = Whole(Vec::new());
-    csi_left(&mut out, LINE_MAXIMUM);
+    csi_left(&mut out, MAXIMUM_LINE_BYTES);
     csi_right(&mut out, 1);
     assert_eq!(out.0, [b"\x1b[256D".to_vec(), b"\x1b[C".to_vec()]);
 }
@@ -686,7 +686,7 @@ fn a_repaint_with_nothing_to_paint_puts_nothing() {
             self.0.push(b.to_vec());
         }
     }
-    let mut editor = LineDisc::new();
+    let mut editor = LineEditor::new();
     let mut out = Puts(Vec::new());
     editor.feed(0x0c, &mut out);
     assert_eq!(out.0, [b"\x1b[2J\x1b[H".to_vec()]);
@@ -709,7 +709,7 @@ fn no_short_keystroke_sequence_puts_an_empty_slice() {
     for a in 0..=255u8 {
         for b in 0..=255u8 {
             for c in [0u8, 8, 11, 21, 23, 25, b'a', b'\r', 0x10, 0x0e] {
-                let mut editor = LineDisc::new();
+                let mut editor = LineEditor::new();
                 let mut out = Puts(false);
                 for k in [b'x', b'y', a, b, c] {
                     let _ = editor.feed(k, &mut out);
@@ -730,7 +730,7 @@ fn recalling_the_empty_line_in_progress_puts_only_the_erase() {
             self.0.push(b.to_vec());
         }
     }
-    let mut editor = LineDisc::new();
+    let mut editor = LineEditor::new();
     let mut out = Puts(Vec::new());
     for key in *b"ab\r" {
         let _ = editor.feed(key, &mut out);

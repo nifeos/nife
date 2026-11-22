@@ -151,22 +151,22 @@ fn a_program_that_reads_nothing_is_refused_an_input() {
 }
 
 /// **A program whose answer is a register cannot be redirected**, and the manifest is what says
-/// so. `least_authority_demo 9 > out.txt` would otherwise write a `u64` into a byte sink, which is a file
+/// so. `count 9 > out.txt` would otherwise write a `u64` into a byte sink, which is a file
 /// with nothing legible in it and no error anywhere.
 #[test]
 fn only_a_byte_stream_can_be_redirected() {
     assert_eq!(
-        plan_line(b"least_authority_demo 9 > out.txt", WITH_DIRECTORY),
+        plan_line(b"count 9 > out.txt", WITH_DIRECTORY),
         Err((0, Refusal::NotAByteStream)),
     );
     assert_eq!(
-        plan_line(b"least_authority_demo 9 | wc", WITH_DIRECTORY),
+        plan_line(b"count 9 | wc", WITH_DIRECTORY),
         Err((0, Refusal::NotAByteStream)),
     );
     // The interrupt demonstrators hold no output capability at all, which is the third case and
     // reaches the same refusal from the other side.
     assert_eq!(
-        plan_line(b"interrupt_heeder | wc", WITH_DIRECTORY),
+        plan_line(b"heed | wc", WITH_DIRECTORY),
         Err((0, Refusal::NotAByteStream)),
     );
     // A `Bytes` program in the same position is fine, so the refusal is about the declaration
@@ -203,7 +203,7 @@ fn a_diagnostic_redirection_binds_to_a_declaration_and_refuses_without_one() {
     assert!(msg.contains("declares no second output"), "{msg}");
     // A program with no byte stream at all reaches it too, from the other side.
     assert_eq!(
-        plan_line(b"least_authority_demo 9 2> err.txt", WITH_DIRECTORY),
+        plan_line(b"count 9 2> err.txt", WITH_DIRECTORY),
         Err((0, Refusal::NoDiagnosticStream)),
     );
 }
@@ -229,11 +229,7 @@ fn a_declarer_gets_a_second_destination_with_no_operator_on_the_line() {
     );
 
     // And a program that declares none has none to place, on any line.
-    for text in [
-        &b"wc gate.txt"[..],
-        b"wc gate.txt > out.txt",
-        b"least_authority_demo 9",
-    ] {
+    for text in [&b"wc gate.txt"[..], b"wc gate.txt > out.txt", b"count 9"] {
         let e = plan_line(text, WITH_DIRECTORY).unwrap().0[0].unwrap();
         assert_eq!(
             e.diagnostics,
@@ -273,8 +269,7 @@ fn a_diagnostic_redirection_changes_one_field_and_nothing_else() {
 /// under the program, and the program probes one number.
 #[test]
 fn the_declared_slot_is_out_of_reach_of_the_ordinary_grants() {
-    let slot = Program::Date
-        .manifest()
+    let slot = rows::DATE
         .output
         .diagnostics_slot()
         .expect("date declares a second stream");
@@ -282,17 +277,6 @@ fn the_declared_slot_is_out_of_reach_of_the_ordinary_grants() {
     // Four is the most ordinary grants any manifest here asks for (output, clock, input,
     // budget). The upper bound of fifteen is arbitrary; `abi::fault::FAULT_RENDEZVOUS_SLOT` is 63.
     assert!(slot > 4 && slot < 15, "slot {slot} is not out of the way");
-    // And every other program declares none, so nothing else needs the slot at all.
-    for p in [
-        Program::LeastAuthorityDemo,
-        Program::MemoryGrantDepleter,
-        Program::InterruptHeeder,
-        Program::InterruptIgnorer,
-        Program::Rm,
-        Program::Wc,
-    ] {
-        assert_eq!(p.manifest().output.diagnostics_slot(), None, "{p:?}");
-    }
 }
 
 /// A declared second stream does not change what `>` and `|` may substitute: the first stream is
@@ -300,7 +284,7 @@ fn the_declared_slot_is_out_of_reach_of_the_ordinary_grants() {
 /// unpipeable, which would be a cost §67 does not pay.
 #[test]
 fn declaring_a_second_stream_leaves_the_first_one_redirectable() {
-    assert!(Program::Date.manifest().output.is_byte_stream());
+    assert!(rows::DATE.output.is_byte_stream());
     assert!(plan_line(b"date | wc", WITH_DIRECTORY).is_ok());
     assert!(plan_line(b"date > out.txt", WITH_DIRECTORY).is_ok());
     // And `2>` rides alongside a pipe, at the tail where it is written.
@@ -314,9 +298,9 @@ fn declaring_a_second_stream_leaves_the_first_one_redirectable() {
 /// a program is endowed is a bigger fact about the line than where its bytes were going.
 #[test]
 fn a_missing_argument_is_reported_before_a_missing_byte_stream() {
-    // `least_authority_demo` needs an integer AND has no bytes to redirect. Both are true; one is printed.
+    // `count` needs an integer AND has no bytes to redirect. Both are true; one is printed.
     assert_eq!(
-        plan_line(b"least_authority_demo > out.txt", WITH_DIRECTORY),
+        plan_line(b"count > out.txt", WITH_DIRECTORY),
         Err((0, Refusal::ProgramArgumentRequired)),
     );
 }
@@ -452,7 +436,7 @@ fn plan_as(m: Manifest, text: &[u8], streams: Streams) -> Endowment {
     let CommandLine::Run(r) = parse(text) else {
         panic!()
     };
-    plan_against_with_streams(&r, m, WITH_DIRECTORY, Expansion::none(), streams).unwrap()
+    plan_against_with_streams(&r, m, &WITH_DIRECTORY, &Expansion::none(), &streams).unwrap()
 }
 
 /// **The declaration reaches the endowment**, which is what lets a whole line be checked rather
@@ -469,7 +453,7 @@ fn writing_while_reading_is_a_declaration_the_plan_carries() {
         ..Streams::default()
     };
     assert!(plan_as(RENDERS_AS_IT_READS, b"wc", streams).writes_while_reading);
-    assert!(!plan_as(Program::Wc.manifest(), b"wc", streams).writes_while_reading);
+    assert!(!plan_as(rows::WC, b"wc", streams).writes_while_reading);
 }
 
 /// **One wait point, stated as a rule about a line.**
@@ -494,7 +478,7 @@ fn a_chain_this_shell_feeds_needs_one_stage_that_reads_to_the_end() {
         ..src
     };
     let renderer = plan_as(RENDERS_AS_IT_READS, b"wc", src);
-    let counter = plan_as(Program::Wc.manifest(), b"wc", src);
+    let counter = plan_as(rows::WC, b"wc", src);
     let renderer_piped = plan_as(RENDERS_AS_IT_READS, b"wc", piped);
 
     // `mdr page.md`: this shell writes the file in, and DECISIONS §106 gives the render

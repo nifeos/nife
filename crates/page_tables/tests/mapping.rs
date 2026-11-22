@@ -2,8 +2,8 @@
 //!
 //! The trick: a `Box<PageTable>` is 4 KiB-aligned (the type says so) and has a real
 //! address. So we hand those addresses to the mapper as "physical" frames, and
-//! `physical_to_pointer` is the identity cast. **The pointer arithmetic is bit-for-bit what the
-//! kernel does.** We are testing the actual code path, not a model of it.
+//! `physical_to_pointer` hands back the table's own pointer at that address. **The pointer
+//! arithmetic is bit-for-bit what the kernel does.** We are testing the actual code path, not a model of it.
 //!
 //! Runs in milliseconds. No emulator, no hardware, no MMU.
 
@@ -23,39 +23,95 @@ fn never_installed(flush: TranslationLookasideBufferFlush) {
     unsafe { flush.assume_no_stale_entry() }
 }
 
-thread_local! {
-    /// Every table the pretend frame allocator hands out, so `TableGuard` can give them back.
-    /// Thread-local because tests run in parallel and each test's tables are its own.
-    static TABLES: RefCell<Vec<*mut PageTable>> = const { RefCell::new(Vec::new()) };
+/// The pretend frame allocator. **The mapper borrows it**, so the borrow checker, not a guard a
+/// test has to remember to bind, keeps the tables alive until the mapper is gone and frees them
+/// afterwards (the shape of `tests/blocks.rs` and `src/domain.rs`'s fixture). The tables outlive
+/// the mapper, which is the ownership shape the real kernel has too: the mapper borrows tables, the
+/// frame allocator owns them.
+struct Pool {
+    /// Every table this pool owns, root included, for freeing and for `pointer`.
+    tables: RefCell<Vec<*mut PageTable>>,
+    /// How many more tables `fresh` hands out before it answers `None`.
+    budget: Cell<usize>,
 }
 
-/// Frees the test's tables when it ends, so Miri's leak check stays meaningful
-/// (notes/undefined-behavior.md). Declared FIRST in each test that builds a mapper, so it drops
-/// last, after the mapper that reads the tables is gone.
-///
-/// # BUGS
-///
-/// Binding this is opt-in: a test added here must declare `let _tables = TableGuard;` first, and
-/// nothing enforces it. `src/domain.rs` and `tests/blocks.rs` hang allocation off the pool, so
-/// forgetting is a compile error there; this file's twenty-one call sites are not converted.
-struct TableGuard;
-impl Drop for TableGuard {
-    fn drop(&mut self) {
-        TABLES.with(|t| {
-            for p in t.borrow_mut().drain(..) {
-                // SAFETY: `p` came from `Box::into_raw` in this thread's allocator below,
-                // registered exactly once; the drain removes it so nothing frees it twice.
-                unsafe { drop(Box::from_raw(p)) };
-            }
-        });
+impl Pool {
+    fn new(budget: usize) -> Self {
+        Pool {
+            tables: RefCell::new(Vec::new()),
+            budget: Cell::new(budget),
+        }
+    }
+
+    /// A zeroed table outside the budget, for a root or a frame a test hands the mapper itself.
+    /// Its "physical" address is its host address.
+    fn table(&self) -> u64 {
+        let p = Box::into_raw(Box::new(PageTable::new()));
+        self.tables.borrow_mut().push(p);
+        p.addr() as u64
+    }
+
+    /// The next table under the budget, or `None` once it is spent.
+    fn fresh(&self) -> Option<u64> {
+        if self.budget.get() == 0 {
+            return None;
+        }
+        self.budget.set(self.budget.get() - 1);
+        Some(self.table())
+    }
+
+    /// How many tables `fresh` still hands out.
+    fn remaining(&self) -> usize {
+        self.budget.get()
+    }
+
+    /// The table this pool owns at `physical_address`, as the pointer `Box::into_raw` returned, so
+    /// the mapper writes through a pointer that keeps its provenance and Miri has no
+    /// integer-to-pointer cast to warn about. Panics on any other address: a walk that followed a
+    /// pointer nothing allocated is a loud test bug, not a segfault.
+    fn pointer(&self, physical_address: u64) -> *mut PageTable {
+        self.tables
+            .borrow()
+            .iter()
+            .copied()
+            .find(|p| p.addr() as u64 == physical_address)
+            .unwrap_or_else(|| panic!("no table of this pool sits at {physical_address:#x}"))
+    }
+
+    /// A mapper over a fresh root that takes its tables from `allocate`.
+    fn mapper_over<A: FnMut() -> Option<u64>>(
+        &self,
+        half: Half,
+        allocate: A,
+    ) -> Mapper<A, impl Fn(u64) -> *mut PageTable + '_, Fmt> {
+        let root = self.table();
+        // SAFETY: `root` is a fresh, zeroed, 4 KiB-aligned table of this pool, and `pointer`
+        // returns the pool's own pointer to every table it holds, which is correct because these
+        // "physical" addresses ARE host addresses. The pool outlives the mapper by the borrow.
+        unsafe {
+            Mapper::new(root, half, allocate, |physical_address| {
+                self.pointer(physical_address)
+            })
+        }
+    }
+
+    /// A mapper over a fresh root in `half` that takes its tables from the budget.
+    #[allow(clippy::type_complexity)] // two opaque closures and a format; no `type` alias without TAIT
+    fn mapper(
+        &self,
+        half: Half,
+    ) -> Mapper<impl FnMut() -> Option<u64> + '_, impl Fn(u64) -> *mut PageTable + '_, Fmt> {
+        self.mapper_over(half, move || self.fresh())
     }
 }
 
-/// `Box::into_raw` with a receipt: the guard above owns the eventual free.
-fn fresh_table() -> u64 {
-    let p = Box::into_raw(Box::new(PageTable::new()));
-    TABLES.with(|t| t.borrow_mut().push(p));
-    p as u64
+impl Drop for Pool {
+    fn drop(&mut self) {
+        for p in self.tables.borrow_mut().drain(..) {
+            // SAFETY: each `p` came from `Box::into_raw` in `table`, registered exactly once.
+            unsafe { drop(Box::from_raw(p)) };
+        }
+    }
 }
 
 /// This host test suite drives the aarch64 format specifically (the format-neutral `Mapper`
@@ -66,48 +122,6 @@ type Fmt = Aarch64;
 /// The `index` free function moved onto the format; alias it so the arithmetic tests read unchanged.
 fn index(virtual_address: u64, level: usize) -> usize {
     Fmt::index(virtual_address, level)
-}
-
-/// A pretend physical frame allocator backed by the host heap. The tables outlive the mapper
-/// (they are freed by the test's `TableGuard`, not here), which is the ownership shape the real
-/// kernel has too: the mapper borrows tables, the frame allocator owns them.
-fn page_frame_source(budget: &Cell<usize>) -> impl FnMut() -> Option<u64> + '_ {
-    move || {
-        if budget.get() == 0 {
-            return None;
-        }
-        budget.set(budget.get() - 1);
-        Some(fresh_table())
-    }
-}
-
-fn physical_to_pointer(physical_address: u64) -> *mut PageTable {
-    physical_address as *mut PageTable
-}
-
-#[allow(clippy::type_complexity)] // an opaque closure + fn pointer + format; no `type` alias without TAIT
-fn mapper_in(
-    half: Half,
-    budget: &Cell<usize>,
-) -> Mapper<impl FnMut() -> Option<u64> + '_, fn(u64) -> *mut PageTable, Fmt> {
-    let root = fresh_table();
-    // SAFETY: `root` is a fresh, zeroed, 4 KiB-aligned table, and `physical_to_pointer` is the
-    // identity, which is correct because these "physical" addresses ARE host addresses.
-    unsafe {
-        Mapper::new(
-            root,
-            half,
-            page_frame_source(budget),
-            physical_to_pointer as fn(u64) -> *mut PageTable,
-        )
-    }
-}
-
-#[allow(clippy::type_complexity)]
-fn mapper(
-    budget: &Cell<usize>,
-) -> Mapper<impl FnMut() -> Option<u64> + '_, fn(u64) -> *mut PageTable, Fmt> {
-    mapper_in(Half::Low, budget)
 }
 
 /// Each level takes a 9-bit slice. L0 = 47:39, L1 = 38:30, L2 = 29:21, L3 = 20:12.
@@ -130,9 +144,8 @@ fn index_wraps_at_512() {
 
 #[test]
 fn map_then_translate_round_trips() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
 
     m.map(0x4008_0000, 0x4008_0000, Flags::kernel_code())
         .unwrap();
@@ -144,9 +157,8 @@ fn map_then_translate_round_trips() {
 
 #[test]
 fn translate_carries_the_offset_within_the_page() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
 
     m.map(0x1000, 0x4000_0000, Flags::kernel_data()).unwrap();
 
@@ -157,9 +169,8 @@ fn translate_carries_the_offset_within_the_page() {
 
 #[test]
 fn unmapped_addresses_translate_to_nothing() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
     m.map(0x1000, 0x4000_0000, Flags::kernel_data()).unwrap();
 
     assert_eq!(m.translate(0x2000), None);
@@ -170,9 +181,8 @@ fn unmapped_addresses_translate_to_nothing() {
 /// the high half) step 4 depends on.
 #[test]
 fn a_virtual_address_can_differ_from_its_physical_one() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
 
     m.map(0x1000, 0x4008_0000, Flags::kernel_code()).unwrap();
 
@@ -220,16 +230,15 @@ fn the_top_16_bits_are_not_translated_they_choose_the_TABLE() {
 /// hours.
 #[test]
 fn mapping_into_the_wrong_half_is_refused() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
+    let pool = Pool::new(16);
 
-    let mut low = mapper_in(Half::Low, &budget);
+    let mut low = pool.mapper(Half::Low);
     assert_eq!(
         low.map(0xffff_0000_0000_0000, 0x1000, Flags::kernel_data()),
         Err(MapError::WrongHalf)
     );
 
-    let mut high = mapper_in(Half::High, &budget);
+    let mut high = pool.mapper(Half::High);
     assert_eq!(
         high.map(0x1000, 0x1000, Flags::kernel_data()),
         Err(MapError::WrongHalf)
@@ -247,9 +256,8 @@ fn non_canonical_addresses_belong_to_neither_half() {
 
 #[test]
 fn the_high_half_maps_normally_once_you_are_in_it() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper_in(Half::High, &budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::High);
 
     let virtual_address = 0xffff_0000_4008_0000;
     m.map(virtual_address, 0x4008_0000, Flags::kernel_code())
@@ -263,25 +271,23 @@ fn the_high_half_maps_normally_once_you_are_in_it() {
 /// out of memory mapping a kernel.
 #[test]
 fn nearby_pages_share_their_intermediate_tables() {
-    let _tables = TableGuard;
-    let budget = Cell::new(3); // exactly enough for ONE chain of L1+L2+L3
-    let mut m = mapper(&budget);
+    let pool = Pool::new(3); // exactly enough for ONE chain of L1+L2+L3
+    let mut m = pool.mapper(Half::Low);
 
     m.map(0x4000_0000, 0x4000_0000, Flags::kernel_data())
         .unwrap();
-    assert_eq!(budget.get(), 0, "first mapping should consume L1+L2+L3");
+    assert_eq!(pool.remaining(), 0, "first mapping should consume L1+L2+L3");
 
     // The next page needs no new tables at all.
     m.map(0x4000_1000, 0x4000_1000, Flags::kernel_data())
         .expect("should reuse the existing tables");
-    assert_eq!(budget.get(), 0);
+    assert_eq!(pool.remaining(), 0);
 }
 
 #[test]
 fn running_out_of_page_frames_is_an_error_not_a_panic() {
-    let _tables = TableGuard;
-    let budget = Cell::new(0);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(0);
+    let mut m = pool.mapper(Half::Low);
 
     assert_eq!(
         m.map(0x1000, 0x1000, Flags::kernel_data()),
@@ -291,9 +297,8 @@ fn running_out_of_page_frames_is_an_error_not_a_panic() {
 
 #[test]
 fn misaligned_addresses_are_rejected() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
 
     assert_eq!(
         m.map(0x1001, 0x1000, Flags::kernel_data()),
@@ -309,9 +314,8 @@ fn misaligned_addresses_are_rejected() {
 /// frame is still marked used by the allocator, and nothing references it any more.
 #[test]
 fn mapping_over_an_existing_mapping_is_an_error() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
 
     m.map(0x1000, 0x4000_0000, Flags::kernel_data()).unwrap();
     assert_eq!(
@@ -322,9 +326,8 @@ fn mapping_over_an_existing_mapping_is_an_error() {
 
 #[test]
 fn map_range_maps_every_page() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
 
     m.map_range(0x4000_0000, 0x8000_0000, 4, Flags::kernel_data())
         .unwrap();
@@ -397,9 +400,8 @@ fn device_memory_is_typed_as_device_and_is_never_executable() {
 
 #[test]
 fn unmap_removes_the_mapping_and_returns_the_page_frame() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
 
     m.map(0x1000, 0x4000_0000, Flags::kernel_data()).unwrap();
     assert!(m.translate(0x1000).is_some());
@@ -418,9 +420,8 @@ fn unmap_removes_the_mapping_and_returns_the_page_frame() {
 
 #[test]
 fn the_tlb_obligation_names_the_address_it_is_about() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
 
     m.map(0x8000, 0x4000_0000, Flags::kernel_data()).unwrap();
     let (_, flush) = m.unmap(0x8000).unwrap();
@@ -436,9 +437,8 @@ fn the_tlb_obligation_names_the_address_it_is_about() {
 
 #[test]
 fn unmapping_nothing_is_an_error_not_a_silent_success() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
 
     match m.unmap(0x1000) {
         Err(MapError::NotMapped) => {}
@@ -455,9 +455,8 @@ fn unmapping_nothing_is_an_error_not_a_silent_success() {
 /// incorrectly, rather than merely documenting the rule and hoping.
 #[test]
 fn changing_a_mapping_is_forced_through_break_before_make() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
 
     m.map(0x1000, 0x4000_0000, Flags::kernel_data()).unwrap();
 
@@ -486,12 +485,11 @@ fn changing_a_mapping_is_forced_through_break_before_make() {
 /// kernel never does that; it frees the recorded frame set wholesale (notes/teardown.md).
 #[test]
 fn unmap_then_map_reuses_the_intermediate_tables() {
-    let _tables = TableGuard;
-    let budget = Cell::new(3); // exactly one chain of L1+L2+L3
-    let mut m = mapper(&budget);
+    let pool = Pool::new(3); // exactly one chain of L1+L2+L3
+    let mut m = pool.mapper(Half::Low);
 
     m.map(0x1000, 0x4000_0000, Flags::kernel_data()).unwrap();
-    assert_eq!(budget.get(), 0);
+    assert_eq!(pool.remaining(), 0);
 
     let (_, flush) = m.unmap(0x1000).unwrap();
     never_installed(flush);
@@ -508,9 +506,8 @@ fn unmap_then_map_reuses_the_intermediate_tables() {
 #[test]
 #[should_panic(expected = "TLB was never invalidated")]
 fn dropping_the_tlb_obligation_is_fatal() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
     m.map(0x1000, 0x4000_0000, Flags::kernel_data()).unwrap();
 
     let (_pa, _flush) = m.unmap(0x1000).unwrap();
@@ -528,22 +525,13 @@ fn dropping_the_tlb_obligation_is_fatal() {
 /// no store goes into a page that has been given back.
 #[test]
 fn unlinking_a_table_cuts_its_whole_span_and_nothing_else() {
-    let _tables = TableGuard;
+    let pool = Pool::new(16);
     let taken = RefCell::new(Vec::new());
-    let alloc = || {
-        let t = fresh_table();
+    let mut m = pool.mapper_over(Half::Low, || {
+        let t = pool.fresh()?;
         taken.borrow_mut().push(t);
         Some(t)
-    };
-    // SAFETY: a fresh, zeroed, aligned root; the identity is right for host addresses.
-    let mut m = unsafe {
-        Mapper::<_, _, Fmt>::new(
-            fresh_table(),
-            Half::Low,
-            alloc,
-            physical_to_pointer as fn(u64) -> *mut PageTable,
-        )
-    };
+    });
 
     const ONE_GIBIBYTE: u64 = 1 << 30;
     m.map(0x1000, 0x4000_0000, Flags::user_data()).unwrap();
@@ -596,9 +584,8 @@ fn unlinking_a_table_cuts_its_whole_span_and_nothing_else() {
 /// previous entry's address. The leaf entry decodes to the frame that was mapped.
 #[test]
 fn a_walk_of_a_mapped_address_reports_every_level_down_to_the_leaf() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
     m.map(0x40_2000, 0x4000_0000, Flags::user_data()).unwrap();
 
     let walk = m.walk(0x40_2000, |_| true);
@@ -627,9 +614,8 @@ fn a_walk_of_a_mapped_address_reports_every_level_down_to_the_leaf() {
 /// table that was never built (which stops higher up).
 #[test]
 fn a_walk_stops_at_the_entry_that_is_not_present_and_keeps_what_it_read() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
     m.map(0x40_2000, 0x4000_0000, Flags::user_data()).unwrap();
     let (_, flush) = m.unmap(0x40_2000).unwrap();
     flush.flush(|_| {});
@@ -653,9 +639,8 @@ fn a_walk_stops_at_the_entry_that_is_not_present_and_keeps_what_it_read() {
 /// direct map does not cover.
 #[test]
 fn a_walk_never_reads_a_table_the_caller_refuses() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
     m.map(0x40_2000, 0x4000_0000, Flags::user_data()).unwrap();
     let second = Fmt::entry_physical_address(m.walk(0x40_2000, |_| true).steps()[0].entry);
 
@@ -674,9 +659,8 @@ fn a_walk_never_reads_a_table_the_caller_refuses() {
 /// [`MapError::BadRegion`] and leave the tables empty (no table frame is taken).
 #[test]
 fn a_range_or_span_past_the_top_of_the_address_space_is_refused_whole() {
-    let _tables = TableGuard;
-    let budget = Cell::new(16);
-    let mut m = mapper(&budget);
+    let pool = Pool::new(16);
+    let mut m = pool.mapper(Half::Low);
     let f = Flags::kernel_data();
 
     assert_eq!(
@@ -712,7 +696,7 @@ fn a_range_or_span_past_the_top_of_the_address_space_is_refused_whole() {
         ),
         Err(MapError::BadRegion)
     );
-    assert_eq!(budget.get(), 16, "a refused run takes no table frame");
+    assert_eq!(pool.remaining(), 16, "a refused run takes no table frame");
     assert!(m.translate(0x1000).is_none());
 }
 
@@ -720,19 +704,10 @@ fn a_range_or_span_past_the_top_of_the_address_space_is_refused_whole() {
 /// through**, with [`MapError::Misaligned`], and nothing is mapped.
 #[test]
 fn a_misaligned_frame_from_the_allocator_is_refused() {
-    let _tables = TableGuard;
-    let root = fresh_table();
-    // SAFETY: `root` is a fresh, zeroed, aligned table and the cast is the identity; the
-    // allocator breaks its alignment obligation on purpose, which the mapper must catch before
+    let pool = Pool::new(16);
+    // The allocator breaks its alignment obligation on purpose, which the mapper must catch before
     // it writes through the frame.
-    let mut m: Mapper<_, fn(u64) -> *mut PageTable, Fmt> = unsafe {
-        Mapper::new(
-            root,
-            Half::Low,
-            || Some(fresh_table() + 8),
-            physical_to_pointer as fn(u64) -> *mut PageTable,
-        )
-    };
+    let mut m = pool.mapper_over(Half::Low, || Some(pool.fresh()? + 8));
     assert_eq!(
         m.map(0x40_0000, 0x4000_0000, Flags::user_data()),
         Err(MapError::Misaligned)

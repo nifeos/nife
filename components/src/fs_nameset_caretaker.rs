@@ -5,8 +5,9 @@
 //! one subtree; this narrows it to a set of names in one directory, which is what `rm *.txt`
 //! designates. A name not in the set does not exist here: every verb that names it is `ENOENT`, at
 //! the granted directory and nowhere below it. `start_granted_set` in
-//! `kernel/src/user/fs_service/set_grant.rs` wires its slots, passes the directory's name and rights
-//! in the three `START` words, and maps the set at [`SET_VA`] ([`file_system_contract::nameset`]).
+//! `kernel/src/user/fs_service/set_grant.rs` wires its slots, passes the rights in the `START`
+//! words, and maps the grant page at [`SET_VA`]: the directory's name, then the set
+//! ([`file_system_contract::grant::write_page`]).
 //! Why it is a third caretaker is in notes/glob-grant/third-caretaker.md.
 
 //! # BUGS
@@ -39,11 +40,10 @@ const REPORT: u64 = 2;
 /// The one page, shared with the FS server above and the client below, for `fs_file_caretaker`'s
 /// reason: every request on both hops is a blocking `CALL`.
 const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
-/// The read-only page the encoded name set arrives in. A second frame, and the only place in the
-/// grant machinery that needs one: a set is the first thing a grant carries that registers cannot.
-/// It is copied into a local at startup and never read again, so nothing that happens to this page
-/// afterwards can widen the namespace.
-const SET_VA: u64 = address_space_layout::pair_page(0x0000_0000_0070_0000);
+/// The read-only grant page: the granted directory's name at offset 0 and the encoded name set at
+/// [`grant::PAGE_NAME_SET_OFFSET`]. Both are copied into locals at startup and never read again, so
+/// nothing that happens to this page afterwards can widen the namespace.
+const SET_VA: u64 = grant::PAGE_VIRTUAL_ADDRESS;
 /// The shared page's size, the contract's transfer unit.
 const PAGE: usize = file_system_contract::PAGE_BYTES;
 
@@ -51,9 +51,10 @@ const PAGE: usize = file_system_contract::PAGE_BYTES;
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
 // write_volatile loops below).
 const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
-// SAFETY: the wiring maps SET_VA read-only, at least nameset::MAXIMUM_BYTES bytes, before this program runs.
+// SAFETY: the wiring maps one page read-only at SET_VA before this program runs, and
+// grant::PAGE_USED_BYTES is less than a page.
 const SET_WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(SET_VA, nameset::MAXIMUM_BYTES as u64) };
+    unsafe { MappedWindow::new(SET_VA, grant::PAGE_USED_BYTES as u64) };
 
 /// How many handles a confined program may hold open at once, including the granted directory at
 /// index 0. `fs_subtree_caretaker`'s number, for `fs_subtree_caretaker`'s reason: no heap, one
@@ -300,17 +301,24 @@ fn list(set: &[u8], cursor: usize) -> i64 {
 user_mode_runtime::program_entry!(start);
 
 fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
-    // **Copy the set before anything else runs.** It arrives in a read-only page, and this process
-    // then works from a local for the rest of its life, so the namespace it serves cannot be
-    // changed by anything that touches that page later. It is `nameset::MAXIMUM_BYTES`, 523 bytes, on a
-    // stack of `CARETAKER_STACK_PAGES`.
-    let mut set = [0u8; nameset::MAXIMUM_BYTES];
-    for (i, b) in set.iter_mut().enumerate() {
+    // **Copy the grant page before anything else runs.** It arrives read-only, and this process
+    // then works from locals for the rest of its life, so the namespace it serves cannot be changed
+    // by anything that touches that page later. The copy is `grant::PAGE_USED_BYTES`, on a stack
+    // of `CARETAKER_STACK_PAGES`.
+    let mut page = [0u8; grant::PAGE_USED_BYTES];
+    for (i, b) in page.iter_mut().enumerate() {
         *b = SET_WINDOW.read_volatile::<u8>(i as u64);
     }
-
-    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
-    let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
+    let set = grant::page_name_set(&page);
+    // START words that still carry a name are refused, not read beside the page: one place holds
+    // the name, and a wiring that wrote two is wrong. So is a page whose name is malformed.
+    if !grant::words_carry_no_name(name_lo, name_hi, spec) {
+        panic!();
+    }
+    let Some(name) = grant::page_name(&page) else {
+        panic!();
+    };
+    let n = name.len();
 
     // The descent, exactly `fs_subtree_caretaker`'s: ask for the granted directory with the granted
     // rights, and die rather than come up serving a hole. Everything the client reaches, it reaches
@@ -326,7 +334,7 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
             grant::specification_rights(spec),
         )
     } else {
-        put_at(0, &buf[..n]);
+        put_at(0, name);
         call(
             FS,
             file_system::request(file_system::OPENDIR, file_system::ROOT, n as u64),
@@ -340,12 +348,12 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // A set with nothing in it is not a capability anybody meant to hand out, and the shell refuses
     // to plan one (`grant_plan::Refusal::NoMatch`). If one arrives anyway the wiring is wrong, and dying
     // here is better than serving a namespace with no names in it.
-    if nameset::count(&set) == 0 {
+    if nameset::count(set) == 0 {
         panic!();
     }
 
     send(REPORT, file_system_contract::READY, 0, 0);
-    serve(dir, &set);
+    serve(dir, set);
 }
 
 user_mode_runtime::panic_handler!();

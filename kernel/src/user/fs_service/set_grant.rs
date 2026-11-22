@@ -6,10 +6,6 @@
 
 use super::*;
 
-/// Where the nameset caretaker expects its read-only name-set page
-/// (`components/src/fs_nameset_caretaker.rs`'s `SET_VA`).
-const SET_VA_CARETAKER: u64 = 0x0000_0000_0070_0000;
-
 /// Stack pages the caretaker gets beyond the one `run` maps: the progenitor's
 /// `CARETAKER_STACK_PAGES` (4), so this wiring runs it on the stack it gets in a booted system.
 /// One page is not enough. The caretaker copies the whole set, `nameset::MAXIMUM_BYTES`, onto its stack
@@ -19,7 +15,7 @@ const CARETAKER_EXTRA_STACK: usize = 3;
 
 /// A set grant: [`DirGrant`]'s shape, narrowed to the names in a set within one directory.
 ///
-/// A set does not fit in `START` registers, so it is encoded into a frame of its own, mapped
+/// The directory and the set are written onto the caretaker's grant page, a frame of its own mapped
 /// read-only into the caretaker before it is spawned. No client can reach that frame, so it needs
 /// none of [`wait_for_caretaker`]'s ordering. See notes/fs-server/kernel-wiring.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
@@ -79,21 +75,11 @@ pub fn start_granted_set(
     let report = endpoint();
     let verdict = verdict.then(endpoint);
 
-    // The set, encoded into its own frame before anything can see it. `encode` refuses rather
-    // than truncating, and a truncated set would be a capability nobody planned.
-    let set_phys = page_frame();
-    let mut encoded = [0u8; file_system_contract::nameset::MAXIMUM_BYTES];
-    let n = file_system_contract::nameset::encode(names, &mut encoded)
-        .expect("this set does not fit one grant, so no command line could have named it");
-    // SAFETY: a fresh frame of FRAME_BYTES bytes reachable through the direct map, and `n` is at
-    // most `nameset::MAXIMUM_BYTES`, which is far smaller.
-    unsafe {
-        core::ptr::copy_nonoverlapping(encoded.as_ptr(), mmu::phys_to_virt(set_phys) as *mut u8, n);
-    };
-
-    let (lo, hi) = file_system_contract::grant::pack_name(dir.as_bytes())
-        .expect("a granted directory's name rides in two argument words; this one does not fit");
-    let spec = file_system_contract::grant::specification(dir.len(), rights);
+    // The directory and the set, on the caretaker's grant page before anything can see it. The
+    // writer refuses rather than truncating, and a truncated set would be a capability nobody
+    // planned.
+    let set_phys = grant_page(dir.as_bytes(), true, names);
+    let spec = file_system_contract::grant::specification(0, rights);
 
     let caretaker = crate::sched::spawn(move || {
         let mut maps = [Mapping {
@@ -108,7 +94,7 @@ pub fn start_granted_set(
         };
         // Read-only: a writable set would let the caretaker widen its own grant.
         maps[1] = Mapping {
-            va: SET_VA_CARETAKER,
+            va: GRANT_VA_CARETAKER,
             phys: set_phys,
             flags: Flags::user_read_only_data(),
         };
@@ -119,8 +105,8 @@ pub fn start_granted_set(
         run(
             caretaker_image,
             Spawn {
-                arg0: lo,
-                arg1: hi,
+                arg0: 0,
+                arg1: 0,
                 arg2: spec,
                 grants: &[
                     rendezvous_capability(file_ep, Rights::WRITE), // slot 0: CALL the FS server

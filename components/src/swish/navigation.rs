@@ -290,9 +290,8 @@ impl Nav {
 
     /// **Parse and validate a path to a name**, for a verb that opens or makes its last component
     /// rather than standing in it: [`Nav::plan_path`] for every step but the last, which is a name
-    /// in that directory and so may be as long as a file's ([`grant_navigation::MAXIMUM_NAME_BYTES`], milestone 946 (a
-    /// granted file name can be longer than sixteen bytes)) where a directory the shell stands in
-    /// may not ([`grant_navigation::MAXIMUM_DIRECTORY_NAME_BYTES`]). A path ending in `..` names a directory, and is
+    /// in that directory, so it is not held to the room left in a [`DirectoryPath`]
+    /// ([`grant_navigation::MAXIMUM_PATH_BYTES`]). A path ending in `..` names a directory, and is
     /// validated whole.
     ///
     /// Name: provisional (milestone 946).

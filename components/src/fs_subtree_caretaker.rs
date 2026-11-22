@@ -6,8 +6,9 @@
 //! granted rights, and afterwards it only maps the client's handle numbers (from
 //! [`file_system_contract::file_system::ROOT`]) to the server's. The handle is the authority and the endpoint
 //! is the boundary: the confined program holds nothing that names the FS server. `start_granted_dir`
-//! (`kernel/src/user/fs_service/directory_grant.rs`) wires its slots and passes the name and rights
-//! in the three `START` words ([`file_system_contract::grant`]). See notes/dir-capability/caretaker.md.
+//! (`kernel/src/user/fs_service/directory_grant.rs`) wires its slots, maps the granted name on a
+//! read-only grant page at [`GRANT_VA`] and passes the rights in the `START` words
+//! ([`file_system_contract::grant`]). See notes/dir-capability/caretaker.md.
 
 //! # BUGS
 //!
@@ -46,11 +47,19 @@ const REPORT: u64 = 2;
 const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the contract's transfer unit.
 const PAGE: usize = file_system_contract::PAGE_BYTES;
+/// The read-only grant page: the granted directory's name at offset 0, as
+/// [`grant::write_page`] lays it out, and nothing else, since this caretaker serves no set. It is
+/// read once at startup, before anything serves.
+const GRANT_VA: u64 = grant::PAGE_VIRTUAL_ADDRESS;
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled write_volatile
 // loop below).
 const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
+// SAFETY: the wiring maps one page read-only at GRANT_VA before this program runs, and
+// grant::PAGE_USED_BYTES is less than a page.
+const GRANT_WINDOW: MappedWindow =
+    unsafe { MappedWindow::new(GRANT_VA, grant::PAGE_USED_BYTES as u64) };
 
 /// How many handles a confined program may hold open at once through this caretaker, including the
 /// granted directory itself at index 0.
@@ -208,28 +217,54 @@ fn serve(dir: u64) -> ! {
     }
 }
 
+/// Report a refused descent on [`REPORT`] and exit without serving.
+fn refuse(errno: i32) -> ! {
+    send(
+        REPORT,
+        file_system_contract::DESCENT_REFUSED,
+        errno as i64 as u64,
+        0,
+    );
+    exit();
+}
+
 user_mode_runtime::program_entry!(start);
 
 fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
-    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
-    let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
+    // The name is read off the grant page into a local, so nothing that touches the page later can
+    // change what this process descended into. START words that still carry a name, or a page
+    // holding a malformed name or a set, are a wiring this caretaker refuses rather than reads one
+    // way: an `EINVAL` descent, reported like any other.
+    let mut page = [0u8; grant::PAGE_USED_BYTES];
+    for (i, b) in page.iter_mut().enumerate() {
+        *b = GRANT_WINDOW.read_volatile::<u8>(i as u64);
+    }
+    let name = match grant::page_name(&page) {
+        Some(name)
+            if grant::words_carry_no_name(name_lo, name_hi, spec)
+                && grant::page_name_set(&page).first() == Some(&0) =>
+        {
+            name
+        }
+        _ => refuse(EINVAL),
+    };
 
     // The whole grant, in one request. The FS server intersects the asked rights with its own and
     // refuses if the intersection is smaller, so a wiring that asked for more fails here, loudly.
     //
     // An empty name is the root of the shell's namespace, which has no name to descend into, so the
     // grant narrows the handle this process already holds (`file_system::NARROW`, §173 (narrowing the root of the shell's namespace)).
-    let (r0, _) = if n == 0 {
+    let (r0, _) = if name.is_empty() {
         call(
             FS,
             file_system::request(file_system::NARROW, file_system::ROOT, 0),
             grant::specification_rights(spec),
         )
     } else {
-        put(&buf[..n]);
+        put(name);
         call(
             FS,
-            file_system::request(file_system::OPENDIR, file_system::ROOT, n as u64),
+            file_system::request(file_system::OPENDIR, file_system::ROOT, name.len() as u64),
             grant::specification_rights(spec),
         )
     };
@@ -238,13 +273,7 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // `RECEIVE`, and `rm nosuchdir/x` is ordinary. It then exits: with no narrowed handle, serving
     // would mean answering from `file_system::ROOT`, the whole directory it was meant to attenuate.
     if let Some(errno) = error::code(r0 as i64) {
-        send(
-            REPORT,
-            file_system_contract::DESCENT_REFUSED,
-            errno as i64 as u64,
-            0,
-        );
-        exit();
+        refuse(errno);
     }
 
     send(REPORT, file_system_contract::READY, 0, 0);

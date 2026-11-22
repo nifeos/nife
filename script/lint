@@ -412,6 +412,12 @@ echo "==> clippy: domain_name_resolution_contract fuzz target (its own workspace
 python3 helpers/clippy_record.py crates/domain_name_resolution_contract/fuzz/clippy cargo clippy \
     --manifest-path crates/domain_name_resolution_contract/fuzz/Cargo.toml --all-targets -- -D warnings
 
+echo "==> clippy: pci_configuration_space fuzz targets (its own workspace)"
+# lint-scope: code
+# lint-lane: fuzz
+python3 helpers/clippy_record.py crates/pci_configuration_space/fuzz/clippy cargo clippy \
+    --manifest-path crates/pci_configuration_space/fuzz/Cargo.toml --all-targets -- -D warnings
+
 # The proofs' own code, which nothing else in this file compiles (milestone 113).
 #
 # `cfg(kani)` is set by the model checker and by nothing else. So every `#[cfg(kani)] mod
@@ -938,7 +944,7 @@ echo "rule 1: no asm outside kernel/src/arch/"
 # A program enters through `user_mode_runtime::program_entry!`, never a hand-written `_start`. On
 # x86_64 the kernel enters a thread with `rsp % 16 == 0` and the psABI promises `rsp % 16 == 8`, so
 # a plain `extern "C" fn _start` misplaces every 16-byte-aligned local; the macro's one-`call` shim
-# is the fix (notes/user-mode-runtime.md, "Entering a process"). `loaded_image_check` proves the
+# is the fix (crates/user_mode_runtime/docs/design.md, "Entering a process"). `loaded_image_check` proves the
 # alignment at run time for one program; this holds every other one to the same entry. `$$` for
 # the reason rule 1 gives above.
 echo "==> programs enter through program_entry!"
@@ -3128,6 +3134,19 @@ if bad:
 print(f"proof-only modules: {len(files)} riscv64 file(s) on the aarch64 prover host, every "
       "crate::arch reference recorded")
 PY
+
+# 5c. **A boot-line head is spelled once** (milestone 1078 (`boot_ladder`: what an outside
+#     maintainer would fix before it leaves), item 7; helpers/boot_line_heads.py, name
+#     provisional). The kernel, the shell and every reader build the heads from
+#     `boot_ladder::Heads`, and `serial_console::heads::HEADS` is nife's value of it. A gate that
+#     spells a head by hand passes every unit test after a wording change and then fails as a
+#     timeout. Test modules, fixtures and a copy marked `boot-line-head: copy, <reason>` pass;
+#     the helper's header says what it cannot see. Fixtures first, because a green run looks the
+#     same as a check that cannot fire.
+echo "==> a boot-line head is spelled once"
+# lint-scope: code
+python3 "$(dirname "$0")/../helpers/boot_line_heads.py" --selftest
+python3 "$(dirname "$0")/../helpers/boot_line_heads.py"
 
 # 6. **`notes/` and `design/` markdown filenames are lowercase and hyphenated** (CLAUDE.md).
 #    They are URL slugs the moment any of this is published, and a hyphen is a word separator in a

@@ -21,6 +21,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	0	fuzz	-	0	-	code	clippy: memory_region_heap fuzz target (its own workspace)
 -	0	fuzz	-	0	-	code	clippy: master_boot_record fuzz target (its own workspace)
 -	0	fuzz	-	0	-	code	clippy: domain_name_resolution_contract fuzz target (its own workspace)
+-	0	fuzz	-	0	-	code	clippy: pci_configuration_space fuzz targets (its own workspace)
 -	0	host	-	0	host	code	clippy: the Kani proof harnesses (--cfg kani)
 -	0	host	-	0	host	code	clippy: user_mode_runtime tests (host)
 -	0	aarch64	-	0	aarch64	code	clippy: kernel + user + user_mode_runtime (aarch64)
@@ -79,6 +80,7 @@ review-status	1	-	-	1	-	both	crate reviews keep one closed set of finding states
 -	1	-	-	0	-	both	naming conventions
 -	1	-	-	0	-	code	fixed /tmp paths in scripts (they race across worktrees; see the note above)
 -	1	-	-	0	-	both	proof-only modules: crate::arch is the host's
+-	1	-	-	0	-	code	a boot-line head is spelled once
 -	1	-	-	0	-	both	names meet the current naming rules
 -	1	-	-	0	-	code	every Kani harness carries a falsification record
 -	1	-	-	0	-	record	the audit index's selftest (fixture indexes: duplicates, triples, missing rows)

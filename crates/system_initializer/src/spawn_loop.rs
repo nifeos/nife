@@ -226,7 +226,8 @@ struct Request {
     grant: Option<GrantWords>,
     frames: Option<Frames>,
     args_seen: Option<u64>,
-    set_seen: Option<u64>,
+    /// A directory grant's page as the shell sent it, mapped read-only (`spawn_protocol::DIRECTORY_GRANT_BIT`).
+    grant_seen: Option<u64>,
     delegated: Delegated,
     presented: bool,
 }
@@ -568,14 +569,15 @@ impl Service<'_> {
             .image
             .then(|| take_frames(spawn, spawn_protocol::image_len(w0), own_ut));
 
-        // The argv's frame, then the name set's (milestone 205 (how a foreign program is told what
-        // to do)): taken whenever announced, whatever the program, so both sides stay in lockstep.
+        // The argv's frame, then a directory grant's page (milestone 205 (how a foreign program is
+        // told what to do), milestone 1122 (every name travels on a page)): taken whenever
+        // announced, whatever the program, so both sides stay in lockstep.
         let args_seen = if wiring.program_arguments {
             receive_args(spawn, own_ut)
         } else {
             None
         };
-        let set_seen = if wiring.nameset {
+        let grant_seen = if wiring.directory_grant {
             receive_args(spawn, own_ut)
         } else {
             None
@@ -599,7 +601,7 @@ impl Service<'_> {
             grant,
             frames,
             args_seen,
-            set_seen,
+            grant_seen,
             delegated,
             presented,
         }
@@ -1165,6 +1167,49 @@ impl Service<'_> {
         (installer, catalog_page, installer_failed, catalog_failed)
     }
 
+    /// **The capability a directory grant hands the job**: the file server's badged endpoint when
+    /// it binds the directory itself, or a caretaker over the bound or plain channel otherwise.
+    /// `None` when the grant asked for one and none could be built. Split out of
+    /// [`Self::wire_directory`], which picks the channel this narrows.
+    fn narrow(
+        (own_ut, care): (u64, &Caretakers),
+        directory_grant: bool,
+        (bound, channel): (Option<Fs>, Option<Fs>),
+        (region, grant, page): (Option<u64>, Option<GrantWords>, Option<&ShellGrant>),
+        manifest: Option<grant_contract::Manifest>,
+    ) -> Option<u64> {
+        if let Some(b) = bound {
+            match (page.filter(|p| p.is_set()), region, grant) {
+                // The job holds the file server's own endpoint, badged and bound: no caretaker.
+                // That is a whole directory, and also the index store, whose job sent no page.
+                (None, ..) => Some(b.ep),
+                // **A set of names is served over the bound channel**: the badge is bound to the
+                // whole directory and the set is what narrows it, so `fs_nameset_caretaker` sits
+                // between, its page naming no directory, which tells it the bound root is its
+                // directory and there is nothing to descend into.
+                (Some(p), Some(r), Some((care_words, _))) => {
+                    build_grant(own_ut, r, b, care, care_words, (b"", p.set()), manifest)
+                }
+                _ => None,
+            }
+        } else if directory_grant {
+            match (region, channel, grant, page) {
+                (Some(r), Some(ch), Some((care_words, _)), Some(p)) => build_grant(
+                    own_ut,
+                    r,
+                    ch,
+                    care,
+                    care_words,
+                    (p.name(), p.set()),
+                    manifest,
+                ),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+
     /// Wire a normal job's directory grant and sync-only grant: take its label and window, bind a
     /// badge where the server enforces grants itself or build a caretaker otherwise, and say whether
     /// a declared grant failed. The window is held until the job's reap. See
@@ -1182,15 +1227,28 @@ impl Service<'_> {
         let Request {
             wiring,
             grant,
-            set_seen,
+            grant_seen,
             ..
         } = *req;
+        // **The grant's page, read once**: the directory's name and the set. A page that does not
+        // decode, or whose set disagrees with `NAMESET_BIT`, leaves the grant unbuilt, and the
+        // spawn is refused below.
+        let page = grant_seen
+            .and_then(ShellGrant::read)
+            .filter(|p| p.is_set() == wiring.nameset);
         // A grant in the second mounted tree is a caretaker over its own pool, never a bound badge:
         // that server enforces no subtree.
-        if let (true, Some((care_words, _)), Some(tree)) = (wiring.directory_grant, grant, disk)
-            && let Some(care_words) = mounted_grant(care_words)
+        if let (true, Some((care_words, _)), Some(tree), Some(p)) =
+            (wiring.directory_grant, grant, disk, page.as_ref())
+            && let Some(rest) = spawn_protocol::in_mounted_tree(p.name())
         {
-            return self.wire_mounted(req, manifest, region, tree, care_words, wants_sync);
+            return self.wire_mounted(
+                manifest,
+                region,
+                tree,
+                (care_words, rest, p.set()),
+                wants_sync,
+            );
         }
         let spawn = &mut self.spawn;
         let label = spawn.label();
@@ -1213,14 +1271,19 @@ impl Service<'_> {
             ),
             _ => None,
         };
-        let bound = match (wiring.directory_grant && self.fs_scoped, fs, grant, window) {
+        let bound = match (
+            wiring.directory_grant && self.fs_scoped,
+            fs,
+            grant,
+            window,
+            page.as_ref(),
+        ) {
             _ if bound.is_some() => bound,
-            (true, Some(f), Some((care_words, _)), Some(w)) => bound_channel(
+            (true, Some(f), Some((care_words, _)), Some(w), Some(p)) => bind_directory(
                 f,
                 (&mut spawn.windows, w),
-                own_ut,
-                &mut self.fs_mapped,
-                care_words,
+                (own_ut, &mut self.fs_mapped),
+                (care_words, p),
             ),
             _ => None,
         };
@@ -1231,34 +1294,13 @@ impl Service<'_> {
             }
             _ => None,
         };
-        let narrowed = if let Some(b) = bound {
-            match (set_seen, region, grant) {
-                // The job holds the file server's own endpoint, badged and bound: no caretaker.
-                (None, ..) => Some(b.ep),
-                // **A set of names is served over the bound channel**: the badge is bound to the
-                // whole directory and the set is what narrows it, so `fs_nameset_caretaker` sits
-                // between, told the bound root is its directory (`at_bound_root`).
-                (Some(_), Some(r), Some((care_words, _))) => build_grant(
-                    own_ut,
-                    r,
-                    b,
-                    &self.care,
-                    at_bound_root(care_words),
-                    set_seen,
-                    manifest,
-                ),
-                _ => None,
-            }
-        } else if wiring.directory_grant {
-            match (region, channel, grant) {
-                (Some(r), Some(ch), Some((care_words, _))) => {
-                    build_grant(own_ut, r, ch, &self.care, care_words, set_seen, manifest)
-                }
-                _ => None,
-            }
-        } else {
-            None
-        };
+        let narrowed = Self::narrow(
+            (own_ut, &self.care),
+            wiring.directory_grant,
+            (bound, channel),
+            (region, grant, page.as_ref()),
+            manifest,
+        );
         // A directory grant that produced no capability refuses the spawn: a program told to act on
         // something and holding nothing is the one outcome this model must never trade away.
         let dir_failed = wiring.directory_grant && narrowed.is_none();
@@ -1290,11 +1332,10 @@ impl Service<'_> {
     /// disk tree's pool, the disk tree's endpoint badged with it, and a caretaker over that.
     fn wire_mounted(
         &mut self,
-        req: &Request,
         manifest: Option<grant_contract::Manifest>,
         region: Option<u64>,
         tree: Fs,
-        care_words: (u64, u64, u64),
+        (care_words, name, set): ((u64, u64, u64), &[u8], &[u8]),
         wants_sync: bool,
     ) -> DirWiring {
         let own_ut = self.c.own_ut;
@@ -1303,15 +1344,9 @@ impl Service<'_> {
         let channel =
             window.and_then(|w| mounted_job_channel(tree, w, own_ut, &mut self.disk_mapped));
         let narrowed = match (region, channel) {
-            (Some(r), Some(ch)) => build_grant(
-                own_ut,
-                r,
-                ch,
-                &self.care,
-                care_words,
-                req.set_seen,
-                manifest,
-            ),
+            (Some(r), Some(ch)) => {
+                build_grant(own_ut, r, ch, &self.care, care_words, (name, set), manifest)
+            }
             _ => None,
         };
         DirWiring {
@@ -1695,7 +1730,7 @@ impl Service<'_> {
         if let Some(ch) = dir.channel {
             capability_delete(ch.page);
             // A bound channel's endpoint is `narrowed`, already deleted above, unless a caretaker
-            // serves a set over it (`at_bound_root`), and then `narrowed` is the caretaker's.
+            // serves a set over it, and then `narrowed` is the caretaker's.
             if dir.narrowed != Some(ch.ep) {
                 capability_delete(ch.ep);
             }
@@ -1915,4 +1950,21 @@ fn build_job(
         }
         _ => None,
     }
+}
+
+/// **Bind the file server's badge to the directory a grant page names**, for a server that
+/// enforces subtree grants itself. `None` for `START` words that still carry a name, which no
+/// builder sends. Split out of `Service::wire_directory`.
+fn bind_directory(
+    fs: Fs,
+    window: (&mut Windows, u64),
+    (own_ut, mapped): (u64, &mut bool),
+    (care_words, page): ((u64, u64, u64), &ShellGrant),
+) -> Option<Fs> {
+    use file_system_contract::grant as gr;
+    if !gr::words_carry_no_name(care_words.0, care_words.1, care_words.2) {
+        return None;
+    }
+    let rights = gr::specification_rights(care_words.2);
+    bound_channel(fs, window, own_ut, mapped, (page.name(), rights))
 }

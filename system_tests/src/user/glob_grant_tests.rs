@@ -35,7 +35,7 @@ fn what_a_shell_shows_is_what_a_set_grant_takes_away() {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_shell_agreed(shown);
-    a_set_capability_cannot_name_a_stranger();
+    a_name_in_the_start_words_is_refused();
     the_set_grant_removes_exactly_the_match();
 }
 
@@ -66,11 +66,12 @@ fn shell_expanded() -> Option<u64> {
                 directory::rights::ENUMERATE | directory::rights::DESCEND | directory::rights::READ,
             ),
             arg2: 0,
-            // A measurement: six pages ran within a few dozen bytes of the guard once `ShellHoldings`
-            // learned a second tree's mount point. See notes/two-trees.md, "The globbing
-            // witness's stack, measured", and its BUGS for the smaller frame that should replace
-            // the seventh page.
-            stack_pages: 7,
+            // In a debug build the deepest chain from `_start` through `globbing` and the planner
+            // is about 44.3 KiB, the frame sizes summed; `globbing`'s own frame is 21 KiB, most
+            // of it 512-byte directory paths held by value. Twelve pages leave about 4.8 KiB.
+            // See notes/two-trees.md, "The globbing witness's stack, measured", and its BUGS for
+            // the smaller frame that should replace the extra pages.
+            stack_pages: 11,
             verdict: false,
         },
     )?;
@@ -98,13 +99,12 @@ fn assert_shell_agreed(v: u64) {
     );
 }
 
-/// Run `rm` once behind a `fs_nameset_caretaker` holding [`MATCHED`] inside `globset`.
+/// Run `rm` once behind a `fs_nameset_caretaker` holding [`MATCHED`] inside `globset`, started with
+/// `flags` and the two name words `name_lo` and `name_hi`.
 ///
-/// `name` empty means [`file_system_contract::grant::WHOLE_NAMESPACE`]: the operand is the set, and `rm`
-/// learns it by enumerating the capability it was handed.
-fn run_rm(name: &str, flags: u64) -> (u64, u64) {
-    // An empty name is the whole namespace, which packs as two zero words.
-    let (lo, hi) = file_system_contract::grant::pack_name(name.as_bytes()).unwrap_or((0, 0));
+/// Every wiring sends zero name words ([`file_system_contract::grant::WHOLE_NAMESPACE`]): the
+/// operand is the set, and `rm` learns it by enumerating the capability it was handed.
+fn run_rm(name_lo: u64, name_hi: u64, flags: u64) -> (u64, u64) {
     let (report, verdict, held) = fs_service::start_granted_set(
         dir_capability_tests::blk_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),
@@ -118,9 +118,9 @@ fn run_rm(name: &str, flags: u64) -> (u64, u64) {
             // under its names. Listing the set needs no right; the caretaker answers it from the
             // grant.
             rights: directory::rights::REMOVE,
-            role: file_system_contract::grant::specification(name.len(), flags),
-            arg: lo,
-            arg2: hi,
+            role: file_system_contract::grant::specification(0, flags),
+            arg: name_lo,
+            arg2: name_hi,
             stack_pages: 6,
             verdict: true,
         },
@@ -151,18 +151,16 @@ fn run_rm(name: &str, flags: u64) -> (u64, u64) {
     panic!("rm sent {MAXIMUM_MESSAGES} messages and never ended its report");
 }
 
-/// **The attacker, and it is `rm` itself.** Told to remove a name that exists, sits one
-/// directory entry away from the two it was granted, and that the caretaker one hop up could
-/// remove on any request it liked.
-///
-/// It gets `ENOENT`: in this scope there is no such name. Nothing consulted a permission, and
-/// nothing in `rm` decided not to try, which is what makes this a fact about the capability.
-fn a_set_capability_cannot_name_a_stranger() {
-    let (status, removed) = run_rm(tree::GLOB_MISS, 0);
+/// **`rm` refuses START words that still carry a name**, restrictive first: its operands are the
+/// set it was granted, and a wiring that also wrote a name in the words is wrong, so it is
+/// `EINVAL` and nothing is removed. That a set capability cannot name a stranger is
+/// `a_name_set_capability_reads_its_attributes_and_still_names_only_its_set`'s witness.
+fn a_name_in_the_start_words_is_refused() {
+    let (status, removed) = run_rm(u64::from_le_bytes(*b"gl-three"), 0, 0);
     assert_eq!(
         status,
-        rr::status(2), // ENOENT
-        "a name outside the set must not be nameable through a set capability",
+        rr::status(22), // EINVAL
+        "rm must refuse name words rather than read a second operand from them",
     );
     assert_eq!(removed, 0);
 }
@@ -172,7 +170,7 @@ fn a_set_capability_cannot_name_a_stranger() {
 /// not match are still on the disk, asserted from the host by
 /// `xtask::redoxfs_glob_grant_took_exactly_the_match`.
 fn the_set_grant_removes_exactly_the_match() {
-    let (status, removed) = run_rm("", 0);
+    let (status, removed) = run_rm(0, 0, 0);
     assert_eq!(status, rr::OK, "the set grant reported a failure");
     assert_eq!(
         removed,

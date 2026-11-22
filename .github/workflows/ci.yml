@@ -2673,7 +2673,7 @@ jobs:
         id: deny
         run: echo "version=$(cat .cargo-deny-version)" >> "$GITHUB_OUTPUT"
       - if: steps.merge-group-gate.outputs.skip != 'true'
-        uses: taiki-e/install-action@ab49d3c64680143e184118bed66a46419fc15519 # v2.90.5
+        uses: taiki-e/install-action@75a7c0f87bd666af3cdb75c5b9e9d03ab6044e6f # v2.90.6
         with:
           tool: cargo-deny@${{ steps.deny.outputs.version }}
       # The published .crate tarballs script/vendor-verify hashes. Keyed on the pin files, so
@@ -2976,7 +2976,7 @@ jobs:
         name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
       - if: steps.merge-group-gate.outputs.skip != 'true'
-        uses: taiki-e/install-action@ab49d3c64680143e184118bed66a46419fc15519 # v2.90.5
+        uses: taiki-e/install-action@75a7c0f87bd666af3cdb75c5b9e9d03ab6044e6f # v2.90.6
         with:
           tool: cargo-llvm-cov
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,

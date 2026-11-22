@@ -630,7 +630,7 @@ pub(super) fn background(nav: &mut Nav, cmd: &[u8]) {
         Err(Say::Cannot(r)) => return refuse(spec, r),
         Err(said) => return say(said),
     };
-    match program_table::plan(&spec, holdings(nav), expanded) {
+    match program_table::plan(&spec, &holdings(nav), &expanded) {
         Err(r) => refuse(spec, r),
         Ok((program, endow)) if endow.interruptible => {
             spawn_background(&mut nav.jobs, program, endow);
@@ -784,7 +784,7 @@ pub(super) fn wait_jobs(jobs: &mut Jobs, tail: &[u8]) {
     let only = match grant_plan::job_operand(tail) {
         Ok(Some(n)) if jobs.get(n).is_none() => return no_such_job(b"wait"),
         Ok(only) => only,
-        Err(()) => return no_such_job(b"wait"),
+        Err(grant_plan::NoJobNamed) => return no_such_job(b"wait"),
     };
     if jobs.is_empty() {
         print(b"  no jobs to wait for\n");
@@ -875,7 +875,7 @@ pub(super) fn foreground(jobs: &mut Jobs, tail: &[u8]) {
     let n = match grant_plan::job_operand(tail) {
         Ok(Some(n)) => Some(n),
         Ok(None) => jobs.newest(),
-        Err(()) => None,
+        Err(grant_plan::NoJobNamed) => None,
     };
     let Some(mut h) = n.and_then(|n| jobs.take(n)) else {
         return no_such_job(b"fg");
@@ -902,7 +902,7 @@ pub(super) fn resume_in_background(jobs: &mut Jobs, tail: &[u8]) {
             .filter_map(|n| jobs.get(n).filter(|h| h.stopped).map(|h| (h.started, n)))
             .max()
             .map(|(_, n)| n),
-        Err(()) => None,
+        Err(grant_plan::NoJobNamed) => None,
     };
     let Some((n, held)) = n.and_then(|n| jobs.held.get_mut(n - 1)?.as_mut().map(|h| (n, h))) else {
         return no_such_job(b"bg");

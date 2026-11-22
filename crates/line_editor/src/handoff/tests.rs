@@ -1,6 +1,6 @@
 use super::*;
 use crate::test_support::{Screen, feed_all};
-use crate::{LINE_MAXIMUM, PROMPT_MAXIMUM, RAW_QUEUE_MAXIMUM, RawQueue, handoff};
+use crate::{MAXIMUM_LINE_BYTES, MAXIMUM_PROMPT_BYTES, MAXIMUM_RAW_QUEUE_BYTES, RawQueue, handoff};
 extern crate std;
 use std::vec::Vec;
 
@@ -9,11 +9,11 @@ use std::vec::Vec;
 /// finishing the line returns all of it, and Up recalls a line typed before the swap.
 #[test]
 fn a_handed_off_discipline_carries_on_where_the_old_one_stopped() {
-    let (mut old, mut s) = (LineDisc::new(), Screen::new());
+    let (mut old, mut s) = (LineEditor::new(), Screen::new());
     // A full ring of long lines, so the blob is the size a real terminal's is.
     // Distinct lines, because the ring skips an exact repeat of its newest entry.
-    for i in 0..HIST - 1 {
-        let long = [b'a' + i as u8; LINE_MAXIMUM - 8];
+    for i in 0..HISTORY_LINES - 1 {
+        let long = [b'a' + i as u8; MAXIMUM_LINE_BYTES - 8];
         old.start_line(b"$ ", &mut s);
         feed_all(&mut old, &mut s, &long);
         feed_all(&mut old, &mut s, b"\r");
@@ -32,7 +32,7 @@ fn a_handed_off_discipline_carries_on_where_the_old_one_stopped() {
     // in one page. The estimate had counted buffers the blob does not carry.
     assert!(n < 2048, "the discipline's blob grew to {n} bytes");
 
-    let mut new = LineDisc::new();
+    let mut new = LineEditor::new();
     let mut r = handoff::Reader::new(&page[..n]).unwrap();
     new.restore(&mut r).unwrap();
     new.resume_line(b"$ ");
@@ -113,7 +113,7 @@ fn a_field_exactly_as_long_as_its_buffer_fits_and_one_longer_is_malformed() {
 /// swap, so Up recalls the newest line and not whichever sits at index 0.
 #[test]
 fn a_restored_cursor_stays_inside_its_line_and_history_keeps_its_place() {
-    let (mut old, mut s) = (LineDisc::new(), Screen::new());
+    let (mut old, mut s) = (LineEditor::new(), Screen::new());
     for line in [&b"one\r"[..], b"two\r", b"three\r"] {
         old.start_line(b"$ ", &mut s);
         feed_all(&mut old, &mut s, line);
@@ -125,7 +125,7 @@ fn a_restored_cursor_stays_inside_its_line_and_history_keeps_its_place() {
     old.save(&mut w);
     let n = w.finish().unwrap();
 
-    let mut new = LineDisc::new();
+    let mut new = LineEditor::new();
     let mut r = handoff::Reader::new(&page[..n]).unwrap();
     assert_eq!(new.restore(&mut r), Some(()));
     assert_eq!(new.pending(), (b"abc".as_slice(), 2));
@@ -137,11 +137,11 @@ fn a_restored_cursor_stays_inside_its_line_and_history_keeps_its_place() {
     let mut bad = page;
     bad[15..19].copy_from_slice(&4u32.to_le_bytes());
     let mut r = handoff::Reader::new(&bad[..n]).unwrap();
-    assert_eq!(LineDisc::new().restore(&mut r), None);
+    assert_eq!(LineEditor::new().restore(&mut r), None);
     // And a cursor on the line's own end is not past it.
     bad[15..19].copy_from_slice(&3u32.to_le_bytes());
     let mut r = handoff::Reader::new(&bad[..n]).unwrap();
-    assert_eq!(LineDisc::new().restore(&mut r), Some(()));
+    assert_eq!(LineEditor::new().restore(&mut r), Some(()));
 }
 
 /// **Unread raw bytes cross a swap in order**, including when the ring has wrapped, and an
@@ -151,17 +151,17 @@ fn the_raw_queue_crosses_a_swap_in_order_across_the_wrap() {
     let mut q = RawQueue::new();
     let first: Vec<u8> = (0..60).collect();
     q.push(&first);
-    // Bounded, so a `pop8` that never shortens the queue fails the assertion instead of hanging.
-    for _ in 0..RAW_QUEUE_MAXIMUM {
-        if q.len <= 4 {
+    // Bounded, so a `pop_up_to_eight` that never shortens the queue fails the assertion instead of hanging.
+    for _ in 0..MAXIMUM_RAW_QUEUE_BYTES {
+        if q.length_bytes <= 4 {
             break;
         }
-        q.pop8();
+        q.pop_up_to_eight();
     }
-    assert_eq!(q.len, 4);
+    assert_eq!(q.length_bytes, 4);
     let more: Vec<u8> = (100..110).collect();
     q.push(&more); // the ring wraps: head is near the end
-    assert!(q.head + q.len > RAW_QUEUE_MAXIMUM);
+    assert!(q.head + q.length_bytes > MAXIMUM_RAW_QUEUE_BYTES);
 
     let mut page = [0u8; 256];
     let mut w = handoff::Writer::new(&mut page);
@@ -173,8 +173,10 @@ fn the_raw_queue_crosses_a_swap_in_order_across_the_wrap() {
 
     let drain = |q: &mut RawQueue| {
         let mut out = Vec::new();
-        for _ in 0..=RAW_QUEUE_MAXIMUM {
-            let Some((n, packed)) = q.pop8() else { break };
+        for _ in 0..=MAXIMUM_RAW_QUEUE_BYTES {
+            let Some((n, packed)) = q.pop_up_to_eight() else {
+                break;
+            };
             out.extend_from_slice(&packed.to_le_bytes()[..n]);
         }
         out
@@ -199,7 +201,7 @@ fn the_raw_queue_crosses_a_swap_in_order_across_the_wrap() {
 /// a field is its length word then its bytes; the history ring is eight fields in slot order.
 #[test]
 fn the_blob_layout_is_pinned_byte_for_byte() {
-    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    let (mut d, mut s) = (LineEditor::new(), Screen::new());
     d.start_line(b"$", &mut s);
     feed_all(&mut d, &mut s, b"ab\x02"); // "ab", cursor between the two
     let mut page = [0u8; 256];
@@ -218,7 +220,7 @@ fn the_blob_layout_is_pinned_byte_for_byte() {
     want.extend_from_slice(b"$"); //   and bytes
     want.extend_from_slice(&0u32.to_le_bytes()); // history entries held
     want.extend_from_slice(&0u32.to_le_bytes()); // the next history slot
-    for _ in 0..HIST {
+    for _ in 0..HISTORY_LINES {
         want.extend_from_slice(&0u32.to_le_bytes()); // eight empty history slots
     }
     assert_eq!(&page[..n], &want[..]);
@@ -230,12 +232,12 @@ fn the_blob_layout_is_pinned_byte_for_byte() {
 /// one page the terminal's handoff frame has.
 #[test]
 fn a_full_blob_is_the_documented_size() {
-    let mut d = LineDisc::new();
-    d.len = LINE_MAXIMUM;
-    d.kill_len = LINE_MAXIMUM;
-    d.prompt_len = PROMPT_MAXIMUM;
-    for entry in &mut d.hist {
-        entry.1 = LINE_MAXIMUM;
+    let mut d = LineEditor::new();
+    d.length_bytes = MAXIMUM_LINE_BYTES;
+    d.kill_length_bytes = MAXIMUM_LINE_BYTES;
+    d.prompt_length_bytes = MAXIMUM_PROMPT_BYTES;
+    for entry in &mut d.history {
+        entry.1 = MAXIMUM_LINE_BYTES;
     }
     let mut page = [0u8; 4096];
     let mut w = handoff::Writer::new(&mut page);
@@ -243,10 +245,10 @@ fn a_full_blob_is_the_documented_size() {
     assert_eq!(w.finish(), Some(2688));
 
     let mut q = RawQueue::new();
-    q.push(&[7; RAW_QUEUE_MAXIMUM]);
+    q.push(&[7; MAXIMUM_RAW_QUEUE_BYTES]);
     let mut w = handoff::Writer::new(&mut page);
     q.save(&mut w);
-    assert_eq!(w.finish(), Some(8 + 4 + RAW_QUEUE_MAXIMUM));
+    assert_eq!(w.finish(), Some(8 + 4 + MAXIMUM_RAW_QUEUE_BYTES));
 }
 
 /// A raw queue whose bytes wrap past the end of its ring is saved oldest first and restored whole.
@@ -254,13 +256,13 @@ fn a_full_blob_is_the_documented_size() {
 fn a_wrapped_raw_queue_round_trips() {
     let mut q = RawQueue::new();
     q.push(&[1; 60]);
-    q.pop8();
-    q.pop8();
-    q.pop8();
-    q.pop8();
-    q.pop8();
-    q.pop8();
-    q.pop8(); // 56 popped: head is at 56
+    q.pop_up_to_eight();
+    q.pop_up_to_eight();
+    q.pop_up_to_eight();
+    q.pop_up_to_eight();
+    q.pop_up_to_eight();
+    q.pop_up_to_eight();
+    q.pop_up_to_eight(); // 56 popped: head is at 56
     q.push(&[9, 9, 9, 9, 9, 9, 9, 9, 8, 8]); // wraps the ring
     let mut page = [0u8; 128];
     let mut w = handoff::Writer::new(&mut page);
@@ -269,14 +271,25 @@ fn a_wrapped_raw_queue_round_trips() {
     let mut got = RawQueue::new();
     got.restore(&mut handoff::Reader::new(&page[..n]).unwrap())
         .unwrap();
-    let mut a = Vec::new();
-    let mut b = Vec::new();
-    while let Some((k, v)) = q.pop8() {
-        a.extend_from_slice(&v.to_le_bytes()[..k]);
-    }
-    while let Some((k, v)) = got.pop8() {
-        b.extend_from_slice(&v.to_le_bytes()[..k]);
-    }
+    let a = drain(&mut q);
+    let b = drain(&mut got);
     assert_eq!(a, b);
     assert_eq!(a.len(), 4 + 10);
+}
+
+/// Every byte a raw queue holds, oldest first. Bounded at one pop per byte the ring can hold, so a
+/// `pop_up_to_eight` that never empties the queue fails the assertion instead of hanging.
+fn drain(q: &mut RawQueue) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    for _ in 0..=MAXIMUM_RAW_QUEUE_BYTES {
+        let Some((n, packed)) = q.pop_up_to_eight() else {
+            return bytes;
+        };
+        assert!(
+            (1..=8).contains(&n),
+            "a pop returns one to eight bytes, got {n}"
+        );
+        bytes.extend_from_slice(&packed.to_le_bytes()[..n]);
+    }
+    panic!("the queue never emptied");
 }

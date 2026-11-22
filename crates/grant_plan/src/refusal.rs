@@ -39,9 +39,9 @@ pub enum Refusal {
     /// option can widen a grant (`rm -r`), so a shell that silently dropped one would be a shell
     /// whose printed preview and actual transfer could disagree.
     NoSuchOption,
-    /// The named file is not something this shell can express: empty, a component longer than the
-    /// two argument words a grant's name rides in (`file_system_contract::grant::MAXIMUM_NAME_BYTES`),
-    /// deeper than the shell tracks, or a path that designates a directory rather than a file.
+    /// The named file is not something this shell can express: empty, a component longer than a
+    /// granted name may be (`file_system_contract::grant::MAXIMUM_NAME_BYTES`), deeper or longer than
+    /// the shell tracks, or a path that designates a directory rather than a file.
     FileNotNameable,
     /// The program takes no memory grant, but `--mem` was given.
     ///
@@ -252,7 +252,7 @@ impl Refusal {
             Refusal::DirectoryRequired => "is granted the directory holding what you name; name it",
             Refusal::NoSuchOption => "no such option (this shell will not pass one along unread)",
             Refusal::FileNotNameable => {
-                "that is not a name this shell can grant: at most 252 bytes a file, 16 a directory, 8 deep"
+                "that is not a name this shell can grant: at most 252 bytes a name, 8 deep, 512 bytes a path"
             }
             // Each of these says what the *pattern* designates, because that is the grant. None of
             // them can be phrased as a permission, and none should be: nothing was denied, the

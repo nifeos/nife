@@ -22,7 +22,6 @@
 //! - A stopped durable session is retired only at its identity's next login.
 //! - Ending a durable session waits for a running job (§222), and `SUSPEND` waits on the terminal.
 //! - A `user_timetable_keeper` that fails half way leaves its splits in the user's budget.
-//! - Identities over `grant::MAXIMUM_WORDS_NAME_BYTES` (16 bytes) get no subtree: [`mint`] refuses to truncate.
 //! - A holder that never sends `LOGOUT` wedges the terminal until this process restarts.
 //! - The measured-boot decision is spelled here rather than through `measured_boot::verdict`.
 //! - The audit endpoint proves establishment, not per-request attribution.
@@ -35,8 +34,8 @@
 #![no_main]
 
 use process_builder::{
-    build_child, memory_region_destroy, memory_region_split, retype_into_kernel_object_from,
-    retype_into_page_frame_from, start_child,
+    build_child, map_scratch, memory_region_destroy, memory_region_split,
+    retype_into_kernel_object_from, retype_into_page_frame_from, start_child,
 };
 use supervision_contract::{ChildEndowment, Retention};
 use timetable::registration;
@@ -123,6 +122,33 @@ const CHANNEL_UT_PAGES: u64 = 32;
 /// `components/src/fs_subtree_caretaker.rs`'s `PAGE_VA` (the same address every caretaker in this tree
 /// uses, since the caretaker itself hardcodes it and this process copies its ELF, not its address).
 const CARETAKER_FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
+
+/// Where a built caretaker reads its grant page, read-only: the directory it narrows to
+/// (`file_system_contract::grant::write_page`).
+const CARETAKER_GRANT_VA: u64 = file_system_contract::grant::PAGE_VIRTUAL_ADDRESS;
+
+/// **Write a caretaker's grant page naming directory `name`**, on a page retyped from `region`, so
+/// it goes when the caretaker's region does. `None` when the region cannot pay for the page, the
+/// scratch window has no room, or `name` is longer than a granted name may be.
+fn grant_page(own_ut: u64, region: u64, name: &[u8]) -> Option<u64> {
+    let page = retype_into_page_frame_from(region).ok()?;
+    let written = map_scratch(page, true, own_ut).ok().and_then(|va| {
+        // SAFETY: `va` is one page this process just mapped read/write, and the frame has not been
+        // handed to the caretaker yet.
+        let out = unsafe {
+            core::slice::from_raw_parts_mut(
+                va as *mut u8,
+                file_system_contract::grant::PAGE_USED_BYTES,
+            )
+        };
+        file_system_contract::grant::write_page(name, true, &[], out)
+    });
+    if written.is_none() {
+        capability_delete(page);
+        return None;
+    }
+    Some(page)
+}
 
 /// This process's own scratch: page tables for [`build_child`]'s own temporary mappings (never a
 /// child's), spent only by [`mint`]'s `build_child` calls. `supervision_contract::fill_and_map`'s
@@ -825,9 +851,9 @@ fn rederive(
             record(RederiveSkip::TableFull);
             break;
         };
-        // `Durable` keeps a name of at most `grant::MAXIMUM_WORDS_NAME_BYTES` bytes, the bound `mint` holds a
-        // login to; the manifest's own bound is wider.
-        if !file_system_contract::grant::fits_words(identity) || durables.find(identity).is_some() {
+        // `Durable` keeps a name of at most `login_contract::MAXIMUM_IDENTITY` bytes, the bound a
+        // login is held to; the manifest's own bound is wider.
+        if identity.len() > login_contract::MAXIMUM_IDENTITY || durables.find(identity).is_some() {
             record(RederiveSkip::Identity);
             continue;
         }
@@ -859,7 +885,7 @@ fn rederive(
 /// belongs to, and the four capabilities that let this process hand it back and, later, take it
 /// down. Four slots each, which is what bounds [`DURABLE_SESSIONS`].
 struct Durable {
-    identity: [u8; file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES],
+    identity: [u8; login_contract::MAXIMUM_IDENTITY],
     len: usize,
     /// The user's budget. `user_timetable_keeper` and its timetable are built from regions split off
     /// it, so it refuses `DESTROY` for as long as either lives (DECISIONS §16 (object revocation)).
@@ -890,7 +916,7 @@ impl Durable {
     ) -> Option<Self> {
         let va = DURABLE_PAGE_VA + k as u64 * DURABLE_PAGE_STRIDE;
         let (keeper, page, ready) = open_schedule(own_ut, budget, images, va)?;
-        let mut id = [0u8; file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES];
+        let mut id = [0u8; login_contract::MAXIMUM_IDENTITY];
         id[..identity.len()].copy_from_slice(identity);
         Some(Durable {
             identity: id,
@@ -1170,15 +1196,18 @@ fn store_caretaker(
     badged: u64,
     name: &str,
 ) -> Option<u64> {
-    let name = name.as_bytes();
-    let (lo, hi) = file_system_contract::grant::pack_name(name)?;
-    let narrow_ep = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()?;
+    let grant = grant_page(own_ut, region, name.as_bytes())?;
+    let Ok(narrow_ep) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
+        capability_delete(grant);
+        return None;
+    };
     let Ok(ready) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
         capability_delete(narrow_ep);
+        capability_delete(grant);
         return None;
     };
     let spec = file_system_contract::grant::specification(
-        name.len(),
+        0,
         file_system_contract::directory::rights::READ
             | file_system_contract::directory::rights::DESCEND,
     );
@@ -1192,16 +1221,20 @@ fn store_caretaker(
                 (narrow_ep, abi::rights::READ),
                 (ready, abi::rights::WRITE),
             ],
-            maps: &[(
-                CARETAKER_FS_VA,
-                DURABLE_WINDOW,
-                abi::address_space::MAP_READ_WRITE,
-            )],
+            maps: &[
+                (
+                    CARETAKER_FS_VA,
+                    DURABLE_WINDOW,
+                    abi::address_space::MAP_READ_WRITE,
+                ),
+                (CARETAKER_GRANT_VA, grant, abi::address_space::MAP_READ_ONLY),
+            ],
             stack_pages: CARETAKER_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },
     )
-    .is_ok_and(|child| start_child(child, lo, hi, spec));
+    .is_ok_and(|child| start_child(child, 0, 0, spec));
+    capability_delete(grant);
     let verdict = if started { receive(ready).0 } else { 0 };
     capability_delete(ready);
     if verdict != file_system_contract::READY {
@@ -1285,36 +1318,35 @@ fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
 /// `identity`'s own home subtree (DECISIONS §117 (a principal's subtree is named by its identity
 /// string), used directly) and the construction region itself, the caretaker's logout ticket
 /// (notes/login.md, "Reclaiming a session: the design argument"), both held with full rights for
-/// [`delegate`] to narrow. `None` on any failure, answered [`login_contract::DENIED`]: a spent
-/// budget, an identity too long to grant, no provisioned subtree, or `care` being `None` because
-/// `_start`'s measurement refused the caretaker. `identity_provisioner` creates the subtree; this
-/// process never does (§117).
+/// [`delegate`] to narrow. The identity, up to `login_contract::MAXIMUM_IDENTITY` bytes, travels
+/// whole on the caretaker's grant page. `None` on any failure, answered [`login_contract::DENIED`]:
+/// a spent budget, no provisioned subtree, or `care` being `None` because `_start`'s measurement
+/// refused the caretaker. `identity_provisioner` creates the subtree; this process never does
+/// (§117).
 fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<(u64, u64)> {
     let care = care?;
 
-    // The grant name travels in two `START` argument words, so it is capped at
-    // `grant::MAXIMUM_WORDS_NAME_BYTES` (16 bytes), below `login_contract::MAXIMUM_IDENTITY` (64). A truncated
-    // name is one two identities could share, so `pack_name` refuses a longer one, and that refusal
-    // is taken before anything is built.
-    let (lo, hi) = file_system_contract::grant::pack_name(identity)?;
-
     let region = memory_region_split(CONSTRUCTION_UT, CARETAKER_REGION_PAGES).ok()?;
     // As in [`connect`]: an abandoned step gives back its capability slots as well as its memory
-    // ([`discard`]).
+    // ([`discard`]). The grant page names the subtree; the `START` words carry the rights alone.
+    let Some(grant) = grant_page(own_ut, region, identity) else {
+        discard(region);
+        return None;
+    };
     let Ok(narrow_ep) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
+        capability_delete(grant);
         discard(region);
         return None;
     };
     let Ok(ready) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
         capability_delete(narrow_ep);
+        capability_delete(grant);
         discard(region);
         return None;
     };
 
-    let spec = file_system_contract::grant::specification(
-        identity.len(),
-        file_system_contract::directory::rights::ALL,
-    );
+    let spec =
+        file_system_contract::grant::specification(0, file_system_contract::directory::rights::ALL);
 
     // Its whole authority: the file service to attenuate, the endpoint it will serve, one place to
     // say it is ready, and the frame it shares with the file service. No untyped of its own, no
@@ -1330,15 +1362,19 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
                 (narrow_ep, abi::rights::READ),
                 (ready, abi::rights::WRITE),
             ],
-            maps: &[(
-                CARETAKER_FS_VA,
-                FS_PAGE_FRAME,
-                abi::address_space::MAP_READ_WRITE,
-            )],
+            maps: &[
+                (
+                    CARETAKER_FS_VA,
+                    FS_PAGE_FRAME,
+                    abi::address_space::MAP_READ_WRITE,
+                ),
+                (CARETAKER_GRANT_VA, grant, abi::address_space::MAP_READ_ONLY),
+            ],
             stack_pages: CARETAKER_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },
     );
+    capability_delete(grant);
     let Ok(child) = built else {
         capability_delete(ready);
         capability_delete(narrow_ep);
@@ -1348,7 +1384,7 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
         discard(region);
         return None;
     };
-    let started = start_child(child, lo, hi, spec);
+    let started = start_child(child, 0, 0, spec);
     if !started {
         capability_delete(ready);
         capability_delete(narrow_ep);

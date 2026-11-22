@@ -1,17 +1,17 @@
-Falsifies `pci::verification::read_bars_is_total_for_any_device`.
+Falsifies `pci_configuration_space::verification::read_bars_is_total_for_any_device`.
 
 The defect: `read_bars` keeps every BAR it can size and drops the refusal of one whose base plus
 size overflows. Every fixture's BAR sits far below the top of the address space, so nothing else
 notices, but the kernel adds the two when it places, adopts and bounds a BAR.
 
-Expected to fail: the harness's `assert!(bar.base.checked_add(bar.size).is_some())`, on a 64-bit
+Expected to fail: the harness's `assert!(bar.base_physical_address.checked_add(bar.size_bytes).is_some())`, on a 64-bit
 BAR whose assigned base is within its size of `u64::MAX`, which is exactly the arbitrary-response
 regime this harness quantifies over and nothing a fixture supplies.
 
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -590,11 +590,7 @@
+@@ -647,11 +647,7 @@
          // An unimplemented BAR is hardwired to zero and reads back zero, type bits included.
          // That is an empty slot, not a malformed one.
          if !(original == 0 && mask_lo == 0) {

@@ -1,4 +1,4 @@
-Falsifies `pci::verification::a_bar_size_is_where_the_writable_bits_begin`.
+Falsifies `pci_configuration_space::verification::a_bar_size_is_where_the_writable_bits_begin`.
 
 The defect: `size_from_mask` keeps the lowest-set-bit size and drops the contiguity check. The
 lowest set bit is the right size for every mask a well-formed device returns, so every fixture
@@ -11,7 +11,7 @@ set one.
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -513,9 +513,6 @@
+@@ -569,9 +569,6 @@
          return Err(BarRefusal::NoWritableBits);
      }
      let size = 1 << mask.trailing_zeros();
