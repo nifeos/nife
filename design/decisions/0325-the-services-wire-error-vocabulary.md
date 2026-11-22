@@ -21,13 +21,13 @@ with Linux's numbering: -2 for `ENOENT`, -30 for `EROFS`.
 
 Nobody chose `errno` for nife. The file server wraps RedoxFS, whose methods return
 `syscall::error::Result` with Linux numbers, and the reply convention in `filesystem_contract`
-(`reply.rs`, being renamed to `file_system_contract::error` with `error::word(code)` and
-`error::code(word)` on #3914) passes those numbers through. The block, NVMe and SD card servers then
+(`reply.rs`; #3914 renames it `file_system_contract::error`, with `error::word(code)` and
+`error::code(word)`) passes those numbers through. The block, NVMe and SD card servers then
 copied the convention, and so did the graphics contract.
 
 This matters now for two reasons. The two spaces overlap, so the same word means two things (below).
-And the names `MAXIMUM_ERRNO` and `EPROTO` are about to be renamed on #3914, which needs to know
-whether the vocabulary they belong to stays.
+And #3914 is about to rename `MAXIMUM_ERRNO` and `EPROTO`, and needs to know whether the
+vocabulary they belong to stays.
 
 ## The decision
 
@@ -39,9 +39,9 @@ defines its own wire error codes and each server translates at its boundary.
 - A reply's error word is a nife code. One table names every code a service may send, by meaning,
   with spelled-out names (`NotFound`, `ReadOnly`, `NotADirectory`; the names are a later naming
   ruling, not this one).
-- The kernel's range and the services' range are fixed now and disjoint. The kernel keeps `-1..=-255`
-  (it uses 15). Services use `-256..=-4095`. A word below -4095 stays a protocol violation, as ruled
-  on 2026-11-14 (block 1090, decision C), so the bound 4095 survives with a nife name.
+- This decision fixes the kernel's range and the services' range now, and keeps them disjoint. The kernel keeps `-1..=-255`
+  (it uses 15). Services use `-256..=-4095`. A word below -4095 stays a protocol violation, the rule of
+  2026-11-14 (block 1090, decision C), so the bound 4095 survives with a nife name.
 - Each server translates once, at its boundary: the file server maps `syscall::error::Error` to a
   nife code in one function, and nothing below that boundary changes.
 - `errno` stays where POSIX is the contract: the C library's `errno` (`c_library_errno`), which is
@@ -67,7 +67,7 @@ Command: `git grep` for `reply_err(`, `Error::new(`, `const E[A-Z]+: i32`, and r
 in `components/`, `crates/`, `redoxfs_server/`; engine codes by
 `grep -rhoE "Error::new\(([a-z_]+::)*E[A-Z]+\)" vendor/redoxfs/src`.
 
-**The file service** (`fs` protocol). Synthesized by nife: the file server (`redoxfs_server`), the
+The file service (`fs` protocol). Synthesized by nife: the file server (`redoxfs_server`), the
 three caretakers (`fs_file_caretaker`, `fs_nameset_caretaker`, `fs_subtree_caretaker`), `disk_tree`
 and `subtree_scope`'s `Refusal::errno`. Passed through: what the RedoxFS engine returns, and, on
 `SYNC` only, the block server's code.
@@ -106,16 +106,16 @@ That is 27 numbers. The overlay (`sys/fs/nife/errors.rs`) distinguishes ten of t
 are `Other`. It also reads -3 as the kernel's `NotPermitted` and answers `Unsupported`
 (`reachable.rs`). Whether every engine code is reachable through the server was not checked.
 
-**The block protocol** (`filesystem_contract::block`), all synthesized: virtio block
+The block protocol (`filesystem_contract::block`), all synthesized: virtio block
 (`block_driver_roles`) `EINVAL` 22, `EIO` 5, `EOPNOTSUPP` 95; NVMe (`non_volatile_memory_express_data_plane`)
 and SD card (`designware_mobile_storage`) `EINVAL` 22, `EROFS` 30, `EIO` 5. The file server, the one
 production client, turns every negative block reply into `EIO` (`redoxfs_server/src/bin/redoxfs_server.rs`,
 `mkfs.rs`), except `SYNC`'s, which it passes through. Only `kernel/src/storage_bench.rs` and the
 system tests read the other numbers.
 
-**The graphics protocol**: `graphics_contract::EINVAL` and `compositor`'s `EBADOP`, both -22.
+The graphics protocol: `graphics_contract::EINVAL` and `compositor`'s `EBADOP`, both -22.
 
-**Sockets** (`socket_contract`): no `errno`. Per-protocol outcomes (`CONNECT_REFUSED` 1,
+Sockets (`socket_contract`): no `errno`. Per-protocol outcomes (`CONNECT_REFUSED` 1,
 `PORT_CLAIM_DENIED` 1, `PORT_CLAIM_IN_USE` 2) and one sentinel, `REPLY_ERROR` = `1 << 32`, a positive
 word, so it never meets the kernel's range.
 
@@ -139,7 +139,7 @@ numbers stop at `std`. It also ties nife's wire to one host's numbering: macOS h
 
 **(C) One vocabulary shared with `abi::Error`.** Fuchsia's model, and the closest runner-up: one
 table, one decoder. It lost on where the table lives. `abi` is the system call surface, §10 (the
-capability-based microkernel process model), which every program is written against; this option
+capability-based microkernel process model), and every program depends on it. This option
 puts file-system meanings into it that the kernel never returns, and ties each new service code to a
 kernel ABI review. (B) keeps the single word and the disjointness without that coupling, and merging
 the two tables later stays compatible because the ranges are already disjoint.
@@ -163,7 +163,7 @@ decoder test a bit as well as a sign.
   (`Error::from_ret`) that refuses unknown values. This is the shape (B) asks of the services.
 - `socket_contract`: its own per-protocol words, no `errno`.
 - `subtree_scope::Refusal`: a nife enum of eight meanings (`NotFound`, `Symlink`, `MountCrossing`)
-  that is translated to `errno` at the end (`Refusal::errno`). It already is (B) with an `errno`
+  that `Refusal::errno` translates to `errno` at the end. It already is (B) with an `errno`
   table on the far side.
 - `domain_name_resolution_contract::grants::Refusal`, `startup_page_contract::Refusal`,
   `driver_process_contract`'s `WindowRefusal` and `BringUpError`, `jh7110_clock_and_reset_contract::Status`:
@@ -173,29 +173,29 @@ decoder test a bit as well as a sign.
 
 ## Prior art
 
-- **Fuchsia** (read: `zircon/errors.h`, the `zx_channel_call` reference, the FIDL API rubric).
+- Fuchsia (read: `zircon/errors.h`, the `zx_channel_call` reference, the FIDL API rubric).
   `zx_status_t` is one space for kernel and services: `ZX_ERR_NOT_FOUND` -25, `ZX_ERR_IO` -40,
   `ZX_ERR_NOT_DIR` -51. The rubric says to use `zx.Status` for errors about kernel objects or IO
   (`fuchsia.io` does) and a purpose-built enum when you control the domain. Where nife differs:
   `zx_channel_call` returns the transport status separately from the reply payload, so Fuchsia never
   has to tell a refused call from a refused request inside one word. nife does, which is why
   disjointness is the part to copy.
-- **seL4** (read: `libsel4/include/sel4/errors.h`). Kernel only: `seL4_NoError` 0 through
+- seL4 (read: `libsel4/include/sel4/errors.h`). Kernel only: `seL4_NoError` 0 through
   `seL4_NotEnoughMemory` 10. Servers define their own; seL4 has no service vocabulary.
-- **Redox** (read: `redox_syscall` 0.9.0 `error.rs`). Linux numbers, `Error::mux` writes
+- Redox (read: `redox_syscall` 0.9.0 `error.rs`). Linux numbers, `Error::mux` writes
   `-errno as usize`, and `Error::demux` reads a word as an error when `-word` is in `1..133`. Redox
   uses one space for kernel and schemes, and it is `errno`'s, because Redox chose POSIX as its
   system call surface. nife did not (§10).
-- **Plan 9** (read: `intro(5)`). 9P's `Rerror` carries a string, `ename`, and no number; the string
+- Plan 9 (read: `intro(5)`). 9P's `Rerror` carries a string, `ename`, and no number; the string
   is advisory.
-- **Linux** (read: `include/linux/err.h`). `MAX_ERRNO` 4095, so a pointer and an error share one
+- Linux (read: `include/linux/err.h`). `MAX_ERRNO` 4095, so a pointer and an error share one
   return value. The source of the 4095 bound kept here.
-- **WASI** (read: wasi-libc `wasip1.h`). WASI kept POSIX names and chose its own numbers in a
+- WASI (read: wasi-libc `wasip1.h`). WASI kept POSIX names and chose its own numbers in a
   `uint16_t`: `__WASI_ERRNO_ACCES` 2, `NOENT` 44, `PERM` 63, `PROTO` 65, `ROFS` 69, and added
   `NOTCAPABLE` 76, a capability system's own answer. The header says some codes exist only for
   alignment with POSIX. The closest precedent: a capability system that refused the host's
   numbering, and translates at its libc.
-- **Hubris** (read: `doc/ipc.adoc`). A reply carries a `u32` response code, 0 for success, the rest
+- Hubris (read: `doc/ipc.adoc`). A reply carries a `u32` response code, 0 for success, the rest
   application-defined; the kernel reserves codes with the top 24 bits set for a dead peer, and tells
   servers to number from 1 to stay clear. The same disjoint-range move this recommends.
 
@@ -220,7 +220,7 @@ For (B). (A) costs nothing; (C) costs the same as (B) plus an `abi` change; (D) 
 | `c_library_errno` | nothing | 0 |
 
 Outside the contract, 23 local copies of `errno` constants sit in 12 files; (B) replaces them with
-one table. Run time is unchanged: decoding stays one comparison on the sign and one on the bound.
+one table. Run time stays the same: decoding is one comparison on the sign and one on the bound.
 
 `rm` makes its exit status the `errno` of the first failure (`filesystem_contract::rm::status`), so
 under (B) the status becomes a nife code. That was not checked against §301 (exit status and output).
@@ -228,12 +228,12 @@ under (B) the status becomes a nife code. That was not checked against §301 (ex
 ## How reversible it is
 
 Two-way today: nife has no installs, no third-party server or client speaks the file or block
-protocol, and nothing is published (no first publish until every review milestone is delivered,
-ruled 2026-11-18). It becomes one-way at the first of: a release of `file_system_contract` to
+protocol, and nothing is on crates.io (the ruling of 2026-11-18 holds every first publish until the
+review milestones deliver). It becomes one-way at the first of: a release of `file_system_contract` to
 crates.io; a server or client written outside nifeos; a basalt image whose packages outside nife
 read these words. After that, renumbering is a protocol version.
 
-The disjoint ranges are the restrictive choice: they can be merged later into one table (C)
+The disjoint ranges are the restrictive choice: a later decision can merge them into one table (C)
 compatibly; separating two spaces that shared numbers cannot.
 
 ## Would we still choose this if both cost the same
@@ -277,6 +277,6 @@ Code::NotADirectory => io::const_error!(io::ErrorKind::NotADirectory, "that name
 
 ## What was not checked
 
-Whether every engine code is reachable through the file server; the macOS numbers, taken from the
-brief; §301's view of an exit status; the fixtures' and system tests' sites one by one (counted in
-the total only); and the exact numbers inside `-256..=-4095`, which the naming ruling assigns.
+Whether every engine code can reach the wire through the file server. The macOS numbers, taken from
+the brief. §301's view of an exit status. The fixtures' and system tests' sites one by one, counted
+in the total only. And the exact numbers inside `-256..=-4095`, which the naming ruling assigns.
