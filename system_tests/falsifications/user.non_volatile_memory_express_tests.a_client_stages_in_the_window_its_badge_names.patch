@@ -13,16 +13,18 @@ The test needs an NVMe controller attached, which `cargo xtask test` does on eve
 Expected to fail: "byte 0 of the disk tree's read came back wrong". The installer's write stages
 from window 0, which still holds 0x11, so 0x11 is what reaches block 41; the disk tree's read then
 lands in window 0 too, and window 2 still holds the 0xaa the test filled it with.
-Replayed 2026-11-10 (UTC), aarch64: failed at exactly that assertion.
+Replayed 2026-11-10 (UTC), aarch64: failed at exactly that assertion. Re-cut 2026-11-22 (UTC)
+when the block-count refusal above the changed line replaced a clamp; the changed line is the
+same and wants a replay.
 
 diff --git a/components/src/non_volatile_memory_express_data_plane.rs b/components/src/non_volatile_memory_express_data_plane.rs
-index 86031f252..a62419d8e 100644
+index be8d6a848..49cc87ab2 100644
 --- a/components/src/non_volatile_memory_express_data_plane.rs
 +++ b/components/src/non_volatile_memory_express_data_plane.rs
-@@ -322,7 +322,7 @@ fn serve(mut plane: Plane) -> ! {
-         // request is never trusted to stay inside the region it shares just because the packing
-         // allows a larger number to be spelled.
-         let count = block::request_block_count(w0).min(TRANSFER_BLOCKS);
+@@ -352,7 +352,7 @@ fn serve(mut plane: Plane) -> ! {
+             reply(reply_to, file_system_contract::error::word(22) as u64, 0); // EINVAL
+             continue;
+         };
 -        let Some(window) = client_window(req.badge) else {
 +        let Some(window) = client_window(req.badge).map(|_| 0) else {
              reply(reply_to, file_system_contract::error::word(22) as u64, 0); // EINVAL
