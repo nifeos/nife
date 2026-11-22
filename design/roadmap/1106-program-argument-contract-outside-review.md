@@ -55,9 +55,11 @@ section number, a milestone or a person in another repository.
   [#3978](https://github.com/nifeos/nife/pull/3978). The round-trip harness fixes the lengths at
   three and two bytes, which keeps the page inside the solver's memory.
 - P1-7, the `unsafe` reader has no test: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P1-8, the mutation exemption and the coverage figure: Done at the move. The new repository's
+- P1-8, the mutation exemption and the coverage figure: Done at the move,
+  [#4007](https://github.com/nifeos/nife/pull/4007). The new repository's
   `.github/mutants-exempts` lists the one survivor, `<` against `<=` in the header check, which
-  reads a page of exactly the header as no arguments either way. The tests reach every line and 98 percent of regions.
+  reads a page of exactly the header as no arguments either way. The tests reach every line and
+  98 percent of regions.
 - P1-9, the all-or-nothing claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-10, the address truncates on narrow targets: Done,
   [#3978](https://github.com/nifeos/nife/pull/3978) (maintainer, provisional, 2026-11-22 UTC). The
@@ -79,9 +81,10 @@ section number, a milestone or a person in another repository.
 - Ruling, three public names: Done, [#3808](https://github.com/nifeos/nife/pull/3808) and
   [#3978](https://github.com/nifeos/nife/pull/3978), with P0-4 and P1-5.
 - Ruling, the remaining names: Done, [#3885](https://github.com/nifeos/nife/pull/3885).
-- The move: Done as a pin. nifeos/program_argument_contract exists, and nife depends on it at
-  commit 764e0e55a238252391b1c06135e228ef6b9436c8 (`version = "0.1.0"`, `publish = false`). No
-  tag and no publish; a pre-release tag moves the pin later.
+- The move: Done as a pin, [#4007](https://github.com/nifeos/nife/pull/4007).
+  nifeos/program_argument_contract exists with `proofs` green on its first run, and nife depends
+  on it at commit 764e0e55a238252391b1c06135e228ef6b9436c8 (`version = "0.1.0"`,
+  `publish = false`). No tag and no publish; a pre-release tag moves the pin later.
 
 ## Open decisions
 
