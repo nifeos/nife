@@ -678,7 +678,6 @@ dependencies = [
  "file_system_fixture",
  "grant_contract",
  "program_argument_contract",
- "program_table",
 ]
 
 [[package]]
@@ -795,7 +794,7 @@ source = "git+https://github.com/nifeos/interfaces_note?rev=bfa27187a87e0cc1916e
 [[package]]
 name = "intrusive_queue"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/intrusive_queue?rev=495ef27be50d37212fabc9019744bdcd48399f0e#495ef27be50d37212fabc9019744bdcd48399f0e"
+source = "git+https://github.com/nifeos/intrusive_queue?rev=10d1fa2893c1cab6db3901f79a1ab2bc0029170b#10d1fa2893c1cab6db3901f79a1ab2bc0029170b"
 
 [[package]]
 name = "jh7110_clock_and_reset"

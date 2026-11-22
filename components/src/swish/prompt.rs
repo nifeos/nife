@@ -186,7 +186,7 @@ fn read_line(prompt: &[u8], out: &mut [u8]) -> (usize, u64) {
 /// The same sans-IO engine the terminal runs, fed from `OPERATION_READRAW`, so a Tab reaches the process
 /// that holds the authority completion needs. A `static` for `line_editor`'s own reason: the
 /// engine is a few KiB and this shell's stack has run out before (notes/pipes.md).
-static mut EDITOR: line_editor::LineDisc = line_editor::LineDisc::new();
+static mut EDITOR: line_editor::LineEditor = line_editor::LineEditor::new();
 
 /// Bytes a raw read delivered after the one that ended a line, kept for the next line. A paste of
 /// two lines arrives in one burst, and dropping the second would lose typed input.
@@ -319,10 +319,10 @@ pub(super) fn edit_line(nav: &mut Nav, prompt: &[u8], out: &mut [u8]) -> (usize,
 /// **Tab**: finish the word under the cursor from what this shell can name (`swish::complete`).
 /// A program or builtin name in command position; otherwise an entry of the directory the word's
 /// lead names, read with the same `ENUMERATE` `ls` needs. No match rings the bell.
-fn complete_word(nav: &mut Nav, disc: &mut line_editor::LineDisc, echo: &mut Echo) {
+fn complete_word(nav: &mut Nav, disc: &mut line_editor::LineEditor, echo: &mut Echo) {
     use line_editor::Sink;
     use swish::complete::{Answer, Completing, Lister, Matches};
-    let mut buf = [0u8; line_editor::LINE_MAXIMUM];
+    let mut buf = [0u8; line_editor::MAXIMUM_LINE_BYTES];
     let (line, cur) = disc.pending();
     let len = line.len();
     buf[..len].copy_from_slice(line);

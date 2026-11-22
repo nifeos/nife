@@ -747,7 +747,7 @@ fn it_understands_the_line_disciplines_echo() {
 
     // "hello", ^B ^B, "XY", ^D, ^K, Enter: the editing that emits CSI D, CSI C, CSI K and a
     // mid-line redraw.
-    let mut ld = line_editor::LineDisc::new();
+    let mut ld = line_editor::LineEditor::new();
     let mut echo = Echo(Vec::new());
     let mut event = line_editor::Event::None;
     for &b in b"hello\x02\x02XY\x04\x0b\r" {

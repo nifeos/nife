@@ -16,10 +16,10 @@ by minting a second token with `unsafe`. That this takes an `unsafe` block a rev
 is the token doing its job; the harness is still shown to catch the result.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index d894909c1..8905df988 100644
+index 0dcb87d6d..e4389bf8b 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -416,6 +416,8 @@ impl<T: Node> Rendezvous<T> {
+@@ -400,6 +400,8 @@ impl<T: Node> Rendezvous<T> {
              self.pending -= 1;
              ReceiveVerdict::Signal(me)
          } else if let Some(sender) = self.take_sender() {

@@ -156,7 +156,7 @@ pub(super) fn admit(command: &[u8], held: Held) -> Admission {
         directory: true,
         ..ShellHoldings::default()
     };
-    match program_table::plan(&spec, holdings, Expansion::none()) {
+    match program_table::plan(&spec, &holdings, &Expansion::none()) {
         Err(r) => Admission::Refused(r),
         Ok((program, e)) => match unbacked(&e, &e.manifest, held) {
             Some(u) => Admission::Unbacked(u),
@@ -185,7 +185,7 @@ fn admit_installed(command: &[u8], m: Manifest, held: Held) -> Admission {
         directory: true,
         ..ShellHoldings::default()
     };
-    match grant_plan::plan_against(&spec, m, holdings, Expansion::none()) {
+    match grant_plan::plan_against(&spec, m, &holdings, &Expansion::none()) {
         Err(r) => Admission::Refused(r),
         Ok(e) => match unbacked(&e, &m, held) {
             Some(u) => Admission::Unbacked(u),

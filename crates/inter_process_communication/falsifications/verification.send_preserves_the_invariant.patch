@@ -10,10 +10,10 @@ would call itself busy with nobody on it, and an object revocation or a teardown
 idle rendezvous would wait for a thread that is not there.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index d894909c1..fbd0844cc 100644
+index 0dcb87d6d..f73469ac1 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -341,11 +341,7 @@ impl<T: Node> Rendezvous<T> {
+@@ -325,11 +325,7 @@ impl<T: Node> Rendezvous<T> {
          let Waiting::Receivers(receivers) = &mut self.waiting else {
              return None;
          };

@@ -430,7 +430,7 @@ fn plan_image(nav: &mut Nav, spec: ParsedInvocation) -> Option<PlannedImage> {
             return None;
         }
     };
-    let e = match grant_plan::plan_against(&spec, m, holdings(nav), expanded) {
+    let e = match grant_plan::plan_against(&spec, m, &holdings(nav), &expanded) {
         Ok(e) => e,
         Err(r) => {
             nav.close(handle);
@@ -1544,7 +1544,7 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: ParsedInvocation) {
         Err(Say::Cannot(r)) => return refuse(spec, r),
         Err(said) => return say(said),
     };
-    match program_table::plan(&spec, holdings(nav), expanded) {
+    match program_table::plan(&spec, &holdings(nav), &expanded) {
         Err(refusal) => refuse(spec, refusal),
         // A supervised job runs under the two-tier ^C path (DECISIONS §24); a fast job is simply
         // spawned and waited on.

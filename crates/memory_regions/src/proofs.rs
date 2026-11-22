@@ -723,7 +723,7 @@ fn a_root_the_table_accepts_never_overflows_returning_a_child() {
     if let Some(child) = table.split(root, any_small_page_count())
         && let Some(claim) = table.claim_for_destroy(child)
     {
-        table.return_to_parent(&claim);
+        table.return_to_parent(claim);
     }
     read_every_report_of(&table, root);
 }
@@ -796,7 +796,7 @@ fn a_return_keeps_every_run_inside_its_parents_spent_part() {
         "the child retyped pages after its grandchild was split"
     );
     if let Some(claim) = claim {
-        table.return_to_parent(&claim);
+        table.return_to_parent(claim);
     }
     // Each region by name, never through `Iterator::flatten` over the three: the flatten's inner
     // loop is one the model checker cannot bound, and unrolling it ran CBMC past a hosted
@@ -845,7 +845,7 @@ fn a_reclaimed_region_tree_leaves_no_count_behind() {
         let claim = run.table.claim_for_destroy(name);
         assert!(claim.is_some(), "an unpinned leaf is claimable");
         if let Some(claim) = claim {
-            run.table.return_to_parent(&claim);
+            run.table.return_to_parent(claim);
         }
     }
     let after = run.table.snapshot(run.name(0)).expect("the root is live");

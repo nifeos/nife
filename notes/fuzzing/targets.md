@@ -126,7 +126,7 @@ The line editor reads a serial console byte by byte, and what arrives there is e
 anywhere, mouse reports and bytes above ASCII. `line_editor_feed` reads its input as a stream of
 keystrokes with five calls mixed in (`start_line`, `resume_line`, `repaint`, `abandon` and
 `insert_text`, each introduced by a byte from `0xf0` to `0xf4`). After every byte the cursor must lie
-inside the line and the line inside `LINE_MAXIMUM`, and no echo write is empty or longer than a
+inside the line and the line inside `MAXIMUM_LINE_BYTES`, and no echo write is empty or longer than a
 prompt and a line. Two Kani harnesses cover the escape parser and the range delete for every input;
 this target covers the whole state machine, history and yank included.
 

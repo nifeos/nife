@@ -473,7 +473,7 @@ mod tests {
             fn put(&mut self, _: &[u8]) {}
         }
         let mut keyboard = Keyboard::new();
-        let mut ld = line_editor::LineDisc::new();
+        let mut ld = line_editor::LineEditor::new();
         // "xy", Home, "w", End, "z", Left, Left, Delete, Enter: "wxyz" with the "y" deleted.
         let keys = [
             45u16, 21, KEY_HOME, 17, KEY_END, 44, KEY_LEFT, KEY_LEFT, KEY_DELETE, 28,
@@ -489,7 +489,7 @@ mod tests {
 
         // Page up reaches the discipline as a sequence it swallows whole: a key the line has no
         // use for must not type its parameter and final byte into the line as `5~`.
-        let mut ld = line_editor::LineDisc::new();
+        let mut ld = line_editor::LineEditor::new();
         for code in [30u16, KEY_PAGEUP, KEY_PAGEDOWN, 28] {
             for &b in keyboard.event(EV_KEY, code, 1).unwrap().as_slice() {
                 event = ld.feed(b, &mut Discard);

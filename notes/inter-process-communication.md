@@ -65,7 +65,7 @@ of §26 (the fault endpoint). A fifth path cannot forget.
 
 ### Taking a thread back off a queue
 
-An intrusive `Queue` offers no arbitrary remove, and the rendezvous needs one in two cases.
+The rendezvous takes one particular thread off a queue in two cases.
 
 A corpse can be a queued sender. A supervised thread that dies with nobody in `RECEIVE` parks on
 its supervision rendezvous's sender queue, its death message in its mailbox. That is item 2 of
@@ -82,11 +82,10 @@ commonest such thread is a server parked in `RECEIVE` on a rendezvous that belon
 else. Its TCB is linked there, so the reclaim unlinks it with `remove_receiver` before freeing the
 page the TCB sits on.
 
-Both removes drain the queue and push the survivors back, rather than adding a remove to `Queue`.
-That keeps the queue's own contract, one link and no arbitrary remove, and its proved invariants
-are the only ones in play. The cost is linear in the queue's length, on a teardown path, and FIFO
-order among the survivors is kept. Both are safe: the victim is compared by pointer and never
-dereferenced, and every other node goes back with the token its own pop handed over.
+Both removes call `Queue::remove`, which walks from the head and writes the one link that bridges
+the gap. The queue's own Kani harness proves it keeps the survivors in FIFO order and moves the
+tail back when the last node leaves. The cost is a walk to the victim, on a teardown path. The
+victim is compared by pointer and dereferenced only when the queue holds it.
 
 They are two methods rather than one taking a queue. A single method would make the caller name
 the queue, which means trusting the victim's recorded `WaitRole`. The kernel records a `CALL`
@@ -194,8 +193,8 @@ bound after a sender queued.
   since a membership scan would hand the solver an unbounded loop.
 
 The remove harness is the only bounded one. Its interesting case is the miss: the kernel asks
-both removes on every victim, and a drain over a queue the victim is not on must rebuild that
-queue exactly. It runs one remove per run, chosen symbolically, because the removes share no state
+both removes on every victim, and a walk over a queue the victim is not on must leave that
+queue exactly as it was. It runs one remove per run, chosen symbolically, because the removes share no state
 between calls. A run of both removes twice each did not finish in seventeen minutes, and
 `unwind(3)` with one remove takes 0.2 seconds. The bound is sound: Kani checks the unwinding
 assertion, so a loop that needed a fourth pass would fail the proof. `seed` queues at most one

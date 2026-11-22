@@ -26,11 +26,11 @@ ratified (2026-11-20 UTC).
 |---|---|
 | crate | `page_frames`, ratified 2026-08-23 (a kernel-dependency crate naming review) |
 | version | `0.1.0`; no tag |
-| edition, `rust-version` | 2024; the crate builds and tests on 1.87 and 1.88 outside the tree, and its manifest sets no `rust-version` yet |
-| license | the manifest inherits `license` from the nife workspace; the move writes `MIT OR Apache-2.0` and the two texts |
+| edition, `rust-version` | 2024; `rust-version = "1.87"`, the first release with `u64::is_multiple_of` in a `const fn` |
+| license | `MIT OR Apache-2.0`, with `LICENSE-MIT` and `LICENSE-APACHE` beside the manifest |
 | `publish` | `false` |
 | dependencies | none |
-| size | `src/lib.rs` of 661 lines (the library and its Kani harnesses) and `tests/allocator.rs` of 434 lines (25 host tests) |
+| size | `src/lib.rs` of 706 lines (the library and its Kani harnesses) and `tests/allocator.rs` of 506 lines |
 | layout | no identity values: the crate is in-process logic and has no wire format, magic or interface number |
 
 ## Who in nife depends on it
@@ -43,8 +43,8 @@ and no tool depends on it. `packages/kernel.package.toml` lists it, and the tool
 it in `helpers/template_report_baseline.txt`, `.cargo/mutants-baseline.txt` and
 `helpers/verify_times.py`.
 
-What references back into nife from the crate: nothing. The manifest inherits `license` and
-`lints` from the workspace, which the move rewrites as literals.
+What references back into nife from the crate: nothing. The manifest writes its own `license`,
+`lints` and `rust-version`.
 
 ## The bar for leaving
 
@@ -141,19 +141,17 @@ gate refused), the harness locals `bitmap`, `allocator`, `first` and `second`, a
 
 ## License
 
-`license` is inherited from the workspace today and becomes `MIT OR Apache-2.0` in the move. The
-crate adapts no source from elsewhere. The design follows the common bitmap allocator and borrows
+`MIT OR Apache-2.0`, written in the manifest, with both texts in the crate directory. The crate
+adapts no source from elsewhere. The design follows the common bitmap allocator and borrows
 no text.
 
 ## What still blocks the move
 
 | item | owner |
 |---|---|
-| Write the crate's own README, carrying the design arguments that stay behind in nife (milestone 1103 item 2). | move lane |
-| Make the manifest stand alone: literal `license`, `lints` and `rust-version`, and the two license texts (item 1). | move lane |
 | Convert the two path dependencies in `kernel` and `system_tests` to `git` and `rev` with `version = "0.1.0"`. | move lane |
 | Rows for the crate in `helpers/template_report_baseline.txt`, `.cargo/mutants-baseline.txt`, `helpers/verify_times.py` and `packages/kernel.package.toml`. | move lane |
-| Items 12 and 17 of milestone 1103. | move lane |
+| Item 17 of milestone 1103: the three mutation exemptions. | move lane |
 | Run the stranger test, the template's workflows and the first weekly mutation run in the new repository. | move lane |
 
 ## Open questions

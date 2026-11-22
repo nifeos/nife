@@ -194,8 +194,8 @@ fn a_token_comes_back_exactly_when_its_node_did_not_queue() {
 /// **Taking a waiter back off a queue preserves the one-queue invariant**, for either side and
 /// whether or not the victim was there, and a hit returns the victim's token.
 ///
-/// The miss matters most: the kernel asks both removes on every victim, and a drain over a queue
-/// the victim is not on must rebuild it exactly. `unwind(3)` is sound because `seed` queues at
+/// The miss matters most: the kernel asks both removes on every victim, and a walk over a queue
+/// the victim is not on must leave it exactly as it was. `unwind(3)` is sound because `seed` queues at
 /// most one waiter and Kani checks the unwinding assertion. See
 /// `notes/inter-process-communication.md` ("The rendezvous harnesses").
 /// Falsification: replayable `crates/inter_process_communication/falsifications/verification.removing_a_waiter_preserves_the_invariant.patch`

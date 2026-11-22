@@ -6,7 +6,7 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 license.workspace = true
 
 [dependencies]
-intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "495ef27be50d37212fabc9019744bdcd48399f0e" }
+intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "10d1fa2893c1cab6db3901f79a1ab2bc0029170b" }
 
 [lints]
 workspace = true
