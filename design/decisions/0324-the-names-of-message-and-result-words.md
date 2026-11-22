@@ -42,18 +42,19 @@ in prose, across nife, its `std` overlay and the kernel.
 
 ## Recommendation: (g), an array of words, and names by meaning once decoded
 
-- A group of message words that travels together is an array: `send(slot, words: [u64; 3])`,
-  `call(slot, words: [u64; 2]) -> [u64; 2]`, `Message { words: [u64; 3], badge, label, delivered }`.
+- The message words a call sends or a receive delivers are an array: `send(slot, words: [u64; 3])`,
+  `call(slot, words: [u64; 2])`, `Message { words: [u64; 3], badge, label, delivered }`.
+- Result words are never an array. The first result word is always signed (an error, or a value),
+  so results are a tuple whose first element is `i64`, as SBI's `sbiret` is a struct:
+  `call(..) -> (i64, u64)`, `reply(to, results: (i64, u64))`, and `survey` keeps
+  `(i64, u64, u64)`. The 11 local `reply` helpers that take `r0: i64` already follow this.
 - A value the code has decoded takes the name of what it is, as design/naming.md already requires:
-  `let [handle, length, _] = call(slot, request);`.
-- A function that decodes one word takes a parameter named by meaning, or plain `word`, and its doc
-  names the position: "`words[1]` of a `MKDIR`".
-- A result with a type of its own stays a tuple or a struct named by meaning, as SBI's `sbiret`
-  does: `survey` keeps `(i64, u64, u64)`, since an array would erase the signed error.
-- Prose and the tables in notes/abi.md write a position as `words[1]` or `results[0]` beside its
-  register.
-- `w0`..`w5` and `r0`..`r2` join the `[spelled_out]` list, and the check below refuses spelled and
-  ordinal positions.
+  `let (handle, length) = call(slot, request);`, or `let [operation, offset, _] = message.words;`.
+- A function that decodes one word takes a parameter named by meaning, or plain `word`.
+- In prose and in notes/abi.md, `words[i]` and `results[i]` are notation for position `i` of the
+  message table and the result table. They name a position, not a variable: a decoder that takes
+  `word` documents that it reads `words[1]` of a `MKDIR`, and no `results` identifier exists.
+- `w0`..`w5` and `r0`..`r2` join the `[spelled_out]` list.
 
 The reasons are on the merits. An array leaves no numbered identifier to rule on, so the tree needs
 no convention for one. The compiler checks the position: `words[3]` on a `[u64; 3]` fails to build,
@@ -75,8 +76,7 @@ them are `x0` and `a0` onward, and a Rust index starts at 0.
 
 Checked on `main` at `nifeos/nife@830de0623`: design/naming.md and design/naming/ contain no
 `w0`..`w5` or `r0`..`r5`. The names are live in the kernel (39 code uses in 8 files), the `std`
-overlay (82 in 9 files) and 23 other packages. `user_mode_runtime`'s `Message` and `Request` carry
-public fields `w0`, `w1` and `w2`, which the ruling of 2026-11-20 left out.
+overlay (82 in 9 files) and 23 other packages.
 
 ## The count
 
@@ -121,19 +121,21 @@ a few uses. It also counts the excluded paths as foreign, so its rows add up to 
 
 ### What (g) does to the declarations
 
-A second classifier sorted the Rust declaration sites, counting `w` and `r` names together:
+A second classifier, posted on the pull request, sorted the Rust declaration sites. It counts a
+tuple pattern as one group however many names it binds (`let (r0, _) = call(..)`), and drops 8
+bindings that hold no word (`let r2 = memory_region::create(8)` is a region).
 
 | Declaration | Sites | Names | Under (g) |
 |---|---:|---:|---|
-| Function taking several words | 30 | 65 | one array parameter |
-| Pattern binding several words | 79 | 215 | an array, or a pattern by meaning |
-| Struct field | 12 in 6 files | 12 | a `words` array beside fields by meaning |
-| Function taking one word | 51 | 51 | `word`, or a name by meaning |
-| Binding of one word | 142 | 142 | a name by meaning, or `words[i]` |
+| Function taking several words | 30 | 65 | an array, or a result tuple |
+| Tuple pattern | 161 | 300 | an array or tuple pattern by meaning |
+| Struct field | 6 in 2 files | 6 | a `words` array beside fields by meaning |
+| Function taking one word | 52 | 52 | `word`, or a name by meaning |
+| Binding of one word | 70 | 70 | a name by meaning |
 
-The first three rows become arrays: 121 sites. The last two never held a group, so they gain no
-array, and under (a) they would carry a digit. Under (g) none of them needs a positional name,
-because a word with no meaning yet stays inside its array as `words[i]`.
+The first three rows hold a group: 197 sites. The last two, 122 sites, never held one. Under (a)
+all 319 carry a digit; under (g) none needs a positional name, because a word with no meaning yet
+stays inside its array.
 
 ## The options
 
@@ -148,7 +150,7 @@ ruled 2026-11-14) and the parameter `receive_descriptor_word_3`.
   the 130 spelled-out lines, and `MessageWords`'s three fields in `byte_sink_contract`. About 300
   files, and `clock_contract`'s prose.
 - Keeps: every signature's shape. It is a rename, with the smallest diff of the two candidates.
-- Costs: a positional name at all 314 sites in the table above, which the compiler cannot check
+- Costs: a positional name at all 319 sites in the table above, which the compiler cannot check
   against the length, and a convention a reviewer applies by hand.
 
 ### (b) Spelled number: `word_zero`
@@ -171,10 +173,10 @@ Cheapest, and the only option whose case is effort. The stay list holds terms wh
 nobody says (§154 (the acronym test is whether the phrase is spoken, applied recursively)), and
 people say "word zero" aloud, so `w0` fails that test.
 
-### (f) Hybrid: keep `w0`..`w5` in the register-level modules, spell out elsewhere
+### (f) Hybrid: keep `w0`..`w5` in the three register-level modules
 
-The three modules where a word is one register hold 151 code uses. The register already has a
-name, `x0` or `a0`, so a third spelling adds a word to remember.
+They hold 151 code uses. The register already has a name, `x0` or `a0`, so a third spelling adds
+a word to remember.
 
 ### (g) An array of words (recommended)
 
@@ -183,52 +185,76 @@ As set out under the recommendation. Where an array fits badly:
 - **`Message` is not all words.** `x0` to `x2` are the sender's, `x3` the badge, `x4` the kernel's
   account of what arrived and `x5` a label. Only the first three form the array; the rest keep
   names by meaning, so the array index matches the register only up to 2.
-- **The first result word is signed.** It is an error or a value, so `survey` and its siblings
-  return `(i64, u64, u64)`, not `[u64; 3]`. Three functions in `user_mode_runtime` keep a tuple.
+- **The first result word is signed.** So results are a tuple, never an array, as set out above.
+  `call` and `reply` change type from `u64` to `i64` for that word.
 - **The kernel writes `x4`.** It is never a sender's word, so it stays outside the array as
   `delivered`.
-- **`w1` can carry a capability slot.** `receive_capability` returns `(w0, capability_slot, w1)`:
-  the sender's second word lands in register 2. As an array, the sender's `words[1]` would arrive
-  as the receiver's `words[2]`, so the function returns the slot by name beside a two-word array.
-  The digit names hide the same shift today.
+- **A capability moves the words.** `receive_capability` documents its return as
+  `(w0, capability_slot, w1)`: the slot is in `x1` and the sender's second word in `x2`. Its body
+  binds `let (w0, w1, w2, ..)`, so the local `w1` holds `x1`, the slot, while the doc's `w1` is the
+  sender's word. A reply carrying a capability uses another order: the kernel writes
+  `[msg[0], msg[1], delivered, 0, 0]` (kernel/src/sched/rendezvous.rs, line 885), so the slot is
+  in `x2`. An index would not survive either trip, so each function returns the slot by name beside
+  the words. The current names hide both shifts.
 - **`const fn` decoders.** Not a problem: constant indexing builds in `const fn`, and three
   `const fn` decoders take an array already.
-- **Code generation.** I compiled `send`, `call` and `receive` both ways for
-  `aarch64-unknown-none-softfloat` at `opt-level=3`, with the tree's `trap6` copied in. Inlined,
-  the two forms produce identical code; the compiler merged the callers into one symbol. Not
-  inlined, a `[u64; 3]` argument travels by pointer and a `[u64; 2]` result through memory: the
-  caller grew from 22 to 27 instructions and from a 64-byte to an 80-byte frame. (A three-word tuple
-  already returns through memory, and `receive` compiled the same both ways.) The wrappers carry no
-  `#[inline]` and the release profile sets no LTO, so the rename lane marks them `#[inline]` and
-  checks one release build's assembly before and after.
+- **Code generation.** I compiled `send`, `call` and `receive` both ways, with each
+  architecture's `trap6` copied in, using the script posted on the pull request. Callers'
+  instruction counts, digits against arrays:
 
-## The follow-on: a check that refuses spelled and ordinal positions
+  | Build | aarch64 | riscv64 | x86_64 |
+  |---|---:|---:|---:|
+  | `opt-level=3`, wrappers inlined | identical | identical | identical |
+  | `opt-level=3`, not inlined | 22 / 27 | 27 / 36 | 25 / 29 |
+  | `opt-level=0` (debug), not inlined | 44 / 51 | 39 / 49 | 42 / 51 |
 
-The ruling says the tree must not permit these spellings, so the naming check gains a rule. Measured
-in Rust outside `vendor/` on `main` at `08d17a3b0`:
+  Not inlined, a `[u64; 3]` argument travels by pointer and a `[u64; 2]` result through memory.
+  The wrappers carry no `#[inline]` and the release profile sets no LTO, so release callers pay
+  this today. `script/board-image` packs debug programs, and `user_mode_runtime` builds there at
+  `opt-level=0`. Even with the wrappers forced `#[inline(always)]`, the aarch64 debug caller grows
+  from 178 to 192 instructions and from a 624-byte to a 688-byte frame. That cost stays: a debug
+  image pays a few instructions per call for (g). The rename lane marks the wrappers `#[inline]`
+  and checks a release build's assembly before and after.
 
-- **Spelled numbers** as a whole segment, after removing predicates such as `is_zero` and
-  `is_power_of_two`: 38 names, 247 uses. Of those, 174 are `word_*`, `argument_*` and
-  `result_word_*`, which this decision replaces. The rest include `domain_one` and `domain_two`
-  (`system_tests`' label tests), `view_one`, `window_zero`, `bus_device_function_zero`,
-  `wire_disk_zero` and `double_word_three`. Some mean "a single one" and number nothing
-  (`spawn_one`, `parse_one`), and constants such as `ONE_GIBIBYTE` are quantities. A pattern cannot
-  tell a quantity from a position, so the rule needs a written allowance for quantities.
-- **Ordinals**: 93 names, 486 uses in 99 files. `second_` onward is 36 names and 101 uses,
-  including `second_region` and `second_directory_grant`. `first_` is 57 names and 385 uses, and
-  most name the start of a range or the earliest event (`first_logical_block_address`,
-  `first_block`, `first_error`), not a place in a numbered set. Eight `first_` stems have a
-  `second_` sibling. The positional ones include `first_partition`,
-  `first_ethernet_port_transmit_parent` (provisional), `domain_name_resolution_contract`'s
-  `first_word` and `second_word`, `byte_sink_contract`'s function `first_word`, the kernel's
-  `HolderWiring::first_word` and a `first_word` in `xtask`'s swish check.
+## The follow-on: a check that refuses spelled numbers and ordinals
 
-A workable rule refuses a spelled number from zero to ten as a segment unless a quantity allowance
-covers it, refuses `second_` to `tenth_`, and refuses `first_` only where a `second_` of the same
-stem exists. Whether the rule covers instance names (`domain_one`, `first_partition`,
-`second_region`, `second_directory_grant`, `first_ethernet_port_transmit_parent`) or only positions
-of a layout stays open, as a separate question. A ratified function name such as `first_word`, and
-any quantity allowance, wait on that ruling too.
+The ruling says the tree must not permit these spellings, so the naming check gains a rule: refuse
+any identifier with a segment that is a spelled number (`zero` to `twelve`) or an ordinal (`first`
+to `tenth`). Measured on Rust code outside `vendor/`, comments and strings blanked, on `main` at
+`08d17a3b0`, by a script posted on the pull request:
+
+| Hit | Names | Uses |
+|---|---:|---:|
+| A segment is a spelled number | 708 | 1231 |
+| ... and it ends the name | 132 | 378 |
+| A segment is an ordinal | 283 | 885 |
+| ... and the only ordinal is `first` | 167 | 595 |
+
+- **Positions.** Beyond the `word_*`, `argument_*` and `result_word_*` names this decision replaces,
+  the hits include `domain_one` and `domain_two`, `view_one`, `slot_one`, `rows_two`,
+  `window_zero`, `fs_window_zero`, `wire_disk_zero`, `bus_device_function_zero` and
+  `double_word_three`. They also include the fixture constants `GLOB_ONE`, `RM_ONE`,
+  `REDIRECTION_ONE` and `LABEL_ONE` with their `_TWO` partners, and `mainline_port_one` inside a
+  test name. Ordinals
+  include `first_partition`, `second_region`, `second_directory_grant`,
+  `first_ethernet_port_transmit_parent`, both `first_word` and `second_word` families, the
+  kernel's `HolderWiring::first_word` and a `first_word` in `xtask`'s swish check.
+- **Test names written as sentences.** 544 of the 708 spelled-number names, and 125 ordinal names,
+  have six or more segments (`a_serviced_note_names_its_exact_length_and_pads_to_four`).
+- **Quantities.** Predicates and amounts number nothing: `is_power_of_two`, `ONE_GIBIBYTE`,
+  `spawn_one` (spawn a single one). A pattern for predicates and units covers 11 of the 132
+  ending names; once the sentence-style test names are set aside, 52 names (279 uses) remain to
+  judge one at a time.
+- **`second` the unit of time.** 44 names (154 uses) say `NANOSECONDS_PER_SECOND` and the like. That
+  is not an ordinal, so the rule allows `second` after `per`.
+
+The ruling refuses ordinals, so the rule refuses `first_` everywhere, including the 167 names where
+it marks the start of a range or the earliest event (`first_logical_block_address`,
+`first_error`). Permitting that sense would narrow the ruling, and that is calef's to decide, as a
+question of its own. Two scope questions also stay open, each separate: whether the rule covers
+instance names (`domain_one`, `first_partition`, `second_region`, `second_directory_grant`,
+`first_ethernet_port_transmit_parent`), and whether it covers test names written as sentences.
+The size of the quantity allowance follows from those answers.
 
 ## Prior art
 
@@ -249,12 +275,9 @@ Read for this decision unless marked otherwise.
 - Redox (`redox_syscall` 0.9.5, read from the local cargo registry): the scheme protocol's `Sqe`
   holds `opcode`, `tag`, `args: [u64; 6]` and `caller`; `Cqe` holds a `result`. An array for the
   words beside names by meaning, the shape (g) gives `Message`.
-- Fuchsia (`zx_channel_call` reference): a message is bytes and handles, and the parameters take
-  names by meaning, with `wr_bytes` and `rd_bytes` for the two directions.
 
-Where nife differs: seL4, Linux and Redox index the words and keep single-letter or numbered names
-at the register edge. nife spells its names out, so under (g) the register edge is the one place a
-position appears, as an index, and never as a name.
+Where nife differs: seL4, Linux and Redox index the words but keep single-letter or numbered names
+at the register edge. Under (g), nife's position appears only as an index, never as a name.
 
 ## A concrete example
 
@@ -280,7 +303,7 @@ parameter is `word_1` and the reply's word is `result_word_0`.
 ## Effort, stated plainly
 
 (a) is a mechanical rename. About 10 files hold both `w1` and `word_one`, so each needs reading for
-a shadowed name, and rustfmt rewraps the lines that grow. (g) is larger: the 121 group sites change
+a shadowed name, and rustfmt rewraps the lines that grow. (g) is larger: the 197 group sites change
 shape, every caller of `send`, `call` and `receive` changes, and the single-word sites still need
 names by meaning chosen one at a time. Under both, `byte_sink_contract` changes first in its own
 repository and nife bumps its pin, and the 16 falsification patches are regenerated and replayed.
