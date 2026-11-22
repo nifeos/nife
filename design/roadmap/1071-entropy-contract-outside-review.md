@@ -178,6 +178,13 @@ the commit before it. Two steps remain, in order: the tag `v0.1.0-pre.1` on `mai
 release dry run, then a nife pull request that moves every `entropy_contract` pin from
 nifeos/entropy_contract@7e800fd to the tagged commit. Publishing stays under the publishing hold.
 
+## Follow-on
+
+- **Done.** The move, the stranger run and the JH7110 service loop's `reply`: see the finding status.
+- **Outstanding.** The tag `v0.1.0-pre.1`, which has its ruling: nifeos/entropy_contract lists no
+  tag (checked through the GitHub API). Then the pin bump: every `entropy_contract` pin in nife
+  reads nifeos/entropy_contract@7e800fd (checked with `grep` over the manifests).
+
 ## BUGS
 
 - Item 8's false-refusal probability assumes a uniform source. A source with its output biased
