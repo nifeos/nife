@@ -228,8 +228,9 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
 
 - **Done.** P0 item 1, the split, in #3584: `grant_plan`, `crates/grant_contract` and
   `crates/program_table` build and test on their own.
-- **Done.** The limits rule (P1-6), the eight renames (P1-7) and the 2026-11-20 name rulings are
-  built, and the review packages are written. The review packages carry the clearance, after which the repositories follow with no tag and no publish.
+- **Done.** The tree builds the limits rule (P1-6), the eight renames (P1-7) and the 2026-11-20
+  name rulings, and the two review packages carry the clearance; the repositories follow it with
+  no tag and no publish.
 - **Outstanding.** Every finding marked Open or Waiting on under "Finding status", each checked
   against the three crates' sources on main.
 - **Done.** `crates/externalization-list.txt` names both crates that leave ([#3961](https://github.com/nifeos/nife/pull/3961));
