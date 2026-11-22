@@ -7,7 +7,7 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
 1. The crate does not stand alone, and the documentation that explains it does not travel.
    Finding: there is no README, no `LICENSE-MIT` or `LICENSE-APACHE`, no `rust-version`. The manifest inherits `license` and `lints` from the workspace, and its `publish = false` comment points at `crates/publish-allowlist.txt`, a file that will not exist in the new repository. The
    crate root documentation sends the reader to notes/abi.md, notes/sink-protocol.md ("the module
-   note", twice), §16 (object revocation: reclaim the objects a process built), §242 (a system log: one service that programs and the kernel append to), milestones 613 and 956, `file_system_contract`, `line_editor::proto`, `file_system_fixture`, `cargo xtask std-src` and two files under `fixtures/src/`. It also names the architect in four `Name:` blocks. The reasons for the shape (register-only rather than a
+   note", twice), §16 (object revocation: reclaim the objects a process built), §242 (a system log), milestones 613 and 956, `file_system_contract`, `line_editor::proto`, `file_system_fixture`, `cargo xtask std-src` and two files under `fixtures/src/`. It also names the architect in four `Name:` blocks. The reasons for the shape (register-only rather than a
    shared page; `SEND` rather than `CALL`; no per-write error; what the protocol deliberately does
    not carry) live only in the note. A stranger holding the published crate cannot learn why the contract has its shape, and the template's `standalone` gate refuses every one of those
    references.

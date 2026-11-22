@@ -25,7 +25,9 @@ pub const READ: u64 = 1;
 pub const WRITE: u64 = 2;
 /// Ask the disk's size in bytes. `w1` ignored. Reply `r0` = the size (always non-negative here).
 ///
-/// Name: provisional, minted 2026-11-22 (UTC) by the file-system-contract-rename lane (ruled 2026-11-22: the size request names its unit).
+/// Name: ratified 2026-11-22. A verb is a question and its name says what it asks (`GET_`) and in what unit (`_BYTES`). The
+/// number, 3, is unchanged. Refused: `GET_CAPACITY_BYTES`, because the disk's capacity and its size are one number here and
+/// "capacity" suggests a free count; `GET_SIZE`, because it leaves the unit to be guessed.
 pub const GET_SIZE_BYTES: u64 = 3;
 /// **Make everything the device has already acknowledged durable**:
 /// a `VIRTUAL_IO_BLK_T_FLUSH` the block server does not reply to until the device completes it. `w1`
