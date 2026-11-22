@@ -58,6 +58,8 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
 - `file_system_contract` is a path dependency inside this repository's workspace, so this crate builds only beside it.
 - Much of the crate describes the QEMU test runs of the stack it was written for (the witnesses, the
   benchmark phases), not a filesystem in general. A third party gets the file names and the shapes as examples.
+- It ships no harness. The programs that drive the witnesses and the benchmarks live with that
+  stack, so a third party gets the vocabulary and nothing to run against it.
 
 ## Minimum Rust version
 

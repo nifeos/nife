@@ -25,62 +25,7 @@ fn the_crash_payloads_replace_each_other_completely() {
     assert_ne!(crash::A, crash::INITIAL);
 }
 
-#[test]
-fn the_escape_bits_are_distinct() {
-    // The attacker reports a bitmap and the test asserts an expected set, so two outcomes
-    // sharing a bit would hide one of them and make a wrong verdict read as a right one.
-    use crate::escape::*;
-    let bits = [
-        SECOND_FILE,
-        WROTE,
-        TRUNCATED,
-        CREATED,
-        FORGED_HANDLE,
-        GRANTED_READ_FAILED,
-        WROTE_ATTRIBUTE,
-        GRANTED_ATTRIBUTES_FAILED,
-    ];
-    let mut seen = 0u64;
-    for b in bits {
-        assert_ne!(b, 0, "zero is the pass; it cannot also be a breach");
-        assert_eq!(seen & b, 0, "two escapes share a bit");
-        seen |= b;
-    }
-}
-
 // --- The directory capability ---
-
-/// The escape bits must not overlap, for the reason the per-file ones must not: the test asserts
-/// an expected set, so two outcomes on one bit make a wrong verdict read as a right one.
-#[test]
-fn the_directory_escape_bits_are_distinct() {
-    use crate::directory_escape::*;
-    let bits = [
-        REACHED_PARENT,
-        REACHED_SIBLING,
-        WALKED_UP,
-        WIDENED,
-        ENUMERATED,
-        DESCENDED,
-        CREATED,
-        WROTE,
-        RENAMED,
-        MADE_A_DIRECTORY,
-        ENUMERATED_A_STRANGER,
-        FORGED_HANDLE,
-        OPENED_ITS_OWN,
-        GRANTED_ACCESS_FAILED,
-        READ_ATTRIBUTES,
-        SET_AN_ATTRIBUTE,
-        REACHED_AN_UNMATCHED_NAME,
-    ];
-    let mut seen = 0u64;
-    for b in bits {
-        assert_ne!(b, 0, "zero is the pass; it cannot also be a breach");
-        assert_eq!(seen & b, 0, "two escapes share a bit");
-        seen |= b;
-    }
-}
 
 /// **The absolute forms of the two probe names are the relative ones with a slash on the
 /// front**, and nothing else. Written down because they are two constants that must agree, and
@@ -91,31 +36,6 @@ fn the_absolute_probe_names_are_the_relative_ones_rooted() {
     use crate::tree::*;
     assert_eq!(ABSOLUTE_INNER, format!("/{INNER}"));
     assert_eq!(ABSOLUTE_SECRET, format!("/{SECRET}"));
-}
-
-/// **The two-grant fixture's bits**, which had no distinctness test of its own at all.
-#[test]
-fn the_two_grant_bits_are_distinct() {
-    use crate::endpoint_boundary::*;
-    // A witness bit of zero turns its probe into one that always passes. Two of these bits are
-    // the structural finding that an endpoint is the boundary.
-    let bits = [
-        OPENED_A,
-        OPENED_B,
-        REACHED_B_VIA_A,
-        REACHED_A_VIA_B,
-        DOT_DOT_CROSSED_MOUNTS,
-        GRANTED_ACCESS_FAILED,
-    ];
-    let mut seen = 0u64;
-    for b in bits {
-        assert_ne!(
-            b, 0,
-            "zero is the empty report; it cannot also be an outcome"
-        );
-        assert_eq!(seen & b, 0, "two two-grant outcomes share a bit");
-        seen |= b;
-    }
 }
 
 /// **Every phase tag the bench boot can be handed has its own name**, and a tag it was not
@@ -145,60 +65,6 @@ fn every_throughput_phase_tag_has_its_own_name() {
     assert_eq!(name(u64::MAX), None);
 }
 
-/// The navigating shell's bits, for the same reason every witness set here has such a test, and
-/// one more that is specific to them: the headline test reads a property off **two** reports, so
-/// a bit that meant two things would let one shell's success stand in for the other's failure.
-#[test]
-fn the_navigation_bits_are_distinct() {
-    use crate::navigation::*;
-    let bits = [
-        PWD_IS_ROOT,
-        CLAMPED_AT_ROOT,
-        WALKED_UP,
-        ABSOLUTE_IS_MY_ROOT,
-        REACHED_INNER,
-        REACHED_SECRET,
-        LISTED,
-        SAW_INNER,
-        SAW_SECRET,
-        DESCENDED,
-        RETURNED,
-        CREATED,
-        MADE_DIRECTORY,
-        UNLINKED,
-        HOLDER_KEPT_READING,
-        NAME_GONE_AFTER_UNLINK,
-        UNLINK_REFUSED_A_DIRECTORY,
-        NAVIGATION_FAILED,
-        RMDIR_REFUSED_NON_EMPTY,
-        RMDIR_REMOVED_EMPTY,
-        ABSOLUTE_REACHED_INNER,
-        ABSOLUTE_REACHED_SECRET,
-        ABSOLUTE_CLAMPED_AT_ROOT,
-        // Every bit `navigation` declares belongs in this list, and nothing checks that a new one is.
-        TOUCH_CREATED,
-        TOUCH_PRESERVED,
-        TOUCH_MODIFICATION_TIME_ADVANCED,
-        TOUCH_AT_ROUND_TRIPPED,
-        TOUCH_NOW_NEEDS_ONLY_WRITE,
-        TOUCH_AT_REFUSED_WITHOUT_SETTIME,
-        // With nothing covering them, `1 << 29`, `1 << 30` and `1 << 31` could each become
-        // `1 >> n`, which is zero, and a witness bit of zero reports nothing while passing.
-        BIND_REACHED_TARGET,
-        BIND_ASCEND_REACHES_REAL_PARENT,
-        BIND_STOPS_AT_TRUE_ROOT,
-    ];
-    let mut seen = 0u64;
-    for b in bits {
-        assert_ne!(
-            b, 0,
-            "zero is the empty report; it cannot also be an outcome"
-        );
-        assert_eq!(seen & b, 0, "two navigation outcomes share a bit");
-        seen |= b;
-    }
-}
-
 // The tests from here down each pin something a mutation run showed nothing pinned. The
 // equivalences (every `|` over disjoint masked fields, where `^` cannot differ) are recorded as
 // such rather than tested.
@@ -213,113 +79,70 @@ fn all_distinct_bits(bits: &[u64]) {
     }
 }
 
-/// Every witness verdict module is distinct single bits. Both ends of each QEMU test build
-/// their words from these same constants, so a shifted-to-zero bit is invisible at runtime:
-/// the claim it carried silently stops being checked. Distinct powers of two here is the
-/// whole defense.
+/// **Every witness's verdict bits are distinct single bits.** A witness reports a bitmap and its
+/// test asserts an exact set, so two outcomes on one bit would make a wrong verdict read as a right
+/// one, and a bit shifted to zero reports nothing while passing. Both ends of each test build their
+/// words from these constants, so a fault here is invisible at run time and this test is the
+/// whole defense. Each module's `ALL` is the one list of its bits.
 #[test]
-fn the_witness_bits_are_distinct_single_bits() {
-    all_distinct_bits(&[
-        crate::escape::SECOND_FILE,
-        crate::escape::WROTE,
-        crate::escape::TRUNCATED,
-        crate::escape::CREATED,
-        crate::escape::FORGED_HANDLE,
-        crate::escape::GRANTED_READ_FAILED,
-        crate::escape::WROTE_ATTRIBUTE,
-        crate::escape::GRANTED_ATTRIBUTES_FAILED,
-    ]);
-    all_distinct_bits(&[
-        crate::directory_escape::REACHED_PARENT,
-        crate::directory_escape::REACHED_SIBLING,
-        crate::directory_escape::WALKED_UP,
-        crate::directory_escape::WIDENED,
-        crate::directory_escape::ENUMERATED,
-        crate::directory_escape::DESCENDED,
-        crate::directory_escape::CREATED,
-        crate::directory_escape::WROTE,
-        crate::directory_escape::RENAMED,
-        crate::directory_escape::ENUMERATED_A_STRANGER,
-        crate::directory_escape::FORGED_HANDLE,
-        crate::directory_escape::GRANTED_ACCESS_FAILED,
-        crate::directory_escape::MADE_A_DIRECTORY,
-        crate::directory_escape::OPENED_ITS_OWN,
-        crate::directory_escape::READ_ATTRIBUTES,
-        crate::directory_escape::SET_AN_ATTRIBUTE,
-        crate::directory_escape::REACHED_AN_UNMATCHED_NAME,
-    ]);
-    all_distinct_bits(&[
-        crate::navigation::PWD_IS_ROOT,
-        crate::navigation::CLAMPED_AT_ROOT,
-        crate::navigation::WALKED_UP,
-        crate::navigation::ABSOLUTE_IS_MY_ROOT,
-        crate::navigation::REACHED_INNER,
-        crate::navigation::REACHED_SECRET,
-        crate::navigation::LISTED,
-        crate::navigation::SAW_INNER,
-        crate::navigation::SAW_SECRET,
-        crate::navigation::DESCENDED,
-        crate::navigation::RETURNED,
-        crate::navigation::CREATED,
-        crate::navigation::MADE_DIRECTORY,
-        crate::navigation::UNLINKED,
-        crate::navigation::HOLDER_KEPT_READING,
-        crate::navigation::NAME_GONE_AFTER_UNLINK,
-        crate::navigation::UNLINK_REFUSED_A_DIRECTORY,
-        crate::navigation::NAVIGATION_FAILED,
-        crate::navigation::RMDIR_REFUSED_NON_EMPTY,
-        crate::navigation::RMDIR_REMOVED_EMPTY,
-        crate::navigation::ABSOLUTE_REACHED_INNER,
-        crate::navigation::ABSOLUTE_REACHED_SECRET,
-        crate::navigation::ABSOLUTE_CLAMPED_AT_ROOT,
-        crate::navigation::TOUCH_CREATED,
-        crate::navigation::TOUCH_PRESERVED,
-        crate::navigation::TOUCH_MODIFICATION_TIME_ADVANCED,
-        crate::navigation::TOUCH_AT_ROUND_TRIPPED,
-        crate::navigation::TOUCH_NOW_NEEDS_ONLY_WRITE,
-        crate::navigation::TOUCH_AT_REFUSED_WITHOUT_SETTIME,
-    ]);
-    all_distinct_bits(&[
-        crate::globbing::EXPANDED,
-        crate::globbing::AGREED,
-        crate::globbing::EXCLUDED_A_STRANGER,
-        crate::globbing::NO_MATCH_REFUSED,
-        crate::globbing::PATTERN_IN_PATH_REFUSED,
-        crate::globbing::TEXT_UNTOUCHED,
-        crate::globbing::GLOB_FAILED,
-    ]);
+fn every_witness_bit_is_a_distinct_single_bit() {
+    let witnesses: [(&str, &[u64]); 7] = [
+        ("escape", &crate::escape::ALL),
+        ("directory_escape", &crate::directory_escape::ALL),
+        ("endpoint_boundary", &crate::endpoint_boundary::ALL),
+        ("mounted_tree", &crate::mounted_tree::ALL),
+        ("navigation", &crate::navigation::ALL),
+        ("globbing", &crate::globbing::ALL),
+        ("attributes", &crate::attributes::ALL),
+    ];
+    for (name, bits) in witnesses {
+        assert!(!bits.is_empty(), "{name} lists no bits");
+        all_distinct_bits(bits);
+    }
 }
 
-/// The attribute claims are distinct single bits, and the eight required ones are bits 0 through 7.
+/// **Each witness's `ALL` names every bit constant its module declares, in declaration order.**
+/// The arrays are written by hand, so this reads the crate's own source and holds each list to the
+/// `pub const NAME: u64 = 1 << n;` lines above it. A bit added to a module and not to its `ALL`
+/// fails here rather than escaping the distinctness test.
 #[test]
-fn the_attribute_claim_bits_are_distinct_and_cover_the_required_eight() {
-    all_distinct_bits(&[
-        crate::attributes::SET_AND_READ_BACK,
-        crate::attributes::LISTED,
-        crate::attributes::SURVIVED_RENAME,
-        crate::attributes::GONE_AFTER_REMOVE,
-        crate::attributes::GONE_AFTER_UNLINK,
-        crate::attributes::OVERSIZE_REFUSED,
-        crate::attributes::STORE_UNNAMEABLE,
-        crate::attributes::STORE_UNLISTED,
-        crate::attributes::ATTRIBUTES_FAILED,
-    ]);
-    assert_eq!(
-        crate::attributes::EXPECTED,
-        crate::attributes::SET_AND_READ_BACK
-            | crate::attributes::LISTED
-            | crate::attributes::SURVIVED_RENAME
-            | crate::attributes::GONE_AFTER_REMOVE
-            | crate::attributes::GONE_AFTER_UNLINK
-            | crate::attributes::OVERSIZE_REFUSED
-            | crate::attributes::STORE_UNNAMEABLE
-            | crate::attributes::STORE_UNLISTED,
-        "the eight required claims, bits 0 through 7"
-    );
-    assert_eq!(crate::attributes::EXPECTED, 255);
+fn every_witness_all_lists_each_bit_its_module_declares() {
+    let source = include_str!("lib.rs");
+    for module in [
+        "escape",
+        "directory_escape",
+        "endpoint_boundary",
+        "mounted_tree",
+        "navigation",
+        "globbing",
+        "attributes",
+    ] {
+        let start = source
+            .find(&format!("\npub mod {module} {{\n"))
+            .expect("module declared");
+        let body = &source[start..start + source[start..].find("\n}\n").expect("module closed")];
+        let (declarations, listed) = body.split_once("    pub const ALL: [u64; ").expect("ALL");
+        let declared: Vec<&str> = declarations
+            .lines()
+            .filter_map(|line| line.strip_prefix("    pub const "))
+            .filter_map(|rest| rest.split_once(": u64 = 1"))
+            .filter(|(_, value)| *value == ";" || value.starts_with(" << "))
+            .map(|(name, _)| name)
+            .collect();
+        let listed: Vec<&str> = listed
+            .lines()
+            .skip(1)
+            .take_while(|line| *line != "    ];")
+            .map(|line| line.trim().trim_end_matches(','))
+            .collect();
+        assert_eq!(
+            listed, declared,
+            "{module}::ALL does not list exactly its declared bits"
+        );
+    }
 }
 
-// ---- survivor triage of the 2026-10-03 census: the shared fixture's arithmetic ---------------
+// ---- the shared fixture's arithmetic ----------------------------------------------------------
 
 /// A sized file's bytes are printable letters cycling through the alphabet, with a newline in
 /// every 64th place. The host check and the guest agree on them without a file, so the pattern
@@ -402,38 +225,6 @@ fn the_walk_totals_are_what_the_shape_adds_up_to() {
     // Four regions at depth 1; chain levels 0..=7 hold two entries at depth i + 2 (2 * (2 + ... + 9)
     // = 88) and the last holds one at depth 10; 132 files at depth 2 in the other regions.
     assert_eq!(WALK_COMPONENTS, 4 + 88 + 10 + 2 * 132);
-}
-
-/// The two-trees report is a bitmap the kernel test compares as an exact set, so every flag has
-/// to be its own single bit. A flag shifted to nothing would be absent from every run and the
-/// set could still match.
-#[test]
-fn every_two_trees_flag_is_its_own_single_bit() {
-    use crate::mounted_tree::*;
-    let flags = [
-        PWD_STARTS_AT_ROOT,
-        LISTED_ROOT,
-        MOVED_INTO_MOUNT,
-        LISTED_MOUNT,
-        OPENED_RELATIVE_IN_MOUNT,
-        OPENED_ROOT_FROM_MOUNT,
-        UP_FROM_MOUNT_IS_PARENT,
-        ROOT_CLAMPED,
-        REDIRECTED_FROM_MOUNT,
-        HOME_IS_ROOT,
-        BOUND_INTO_MOUNT,
-        RM_IN_MOUNT_REFUSED,
-        MOVED_ON_REFUSAL,
-        CLIMBED_OUT,
-        REACHED_ACROSS,
-        TWO_TREES_FAILED,
-    ];
-    let mut seen = 0u64;
-    for f in flags {
-        assert_eq!(f.count_ones(), 1, "{f:#x} is not one bit");
-        assert_eq!(seen & f, 0, "{f:#x} is used twice");
-        seen |= f;
-    }
 }
 
 // --- The directory capability: the fixture against the contract it rides on ---
@@ -553,39 +344,23 @@ fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
 
 // --- Extended attributes ---
 
-/// The attribute witness's bits must not overlap, for the reason every other witness's must not:
-/// the kernel test asserts an exact set, so two outcomes on one bit make a wrong verdict read as
-/// a right one. `EXPECTED` is pinned against them here so the two instruction-set legs cannot assert
-/// something the bits no longer spell.
+/// The attribute witness's `EXPECTED` is every outcome bit and no failure bit, pinned here so the
+/// two instruction-set legs cannot assert something the bits no longer spell.
+/// `every_witness_bit_is_a_distinct_single_bit` checks the bits themselves.
 #[test]
-fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
+fn the_attribute_witness_expectation_matches_its_bits() {
     use file_system_contract::{extended_attribute, grant};
 
     use crate::attributes::*;
-    let bits = [
-        SET_AND_READ_BACK,
-        LISTED,
-        SURVIVED_RENAME,
-        GONE_AFTER_REMOVE,
-        GONE_AFTER_UNLINK,
-        OVERSIZE_REFUSED,
-        STORE_UNNAMEABLE,
-        STORE_UNLISTED,
-        ATTRIBUTES_FAILED,
-    ];
-    let mut seen = 0u64;
-    for b in bits {
-        assert_ne!(
-            b, 0,
-            "zero is the empty report; it cannot also be an outcome"
-        );
-        assert_eq!(seen & b, 0, "two attribute outcomes share a bit");
-        seen |= b;
-    }
+    let seen = ALL.iter().fold(0, |word, bit| word | bit);
     assert_eq!(
         EXPECTED,
         seen & !ATTRIBUTES_FAILED,
         "a correct run reports every outcome and no failure",
+    );
+    assert_eq!(
+        EXPECTED, 0xFF,
+        "the eight required claims are bits 0 through 7"
     );
     // The witness's fixture has to be usable: two distinct names it can create and rename
     // between, and a name and value the store will actually accept.

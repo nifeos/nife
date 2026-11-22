@@ -12,6 +12,8 @@
 //!   crate builds only beside it.
 //! - Much of the crate describes the QEMU test runs of the stack it was written for (the witnesses, the benchmark phases), not
 //!   a filesystem in general. A third party gets the file names and the shapes as examples.
+//! - It ships no harness. The programs that drive the witnesses and the benchmarks live with that
+//!   stack, so a third party gets the vocabulary and nothing to run against it.
 //!
 //! Name: provisional (proposed by block 886, its crate-root name lifted; considered and refused
 //! `filesystem_test_image`, which names the shipped files but not the verdict words or the
@@ -51,8 +53,7 @@ pub const SCRATCH_NAME: &str = "scratch";
 /// Placeholder contents the host tool writes; overwritten by the client's write test.
 ///
 /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
-pub const SCRATCH_PLACEHOLDER: &[u8] =
-    b"(placeholder overwritten by the redoxfs_server write test)";
+pub const SCRATCH_PLACEHOLDER: &[u8] = b"(placeholder overwritten by the client's write test)";
 /// What the client writes to `scratch` and reads back; the host tool re-reads it after the run
 /// to prove the write reached the on-disk image and the filesystem is still consistent.
 pub const WRITE_PATTERN: &[u8] = b"CRKFS_WRITE_OK: this round-tripped through the RedoxFS image\n";
@@ -111,10 +112,12 @@ pub mod throughput {
     /// carry.** It is [`file_system_contract::file_system::MAXIMUM_TRANSFER_BYTES`], so this phase measures the
     /// protocol's own ceiling and the tuning lives at that one constant. A figure here is how fast
     /// this architecture moves one request's worth, so a comparison against a system whose client
-    /// passes a differently sized buffer compares two different things.
+    /// passes a differently sized buffer compares two different things. It is a `u64`, like every
+    /// other size in this module, so the one widening cast is here; a client that needs a buffer
+    /// length narrows it once.
     ///
     /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
-    pub const UNIT_BYTES: usize = file_system_contract::file_system::MAXIMUM_TRANSFER_BYTES;
+    pub const UNIT_BYTES: u64 = file_system_contract::file_system::MAXIMUM_TRANSFER_BYTES as u64;
 
     /// **Bytes moved per phase, held constant across transfer sizes on purpose.** 1 MiB, bounded by
     /// the 16 MiB fixture image rather than chosen for statistics: the write phases fit beside
@@ -127,7 +130,7 @@ pub mod throughput {
     pub const TOTAL_BYTES: u64 = 1024 * 1024;
 
     /// Transfers per phase: [`TOTAL_BYTES`] divided by [`UNIT_BYTES`]. 256 at one page, 16 at sixteen.
-    pub const BLOCKS: u64 = TOTAL_BYTES / UNIT_BYTES as u64;
+    pub const BLOCKS: u64 = TOTAL_BYTES / UNIT_BYTES;
 
     /// **The phase moves exactly [`TOTAL_BYTES`] bytes at every transfer size**, which is what makes a
     /// before and an after on `bench/transfer-size-sweep.sh` a comparison rather than two
@@ -135,7 +138,7 @@ pub mod throughput {
     /// A build is where this has to hold, because the phase runs in user mode where no test does.
     const _: () = {
         assert!(BLOCKS >= 1);
-        assert!(BLOCKS * UNIT_BYTES as u64 == TOTAL_BYTES);
+        assert!(BLOCKS * UNIT_BYTES == TOTAL_BYTES);
         assert!(TOTAL_BYTES.is_multiple_of(RECORD_BYTES));
     };
 
@@ -252,6 +255,22 @@ pub mod escape {
     ///
     /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
     pub const GRANTED_ATTRIBUTES_FAILED: u64 = 1 << 7;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 8] = [
+        SECOND_FILE,
+        WROTE,
+        TRUNCATED,
+        CREATED,
+        FORGED_HANDLE,
+        GRANTED_READ_FAILED,
+        WROTE_ATTRIBUTE,
+        GRANTED_ATTRIBUTES_FAILED,
+    ];
 }
 
 /// The attacker's report leads with this so a silent client (a trapped one) cannot be mistaken
@@ -385,7 +404,7 @@ pub mod tree {
     pub const NAVIGATION_TOUCH_AT_UNIX_SECONDS: u64 = 1_893_456_000;
     /// The fresh directory the navigating witness mints with `MKDIR`, attenuated to `WRITE` and
     /// not `SET_MODIFICATION_TIME_AT`, to prove `touch -t` needs the right through the real wire and not only in
-    /// `redoxfs_server`'s own host tests. Ten bytes plus a run digit, `run_name`'s bound.
+    /// the filesystem server's own host tests. Ten bytes plus a run digit, `run_name`'s bound.
     ///
     /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
     pub const NAVIGATION_TOUCH_NO_SETTIME: &str = "nav-notime";
@@ -841,7 +860,7 @@ pub mod directory_escape {
     /// Expected only with [`file_system_contract::directory::rights::WRITE`], which is [`WROTE`]'s rule applied to the
     /// third way of changing a file.
     ///
-    /// The interesting part is *who* enforces it: `fs_subtree_caretaker` performs no check, so
+    /// The interesting part is *who* enforces it: the subtree caretaker performs no check, so
     /// this bit is a statement about the handle the filesystem server minted from the caretaker's one
     /// `OPENDIR`. A file handle inherits `READ`/`WRITE` from the directory it was opened
     /// through, so a read-only subtree grant is refused by the server rather than by a branch in
@@ -858,9 +877,34 @@ pub mod directory_escape {
     /// `READ`, because the set proxy serves four verbs that read and it
     /// would be a poor trade to close an attribute gap by opening a naming one.
     pub const REACHED_AN_UNMATCHED_NAME: u64 = 1 << 16;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 17] = [
+        REACHED_PARENT,
+        REACHED_SIBLING,
+        WALKED_UP,
+        WIDENED,
+        ENUMERATED,
+        DESCENDED,
+        CREATED,
+        MADE_A_DIRECTORY,
+        WROTE,
+        RENAMED,
+        ENUMERATED_A_STRANGER,
+        FORGED_HANDLE,
+        OPENED_ITS_OWN,
+        GRANTED_ACCESS_FAILED,
+        READ_ATTRIBUTES,
+        SET_AN_ATTRIBUTE,
+        REACHED_AN_UNMATCHED_NAME,
+    ];
 }
 
-/// **What the two-directory witness reports**: one process, two `fs_subtree_caretaker`s,
+/// **What the two-directory witness reports**: one process, two subtree caretakers,
 /// two capability table slots, and the negative control that only a union of two grants can state.
 ///
 /// A bitmap for [`directory_escape`]'s reason: the test asserts an *exact* set, so a witness that
@@ -895,10 +939,24 @@ pub mod endpoint_boundary {
     /// grant that reaches nothing is trivially unescapable, the same caveat every other
     /// witness in this module carries.
     pub const GRANTED_ACCESS_FAILED: u64 = 1 << 5;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 6] = [
+        OPENED_A,
+        OPENED_B,
+        REACHED_B_VIA_A,
+        REACHED_A_VIA_B,
+        DOT_DOT_CROSSED_MOUNTS,
+        GRANTED_ACCESS_FAILED,
+    ];
 }
 
 /// **What a shell holding two trees reports**, the live half of holding two directory
-/// capabilities: the real `swish` builtins, `cd`, `pwd`, `ls`, `bind` and a
+/// capabilities: the real shell builtins `cd`, `pwd`, `ls` and `bind`, and a
 /// planned `<`, run over two live caretakers, the first over [`tree::SUB`] and the second over
 /// [`tree::OTHER`], mounted at [`mounted_tree::MOUNT`] in the first.
 ///
@@ -953,6 +1011,30 @@ pub mod mounted_tree {
     pub const REACHED_ACROSS: u64 = 1 << 18;
     /// Nothing reachable was reached, so nothing above was proven.
     pub const TWO_TREES_FAILED: u64 = 1 << 19;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 16] = [
+        PWD_STARTS_AT_ROOT,
+        LISTED_ROOT,
+        MOVED_INTO_MOUNT,
+        LISTED_MOUNT,
+        OPENED_RELATIVE_IN_MOUNT,
+        OPENED_ROOT_FROM_MOUNT,
+        UP_FROM_MOUNT_IS_PARENT,
+        ROOT_CLAMPED,
+        REDIRECTED_FROM_MOUNT,
+        HOME_IS_ROOT,
+        BOUND_INTO_MOUNT,
+        RM_IN_MOUNT_REFUSED,
+        MOVED_ON_REFUSAL,
+        CLIMBED_OUT,
+        REACHED_ACROSS,
+        TWO_TREES_FAILED,
+    ];
 }
 
 /// **What a navigating shell reports**.
@@ -1064,7 +1146,7 @@ pub mod navigation {
     /// bit mean the caller's assertion moved rather than the server's own clock.
     pub const TOUCH_AT_ROUND_TRIPPED: u64 = 1 << 26;
     /// **A directory handle carrying `WRITE` and not `SET_MODIFICATION_TIME_AT` still bumped a name's mtime to
-    /// now**, through the real wire and the real `fs_subtree_caretaker`, not just the
+    /// now**, through the real wire and a real subtree caretaker, not just the
     /// filesystem server's in-process host tests. The rule that plain `WRITE` covers
     /// "now", made a measurement one layer further out: a bug in `verb::TABLE`'s row for
     /// `SET_MODIFICATION_TIME` (the wrong `needs_all`, or an off-by-one index after `SYNC`'s row was
@@ -1094,13 +1176,53 @@ pub mod navigation {
     /// walk to the same depth would have: the negative control that a bind cannot manufacture
     /// either more reach or a new boundary, only a second name for a position already held.
     pub const BIND_STOPS_AT_TRUE_ROOT: u64 = 1 << 31;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 32] = [
+        PWD_IS_ROOT,
+        CLAMPED_AT_ROOT,
+        WALKED_UP,
+        ABSOLUTE_IS_MY_ROOT,
+        REACHED_INNER,
+        REACHED_SECRET,
+        LISTED,
+        SAW_INNER,
+        SAW_SECRET,
+        DESCENDED,
+        RETURNED,
+        CREATED,
+        MADE_DIRECTORY,
+        UNLINKED,
+        HOLDER_KEPT_READING,
+        NAME_GONE_AFTER_UNLINK,
+        UNLINK_REFUSED_A_DIRECTORY,
+        NAVIGATION_FAILED,
+        RMDIR_REFUSED_NON_EMPTY,
+        RMDIR_REMOVED_EMPTY,
+        ABSOLUTE_REACHED_INNER,
+        ABSOLUTE_REACHED_SECRET,
+        ABSOLUTE_CLAMPED_AT_ROOT,
+        TOUCH_CREATED,
+        TOUCH_PRESERVED,
+        TOUCH_MODIFICATION_TIME_ADVANCED,
+        TOUCH_AT_ROUND_TRIPPED,
+        TOUCH_NOW_NEEDS_ONLY_WRITE,
+        TOUCH_AT_REFUSED_WITHOUT_SETTIME,
+        BIND_REACHED_TARGET,
+        BIND_ASCEND_REACHES_REAL_PARENT,
+        BIND_STOPS_AT_TRUE_ROOT,
+    ];
 }
 
 /// **What the globbing witness reports**: a bitmap, for the same
 /// reason every other witness here reports one, and with the same vacuity control at the end.
 ///
 /// The shell it runs in holds a real directory capability served by a real
-/// `fs_subtree_caretaker`, so what is under test is the prompt's own expansion path over a real
+/// subtree caretaker, so what is under test is the prompt's own expansion path over a real
 /// `READDIR`, not a reimplementation of it.
 ///
 /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
@@ -1127,6 +1249,21 @@ pub mod globbing {
     /// Something that should have worked did not, so nothing above proves anything. Always a
     /// failure.
     pub const GLOB_FAILED: u64 = 1 << 6;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 7] = [
+        EXPANDED,
+        AGREED,
+        EXCLUDED_A_STRANGER,
+        NO_MATCH_REFUSED,
+        PATTERN_IN_PATH_REFUSED,
+        TEXT_UNTOUCHED,
+        GLOB_FAILED,
+    ];
 }
 
 /// **What the extended-attribute witness reports**, a bitmap for the reason every
@@ -1172,6 +1309,23 @@ pub mod attributes {
     ///
     /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
     pub const ATTRIBUTES_FAILED: u64 = 1 << 8;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 9] = [
+        SET_AND_READ_BACK,
+        LISTED,
+        SURVIVED_RENAME,
+        GONE_AFTER_REMOVE,
+        GONE_AFTER_UNLINK,
+        OVERSIZE_REFUSED,
+        STORE_UNNAMEABLE,
+        STORE_UNLISTED,
+        ATTRIBUTES_FAILED,
+    ];
 
     /// What a correct run reports, stated once so the two instruction-set legs' assertions cannot drift.
     /// The eight required claims, bits 0 through 7; a test holds it equal to their union.
