@@ -106,8 +106,9 @@ decisions](#ruled-decisions). The crate lives in `nifeos/device_tree_blob`.
 - F-move, the repository: Done, [#3833](https://github.com/nifeos/nife/pull/3833). The repository is
   `nifeos/device_tree_blob`, with `publish = false`, no tag and no publication, and nife pins a
   commit of its `main`.
-- BUGS-239, milestone 239 gives the depth bound as a `MAX_DEPTH` of 16: Done,
-  [#3954](https://github.com/nifeos/nife/pull/3954). It names `MAXIMUM_DEPTH`, 64.
+- BUGS-239, milestone 239 (radon's device tree does not describe the TRNG) gives the depth bound
+  as a `MAX_DEPTH` of 16: Done, [#3954](https://github.com/nifeos/nife/pull/3954). It names
+  `MAXIMUM_DEPTH`, 64.
 
 ## Ruled decisions
 
