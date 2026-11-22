@@ -86,7 +86,7 @@ The badged copy, as chosen above, with one change to its shape: the discipline s
 holder an **allowlist** (`OP_RAWMODE`, `OP_READRAW`) rather than refusing a list, so `OP_WRITE`,
 `OP_INTRCOUNT`, `OP_QUIESCE` and any request added later are refused too.
 
-- `crates/line_editor`: `proto::RAW_ONLY_BADGE` (provisional name). The rule is any non-zero badge,
+- `line_editor`: `proto::RAW_ONLY_BADGE` (provisional name). The rule is any non-zero badge,
   so the discipline holds no table; the value only makes the minting site and the test agree.
 - `components/src/line_editor.rs`: the guard ahead of the dispatch, reading the badge
   `recv_request` already returned.

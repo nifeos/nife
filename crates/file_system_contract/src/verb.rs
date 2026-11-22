@@ -10,8 +10,8 @@ pub enum Operand {
     /// have some later server give it a meaning.
     None,
     /// A **directory name**, `request_length_bytes` bytes at the start of the shared page, resolved under the
-    /// request's handle. This is the operand a name filter applies to, and the only one:
-    /// `fs_nameset_caretaker` asks its question exactly when this is the shape.
+    /// request's handle. This is the operand a name filter applies to, and the only one: a
+    /// name-set caretaker asks its question exactly when this is the shape.
     Name,
     /// `request_length_bytes` bytes of **payload** that are not a directory name: file data
     /// ([`file_system::READ`]/[`file_system::WRITE`]), or an attribute name and value. Forwarded verbatim, and
@@ -60,8 +60,8 @@ impl Verb {
     }
 
     /// Whether the operand is a name in the namespace a caretaker narrows. **This is what a
-    /// name filter keys off**, and the reason it is a table field rather than a list inside
-    /// `fs_nameset_caretaker`: a name-taking verb added to the contract is filtered from the
+    /// name filter keys off**, and the reason it is a table field rather than a list inside a
+    /// name-set caretaker: a name-taking verb added to the contract is filtered from the
     /// moment its row exists, instead of from the moment somebody remembers.
     pub const fn takes_name(&self) -> bool {
         matches!(self.operand, Operand::Name | Operand::Rename)
@@ -119,13 +119,13 @@ pub const LAST: u64 = file_system::NARROW;
 /// **Every verb the file-service contract carries, in opcode order.**
 ///
 /// The rights column is the server's, copied from the doc comment on each opcode in [`file_system`] and
-/// checked against the server's behavior by `redoxfs_server`'s own tests. It is here because a proxy
+/// checked against the server's behavior by the server's own tests. It is here because a proxy
 /// that knows a verb mutates can refuse it without having to know what mutating means.
 pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
     // OPEN's requirement is "READ or WRITE", the one any-of in the contract, so it is the one
     // row built by hand rather than by `row`.
-    // Its second word is the per-step rights request a relative path descends with (milestone
-    // 606, ruling A), so a caretaker must forward it.
+    // Its second word is the per-step rights request a relative path descends with, so a
+    // caretaker must forward it.
     Verb {
         operation: file_system::OPEN,
         name: "OPEN",
@@ -263,7 +263,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
     ),
     // GET_VOLUME_STATISTICS names a handle and nothing else: no operand, no second word, no right. The reply
     // fills the shared page, which costs a proxy nothing because the page is the one all three
-    // parties already share (see `fs_subtree_caretaker`'s `PAGE_VA`).
+    // parties already share.
     row(
         file_system::GET_VOLUME_STATISTICS,
         "GET_VOLUME_STATISTICS",
@@ -364,7 +364,7 @@ pub(crate) const fn is_in_opcode_order(table: &[Verb]) -> bool {
 /// **What a per-file grant answers for each verb**.
 ///
 /// This one caretaker needs a policy and the other two do not, and the asymmetry is the design
-/// rather than an accident. `fs_subtree_caretaker` and `fs_nameset_caretaker` serve the
+/// rather than an accident. The subtree and name-set caretakers serve the
 /// *directory* protocol their client speaks, so every verb means what it always meant and the
 /// attenuation lives elsewhere (in the handle the server minted, and in a name filter). A file
 /// capability is a **different protocol**: it has no namespace to enumerate, nothing to create a

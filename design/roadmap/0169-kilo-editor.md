@@ -5,7 +5,7 @@ built: 2026-08-27
 ---
 # 169. `kilo`: the smallest real text editor, as the forcing function for raw terminal input
 
-Built, 2026-08-27: the raw-keystroke primitive (`OP_RAWMODE`/`OP_READRAW`, `crates/line_editor`) is
+Built, 2026-08-27: the raw-keystroke primitive (`OP_RAWMODE`/`OP_READRAW`, `line_editor`) is
 built and proven by the raw-mode tests. No editor program ships in this tree. DECISIONS §31's
 foreign-language seam as built is a one-shot call. It cannot support `kilo`'s own blocking event
 loop without new seam infrastructure (that infrastructure is

@@ -1,12 +1,11 @@
-//! **Navigation in a system with no global namespace** (milestone 47's commands).
+//! **Navigation in a system with no global namespace**.
 //!
 //! The pure half of the `cd`, `pwd` and `ls` builtins, which spawn nothing and confer no new
 //! authority: the shell rebinds a directory capability it already holds. A name resolves once, at
 //! the prompt, into a value ([`crate::FileGrant`]), so a child has no cwd to inherit. `/` is the
 //! root of *your* namespace ([`Path::is_from_root`]), `..` stops at it ([`DirectoryPath::ascend`]), and `pwd`
 //! renders relative to it ([`DirectoryPath::render`]), so every shell has its own root. [`TwoRoots`] and
-//! [`Bindings`] compose a second root and named positions. See notes/shell-navigation.md and
-//! notes/grant-expression/grant-plan-crate.md ("Navigation").
+//! [`Bindings`] compose a second root and named positions.
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, spelled out.
 
@@ -111,10 +110,9 @@ pub enum Step<'a> {
 ///
 /// Validation is up front and total, so `cd a/b/c` fails at the prompt when `c` is unnameable rather
 /// than half way through, having already moved. The shell then walks the steps one at a time,
-/// because **the FS contract takes a single component per request** and this is where the roadmap's
+/// because **the filesystem contract takes a single component per request**, and this is where
 /// "the resolver lives in the client's runtime" is actually true: the server never sees a path, and
-/// §27's rule that open-by-path exists only inside a server, relative to one bound directory, holds
-/// exactly as it did.
+/// open-by-path exists only inside a server, relative to one bound directory.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Path<'a> {
     steps: [Step<'a>; MAXIMUM_DEPTH],
@@ -151,7 +149,7 @@ impl<'a> Path<'a> {
     }
 }
 
-/// Parse a token into a [`Path`], with no IO and no capability consulted.
+/// Parse a token into a [`Path`], with no input or output and no capability consulted.
 ///
 /// Empty components are skipped, so `a//b` and `deeper/` mean what they do everywhere else; that is
 /// Unix's behavior and there is no divergence to earn. A leading `/` sets [`Path::is_from_root`],
@@ -197,7 +195,7 @@ pub fn path(token: &[u8]) -> Result<Path<'_>, PathRefusal> {
     })
 }
 
-/// Whether one component can be a name at all. The same rule the FS server enforces at its own
+/// Whether one component can be a name at all. The same rule the filesystem server enforces at its own
 /// boundary (`check_component`), stated here so the shell refuses at the prompt rather than sending
 /// a request it knows will be `EINVAL`.
 ///
@@ -308,10 +306,9 @@ impl DirectoryPath {
     /// there is nothing to pop and no request to send.
     ///
     /// **The popped component is zeroed, not just forgotten**, so one place has one representation
-    /// and the derived `PartialEq` means "the same position". Before milestone 154 (a process that
-    /// holds two directory capabilities) it only decremented the depth, and `/logs` reached by
-    /// `cd logs/x; cd ..` compared unequal to `/logs` reached directly, because the stale `x` was
-    /// still in the array behind the depth.
+    /// and the derived `PartialEq` means "the same position". Were it only to decrement the depth,
+    /// `/logs` reached by `cd logs/x; cd ..` would compare unequal to `/logs` reached directly,
+    /// because the stale `x` would still be in the array behind the depth.
     pub fn ascend(&mut self) -> bool {
         if self.depth == 0 {
             return false;
@@ -413,14 +410,11 @@ impl DirectoryPath {
     }
 }
 
-/// **Two directory capabilities, composed under two labels** (milestone 154 (a process that holds
-/// two directory capabilities)). Provisional name and shape, named in the milestone's own report
-/// rather than ratified.
+/// **Two directory capabilities, composed under two labels.**
 ///
 /// A label selects one grant's root by exact match on an absolute path's first component, and
 /// nothing later re-selects. Past the label a path resolves as a single [`DirectoryPath`] does, so `..` stops
-/// at that grant's own root and `/a/../b` is refused. It is not `bind`'s ordered union. See
-/// notes/grant-expression/grant-plan-crate.md ("Navigation").
+/// at that grant's own root and `/a/../b` is refused. It is not `bind`'s ordered union.
 ///
 /// Name: ratified 2026-11-20 (UTC).
 pub struct TwoRoots<'a> {
@@ -496,8 +490,7 @@ impl<'a> TwoRoots<'a> {
         )
     }
 
-    /// **A two-grant shell's real, single, moving position** (DECISIONS §126,
-    /// design/decisions/0126-two-directory-cwd.md), built on [`TwoRoots::resolve`] and
+    /// **A two-grant shell's real, single, moving position**, built on [`TwoRoots::resolve`] and
     /// [`DirectoryPath::resolve`] rather than reimplementing either.
     ///
     /// A relative `token` resolves against `pos` in tree `side`, as for one grant; an absolute one
@@ -506,14 +499,14 @@ impl<'a> TwoRoots<'a> {
     pub fn resolve_from(
         &self,
         side: GrantSide,
-        pos: DirectoryPath,
+        position: DirectoryPath,
         token: &[u8],
     ) -> Result<(GrantSide, DirectoryPath), PathRefusal> {
         let p = path(token)?;
         if p.is_from_root() {
             self.resolve_absolute(&p)
         } else {
-            Ok((side, pos.resolve(&p)?))
+            Ok((side, position.resolve(&p)?))
         }
     }
 
@@ -522,12 +515,12 @@ impl<'a> TwoRoots<'a> {
     pub fn apply_from(
         &self,
         side: &mut GrantSide,
-        pos: &mut DirectoryPath,
+        position: &mut DirectoryPath,
         token: &[u8],
     ) -> Result<(), PathRefusal> {
-        let (w, p) = self.resolve_from(*side, *pos, token)?;
+        let (w, p) = self.resolve_from(*side, *position, token)?;
         *side = w;
-        *pos = p;
+        *position = p;
         Ok(())
     }
 }
@@ -569,7 +562,7 @@ pub enum BindRefusal {
     /// The token is not a single nameable component: empty, too long, or carrying `/`.
     NotAName,
     /// This name is already bound. `bind` does not silently replace an entry, because a rebind a
-    /// user did not intend is exactly the kind of quiet authority change §42 refuses elsewhere;
+    /// user did not intend is exactly the kind of quiet authority change refused elsewhere;
     /// unbinding first is one more word and never an ambiguity.
     AlreadyBound,
     /// [`MAXIMUM_BINDS`] entries are already in use.
@@ -597,7 +590,7 @@ impl BindRefusal {
 /// [`DirectoryPath`]'s own shape. A [`BindEntry`] is a value, a [`DirectoryPath`] under a name, with no capability slot
 /// and no lifetime, and it resolves through [`DirectoryPath::apply`], so a bound name reaches nothing a
 /// direct walk could not. One entry per name: a second bind of a name is refused, never shadowing.
-/// See notes/grant-expression/grant-plan-crate.md ("Navigation").
+///
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Bindings {
     entries: [Option<BindEntry>; MAXIMUM_BINDS],
@@ -620,7 +613,7 @@ impl Bindings {
 
     /// Bind `name` to `pos`, a path in the one tree the shell presents. Refuses a name that cannot be a component, one already
     /// bound, or a full table; never overwrites.
-    pub fn add(&mut self, name: &[u8], pos: DirectoryPath) -> Result<(), BindRefusal> {
+    pub fn add(&mut self, name: &[u8], position: DirectoryPath) -> Result<(), BindRefusal> {
         if !is_valid_component(name) || name.len() > MAXIMUM_BOUND_NAME_BYTES {
             return Err(BindRefusal::NotAName);
         }
@@ -637,7 +630,7 @@ impl Bindings {
         *slot = Some(BindEntry {
             name: packed,
             name_length_bytes: name.len() as u8,
-            position: pos,
+            position,
         });
         Ok(())
     }
@@ -674,8 +667,8 @@ impl Bindings {
     /// underneath). `None` when the label matches no bound entry.
     pub fn resolve_absolute(&self, p: &Path<'_>) -> Option<Result<DirectoryPath, PathRefusal>> {
         let (base, rest) = self.split_absolute(p)?;
-        let mut pos = base;
-        Some(pos.apply(rest).map(|_| pos))
+        let mut position = base;
+        Some(position.apply(rest).map(|_| position))
     }
 }
 
@@ -722,7 +715,7 @@ mod tests {
     }
 
     /// Two routes to one position compare equal, which the derived `PartialEq` only promises if
-    /// [`DirectoryPath::ascend`] leaves no stale component behind (milestone 154 found that it did).
+    /// [`DirectoryPath::ascend`] leaves no stale component behind.
     #[test]
     fn two_routes_to_one_position_are_equal() {
         let mut direct = DirectoryPath::root();
@@ -858,7 +851,7 @@ mod tests {
 
     /// **`..` stops at your root**, which is the divergence and the safety property in one line. It
     /// is not a check on a path: at the root there is no capability to pop, so there is nothing to
-    /// get wrong, and no request is sent for the FS server to have to refuse.
+    /// get wrong, and no request is sent for the filesystem server to have to refuse.
     #[test]
     fn dot_dot_clamps_at_your_root_and_never_climbs_out() {
         let mut working_directory = DirectoryPath::root();
@@ -980,7 +973,7 @@ mod tests {
         }
     }
 
-    /// The component rules, which are the FS server's own, checked at the prompt so a request that
+    /// The component rules, which are the filesystem server's own, checked at the prompt so a request that
     /// cannot succeed is never sent.
     #[test]
     fn a_component_that_cannot_be_a_name_is_refused_before_anything_is_sent() {
@@ -1087,8 +1080,8 @@ mod tests {
         assert_eq!(working_directory.render(&mut none), 0);
     }
 
-    /// **`/a/x` and `/b/y` both resolve, to the grant their own label names.** This is milestone
-    /// 154's deliverable in its own words, checked as pure logic before any capability exists.
+    /// **`/a/x` and `/b/y` both resolve, to the grant their own label names**, checked as pure
+    /// logic before any capability exists.
     #[test]
     fn each_label_reaches_its_own_grant_and_only_its_own_grant() {
         let roots = TwoRoots::new(b"a", b"b");
@@ -1147,17 +1140,17 @@ mod tests {
         assert_eq!(working_directory.component(0), b"y");
     }
 
-    // ---- DECISIONS §126: the real, single, moving `(which, pos)` cwd ----
+    // ---- The real, single, moving `(which, position)` working directory ----
 
     /// **A bare relative name resolves against `pos` inside whichever tree `side` currently
     /// names**, identical to a one-grant [`DirectoryPath::resolve`], parameterized by which tree.
     #[test]
     fn a_relative_token_resolves_inside_the_current_tree() {
         let roots = TwoRoots::new(b"a", b"b");
-        let mut pos = DirectoryPath::root();
-        pos.descend(b"here");
+        let mut position = DirectoryPath::root();
+        position.descend(b"here");
         let (side, next) = roots
-            .resolve_from(GrantSide::Second, pos, b"deeper")
+            .resolve_from(GrantSide::Second, position, b"deeper")
             .unwrap();
         assert_eq!(
             side,
@@ -1168,13 +1161,13 @@ mod tests {
     }
 
     /// **An absolute path both resolves and moves between trees**: `cd /b/somewhere` from
-    /// anywhere works with no new verb, exactly as §126 describes.
+    /// anywhere works with no new verb.
     #[test]
     fn an_absolute_token_moves_to_the_tree_it_names() {
         let roots = TwoRoots::new(b"a", b"b");
-        let pos = DirectoryPath::root();
+        let position = DirectoryPath::root();
         let (side, next) = roots
-            .resolve_from(GrantSide::First, pos, b"/b/elsewhere")
+            .resolve_from(GrantSide::First, position, b"/b/elsewhere")
             .unwrap();
         assert_eq!(side, GrantSide::Second);
         assert_pwd(&next, b"/elsewhere");
@@ -1192,24 +1185,26 @@ mod tests {
         );
         // One level down and back up composes normally, same as a single grant.
         let mut side = GrantSide::First;
-        let mut pos = DirectoryPath::root();
-        roots.apply_from(&mut side, &mut pos, b"/a/sub").unwrap();
-        roots.apply_from(&mut side, &mut pos, b"..").unwrap();
+        let mut position = DirectoryPath::root();
+        roots
+            .apply_from(&mut side, &mut position, b"/a/sub")
+            .unwrap();
+        roots.apply_from(&mut side, &mut position, b"..").unwrap();
         assert_eq!(side, GrantSide::First);
-        assert_pwd(&pos, b"/");
+        assert_pwd(&position, b"/");
     }
 
     /// **The starting position is the first-listed grant's own root** (`which = A`), matching the
-    /// "slot 0 is always the first grant" precedent milestone 154 already established: a relative
+    /// "slot 0 is always the first grant" precedent: a relative
     /// token typed from the start resolves inside `a`, with nothing special about the start
     /// beyond being where a fresh two-grant holder stands.
     #[test]
     fn the_starting_position_is_grant_as_own_root() {
         let roots = TwoRoots::new(b"a", b"b");
         let start = (GrantSide::First, DirectoryPath::root());
-        let (side, pos) = roots.resolve_from(start.0, start.1, b"x").unwrap();
+        let (side, position) = roots.resolve_from(start.0, start.1, b"x").unwrap();
         assert_eq!(side, GrantSide::First);
-        assert_eq!(pos.component(0), b"x");
+        assert_eq!(position.component(0), b"x");
     }
 
     /// [`TwoRoots::apply_from`] is all-or-nothing, [`DirectoryPath::apply`]'s own rule composed rather than
@@ -1218,24 +1213,24 @@ mod tests {
     fn apply_from_moves_nothing_on_a_refusal() {
         let roots = TwoRoots::new(b"a", b"b");
         let mut side = GrantSide::First;
-        let mut pos = DirectoryPath::root();
-        pos.descend(b"sub");
+        let mut position = DirectoryPath::root();
+        position.descend(b"sub");
         assert_eq!(
-            roots.apply_from(&mut side, &mut pos, b".."),
+            roots.apply_from(&mut side, &mut position, b".."),
             Ok(()),
             "one legal ascent",
         );
         assert_eq!(side, GrantSide::First);
-        assert_pwd(&pos, b"/");
+        assert_pwd(&position, b"/");
         assert_eq!(
-            roots.apply_from(&mut side, &mut pos, b".."),
+            roots.apply_from(&mut side, &mut position, b".."),
             Err(PathRefusal::AtYourRoot),
         );
         assert_eq!(side, GrantSide::First, "a refusal moved nothing");
-        assert_pwd(&pos, b"/");
+        assert_pwd(&position, b"/");
     }
 
-    // ---- `bind`: a value under a name, milestone 47's own sketch ----
+    // ---- `bind`: a value under a name ----
 
     /// **A bound entry resolves as the position it was given**, no more and no less: the whole of
     /// "a bind entry is a value, not a capability."
