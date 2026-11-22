@@ -250,7 +250,8 @@ it. That ruling is not the adoption ruling above, which stays open.
 - **Outstanding.** The upstream round: the two bug fixes, the recovery-flag order, the fuzz
   targets, the mount's error report and whole times in `InodeInfo`. Each text goes to the
   architect before anyone files it.
-- **Outstanding.** Items 5 and 6 await review. The
+- **Outstanding.** Items 5 and 6 await review, listed with the other
+  [upstream drafts](0190-ext4-read-write/upstream/README.md). The
   [unsafe review](0190-ext4-read-write/upstream/5-unsafe-review.md) holds the safety arguments and
   the cast replacement as a patch, and the
   [Kani harnesses draft](0190-ext4-read-write/upstream/6-kani-harnesses.md) offers the harnesses
