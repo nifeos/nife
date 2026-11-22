@@ -877,6 +877,67 @@ def build(into, manifest, targets, work, report):
         report('FAIL' if code else 'ok', 'build', f'{t} on {toolchain}' + (f': {tail(out)}' if code else ''))
 
 
+def clippy(into, tree, targets, work, report, toolchain='stable'):
+    """The template's `clippy` job over the staged crate: host, each bare-metal target, `--cfg kani`.
+
+    The job gates on stable with `-D warnings`, while nife's own gate runs clippy on its pinned
+    nightly, so a lint that only stable fires (`clippy::doc_markdown` over a bare `x86_64`) reaches
+    the new repository red unless the dry run runs the same three passes.
+    """
+    env = dict(os.environ, CARGO_TARGET_DIR=os.path.join(work, 'target-clippy'))
+    env.pop('RUSTUP_TOOLCHAIN', None)
+    code, out = run(['cargo', f'+{toolchain}', 'clippy', '--version'], into, env)
+    if code:
+        report('FAIL', 'clippy', f'clippy on {toolchain} is not installed: '
+                                 f'rustup component add clippy --toolchain {toolchain}')
+        return
+    passes = [('host, all targets', ['--all-targets'])]
+    passes += [(t, ['--target', t, '--lib', '--bins']) for t in targets]
+    for label, argv in passes:
+        code, out = run(['cargo', f'+{toolchain}', 'clippy', '--quiet'] + argv + ['--', '-D', 'warnings'],
+                        into, env)
+        report('FAIL' if code else 'ok', 'clippy', f'{label} on {toolchain}' + (f': {tail(out)}' if code else ''))
+    shim_source = os.path.join(tree, 'helpers', 'kani-lint-shim')
+    if not os.path.isdir(shim_source):
+        report('note', 'clippy (--cfg kani)', 'the pinned template has no kani-lint-shim, so it runs no such pass')
+        return
+    shim = os.path.join(work, 'kani-lint-shim')
+    os.makedirs(shim, exist_ok=True)
+    attributes = os.path.join(shim_source, 'kani_attributes.rs')
+    code, name = run(['rustc', f'+{toolchain}', '--print', 'file-names', '--crate-type', 'proc-macro',
+                      '--crate-name', 'kani_attributes', attributes], into, env)
+    steps = [['rustc', f'+{toolchain}', '--edition', '2024', '--crate-type', 'proc-macro',
+              '--crate-name', 'kani_attributes', attributes, '--out-dir', shim],
+             ['rustc', f'+{toolchain}', '--edition', '2024', '--crate-type', 'lib', '--crate-name', 'kani',
+              os.path.join(shim_source, 'kani.rs'), '--extern',
+              f'kani_attributes={os.path.join(shim, name)}', '--out-dir', shim]]
+    for step in ([] if code else steps):
+        code, out = run(step, into, env)
+        if code:
+            break
+    if code:
+        report('FAIL', 'clippy (--cfg kani)', f'cannot build the template\'s kani-lint-shim: {tail(out)}')
+        return
+    code, out = run(['cargo', f'+{toolchain}', 'clippy', '--quiet', '--all-targets', '--', '--cfg', 'kani',
+                     '--extern', f'kani={os.path.join(shim, "libkani.rlib")}', '-L', shim, '-D', 'warnings'],
+                    into, env)
+    report('FAIL' if code else 'ok', 'clippy (--cfg kani)', f'on {toolchain}' + (f': {tail(out)}' if code else ''))
+
+
+# A path into this tree outside the crate's own directory. The staging step has already made every
+# path into the crate's own directory repository-relative, so a `crates/...` path left in the
+# staged copy names a file the new repository does not hold. A path needs a second segment or an
+# extension, so prose such as "kernel/user" is not one.
+TREE_PATH = re.compile(r'(?<![\w/.])(?:crates|kernel|xtask|system_tests|components|patches)'
+                       r'/[\w-]+(?:/[\w.-]+|\.\w+)')
+
+
+def tree_paths(texts):
+    """['path:line'] of each line in {relative path: text} that names a path into this tree."""
+    return [f'{f}:{n}' for f, t in sorted(texts.items())
+            for n, line in enumerate(t.split('\n'), 1) if TREE_PATH.search(line)]
+
+
 def checks(into, tree, rev, report, own=frozenset(), crate=None):
     """The template's cheap checks, then the two rules the template does not hold.
 
@@ -919,7 +980,11 @@ def checks(into, tree, rev, report, own=frozenset(), crate=None):
     for suffix, part in split_own(texts, own):
         for _step, why in crate_release.citation_findings(part):
             report('FAIL', 'citations' + suffix, why)
-        hits = [f'{f}:{n}' for f, t in sorted(part.items()) for n in nife_mentions(t)]
+        paths = tree_paths(part)
+        if paths:
+            report('FAIL', 'citations' + suffix, f'{len(paths)} path outside the crate line(s), '
+                                                 f'first {", ".join(paths[:4])}')
+        hits =[f'{f}:{n}' for f, t in sorted(part.items()) for n in nife_mentions(t)]
         if hits:
             report('FAIL', 'mentions nife' + suffix, f'{len(hits)} line(s), first {", ".join(hits[:4])}')
         else:
@@ -1166,6 +1231,11 @@ def selftest():
     assert standalone_helpers(job) == ['readme_test_counts', 'register_names', 'spelled_out'], \
         standalone_helpers(job)
     assert standalone_helpers('jobs:\n  other:\n') == []
+    publish = 'publish = false  # the allowlist lint holds the exception (crates/publish-allowlist.txt)'
+    assert tree_paths({'Cargo.toml': 'x\n' + publish}) == ['Cargo.toml:2']
+    assert tree_paths({'a.md': 'see kernel/src/user/loader.rs'}) == ['a.md:1']
+    assert tree_paths({'a.md': 'the kernel/user boundary, ../crates/x, `falsifications/a.patch`'}) == []
+    assert tree_paths({'a.md': 'xcrates/y/z.rs and fuzz/src/a.rs'}) == []
     coverage_selftest()
     print('crate_move selftest: ok')
 
@@ -1203,6 +1273,7 @@ def main(argv):
         report('note', 'build', 'skipped (--no-build); the staged tree has no Cargo.lock')
     else:
         build(into, manifest, targets, work, report)
+        clippy(into, tree, targets, work, report)
         if moved:
             fuzz_dry_run(into, moved, work, report)
     if moved:
