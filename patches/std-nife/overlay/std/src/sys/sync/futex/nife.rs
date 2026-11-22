@@ -24,7 +24,7 @@ pub type Primitive = u32;
 pub type SmallFutex = Atomic<SmallPrimitive>;
 pub type SmallPrimitive = u32;
 
-const FLAGS: u64 = abi::address_wait::PRIVATE | abi::address_wait::SIZE_U32;
+const FLAGS: u64 = abi::address_wait::PRIVATE | abi::address_wait::WIDTH_32_BITS;
 
 /// `WAIT` or `WAKE` on `futex`, through the space capability. A negative answer is the kernel's
 /// refusal; the callers below treat every refusal as "no kernel wait here".

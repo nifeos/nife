@@ -14,7 +14,7 @@ fn plain_typing_makes_a_line() {
     assert_eq!(s.text(), "echo hi");
 }
 
-/// **Tab is reported and changes nothing** (§227 option D): no echo, no edit, and the line in
+/// **Tab is reported and changes nothing**: no echo, no edit, and the line in
 /// progress and its cursor are what [`LineEditor::pending`] says. A terminal that ignores the
 /// event therefore behaves exactly as it did when Tab fell into the catch-all.
 #[test]
@@ -205,7 +205,7 @@ fn ctrl_c_discards_the_line() {
 }
 
 /// ^Z reports Suspend and, like ^C, leaves no byte of itself in the line: a job-control key that
-/// was stored as text would reach the next command (milestone 48 (job control)).
+/// was stored as text would reach the next command.
 #[test]
 fn ctrl_z_suspends_and_discards_the_line() {
     let (mut d, mut s) = (LineEditor::new(), Screen::new());
@@ -216,7 +216,7 @@ fn ctrl_z_suspends_and_discards_the_line() {
     assert_eq!(d.line(), b"ok");
 }
 
-/// ^D is EOF only on an empty line.
+/// ^D is end of input only on an empty line.
 #[test]
 fn ctrl_d_is_eof_only_when_empty() {
     let (mut d, mut s) = (LineEditor::new(), Screen::new());
@@ -446,12 +446,12 @@ fn stash_restores_cursor_column() {
     let (mut d, mut s) = (LineEditor::new(), Screen::new());
     feed_all(&mut d, &mut s, b"old\r");
     s = Screen::new();
-    feed_all(&mut d, &mut s, b"hello\x02\x02"); // cursor after "hel"
+    feed_all(&mut d, &mut s, b"abcdef\x02\x02"); // cursor after "abcd"
     feed_all(&mut d, &mut s, b"\x1b[A\x1b[B"); // up to "old", back down
     feed_all(&mut d, &mut s, b"X");
-    assert_eq!(s.text(), "helXlo");
+    assert_eq!(s.text(), "abcdXef");
     feed_all(&mut d, &mut s, b"\r");
-    assert_eq!(d.line(), b"helXlo");
+    assert_eq!(d.line(), b"abcdXef");
 }
 
 /// A yank that does not fit is truncated to the room left: the line ends exactly full,
@@ -523,7 +523,7 @@ fn word_kill_yank_round_trip() {
 }
 
 /// Home from column 12 needs a two-digit CSI count; typing at the front proves the
-/// cursor really travelled all twelve columns. Every other test moves fewer than ten,
+/// cursor really traveled all twelve columns. Every other test moves fewer than ten,
 /// so the multi-digit encoding path was unexercised.
 #[test]
 fn multi_digit_cursor_move() {

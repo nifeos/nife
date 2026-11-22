@@ -134,7 +134,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 /// Every figure the table needs, or the first refusal.
 fn read() -> Result<Spending, i64> {
     Ok(Spending {
-        pages: usage(abi::usage::SIZE)?,
+        pages: usage(abi::usage::SIZE_PAGES)?,
         committed: usage(abi::usage::COMMITTED)?,
         frames: usage(abi::usage::FRAMES)?,
         threads: usage(abi::usage::THREADS)?,

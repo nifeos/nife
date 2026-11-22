@@ -60,7 +60,7 @@ pub const UNMAP: u64 = 2;
 /// thread on the word at `va` in its own space if it still holds `expected`**, checked and parked
 /// as one step against [`WAKE`]. Semantics follow the thread system calls as built.
 ///
-/// - `flags` is [`super::address_wait::PRIVATE`] `|` [`super::address_wait::SIZE_U32`], or else `BadMethod`.
+/// - `flags` is [`super::address_wait::PRIVATE`] `|` [`super::address_wait::WIDTH_32_BITS`], or else `BadMethod`.
 /// - The capability must name the caller's own space (`WrongObject`) with `READ` (`NotPermitted`).
 /// - `va` must be 4-aligned, in the user half and mapped readable, else `BadPointer`.
 /// - `Gone` if ended without a wake. A `0` may be spurious, so a caller re-checks its word. No
