@@ -233,7 +233,8 @@ closes (ruled 2026-11-18 UTC).
 ## Follow-on
 
 - **Milestone 819.** The move to nifeos/jh7110_clock_and_reset. The review has its clearance and
-  the repository its approval (2026-11-11 UTC). The move carries items 5, 12 and 13 and decision 6,
+  the repository its approval (2026-11-11 UTC). Milestone 819 (JH7110 clock and reset logic,
+  proven, then released) carries it, and the move carries items 5, 12 and 13 and decision 6,
   as the finding status says.
 - **Recorded.** The server's transmit parent. `jh7110_clock_and_reset_devices` applies the v1.3B
   parent to the device at `0x1603_0000` on every board, and its BUGS section records it. The
