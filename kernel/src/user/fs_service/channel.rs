@@ -35,9 +35,8 @@ pub(super) fn page_frame() -> u64 {
         .physical_address()
 }
 
-/// Where every caretaker maps its read-only grant page (`components/src/fs_subtree_caretaker.rs`'s
-/// `GRANT_VA`, `fs_nameset_caretaker.rs`'s `SET_VA`, `fs_file_caretaker.rs`'s `GRANT_VA`).
-pub(super) const GRANT_VA_CARETAKER: u64 = 0x0000_0000_0070_0000;
+/// Where every caretaker maps its read-only grant page.
+pub(super) const GRANT_VA_CARETAKER: u64 = file_system_contract::grant::PAGE_VIRTUAL_ADDRESS;
 
 /// A caretaker's grant page, written before anything can see it: `name` at offset 0 and `names`,
 /// the set, after it ([`file_system_contract::grant::write_page`]). Returns its frame, which the

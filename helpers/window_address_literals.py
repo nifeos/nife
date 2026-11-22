@@ -36,7 +36,7 @@ import sys
 # One of the literals is the block driver's DMA page, which moved into `components` with the roles
 # it belongs to when the virtio crate folded into the block driver; it leaves when that driver
 # reads its windows from the startup page.
-CEILING = 64
+CEILING = 63
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCOPE = os.path.join('components', 'src')

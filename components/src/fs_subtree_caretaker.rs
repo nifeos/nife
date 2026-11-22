@@ -50,7 +50,7 @@ const PAGE: usize = file_system_contract::PAGE_BYTES;
 /// The read-only grant page: the granted directory's name at offset 0, as
 /// [`grant::write_page`] lays it out, and nothing else, since this caretaker serves no set. It is
 /// read once at startup, before anything serves.
-const GRANT_VA: u64 = address_space_layout::pair_page(0x0000_0000_0070_0000);
+const GRANT_VA: u64 = grant::PAGE_VIRTUAL_ADDRESS;
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled write_volatile

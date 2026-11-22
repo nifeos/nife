@@ -69,7 +69,8 @@ fn grant_page(own_ut: u64, region: u64, name: &[u8], set: &[u8]) -> Option<u64> 
         core::slice::from_raw_parts_mut(ours as *mut u8, spawn_protocol::IMAGE_PAGE as usize)
     };
     let written = file_system_contract::grant::write_page(name, true, set, out);
-    // Written, and the child's from here: give our window onto it up (milestone 95, §249).
+    // Written, and the child's from here: give our window onto it up (milestone 95 (an unmap
+    // primitive), §249 (a running address space stays nameable)).
     process_builder::give_up_own_page(ours);
     if written.is_none() {
         capability_delete(page);

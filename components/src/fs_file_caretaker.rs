@@ -59,7 +59,7 @@ const PAGE: usize = file_system_contract::PAGE_BYTES;
 const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
 /// The read-only grant page: the granted file's name at offset 0, as [`grant::write_page`] lays it
 /// out. Read once at startup.
-const GRANT_VA: u64 = address_space_layout::pair_page(0x0000_0000_0070_0000);
+const GRANT_VA: u64 = grant::PAGE_VIRTUAL_ADDRESS;
 // SAFETY: the wiring maps one page read-only at GRANT_VA before this program runs, and
 // grant::PAGE_USED_BYTES is less than a page.
 const GRANT_WINDOW: MappedWindow =

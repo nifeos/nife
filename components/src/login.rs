@@ -125,9 +125,8 @@ const CHANNEL_UT_PAGES: u64 = 32;
 const CARETAKER_FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
 /// Where a built caretaker reads its grant page, read-only: the directory it narrows to
-/// (`file_system_contract::grant::write_page`). Must match `fs_subtree_caretaker`'s `GRANT_VA`, for
-/// [`CARETAKER_FS_VA`]'s reason.
-const CARETAKER_GRANT_VA: u64 = address_space_layout::pair_page(0x0000_0000_0070_0000);
+/// (`file_system_contract::grant::write_page`).
+const CARETAKER_GRANT_VA: u64 = file_system_contract::grant::PAGE_VIRTUAL_ADDRESS;
 
 /// **Write a caretaker's grant page naming directory `name`**, on a page retyped from `region`, so
 /// it goes when the caretaker's region does. `None` when the region cannot pay for the page, the

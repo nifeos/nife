@@ -154,6 +154,16 @@ pub const fn is_writable(w: u64) -> bool {
     specification_rights(w) & rights::WRITE != 0
 }
 
+/// **Where a caretaker's grant page is mapped**, read-only, in the caretaker's address space. Its
+/// builder maps the page here and the caretaker reads it here, both through this one constant: the
+/// progenitor, `login` and the kernel's test wiring on one side, `fs_subtree_caretaker`,
+/// `fs_nameset_caretaker` and `fs_file_caretaker` on the other. A page of the address space map's
+/// pair-page window; the progenitor checks it against the map at compile time
+/// (`address_space_layout::pair_page`), so this crate keeps no dependency of its own.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by lane/directory-name-on-a-page (milestone 1122).
+pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0000_0070_0000;
+
 /// **Where a caretaker's grant page holds its name set**, in bytes from the start of the page.
 ///
 /// A caretaker is started with one read-only page, its grant page, and every name it is granted
