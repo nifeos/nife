@@ -1,6 +1,6 @@
-From 1ed44068b3f4690fd9771e793b98a15505d82408 Mon Sep 17 00:00:00 2001
-From: Chris Alef <chris@crickertech.com>
-Date: Sun, 22 Nov 2026 19:03:20 +0000
+From 4e39d389ee47c725961cddc3b01c235d29ef2910 Mon Sep 17 00:00:00 2001
+From: Chris Alef <476570+calef@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 22:31:07 +0000
 Subject: [PATCH] fix(rsext4): report why mount refused the superblock
 
 Mount, device_has_error_state and reload_after_journal_replay mapped

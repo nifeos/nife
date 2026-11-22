@@ -1,6 +1,6 @@
-From 49fc670dd88ef95d4067b5d520a9e8e36655fe5b Mon Sep 17 00:00:00 2001
-From: Chris Alef <chris@crickertech.com>
-Date: Sun, 22 Nov 2026 19:51:21 +0000
+From a7b07b1441234ded575da437de142db5fb7d153d Mon Sep 17 00:00:00 2001
+From: Chris Alef <476570+calef@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 22:31:07 +0000
 Subject: [PATCH] test(rsext4): add fuzz targets for the on-disk parsers, mount
  and journal replay
 

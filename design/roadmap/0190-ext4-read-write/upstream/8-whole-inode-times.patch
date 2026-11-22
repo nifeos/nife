@@ -1,6 +1,6 @@
-From 43ffc55e8e7ecd783587ac5cdcdad17d25207372 Mon Sep 17 00:00:00 2001
-From: Chris Alef <chris@crickertech.com>
-Date: Sun, 22 Nov 2026 19:14:10 +0000
+From a5c9530275ca19aca893ea8cb2cc540eb544e844 Mon Sep 17 00:00:00 2001
+From: Chris Alef <476570+calef@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 22:31:07 +0000
 Subject: [PATCH] fix(rsext4)!: report whole inode times in InodeInfo
 
 InodeInfo carried each time as the raw 32-bit seconds field, so it
