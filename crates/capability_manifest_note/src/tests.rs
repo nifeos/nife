@@ -3,9 +3,47 @@
 //!
 //! Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 
-use program_table::Program;
-
 use super::*;
+
+/// **The manifest that asks for nothing but its output and its exit report**: bytes out, no
+/// argument, no memory, no file or directory, no option, no page. The tests start from it, so an
+/// absent field is the zero byte the layout requires.
+pub(crate) const OUTPUT_ONLY: Manifest = Manifest {
+    program_argument: ProgramArgumentDeclaration::Forbidden,
+    memory_grant: MemoryGrantDeclaration::Forbidden,
+    file: FileGrantDeclaration::Forbidden,
+    directory: DirectoryGrantDeclaration::Forbidden,
+    short_options: grant_contract::NO_SHORT_OPTIONS,
+    output: OutputDeclaration::Bytes,
+    input: InputDeclaration::Forbidden,
+    reports: true,
+    interruptible: false,
+    clock: false,
+    domain: false,
+    configuration: false,
+    entropy: false,
+    network: false,
+    machine: false,
+    share: false,
+    reboot: false,
+    sync: false,
+    installer: false,
+    catalog: false,
+    indexes: IndexStoreDeclaration::Forbidden,
+    activation_directory: false,
+    console_input: false,
+    startup: StartupContract::Native,
+};
+
+/// **A remover's manifest**: three option letters, `-r` the one that asks for the directory's
+/// subtree.
+const REMOVER: Manifest = Manifest {
+    directory: DirectoryGrantDeclaration::Required {
+        subtree_option: Some(b'r'),
+    },
+    short_options: ShortOptions::new(b"rfv"),
+    ..OUTPUT_ONLY
+};
 
 /// **The subtree-grants note round-trips, and one encoding is the only encoding**: the note's own descriptor decodes to its scope, and a wrong version, scope
 /// or length is refused rather than read as "eligible".
@@ -32,20 +70,20 @@ fn a_subtree_grants_note_has_one_encoding() {
 
 #[test]
 fn a_later_version_is_refused_rather_than_guessed_at() {
-    let mut d = encode(&Program::Uptime.manifest());
+    let mut d = encode(&OUTPUT_ONLY);
     d[0] = 9;
     assert_eq!(decode(&d), Err(Error::UnknownVersion));
     assert_eq!(decode(&d[..3]), Err(Error::NoVersion));
     // Version 3 is known; a version 1 descriptor with 3 in its version word is a WrongLength,
     // since 3's layout is longer.
-    let mut d = encode(&Program::Uptime.manifest());
+    let mut d = encode(&OUTPUT_ONLY);
     d[0] = 3;
     assert_eq!(decode(&d), Err(Error::WrongLength));
 }
 
 #[test]
 fn a_descriptor_one_byte_long_or_short_is_refused() {
-    let d = encode(&Program::Uptime.manifest());
+    let d = encode(&OUTPUT_ONLY);
     assert_eq!(decode(&d[..DESCRIPTOR_BYTES - 1]), Err(Error::WrongLength));
     let mut long = [0u8; DESCRIPTOR_BYTES + 1];
     long[..DESCRIPTOR_BYTES].copy_from_slice(&d);
@@ -54,7 +92,7 @@ fn a_descriptor_one_byte_long_or_short_is_refused() {
 
 #[test]
 fn every_field_refuses_a_value_outside_its_range() {
-    let base = encode(&Program::Uptime.manifest());
+    let base = encode(&OUTPUT_ONLY);
     for at in [
         PROGRAM_ARGUMENT,
         MEMORY_GRANT,
@@ -79,8 +117,8 @@ fn every_field_refuses_a_value_outside_its_range() {
 
 #[test]
 fn a_byte_the_layout_says_is_zero_is_refused() {
-    let base = encode(&Program::Uptime.manifest());
-    // Uptime declares no memory, no input, no directory and no options, so all of these are
+    let base = encode(&OUTPUT_ONLY);
+    // The manifest declares no memory, no input, no directory and no options, so all of these are
     // absent fields, and the three trailing bytes are always zero.
     for at in [
         MEMORY_MINIMUM_PAGES,
@@ -99,7 +137,7 @@ fn a_byte_the_layout_says_is_zero_is_refused() {
 
 #[test]
 fn options_are_distinct_letters_and_the_subtree_option_is_one_of_them() {
-    let rm = encode(&Program::Rm.manifest());
+    let rm = encode(&REMOVER);
     assert_eq!(&rm[OPTION_LETTERS..OPTION_LETTERS + 3], b"rfv");
     assert_eq!(rm[SUBTREE], b'r');
 
@@ -130,7 +168,7 @@ fn a_memory_range_upside_down_is_refused() {
             minimum: 4,
             maximum: 8,
         },
-        ..Program::Uptime.manifest()
+        ..OUTPUT_ONLY
     };
     let mut d = encode(&m);
     assert_eq!(decode(&d), Ok(m));
@@ -140,19 +178,19 @@ fn a_memory_range_upside_down_is_refused() {
 
 #[test]
 fn the_note_is_what_elf_finds() {
-    let n = Note::of(&Program::Uptime.manifest());
+    let n = Note::of(&OUTPUT_ONLY);
     assert_eq!(n.0.len(), NOTE_BYTES);
     assert_eq!(&n.0[0..4], &5u32.to_le_bytes());
     assert_eq!(&n.0[4..8], &(DESCRIPTOR_BYTES as u32).to_le_bytes());
     assert_eq!(&n.0[8..12], &MANIFEST.to_le_bytes());
     assert_eq!(&n.0[12..20], b"nife\0\0\0\0"); // wire literal
-    assert_eq!(decode(&n.0[20..]), Ok(Program::Uptime.manifest()));
+    assert_eq!(decode(&n.0[20..]), Ok(OUTPUT_ONLY));
 }
 
 /// The manifest every field of which is at a non-default value except those a test sets, so a
 /// field moved to the wrong byte or dropped shows as a different manifest.
 fn base() -> Manifest {
-    program_table::NO_NOTE_MANIFEST
+    OUTPUT_ONLY
 }
 
 /// **Every value of every enumerated field encodes and decodes to itself**, one field at a
@@ -226,7 +264,10 @@ fn a_second_stream_at_any_other_slot_has_no_encoding() {
 #[test]
 #[should_panic(expected = "cannot carry `reboot`")]
 fn the_reboot_object_has_no_encoding() {
-    let _ = encode(&program_table::Program::Reboot.manifest());
+    let _ = encode(&Manifest {
+        reboot: true,
+        ..OUTPUT_ONLY
+    });
 }
 
 /// A subtree option is accepted when it is one of the declared letters, including when it is
@@ -314,7 +355,7 @@ fn a_zoned_descriptor_has_one_encoding() {
     const ZONES: &[&str] = &["", "alpha.example.org", "example.net"];
     const M: Manifest = Manifest {
         network: true,
-        ..program_table::NO_NOTE_MANIFEST
+        ..OUTPUT_ONLY
     };
     const D: [u8; zoned_descriptor_bytes(ZONES)] = encode_zoned(&M, ZONES);
     assert_eq!(decode(&D), Ok(M));
@@ -387,7 +428,7 @@ fn a_zoned_descriptor_has_one_encoding() {
 fn a_zoned_note_names_its_exact_length_and_pads_to_four() {
     const ZONES: &[&str] = &["zone.test"];
     const NOTE: ZonedNote<{ zoned_note_bytes(ZONES) }> =
-        ZonedNote::of::<{ zoned_descriptor_bytes(ZONES) }>(&program_table::NO_NOTE_MANIFEST, ZONES);
+        ZonedNote::of::<{ zoned_descriptor_bytes(ZONES) }>(&OUTPUT_ONLY, ZONES);
     let n = &NOTE.0;
     // 56 + 1 + 1 + 9 = 67 bytes of descriptor after a 20-byte header and owner, rounded to 88.
     assert_eq!(n.len(), 88);
@@ -418,28 +459,24 @@ fn a_zoned_note_names_its_exact_length_and_pads_to_four() {
 #[test]
 fn the_service_ask_is_version_threes_and_only_its() {
     const ZONES: &[&str] = &["zone.test"];
-    const D: [u8; serviced_descriptor_bytes(ZONES)] =
-        encode_serviced(&program_table::NO_NOTE_MANIFEST, ZONES, true);
-    assert_eq!(decode(&D), Ok(program_table::NO_NOTE_MANIFEST));
+    const D: [u8; serviced_descriptor_bytes(ZONES)] = encode_serviced(&OUTPUT_ONLY, ZONES, true);
+    assert_eq!(decode(&D), Ok(OUTPUT_ONLY));
     assert_eq!(zones(&D).unwrap().iter().next(), Some(&b"zone.test"[..]));
     assert_eq!(asks_service(&D), Ok(true));
 
-    const NONE: [u8; serviced_descriptor_bytes(&[])] =
-        encode_serviced(&program_table::NO_NOTE_MANIFEST, &[], true);
+    const NONE: [u8; serviced_descriptor_bytes(&[])] = encode_serviced(&OUTPUT_ONLY, &[], true);
     assert_eq!(
         zones(&NONE).unwrap().iter().count(),
         0,
         "version 3 asks no zone"
     );
     assert_eq!(asks_service(&NONE), Ok(true));
-    const OFF: [u8; serviced_descriptor_bytes(&[])] =
-        encode_serviced(&program_table::NO_NOTE_MANIFEST, &[], false);
+    const OFF: [u8; serviced_descriptor_bytes(&[])] = encode_serviced(&OUTPUT_ONLY, &[], false);
     assert_eq!(asks_service(&OFF), Ok(false));
 
-    let v1 = encode(&program_table::NO_NOTE_MANIFEST);
+    let v1 = encode(&OUTPUT_ONLY);
     assert_eq!(asks_service(&v1), Ok(false));
-    const ZONED: [u8; zoned_descriptor_bytes(ZONES)] =
-        encode_zoned(&program_table::NO_NOTE_MANIFEST, ZONES);
+    const ZONED: [u8; zoned_descriptor_bytes(ZONES)] = encode_zoned(&OUTPUT_ONLY, ZONES);
     assert_eq!(asks_service(&ZONED), Ok(false));
 
     let mut unknown = D;
@@ -461,11 +498,7 @@ fn the_service_ask_is_version_threes_and_only_its() {
 #[test]
 fn a_serviced_note_names_its_exact_length_and_pads_to_four() {
     const NOTE: ServicedNote<{ serviced_note_bytes(&[]) }> =
-        ServicedNote::of::<{ serviced_descriptor_bytes(&[]) }>(
-            &program_table::NO_NOTE_MANIFEST,
-            &[],
-            true,
-        );
+        ServicedNote::of::<{ serviced_descriptor_bytes(&[]) }>(&OUTPUT_ONLY, &[], true);
     let n = &NOTE.0;
     // 20 bytes of header and owner, then 58 of descriptor, rounded to four: 80.
     assert_eq!(n.len(), 80);
@@ -496,16 +529,12 @@ fn a_serviced_note_names_its_exact_length_and_pads_to_four() {
     // A note carrying zones places its descriptor where the owner's name ends, zones and all.
     const TWO: &[&str] = &["a.test", "b.c.test"];
     const ZONED: ServicedNote<{ serviced_note_bytes(TWO) }> =
-        ServicedNote::of::<{ serviced_descriptor_bytes(TWO) }>(
-            &program_table::NO_NOTE_MANIFEST,
-            TWO,
-            true,
-        );
+        ServicedNote::of::<{ serviced_descriptor_bytes(TWO) }>(&OUTPUT_ONLY, TWO, true);
     let n = &ZONED.0;
     let descsz = u32::from_le_bytes([n[4], n[5], n[6], n[7]]) as usize;
     assert_eq!(descsz, serviced_descriptor_bytes(TWO));
     let d = &n[HEADER_BYTES + NAME_FIELD_BYTES..HEADER_BYTES + NAME_FIELD_BYTES + descsz];
-    assert_eq!(decode(d), Ok(program_table::NO_NOTE_MANIFEST));
+    assert_eq!(decode(d), Ok(OUTPUT_ONLY));
     assert_eq!(zones(d).unwrap().iter().count(), 2);
     assert_eq!(asks_service(d), Ok(true));
 }
@@ -517,9 +546,8 @@ fn a_serviced_note_names_its_exact_length_and_pads_to_four() {
 #[test]
 fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
     const TWO: &[&str] = &["a.test", "b.c.test"];
-    const D: [u8; serviced_descriptor_bytes(TWO)] =
-        encode_serviced(&program_table::NO_NOTE_MANIFEST, TWO, true);
-    assert_eq!(decode(&D), Ok(program_table::NO_NOTE_MANIFEST));
+    const D: [u8; serviced_descriptor_bytes(TWO)] = encode_serviced(&OUTPUT_ONLY, TWO, true);
+    assert_eq!(decode(&D), Ok(OUTPUT_ONLY));
     let mut got = zones(&D).unwrap().iter();
     assert_eq!(got.next(), Some(&b"a.test"[..]));
     assert_eq!(got.next(), Some(&b"b.c.test"[..]));
@@ -529,9 +557,8 @@ fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
     const EIGHT: &[&str] = &[
         "a.test", "b.test", "c.test", "d.test", "e.test", "f.test", "g.test", "h.test",
     ];
-    const E: [u8; serviced_descriptor_bytes(EIGHT)] =
-        encode_serviced(&program_table::NO_NOTE_MANIFEST, EIGHT, false);
-    assert_eq!(decode(&E), Ok(program_table::NO_NOTE_MANIFEST));
+    const E: [u8; serviced_descriptor_bytes(EIGHT)] = encode_serviced(&OUTPUT_ONLY, EIGHT, false);
+    assert_eq!(decode(&E), Ok(OUTPUT_ONLY));
     assert_eq!(zones(&E).unwrap().iter().count(), MAXIMUM_ZONES);
 
     // The same two zones, longest first: both canonical, and out of order at the second.
@@ -553,9 +580,8 @@ fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
     // computed two short lands on `ab.` from `ab.cd`. Both leave a trailing dot the contract
     // refuses, where a zone ending in a longer label would hide the same fault.
     const SHORT: &[&str] = &["a.x", "ab.cd"];
-    const S: [u8; serviced_descriptor_bytes(SHORT)] =
-        encode_serviced(&program_table::NO_NOTE_MANIFEST, SHORT, true);
-    assert_eq!(decode(&S), Ok(program_table::NO_NOTE_MANIFEST));
+    const S: [u8; serviced_descriptor_bytes(SHORT)] = encode_serviced(&OUTPUT_ONLY, SHORT, true);
+    assert_eq!(decode(&S), Ok(OUTPUT_ONLY));
     let mut got = zones(&S).unwrap().iter();
     assert_eq!(got.next(), Some(&b"a.x"[..]));
     assert_eq!(got.next(), Some(&b"ab.cd"[..]));
@@ -595,7 +621,7 @@ fn the_interfaces_note_shares_the_manifest_notes_header() {
 #[should_panic(expected = "lowercase dotted ASCII")]
 fn the_serviced_encoder_refuses_a_zone_the_resolver_would_not_spell() {
     let _ = encode_serviced::<{ serviced_descriptor_bytes(&["Example.NET"]) }>(
-        &program_table::NO_NOTE_MANIFEST,
+        &OUTPUT_ONLY,
         &["Example.NET"],
         true,
     );
@@ -605,7 +631,7 @@ fn the_serviced_encoder_refuses_a_zone_the_resolver_would_not_spell() {
 #[should_panic(expected = "lowercase dotted ASCII")]
 fn the_serviced_encoder_refuses_a_zone_with_a_trailing_dot() {
     let _ = encode_serviced::<{ serviced_descriptor_bytes(&["example.net."]) }>(
-        &program_table::NO_NOTE_MANIFEST,
+        &OUTPUT_ONLY,
         &["example.net."],
         false,
     );
@@ -621,7 +647,7 @@ fn the_encoder_refuses_an_inverted_memory_grant() {
             minimum: 8,
             maximum: 4,
         },
-        ..program_table::NO_NOTE_MANIFEST
+        ..OUTPUT_ONLY
     });
 }
 

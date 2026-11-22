@@ -81,19 +81,18 @@ methods on `FramePool`, the free functions are gone, and a test that allocates w
 pool does not compile. That is AGENTS.md's ladder moving from rung four to rung one, on a
 mechanism that had already been given one chance at rung four and lost it.
 
-`tests/mapping.rs`'s `TableGuard` is still the opt-in shape and every test in that file currently
-binds one. It is a latent instance of exactly the same defect; see the `BUGS` note at `TableGuard`
-and milestone 310's follow-on.
+`tests/mapping.rs`, `tests/blocks.rs` and `tests/nth_allocation.rs` take the same shape: the mapper
+borrows the pool that owns its tables, so a test that builds a mapper without one does not compile.
 
 **4. A `byte_glob` sweep failure in the triage logs: an artifact, not a finding.** One intermediate run
 recorded `greedy_agrees_with_exhaustive_search_over_every_short_pattern` failing with
 `checked = 43,720`; that run caught the file mid-edit, with the Miri stride applied but the
 completeness pin not yet updated. The finished edit passes under Miri and natively.
 
-**Also seen, deliberately left:** integer-to-pointer cast *warnings* in `page_tables`' tests, where
-`physical_to_pointer` is an identity cast by design (the tests' documented trick is that host addresses
-stand in for physical ones). They are warnings about a pattern the harness is honest about, not
-errors.
+`page_tables`' host tests hand the mapper host addresses as "physical" ones. Each pool turns an
+address back into the pointer it allocated rather than casting the integer. The mapper therefore
+writes through pointers that keep their provenance, and Miri has no integer-to-pointer cast to warn
+about.
 
 ## "Miri-clean" means the sampled paths
 

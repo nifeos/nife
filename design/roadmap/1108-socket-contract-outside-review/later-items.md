@@ -21,7 +21,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
    second is the honest shape and costs one `match` in `socket_table.rs`.
    Door: two-way (an unreleased signature). Effort: M.
 
-8. Offsets, lengths and byte orders mix types and go unstated. PARTIAL: `FRAME_BYTES` added and the byte order stated. LEFT, and not doable as written: one type for offsets and lengths. `user_mode_runtime`'s window API takes `u64` offsets, so a `usize` here moves the casts to the window calls instead of removing them; the type is for the window API's owner to change, with this crate following.
+8. Offsets, lengths and byte orders mix types and go unstated. WILL NOT FIX in part (provisional, ruled 2026-11-22 UTC): `FRAME_BYTES` names the frame size and the byte order is stated once. The offsets stay `u64`, the type `user_mode_runtime`'s window API takes, and `MAXIMUM_PAYLOAD_BYTES` stays `usize`, the type arrays and slices take, so neither consumer casts its own constant.
    Finding: `OFF_*` are `u64` and `DATA_MAXIMUM` is `usize`, so every caller casts
    (`DATA_MAXIMUM as u64` at five sites in `components/`, `PAYLOAD_OFFSET_BYTES as usize` in the crate's
    own line 471). `DATA_MAXIMUM = 4096 - PAYLOAD_OFFSET_BYTES` hardcodes the page size with no constant for

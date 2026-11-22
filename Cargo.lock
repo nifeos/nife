@@ -163,7 +163,6 @@ dependencies = [
  "domain_name_resolution_contract",
  "grant_contract",
  "interfaces_note",
- "program_table",
 ]
 
 [[package]]
@@ -176,7 +175,7 @@ dependencies = [
 [[package]]
 name = "capability_table"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/capability_table?rev=a8d0fa65b08050e788719bd0e88922f9cd6b43bb#a8d0fa65b08050e788719bd0e88922f9cd6b43bb"
+source = "git+https://github.com/nifeos/capability_table?rev=968a16fed9723d88bf5168ec6604d0bbcaba853b#a8d0fa65b08050e788719bd0e88922f9cd6b43bb"
 
 [[package]]
 name = "capability_witness_contract"
@@ -523,7 +522,7 @@ source = "git+https://github.com/nifeos/entropy_contract?rev=7e800fdcebe9128eaa5
 [[package]]
 name = "environment_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/environment_contract?rev=b4925221c6d33163c6217aa2b118ba29f0be5379#b4925221c6d33163c6217aa2b118ba29f0be5379"
+source = "git+https://github.com/nifeos/environment_contract?rev=4778d5937460ef1e43e39113721422dd573a3306#4778d5937460ef1e43e39113721422dd573a3306"
 
 [[package]]
 name = "equivalent"

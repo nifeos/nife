@@ -39,8 +39,41 @@ use capability_manifest_note::{
     VERB_RECORD_BYTES, VERBS_VERSION, ZONED_VERSION, asks_service, decode, decode_subtree_grants,
     decode_verbs, encode, zones,
 };
-use grant_contract::{IndexStoreDeclaration, MAXIMUM_VERB_BYTES, ManifestAuthorities};
+use grant_contract::{
+    DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration, InputDeclaration,
+    MAXIMUM_VERB_BYTES, Manifest, ManifestAuthorities, MemoryGrantDeclaration, NO_SHORT_OPTIONS,
+    OutputDeclaration, ProgramArgumentDeclaration, StartupContract,
+};
 use libfuzzer_sys::{fuzz_mutator, fuzz_target};
+
+/// The version 1 bytes a zoned descriptor starts from when the input is too short to lend its own:
+/// a manifest that asks for nothing but its output and its exit report.
+const OUTPUT_ONLY: Manifest = Manifest {
+    program_argument: ProgramArgumentDeclaration::Forbidden,
+    memory_grant: MemoryGrantDeclaration::Forbidden,
+    file: FileGrantDeclaration::Forbidden,
+    directory: DirectoryGrantDeclaration::Forbidden,
+    short_options: NO_SHORT_OPTIONS,
+    output: OutputDeclaration::Bytes,
+    input: InputDeclaration::Forbidden,
+    reports: true,
+    interruptible: false,
+    clock: false,
+    domain: false,
+    configuration: false,
+    entropy: false,
+    network: false,
+    machine: false,
+    share: false,
+    reboot: false,
+    sync: false,
+    installer: false,
+    catalog: false,
+    indexes: IndexStoreDeclaration::Forbidden,
+    activation_directory: false,
+    console_input: false,
+    startup: StartupContract::Native,
+};
 
 fuzz_target!(|data: &[u8]| {
     manifest(data);
@@ -200,7 +233,7 @@ fn build_zoned(base: &[u8], random: &mut Random) -> Vec<u8> {
     let mut out = if base.len() >= 56 {
         base[..56].to_vec()
     } else {
-        encode(&program_table::NO_NOTE_MANIFEST).to_vec()
+        encode(&OUTPUT_ONLY).to_vec()
     };
     let mut picks: Vec<&str> = (0..random.below(MAXIMUM_ZONES + 1))
         .map(|_| ZONE_POOL[random.below(ZONE_POOL.len())])

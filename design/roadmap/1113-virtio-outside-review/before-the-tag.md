@@ -75,7 +75,7 @@ exactly what a second broadcast in the loop at `:883-897` produces. The fix: rea
 `used.ring[i].len`, bound every read by it, and make the option loop's guard `o + 2 < end`.
 Effort: S. Two-way.
 
-9. Names, against `design/naming.md`. The rule covers parameters and private items as well as
+9. Names, against `design/naming.md`. DONE (every name below is spelled out and provisional; each specification term keeps its spelling as `#[doc(alias)]`, and the public entry points carry `Name:` blocks). The rule covers parameters and private items as well as
 public ones, and `script/crate-standalone` requires every name a stranger meets to carry a
 ratification. Found, with the rule each breaks:
 - `DMA_VA` (`:39`): `dma` and `va` both appear on the spelled-out list, and the appendix wants

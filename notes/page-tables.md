@@ -192,8 +192,8 @@ The page table format is pure logic: addresses in, descriptors out. So it lives 
 
 **The trick that makes it work:** a `Box<PageTable>` is 4 KiB-aligned (the type declares it)
 and has a real address. So the tests hand those addresses to the mapper as pretend "physical"
-frames, and `phys_to_ptr` is the identity cast. The pointer arithmetic is bit-for-bit what
-the kernel does. We are testing the real code path, not a model of it.
+frames, and `physical_to_pointer` hands back the pointer the test allocated at that address. The
+pointer arithmetic is bit-for-bit what the kernel does. We are testing the real code path, not a model of it.
 
 That's what caught the `Half` discovery above, at zero cost, before a single instruction ran
 on the machine.

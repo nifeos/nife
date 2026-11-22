@@ -8,8 +8,7 @@ The architect reads this to clear the crate for its move to its own repository, 
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
 It describes the crate as `main` leaves it. The outside review behind it is
 [milestone 1084 (`current_cpu_contract`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1084-current-cpu-contract-outside-review.md).
-Every item of that review has landed, except two that the move itself does and one farm check in
-nife.
+Every item of that review has landed, except the `repository` key, which the move itself adds.
 
 ## In one paragraph
 
@@ -109,12 +108,13 @@ stay in nife.
 
 ## What was run
 
-On the branch's base, `main` at `cd99567e5`, on 2026-11-19 (UTC).
+On `main` at `cd99567e5`, on 2026-11-19 (UTC). The rows for the names, the standalone gate, the move's
+dry run, the report gates and the waiver lint ran again at `d89372281` on 2026-11-22 (UTC).
 
 | check | result |
 |---|---|
 | `script/names current_cpu_contract` | the crate name reads ratified 2026-10-18; the command lists no item block |
-| `python3 helpers/name_release.py --draft current_cpu_contract` | 19 rows: 1 ratified (the crate), 10 provisional, 8 with no block |
+| `python3 helpers/name_release.py --draft current_cpu_contract` | 19 rows, every one ratified |
 | `cargo test -p current_cpu_contract` | 14 host tests and 4 doctests pass |
 | `cargo clippy -p current_cpu_contract --all-targets -- -D warnings` | no warning |
 | `RUSTDOCFLAGS="-D warnings" cargo doc -p current_cpu_contract --no-deps` | no warning |
@@ -122,10 +122,10 @@ On the branch's base, `main` at `cd99567e5`, on 2026-11-19 (UTC).
 | the crate and `address_space_layout` copied out of the tree, `cargo +1.88 build --lib` for the host and the three targets, `cargo +1.88 test` | all build; 14 tests and 4 doctests pass on 1.88 |
 | `cargo kani -p current_cpu_contract` (Kani 0.68.0, CBMC 6.11.0) | 2 of 2 harnesses verify; 8 seconds of wall time at a peak of 314 MiB |
 | `script/falsifications --sweep current_cpu_contract` | 2 swept, 0 survivors: each patch turns its harness red |
-| `script/crate-standalone current_cpu_contract` | 4 failures: `names` (18 names not ratified, first `VERSION`), `manifest` (the path dependency on `address_space_layout`), and `build` and `proofs` skipped because the copy cannot resolve that dependency |
-| `script/crate-move current_cpu_contract --dry-run --into <scratch>` | stages at template `v8`; both patches apply exactly; standalone, passive voice, history phrases, file and function length, comment blocks, unit symbols, orphan modules, markdown links and falsification records pass, and it finds no mention of nife. Three failures: `build` (the same path dependency), `prose caps` (the README's median sentence is 22.5 words over a cap of 20, its longest 49 over 40) and `spelled-out words` (the two test names below) |
-| `python3 helpers/template_report_gates.py --list current_cpu_contract` | two `abbreviations` findings, both the test names below; `helpers/template_report_baseline.txt` still holds a row of 6 for the crate |
-| `python3 helpers/lint_externalized_crates.py` | 0 hits, under the crate's ceiling of 3; the lint asks for its waiver to be lowered or deleted |
+| `script/crate-standalone --no-kani current_cpu_contract` | clean: the copy builds for the host and the three targets on 1.88 |
+| `script/crate-move current_cpu_contract --dry-run --into <scratch>` | clean: stages at template `v9`, both patches apply exactly, the copy builds against `address_space_layout` by `git` and `rev`, and every template gate passes |
+| `python3 helpers/template_report_gates.py --list current_cpu_contract` | no finding, and the crate has no baseline row |
+| `python3 helpers/lint_externalized_crates.py` | 0 hits, and the crate has no waiver |
 | `script/crate-review-packet current_cpu_contract` | 2 harnesses, 2 patches, 11 `unsafe` sites (the two entry points, the reader's two loads, the writer's store and six in tests and harnesses), no foreign type in a signature |
 
 Not run, and so not claimed:
@@ -162,14 +162,9 @@ built. `CPU_OFFSET_BYTES` is published as `u64` and stays `u64` (ruled the same 
 | `CPU_ID_BOUND` | constant | kept |
 | `MAGIC`, `VERSION`, `INTERFACE_ID`, `UNSCHEDULED`, `THREAD_PAGE_SLOTS`, `build_page`, `publish`, `CurrentCpuPage`, `new`, `cpu`, `allowance` | | keep their spellings |
 
-No alias carries an old spelling. The `Name:` blocks in the crate source still read provisional
-for ten items, `VERSION` and `INTERFACE_ID` among them. The move commit strips them under the ruling
-that a moved crate keeps no provenance record, or a lane before it rewrites them to ratified so
-that the standalone gate's `names` check passes in this tree.
-
-Two private names in the tests break the spelled-out rule: the helper `Aligned::va` and a binding
-`va` in `the_thread_page_slots_fill_the_process_pages_band`. The maintainer names them, and the
-lane that applies item 4's last step renames them.
+No alias carries an old spelling. Every `Name:` block in the crate source reads ratified, and the
+move commit strips them under the ruling that a moved crate keeps no provenance record. The tests
+spell `virtual_address` out too.
 
 ## License
 
@@ -180,10 +175,10 @@ Linux's `rseq` appears only in the review's prior-art box, and the crate copies 
 
 | item | status |
 |---|---|
-| 1, the manifest | the crate's own license, lints, `rust-version`, description and docs.rs targets are in. The move adds `repository` and turns the path dependency on `address_space_layout` into a pinned one once that crate has left |
+| 1, the manifest | the crate's own license, lints, `rust-version`, description and docs.rs targets are in. The dependency on `address_space_layout` is pinned by `git` and `rev`, and the move adds `repository` |
 | 2, README and license files | done |
 | 3, docs that cite nife and quote the decider | done |
-| 4, names | the renames are in and ruled. What remains is the move's: the `Name:` blocks and the two private test names above |
+| 4, names | done: ruled, applied, and every block reads ratified |
 | 5, `cpu()` past the bound | done |
 | 6, `allowance()` on a narrow target | done |
 | 7, the reader reaches its word through an integer | done |
@@ -191,7 +186,7 @@ Linux's `rseq` appears only in the review's prior-art box, and the crate copies 
 | 9, builder and readers disagree on unknown | done |
 | 10, nothing machine-checked | done: two harnesses, two patches |
 | 11, a stale `BUGS` section | done |
-| 12, the single-file constraint | the README and `BUGS` sentence are in. The farm check that refuses a private `mod x;` or an `include!` in a copied single-file crate is a nife lane, not part of the crate, and is not built |
+| 12, the single-file constraint | done: the README and `BUGS` sentence, and the farm refuses a copied file that names a source file the copy leaves behind |
 | 13, `#![no_std]` | done |
 | 14, the type of `CPU_OFFSET_BYTES` | ruled: stays `u64` |
 | 15, the kernel's safety comment | done, in nife |
@@ -203,12 +198,8 @@ Linux's `rseq` appears only in the review's prior-art box, and the crate copies 
 
 | item | owner |
 |---|---|
-| `address_space_layout` leaves first, in milestone 1017 step 3's order, and this crate then depends on it by `git` and `rev` with `version = "0.1.0"`. Until then the standalone build cannot resolve the dependency | the `address_space_layout` move, then this move |
-| Strip or rewrite the ten provisional `Name:` blocks, and rename the two private `va` test names | the move lane, or a lane before it |
-| Bring the README under the template's prose caps: a median sentence of 20 words and a longest of 40 | the move lane, or a lane before it |
 | Add `repository` to the manifest | the move lane |
 | Convert the six manifests to `git` and `rev`, drop the workspace member and the mutation baseline row, and read `.github/workflows/undefined-behavior-check.yml` and `script/verify`, which name the crate | the move lane's nife-side pull request, as the dry run lists it |
-| Lower or delete the crate's rows in `helpers/lint_externalized_crates.py` and `helpers/template_report_baseline.txt` | the move lane's nife-side pull request |
 | Run the stranger test, the template's workflows and the first weekly mutation run | the move lane, in the new repository |
 
 ## Recommendation
