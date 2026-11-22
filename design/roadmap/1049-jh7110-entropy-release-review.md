@@ -272,8 +272,8 @@ The review claims none of the hardware checks.
 
 ## Follow-on
 
-What remains is each line of *Finding status* that waits: the publication steps on the
-publishing hold, and two questions on a board run.
+- **Outstanding.** Items 1 to 3, on the publishing hold.
+- **Outstanding.** Two questions on a board run, under *Finding status*.
 
 ## Index row
 
