@@ -111,10 +111,12 @@ pub mod throughput {
     /// carry.** It is [`file_system_contract::file_system::MAXIMUM_TRANSFER_BYTES`], so this phase measures the
     /// protocol's own ceiling and the tuning lives at that one constant. A figure here is how fast
     /// this architecture moves one request's worth, so a comparison against a system whose client
-    /// passes a differently sized buffer compares two different things.
+    /// passes a differently sized buffer compares two different things. It is a `u64`, like every
+    /// other size in this module, so the one widening cast is here; a client that needs a buffer
+    /// length narrows it once.
     ///
     /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
-    pub const UNIT_BYTES: usize = file_system_contract::file_system::MAXIMUM_TRANSFER_BYTES;
+    pub const UNIT_BYTES: u64 = file_system_contract::file_system::MAXIMUM_TRANSFER_BYTES as u64;
 
     /// **Bytes moved per phase, held constant across transfer sizes on purpose.** 1 MiB, bounded by
     /// the 16 MiB fixture image rather than chosen for statistics: the write phases fit beside
@@ -127,7 +129,7 @@ pub mod throughput {
     pub const TOTAL_BYTES: u64 = 1024 * 1024;
 
     /// Transfers per phase: [`TOTAL_BYTES`] divided by [`UNIT_BYTES`]. 256 at one page, 16 at sixteen.
-    pub const BLOCKS: u64 = TOTAL_BYTES / UNIT_BYTES as u64;
+    pub const BLOCKS: u64 = TOTAL_BYTES / UNIT_BYTES;
 
     /// **The phase moves exactly [`TOTAL_BYTES`] bytes at every transfer size**, which is what makes a
     /// before and an after on `bench/transfer-size-sweep.sh` a comparison rather than two
@@ -135,7 +137,7 @@ pub mod throughput {
     /// A build is where this has to hold, because the phase runs in user mode where no test does.
     const _: () = {
         assert!(BLOCKS >= 1);
-        assert!(BLOCKS * UNIT_BYTES as u64 == TOTAL_BYTES);
+        assert!(BLOCKS * UNIT_BYTES == TOTAL_BYTES);
         assert!(TOTAL_BYTES.is_multiple_of(RECORD_BYTES));
     };
 
