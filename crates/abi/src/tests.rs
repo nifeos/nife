@@ -453,6 +453,39 @@ fn every_public_number_is_pinned() {
     );
 }
 
+/// **A pinned number changes only with `ABI_VERSION`.** `pinned-at-version-<N>.txt`, at the
+/// crate root, holds every pinned line as it stood when `ABI_VERSION` became `N`. Each of its
+/// lines must still appear in this file, so changing or removing a pinned number fails here until
+/// the pull request bumps `ABI_VERSION` and adds the record for the new version. A new number adds
+/// a pinned line and owes nothing, since the record only lists what was. A rename changes no
+/// number, and the pull request that renames edits the record's line to the new name.
+///
+/// Name: provisional.
+#[test]
+fn no_pinned_number_moves_without_a_version_bump() {
+    extern crate std;
+    use std::format;
+    use std::vec::Vec;
+
+    let directory = env!("CARGO_MANIFEST_DIR");
+    let version = crate::ABI_VERSION;
+    let record = std::fs::read_to_string(format!("{directory}/pinned-at-version-{version}.txt"))
+        .unwrap_or_else(|e| panic!("no record of the pinned numbers at version {version}: {e}"));
+    let pinned = std::fs::read_to_string(format!("{directory}/src/tests.rs")).unwrap();
+    let lines: Vec<&str> = pinned.lines().map(str::trim).collect();
+    let moved: Vec<&str> = record
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .filter(|line| !lines.contains(line))
+        .collect();
+    assert!(
+        moved.is_empty(),
+        "pinned at ABI_VERSION {version} and now changed or gone: {moved:?}. Bump ABI_VERSION and \
+         add pinned-at-version-<new>.txt"
+    );
+}
+
 /// **`Error` works behind `?` and in a hash map.** It is `Display`, `core::error::Error` and
 /// `Hash`, which a host-side harness reaches for first.
 #[test]

@@ -33,7 +33,8 @@ sides of the system call boundary.
   changes `ABI_VERSION` in the same pull request, and a new number owes nothing.
 - The crate's tests pin every number as a literal, and a test counts the public numbers to see
   that the pinned lists name each one. Changing a number fails the tests until its pinned line
-  changes with it, and that pinned line changes only with `ABI_VERSION`.
+  changes with it, and `pinned-at-version-1.txt` records every pinned line of this version, so a
+  changed pinned line fails until `ABI_VERSION` moves and a new record joins it.
 
 | module | what it holds |
 |---|---|
