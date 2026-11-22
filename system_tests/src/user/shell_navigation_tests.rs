@@ -73,9 +73,8 @@ pub(super) fn navigate(root: &'static str, run: u64) -> Option<u64> {
             arg2: 0,
             // Measured, not guessed: see `spawn_fs_client`. A shell carries a path stack, a
             // parsed path and a listing buffer by value. In a debug build the deepest direct
-            // chain from `_start` through `navigate`, `Nav::rooted_at` and
-            // `ShellHoldings::default` is about 19.7 KiB, the sum of each frame's prologue; six
-            // pages leave about 4.8 KiB.
+            // chain from `_start` through `navigate` and `Nav::ls` is about
+            // 20.5 KiB, the frame sizes summed; six pages leave about 4 KiB.
             stack_pages: 5,
             verdict: false,
         },

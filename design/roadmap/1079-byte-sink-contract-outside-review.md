@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 151, 242
@@ -193,8 +194,9 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
   `first_word` takes `operation: u8` and `len: u32`.
 - P2-13, `pack` returns a bare four-tuple: Done, [#3880](https://github.com/nifeos/nife/pull/3880).
   `pack` and `unpack` take and return `MessageWords`, whose name waits for the release review.
-- P2-14, equivalent mutants: Waiting on nifeos/byte_sink_contract#1, which exempts the four
-  survivors the repository's first mutation run names and leaves the Kani module out of the run.
+- P2-14, equivalent mutants: Done, nifeos/byte_sink_contract#1. The repository's
+  `.github/mutants-exempts` lists the four survivors its mutation run names, each with its reason,
+  and its mutation configuration skips the Kani module.
 - P2-15, severity bits on any first word: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Decision A, no wire version operation: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Decision B, `fixture` out of the published crate: Done,
@@ -207,8 +209,7 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
 
 ## Follow-on
 
-- **Outstanding.** The `Waiting on` line under [Finding status](#finding-status), and the release
-  review of `MessageWords`.
+- **Recorded.** The release review of `MessageWords`, under P2-13.
 
 ## BUGS
 
@@ -225,4 +226,4 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
 An outside review of `byte_sink_contract` before it leaves found two findings that block the move. The crate does not stand alone, and its `VERSION` text specifies a wire operation that does not and cannot exist. It found eight to land before the first release. They are the fixture module in the public API, the `abi` dev-dependency, no proofs, a kind byte the decoder ignores, a British spelling, undefined end-of-stream words, names a later rule reopens, and a zero-count contradiction. It found five for later.
 Four decisions: the architect ruled the end-of-stream words reserved and the names, and the
 maintainer decided, provisionally, no wire version operation and `fixture` out of the published
-crate. The crate lives in nifeos/byte_sink_contract; its mutant exemptions are the last finding.
+crate. The crate lives in nifeos/byte_sink_contract, and every finding has landed.

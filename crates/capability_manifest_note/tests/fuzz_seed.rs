@@ -16,8 +16,49 @@ use capability_manifest_note::{
     encode_serviced, encode_verbs, encode_zoned, serviced_descriptor_bytes, verbs_descriptor_bytes,
     zoned_descriptor_bytes, zones,
 };
-use grant_contract::{ManifestAuthorities, VerbGrant};
-use program_table::{NO_NOTE_MANIFEST, Program, UNVOUCHED_STD_MANIFEST};
+use grant_contract::{
+    DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration, InputDeclaration,
+    Manifest, ManifestAuthorities, MemoryGrantDeclaration, NO_SHORT_OPTIONS, OutputDeclaration,
+    ProgramArgumentDeclaration, StartupContract, VerbGrant, WordGrant,
+};
+
+/// What a program that asks for nothing but its output and its exit report declares.
+const OUTPUT_ONLY: Manifest = Manifest {
+    program_argument: ProgramArgumentDeclaration::Forbidden,
+    memory_grant: MemoryGrantDeclaration::Forbidden,
+    file: FileGrantDeclaration::Forbidden,
+    directory: DirectoryGrantDeclaration::Forbidden,
+    short_options: NO_SHORT_OPTIONS,
+    output: OutputDeclaration::Bytes,
+    input: InputDeclaration::Forbidden,
+    reports: true,
+    interruptible: false,
+    clock: false,
+    domain: false,
+    configuration: false,
+    entropy: false,
+    network: false,
+    machine: false,
+    share: false,
+    reboot: false,
+    sync: false,
+    installer: false,
+    catalog: false,
+    indexes: IndexStoreDeclaration::Forbidden,
+    activation_directory: false,
+    console_input: false,
+    startup: StartupContract::Native,
+};
+
+/// A program built against a `std` that hears its line's words read-only and reads the clock and
+/// configuration pages.
+const STD_WORDS_CLOCK_CONFIGURATION: Manifest = Manifest {
+    program_argument: ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
+    clock: true,
+    configuration: true,
+    startup: StartupContract::Std,
+    ..OUTPUT_ONLY
+};
 
 /// The longest zone a descriptor may hold: 63 + 1 + 63 + 1 + 63 + 1 + 61 = 253 bytes.
 const LONGEST: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.\
@@ -60,12 +101,12 @@ const ONE_VERB: &[VerbGrant] = &[VerbGrant {
 
 /// Every seed: its file name and its bytes.
 fn seeds() -> Vec<(&'static str, Vec<u8>)> {
-    let m = Program::Uptime.manifest();
+    let m = OUTPUT_ONLY;
     vec![
         ("manifest_v1_uptime", encode(&m).to_vec()),
         (
             "manifest_v1_unvouched_std",
-            encode(&UNVOUCHED_STD_MANIFEST).to_vec(),
+            encode(&STD_WORDS_CLOCK_CONFIGURATION).to_vec(),
         ),
         (
             "manifest_v2_one_zone",
@@ -73,12 +114,15 @@ fn seeds() -> Vec<(&'static str, Vec<u8>)> {
         ),
         (
             "manifest_v2_root_and_one",
-            encode_zoned::<{ zoned_descriptor_bytes(TWO) }>(&NO_NOTE_MANIFEST, TWO).to_vec(),
+            encode_zoned::<{ zoned_descriptor_bytes(TWO) }>(&OUTPUT_ONLY, TWO).to_vec(),
         ),
         (
             "manifest_v2_eight_zones",
-            encode_zoned::<{ zoned_descriptor_bytes(EIGHT) }>(&UNVOUCHED_STD_MANIFEST, EIGHT)
-                .to_vec(),
+            encode_zoned::<{ zoned_descriptor_bytes(EIGHT) }>(
+                &STD_WORDS_CLOCK_CONFIGURATION,
+                EIGHT,
+            )
+            .to_vec(),
         ),
         (
             "manifest_v2_longest_zone",
@@ -95,7 +139,7 @@ fn seeds() -> Vec<(&'static str, Vec<u8>)> {
         (
             "manifest_v3_zones_service",
             encode_serviced::<{ serviced_descriptor_bytes(TWO) }>(
-                &UNVOUCHED_STD_MANIFEST,
+                &STD_WORDS_CLOCK_CONFIGURATION,
                 TWO,
                 true,
             )

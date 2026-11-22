@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: 972, 1017
 decision_dependencies: 305
 machine_requirements: none
@@ -156,15 +157,15 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 
 ## Finding status
 
-Read against nifeos/boot_ladder `main` at `ed23542` and nife `main`.
+Read against nifeos/boot_ladder `main` at `6f2dfda` and nife `main`.
 
 - P0-1, the manifest stands alone: Done, [#3655](https://github.com/nifeos/nife/pull/3655) and the
   move ([#3894](https://github.com/nifeos/nife/pull/3894)). `license`, `rust-version`,
   `description`, `repository`, `readme` and the template's lints are literals, and the `publish`
   line carries the one-sentence comment.
-- P0-2, the files a stranger needs: Waiting on nifeos/boot_ladder#2, which records a passing
-  stranger run in `docs/stranger-test.md`. The README, both licenses, `CHANGELOG.md` and
-  `_typos.toml` exist, and nifeos/boot_ladder#1 gave the README its proof steps.
+- P0-2, the files a stranger needs: Done, nifeos/boot_ladder#1 and nifeos/boot_ladder#2. The
+  README, both licenses, `CHANGELOG.md` and `_typos.toml` exist, #1 gave the README its proof
+  steps, and `docs/stranger-test.md` records a passing stranger run.
 - P0-3, shipped text points into this tree: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
   [#3655](https://github.com/nifeos/nife/pull/3655) and the move
   ([#3894](https://github.com/nifeos/nife/pull/3894)). No doc comment in nifeos/boot_ladder names a
@@ -178,13 +179,13 @@ Read against nifeos/boot_ladder `main` at `ed23542` and nife `main`.
 - P1-6, tests and proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565) and
   [#3655](https://github.com/nifeos/nife/pull/3655). Two Kani harnesses in `src/verdict.rs`, each
   with a falsification patch under `falsifications/`.
-- P1-7, head literals in `xtask`: Done in this pull request. The literals went in
-  [#3655](https://github.com/nifeos/nife/pull/3655), and `script/lint` section 5c
+- P1-7, head literals in `xtask`: Done, [#3655](https://github.com/nifeos/nife/pull/3655) and
+  [#3943](https://github.com/nifeos/nife/pull/3943). The literals went in #3655, and `script/lint` section 5c
   (`helpers/boot_line_heads.py`) refuses a head spelled by hand outside test modules, fixtures and
   a copy marked `boot-line-head: copy, <reason>`.
 - P1-8, the ten public names: Done, [#3589](https://github.com/nifeos/nife/pull/3589) and
   [#3655](https://github.com/nifeos/nife/pull/3655), ratified as built (ruled 2026-11-19 UTC).
-- P1-8b, the `self_test_program` names: Won't fix in this review, because the module stays in
+- P1-8b, the `self_test_program` names: Will not fix in this review, because the module stays in
   nife's `self_test_contract` (ruled 2026-11-21 UTC). Its names stay provisional there, on nife's
   name worklist, with the proposal that `DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS` become
   `DIRECT_MEMORY_ACCESS_OBSERVER_VIRTUAL_ADDRESS`.
@@ -195,8 +196,9 @@ Read against nifeos/boot_ladder `main` at `ed23542` and nife `main`.
   kernel's name column stays ten wide, which the crate's `BUGS` records.
 - P2-11, a version policy: Done, [#3655](https://github.com/nifeos/nife/pull/3655). The README's
   "Version policy" states it, and no identity constant exists.
-- P2-12, growth already proposed: Done by the record the item allows. Milestone 972 (the boot
-  stick's shared names are code) and the two hoists in
+- P2-12, growth already proposed: Done, [#3943](https://github.com/nifeos/nife/pull/3943), by the
+  record the item allows. Milestone 972 (the boot stick's shared names are code) and the two
+  hoists in
   `notes/bugs-without-milestones/drivers-boot-and-install-1.md` (soak markers, job-mix field names)
   each land in nifeos/boot_ladder after the move and then move nife's pin.
 - P2-13, the banner's tail: Done, [#3565](https://github.com/nifeos/nife/pull/3565) and
@@ -209,7 +211,7 @@ None. The publishing hold stands.
 
 ## Follow-on
 
-- **Outstanding.** P0-2 reads Done once nifeos/boot_ladder#2 merges, and the milestone is then BUILT.
+- **None.**
 
 ## BUGS
 
