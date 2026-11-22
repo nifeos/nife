@@ -64,14 +64,14 @@ assert_eq!(f.metadata()?.modified().unwrap_err().kind(), ErrorKind::Unsupported)
 
 BUGS:
 
-- A file nife writes while the clock is not set shows early 1970. Once the clock page reports a set
-  clock, the FS server stamps from the wall clock. Before that every mutation stamps a counter
+- A file nife writes while the clock reads unknown shows early 1970. Once the clock page knows the
+  time, the FS server stamps from the wall clock. Before that every mutation stamps a counter
   (notes/touch.md's `BUGS`), and the contract says Unix seconds. So `modified()` of such a file is
   `UNIX_EPOCH` plus a few seconds. The PAL cannot tell, because `SETMTIME_AT` may legitimately assert
   a small number.
 - A write only ever moves a timestamp forward. The engine (`vendor/redoxfs`'s `write_node` and
   `truncate_node`) never moves an mtime back. A file the host tool made keeps its host time through
-  any write with an earlier stamp, which is every write before the clock is set. A file that `set_times` moved to the future
+  any write with an earlier stamp, which is every write while the clock reads unknown. A file that `set_times` moved to the future
   stays there. So `std_exerciser` asserts a write moving a *made* file forward, before the
   `set_times`, which is what the stamp can promise.
 - Whole seconds only. The wire carries seconds, so `set_times` stores a zero nanosecond part and
