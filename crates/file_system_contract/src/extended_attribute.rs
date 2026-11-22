@@ -70,8 +70,8 @@ pub const ENOSPC: i32 = 28;
 /// `EOPNOTSUPP`: **this capability does not offer extended attributes at all.**
 ///
 /// The rule is that a backend which cannot meet a verb's guarantee does not offer
-/// the verb, and that the refusal is loud. The caretakers (`fs_file_caretaker`,
-/// `fs_subtree_caretaker`, `fs_nameset_caretaker`) answer this: they serve this same protocol
+/// the verb, and that the refusal is loud. A caretaker (a proxy that narrows a directory
+/// capability to a subtree, a set of names or one file) answers this: it serves this same protocol
 /// over a narrowed namespace and do not forward attribute requests, so a program behind one
 /// learns that its capability does not carry attributes rather than that its request was
 /// malformed. `EINVAL` would have been the silent degradation, because it reads as "you sent
@@ -85,7 +85,7 @@ pub const ENOTSUP: i32 = 95;
 ///
 /// Every name-taking verb refuses it with `EINVAL`, as for `..`, and [`file_system::READDIR`] skips it, in
 /// every directory, so no client reaches attributes as ordinary bytes. Recovery does see it:
-/// `redoxfs_host extract` and upstream's FUSE (filesystem in userspace) mount carry it out with the files, a decision and not
+/// a host tool that extracts an image and upstream's FUSE (filesystem in userspace) mount carry it out with the files, a decision and not
 /// a leak.
 ///
 /// **BUGS.** No file anywhere on a filesystem of this stack can be called `.extended-attributes`, at any rights.

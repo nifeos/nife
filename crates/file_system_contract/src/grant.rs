@@ -26,9 +26,9 @@ pub mod rights {
 pub const MAXIMUM_NAME_BYTES: usize = 252;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, eight per word. A
-/// caretaker's granted directory, `rm`'s operand, a `login` identity's subtree and an activation
-/// request's package name ride this way, so they cost no extra page and the process needs nothing
-/// mapped before it runs. Anything longer is refused where it would be packed ([`pack_name`]
+/// caretaker's granted directory, a remove program's operand, a user's home subtree and the
+/// package name in a request to start a program ride this way, so they cost no extra page and the
+/// process needs nothing mapped before it runs. Anything longer is refused where it would be packed ([`pack_name`]
 /// answers `None`), never truncated, because a truncated name is a different file.
 ///
 /// Name: provisional (milestone 946 (a granted file name longer than sixteen bytes)), for "what two words can hold" beside [`MAXIMUM_NAME_BYTES`]'s "what
@@ -155,11 +155,10 @@ pub const fn is_writable(w: u64) -> bool {
 }
 
 /// **Where a caretaker's grant page is mapped**, read-only, in the caretaker's address space. Its
-/// builder maps the page here and the caretaker reads it here, both through this one constant: the
-/// progenitor, `login` and the kernel's test wiring on one side, `fs_subtree_caretaker`,
-/// `fs_nameset_caretaker` and `fs_file_caretaker` on the other. A page of the address space map's
-/// pair-page window; the progenitor checks it against the map at compile time
-/// (`address_space_layout::pair_page`), so this crate keeps no dependency of its own.
+/// builder (the process that starts the caretaker) maps the page here and the caretaker reads it
+/// here, both through this one constant. The address is a page of the pair-page window in the
+/// address space layout, and the builder checks it against that layout at compile time, so this
+/// crate keeps no dependency of its own.
 ///
 /// Name: provisional.
 pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0000_0070_0000;

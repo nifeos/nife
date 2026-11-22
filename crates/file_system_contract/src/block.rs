@@ -49,9 +49,9 @@ pub const FLUSH: u64 = 4;
 pub const BLOCK_BYTES: usize = PAGE_BYTES;
 
 /// The logical block size a partition table counts in, in bytes: the device's logical block size,
-/// assumed to be 512 until a driver reports it. Nothing yet carries the driver's size to the
-/// partitioner (`disk_surveyor`'s BUGS), so it is stated here once and every consumer takes it from
-/// here, the shipping installer included, which depends on no test data.
+/// assumed to be 512 until a driver reports it. Nothing yet carries the driver's size to a
+/// partitioner, so it is stated here once and every consumer takes it from here, an installer
+/// included, which depends on no test data.
 ///
 /// Name: ratified 2026-11-22.
 pub const LOGICAL_BLOCK_BYTES: u64 = 512;
@@ -62,7 +62,8 @@ pub const LOGICAL_BLOCK_BYTES: u64 = 512;
 ///
 /// The device reads and writes the region directly, by direct memory access, so a larger request would overrun it. A caller that
 /// sends [`super::request`]`(operation)`, whose low bits are zero, gets one block ([`request_block_count`]), so
-/// the single-block callers (`disk_surveyor`, `disk_partitioner`, `mkfs`) need no change.
+/// a caller that reads or writes one block at a time (a partition reader, a formatter) needs no
+/// count.
 pub const TRANSFER_BLOCKS: usize = 16;
 
 /// The largest payload one [`READ`] or [`WRITE`] may carry, in bytes: the whole shared region

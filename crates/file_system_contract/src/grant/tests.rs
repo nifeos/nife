@@ -37,18 +37,18 @@ fn pack_name_refuses_what_two_words_cannot_hold() {
 }
 
 /// **What a grant can name is wider than what two words hold**: a 20-byte name
-/// like `least_authority_demo` is grantable, and only the packer refuses it.
+/// like `quarterly_report.txt` is grantable, and only the packer refuses it.
 #[test]
 fn a_granted_name_may_be_longer_than_two_words() {
     let long = [b'n'; grant::MAXIMUM_NAME_BYTES];
-    assert!(grant::fits(b"least_authority_demo"));
+    assert!(grant::fits(b"quarterly_report.txt"));
     assert!(grant::fits(&long), "the longest grantable name");
     assert!(
         !grant::fits(&[b'n'; grant::MAXIMUM_NAME_BYTES + 1]),
         "one byte past it"
     );
     assert!(!grant::fits(b""));
-    assert!(grant::pack_name(b"least_authority_demo").is_none());
+    assert!(grant::pack_name(b"quarterly_report.txt").is_none());
     const { assert!(grant::MAXIMUM_WORDS_NAME_BYTES < grant::MAXIMUM_NAME_BYTES) };
     // The spec word's length field is one byte, so the longest name must still be sayable in it.
     assert_eq!(

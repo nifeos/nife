@@ -317,7 +317,7 @@ pub const UNBIND: u64 = 65;
 /// **Make a badge sync-only**. `w1` is the badge; the handle field is ignored. A request carrying it may
 /// then be [`SYNC`] and nothing else, answered as any writer's; every other verb is `EPERM` before
 /// a handle is read. [`BIND`]'s caller rule and [`UNBIND`]'s revocation apply. The one holder is
-/// `reboot`, which syncs before it restarts the machine. Outside [`super::verb::TABLE`]'s range,
+/// the program that restarts the machine, which syncs first. Outside [`super::verb::TABLE`]'s range,
 /// for [`BIND`]'s reason.
 ///
 /// Name: ratified 2026-10-06 (calef, #1783: "Approve sync for the file-server

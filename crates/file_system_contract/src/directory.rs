@@ -215,7 +215,7 @@ impl Rights {
         self.0 & any == 0
     }
 
-    /// The raw mask, for reporting it (a test's verdict, or what `caps` would print). Not a way
+    /// The raw mask, for reporting it (a test's verdict, or a listing of what a capability allows). Not a way
     /// back into a [`Rights`]: there is no constructor that takes this.
     pub const fn bits(self) -> u64 {
         self.0
