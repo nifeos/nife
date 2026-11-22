@@ -84,11 +84,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "byte_glob"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
-
-[[package]]
 name = "byte_sink_contract"
 version = "0.1.0"
 source = "git+https://github.com/nifeos/byte_sink_contract?rev=8a6c4599882e505d219829fd106d9e572d56f6e9#8a6c4599882e505d219829fd106d9e572d56f6e9"
@@ -289,7 +284,6 @@ dependencies = [
  "nifefs",
  "package_archive",
  "package_index",
- "program_table",
  "redoxfs",
  "redoxfs_server",
  "static_elf",
@@ -349,15 +343,6 @@ version = "0.1.0"
 name = "grant_contract"
 version = "0.1.0"
 dependencies = [
- "program_argument_contract",
-]
-
-[[package]]
-name = "grant_plan"
-version = "0.1.0"
-dependencies = [
- "byte_glob",
- "grant_contract",
  "program_argument_contract",
 ]
 
@@ -630,14 +615,6 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
-
-[[package]]
-name = "program_table"
-version = "0.1.0"
-dependencies = [
- "grant_contract",
- "grant_plan",
-]
 
 [[package]]
 name = "quote"
