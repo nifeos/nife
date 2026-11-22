@@ -569,18 +569,19 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
         //
         // A first word with a reserved bit set is refused before either (`proto::decode`), so a
         // later version can give the bits a meaning.
-        let from_supervisor = req.badge == proto::SUPERVISOR_BADGE;
-        let operation = match proto::decode(w0) {
-            Some((operation, _)) if from_supervisor == (operation == proto::OPERATION_QUIESCE) => {
-                operation
+        let Some((operation, _)) = proto::decode(w0) else {
+            if let Some(to) = reply_slot {
+                reply(to, proto::BAD_REQUEST, 0);
             }
-            _ => {
-                if let Some(to) = reply_slot {
-                    reply(to, proto::BAD_REQUEST, 0);
-                }
-                continue;
-            }
+            continue;
         };
+        let from_supervisor = req.badge == proto::SUPERVISOR_BADGE;
+        if from_supervisor != (operation == proto::OPERATION_QUIESCE) {
+            if let Some(to) = reply_slot {
+                reply(to, proto::BAD_REQUEST, 0);
+            }
+            continue;
+        }
         match operation {
             // The application half: print `len` bytes from the shared output page. The terminal
             // performs no newline translation, deliberately: `line_editor::expand_output` already put
