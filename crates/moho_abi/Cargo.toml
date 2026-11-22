@@ -11,6 +11,8 @@ categories = ["no-std", "embedded", "os"]
 publish = false     # `false` until the release that publishes; that release deletes the line
 
 [lints.rust]
+# `cfg(kani)` is set by the Kani model checker, not by cargo, so a crate that checks its cfgs names it.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
 unsafe_op_in_unsafe_fn = "warn"
 missing_docs = "warn"
 
