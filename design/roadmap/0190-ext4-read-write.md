@@ -31,8 +31,6 @@ reason each lost are in [the survey](0190-ext4-read-write/survey.md).
 It is the one Rust implementation that writes ext4 with `metadata_csum` and writes a jbd2 journal,
 and it has a maintained upstream. Taking it is §46's 2026-10-04 default: a file format is the
 exposure case, and code other systems have run carries evidence that code written here cannot.
-What it lacks is what our bar asks for, and the rule says to contribute that rather than write
-around it.
 
 ## What is measured
 
@@ -57,13 +55,13 @@ public API:
 - Write, bug 2. `truncate_inode` on a file whose extent tree has depth 2 returns
   `Corrupted { op: "extent:empty_index" }` in 2 of 8 seeds. It is not atomic: when it fails, the
   bytes from the new end of file to the end of that block are already zeroed.
-- Write, bug 3. At 1 KiB blocks `rsext4` leaves clear the padding of an inode bitmap it
+- Write, bug 3 (upstream item 9). At 1 KiB blocks `rsext4` leaves clear the padding of an inode bitmap it
   initializes, and `e2fsck -fn` exits 4.
 - Write oracle, 2026-11-22 (UTC). Sixteen cases, extended attributes included, fail only on bugs
   1 to 3 ([the write-oracle appendix](0190-ext4-read-write/write-oracle.md)).
 - Journal. It writes descriptor, revoke and commit blocks with journal checksum v3, and Linux's
   `e2fsck` replays them. Across two images, 158 power-cut points all recovered to a clean volume.
-  It commits only on `sync()` or unmount. In 2 of 79 cuts on one image the `needs_recovery` flag was
+  In 2 of 79 cuts on one image the `needs_recovery` flag was
   cleared before the journal's start was reset; both recovered, and the order is still wrong.
 - `unsafe`. Eleven uses. Nine are the hardware CRC32C paths for aarch64 and x86_64. Two are in
   `blockgroup_description/table.rs`, which casts a `&[u8]` to `*const Ext4GroupDesc` and to
@@ -78,8 +76,7 @@ and performance.
 
 ## The bar, and where rsext4 stands
 
-§46, as amended, lets a third-party crate be taken when it meets four conditions; a crate short of
-them is one we contribute to upstream until it meets them.
+§46's four conditions, as amended:
 
 | condition | `rsext4` 0.9.2 | what closes it |
 |---|---|---|
@@ -98,7 +95,7 @@ agent-written submissions is read, and followed, before the first one.
    entries, unmount, and require `e2fsck -fn` to exit 0.
 2. The truncate fix, with its reproducer: the failing seeds as fixed inputs, a check that
    truncation of a depth-2 tree succeeds, and a check that a failed truncation leaves the file's
-   bytes as they were. Atomicity is the larger half of this fix.
+   bytes as they were.
 3. The recovery-flag order. The journal's start is reset before `needs_recovery` is cleared,
    with the power-cut point that showed it as a test.
 4. Fuzz targets: mount and walk an arbitrary image; parse a superblock, a group descriptor
@@ -122,10 +119,8 @@ agent-written submissions is read, and followed, before the first one.
 8. `InodeInfo` reports whole times. Its four times are the raw 32-bit seconds fields, which drop
    nanoseconds, times before 1970 and times past 2106; the crate already decodes all three
    inside, and writes them.
-9. The inode bitmap's padding. The first inode allocated in a group `mke2fs` left `INODE_UNINIT`
-   gets a bitmap with the bits past the group's last inode clear, which `e2fsck` refuses whenever
-   a group's inodes fill less than one bitmap block, as at 1 KiB blocks. The fix sets them as
-   Linux does, and the reproducer requires them set after that first allocation.
+9. The inode bitmap's padding (bug 3), set as Linux sets it when a group `mke2fs` left
+   `INODE_UNINIT` gets its first inode, with the crate's own allocation test strengthened.
 
 **Every issue and pull request text is shown to the architect before it is filed.** An upstream
 submission is an outward step, and the review is of the exact text, not of the idea. A fuzz finding
@@ -138,8 +133,7 @@ crates.io release carries it.
 
 ## What we test on our side
 
-The four phases keep their intent, each independently useful. The measurement suite above becomes
-the oracle that every phase is judged by.
+Each of the four phases is useful alone, and the oracle judges each.
 
 | phase | what | judged by |
 |---|---|---|
@@ -152,7 +146,7 @@ The oracle. A host harness in `tools/`, its own workspace, `std`, never in the s
 the pattern `tools/redoxfs_host` set. For reads, it extracts every file and directory listing
 through `rsext4` and through `debugfs`, and requires them equal. For writes, it applies an operation
 sequence through `rsext4`, then judges the image with `e2fsck -fn` and reads it back through
-`debugfs`. Bugs 1 and 2 are its first two fixed cases.
+`debugfs`.
 
 The corpus is images `mke2fs` makes with its defaults and with 1 KiB, 2 KiB and 4 KiB blocks, on
 devices with 512-byte and 4,096-byte sectors. It adds extent depths 0 to 2, htree directories,
@@ -247,7 +241,6 @@ it. That ruling is not the adoption ruling above, which stays open.
   give a reader the time Linux wrote until that lands.
 - `write_file` fails with `Corrupted { op: "extent:parent_key" }` when 1,500 single-block extents
   arrive shuffled, in 0.9.2 and on `dev`; in ascending order the file builds. No upstream draft yet.
-- Bug 3 above is upstream item 9, whose draft awaits the architect.
 - The read oracle compares against `debugfs`, which is libext2fs, not the Linux kernel; this host
   could not mount a loop device.
 - No phase is priced. The honest estimate comes after the corpus survey and the first upstream
@@ -269,8 +262,8 @@ it. That ruling is not the adoption ruling above, which stays open.
   sector-size report as a test, and the CI job `ext4-read-oracle` on an x86_64 host.
 - **Done.** The oracle's write half in `tools/ext4_oracle/` and the `ext4-read-oracle` job, bugs
   1 to 3 held as expected outcomes.
-- **Outstanding.** [The inode bitmap padding draft](0190-ext4-read-write/upstream/9-inode-bitmap-padding.md)
-  (item 9, bug 3) awaits the architect.
+- **Outstanding.** [Item 9's draft](0190-ext4-read-write/upstream/9-inode-bitmap-padding.md), for
+  bug 3, awaits the architect.
 - **Outstanding.** Our side: the oracle on aarch64 and riscv64 hosts, the kernel as a
   second read oracle, a volume over 1 GiB, the write-reordering and power-cut sweeps,
   hostile-image fuzzing, and `ext4_server` itself.
@@ -279,8 +272,8 @@ it. That ruling is not the adoption ruling above, which stays open.
 ## Index row
 
 calef's ext4 drives hold the family's borg repositories, so nife reads and writes the format Linux
-wrote. The implementation is `rsext4`, brought to the bar of §46 by contributing upstream: two
-write-path bug fixes with reproducers, fuzz targets, safety arguments and a sound replacement for
+wrote. The implementation is `rsext4`, brought to the bar of §46 by contributing upstream: write-path
+bug fixes with reproducers, fuzz targets, safety arguments and a sound replacement for
 two unchecked casts, and Kani harnesses. Here, a differential oracle against libext2fs and Linux
 judges four phases: read-only, the oracle itself, write, and jbd2 with Linux replay, plus write
 reordering and hostile-image fuzzing. Every upstream text is shown to the architect before it is
