@@ -1,11 +1,12 @@
 ---
 status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 1087. `domain_name_system`: what an outside maintainer would fix before it leaves
 
@@ -230,10 +231,6 @@ creates `nifeos/domain_name_system` with the three mutant exemptions and the fuz
 ## Done when
 
 The checks are in [the appendix](1087-domain-name-system-outside-review/done-when.md).
-
-## Follow-on
-
-- **Outstanding.** None: every line under [Finding status](#finding-status) is Done.
 
 ## BUGS
 
