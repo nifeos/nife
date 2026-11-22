@@ -103,18 +103,12 @@ c_library/src/start.rs::CMain
 
 c_library/src/start.rs::run
 
-components/src/block_driver_roles.rs::run
-
-components/src/block_driver_roles.rs::run_attack
-
-components/src/block_driver_roles.rs::run_attack_indirect
 
 
-components/src/block_driver_roles.rs::run_net
 
-components/src/block_driver_roles.rs::run_write
 
-components/src/block_driver_roles.rs::run_write_abandon
+
+
 
 components/src/credentialer.rs::RPT_READY
 
