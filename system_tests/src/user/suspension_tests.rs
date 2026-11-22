@@ -9,7 +9,7 @@
 //!
 //! Name: provisional (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
 
-use abi::Error;
+use moho_abi::Error;
 
 use super::*;
 use crate::capability_object::{Capability, Object, Rights};
@@ -115,7 +115,7 @@ fn a_suspended_user_thread_stands_still_and_resumes_with_its_registers() {
         sched::grant(capability(Object::ThreadControlBlock(tid), Rights::READ)).expect("grant");
     call(
         tcb,
-        abi::thread_control_block::CONFIGURE,
+        moho_abi::thread_control_block::CONFIGURE,
         [CODE_VA, STACK_VA + page_frames::FRAME_BYTES, given],
     )
     .expect("CONFIGURE");
@@ -129,8 +129,8 @@ fn a_suspended_user_thread_stands_still_and_resumes_with_its_registers() {
     let_time_pass(10, || {});
 
     for method in [
-        abi::thread_control_block::SUSPEND,
-        abi::thread_control_block::RESUME,
+        moho_abi::thread_control_block::SUSPEND,
+        moho_abi::thread_control_block::RESUME,
     ] {
         assert_eq!(
             call(read_only, method, [0; 3]),
@@ -139,12 +139,18 @@ fn a_suspended_user_thread_stands_still_and_resumes_with_its_registers() {
         );
     }
 
-    assert_eq!(call(tcb, abi::thread_control_block::SUSPEND, [0; 3]), Ok(0));
+    assert_eq!(
+        call(tcb, moho_abi::thread_control_block::SUSPEND, [0; 3]),
+        Ok(0)
+    );
     let frozen = word(page, 0);
     let_time_pass(20, || {});
     assert_eq!(word(page, 0), frozen, "a suspended thread went on counting");
 
-    assert_eq!(call(tcb, abi::thread_control_block::RESUME, [0; 3]), Ok(0));
+    assert_eq!(
+        call(tcb, moho_abi::thread_control_block::RESUME, [0; 3]),
+        Ok(0)
+    );
     let mut lowest = u64::MAX;
     let_time_pass(50, || lowest = lowest.min(word(page, 0)));
     assert!(
@@ -158,7 +164,10 @@ fn a_suspended_user_thread_stands_still_and_resumes_with_its_registers() {
     assert_eq!(word(page, 1), 1, "RESUME re-ran the thread from its entry");
 
     // `kill -9` on a stopped job: the region comes back with its thread suspended, not running.
-    assert_eq!(call(tcb, abi::thread_control_block::SUSPEND, [0; 3]), Ok(0));
+    assert_eq!(
+        call(tcb, moho_abi::thread_control_block::SUSPEND, [0; 3]),
+        Ok(0)
+    );
     let _ = delete_current_capability(tcb);
     let _ = delete_current_capability(read_only);
     assert!(

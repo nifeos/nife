@@ -228,27 +228,28 @@ fn spawn_bench() -> ! {
 fn spawn_one(code_frame: u64) {
     // The child's own region, so it is independently reclaimable.
     let child_ut = split_memory_region(SP_UNTYPED, CHILD_PAGES) as u64;
-    let aspace = retype_into_kernel_object(child_ut, abi::object_type::ADDRESS_SPACE) as u64;
+    let aspace = retype_into_kernel_object(child_ut, moho_abi::object_type::ADDRESS_SPACE) as u64;
     // Alias the shared code frame as the child's code; a stack from the child's own region.
     address_space_layout_into(
         aspace,
         CHILD_CODE_VA,
         code_frame,
-        abi::address_space::MAP_CODE,
+        moho_abi::address_space::MAP_CODE,
     );
     let stack = retype_into_page_frame(child_ut) as u64;
     address_space_layout_into(
         aspace,
         CHILD_STACK_VA,
         stack,
-        abi::address_space::MAP_READ_WRITE,
+        moho_abi::address_space::MAP_READ_WRITE,
     );
     capability_delete(stack);
 
     // The thread: give it CHILD_DONE (narrowed to WRITE) in its slot 0, configure (which consumes
     // the address space cap), and start. The child drops to EL0, SENDs its done word, and exits.
-    let tcb = retype_into_kernel_object(child_ut, abi::object_type::THREAD_CONTROL_BLOCK) as u64;
-    thread_control_block_capability_insert(tcb, SP_CHILD_DONE, abi::rights::WRITE, 0);
+    let tcb =
+        retype_into_kernel_object(child_ut, moho_abi::object_type::THREAD_CONTROL_BLOCK) as u64;
+    thread_control_block_capability_insert(tcb, SP_CHILD_DONE, moho_abi::rights::WRITE, 0);
     thread_control_block_configure(tcb, CHILD_CODE_VA, CHILD_STACK_VA + SPAWN_PAGE, aspace);
     thread_control_block_start(tcb, 0, 0, 0);
 

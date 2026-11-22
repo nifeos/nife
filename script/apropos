@@ -14,7 +14,7 @@
 #          25  design/decisions/0124-x86-64-system-call-abi.md        124. Ratify the x86_64 system call ABI
 #           3  design/decisions/0008-process-model-deferred.md     8. Process model / system call ABI: ...
 #         ...
-#           5  crates/abi/src/lib.rs                             crate abi
+#           5  crates/moho_abi/src/lib.rs                             crate abi
 #         ...
 #       16 of 278 pages, strongest first
 #
@@ -31,10 +31,10 @@
 # **Why it exists**, and it is a finding rather than a nicety. Milestone 117 has run three strangers
 # at this tree with no help. What none of them could do is on the record in notes/stranger-test.md:
 # reach notes/net.md, notes/capabilities.md or ANY design/decisions/ file by following the tree
-# while doing ordinary work, or find crates/abi/src/lib.rs, which is four system call numbers and the
+# while doing ordinary work, or find crates/moho_abi/src/lib.rs, which is four system call numbers and the
 # whole design on one screen. None of those is hidden; nothing a person would type led to them.
 # This is the thing to type. It is also why the crate and program headers are indexed: the document
-# a reader wants about `abi` *is* that file's header, and no markdown page was ever going to fix it.
+# a reader wants about `moho_abi` *is* that file's header, and no markdown page was ever going to fix it.
 #
 # It is the same index and the same reader as the guest's, on purpose (`documentation::index::build` and
 # `documentation::index::search`), so a defect in the layout shows up in both places and a fix lands in

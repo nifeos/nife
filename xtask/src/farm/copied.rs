@@ -36,9 +36,9 @@ pub(super) struct CopiedFile {
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/farm-sources-from-cargo-metadata.
 pub(super) const COPIED_FILES: [CopiedFile; 15] = [
     CopiedFile {
-        package: "abi",
+        package: "moho_abi",
         file: "src/lib.rs",
-        destination: "sys/pal/nife/abi.rs",
+        destination: "sys/pal/nife/moho_abi.rs",
     },
     // Each thread's cache in front of the heap (milestone 561 (a per-CPU allocator is what the
     // current-CPU page was for)), a sibling of it, so the two stay one grid.

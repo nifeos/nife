@@ -65,7 +65,7 @@ fn a_device_frame_revoked_while_in_flight_does_not_reach_the_receiver() {
     crate::revoke::revoke_device_from_others(phys);
 
     let [_word, slot, _second, _badge, ..] = inter_process_communication_receive_capability(ep);
-    let delivered = if slot == abi::rendezvous::NO_CAPABILITY {
+    let delivered = if slot == moho_abi::rendezvous::NO_CAPABILITY {
         None
     } else {
         current_capability(slot).ok()
@@ -139,7 +139,7 @@ fn a_port_range_revoked_while_in_flight_does_not_reach_the_receiver() {
     sched::delete_port_range_capabilities(BASE, COUNT);
 
     let [_word, slot, _second, _badge, ..] = inter_process_communication_receive_capability(ep);
-    let delivered = if slot == abi::rendezvous::NO_CAPABILITY {
+    let delivered = if slot == moho_abi::rendezvous::NO_CAPABILITY {
         None
     } else {
         current_capability(slot).ok()

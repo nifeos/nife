@@ -24,7 +24,7 @@ pub(super) fn reply_other(
     a1: u64,
     carried: u64,
 ) -> Result<i64, Error> {
-    if method != abi::reply::REPLY_CAPABILITY {
+    if method != moho_abi::reply::REPLY_CAPABILITY {
         return Err(Error::BadMethod);
     }
     let reply = sched::current_capability(slot).map_err(|_| Error::NoSuchSlot)?;
@@ -59,7 +59,7 @@ pub(super) fn aborted_send_error() -> Error {
 
 /// The four `Notification` methods (milestone 151, DECISIONS §101). Rights are §101's: `WRITE` to
 /// signal and to bind, `READ` to wait and to poll. `BIND` also needs `WRITE` on the thread it names,
-/// because binding changes what that thread's receives return. See `abi::notification`.
+/// because binding changes what that thread's receives return. See `moho_abi::notification`.
 #[inline(never)]
 pub(super) fn notification_invoke(
     rights: Rights,
@@ -68,26 +68,26 @@ pub(super) fn notification_invoke(
     a0: u64,
 ) -> Result<i64, Error> {
     match method {
-        abi::notification::SIGNAL => {
+        moho_abi::notification::SIGNAL => {
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             sched::notification_signal(id, a0)?;
             Ok(0)
         }
-        abi::notification::WAIT => {
+        moho_abi::notification::WAIT => {
             if !rights.allows(Rights::READ) {
                 return Err(Error::NotPermitted);
             }
             sched::notification_wait(id).map(|w| w as i64)
         }
-        abi::notification::POLL => {
+        moho_abi::notification::POLL => {
             if !rights.allows(Rights::READ) {
                 return Err(Error::NotPermitted);
             }
             sched::notification_poll(id).map(|w| w as i64)
         }
-        abi::notification::BIND => {
+        moho_abi::notification::BIND => {
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
@@ -106,19 +106,19 @@ pub(super) fn notification_invoke(
 }
 
 /// `Reboot::REBOOT` (DECISIONS §251 (restarting the machine is a kernel object the progenitor
-/// hands out)): restart the machine, or answer one of the four `abi::Error::Reset…` reasons for
+/// hands out)): restart the machine, or answer one of the four `moho_abi::Error::Reset…` reasons for
 /// not. See kernel/src/reboot.rs.
 #[inline(never)]
 pub(super) fn reboot_invoke(method: u64) -> Result<i64, Error> {
     match method {
-        abi::reboot::REBOOT => Err(crate::reboot::restart()),
+        moho_abi::reboot::REBOOT => Err(crate::reboot::restart()),
         _ => Err(Error::BadMethod),
     }
 }
 
 /// The two `Timer` methods (milestone 106, DECISIONS §147). `WRITE` on the timer for both, and
 /// for `ARM` also `WRITE` on the notification it names, because arming is signalling later and
-/// `SIGNAL` takes `WRITE`. See `abi::timer`.
+/// `SIGNAL` takes `WRITE`. See `moho_abi::timer`.
 #[inline(never)]
 pub(super) fn timer_invoke(
     rights: Rights,
@@ -132,7 +132,7 @@ pub(super) fn timer_invoke(
         return Err(Error::NotPermitted);
     }
     match method {
-        abi::timer::ARM => {
+        moho_abi::timer::ARM => {
             let target = sched::current_capability(a1).map_err(|_| Error::NoSuchSlot)?;
             let Object::Notification(notification) = target.object else {
                 return Err(Error::WrongObject);
@@ -143,7 +143,7 @@ pub(super) fn timer_invoke(
             sched::timer_arm(id, a0, notification, a2)?;
             Ok(0)
         }
-        abi::timer::CANCEL => sched::timer_cancel(id).map(i64::from),
+        moho_abi::timer::CANCEL => sched::timer_cancel(id).map(i64::from),
         _ => Err(Error::BadMethod),
     }
 }
@@ -189,7 +189,7 @@ pub(super) fn process_invoke(
     method: u64,
 ) -> Result<i64, Error> {
     match method {
-        abi::process::DESTROY => {
+        moho_abi::process::DESTROY => {
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
@@ -235,16 +235,20 @@ pub(super) fn virtual_io_invoke(id: u64, method: u64, a0: u64, a1: u64) -> Resul
         _ => Error::WrongObject,
     };
     match method {
-        abi::virtual_io::READ_REGISTER => crate::virtual_io::read_register(id, a0)
+        moho_abi::virtual_io::READ_REGISTER => crate::virtual_io::read_register(id, a0)
             .map(|v| v as i64)
             .ok_or(Error::WrongObject),
-        abi::virtual_io::WRITE_REGISTER => crate::virtual_io::write_register(id, a0, a1 as u32)
-            .map(|_| 0)
-            .map_err(map),
-        abi::virtual_io::SETUP_QUEUE => crate::virtual_io::setup_queue(id, a0 as u16, a1 as u16)
-            .map(|_| 0)
-            .map_err(map),
-        abi::virtual_io::NOTIFY => crate::virtual_io::notify(id, a0 as u16)
+        moho_abi::virtual_io::WRITE_REGISTER => {
+            crate::virtual_io::write_register(id, a0, a1 as u32)
+                .map(|_| 0)
+                .map_err(map)
+        }
+        moho_abi::virtual_io::SETUP_QUEUE => {
+            crate::virtual_io::setup_queue(id, a0 as u16, a1 as u16)
+                .map(|_| 0)
+                .map_err(map)
+        }
+        moho_abi::virtual_io::NOTIFY => crate::virtual_io::notify(id, a0 as u16)
             .map(|_| 0)
             .map_err(map),
         _ => Err(Error::BadMethod),
@@ -267,7 +271,7 @@ pub(super) fn port_range_invoke(
     method: u64,
 ) -> Result<i64, Error> {
     match method {
-        abi::port_range::REVOKE => {
+        moho_abi::port_range::REVOKE => {
             if !rights.allows(Rights::GRANT) {
                 return Err(Error::NotPermitted);
             }

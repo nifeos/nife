@@ -87,7 +87,7 @@ fn wire_servers(
         None => return None,
     };
     // One contiguous run of every window (calef, 2026-09-27), so one `PageFrame` capability names
-    // the pool and the progenitor slices a window per client (`abi::page_frame::SLICE`).
+    // the pool and the progenitor slices a window per client (`moho_abi::page_frame::SLICE`).
     let file_shared = file_pool();
     for (w, window) in WINDOWS.iter().enumerate() {
         window.store(

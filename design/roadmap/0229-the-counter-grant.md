@@ -85,7 +85,7 @@ word, so expressing the grant through the existing methods would mean widening `
 which is a larger and equally irreversible change than the method being deferred. The finding is
 kept because the next person needs it: it is the reason the cheap-looking door is not a door.
 
-The standing note lives in `crates/abi`'s `thread_control_block` module, where a reader looking for
+The standing note lives in `crates/moho_abi`'s `thread_control_block` module, where a reader looking for
 the method meets the reason it is absent. **`Thread::cycle_counter_grant` and every arch name here
 are provisional.**
 

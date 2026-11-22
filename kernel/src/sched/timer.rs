@@ -75,14 +75,14 @@ pub fn timer_arm(
     deadline: u64,
     notification: NotificationId,
     bits: u64,
-) -> Result<(), abi::Error> {
+) -> Result<(), moho_abi::Error> {
     use inter_process_communication::timer::{ArmVerdict, lowered};
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
     // Refuse a dead notification at arm time rather than letting the expiry discover it: the
     // caller can still act on `Gone` now, and nobody can act on it at the deadline.
-    notification_of(sched, notification).ok_or(abi::Error::Gone)?;
-    let page = timer_of(sched, id).ok_or(abi::Error::Gone)?;
+    notification_of(sched, notification).ok_or(moho_abi::Error::Gone)?;
+    let page = timer_of(sched, id).ok_or(moho_abi::Error::Gone)?;
     let now = crate::arch::timer::now();
     match page.state.arm(deadline, (notification, bits), now) {
         ArmVerdict::Pending => {
@@ -98,10 +98,13 @@ pub fn timer_arm(
 
 /// `Timer::CANCEL`: disarm `id`. `true` if a deadline was pending and now never fires. The cache is
 /// left alone: only a walk raises it, and stale-low is safe. `Gone` if the name is stale.
-pub fn timer_cancel(id: TimerId) -> Result<bool, abi::Error> {
+pub fn timer_cancel(id: TimerId) -> Result<bool, moho_abi::Error> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
-    Ok(timer_of(sched, id).ok_or(abi::Error::Gone)?.state.cancel())
+    Ok(timer_of(sched, id)
+        .ok_or(moho_abi::Error::Gone)?
+        .state
+        .cancel())
 }
 
 /// The expiry walk: fire every due timer, then recompute the cache exactly, through

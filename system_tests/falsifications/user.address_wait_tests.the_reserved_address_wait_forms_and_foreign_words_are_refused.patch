@@ -9,9 +9,9 @@ address space) admit every flags word, so a shared address wait and a 64-bit add
 Expected to fail: "a shared address wait was not refused as a form this kernel does not answer", which
 gets `NotPermitted` from the next check instead of `BadMethod`.
 
-diff --git a/crates/abi/src/address_wait.rs b/crates/abi/src/address_wait.rs
---- a/crates/abi/src/address_wait.rs
-+++ b/crates/abi/src/address_wait.rs
+diff --git a/crates/moho_abi/src/address_wait.rs b/crates/moho_abi/src/address_wait.rs
+--- a/crates/moho_abi/src/address_wait.rs
++++ b/crates/moho_abi/src/address_wait.rs
 @@ -28,7 +28,8 @@ pub const PRIVATE: u64 = 1 << 7;
  
  /// **Is this a `flags` word the kernel answers?** Exactly one today.

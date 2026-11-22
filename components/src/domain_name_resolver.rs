@@ -30,12 +30,12 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use abi::rights;
 use domain_name_resolution_contract::{
     self as protocol, Grants, IPV4_ADDRESSES_OFFSET_BYTES, MAXIMUM_IPV4_ADDRESSES,
     MAXIMUM_NAME_FIELD_BYTES, NAME_OFFSET_BYTES, Outcome, endowment, network_step, status,
 };
 use domain_name_system::{Answer, Name, Query, Reject, TcpReply};
+use moho_abi::rights;
 use socket_contract as socket;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{
@@ -220,7 +220,7 @@ fn give_up_window(state: &mut State, window: usize) {
         let _ = unsafe {
             user_mode_runtime::invoke(
                 OWN_SPACE,
-                abi::address_space::UNMAP,
+                moho_abi::address_space::UNMAP,
                 window_va(window),
                 0,
                 0,

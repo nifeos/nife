@@ -333,13 +333,13 @@ pub(crate) fn run(dma: u64) -> ! {
     send_capability(
         administration_slots::GRANTS,
         administration_slots::DOORBELL_PAGE,
-        abi::rights::WRITE,
+        moho_abi::rights::WRITE,
         DOORBELL_PAGE_GRANT,
     );
     send_capability(
         administration_slots::GRANTS,
         administration_slots::DATA_PLANE,
-        abi::rights::READ | abi::rights::WRITE,
+        moho_abi::rights::READ | moho_abi::rights::WRITE,
         DATA_PLANE_GRANT,
     );
 

@@ -24,7 +24,7 @@ source files the operand that `pmap <tid>` needs.
 
 A person at the shell prompt lists what another running job has mapped. Milestone 126 (the
 `procps` package: who else is running) built the kernel method and the program:
-`abi::address_space::LIST`, gated by `ENUMERATE` under §114 (`ENUMERATE` extends to the
+`moho_abi::address_space::LIST`, gated by `ENUMERATE` under §114 (`ENUMERATE` extends to the
 address-space object), and `crates/pmap` with `components/src/pmap.rs`, proven in
 `kernel::user::pmap_tests`. Nothing live can be handed to the program. `ThreadControlBlock::CONFIGURE`
 takes a space out of the registry `LIST` reads, and no spawner keeps a view of a child's space.

@@ -19,14 +19,14 @@ device's backing to be a single memory entry and for the IOMMU domain to cover i
 Zeroing means no stale descriptor or pixel ever reaches the device or the client.
 
 The region records its own physical base in the tail of its first page, at
-`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`. A driver the
+`moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`. A driver the
 progenitor builds has no other way to learn it, since the progenitor holds the run as a capability
 and knows no address either. The kernel's own test wiring passes `arg1: 0` for the same reason, so
 the harness and the boot hand the driver one world.
 
 ## The fault slot
 
-The supervisor writes each process's fault rendezvous at `abi::fault::FAULT_RENDEZVOUS_SLOT`, the last slot
+The supervisor writes each process's fault rendezvous at `moho_abi::fault::FAULT_RENDEZVOUS_SLOT`, the last slot
 of the table. A grant placed there would overwrite it, and nothing would complain: `grant_at` on an
 empty slot succeeds. The failure would surface later as a faulting process that hangs instead of
 being reaped, far from its cause. So each grant list's highest slot is checked against the fault

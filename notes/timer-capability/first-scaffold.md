@@ -20,7 +20,7 @@ whether any of it lands on the IPC fastpath.
 
 A throwaway scaffold was built on 2026-09-05 and then deleted. It held:
 
-- `Object::Timer(u64)`, and an `abi::timer` module with `ARM` and `CANCEL`;
+- `Object::Timer(u64)`, and a `moho_abi::timer` module with `ARM` and `CANCEL`;
 - a `RETYPE_OBJECT` arm minting one from the caller's own untyped;
 - two `#[inline(never)]` dispatch bodies;
 - a 64-entry armed-timer table with a cached earliest deadline;

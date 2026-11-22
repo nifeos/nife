@@ -1,7 +1,7 @@
 # The sink protocol: one way to write bytes somewhere
 
 *Milestone 50, the protocol lane. `nifeos/byte_sink_contract`, `fixtures/src/sink.rs`, the std PAL's
-`sys/stdio/nife.rs`, and `abi::Error::Gone`.*
+`sys/stdio/nife.rs`, and `moho_abi::Error::Gone`.*
 
 ## The problem, which was not the one anybody expected
 
@@ -106,14 +106,14 @@ So the protocol needs to tell two failures apart:
 
 ### The kernel could not tell them apart, and that was the actual finding
 
-Both arrived as `abi::Error::NoSuchSlot`. A destroyed endpoint leaves the holder's capability in
+Both arrived as `moho_abi::Error::NoSuchSlot`. A destroyed endpoint leaves the holder's capability in
 place (endpoints are named generationally, `nifeos/generational_table`), and the failure surfaces
 when `sched::take_ipc_aborted` is set; `system_call.rs` mapped that to `NoSuchSlot`, the same value an
 empty slot returns. The only available behavior was therefore the wrong one for a pipeline, and no
 amount of userspace protocol design could have recovered the distinction, because the fact lives in
 the kernel.
 
-So the ABI grew one variant, `abi::Error::Gone` (-11): *the capability names an object that no
+So the ABI grew one variant, `moho_abi::Error::Gone` (-11): *the capability names an object that no
 longer exists*. It applies to all five endpoint IPC paths (SEND, RECEIVE, SEND_CAPABILITY, RECEIVE_CAPABILITY,
 CALL), because the fact is about the endpoint and not about the direction.
 

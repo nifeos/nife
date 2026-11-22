@@ -48,7 +48,7 @@ chose:
 JSON with `os = "nife"`, `panic-strategy = "abort"`, softfloat, and `singlethread = true`. That last
 one is honest for phase one, one thread of execution per process, so std uses its `no_threads` sync
 and single-`static` TLS. That setting flips off when `thread::spawn` becomes real. The ABI numbers
-and the heap algorithm are generated verbatim into the patched std from `crates/abi` and
+and the heap algorithm are generated verbatim into the patched std from `crates/moho_abi` and
 `crates/user_heap`. So they have exactly one definition and cannot drift.
 
 Accepted costs, recorded. `SystemTime` is monotonic-since-boot rather than wall-clock (no RTC).

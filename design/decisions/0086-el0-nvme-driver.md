@@ -166,7 +166,7 @@ needs and what supplies it today.
 
 Adding a capability, measured against the precedent. `Object::Virtio` is one enum variant
 (`kernel/src/cap.rs:124`), **six sites** across `kernel/src`, and **four method constants** in
-`crates/abi`. It added **no new system call number**: it dispatches through the existing `invoke`, which
+`crates/moho_abi`. It added **no new system call number**: it dispatches through the existing `invoke`, which
 is the pattern §16 (object revocation) established when it grew `Untyped`. One constraint to respect
 if a variant is added: `kernel/src/cap.rs` asserts `size_of::<Object>() == 24` at compile time, so
 the new variant must carry no more than `Virtio(usize)` does.

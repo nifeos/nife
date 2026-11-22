@@ -33,7 +33,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use abi::Error;
+use moho_abi::Error;
 use user_mode_runtime::{map_memory_region_page, send};
 
 const MEMORY_REGION: u64 = 0;

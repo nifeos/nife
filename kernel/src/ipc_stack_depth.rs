@@ -338,7 +338,7 @@ struct El0Slot {
     /// The ceiling of the last paint, or 0 before the thread's first system call, whose window is the
     /// spawn path into EL0 and so records nothing.
     ceiling: AtomicU64,
-    /// One series per rendezvous method number (`abi::rendezvous::*` are 0 to 4, and a Reply
+    /// One series per rendezvous method number (`moho_abi::rendezvous::*` are 0 to 4, and a Reply
     /// capability's `REPLY` is 0). Within one role the methods it issues are distinct, which is
     /// what makes a per-slot index enough to tell SEND from REPLY.
     series: [Series; 8],
@@ -414,7 +414,7 @@ pub(crate) fn after_system_call(nr: u64, method: u64) {
         s.top.load(Ordering::Relaxed),
     );
     let ceiling = s.ceiling.load(Ordering::Relaxed);
-    if ceiling != 0 && nr == abi::SYSTEM_CALL_INVOKE {
+    if ceiling != 0 && nr == moho_abi::SYSTEM_CALL_INVOKE {
         let used = scan(bottom, top);
         // The trap frame is at the top, so the caller's own depth is zero by construction.
         s.series[(method & 7) as usize].record(used, top - ceiling, 0);
@@ -565,9 +565,9 @@ fn call_reply_el0() -> Option<()> {
     // Wall clock, not a yield count, for `Holding`'s own reason (threads may run on other cores).
     let deadline = crate::arch::timer::now() + 30 * crate::arch::timer::frequency();
     let filled = || {
-        EL0[0].series[abi::rendezvous::RECEIVE_CAPABILITY as usize].is_full()
-            && EL0[0].series[abi::reply::REPLY as usize].is_full()
-            && EL0[1].series[abi::rendezvous::CALL as usize].is_full()
+        EL0[0].series[moho_abi::rendezvous::RECEIVE_CAPABILITY as usize].is_full()
+            && EL0[0].series[moho_abi::reply::REPLY as usize].is_full()
+            && EL0[1].series[moho_abi::rendezvous::CALL as usize].is_full()
     };
     while !filled() && crate::arch::timer::now() < deadline {
         sched::yield_now();
@@ -587,7 +587,7 @@ fn call_reply_el0() -> Option<()> {
 /// Both EL0 shapes, then their report, in the same form as [`kernel_thread_shapes`].
 #[cfg(initial_ramdisk)]
 pub(crate) fn el0_shapes() -> usize {
-    use abi::rendezvous::{CALL, RECEIVE, RECEIVE_CAPABILITY, SEND};
+    use moho_abi::rendezvous::{CALL, RECEIVE, RECEIVE_CAPABILITY, SEND};
     let mut bad = 0;
     if send_receive_el0().is_some() {
         bad += report(
@@ -620,7 +620,7 @@ pub(crate) fn el0_shapes() -> usize {
         );
     }
     if call_reply_el0().is_some() {
-        let reply = abi::reply::REPLY as usize;
+        let reply = moho_abi::reply::REPLY as usize;
         bad += report(
             "el0",
             "call_reply",

@@ -13,7 +13,7 @@ its own separate capability.
 
 The nesting survives the correction for a better reason. It is the only thing that can ever pair
 a death with a grant. A builder is never told its child's tid: `supervision_contract::build_child`
-hands back a TCB capability, and `abi::thread_control_block` has no method that reads one out. So
+hands back a TCB capability, and `moho_abi::thread_control_block` has no method that reads one out. So
 the only fact this process has about a death is the tid the kernel stamped on it.
 `fire_with_grant` keeps the split untyped's own capability rather than `capability_delete`-ing it the
 way it does the region and the TCB. That is what lets `collect_grant` destroy it later, by name.
@@ -44,7 +44,7 @@ link; these moved here, checked against the tree that day.
 
 - `memory_regions::split_stays_within_budget_and_progresses`' sibling proof pins the refusal.
   `sched::reap_supervised` passes it back as `NotPermitted`.
-- A supervisor learns a tid and nothing else. Besides the TCB capability above, `abi::fault`'s
+- A supervisor learns a tid and nothing else. Besides the TCB capability above, `moho_abi::fault`'s
   five-word message carries no builder-chosen tag, so nothing in a death names the grant.
 - `components/src/timetable.rs` does not lean on interpreting a refused reap. It drains everything
   already outstanding before firing the grant-bearing instance, and the grant is destroyed

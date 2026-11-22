@@ -18,8 +18,8 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use abi::rights;
 use clock_contract::propose;
+use moho_abi::rights;
 use network_time_protocol::{Query, Reject, Timestamp};
 // The socket contract, verbatim from the file `net_stack` compiles, so this client and the test
 // server cannot drift from the real server's idea of the wire format.
@@ -288,7 +288,7 @@ fn poll_gap() {
     }
     let timer = TIMER.load(Relaxed);
     if timer != u64::MAX {
-        let ticks = abi::timer::counter_ticks_for(
+        let ticks = moho_abi::timer::counter_ticks_for(
             RETRY_GAP_NANOSECONDS / 1_000_000_000,
             (RETRY_GAP_NANOSECONDS % 1_000_000_000) as u32,
             counter_hertz(),

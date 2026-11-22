@@ -4,7 +4,7 @@
 
 *Written 2026-10-10 (UTC) by milestone 812 (`std::thread::spawn` runs real threads in one address
 space)'s lane. The ruling is §269 (how threads share a process) fork 2; the wire contract is
-`abi::address_space::WAIT` and `WAKE`, and the flags are `abi::address_wait`.*
+`moho_abi::address_space::WAIT` and `WAKE`, and the flags are `moho_abi::address_wait`.*
 
 ## What it is for
 

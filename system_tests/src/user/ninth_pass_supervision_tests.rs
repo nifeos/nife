@@ -12,7 +12,7 @@
 //! portable kernel code; the child stub is per-architecture inside `supervision_tests` (DECISIONS
 //! §19 (architectural parity is a tenet)).
 
-use abi::Error;
+use moho_abi::Error;
 
 use super::supervision_tests::{REPORT_WORD, build_child_in};
 use crate::arch::exceptions::TrapFrame;
@@ -77,7 +77,7 @@ fn a_foreign_endpoint_cannot_reap_or_survey_a_child_it_does_not_supervise() {
 
     // --- Claim 6: reap through the wrong endpoint is refused. -----------------------------------
     assert_eq!(
-        call(foreign, abi::rendezvous::REAP, child, 0, 0),
+        call(foreign, moho_abi::rendezvous::REAP, child, 0, 0),
         Err(Error::NotSupervised),
         "a foreign endpoint reaped a child it does not supervise: a supervisor collected a corpse \
          that was never its own (claim 6)",
@@ -89,7 +89,7 @@ fn a_foreign_endpoint_cannot_reap_or_survey_a_child_it_does_not_supervise() {
     // refusal would leak whether a given tid is a real thread elsewhere in the system.
     let bogus_tid = child | 0xffff_0000_0000;
     assert_eq!(
-        call(foreign, abi::rendezvous::REAP, bogus_tid, 0, 0),
+        call(foreign, moho_abi::rendezvous::REAP, bogus_tid, 0, 0),
         Err(Error::NotSupervised),
         "reaping a nonexistent tid through a foreign endpoint answered differently from reaping a \
          real foreign child: the refusal discloses a stranger's liveness (claim 7)",
@@ -99,12 +99,12 @@ fn a_foreign_endpoint_cannot_reap_or_survey_a_child_it_does_not_supervise() {
     assert_eq!(
         call(
             foreign,
-            abi::rendezvous::SURVEY,
+            moho_abi::rendezvous::SURVEY,
             0,
-            abi::survey::record::STATE,
+            moho_abi::survey::record::STATE,
             0
         ),
-        Ok(abi::survey::DONE as i64),
+        Ok(moho_abi::survey::DONE as i64),
         "a foreign endpoint's survey returned an entry: it saw a child outside its own domain \
          (claim 8)",
     );
@@ -113,15 +113,15 @@ fn a_foreign_endpoint_cannot_reap_or_survey_a_child_it_does_not_supervise() {
     // SURVEY through the real supervisor returns a cursor past the first match (>= 1), not DONE.
     let surveyed = call(
         owner,
-        abi::rendezvous::SURVEY,
+        moho_abi::rendezvous::SURVEY,
         0,
-        abi::survey::record::STATE,
+        moho_abi::survey::record::STATE,
         0,
     )
     .expect("the owning endpoint's survey was refused");
     assert_ne!(
         surveyed,
-        abi::survey::DONE as i64,
+        moho_abi::survey::DONE as i64,
         "the owning endpoint's survey showed no child: the view and the reap are not one domain \
          (claim 9)",
     );
@@ -129,12 +129,12 @@ fn a_foreign_endpoint_cannot_reap_or_survey_a_child_it_does_not_supervise() {
     // And REAP through the real supervisor collects the corpse, retried across the one context
     // switch in which a just-dead corpse still stands on its own kernel stack and the reclaim
     // answers `NotPermitted` (`supervision_tests` and `reap_tests` explain the window).
-    let mut reaped = call(owner, abi::rendezvous::REAP, child, 0, 0);
+    let mut reaped = call(owner, moho_abi::rendezvous::REAP, child, 0, 0);
     super::wait_for(|| {
         if reaped != Err(Error::NotPermitted) && reaped != Err(Error::StillAlive) {
             return true;
         }
-        reaped = call(owner, abi::rendezvous::REAP, child, 0, 0);
+        reaped = call(owner, moho_abi::rendezvous::REAP, child, 0, 0);
         reaped != Err(Error::NotPermitted) && reaped != Err(Error::StillAlive)
     });
     assert_eq!(

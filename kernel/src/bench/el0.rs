@@ -291,14 +291,14 @@ fn print_ipc_rtt_el0_cycles(cycles: u64, meaning: u64, ticks: u64, iters: u64) {
         per_tick / 100,
         per_tick % 100,
     );
-    let means = match abi::cycle_counter::CycleMeaning::from_word(meaning) {
-        Some(abi::cycle_counter::CycleMeaning::CoreCyclesUserAndKernel) => {
+    let means = match moho_abi::cycle_counter::CycleMeaning::from_word(meaning) {
+        Some(moho_abi::cycle_counter::CycleMeaning::CoreCyclesUserAndKernel) => {
             "core cycles at EL0 and EL1 (PMCCNTR_EL0, PMCCFILTR_EL0 0)"
         }
-        Some(abi::cycle_counter::CycleMeaning::CoreCyclesEveryMode) => {
+        Some(moho_abi::cycle_counter::CycleMeaning::CoreCyclesEveryMode) => {
             "core cycles in every mode (the `cycle` CSR)"
         }
-        Some(abi::cycle_counter::CycleMeaning::ConstantRateReferenceCycles) => {
+        Some(moho_abi::cycle_counter::CycleMeaning::ConstantRateReferenceCycles) => {
             "constant-rate reference cycles (the TSC), not core cycles"
         }
         None => "nothing: the client reported no meaning",

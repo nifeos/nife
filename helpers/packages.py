@@ -36,7 +36,7 @@ An unknown key is refused, so a misspelt one cannot read as an absent one.
                                     required, no default; or { repo, status = "ratified", date },
                                     or { status = "undecided", reason = "..." }
        crates = ["ps"]              member crates; each claims its directory
-       interfaces = ["abi"]         member crates other packages may link without declaring them
+       interfaces = ["moho_abi"]    member crates other packages may link without declaring them
        programs = ["ps"]            member programs; each claims its source file
        paths = ["patches/"]         member paths (the std overlay, a recipe, a `#[path]` module)
        depends = ["init"]           declared dependencies; their crates may be linked

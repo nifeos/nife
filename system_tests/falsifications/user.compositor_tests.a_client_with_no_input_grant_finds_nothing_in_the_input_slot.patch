@@ -7,7 +7,7 @@ must stay empty. Receiving there is now `NotPermitted` (-3) instead of `NoSuchSl
 authority exists and was withheld, which is exactly the "permission error from a server that
 consulted a list" the claim says is absent.
 
-Expected to fail: `assert_eq!(errno as i64, abi::Error::NoSuchSlot as i64, "a non-focusable
+Expected to fail: `assert_eq!(errno as i64, moho_abi::Error::NoSuchSlot as i64, "a non-focusable
 client's input slot must be empty ...")`. Measured 2026-10-03 (UTC): red, reporting -3.
 
 The original test also asserts this and would also go red here, but it carried no record of it.

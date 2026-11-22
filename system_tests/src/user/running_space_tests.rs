@@ -21,8 +21,8 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use abi::Error;
-use abi::fault::{EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
+use moho_abi::Error;
+use moho_abi::fault::{EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
 
 use super::*;
 use crate::capability_object::Rights;
@@ -124,7 +124,7 @@ fn start_reader(region: u64) -> (u64, u64, u64, u64, u64) {
     assert_eq!(
         call(
             tcb,
-            abi::thread_control_block::CONFIGURE,
+            moho_abi::thread_control_block::CONFIGURE,
             CODE_VA,
             STACK_VA + page_frames::FRAME_BYTES,
             given,
@@ -166,7 +166,7 @@ fn unmap_through_a_copy_made_before_configure_faults_the_running_thread() {
     let faults = crate::arch::exceptions::USER_FAULTS.load(Ordering::Acquire);
 
     assert_eq!(
-        call(kept, abi::address_space::UNMAP, VA, 0, 0),
+        call(kept, moho_abi::address_space::UNMAP, VA, 0, 0),
         Ok(0),
         "a capability made before CONFIGURE no longer names the space its thread runs in",
     );
@@ -246,7 +246,7 @@ fn unmap_on_another_core_faults_a_reader_spinning_on_the_page() {
             .expect("grant the unmapper its capability");
             READER_CPU_AT_UNMAP.store(theirs.map_or(u64::MAX - 1, |c| c as u64), Ordering::Relaxed);
             UNMAPPER_CPU.store(me as u64, Ordering::Relaxed);
-            let r = call(slot, abi::address_space::UNMAP, VA, 0, 0);
+            let r = call(slot, moho_abi::address_space::UNMAP, VA, 0, 0);
             let _ = sched::delete_current_capability(slot);
             UNMAP_RESULT.store(if r == Ok(0) { 0 } else { 1 }, Ordering::Release);
         })
@@ -333,7 +333,7 @@ fn a_second_bind_of_a_bound_space_is_refused() {
     let configure = |tcb, aspace| {
         call(
             tcb,
-            abi::thread_control_block::CONFIGURE,
+            moho_abi::thread_control_block::CONFIGURE,
             CODE_VA,
             STACK_VA + page_frames::FRAME_BYTES,
             aspace,
@@ -411,7 +411,7 @@ fn a_bound_space_dies_with_its_thread_not_with_its_capabilities() {
     ))
     .expect("grant");
     assert_eq!(
-        call(late, abi::address_space::UNMAP, VA, 0, 0),
+        call(late, moho_abi::address_space::UNMAP, VA, 0, 0),
         Err(Error::BadPointer),
         "a capability to a dead space still reached it",
     );

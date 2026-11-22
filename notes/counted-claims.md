@@ -61,8 +61,8 @@ answers, in the prose's own words, and a derivation.
 | `kani-harnesses` | how many Kani proof harnesses the tree carries, which is what `script/verify` proves | `#[kani::proof…]` alone on its line, in any workspace package |
 | `harness-crates` | how many workspace packages carry at least one Kani proof harness | distinct packages among those files |
 | `sh-scripts` | how many `#!/bin/sh` scripts there are under `script/` and `helpers/`, which is the set shellcheck gates | files whose first line is exactly `#!/bin/sh` |
-| `system_calls` | how many system call numbers the ABI defines, which is the whole width of the trap | `pub const SYSTEM_CALL_*: u64` in `crates/abi/src/lib.rs` |
-| `rights-bits` | how many named single-bit rights a capability can carry | `pub const NAME: u64 = 1 << N` in `crates/abi/src/rights.rs` |
+| `system_calls` | how many system call numbers the ABI defines, which is the whole width of the trap | `pub const SYSTEM_CALL_*: u64` in `crates/moho_abi/src/lib.rs` |
+| `rights-bits` | how many named single-bit rights a capability can carry | `pub const NAME: u64 = 1 << N` in `crates/moho_abi/src/rights.rs` |
 | `loom-harnesses` | how many loom harnesses the tree carries, which is what `script/interleaving-check` runs | `loom::model(` calls in `crates//*.rs` |
 | `loom-crates` | how many crates carry at least one loom harness | distinct crate directories among those files |
 
@@ -206,7 +206,7 @@ refusal in full.
   honest.
 
 - **A marker works in a `.rs` doc comment, and the fence exemption does not follow it there.** The
-  2026-08-17 sweep put four in `crates/abi/src/lib.rs` and `kernel/src/system_call.rs`, because the
+  2026-08-17 sweep put four in `crates/moho_abi/src/lib.rs` and `kernel/src/system_call.rs`, because the
   claims it was gating live in the boundary artifact rather than in a note, and an HTML comment is
   invisible in rustdoc. The gate finds them: it greps every tracked file. But the fenced-block skip
   is implemented for `.md` only, so a marker inside a ```` ```text ```` block in Rust source is

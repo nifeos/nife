@@ -22,31 +22,31 @@ pub(super) fn memory_region_invoke(
     [a0, a1, a2]: [u64; 3],
 ) -> Result<i64, Error> {
     match method {
-        abi::memory_region::MAP => {
+        moho_abi::memory_region::MAP => {
             if !capability.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             memory_region_map(region, a0)
         }
-        abi::memory_region::RETYPE_OBJECT => {
+        moho_abi::memory_region::RETYPE_OBJECT => {
             if !capability.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             super::retype::memory_region_retype_object(capability, region, a0, a1, a2)
         }
-        abi::memory_region::RETYPE => {
+        moho_abi::memory_region::RETYPE => {
             if !capability.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             memory_region_retype(capability, region, a0)
         }
-        abi::memory_region::SPLIT => {
+        moho_abi::memory_region::SPLIT => {
             if !capability.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             memory_region_split(capability, region, a0)
         }
-        abi::memory_region::DESTROY => {
+        moho_abi::memory_region::DESTROY => {
             if !capability.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
@@ -54,7 +54,7 @@ pub(super) fn memory_region_invoke(
         }
         // `ENUMERATE` alone, checked inside: learning what a budget went to is not the authority
         // to spend it (DECISIONS §225 (`free` sees the machine and your share)).
-        abi::memory_region::USAGE => memory_region_usage(capability, region, a0),
+        moho_abi::memory_region::USAGE => memory_region_usage(capability, region, a0),
         _ => Err(Error::BadMethod),
     }
 }
@@ -180,7 +180,7 @@ pub(super) fn memory_region_usage(
     if !capability.rights.allows(Rights::ENUMERATE) {
         return Err(Error::NotPermitted);
     }
-    if !abi::usage::is_known(record) {
+    if !moho_abi::usage::is_known(record) {
         return Err(Error::BadMethod);
     }
     crate::memory_region::usage_record(region, record)

@@ -48,7 +48,7 @@ clients of one server.
 - Milestone 851's accounts form a tree: pool, then session, then program. A grant is charged to every
   account above it. An account is a badged endpoint, and a program's spawner opens and closes it.
 - A region's `DESTROY` cuts the page tables it paid for and everything mapped beneath them
-  (`abi::page_frame::MAP`). A server mapping pages a client can revoke can lose them while running.
+  (`moho_abi::page_frame::MAP`). A server mapping pages a client can revoke can lose them while running.
 - A server dies on a fault, delivered to its supervisor (§26 (the fault endpoint)). There is no
   recoverable fault.
 - `socket_contract` opens a socket with a message that carries no capability today.

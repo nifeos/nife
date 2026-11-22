@@ -64,7 +64,7 @@ fn a_plain_send_to_receive_capability_delivers_no_capability_whichever_side_park
     );
     assert_eq!(
         RECEIVER_FIRST_X1.load(Ordering::SeqCst),
-        abi::rendezvous::NO_CAPABILITY,
+        moho_abi::rendezvous::NO_CAPABILITY,
         "a plain SEND handed the receiver x1 = {} on the receiver-first order, a sender-chosen \
          word where a CALL server reads a reply slot",
         RECEIVER_FIRST_X1.load(Ordering::SeqCst),
@@ -84,7 +84,7 @@ fn a_plain_send_to_receive_capability_delivers_no_capability_whichever_side_park
     let [_w0, x1, ..] = sched::inter_process_communication_receive_capability(ep);
     assert_eq!(
         x1,
-        abi::rendezvous::NO_CAPABILITY,
+        moho_abi::rendezvous::NO_CAPABILITY,
         "a plain SEND handed the receiver x1 = {x1} on the sender-first order",
     );
 
@@ -212,7 +212,7 @@ fn a_send_capability_aborted_by_teardown_stages_nothing_for_a_later_plain_send()
     assert_eq!(w0, 2, "the plain SEND's first word did not arrive");
     assert_eq!(
         x1,
-        abi::rendezvous::NO_CAPABILITY,
+        moho_abi::rendezvous::NO_CAPABILITY,
         "a plain SEND after an aborted SEND_CAPABILITY delivered the stale delegation at slot {x1}",
     );
     assert!(
@@ -277,7 +277,7 @@ fn a_send_capability_collected_by_a_plain_receive_stages_nothing_for_a_later_pla
     assert_eq!(w0, 2, "the plain SEND's first word did not arrive");
     assert_eq!(
         x1,
-        abi::rendezvous::NO_CAPABILITY,
+        moho_abi::rendezvous::NO_CAPABILITY,
         "a plain SEND after a plain-RECEIVE-collected SEND_CAPABILITY delivered the stale delegation at slot \
          {x1}, a capability granted to one endpoint reaching a receiver on another",
     );
@@ -376,7 +376,7 @@ fn a_call_server_tells_its_reply_from_a_delegation_on_both_arrival_orders() {
                     round.call_x4.store(x4, Ordering::SeqCst);
                 }
                 round.received.fetch_add(1, Ordering::SeqCst);
-                if x4 == abi::rendezvous::REPLY_DELIVERED {
+                if x4 == moho_abi::rendezvous::REPLY_DELIVERED {
                     // The tag's claim, checked against the table: the slot is a Reply.
                     if let Ok(crate::capability_object::Capability {
                         object: crate::capability_object::Object::Reply(caller),
@@ -386,7 +386,7 @@ fn a_call_server_tells_its_reply_from_a_delegation_on_both_arrival_orders() {
                         sched::ipc_reply(caller, [CallServerRound::ANSWER, 0]);
                     }
                     let _ = sched::delete_current_capability(x1);
-                } else if x1 != abi::rendezvous::NO_CAPABILITY {
+                } else if x1 != moho_abi::rendezvous::NO_CAPABILITY {
                     let _ = sched::delete_current_capability(x1); // `Delivered::into_reply`'s delete
                 }
             }
@@ -479,7 +479,7 @@ fn the_server_answered_and_kept_nothing(round: &CallServerRound, server_first: b
     );
     assert_eq!(
         round.call_x4.load(Ordering::SeqCst),
-        abi::rendezvous::REPLY_DELIVERED,
+        moho_abi::rendezvous::REPLY_DELIVERED,
         "a CALL's delivery did not carry REPLY_DELIVERED in x4 (server_first = {server_first})",
     );
     assert_eq!(
@@ -548,7 +548,7 @@ fn an_interrupt_signal_received_by_receive_capability_delivers_no_capability_whi
     );
     assert_eq!(
         RECEIVER_X1.load(Ordering::SeqCst),
-        abi::rendezvous::NO_CAPABILITY,
+        moho_abi::rendezvous::NO_CAPABILITY,
         "an interrupt signal handed the receiver x1 = {} on the receiver-first order, a slot number \
          where the message carried no capability",
         RECEIVER_X1.load(Ordering::SeqCst),
@@ -560,7 +560,7 @@ fn an_interrupt_signal_received_by_receive_capability_delivers_no_capability_whi
     assert_eq!(x0, 1, "the pending interrupt's w0 did not arrive");
     assert_eq!(
         x1,
-        abi::rendezvous::NO_CAPABILITY,
+        moho_abi::rendezvous::NO_CAPABILITY,
         "an interrupt signal handed the receiver x1 = {x1} on the signal-first order",
     );
 
@@ -610,12 +610,12 @@ fn a_death_message_received_by_receive_capability_delivers_no_capability_whichev
     );
     assert_eq!(
         SUPERVISOR_MSG[0].load(Ordering::SeqCst),
-        abi::fault::EVENT_FAULT,
+        moho_abi::fault::EVENT_FAULT,
         "the message that arrived was not the child's fault"
     );
     assert_eq!(
         SUPERVISOR_MSG[1].load(Ordering::SeqCst),
-        abi::rendezvous::NO_CAPABILITY,
+        moho_abi::rendezvous::NO_CAPABILITY,
         "a death message handed the supervisor x1 = {} on the receiver-first order, the dead \
          thread's id where the message carried no capability",
         SUPERVISOR_MSG[1].load(Ordering::SeqCst),
@@ -640,10 +640,10 @@ fn a_death_message_received_by_receive_capability_delivers_no_capability_whichev
         "the second child never died and parked its message, so nothing proved the corpse-first order",
     );
     let [event, x1, x2, ..] = sched::inter_process_communication_receive_capability(fault_ep);
-    assert_eq!(event, abi::fault::EVENT_FAULT, "not the child's fault");
+    assert_eq!(event, moho_abi::fault::EVENT_FAULT, "not the child's fault");
     assert_eq!(
         x1,
-        abi::rendezvous::NO_CAPABILITY,
+        moho_abi::rendezvous::NO_CAPABILITY,
         "a death message handed the supervisor x1 = {x1} on the corpse-first order",
     );
     assert_eq!(x2, child, "the death message's thread id did not arrive");

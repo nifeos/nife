@@ -520,7 +520,7 @@ fn without_entropy_the_client_refuses_rather_than_guessing() {
     );
     assert_eq!(
         reported[1] as i64,
-        abi::Error::NoSuchSlot as i64,
+        moho_abi::Error::NoSuchSlot as i64,
         "an ungranted slot must answer NoSuchSlot (-1), 'there is nothing there', not {}",
         reported[1] as i64,
     );

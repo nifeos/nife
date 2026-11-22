@@ -47,7 +47,7 @@ glibc's 128 KiB default (from memory, with its dynamic rise toward 32 MiB on 64-
 `mmap`, whose cost is a per-process VMA. Here a large allocation costs:
 
 - a broker round trip: a `CALL`, then the grant over the result endpoint, since a reply carries no
-  capability (`abi::reply`);
+  capability (`moho_abi::reply`);
 - a `SPLIT` in the broker and a `DESTROY` at free;
 - one region slot machine-wide, and one capability slot while it maps the pages;
 - one `MAP` per page, the same as in the band.
@@ -147,7 +147,7 @@ on riscv64 (Sv39), less the timebase page near the top of each. So 32 GiB fits o
 
 Page tables are the cost, and they are paid at commit, not at reserve. `MemoryRegion::MAP` takes a
 page's tables from the same region as the page. `PageFrame::MAP` takes them from a region the
-caller names (`crates/abi`). That difference matters, because a region's `DESTROY` cuts every
+caller names (`crates/moho_abi`). That difference matters, because a region's `DESTROY` cuts every
 table it paid for out of the address space, with everything mapped beneath it
 (`kernel/src/revoke.rs`, the page-tables-outlive-destroy pass). If a committed region paid for a
 table that also reaches a neighbor's pages, decommitting it would unmap the neighbor. So commit

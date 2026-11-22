@@ -62,7 +62,7 @@ PACKAGE_FIELDS = ['commits', 'commits_crossing', 'commits_touching_another',
                   'commits_excluding_mass', 'commits_crossing_excluding_mass']
 SCRATCH = pathlib.Path('target/interface-stability')
 
-# The contracts division: notes/packages-and-divisions.md (#1389, not yet on main), `abi`, the
+# The contracts division: notes/packages-and-divisions.md (#1389, not yet on main), `moho_abi`, the
 # sixteen `*_protocol` crates that are contracts (not `network_time_protocol`, a service whose name
 # says protocol), and the named formats two programs agree on. Three members sit outside that
 # note's census: `capability_manifest_note` was born on 2026-09-26, after it, and is exactly the
@@ -72,7 +72,7 @@ SCRATCH = pathlib.Path('target/interface-stability')
 # the crates whose directory later became one of these (LINEAGE below), which is a restatement like
 # every other series on the metrics page.
 CONTRACTS = (
-    'abi',
+    'moho_abi',
     'byte_sink_contract', 'capability_witness_contract', 'clock_contract',
     'counter_frequency_contract', 'credential_contract', 'current_cpu_contract',
     'entropy_contract', 'environment_contract', 'file_system_contract', 'graphics_contract',
@@ -476,7 +476,7 @@ def is_wire_variant(fingerprint):
 
 
 def is_system_call_item(crate, path, fingerprint):
-    """Is this item part of the system call surface? abi's public constants and enum variants.
+    """Is this item part of the system call surface? moho_abi's public constants and enum variants.
 
     The system call numbers (`SYSTEM_CALL_*`), the object types (`object_type::*`), and every method number and
     argument or result encoding the object modules define are constants. The error codes
@@ -485,7 +485,7 @@ def is_system_call_item(crate, path, fingerprint):
     variant is a boundary move too (calef, 2026-10-18 UTC). Functions and the enum items
     themselves are helpers, not surface.
     """
-    return crate == 'abi' and (fingerprint.startswith('{"constant"')
+    return crate == 'moho_abi' and (fingerprint.startswith('{"constant"')
                                or is_wire_variant(fingerprint))
 
 
@@ -508,7 +508,7 @@ def _const_value(fingerprint):
 
 
 def system_call_renames(crate, removed, added, old, new):
-    """{removed abi constant: its successor} where only the NAME changed and the number did not.
+    """{removed moho_abi constant: its successor} where only the NAME changed and the number did not.
 
     `endpoint::SEND` becoming `rendezvous::SEND` at the same value breaks every caller's source
     and no binary. The successor must be unambiguous: exactly one added constant with the same
@@ -516,7 +516,7 @@ def system_call_renames(crate, removed, added, old, new):
     Anything less certain stays a change, which overcounts rather than hides.
     """
     out = {}
-    if crate != 'abi':
+    if crate != 'moho_abi':
         return out
     for p in removed:
         v = _const_value(old[p]) if is_system_call_item(crate, p, old[p]) else None
@@ -930,7 +930,7 @@ def measure(rev, lineage_map, wanted):
     archive = subprocess.run(['git', 'archive', rev], capture_output=True, check=True).stdout
     # `-m`: every file gets today's mtime. `git archive` stamps files with the commit's time, which
     # is OLDER than the artifacts the previous week left in the shared target directory, and cargo
-    # then trusts a stale `abi` rmeta and fails to build the crates that use it. Measured: that
+    # then trusts a stale `moho_abi` rmeta and fails to build the crates that use it. Measured: that
     # failure is what first showed `supervision_contract` as unmeasured on five weeks.
     subprocess.run(['tar', '-x', '-m', '-C', str(tree)], input=archive, check=True)
     present = {}
@@ -1246,8 +1246,8 @@ def selftest():
                        7: field('kind', 'u16'), 8: const('VERSION', '2'),
                        10: trait_impl('Clone', 1234), 11: blanket()},
                       [1, 2, 4, 5, 8]))
-    counts, per_crate, events = compare({'abi': {'dir': 'abi', 'items': old}},
-                                        {'abi': {'dir': 'abi', 'items': new}}, {'abi'})
+    counts, per_crate, events = compare({'moho_abi': {'dir': 'moho_abi', 'items': old}},
+                                        {'moho_abi': {'dir': 'moho_abi', 'items': new}}, {'moho_abi'})
     renamed, _p, _e = compare({'fs': {'dir': 'fs_proto', 'items': {'a': '1'}}},
                               {'fs': {'dir': 'fs_protocol', 'items': {'a': '1'}}}, set())
     born, _p, _e = compare({}, {'n': {'dir': 'n', 'items': {'a': '1', 'b': '2'}}}, set())
@@ -1270,10 +1270,10 @@ def selftest():
                         'items': {'trim': _fp(_clean(const('trim', '9')['inner']))}}},
         set())
     renamed_system_call, _pc, _e = compare(
-        {'abi': {'dir': 'abi', 'items': {'irq::ACK': _fp(_clean(const('ACK', '3')['inner']))}}},
-        {'abi': {'dir': 'abi',
+        {'moho_abi': {'dir': 'moho_abi', 'items': {'irq::ACK': _fp(_clean(const('ACK', '3')['inner']))}}},
+        {'moho_abi': {'dir': 'moho_abi',
                  'items': {'interrupt::ACK': _fp(_clean(const('ACK', '3')['inner']))}}},
-        {'abi'})
+        {'moho_abi'})
     bumped, _pc, _e = compare(
         {'nifefs': {'dir': 'nifefs',
                     'items': {'DISK_VERSION': _fp(_clean(const('DISK_VERSION', '1')['inner']))}}},
@@ -1289,25 +1289,25 @@ def selftest():
         return compare({crate: {'dir': crate, 'items': old_items}},
                        {crate: {'dir': crate, 'items': new_items}}, set())[0]
 
-    err_renumbered = one('abi', {'Error::NoSuchSlot': variant(-1)}, {'Error::NoSuchSlot': variant(-7)})
-    err_added = one('abi', {}, {'Error::Fresh': variant(-99)})
-    err_removed = one('abi', {'Error::NoSuchSlot': variant(-1)}, {})
-    enum_item = one('abi', {'Error': _fp({'kind': 'enum', 'variants': ['A']})},
+    err_renumbered = one('moho_abi', {'Error::NoSuchSlot': variant(-1)}, {'Error::NoSuchSlot': variant(-7)})
+    err_added = one('moho_abi', {}, {'Error::Fresh': variant(-99)})
+    err_removed = one('moho_abi', {'Error::NoSuchSlot': variant(-1)}, {})
+    enum_item = one('moho_abi', {'Error': _fp({'kind': 'enum', 'variants': ['A']})},
                     {'Error': _fp({'kind': 'enum', 'variants': ['A', 'B']})})
     other_variant = one('grant_plan', {'Mode::A': variant(1)}, {'Mode::A': variant(2)})
     ledger = ledger_dates('//! Intro\n//!\n//! # Amendments\n//!\n//! - 2026-09-27: field order\n'
                           '//!   continued, not an item\n//! - 2026-10-02 (UTC): again\n'
                           '//! # BUGS\n//! - 2026-01-01: not an amendment\n')
-    dirs = ('crates/abi/', 'crates/fs_proto/')
+    dirs = ('crates/moho_abi/', 'crates/fs_proto/')
     rows = {'2026W38': {f: '' for f in FIELDS}, '2026W39': {f: str(i) for i, f in enumerate(FIELDS)}}
     rows['2026W38']['interface_breaking'] = '0'
     cases = [
         ('a module rename that keeps the number is a system call rename, not a change',
-         compare({'abi': {'dir': 'abi', 'items': {'endpoint::SEND': _fp(_clean(const('SEND', '0')['inner']))}}},
-                 {'abi': {'dir': 'abi', 'items': {'rendezvous::SEND': _fp(_clean(const('SEND', '0')['inner']))}}},
+         compare({'moho_abi': {'dir': 'moho_abi', 'items': {'endpoint::SEND': _fp(_clean(const('SEND', '0')['inner']))}}},
+                 {'moho_abi': {'dir': 'moho_abi', 'items': {'rendezvous::SEND': _fp(_clean(const('SEND', '0')['inner']))}}},
                  set())[0]['system_call_renamed'], 1),
         ('a module rename learned from a sibling resolves an ambiguous constant',
-         sorted(system_call_renames('abi', ['frame::MAP', 'frame::REVOKE', 'untyped::MAP'],
+         sorted(system_call_renames('moho_abi', ['frame::MAP', 'frame::REVOKE', 'untyped::MAP'],
                                 ['page_frame::MAP', 'page_frame::REVOKE', 'region::MAP'],
                                 {'frame::MAP': _fp(_clean(const('MAP', '0')['inner'])),
                                  'frame::REVOKE': _fp(_clean(const('REVOKE', '1')['inner'])),
@@ -1317,8 +1317,8 @@ def selftest():
                                  'region::MAP': _fp(_clean(const('MAP', '0')['inner']))}).items()),
          [('frame::MAP', 'page_frame::MAP'), ('frame::REVOKE', 'page_frame::REVOKE')]),
         ('two same-valued successors are ambiguous, so a change',
-         compare({'abi': {'dir': 'abi', 'items': {'m::A': _fp(_clean(const('A', '0')['inner']))}}},
-                 {'abi': {'dir': 'abi', 'items': {'m::B': _fp(_clean(const('B', '0')['inner'])),
+         compare({'moho_abi': {'dir': 'moho_abi', 'items': {'m::A': _fp(_clean(const('A', '0')['inner']))}}},
+                 {'moho_abi': {'dir': 'moho_abi', 'items': {'m::B': _fp(_clean(const('B', '0')['inner'])),
                                                   'm::C': _fp(_clean(const('C', '0')['inner']))}}},
                  set())[0]['system_call_changed'], 1),
         ('a byte-string magic rustdoc cannot evaluate is read from source',
@@ -1401,16 +1401,16 @@ def selftest():
         ('contract dirs include old names',
          'crates/fs_proto/' in contract_dirs({'fs_proto': 'file_system_contract'}), True),
         ('a docs-only companion does not cross',
-         classify_commit('x', ['crates/abi/src/lib.rs', 'notes/abi.md', 'design/x.md'], dirs),
+         classify_commit('x', ['crates/moho_abi/src/lib.rs', 'notes/abi.md', 'design/x.md'], dirs),
          (True, False, False)),
         ('a kernel companion crosses',
-         classify_commit('x', ['crates/abi/src/lib.rs', 'kernel/src/a.rs'], dirs),
+         classify_commit('x', ['crates/moho_abi/src/lib.rs', 'kernel/src/a.rs'], dirs),
          (True, True, False)),
         ('an old directory name is still a contract',
          classify_commit('x', ['crates/fs_proto/src/lib.rs'], dirs)[0], True),
         ('a rename subject is mass', classify_commit('rename the protos',
-                                                     ['crates/abi/src/lib.rs'], dirs)[2], True),
-        ('41 files is mass', classify_commit('x', ['crates/abi/%d' % i for i in range(41)],
+                                                     ['crates/moho_abi/src/lib.rs'], dirs)[2], True),
+        ('41 files is mass', classify_commit('x', ['crates/moho_abi/%d' % i for i in range(41)],
                                              dirs)[2], True),
         ('no contract path, no commit', classify_commit('x', ['kernel/a.rs'], dirs),
          (False, False, False)),
@@ -1419,10 +1419,10 @@ def selftest():
          render_rows(rows)),
         ('the per-crate CSV round-trips and drops an all-zero row',
          render_crate_rows(_crates_from_text(render_crate_rows(
-             {'2026W39': {'abi': [1, 2, 3, 4], 'elf': [0, 0, 0, 0]}}))),
-         'week,crate,breaking,additions,commits,commits_crossing\n2026W39,abi,1,2,3,4\n'),
+             {'2026W39': {'moho_abi': [1, 2, 3, 4], 'elf': [0, 0, 0, 0]}}))),
+         'week,crate,breaking,additions,commits,commits_crossing\n2026W39,moho_abi,1,2,3,4\n'),
         ('the appendix lists a week with no breaks as nothing',
-         render_appendix({'2026W39': {}}, {'2026W39': {'abi': [0, 1, 1, 1]}}, '2026W39', [],
+         render_appendix({'2026W39': {}}, {'2026W39': {'moho_abi': [0, 1, 1, 1]}}, '2026W39', [],
                          'f' * 40).rstrip().endswith('Nothing.'), True),
         ('a what-broke line is a quotation line, so a retired spelling stays quotable',
          render_appendix({'2026W39': {}}, {'2026W39': {}}, '2026W39',
@@ -1434,9 +1434,9 @@ def selftest():
                          'f' * 40).count('> - `c`'),
          EVENTS_LISTED_PER_CRATE + 1),
         ('the std abi list comes from the copy',
-         std_abi_crates('root.join("crates/abi/src/lib.rs"),\nroot.join("crates/abi/src/lib.rs"),'
+         std_abi_crates('root.join("crates/moho_abi/src/lib.rs"),\nroot.join("crates/moho_abi/src/lib.rs"),'
                         ' root.join("crates/clock_contract/src/lib.rs")'),
-         ['abi', 'clock_contract']),
+         ['clock_contract', 'moho_abi']),
     ]
 
     # Per-package co-change, over helpers/packages.py's own fixture tree: `toolbox` holds the crates

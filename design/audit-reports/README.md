@@ -168,7 +168,7 @@ the report. Milestones built is the `BUILT` rows of
 `script/roadmap --index`, which assembles them from the blocks in
 [design/roadmap/](../roadmap/); components is `crates/*/` plus `[[bin]]` targets in
 `components/Cargo.toml` **and** `fixtures/Cargo.toml`; ABI constants is the `pub const NAME: u64`
-surface of `crates/abi`; external
+surface of `crates/moho_abi`; external
 packages is the distinct registry packages across every committed lockfile but the vendored one.
 
 **Both userspace packages, and the reason is this table rather than the word "component"**

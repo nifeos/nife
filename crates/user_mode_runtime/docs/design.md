@@ -29,7 +29,7 @@ stubs' encodings) has host tests.
 
 aarch64 uses `svc #0` with the number in `x8` and arguments in `x0..x5`. RISC-V uses `ecall` with
 `a7` and `a0..a5`. `x86_64` uses `syscall` with `rax` and `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`. All
-three return in the first argument register, and every signature and `abi` constant is identical.
+three return in the first argument register, and every signature and `moho_abi` constant is identical.
 
 `x86_64` costs more in three places. `syscall` clobbers `rcx` and `r11` at every site, `rdtsc`
 answers in two halves, and there is no architected counter frequency, so `counter_hertz` reads a
@@ -187,7 +187,7 @@ closure. The standard library's own fill cannot be shared: it lives inside `std`
 `no_std`, and it panics where they must refuse quietly.
 
 The `virtual_io` module wraps the four `VirtualIo` capability methods. The `SAFETY` argument at
-each raw call site was `invoke`'s own contract and nothing more. `abi::virtual_io` states what the
+each raw call site was `invoke`'s own contract and nothing more. `moho_abi::virtual_io` states what the
 kernel checks: `WRITE_REGISTER` refuses the queue-address and notify registers, and `SETUP_QUEUE`
 and `NOTIFY` are bounds-checked against the DMA region and its high-water mark.
 

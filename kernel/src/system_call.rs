@@ -3,12 +3,12 @@
 //! `exit`, `exit_thread`, `yield` and `capability_delete` are authority over the caller itself, and
 //! `invoke(capability, method, a0, a1, a2)` is everything else, on a capability the caller was handed.
 //! Every argument is a scalar in a register, so the kernel follows no user pointer. The ABI is
-//! `crates/abi`, which the kernel and every user program share.
+//! `crates/moho_abi`, which the kernel and every user program share.
 //!
 //! See notes/system-call-boundary.md, and DECISIONS §10 (process model: capability-based,
 //! microkernel) for the choice this surface carries out.
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Capability, Object, Rights};
@@ -62,25 +62,25 @@ pub(crate) fn dispatch(frame: &mut TrapFrame) {
     let method = frame.arg(1);
 
     // `exit` never comes back, so it is not part of the result-writing path below.
-    if nr == abi::SYSTEM_CALL_EXIT {
+    if nr == moho_abi::SYSTEM_CALL_EXIT {
         sched::exit();
     }
     // Ends this thread only, and like `exit` never comes back.
-    if nr == abi::SYSTEM_CALL_EXIT_THREAD {
+    if nr == moho_abi::SYSTEM_CALL_EXIT_THREAD {
         sched::exit_thread(frame.arg(0));
     }
 
     let result: Result<i64, Error> = match nr {
-        abi::SYSTEM_CALL_YIELD => {
+        moho_abi::SYSTEM_CALL_YIELD => {
             sched::yield_now();
             Ok(0)
         }
         // An empty slot is not an error: a loader recycling slots need not track emptiness.
-        abi::SYSTEM_CALL_CAPABILITY_DELETE => {
+        moho_abi::SYSTEM_CALL_CAPABILITY_DELETE => {
             let _ = sched::delete_current_capability(frame.arg(0));
             Ok(0)
         }
-        abi::SYSTEM_CALL_INVOKE => invoke(
+        moho_abi::SYSTEM_CALL_INVOKE => invoke(
             frame,
             frame.arg(0),
             frame.arg(1),
@@ -112,7 +112,7 @@ pub(crate) fn dispatch(frame: &mut TrapFrame) {
 ///
 /// The lookup is the security mechanism: `slot` indexes this thread's own table in kernel memory,
 /// and an empty slot is `NoSuchSlot` (there is nothing there), not a refusal. Then the object's
-/// rights checks, then the method. Returns the method's result word or its `abi::Error`.
+/// rights checks, then the method. Returns the method's result word or its `moho_abi::Error`.
 ///
 /// Public so kernel tests drive this path, not a copy of it (`user/reap_tests.rs` does). See
 /// notes/system-call-boundary.md.
@@ -129,32 +129,36 @@ pub fn invoke(
     match capability.object {
         Object::Rendezvous(ep, badge) => match method {
             // `#[inline(always)]` in `rendezvous`, so the round trip stays inside `invoke`.
-            abi::rendezvous::SEND => rendezvous_send(capability.rights, ep, badge, [a0, a1, a2]),
-            abi::rendezvous::RECEIVE => rendezvous_receive(frame, capability.rights, ep),
-            abi::rendezvous::SEND_CAPABILITY => {
+            moho_abi::rendezvous::SEND => {
+                rendezvous_send(capability.rights, ep, badge, [a0, a1, a2])
+            }
+            moho_abi::rendezvous::RECEIVE => rendezvous_receive(frame, capability.rights, ep),
+            moho_abi::rendezvous::SEND_CAPABILITY => {
                 rendezvous_send_capability(capability.rights, ep, badge, [a0, a1, a2])
             }
-            abi::rendezvous::RECEIVE_CAPABILITY => {
+            moho_abi::rendezvous::RECEIVE_CAPABILITY => {
                 rendezvous_receive_capability(frame, capability.rights, ep)
             }
-            abi::rendezvous::CALL => rendezvous_call(frame, capability.rights, ep, badge, [a0, a1]),
+            moho_abi::rendezvous::CALL => {
+                rendezvous_call(frame, capability.rights, ep, badge, [a0, a1])
+            }
 
             // READ, the right to receive deaths here, which a send-only peer lacks (DECISIONS §32
             // (a supervisor may collect a corpse without being able to build one)).
-            abi::rendezvous::REAP => {
+            moho_abi::rendezvous::REAP => {
                 if !capability.rights.allows(Rights::READ) {
                     return Err(Error::NotPermitted);
                 }
                 rendezvous_reap(ep, a0)
             }
-            abi::rendezvous::SURVEY => rendezvous_survey(frame, capability.rights, ep, a0, a1),
-            abi::rendezvous::BADGE => rendezvous_badge(ep, capability.rights, badge, a0),
+            moho_abi::rendezvous::SURVEY => rendezvous_survey(frame, capability.rights, ep, a0, a1),
+            moho_abi::rendezvous::BADGE => rendezvous_badge(ep, capability.rights, badge, a0),
             _ => Err(Error::BadMethod),
         },
 
         // §12 (Call/Reply IPC: a one-shot reply capability).
         Object::Reply(tid) => match method {
-            abi::reply::REPLY => {
+            moho_abi::reply::REPLY => {
                 // Minted WRITE-only, so a narrowed copy cannot answer, and without GRANT, so it
                 // cannot have been delegated here.
                 if !capability.rights.allows(Rights::WRITE) {
@@ -193,19 +197,19 @@ pub fn invoke(
 
         Object::PageFrame(phys, count) => match method {
             // `MAP` checks its rights inside `page_frame_map`, because they depend on `a1`.
-            abi::page_frame::MAP => page_frame_map(slot, a0, a1, a2),
+            moho_abi::page_frame::MAP => page_frame_map(slot, a0, a1, a2),
             // Both `REVOKE` arms test `GRANT` here rather than through `Capability::delegate`,
             // because a revoke takes authority back and mints nothing. No harness covers the arm:
             // `allows` is proved in `capability_table`, and proving the arm itself would mean
             // stubbing the current thread, its table and the frame revoke, which the kernel
             // proofs do not stub. Its shape is the one-line rights test of every arm around it.
-            abi::page_frame::REVOKE => {
+            moho_abi::page_frame::REVOKE => {
                 if !capability.rights.allows(Rights::GRANT) {
                     return Err(Error::NotPermitted);
                 }
                 page_frame_revoke(phys, count.get())
             }
-            abi::page_frame::SLICE => page_frame_slice(slot, a0, a1),
+            moho_abi::page_frame::SLICE => page_frame_slice(slot, a0, a1),
             _ => Err(Error::BadMethod),
         },
 
@@ -213,7 +217,7 @@ pub fn invoke(
             // Spares the invoker's own capability and mapping, unlike a frame revoke: the kernel
             // mints a `DeviceFrame` once (DECISIONS §41 (the endpoint is the broker, and a device
             // is revoked by taking it back); `revoke::revoke_device_from_others` has why).
-            abi::page_frame::REVOKE => {
+            moho_abi::page_frame::REVOKE => {
                 if !capability.rights.allows(Rights::GRANT) {
                     return Err(Error::NotPermitted);
                 }
@@ -231,13 +235,13 @@ pub fn invoke(
         }
 
         Object::Interrupt(intid) => match method {
-            abi::interrupt::WAIT => {
+            moho_abi::interrupt::WAIT => {
                 if !capability.rights.allows(Rights::READ) {
                     return Err(Error::NotPermitted);
                 }
                 interrupt_wait(frame, intid)
             }
-            abi::interrupt::ACKNOWLEDGE => {
+            moho_abi::interrupt::ACKNOWLEDGE => {
                 if !capability.rights.allows(Rights::READ) {
                     return Err(Error::NotPermitted);
                 }

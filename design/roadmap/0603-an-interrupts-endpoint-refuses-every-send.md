@@ -28,7 +28,7 @@ binds endpoints its caller supplies. Nothing refused a program granted `WRITE` o
 | the refusal: `send` answers `Send::Refused` and touches nothing, tested before a receiver is popped | the same |
 | `bind_irq` marks the endpoint before it publishes the route, so the soak's caller-supplied endpoints are covered too | `kernel/src/sched.rs` |
 | `SEND`, `SEND_CAP` and `CALL` return `NotPermitted` without blocking; a §26 (the fault endpoint) death message sent there is dropped, since `EVENT_FAULT` is also `1` | `sched.rs`, `system_call.rs` |
-| `NotPermitted`'s doc names the case | `crates/abi` |
+| `NotPermitted`'s doc names the case | `crates/moho_abi` |
 
 The refusal is a variant of `send`'s result rather than a check at each caller. Every path that
 deposits into a rendezvous has to match it or the kernel does not compile, so a fifth deposit

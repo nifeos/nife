@@ -26,11 +26,11 @@ index fa1dfc5d5..22fae6ada 100644
 --- a/crates/system_initializer/src/children.rs
 +++ b/crates/system_initializer/src/children.rs
 @@ -292,7 +292,7 @@ pub(super) fn build_domain_name_resolver(
-                 (0, service, abi::rights::READ),
-                 (1, stack, abi::rights::WRITE),
+                 (0, service, moho_abi::rights::READ),
+                 (1, stack, moho_abi::rights::WRITE),
                  // Every right: lending a socket a page retyped from this budget needs `GRANT`.
--                (2, budget, abi::rights::ALL),
-+                (2, budget, abi::rights::SPEND_ONLY),
-                 (3, entropy, abi::rights::WRITE),
+-                (2, budget, moho_abi::rights::ALL),
++                (2, budget, moho_abi::rights::SPEND_ONLY),
+                 (3, entropy, moho_abi::rights::WRITE),
                  (
                      endowment::OWN_SPACE_SLOT,

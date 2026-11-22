@@ -38,7 +38,7 @@ time:
   machinery returns as its own decision if a supervision endpoint ever needs trustworthy identity
   from userspace senders."
 
-No badge field exists anywhere in the ABI today (checked directly: `crates/abi`, `crates/capability`).
+No badge field exists anywhere in the ABI today (checked directly: `crates/moho_abi`, `crates/capability`).
 In each prior case the actual requirement was confinement, not identity. A badge answers neither
 question a shared endpoint actually raised. It tells a receiver who called, never whether the
 message content can be trusted, which is what compositor's and dir-capability's fixes both needed.
