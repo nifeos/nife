@@ -43,7 +43,7 @@ near 2106, and wraps a time past 2106.
 
 The authority for the encoding is the ext4 format documentation (the Linux kernel's
 Documentation/filesystems/ext4/), page "4.1. Index Nodes", section "4.1.3. Inode Timestamps". The
-seconds fields are signed 32-bit numbers. When the inode is larger than 128 bytes and
+seconds fields hold signed 32-bit numbers. When the inode is larger than 128 bytes and
 `i_extra_isize` covers the matching `i_[cma]time_extra` field, that field's low two bits extend the
 seconds and its upper 30 bits hold the nanoseconds.
 
