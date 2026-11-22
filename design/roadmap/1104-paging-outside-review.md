@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
 milestone_dependencies: none
 decision_dependencies: none
@@ -34,60 +34,53 @@ reasons.
 
 ## Finding status
 
-
-- P0-1, the manifest stands alone: At the move. `Cargo.toml` still inherits `license` and the lints,
-  carries `publish = false` and has no `rust-version`, metadata or license files.
-- P0-2, another crate holds the name on crates.io: Done,
-  [#3594](https://github.com/nifeos/nife/pull/3594), the rename to `page_tables`.
-- P0-3, falsification records point into nife: At the move. The 38 record lines and 42 patch paths still
-  name `crates/page_tables/`, and the four host-test patches have no replay.
-- P1-4, documentation for a stranger: At the move. The comments still cite sections, milestones and nife
-  paths.
-- P1-5, the spelled-out renames: Done, [#3806](https://github.com/nifeos/nife/pull/3806), provisional. `is_user_page_virtual_address`,
-  `entry_physical_address`, `DirectMemoryAccessRegion` and the `virtual_address` and
-  `physical_address` parameters replace the old spellings in the crate and every caller. A two-way
-  door before the first release, so the maintainer ruled the names provisionally (2026-11-19 UTC)
-  and the ratification below takes the result.
-- P1-6, `doc(alias)` on kept specification names: Done, [#3806](https://github.com/nifeos/nife/pull/3806). The kept names carry aliases
-  for the specification spelling.
-- P1-7, `Mapper::new`'s safety contract and `Misaligned`: Done,
-  [#3567](https://github.com/nifeos/nife/pull/3567).
-- P1-8, `Flags::ALL` over every constructor: Done,
-  [#3567](https://github.com/nifeos/nife/pull/3567), eleven constructors, with `Flags::ALL`
-  provisional.
-- P1-9, the mutation exemptions: At the move. The 33 exemptions stay in nife's `.cargo/mutants.toml` until
-  the new repository's `.github/mutants-exempts` takes them.
+- P0-1, the manifest stands alone: At the move. The ruling of 2026-11-20 (UTC) gives the move lane
+  item 1: the inline license and lints, `rust-version`, the metadata and the license files.
+- P0-2, another crate holds the name on crates.io: Done, [#3594](https://github.com/nifeos/nife/pull/3594), the rename to `page_tables`.
+- P0-3, falsification records point into nife: At the move. The move commit rewrites the 38 record
+  lines and the patch paths that name `crates/page_tables/`, and gives the host-test patches a
+  replay.
+- P1-4, documentation for a stranger: At the move. The move lane rewrites the comments that cite
+  sections, milestones and nife paths.
+- P1-5, the spelled-out renames: Done, [#3806](https://github.com/nifeos/nife/pull/3806). The architect ratified the result with the other
+  public names in [#3857](https://github.com/nifeos/nife/pull/3857).
+- P1-6, `doc(alias)` on kept specification names: Done, [#3806](https://github.com/nifeos/nife/pull/3806) and [#3857](https://github.com/nifeos/nife/pull/3857). Every kept
+  public name carries an alias for its plain or specification spelling.
+- P1-7, `Mapper::new`'s safety contract and `Misaligned`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P1-8, `Flags::ALL` over every constructor: Done, [#3567](https://github.com/nifeos/nife/pull/3567), eleven constructors.
+- P1-9, the mutation exemptions: At the move. The 33 exemptions move from nife's
+  `.cargo/mutants.toml` to the new repository's `.github/mutants-exempts`.
 - P1-10, overflowing range arithmetic: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P1-11, a README: At the move. None exists.
-- P2-12a, `SPLIT_SHIFT` and `BadRegion` documented: Done,
-  [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-12b, `WritableAndExecutable` out of `MapError`: Waiting on a ruling. A change to a public
-  enum, two-way before the first publish and the maintainer's.
+- P1-11, a README: At the move.
+- P2-12a, `SPLIT_SHIFT` and `BadRegion` documented: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2-12b, `WritableAndExecutable` out of `MapError`: Will not fix. The architect kept the variant
+  when ratifying the public names, ruled 2026-11-20 (UTC); its doc says the kernel's mapping hold
+  raises it and this crate never does.
 - P2-13, the `walk` assertion: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-14, the leaf-size spelling: Done, [#3806](https://github.com/nifeos/nife/pull/3806), provisional. `PageSize::FourKibibytes`,
-  `TwoMebibytes` and `OneGibibyte` carry `#[doc(alias = "Size4KiB")]` and siblings. The maintainer
-  ruled option A provisionally on 2026-11-19 (UTC); the ratification below takes it.
-- P2-15a, `Display` and `core::error::Error` for `MapError`: Done,
-  [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2-14, the leaf-size spelling: Done, [#3806](https://github.com/nifeos/nife/pull/3806). `PageSize::FourKibibytes`, `TwoMebibytes` and
+  `OneGibibyte` carry `#[doc(alias = "Size4KiB")]` and siblings.
+- P2-15a, `Display` and `core::error::Error` for `MapError`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-15b, the README's list of missing operations: At the move, with item 11.
 - P2-16, documentation drift: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-17, the test pool shape: Open. `tests/mapping.rs` still frees its tables by `TableGuard`.
-- P2-18, the Sv39 device bit and the T-Head source: Done,
-  [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-19, Miri's pointer casts: Open. The crate's integer-to-pointer casts still draw Miri's
-  warnings, and neither `expose_provenance` nor `with_exposed_provenance` appears in it. The warnings stay
-  documented in `notes/undefined-behavior.md`, and the README note belongs to the move.
-- Decision 1, the published name: Done, ruled 2026-11-14 (UTC) and built in
-  [#3594](https://github.com/nifeos/nife/pull/3594).
-- Decision 2, the spelling of the leaf sizes: Done, [#3806](https://github.com/nifeos/nife/pull/3806). Ruled provisionally, option A,
-  2026-11-19 (UTC) by the maintainer; the ratification below takes it with the other names.
+- P2-17, the test pool shape: Done, [#3973](https://github.com/nifeos/nife/pull/3973). `tests/mapping.rs` builds every mapper from a pool
+  the mapper borrows.
+- P2-18, the Sv39 device bit and the T-Head source: Done, [#3567](https://github.com/nifeos/nife/pull/3567). The README's BUGS lines
+  belong to item 11.
+- P2-19, Miri's pointer casts: Done, [#3973](https://github.com/nifeos/nife/pull/3973). Each test pool returns the pointer it allocated
+  for an address instead of casting the integer back.
+- Decision 1, the published name: Done, [#3594](https://github.com/nifeos/nife/pull/3594), ruled 2026-11-14 (UTC).
+- Decision 2, the spelling of the leaf sizes: Done, [#3806](https://github.com/nifeos/nife/pull/3806), option A, ratified with the other
+  names in [#3857](https://github.com/nifeos/nife/pull/3857).
+- Ratifying the public names: Done, [#3857](https://github.com/nifeos/nife/pull/3857), ruled 2026-11-20 (UTC).
+- Clearing the review package: Done, [#3857](https://github.com/nifeos/nife/pull/3857), ruled 2026-11-20 (UTC). The repository
+  `nifeos/page_tables` is approved with `publish = false`, no tag and no publish.
 
 ## Open decisions
 
 ### The spelling of the leaf sizes
 
-Ruled provisionally 2026-11-19 (UTC), option A, by the maintainer under the standing units rule; the
-names stand as built until the architect ratifies them below. The reasoning follows.
+Ruled 2026-11-19 (UTC), option A, by the maintainer under the standing units rule, and ratified
+by the architect with the other public names on 2026-11-20 (UTC). The reasoning follows.
 
 Background. `PageSize` names the three sizes a single page table entry can map: 4 KiB, 2 MiB and
 1 GiB. Its variants are `Size4KiB`, `Size2MiB` and `Size1GiB`, copied from the `x86_64` crate,
@@ -290,11 +283,8 @@ The checks are in [the appendix](1104-paging-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Each finding that "Finding status" marks Open or Waiting, checked against
-  `crates/page_tables` and its manifest. Items marked At the move are the move lane's work.
-- **Outstanding.** Ratifying the public names in one pass, then clearing the review package
-  `notes/crate-reviews/page-tables.md`, which approves the repository: the two decisions under
-  "Open decisions" above.
+- **Outstanding.** The move to `nifeos/page_tables`, which takes items 1, 3, 4, 9 and 11 and the
+  README lines of items 15 and 18.
 
 ## Index row
 
@@ -304,6 +294,5 @@ falsification records that point into nife. It finds eight P1 items: documentati
 insider, 84 spelled-out-rule findings, kept names with no alias, and an incomplete `unsafe` contract
 on `Mapper::new`. The rest are proofs that miss constructors, mutation exemptions in
 the wrong file, overflowing range arithmetic, and no README. It finds eight P2 items. The architect
-ruled the crate's published name on 2026-11-14 (`page_tables`); the maintainer ruled the
-spelling of the leaf sizes and the item 5 and 6 renames provisionally on 2026-11-19, and the
-architect's ratification and the review's clearance stay open.
+ruled the crate's published name on 2026-11-14 (`page_tables`), ratified the public names and
+cleared the review on 2026-11-20, and the move does what remains.
