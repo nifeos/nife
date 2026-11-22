@@ -78,10 +78,9 @@ pages it overflowed by 192 bytes. Each pipeline stage's endowment can carry a wh
 four pages then overflowed by 48 bytes. Both presented as a data abort on the client's `sp`, then
 the lost-wakeup watchdog. The test was still waiting for a report from a dead process. The
 shell's stack is sized by the largest value `grant_plan` hands it, so a field added there can be a
-page needed here. Size it by measurement: in the debug build the suite boots, the sum of the frame
-sizes along the deepest direct call chain from `_start` matches where the shell faults, and a
-512-byte directory path held by value in each planner frame puts the two-tree `rm` script near
-44 KiB.
+page needed here. Size it by measurement. In the debug build the suite boots, the frame sizes summed
+along the deepest direct call chain from `_start` match where the shell faults. A 512-byte
+directory path held by value in each planner frame puts the two-tree `rm` script near 44 KiB.
 
 ## The disk the FS server mounts
 
