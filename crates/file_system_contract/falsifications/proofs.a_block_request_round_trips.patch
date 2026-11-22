@@ -2,7 +2,7 @@ Falsifies `file_system_contract::proofs::a_block_request_round_trips`.
 
 The defect: `block::request` stores the count rather than the count minus one.
 
-Expected to fail: `assert!(block::request_block_count(w0) == blocks)` for every count.
+Expected to fail: `assert!(block::request_block_count(w0) == Some(blocks))` for every count.
 
 diff --git a/crates/file_system_contract/src/block.rs b/crates/file_system_contract/src/block.rs
 --- a/crates/file_system_contract/src/block.rs

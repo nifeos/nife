@@ -67,7 +67,8 @@ pub const LOGICAL_BLOCK_BYTES: u64 = 512;
 pub const TRANSFER_BLOCKS: usize = 16;
 
 /// The largest payload one [`READ`] or [`WRITE`] may carry, in bytes: the whole shared region
-/// ([`TRANSFER_BLOCKS`] blocks). The block server clamps every request's count to this.
+/// ([`TRANSFER_BLOCKS`] blocks). A block server refuses a request that asks for more
+/// ([`request_block_count`] answers `None`).
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_TRANSFER_BYTES: usize = TRANSFER_BLOCKS * BLOCK_BYTES;
@@ -85,9 +86,19 @@ pub const fn request(operation: u64, blocks: usize) -> u64 {
 /// The block count of a blk request word: [`request`]'s inverse. A word built by
 /// [`super::request`]`(operation)`, as a single-block caller sends, decodes as 1.
 ///
+/// `None` when the count field spells more than [`TRANSFER_BLOCKS`]: the eight-bit field can say
+/// 256, and the region holds 16. A block server answers `None` with `EINVAL` rather than clamping,
+/// because a clamped read returns fewer blocks than the caller asked for and says nothing. The
+/// refusal is provisional (restrictive first); clamping could replace it without breaking a caller.
+///
 /// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `file_system_contract`).
-pub const fn request_block_count(w0: u64) -> usize {
-    ((w0 & 0xff) + 1) as usize
+pub const fn request_block_count(w0: u64) -> Option<usize> {
+    let blocks = ((w0 & 0xff) + 1) as usize;
+    if blocks <= TRANSFER_BLOCKS {
+        Some(blocks)
+    } else {
+        None
+    }
 }
 
 /// **The channel's arithmetic, checked by the build rather than by a test**, for
@@ -99,7 +110,7 @@ const _: () = {
     assert!(MAXIMUM_TRANSFER_BYTES == TRANSFER_BLOCKS * BLOCK_BYTES);
     // `request`'s all-zero-low-bits compatibility case: a caller that never heard of `request_block_count`
     // sends `super::request(operation)`, whose low bits are 0, and that must still mean one block.
-    assert!(request_block_count(super::request(READ)) == 1);
+    assert!(matches!(request_block_count(super::request(READ)), Some(1)));
 };
 
 #[cfg(test)]
