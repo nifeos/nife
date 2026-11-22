@@ -9,7 +9,6 @@ capability_manifest_note
 current_cpu_contract
 domain_name_resolution_contract
 globally_unique_identifier_partition_table
-grant_plan
 machine_statistics_contract
 socket_contract
 user_mode_runtime

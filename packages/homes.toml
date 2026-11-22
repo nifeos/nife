@@ -159,11 +159,6 @@ paths = ["notes/glyphs/glyph-atlas.md"]
 
 [[home]]
 status = "undecided"
-reason = "about crates/grant_plan alone; it leaves with that crate (§315)"
-paths = ["notes/grant-expression/grant-plan-crate.md"]
-
-[[home]]
-status = "undecided"
 reason = "about crates/installed_programs alone; it leaves with that crate (§315)"
 paths = ["notes/packages/installed-programs.md"]
 

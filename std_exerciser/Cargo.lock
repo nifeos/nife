@@ -165,6 +165,7 @@ dependencies = [
 [[package]]
 name = "grant_plan"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/grant_plan?rev=a5d87c426ec0aeebeb51a13d3ffb116caebd73c9#a5d87c426ec0aeebeb51a13d3ffb116caebd73c9"
 dependencies = [
  "byte_glob",
  "grant_contract",
