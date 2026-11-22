@@ -132,6 +132,20 @@ impl Program {
     }
 }
 
+// Every row's manifest agrees with itself, checked by the compiler: a directory grant that names a
+// widening option declares that option, so the planner's narrow reading of an undeclared one is
+// never what a shipped program meets. A row that breaks it fails the build, not a test run.
+const _: () = {
+    let mut i = 0;
+    while i < Program::ALL.len() {
+        assert!(
+            Program::ALL[i].manifest().is_well_formed(),
+            "a program's manifest names a widening option it does not declare"
+        );
+        i += 1;
+    }
+};
+
 /// The manifest of `least_authority_demo`, [`Program::LeastAuthorityDemo`].
 const fn least_authority_demo_manifest() -> Manifest {
     Manifest {
