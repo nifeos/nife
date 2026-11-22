@@ -42,9 +42,9 @@ struct ReadmeExample;
 /// Retired numbers, and what owes the bump. A number that was served and no longer is stays in
 /// the crate as reserved and is never reused for another method; it is pinned in
 /// `tests::reserved_numbers_are_never_reused`. Removing a number that no kernel serves is not done.
-/// Changing the value or the meaning of a number a kernel serves owes a bump of this constant:
-/// `helpers/format_values_check.py` refuses a change or removal of any public number of this crate
-/// that arrives without a changed `ABI_VERSION`, and a new number owes nothing.
+/// Changing the value or the meaning of a number a kernel serves owes a bump of this constant: a
+/// change that alters or removes any public number of this crate changes `ABI_VERSION` with it,
+/// and a new number owes nothing.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const ABI_VERSION: u32 = 1;
