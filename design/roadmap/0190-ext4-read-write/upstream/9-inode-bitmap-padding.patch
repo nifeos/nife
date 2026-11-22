@@ -1,6 +1,6 @@
-From 87db31180c1ead4c3fe0f7ee42bc05a612cbc659 Mon Sep 17 00:00:00 2001
-From: Chris Alef <chris@crickertech.com>
-Date: Sun, 22 Nov 2026 19:46:57 +0000
+From 00d48c1088d240a1429cc47e6f487520d2c9543b Mon Sep 17 00:00:00 2001
+From: Chris Alef <476570+calef@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 22:31:01 +0000
 Subject: [PATCH] fix(rsext4): set the inode bitmap padding when initializing
  an uninit group
 
