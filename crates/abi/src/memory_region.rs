@@ -1,7 +1,11 @@
+//! Name: provisional.
+
 /// `invoke(capability, MAP, va, _, _)` -> 0. Retype one page out of the untyped and map it, writable,
 /// at `va` in the caller's own address space. The page and any page tables it needs both come
 /// from the untyped; the kernel allocates nothing. Returns `OutOfMemory` when the untyped is
 /// exhausted (the *process* is out of budget, not the kernel).
+///
+/// Name: provisional.
 pub const MAP: u64 = 0;
 
 /// `invoke(capability, RETYPE, pages, _, _)` -> slot. Retype `pages` contiguous pages out of the untyped
@@ -13,6 +17,8 @@ pub const MAP: u64 = 0;
 /// rather than something mapped in one shot. `OutOfMemory` when the run does not fit, and then
 /// the region's budget is untouched; also when the caller's capability table is full, and then
 /// the run is spent, exactly as a single page always was.
+///
+/// Name: provisional.
 pub const RETYPE: u64 = 1;
 
 /// `invoke(capability, RETYPE_OBJECT, object_type, space, floor)` -> slot: retype one page of the untyped into a
@@ -39,6 +45,8 @@ pub const RETYPE_OBJECT: u64 = 2;
 /// (its pages are committed; the child frees them at its own `DESTROY`). `OutOfMemory` when the
 /// budget or region table is exhausted or the capability table is full; `NotPermitted` without
 /// `WRITE`.
+///
+/// Name: provisional.
 pub const SPLIT: u64 = 3;
 
 /// `invoke(capability, DESTROY, _, _, _)` -> 0. **Reclaim this region and every object retyped from
@@ -46,6 +54,8 @@ pub const SPLIT: u64 = 3;
 /// returned; every capability to them goes stale on next use (generational names, no derivation
 /// tree to walk). `NotPermitted` while a live thread still occupies the region, or if it has
 /// been `SPLIT` into children (destroy the children first), or without `WRITE`.
+///
+/// Name: provisional.
 pub const DESTROY: u64 = 4;
 
 /// `invoke(capability, USAGE, record, _, _)` -> pages: **how much of this region has been spent, and on
@@ -55,4 +65,6 @@ pub const DESTROY: u64 = 4;
 /// # BUGS
 /// - **A subtree record walks the whole region table under the region lock, interrupts masked**:
 ///   up to 62 µs a call, repeatable by any `ENUMERATE` holder; accepted.
+///
+/// Name: provisional.
 pub const USAGE: u64 = 5;

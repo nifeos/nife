@@ -247,7 +247,7 @@ fn address_space_address_wait(
     flags: u64,
     word: u64,
 ) -> Result<i64, Error> {
-    if !abi::address_wait::admitted(flags) {
+    if !abi::address_wait::is_admitted(flags) {
         return Err(Error::BadMethod);
     }
     if !rights.allows(Rights::READ) {

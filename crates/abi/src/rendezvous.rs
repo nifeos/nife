@@ -1,3 +1,5 @@
+//! Name: provisional.
+
 /// `invoke(capability, SEND, w0, w1, w2)` -> 0. **Blocks until a receiver takes the message.**
 ///
 /// The three words travel in registers and never touch memory. That is the whole of the
@@ -8,6 +10,8 @@
 /// [`crate::Error::NoSuchSlot`] means the slot is empty, and [`crate::Error::Gone`] means the
 /// endpoint this capability names has been destroyed, including while this thread was blocked
 /// inside the send. A byte-sink contract can build on the difference.
+///
+/// Name: provisional.
 pub const SEND: u64 = 0;
 
 /// `invoke(capability, RECEIVE, _, _, _)` -> w0, with w1 in x1 and w2 in x2. **Blocks until a message
@@ -20,6 +24,8 @@ pub const SEND: u64 = 0;
 /// # BUGS
 /// - **`x0` is the sender's own `w0`**, so a negative `w0` equal to an [`Error`](crate::Error) code
 ///   reads as that error to a wrapper that checks the sign.
+///
+/// Name: provisional.
 pub const RECEIVE: u64 = 1;
 
 /// `invoke(capability, SEND_CAPABILITY, capability_slot, rights, w0)` -> 0. **Delegate a capability.** Passes the
@@ -59,6 +65,8 @@ pub const RECEIVE_CAPABILITY: u64 = 3;
 /// exactly once, and only that caller. Needs `WRITE`. A `CALL` that reaches a plain [`RECEIVE`] returns
 /// [`Gone`](crate::Error::Gone): the receiver gets the two words, and there is nowhere to put the
 /// Reply.
+///
+/// Name: provisional.
 pub const CALL: u64 = 4;
 
 /// `invoke(capability, REAP, tid, _, _)` -> 0. **Collect a corpse this rendezvous supervises**: reclaim the TCB, space and region of the thread `tid` names.
@@ -70,6 +78,8 @@ pub const CALL: u64 = 4;
 ///
 /// # BUGS
 /// - `NotPermitted` has a second, unmeasured cause.
+///
+/// Name: provisional.
 pub const REAP: u64 = 5;
 
 /// `invoke(capability, SURVEY, cursor, record, 0)` -> `(next_cursor, tid, word)`: **read one entry of the
@@ -81,6 +91,8 @@ pub const REAP: u64 = 5;
 /// does not act on them. Without it: `NotPermitted`, never an empty domain.
 /// Start at cursor 0 and feed each `next_cursor` back until [`survey::DONE`](super::survey::DONE).
 /// Each call is its own snapshot, never a lock held across the walk.
+///
+/// Name: provisional.
 pub const SURVEY: u64 = 6;
 
 /// `invoke(capability, BADGE, badge, _, _)` -> the slot of a badged copy of this endpoint capability, in
@@ -91,6 +103,8 @@ pub const SURVEY: u64 = 6;
 /// Needs `GRANT`, a delegation-class power. Refuses a `badge` of 0 (the unbadged value) and a
 /// source already badged: a badge is set once (seL4's rule), so a holder can trust the one it was
 /// given. It rides through a later [`SEND_CAPABILITY`], because that copies the object.
+///
+/// Name: provisional.
 pub const BADGE: u64 = 7;
 
 /// The x1 value from [`RECEIVE_CAPABILITY`] when the message carried no capability.

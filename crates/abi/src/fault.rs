@@ -1,3 +1,5 @@
+//! Name: provisional.
+
 /// **The spawn-slot convention**: a supervised child is spawned with its
 /// supervision rendezvous in this reserved slot, by [`crate::thread_control_block::CAPABILITY_INSERT`] with
 /// an explicit target. At `START` the kernel reads
@@ -25,6 +27,10 @@ const _: () = assert!(FAULT_RENDEZVOUS_SLOT + 1 == super::CAPABILITY_TABLE_SLOTS
 ///   w4  0      reserved; a fault-reply protocol arrives here additively
 ///   r5  label  x5, a5 or r9: the BADGE on the child's supervision capability, 0 if none
 /// ```
+///
+/// Name: provisional.
 pub const EVENT_FAULT: u64 = 1;
 /// `w0`: the thread called `exit` (or was reaped), rather than faulting.
+///
+/// Name: provisional.
 pub const EVENT_EXIT: u64 = 2;

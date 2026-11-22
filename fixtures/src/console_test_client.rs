@@ -67,7 +67,7 @@ fn print(bytes: &[u8]) -> Result<(), Error> {
 
     // The length is the message. The data is already in place, shared, uncopied.
     let r = send(REQUEST, n as u64, 0, 0);
-    if let Some(e) = Error::from_ret(r) {
+    if let Ok(e) = Error::try_from(r) {
         return Err(e); // e.g. NoSuchSlot: we were not handed a console
     }
 
