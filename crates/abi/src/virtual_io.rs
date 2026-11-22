@@ -1,3 +1,5 @@
+//! Name: provisional.
+
 /// `invoke(capability, READ_REGISTER, off, _, _)` -> register value. Reads are DMA-safe, so any register
 /// in the device's own slot; an offset outside the slot, or not word-aligned, is `WrongObject`. The
 /// kernel offers only modern (version 2) devices on either bus, so the `Version` register always
@@ -19,11 +21,15 @@ pub const WRITE_REGISTER: u64 = 1;
 /// driver never chooses them. `queue` selects the virtqueue (a virtio-net device uses receive =
 /// 0, transmit = 1; the disk uses only queue 0, and passing 0 keeps its ABI byte-identical).
 /// `WrongObject` when `queue` is out of range, the block does not fit the region, or the queue was never set up.
+///
+/// Name: provisional.
 pub const SETUP_QUEUE: u64 = 2;
 /// `invoke(capability, NOTIFY, queue, _, _)` -> 0, or `DeviceRefused` if a newly-published descriptor on
 /// that queue points outside the driver's DMA region. On refusal the device is NOT told to go.
 /// `queue` selects the virtqueue, as for `SETUP_QUEUE`; each queue keeps its own validated
 /// high-water mark, so receive and transmit submits never interfere.
+///
+/// Name: provisional.
 pub const NOTIFY: u64 = 3;
 
 /// **Where a boot virtio device's DMA region says where it is**: the byte offset, inside the

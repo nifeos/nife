@@ -195,7 +195,7 @@ pub const fn kind_name(kind: u64) -> &'static str {
 /// What a negated `abi::Error` means to somebody who typed `pmap`. `ps::refusal`'s catalogue, one
 /// object type over.
 pub fn refusal(code: i64) -> &'static str {
-    match abi::Error::from_ret(code) {
+    match abi::Error::try_from(code).ok() {
         Some(abi::Error::NoSuchSlot) => "this process holds no address-space capability",
         Some(abi::Error::NotPermitted) => {
             "this address space may be mapped into, but not looked at: no ENUMERATE"

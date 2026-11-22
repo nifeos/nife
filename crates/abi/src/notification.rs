@@ -1,7 +1,11 @@
+//! Name: provisional.
+
 /// `invoke(capability, SIGNAL, bits, _, _)` -> 0. OR `bits` into the word, waking a waiter or the
 /// bound receiver if there is one. **Never blocks and never loses a bit.** A signal of zero
 /// bits does nothing and wakes nobody, because it has nothing to deliver. `Gone` if the
 /// notification has been destroyed. Needs `WRITE`.
+///
+/// Name: provisional.
 pub const SIGNAL: u64 = 0;
 
 /// `invoke(capability, WAIT, _, _, _)` -> word. If the word is non-zero, return it and clear it;
@@ -11,10 +15,14 @@ pub const SIGNAL: u64 = 0;
 /// The word travels in `x0`, where a negative value is an error, so a word whose top bit is set
 /// and whose value lands on an error code reads as that error. Callers that need the full range must
 /// not use a word that can land there.
+///
+/// Name: provisional.
 pub const WAIT: u64 = 1;
 
 /// `invoke(capability, POLL, _, _, _)` -> word. `WAIT` without blocking: the word, cleared, and `0` if
 /// nothing was pending. Needs `READ`.
+///
+/// Name: provisional.
 pub const POLL: u64 = 2;
 
 /// `invoke(capability, BIND, tcb_slot, _, _)` -> 0. Bind this notification to the thread named by the
@@ -22,6 +30,8 @@ pub const POLL: u64 = 2;
 /// `NotPermitted` if either is already bound; `WrongObject` if the slot is not a thread;
 /// `Gone` if either object has been destroyed. If the thread is already blocked receiving and
 /// the word is non-zero, the bind delivers it at once rather than leaving it for later.
+///
+/// Name: provisional.
 pub const BIND: u64 = 3;
 
 /// **The tag on a receive that the bound notification ended** rather than a message. A receive
@@ -31,4 +41,6 @@ pub const BIND: u64 = 3;
 /// **and this value again in `x4`, which is the one to test.** Any sender can put `BOUND` in `x0`;
 /// `x4` is written only by the kernel, and is `0` on every other receive. The fault-reply protocol that the fault rendezvous reserves `w4` for must not put this
 /// value there.
+///
+/// Name: provisional.
 pub const BOUND: u64 = 2;

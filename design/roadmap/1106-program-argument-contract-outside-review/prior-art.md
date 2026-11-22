@@ -21,5 +21,5 @@ single-field damage. What it costs: four bytes of length per argument where two 
 largest record the page can carry. It allows one page of ceiling where Linux allows two mebibytes.
 It has no checksum, so a header whose count and total both agree on a shorter line is
 indistinguishable from that shorter line (item 9). A concrete example of the shape is the line `rg
-pattern src`. It is the magic `nifeargv`, count 3, total 25, then `2 rg`, `7 pattern`, `3 src`, each
+pattern src`. It is the magic `PROGARG2`, count 3, total 25, then `2 rg`, `7 pattern`, `3 src`, each
 length a little-endian `u32`, and 4,055 bytes nothing reads.

@@ -3,6 +3,8 @@
 //! abbreviations).
 
 /// An IPC rendezvous, page-resident, owned by the caller's budget.
+///
+/// Name: provisional.
 pub const RENDEZVOUS: u64 = 1;
 
 /// An address space: the retyped page **is the L0 root table**, and the
@@ -12,21 +14,29 @@ pub const RENDEZVOUS: u64 = 1;
 /// principle (the user pays, the kernel allocates nothing) in this kernel's idiom, rather
 /// than seL4's per-call paging-structure objects, which belong to the explicitness this
 /// project deliberately did not copy.
+///
+/// Name: provisional.
 pub const ADDRESS_SPACE: u64 = 2;
 
-/// A thread: the retyped page holds the TCB, and the object is born an
+/// A thread: the retyped page holds the thread control block (TCB), and the object is born an
 /// **embryo**, in no queue and not runnable. It becomes a running thread only through
 /// [`crate::thread_control_block::CONFIGURE`] (bind an address space, set entry and stack) and [`crate::thread_control_block::START`], with
 /// [`crate::thread_control_block::CAPABILITY_INSERT`] granting its initial authority in between. A half-built TCB can never
 /// run: `START` refuses one with no bound space or no entry.
+///
+/// Name: provisional.
 pub const THREAD_CONTROL_BLOCK: u64 = 3;
 
 /// A notification: a data word and a wait queue, the
 /// asynchronous half of IPC. See [`crate::notification`].
+///
+/// Name: provisional.
 pub const NOTIFICATION: u64 = 4;
 
 /// A timer: one deadline and the notification it signals when
 /// the deadline passes. See [`crate::timer`].
+///
+/// Name: provisional.
 pub const TIMER: u64 = 5;
 
 /// **A process**: the capability table its threads share,
@@ -34,4 +44,6 @@ pub const TIMER: u64 = 5;
 /// region's, which is what pays for it. `RETYPE_OBJECT`'s second word names the address space the
 /// process holds, a `WRITE` capability that is consumed as `CONFIGURE` consumes one. See
 /// [`super::process`]. *(Number provisional.)*
+///
+/// Name: provisional.
 pub const PROCESS: u64 = 6;
