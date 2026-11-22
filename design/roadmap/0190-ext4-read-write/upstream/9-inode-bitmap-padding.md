@@ -2,8 +2,10 @@
 
 Appendix to [milestone 190](../../0190-ext4-read-write.md), upstream item 9. Name provisional.
 
-This is a draft. Nobody has filed anything here. The architect reviews the exact text below, and
-filing it is a separate step.
+Both submissions are upstream, each with the title and Chinese body below: the Issue as
+[rcore-os/tgoskits#2824](https://github.com/rcore-os/tgoskits/issues/2824) and the pull request as
+[rcore-os/tgoskits#2825](https://github.com/rcore-os/tgoskits/pull/2825), whose one commit is the
+patch beside this file.
 
 - Repository and branch: `rcore-os/tgoskits`, `dev`.
 - Base commit: `6e80b940d46167a59a795e158bb17a7eb28333af` ("feat(ivc): add fragmented Message V1
@@ -16,7 +18,7 @@ pull requests) processes a pull request only when it links an Issue, so the Issu
 and its number fills the pull request's `关联 Issue` line. Both follow the repository's templates
 (`.github/ISSUE_TEMPLATE/development.md` and `.github/PULL_REQUEST_TEMPLATE.md`).
 
-## Issue to file first
+## Issue (filed)
 
 ### Issue title
 
@@ -108,7 +110,7 @@ and a single group never reaches this path.
   repeat the reproduction on the 1 KiB image above and expect `e2fsck -fn` to exit with status 0.
 ```
 
-## Pull request
+## Pull request (filed)
 
 ### Title
 
@@ -121,7 +123,7 @@ fix(rsext4): set the inode bitmap padding when initializing an uninit group
 ```markdown
 ## 当前问题
 
-关联 Issue：#<待填写>
+关联 Issue：#2824
 
 块组带有 `EXT4_BG_INODE_UNINIT` 标志时，磁盘上的 inode 位图尚未初始化。`alloc_inodes` 在该组分配第一个
 inode 时，会在内存中把位图整块清零，然后置位新分配的 inode。
@@ -165,7 +167,7 @@ Bitmaps 没有规定最后一个 inode 之后直到块末尾的填充位。`e2fs
 ```markdown
 ## Current problem
 
-Linked Issue: #<to be filled>
+Linked Issue: #2824
 
 When a block group carries `EXT4_BG_INODE_UNINIT`, its inode bitmap on disk is not initialized yet.
 When `alloc_inodes` allocates the first inode in such a group, it zeroes the whole bitmap in memory
