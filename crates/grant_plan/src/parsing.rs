@@ -201,21 +201,29 @@ pub fn parse(line: &[u8]) -> CommandLine<'_> {
     }
 }
 
+/// **An operand that names no job**: what [`job_operand`] and [`kill_operands`] answer for a tail
+/// that is not `%N` or `N` counted from one, or, for `kill`, that names no job at all. It carries no
+/// detail, as each builtin says in its own words which form it takes.
+///
+/// Name: provisional.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NoJobNamed;
+
 /// **Which job an operand names** (milestone 48): `%N` or a bare `N`, counted from one. `Ok(None)`
-/// is an empty operand (every job to `wait`, the newest to `fg`); `Err(())` names no job.
+/// is an empty operand (every job to `wait`, the newest to `fg`); [`NoJobNamed`] is any other
+/// operand.
 ///
 /// Name: ratified 2026-11-20 (UTC).
 ///
 /// ```
-/// use grant_plan::job_operand;
+/// use grant_plan::{NoJobNamed, job_operand};
 /// assert_eq!(job_operand(b"%2"), Ok(Some(2)));
 /// assert_eq!(job_operand(b"2"), Ok(Some(2)));
 /// assert_eq!(job_operand(b""), Ok(None));
-/// assert_eq!(job_operand(b"%0"), Err(()));
-/// assert_eq!(job_operand(b"%1 %2"), Err(()));
+/// assert_eq!(job_operand(b"%0"), Err(NoJobNamed));
+/// assert_eq!(job_operand(b"%1 %2"), Err(NoJobNamed));
 /// ```
-#[allow(clippy::result_unit_err)]
-pub fn job_operand(tail: &[u8]) -> Result<Option<usize>, ()> {
+pub fn job_operand(tail: &[u8]) -> Result<Option<usize>, NoJobNamed> {
     let t = tail.trim_ascii();
     if t.is_empty() {
         return Ok(None);
@@ -224,12 +232,12 @@ pub fn job_operand(tail: &[u8]) -> Result<Option<usize>, ()> {
     // Two digits is the whole range a job number can have; anything longer names no job, and
     // refusing it here keeps the sum below from overflowing.
     if digits.is_empty() || digits.len() > 2 || !digits.iter().all(u8::is_ascii_digit) {
-        return Err(());
+        return Err(NoJobNamed);
     }
     let n = digits
         .iter()
         .fold(0usize, |n, d| n * 10 + usize::from(d - b'0'));
-    if n == 0 { Err(()) } else { Ok(Some(n)) }
+    if n == 0 { Err(NoJobNamed) } else { Ok(Some(n)) }
 }
 
 /// **`kill`'s operands** (milestone 48 (job control)): whether `-9` asked for the forcible tier, and
@@ -238,14 +246,13 @@ pub fn job_operand(tail: &[u8]) -> Result<Option<usize>, ()> {
 /// Name: ratified 2026-11-20 (UTC).
 ///
 /// ```
-/// use grant_plan::kill_operands;
+/// use grant_plan::{NoJobNamed, kill_operands};
 /// assert_eq!(kill_operands(b"%1"), Ok((false, 1)));
 /// assert_eq!(kill_operands(b"-9 %3"), Ok((true, 3)));
-/// assert_eq!(kill_operands(b""), Err(()));
-/// assert_eq!(kill_operands(b"-15 %1"), Err(()));
+/// assert_eq!(kill_operands(b""), Err(NoJobNamed));
+/// assert_eq!(kill_operands(b"-15 %1"), Err(NoJobNamed));
 /// ```
-#[allow(clippy::result_unit_err)]
-pub fn kill_operands(tail: &[u8]) -> Result<(bool, usize), ()> {
+pub fn kill_operands(tail: &[u8]) -> Result<(bool, usize), NoJobNamed> {
     let t = tail.trim_ascii();
     let (force, job) = match t.strip_prefix(b"-9") {
         Some(rest) if rest.first().is_some_and(u8::is_ascii_whitespace) => (true, rest),
@@ -253,7 +260,7 @@ pub fn kill_operands(tail: &[u8]) -> Result<(bool, usize), ()> {
     };
     match job_operand(job) {
         Ok(Some(n)) => Ok((force, n)),
-        _ => Err(()),
+        _ => Err(NoJobNamed),
     }
 }
 

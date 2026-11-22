@@ -48,8 +48,8 @@
 //!   maps read-only, so this is a property of the format under corruption and not an attack
 //!   surface; a checksum would be a wire-format change.
 //! - [`ArgumentPage::from_virtual_address`] reads through a `usize` pointer, so on a target
-//!   narrower than 64 bits an address above 4 GiB would read a different page. No target built here
-//!   is that narrow.
+//!   narrower than 64 bits an address above 4 GiB would read a different page. Its `# Safety`
+//!   section makes a fitting address the caller's promise. No target built here is that narrow.
 //! - This crate is one file, `src/lib.rs`: the nife repository's `std` port copies it by name, so a
 //!   module split, or an inner attribute the port cannot carry, breaks that build and not this one.
 //!   A test checks that `src/` holds no other file.
@@ -73,8 +73,8 @@ pub const HEADER_BYTES: usize = 16;
 
 /// The bytes of records one page holds, each argument's four-byte length prefix included.
 ///
-/// Name: provisional, renamed from `CAPACITY` so the name carries its unit. `PAGE_CONTENT_BYTES`
-/// is not used: elsewhere in the contract family it counts the header too.
+/// Name: ratified 2026-11-21 (UTC). `PAGE_CONTENT_BYTES` is not used: elsewhere in the contract
+/// family it counts the header too.
 pub const MAXIMUM_RECORDS_BYTES: usize = PAGE_BYTES - HEADER_BYTES;
 
 /// The bytes one argument of `argument_bytes` bytes takes in the records: its four-byte length
@@ -310,12 +310,14 @@ impl<'a> ArgumentPage<'a> {
 
     /// Read the page mapped at `virtual_address`.
     ///
-    /// Name: provisional, renamed from `from_va` so the address is spelled out.
+    /// Name: ratified 2026-11-21 (UTC).
     ///
     /// # Safety
     ///
     /// `virtual_address` must be the start of [`PAGE_BYTES`] of readable memory that stays mapped and unwritten
-    /// for `'a`. The loader maps this page read-only and nothing writes it after assembly.
+    /// for `'a`. The loader maps this page read-only and nothing writes it after assembly. The
+    /// address must also fit the target's `usize`, since it becomes a pointer through one: on a
+    /// target narrower than 64 bits, a larger address names a different page.
     #[must_use]
     pub unsafe fn from_virtual_address(virtual_address: u64) -> Self {
         // SAFETY: the caller's contract, exactly.
@@ -437,6 +439,29 @@ mod verification {
             sum += 4 + argument.len();
         }
         assert_eq!(sum, total);
+    }
+
+    /// **What the builder writes, the parser reads back**: two arguments of three and two bytes,
+    /// every byte symbolic, written over a page of stale bytes, as the shell writes each line over
+    /// one frame. The lengths are concrete, so every write lands at a known offset; with
+    /// symbolic lengths the 4,096-byte page ran the solver out of memory.
+    /// Falsification: replayable `crates/program_argument_contract/falsifications/verification.the_builder_and_the_parser_round_trip_two_arguments.patch`
+    #[kani::proof]
+    #[kani::unwind(17)]
+    fn the_builder_and_the_parser_round_trip_two_arguments() {
+        let first: [u8; 3] = kani::any();
+        let second: [u8; 2] = kani::any();
+        let mut page = [0xa5u8; PAGE_BYTES];
+        let mut builder = PageBuilder::new(&mut page).unwrap();
+        builder.push(&first).unwrap();
+        builder.push(&second).unwrap();
+        assert_eq!(builder.finish(), 2);
+        let parsed = ArgumentPage::parse(&page);
+        assert_eq!(parsed.len(), 2);
+        let mut read = parsed.iter();
+        assert_eq!(read.next(), Some(&first[..]));
+        assert_eq!(read.next(), Some(&second[..]));
+        assert_eq!(read.next(), None);
     }
 }
 

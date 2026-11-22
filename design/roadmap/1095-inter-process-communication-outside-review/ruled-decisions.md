@@ -117,7 +117,8 @@ differs in nothing. Example: `let table: FutexTable<Thread, 64> = FutexTable::ne
 
 Decided by the maintainer on 2026-11-19 (UTC), provisional: a two-way door until the first publish.
 `Futexes` becomes `FutexTable<T, const BUCKETS: usize>`, `queued()` becomes `len()` and
-`Key::space` becomes `Key::address_space`.
+`Key::space` becomes `Key::address_space`. The ruling of 2026-11-21 (UTC) that spells futex out as
+address wait names the type `AddressWaitTable<T, const BUCKETS: usize>`, with `futex` as its alias.
 
 ## D6. Review clearance and the repository
 

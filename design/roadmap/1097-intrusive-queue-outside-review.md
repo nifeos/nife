@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -22,42 +23,40 @@ cargo-mutants. No new tool.
 
 ## Finding status
 
-Every item not Done blocks the first crates.io publish, which waits until every outside-review
+Every finding not Done blocks the first crates.io publish, which waits until every outside-review
 milestone reaches delivery.
 
-- Item 1, the manifest is a workspace member's: Done. The manifest states its own license,
-  `rust-version = "1.85"`, description, keywords, categories and lint tables.
-- Item 2, the front page points into nife: Done for the notes pointers and the DECISIONS
-  citation, which `src/lib.rs` no longer carries, and the README holds the contract's fine print.
-  The repository carries no `Name:` blocks.
-- Item 3, no repository skeleton: Open. The crate lives in `nifeos/intrusive_queue` with the
-  template's scaffold at crate-workflows v8; a stranger run goes on record there next.
-- Item 4, `Queue<T>` is `Send` for every `T`: Done, by this lane's pull request. `Queue<T>` is `Send`
-  only when `T: Send`, with a compile-fail doctest (decision 1).
-- Item 5, the documentation teaches an aliasing minting shape: Done,
-  [#3523](https://github.com/nifeos/nife/pull/3523).
-- Item 6, seven public names lack ratification: Done, by this lane's pull request. The `Name:` blocks
-  read ratified 2026-11-19 (UTC) (decision 2).
-- Item 7, the compile-fail doctest accepts any error: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 8, no rule for dropping a non-empty `Queue`: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 9, `remove` and an `extract_if`-shaped method: Open. Two-way and additive, so the maintainer
-  rules whether the surface grows; a lane then builds it with its harnesses in
-  `nifeos/intrusive_queue`.
-- Item 10, link hygiene after a pop: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 11, the standard traits: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 12, acronyms: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 13, one shared test node: Open, as a pull request in `nifeos/intrusive_queue`.
-- Follow-on, the externalization list: Done. Step 10 of milestone 1017 (the contract crates leave
-  in this order) moves the crate, so `crates/externalization-list.txt` no longer names it.
-- Follow-on, review clearance and the repository: Done (ruled 2026-11-20 UTC, option A). The package
-  [`notes/crate-reviews/intrusive-queue.md`](../../notes/crate-reviews/intrusive-queue.md) is
-  cleared, and `nifeos/intrusive_queue` is approved with `publish = false`, no tag and no publish.
-  The move is item 10 of milestone 1017.
-- Follow-on, the soak: in progress. The crate keeps `publish = false`, and the kernel and
-  `inter_process_communication` take it by `rev`, a commit on the repository's main; a tag moves
-  the pin later.
+- Item 1 (P0), the manifest is a workspace member's: Done, [#3882](https://github.com/nifeos/nife/pull/3882). The manifest states its own
+  license, `rust-version = "1.85"`, description, keywords, categories and lint tables.
+- Item 2 (P0), the front page points into nife: Done, [#3882](https://github.com/nifeos/nife/pull/3882) and [#3892](https://github.com/nifeos/nife/pull/3892). `src/lib.rs` no
+  longer carries the notes pointers or the DECISIONS citation, the README holds the contract's fine
+  print, and the repository carries no `Name:` blocks.
+- Item 3 (P0), no repository skeleton: Done, nifeos/intrusive_queue#4. The crate lives in
+  `nifeos/intrusive_queue` with the template's scaffold ([#3892](https://github.com/nifeos/nife/pull/3892)), pinned at crate-workflows v9 by
+  nifeos/intrusive_queue#3, and `docs/stranger-test.md` records a passing stranger run.
+- Item 4 (P1), `Queue<T>` is `Send` for every `T`: Done, [#3795](https://github.com/nifeos/nife/pull/3795). `Queue<T>` is `Send` only when
+  `T: Send`, with a compile-fail doctest (decision 1).
+- Item 5 (P1), the documentation teaches an aliasing minting shape: Done, [#3523](https://github.com/nifeos/nife/pull/3523).
+- Item 6 (P1), seven public names lack ratification: Done, [#3795](https://github.com/nifeos/nife/pull/3795). The `Name:` blocks read
+  ratified 2026-11-19 (UTC) (decision 2), and the move stripped them.
+- Item 7 (P1), the compile-fail doctest accepts any error: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 8 (P1), no rule for dropping a non-empty `Queue`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 9 (P2), `remove` and an `extract_if`-shaped method: Done, nifeos/intrusive_queue#4 and
+  [#3970](https://github.com/nifeos/nife/pull/3970). `Queue::remove` and `Queue::extract_if` carry provisional names, each with a Kani
+  harness and a falsification patch, and the five drain-and-rebuild loops in
+  `inter_process_communication` are calls to them.
+- Item 10 (P2), link hygiene after a pop: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 11 (P2), the standard traits: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 12 (P2), acronyms: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 13 (P2), one shared test node: Done, nifeos/intrusive_queue#4. The host tests and the
+  harnesses share one test node under `cfg(any(test, kani))`.
+- Decision 1, the `Send` bound on `Queue`: Done, [#3795](https://github.com/nifeos/nife/pull/3795).
+- Decision 2, the seven public names the release publishes: Done, [#3795](https://github.com/nifeos/nife/pull/3795), ratified 2026-11-19
+  (UTC).
+- Decision 3, review clearance and the repository: Done, [#3892](https://github.com/nifeos/nife/pull/3892), ruled 2026-11-20 (UTC), option
+  A. The package [`notes/crate-reviews/intrusive-queue.md`](../../notes/crate-reviews/intrusive-queue.md)
+  is cleared, and `nifeos/intrusive_queue` holds the crate with `publish = false`, no tag and no
+  publish.
 
 ## Open decisions
 
@@ -229,8 +228,9 @@ The rules in force, each with its background and prior art, are in
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open under "Finding status", each checked against the
-  crate's sources on main.
+- **Recorded.** The soak. The crate keeps `publish = false`, and the kernel and
+  `inter_process_communication` take it by `rev`, a commit on the repository's main, checked in
+  `kernel/Cargo.toml`; a tag moves the pin later.
 
 ## Done when
 
@@ -242,8 +242,8 @@ The checks are in [the appendix](1097-intrusive-queue-outside-review/done-when.m
   Miri experiments on standalone nodes, not from a Miri run of the kernel, which has no Miri
   target. The crate's documentation change does not wait on it.
 - Item 9 reopens nothing the architect ruled: the note that chose drain-and-rebuild is a note, and
-  the timed-wait note already expects a `remove`. If the maintainer prefers to keep the surface at
-  four methods, the five consumer loops stand and item 9 closes as declined.
+  the timed-wait note already expects a `remove`. The surface grows as a two-way door, with
+  `remove` and `extract_if` provisional until the crate's next name review.
 - The `cordyceps` claims in the prior-art table are from memory; its documentation pages did not
   resolve during the review.
 - This review ran no mutation census; the 19-mutant list is what `cargo mutants --list` prints. The
@@ -258,6 +258,6 @@ The two experiments are in [the appendix](1097-intrusive-queue-outside-review/mi
 
 ## Index row
 
-An outside review of `intrusive_queue` before its first release. Eight findings have landed, the
-`Send` bound and the seven names among them. The move's skeleton, a shared test node and item 9
-remain; the review package is cleared (2026-11-20 UTC).
+An outside review of `intrusive_queue` before its first release. Every finding has landed, the
+`Send` bound, the seven names, the repository's stranger run and `Queue::remove` among them. The
+review package is cleared (2026-11-20 UTC), and the soak remains before a tag.

@@ -13,12 +13,13 @@ second `FileOut`, each with a 256-byte staging buffer held by value, on the shel
 frame. Twelve leaves four pages of headroom, because each smaller raise bought exactly enough and
 the next change found the wall again. The cost is 48 KiB of address space per child.
 
-`SHELL_STACK_PAGES` is twenty-one, for the shell alone. A file's name may be 252 bytes (milestone
+`SHELL_STACK_PAGES` is twenty-eight, for the shell alone. A file's name may be 252 bytes (milestone
 946), an `Endowment` holds four file grants, and a debug build keeps a copy of one in a frame for
-every argument and return that carries it. Measured on `script/swish-check`'s aarch64 leg on
-2026-10-24 (UTC): twelve faults on the boot's first pipeline, sixteen in `installed/jig rollback`,
-seventeen passes both boots. Twenty-one is that and the four pages of headroom `CHILD_STACK_PAGES`
-keeps. The planner (`grant_plan`) is compiled optimized even in a debug build, which took 14 KiB off
+every argument and return that carries it. A directory path packs up to 512 bytes
+(`grant_plan::navigation::MAXIMUM_PATH_BYTES`), which grew each `Endowment` by 1920 bytes.
+Twenty-one, the earlier measure of seventeen plus four pages of headroom, then faults on the boot's
+first pipeline; twenty-eight adds the growth of a pipeline's four planned endowments and the debug
+copies kept of them. The planner (`grant_plan`) is compiled optimized even in a debug build, which took 14 KiB off
 its largest frame. The progenitor builds the shell from its own pages, once a boot, so the pages are
 not a job's. The kernel's `pipeline_service::SHELL_EXTRA_STACK` must stay level with it: a test
 wiring with less headroom finds faults the boot does not have.

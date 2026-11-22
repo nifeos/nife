@@ -117,7 +117,7 @@ would stop the terminal until a `CTL_RESUME` nobody sends. `line_editor`'s whole
   line discipline, by design, does not give a program (DECISIONS §21 says a program "never sees a
   keystroke, an escape sequence, or an echo"). `OPERATION_RAWMODE` switches the terminal between the line
   discipline and raw mode (`len` 1 to enter, 0 to leave), replied immediately. While raw mode is on,
-  `OPERATION_BYTES` bypasses [`LineDisc`](../crates/line_editor/src/line_disc.rs) entirely: no echo, no editing,
+  `OPERATION_BYTES` bypasses [`LineEditor`](../crates/line_editor/src/line_disc.rs) entirely: no echo, no editing,
   no line assembly, and a control byte like `^C` is delivered literally rather than intercepted.
   `OPERATION_READRAW` reads the result: one to eight raw bytes, packed little-endian. That is the
   same register-only shape `OPERATION_BYTES` and `OPERATION_PRINT` already use, so this needs no
@@ -218,7 +218,7 @@ Owes:
 Does not owe:
 
 - Terminal size tracking. The redraw math assumes a line fits one row. A line longer than the
-  terminal is wide will redraw incorrectly past the margin. `line_editor::LINE_MAXIMUM` keeps this
+  terminal is wide will redraw incorrectly past the margin. `line_editor::MAXIMUM_LINE_BYTES` keeps this
   rare; a full fix needs size negotiation the serial contract does not carry. Honest limit,
   recorded.
 - Tab completion. Completion needs the command namespace, which is the application's

@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -30,61 +31,54 @@ for the crate's own reasons.
 
 ## Finding status
 
-- P0-1, the manifest does not stand alone: Open. It still inherits `license` and `[lints]` from
-  the workspace and points at nife's publish allowlist; the move inlines both.
-- P0-2, README, licenses, changelog and a stranger record: Open. The move writes them, and a
+- P0-1, the manifest does not stand alone: At the move. It still inherits `license` and `[lints]`
+  from the workspace and points at nife's publish allowlist; the move inlines both.
+- P0-2, README, licenses, changelog and a stranger record: At the move. The move writes them, and a
   stranger runs the README before the first tag.
-- P0-3, the contract-crate gate: Done. The crate-root documentation opens with the kept-name form
-  in code spans, ``(`network_time_protocol`, `RFC 5905`)``, which the template's `contract_names`
-  and clippy's `doc_markdown` both accept.
-- P0-4, `PACKET_LEN`: Done (Decision 2, maintainer, provisional, 2026-11-14 UTC). The constant is
-  `PACKET_BYTES`.
-- P0-5, British spellings in names: Done (Decision 2). The low-bit randomizer is gone, the `Reject`
-  variant for leap indicator 3 is `Unsynchronized` and the harness is
+- P0-3, the contract-crate gate: Done, [#3841](https://github.com/nifeos/nife/pull/3841). The crate-root documentation opens with the kept-name
+  form in code spans, ``(`network_time_protocol`, `RFC 5905`)``, which the template's
+  `contract_names` and clippy's `doc_markdown` both accept.
+- P0-4, `PACKET_LEN`: Done, [#3804](https://github.com/nifeos/nife/pull/3804), by Decision 2. The constant is `PACKET_BYTES`.
+- P0-5, British spellings in names: Done, [#3804](https://github.com/nifeos/nife/pull/3804), by Decision 2. The low-bit randomizer is gone, the
+  `Reject` variant for leap indicator 3 is `Unsynchronized` and the harness is
   `parse_then_serialize_is_the_identity`.
-- P0-6, acronyms at first use: Done. The crate-root documentation expands each acronym where it
-  first appears, and the template's `prose_acronyms` reports none. Each RFC citation is a code span,
-  as `nifeos/domain_name_system` writes them, because that gate drops "for" as a small word and so
-  never reads "Request for Comments" as an expansion of RFC.
-- P0-7, the dependency on `clock_contract`: Done (Decision 1, maintainer, provisional,
-  2026-11-14 UTC). The crate keeps a private `NANOSECONDS_PER_SECOND` and has no dependencies.
-- P1-8, shipped text that points back into nife: Open, the move's.
-- P1-9, safe Rust: Open. `#![forbid(unsafe_code)]` landed in
-  [#3567](https://github.com/nifeos/nife/pull/3567); the new repository's fuzz opt-in and target
-  remain.
-- P1-10, the exhaustive sweep and the workspace profile: Open, the new manifest's. At
+- P0-6, acronyms at first use: Done, [#3841](https://github.com/nifeos/nife/pull/3841). The crate-root documentation expands each acronym where
+  it first appears, and the template's `prose_acronyms` reports none. Each RFC citation is a code
+  span, as `nifeos/domain_name_system` writes them, because that gate drops "for" as a small word
+  and so never reads "Request for Comments" as an expansion of RFC.
+- P0-7, the dependency on `clock_contract`: Done, [#3804](https://github.com/nifeos/nife/pull/3804), by Decision 1. The crate keeps a private
+  `NANOSECONDS_PER_SECOND` and has no dependencies.
+- P1-8, shipped text that points back into nife: At the move.
+- P1-9, safe Rust: At the move. `#![forbid(unsafe_code)]` landed in [#3567](https://github.com/nifeos/nife/pull/3567); the new repository's fuzz
+  opt-in and target remain.
+- P1-10, the exhaustive sweep and the workspace profile: At the move, in the new manifest. At
   `opt-level = 2` line coverage of `src/lib.rs` is 97 per cent, over the template's floor of 85,
   so the full sweep can stay in the default test.
-- P1-11, surviving mutants: Open, the new repository's exemptions file.
-- P1-12, the totality of `Interval`: Done. Both accessors saturate, and the Kani harness
+- P1-11, surviving mutants: At the move, in the new repository's exemptions file.
+- P1-12, the totality of `Interval`: Done, [#3841](https://github.com/nifeos/nife/pull/3841). Both accessors saturate, and the Kani harness
   `the_interval_conversions_are_total` proves them free of overflow and sign-preserving over every
   `i128` tick count, with a falsification patch. Narrowing `from_ticks` to `i64` is a further
   two-way door before the first publish, which the maintainer may rule; the done-when check does
   not need it.
-- P1-13, two checks the RFC's reference implementation makes: Done,
-  [#3567](https://github.com/nifeos/nife/pull/3567).
-- P1-14, the caller's replay duty: Open. The `Query::accept` documentation states it
-  ([#3567](https://github.com/nifeos/nife/pull/3567)); the README's BUGS line waits for the move.
-- P1-15, a proof that `accept` ever accepts: Done,
-  [#3567](https://github.com/nifeos/nife/pull/3567).
+- P1-13, two checks the RFC's reference implementation makes: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P1-14, the caller's replay duty: At the move. The `Query::accept` documentation states it
+  ([#3567](https://github.com/nifeos/nife/pull/3567)); the README's BUGS line is written with the README.
+- P1-15, a proof that `accept` ever accepts: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-16, `Timestamp::fraction`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-17, the low-entropy items: Done (Decision 3, maintainer, provisional, 2026-11-14 UTC).
-  `Query::new` and the low-bit randomizer no longer exist; `Query::with_nonce` is the only constructor.
-- P2-18, `Short`'s public field: Done (Decision 2). `ShortFormat` keeps its field private, with
-  `from_bits` and `bits`.
+- P2-17, the low-entropy items: Done, [#3804](https://github.com/nifeos/nife/pull/3804), by Decision 3. `Query::new` and the low-bit randomizer
+  no longer exist; `Query::with_nonce` is the only constructor.
+- P2-18, `Short`'s public field: Done, [#3804](https://github.com/nifeos/nife/pull/3804), by Decision 2. `ShortFormat` keeps its field private,
+  with `from_bits` and `bits`.
 - P2-19, the `dest` parameter: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-20, drifted notes: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-21, the `Reject` order claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-22, `abs_ticks`: Done (Decision 2). `abs_ticks` no longer exists.
-- Decision 1, `clock_contract`: Done (maintainer, provisional, 2026-11-14 UTC). Item 7 has landed.
-- Decision 2, the public names: Done (maintainer, provisional, 2026-11-14 UTC). Items 4, 5, 18 and
-  22 landed, with the `UNIX_*` constants, `DEFAULT_POLL_EXPONENT` and `ShortFormat` renamed.
-- Decision 3, the low-entropy items: Done (maintainer, provisional, 2026-11-14 UTC). Item 17 is
-  built.
-- Ratifying the renamed names: Done (architect, 2026-11-20 UTC, A). `PORT` stays. The move lane rewrites the source `Name:` blocks.
-- Review package: Done. `notes/crate-reviews/network-time-protocol.md` lists every public name with
-  its status and proposal.
-- Review clearance and the repository: Done (architect, 2026-11-20 UTC, A). The architect approves `nifeos/network_time_protocol`; no tag, no publish.
+- P2-22, `abs_ticks`: Done, [#3804](https://github.com/nifeos/nife/pull/3804), by Decision 2. `abs_ticks` no longer exists.
+- Decision 1, `clock_contract`: Done, [#3804](https://github.com/nifeos/nife/pull/3804), ruled by the maintainer, provisional, 2026-11-14 (UTC).
+- Decision 2, the public names: Done, [#3804](https://github.com/nifeos/nife/pull/3804), ruled by the maintainer, provisional, 2026-11-14 (UTC),
+  with the `UNIX_*` constants, `DEFAULT_POLL_EXPONENT` and `ShortFormat` renamed, and ratified
+  with `PORT` kept.
+- Decision 3, the low-entropy items: Done, [#3804](https://github.com/nifeos/nife/pull/3804), ruled by the maintainer, provisional, 2026-11-14
+  (UTC).
 
 ## Decisions recorded
 
@@ -296,9 +290,9 @@ the low-bit randomizer (line 226) have no caller outside the crate. Item 17 has 
 
 ## Follow-on
 
-- **Outstanding.** Each finding that "Finding status" marks Open, checked against
-  `crates/network_time_protocol` and its manifest, and the names and the clearance, asked from
-  `notes/crate-reviews/network-time-protocol.md`.
+- **Recorded.** With every finding Done or At the move, the milestone counts as built. The move
+  lane owns the findings marked At the move, checked against `crates/network_time_protocol` and its
+  manifest. The architect ratified the names and cleared the review package.
 
 ## Done when
 

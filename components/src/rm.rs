@@ -18,8 +18,9 @@
 //! - **slot 2** ([`rm::VERDICT_SLOT`]): a verdict endpoint, `WRITE`, optional: the exit status
 //!   and the count, once, after the end of stream ([`file_system_contract::rm`], [`verdict`]). The
 //!   shell leaves it empty.
-//! - **[`PAGE_VA`]**: the page shared with the FS server. The name and options ride in the three
-//!   `START` words, packed by [`file_system_contract::grant`].
+//! - **[`PAGE_VA`]**: the page shared with the FS server. The options ride in the `START` spec
+//!   word ([`file_system_contract::grant`]), and its two name words are zero: the operands are
+//!   the names slot 0's set capability holds.
 //!
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist), on AGENTS.md's naming
 //! section, "standard terms a reader already knows from outside". This is the one of the five
@@ -61,6 +62,8 @@ const WINDOW: MappedWindow =
 /// `ENOENT`. Not in [`directory`]'s list because it is POSIX's oldest number and this contract answers it
 /// from three different rungs; `-f` cares about exactly one of them (see [`remove`]).
 const ENOENT: i32 = 2;
+/// `EINVAL`, for START words that still carry a name, which no wiring sends.
+const EINVAL: i32 = 22;
 /// `ELOOP`, borrowed for a tree deeper than this program can walk. It is **this program's refusal
 /// and not the filesystem's**, which is why it prints its own sentence for it: nothing was wrong
 /// with the directory.
@@ -429,8 +432,6 @@ interfaces_note::carry_interfaces!(&[
 user_mode_runtime::program_entry!(start);
 
 fn start(spec: u64, name_lo: u64, name_hi: u64) -> ! {
-    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
-    let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
     // The options ride in the spec word's mask field, the same field a caretaker's rights ride in:
     // both are "what this process was started with", and neither needs a frame. The bit order is
     // `grant_plan::rm_options`, which is the shell's own numbering, so the program and the prompt cannot
@@ -438,13 +439,15 @@ fn start(spec: u64, name_lo: u64, name_hi: u64) -> ! {
     let flags = grant::specification_rights(spec);
 
     let mut count = 0u64;
-    // **A grant with no name in it means the operand is the namespace** (`grant::WHOLE_NAMESPACE`).
-    // A name cannot be empty, so a length of zero cannot be one, which is what lets a set grant say
-    // "everything you hold" without a second protocol. See [`sweep`].
-    let removal = if n == grant::WHOLE_NAMESPACE {
+    // **The operands are the namespace** (`grant::WHOLE_NAMESPACE`): the shell grants every `rm`
+    // a set capability holding exactly the names its command line designated, and this program
+    // learns them by listing it. START words that still carry a name are refused, restrictive
+    // first, rather than read as a second way to say what to remove. See [`sweep`].
+    let removal = if grant::words_carry_no_name(name_lo, name_hi, spec) {
         sweep(flags, &mut count)
     } else {
-        remove(file_system::ROOT, &buf[..n], flags, 0, &mut count)
+        diagnose(b"", EINVAL);
+        Err(EINVAL)
     };
     let status = match removal {
         Ok(()) => rm::OK,

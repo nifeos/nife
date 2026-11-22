@@ -1,4 +1,4 @@
-Falsifies `pci::verification::ecam_offset_stays_inside_the_window`.
+Falsifies `pci_configuration_space::verification::ecam_offset_stays_inside_the_window`.
 
 The defect: the bus stride is doubled, `<< 21` in place of `<< 20`. ECAM gives each bus 32
 devices of 8 functions of 4 KiB, which is 20 bits, and a reader who counts the fields rather
@@ -12,7 +12,7 @@ accessor touches whatever is next in the address space.
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -61,7 +61,7 @@
+@@ -63,7 +63,7 @@
      /// land on the next bus's or the next device's page.
      #[doc(alias = "enhanced configuration access mechanism")]
      pub fn ecam_offset(self) -> u64 {

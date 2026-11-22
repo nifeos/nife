@@ -49,7 +49,7 @@ address_space_identifier = { version = "0.1.0", path = "../crates/address_space_
 # warning is expected; any other `unused_dependencies` warning from the kernel is a real finding.
 # Do not add an `allow` for it either, because that would hide a second, real one.
 memory_corruption_canary_gate = { version = "0.1.0", path = "../crates/memory_corruption_canary_gate" }
-capability_table = { version = "0.1.0", git = "https://github.com/nifeos/capability_table", rev = "a8d0fa65b08050e788719bd0e88922f9cd6b43bb", features = ["peak"] }
+capability_table = { version = "0.1.0", git = "https://github.com/nifeos/capability_table", rev = "968a16fed9723d88bf5168ec6604d0bbcaba853b", features = ["peak"] }
 # The timer re-arm's arithmetic (milestone 360 (`crates/timetable`'s proved `next_after` is not what
 # the timer calls), §178 (where the timer re-arm seam goes)). The aarch64 and riscv64 `rearm` call
 # the Kani-proved `next_after` rather than keeping a copy, so the proof binds the code that runs.
@@ -71,7 +71,7 @@ clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_con
 # kernel-side std program wiring assembles the page (`PageBuilder`) and maps it read-only into a
 # std program the same way it does the clock page, so no party has its own copy of the layout or
 # the validated domains.
-environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "b4925221c6d33163c6217aa2b118ba29f0be5379" }
+environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "4778d5937460ef1e43e39113721422dd573a3306" }
 # The base digest page (milestone 695 (the kernel trusts two digests from the loader), part 1): the
 # kernel writes the loader's `nife.base` digest into it and grants it to the progenitor read-only,
 # and the progenitor reads it through the same crate, so the layout has one definition.
@@ -198,7 +198,7 @@ e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", re
 extensible_host_controller_interface = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "99daca365beb53961c3d64b01751f8de85a281ac" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
-intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "08c31f2d1397edc91f8046d068eaaf4f116b580b" }
+intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "10d1fa2893c1cab6db3901f79a1ab2bc0029170b" }
 inter_process_communication = { version = "0.1.0", path = "../crates/inter_process_communication" }
 # What machine is this (milestone 60). The kernel reads the device tree and the ID registers; every
 # decoding of what it finds lives in the crate, host-tested against a real device tree and against

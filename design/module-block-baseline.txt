@@ -103,18 +103,12 @@ c_library/src/start.rs::CMain
 
 c_library/src/start.rs::run
 
-components/src/block_driver_roles.rs::run
-
-components/src/block_driver_roles.rs::run_attack
-
-components/src/block_driver_roles.rs::run_attack_indirect
 
 
-components/src/block_driver_roles.rs::run_net
 
-components/src/block_driver_roles.rs::run_write
 
-components/src/block_driver_roles.rs::run_write_abandon
+
+
 
 components/src/credentialer.rs::RPT_READY
 
@@ -1323,24 +1317,16 @@ crates/credentialer/src/lib.rs::put
 
 crates/credentialer/src/lib.rs::verify
 
-crates/current_cpu_contract/src/lib.rs::CPU_ID_BOUND
-
-crates/current_cpu_contract/src/lib.rs::CurrentCpuPage
-
-crates/current_cpu_contract/src/lib.rs::MAGIC
 
 
 
-crates/current_cpu_contract/src/lib.rs::THREAD_PAGE_SLOTS
-
-crates/current_cpu_contract/src/lib.rs::UNSCHEDULED
-
-crates/current_cpu_contract/src/lib.rs::allowance
-
-crates/current_cpu_contract/src/lib.rs::build_page
 
 
-crates/current_cpu_contract/src/lib.rs::cpu
+
+
+
+
+
 
 
 
@@ -3801,9 +3787,7 @@ crates/line_editor/src/handoff.rs::u32
 
 crates/line_editor/src/line_disc.rs::Event
 
-crates/line_editor/src/line_disc.rs::HIST
 
-crates/line_editor/src/line_disc.rs::LineDisc
 
 crates/line_editor/src/line_disc.rs::abandon
 
@@ -3835,7 +3819,6 @@ crates/line_editor/src/raw_queue.rs::is_empty
 
 crates/line_editor/src/raw_queue.rs::new
 
-crates/line_editor/src/raw_queue.rs::pop8
 
 crates/line_editor/src/raw_queue.rs::push
 
@@ -5710,14 +5693,6 @@ crates/static_elf/src/machine.rs::NATIVE_MACHINE
 
 
 crates/static_elf/src/note.rs
-
-crates/static_elf/src/note.rs::NoteError
-
-crates/static_elf/src/note.rs::NoteSearch
-
-crates/static_elf/src/note.rs::NoteSegment
-
-crates/static_elf/src/note.rs::NoteSegments
 
 crates/static_elf/src/note.rs::from_head
 

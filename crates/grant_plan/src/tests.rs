@@ -15,7 +15,7 @@ fn a_grant_name_limit_matches_the_file_system_contract() {
         MAXIMUM_WORDS_NAME_BYTES,
         file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES
     );
-    assert!(is_valid_file_name(b"least_authority_demo"));
+    assert!(is_valid_file_name(b"count"));
     assert!(is_valid_file_name(&[b'n'; MAXIMUM_FILE_NAME_BYTES]));
     assert!(!is_valid_file_name(&[b'n'; MAXIMUM_FILE_NAME_BYTES + 1]));
     assert!(!is_valid_file_name(b""));
@@ -37,8 +37,8 @@ fn parse_u64_rejects_junk() {
 #[test]
 fn the_planning_types_have_the_sizes_the_stack_budget_assumes() {
     use core::mem::size_of;
-    assert_eq!(size_of::<Endowment>(), 2424);
-    assert_eq!(size_of::<ShellHoldings>(), 1008);
+    assert_eq!(size_of::<Endowment>(), 4344);
+    assert_eq!(size_of::<ShellHoldings>(), 3312);
     assert_eq!(size_of::<expansion::NameSet>(), 544);
-    assert_eq!(size_of::<navigation::DirectoryPath>(), 144);
+    assert_eq!(size_of::<navigation::DirectoryPath>(), 528);
 }

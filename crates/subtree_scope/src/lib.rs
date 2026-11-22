@@ -462,6 +462,44 @@ mod proofs {
         }
     }
 
+    /// **A walk asks for every component before the last `/`, in order, and for nothing else.**
+    /// Each step `lookup` sees begins where the one before it ended, one `/` later, and ends at a
+    /// `/`; a walk that succeeds has asked for everything before the last `/`. Since every step is
+    /// a name ([`a_step_is_one_name`]), the steps are the components themselves. The rights are the
+    /// widest and every node is a directory, so none of the refusals the other walk harness covers
+    /// cuts the walk short. The harness keeps one running offset rather than a record of the steps,
+    /// which is what keeps it within a prove shard's room.
+    /// Falsification: replayable `crates/subtree_scope/falsifications/proofs.a_walk_asks_for_every_component_in_order.patch`
+    #[kani::proof]
+    #[kani::unwind(7)]
+    fn a_walk_asks_for_every_component_in_order() {
+        let mut buffer = [0u8; PROOF_PATH_BYTES];
+        let path = any_path(&mut buffer);
+        let base = path.as_ptr() as usize;
+        let mut next = 0usize;
+        let widest = Rights::root(directory::rights::ALL);
+        let result = walk::<u8, Refusal>(0u8, widest, path, 0, |n, step| {
+            let offset = (step.as_ptr() as usize).wrapping_sub(base);
+            assert_eq!(offset, next, "a walk skipped or repeated a component");
+            assert_eq!(
+                path.get(offset + step.len()),
+                Some(&b'/'),
+                "a step did not end at a slash"
+            );
+            next = offset + step.len() + 1;
+            Ok((n, NodeKind::Directory))
+        });
+        // Not vacuous: a walk that asked for a component and succeeded is reachable.
+        kani::cover!(result.is_ok() && next > 0);
+        if result.is_ok() {
+            let asked_through = path.iter().rposition(|&b| b == b'/').map_or(0, |i| i + 1);
+            assert_eq!(
+                next, asked_through,
+                "a walk that succeeded left a component unasked"
+            );
+        }
+    }
+
     /// **A bound badge reaches its own root and what it minted, and nothing else.**
     /// Falsification: replayable `crates/subtree_scope/falsifications/proofs.a_bound_badge_reaches_only_its_own.patch`
     #[kani::proof]

@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017, 1000
 decision_dependencies: none
@@ -37,49 +38,40 @@ proofs cover the one piece of logic the crate holds beyond the grants.
 
 ## Finding status
 
-The ids P0-1 to P2-11 are this review's items; PKG-1 to PKG-5 are the decisions of the review
-package, `notes/crate-reviews/socket-contract.md`.
 
 - P0-1, text and wire disagree on where a send's length travels: Done,
   [#3517](https://github.com/nifeos/nife/pull/3517) (D1).
-- P0-2, the `publish` comment points outside: Open. The comment and `repository` are in place; the
+- P0-2, the `publish` comment points outside: At the move. The comment and `repository` are in place; the
   new repository's caller passes `allow-unpublished` at the move.
 - P1-3, `ACCEPT` carries no peer: Done, [#3526](https://github.com/nifeos/nife/pull/3526), its
   proof in [#3580](https://github.com/nifeos/nife/pull/3580) (D2).
 - P1-4, the reply vocabulary: Done, [#3517](https://github.com/nifeos/nife/pull/3517).
-- P1-5, the README against the scaffold: Open. The badges, the `rustup target add` line, the Kani
-  time and peak, the one-harness command, a falsify example and the undo remain, then a stranger
-  run; a move step.
-- P1-6, three equivalent mutants: Open. `.github/mutants-exempts` exists only in the new
-  repository; the move exempts them with the triage's reasons.
+- P1-5, the README against the scaffold: At the move. The badges, the `rustup target add` line,
+  the Kani time and peak, the one-harness command, a falsify example and the undo remain, then a
+  stranger run.
+- P1-6, three equivalent mutants: At the move. The three are `|` to `^` in `listen_grant`,
+  `udp_bind_grant` and `peer_word`, whose operands share no bit. `.github/mutants-exempts` exists
+  only in the new repository; the move exempts them with the triage's reasons.
 - P2-7, the ephemeral cursor unproven: Done, [#3580](https://github.com/nifeos/nife/pull/3580) and
   [#3610](https://github.com/nifeos/nife/pull/3610).
-- P2-8, offsets and lengths of mixed types: Open. `FRAME_BYTES` and the byte order are in place;
-  the offsets stay `u64` while `MAXIMUM_PAYLOAD_BYTES` (was `DATA_MAXIMUM`) is `usize`, and one type waits on a change to
-  `user_mode_runtime`'s window API that no milestone holds.
+- P2-8, offsets and lengths of mixed types: Will not fix, provisional, ruled 2026-11-22 UTC as a
+  two-way door. `FRAME_BYTES` names the frame size and the layout note states the byte order once.
+  Each type matches its consumer: an offset is `u64` because `MappedWindow` takes `u64` offsets at
+  every call site, and `MAXIMUM_PAYLOAD_BYTES` is `usize` because it sizes arrays and slices. One
+  type would move the casts to the window calls without removing them. The types turn one-way at
+  the first release.
 - P2-9, names: Done, [#3811](https://github.com/nifeos/nife/pull/3811) built the package's names
   table, and the architect ratified it as built on 2026-11-20 UTC. `Cursor::next` and `polled_wait::next` keep their spelling (the
   table keeps them). `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC), and the template
   accepts `tcp` and `udp`.
-- P2-10, inline "provisional" prose: Done. No doc comment in `src/lib.rs` says it; the move strips
-  the ratified `Name:` blocks.
+- P2-10, inline "provisional" prose: Done, [#3811](https://github.com/nifeos/nife/pull/3811) and
+  [#3861](https://github.com/nifeos/nife/pull/3861). No doc comment in `src/lib.rs` says it; the
+  move strips the ratified `Name:` blocks.
 - P2-11, vocabulary undefined: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - D1, a send's length in the argument word: Done,
   [#3517](https://github.com/nifeos/nife/pull/3517) (ruled 2026-11-11 UTC).
 - D2, the `ACCEPT` peer in the second reply word: Done,
   [#3526](https://github.com/nifeos/nife/pull/3526) (ruled 2026-11-11 UTC).
-- PKG-1, `INTERFACE_ID` 19 and `VERSION` 1: Done as a ruling (2026-11-19 UTC): frozen with no magic word; see "Rules in force".
-- PKG-2, `fixture` moves to a crate that stays in nife: Done as provisional,
-  [#3811](https://github.com/nifeos/nife/pull/3811). The crate is `socket_fixture`, not published;
-  its name is provisional. Four constants took spelled-out stems because the new crate's report
-  gates refuse `msg` and `ip`.
-- PKG-3, `ephemeral` and `polled_wait` move to the stack's own crate: Done as provisional,
-  [#3811](https://github.com/nifeos/nife/pull/3811), into `network_stack`, with the module renamed
-  `ephemeral_port`.
-- PKG-4, the package's names table: Done and ratified (2026-11-20 UTC),
-  [#3811](https://github.com/nifeos/nife/pull/3811), with one difference: the four offset rows keep `_BYTES`, because the family's
-  `<FIELD>_OFFSET_BYTES` spelling (ruled 2026-11-14 UTC) wins, and only their stems changed.
-- PKG-5, clearing the move with no tag and no publish: Done as a ruling (2026-11-21 UTC): cleared, with `nifeos/socket_contract` approved and `publish = false`.
 
 ## Rules in force
 
@@ -225,12 +217,10 @@ The checks are in [the appendix](1108-socket-contract-outside-review/done-when.m
 
 ## Follow-on
 
-What is left is under "Finding status" above.
-
-- **Milestone 1017.** The crate moves in its order, and the move lane takes items 2, 5, 6 and 10.
-- **Outstanding.** Item 8's single offset type, which waits on the window API's offset type.
-  Item 7's loop proof is bounded at four candidates, as the appendix says.
-- **Outstanding.** The move itself, which begins by proving the `std` farm builds from the pinned checkout.
+- **Milestone 1017.** The crate moves in its order, and the move lane takes the items marked At the
+  move. The move begins by proving the `std` farm builds from the pinned checkout. The review
+  package `notes/crate-reviews/socket-contract.md` holds its own decisions, all ruled or built.
+- **Recorded.** Item 7's loop proof is bounded at four candidates, as the appendix says.
 
 ## Index row
 

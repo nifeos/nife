@@ -105,10 +105,11 @@ harness's comment, where the template reads it, so those records pass `falsify.p
    ```
 
    Expected: exit 0 and `<crate>: clean`. The staged tree has git initialized, every file added and
-   nothing committed. The run builds each fuzz target with `cargo +nightly fuzz build` and runs it
-   once over its corpus, so it needs `cargo-fuzz` and a nightly toolchain. The staged fuzz caller sets `public-crash-inputs: true` only for a crate with no `unsafe` code, the
-   opt-in the maintainers ruled for weekly fuzzing; for any other crate it stays `false` and the
-   run says why.
+   nothing committed. It builds each fuzz target with `cargo +nightly fuzz build` and runs it
+   once over its corpus, which needs `cargo-fuzz` and nightly. A target moves if it links only
+   the crate and its dependencies. The staged fuzz caller sets `public-crash-inputs: true` only
+   for a crate without `unsafe`, the weekly fuzzing opt-in the maintainers ruled; any other crate
+   gets `false`, and the run says why.
 9. Commit and push (lane). The message names the template release and nothing of nife:
 
    ```sh

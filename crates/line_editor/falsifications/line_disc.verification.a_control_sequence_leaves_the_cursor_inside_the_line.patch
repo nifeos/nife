@@ -5,14 +5,14 @@ a right arrow at the end of the line steps the cursor one past the last byte. Ev
 presses Right does so mid-line, and none presses it at the end, which is the only place the
 defect shows.
 
-Expected to fail: the harness's `assert!(editor.cur <= editor.len)`, on a line whose cursor sits
+Expected to fail: the harness's `assert!(editor.cursor <= editor.length_bytes)`, on a line whose cursor sits
 at its end when the sequence `CSI C` arrives.
 
 diff --git a/crates/line_editor/src/line_disc.rs b/crates/line_editor/src/line_disc.rs
 --- a/crates/line_editor/src/line_disc.rs
 +++ b/crates/line_editor/src/line_disc.rs
-@@ -591,3 +591,3 @@
+@@ -614,3 +614,3 @@
      fn right(&mut self, out: &mut impl Sink) {
--        if self.cur < self.len {
-+        if self.cur <= self.len {
-             self.cur += 1;
+-        if self.cursor < self.length_bytes {
++        if self.cursor <= self.length_bytes {
+             self.cursor += 1;

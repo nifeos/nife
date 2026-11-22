@@ -1,4 +1,4 @@
-Falsifies `pci::verification::the_bus_queue_stays_inside_its_array_on_any_firmware`.
+Falsifies `pci_configuration_space::verification::the_bus_queue_stays_inside_its_array_on_any_firmware`.
 
 The defect: the already-seen check is deleted, so `enqueue` becomes idempotent in the bitmap
 (`|=` is) but not in the queue. The line looks redundant beside a `|=` that is itself
@@ -13,7 +13,7 @@ defect firmware that names one bus from several bridges walks `tail` past the en
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -319,9 +319,6 @@
+@@ -366,9 +366,6 @@
      /// the whole walk.
      fn enqueue(&mut self, bus: u8) {
          let (word, bit) = (bus as usize >> 6, 1u64 << (bus & 63));

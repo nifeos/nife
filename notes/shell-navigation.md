@@ -213,13 +213,12 @@ should be able to answer for every capability rather than a flag on one verb.
   per-file grant has been in since milestone 31 (a capability shell: designation is authorization). The builtins are gated in
   the navigating role on both ISAs; what is missing is a boot that wires an FS service into the
   interactive system, which is a wiring change and not a change here.
-- The shell tracks 8 levels, and a directory it stands in or walks through is named in at most 16
-  bytes (`navigation::MAXIMUM_DIRECTORY_NAME_BYTES`, `grant::WORDS_NAME`). The path stack is an array because
-  this program has no allocator. A directory grant names its directory in a caretaker's two `START`
-  words, and a name you could `cd` into but not grant would be a place you cannot talk about. A
-  file, the last component, may be 252 bytes (`navigation::MAXIMUM_NAME_BYTES`, milestone 946 (a granted file
-  name can be longer than sixteen bytes)). A longer directory name is `DirectoryNameTooLong` and
-  deeper is `TooDeep`, refused rather than truncated.
+- The shell tracks 8 levels, and the names of the directories it stands in or walks through are
+  packed into at most 512 bytes, a length byte and the name for each
+  (`navigation::MAXIMUM_PATH_BYTES`). The path is a fixed buffer because this program has no
+  allocator. Any one name, a directory's or a file's, may be 252 bytes
+  (`navigation::MAXIMUM_NAME_BYTES`), which is what a grant page carries. A longer path is
+  `PathTooLong` and a deeper one is `TooDeep`, refused rather than truncated.
 - `ls` reads a directory in rounds of 256 bytes and re-reads it per round, so a name added or
   removed mid-listing can be seen twice or missed. That is `READDIR`'s own caveat
   ([dir-capability.md](dir-capability.md)), inherited rather than added.

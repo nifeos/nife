@@ -148,7 +148,7 @@ directory said. That is the same resolve-at-grant-time rule the rest of a grant 
 
 ## `rm` is told "everything you can see"
 
-A set grant has no single name to put in the `START` words, so `rm` is started with a grant whose
+A set grant has no single name, so `rm` is started with a grant whose
 name is zero bytes long (`file_system_contract::grant::WHOLE_NAMESPACE`). A name cannot be empty, so
 that spelling was free. It means the operand is the namespace, and `rm` learns the names by
 enumerating its own capability.
@@ -235,8 +235,7 @@ Known limitations, next to the feature rather than only in a tracker.
   the prompt. The stop rule sees only failures the shell prints, a sweep lists the directory once
   per batch, and a name created mid-sweep joins it only above the watermark.
 - A literal operand's type bit is `false` because nothing enumerated it. `rm` with a literal name
-  over two argument words is served through `fs_nameset_caretaker` (milestone 946 (a granted file name can be longer than sixteen bytes)), so its
-  listing calls a directory of that name a file. `rm` reads only the names and asks the server.
+  is served through `fs_nameset_caretaker`, so its listing calls a directory of that name a file. `rm` reads only the names and asks the server.
 - A set capability cannot move a name out of its set, so `mv *.txt elsewhere/` is not expressible
   (see `RENAME` above).
 - Only the first pattern on a line is expanded. No manifest declares two name slots, so a second
