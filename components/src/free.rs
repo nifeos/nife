@@ -111,7 +111,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let share = if !is_granted(SHARE_SLOT) {
         Err(ShareRefusal::NotHeld)
     } else {
-        usage(abi::usage::SIZE).and_then(|pages| {
+        usage(abi::usage::SIZE_PAGES).and_then(|pages| {
             usage(abi::usage::COMMITTED).map(|committed| Share { pages, committed })
         })
     };

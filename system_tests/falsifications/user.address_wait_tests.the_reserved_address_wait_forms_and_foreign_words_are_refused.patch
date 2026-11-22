@@ -18,7 +18,7 @@ diff --git a/crates/abi/src/address_wait.rs b/crates/abi/src/address_wait.rs
  ///
  /// Name: provisional. A function that answers yes or no is named like a question.
  pub const fn is_admitted(flags: u64) -> bool {
--    flags == PRIVATE | SIZE_U32
+-    flags == PRIVATE | WIDTH_32_BITS
 +    let _ = flags;
 +    true
  }

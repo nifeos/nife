@@ -15,7 +15,7 @@
 //!   instant a process ends. `notes/processes.md` records it.
 
 use abi::Error;
-use abi::address_wait::{PRIVATE, SIZE_U32};
+use abi::address_wait::{PRIVATE, WIDTH_32_BITS};
 use abi::fault::{EVENT_EXIT, FAULT_RENDEZVOUS_SLOT};
 
 use super::*;
@@ -286,7 +286,7 @@ fn two_threads_of_one_process_share_its_space_its_table_and_an_address_wait() {
         "two joins, not two members"
     );
 
-    let flags = PRIVATE | SIZE_U32;
+    let flags = PRIVATE | WIDTH_32_BITS;
     sched::start_thread_control_block(waiter, [0, VA, flags]).expect("start the waiter");
     assert!(
         wait_for(5, || sched::address_wait_waiters(space, VA) == 1),
@@ -724,7 +724,7 @@ fn a_member_stranded_killed_on_an_address_wait_is_finished_and_reaped() {
         Ok(0),
         "CAPABILITY_INSERT into a member refused",
     );
-    sched::start_thread_control_block(waiter, [0, VA, PRIVATE | SIZE_U32]).expect("start");
+    sched::start_thread_control_block(waiter, [0, VA, PRIVATE | WIDTH_32_BITS]).expect("start");
     assert!(
         wait_for(5, || sched::address_wait_waiters(space, VA) == 1),
         "the waiter never parked",

@@ -332,7 +332,7 @@ pub(crate) fn usage_record(region: u64, record: u64) -> Option<u64> {
     let table = REGIONS.lock();
     let region = typed(region);
     let on = match record {
-        abi::usage::SIZE => return table.usage(region).map(|(_, pages)| pages),
+        abi::usage::SIZE_PAGES => return table.usage(region).map(|(_, pages)| pages),
         abi::usage::COMMITTED => return table.usage(region).map(|(spent, _)| spent),
         abi::usage::FRAMES => PageUse::Frames,
         abi::usage::RENDEZVOUS => PageUse::Object(ObjectKind::Rendezvous),
