@@ -387,3 +387,118 @@ fn a_name_always_decodes_into_its_documented_buffer() {
     assert!(written.is_ok());
     assert!(written.unwrap() <= out.len());
 }
+
+/// The stand-in for [`crc::crc32`] in `the_entry_array_check_is_total`: any value at all. Every
+/// CRC the real function can compute is one of them, so a path the proof covers under the
+/// stand-in includes every path the real CRC can take.
+#[allow(dead_code)] // named only by `#[kani::stub]`, which the lint pass's shim ignores
+fn any_crc(_bytes: &[u8]) -> u32 {
+    kani::any()
+}
+
+/// **The entry array check is total, and on a one-entry array it admits only one 128-byte
+/// entry**: for any header fields and any 128 supplied bytes, `check_entry_array` returns without
+/// panicking, and what it accepts is exactly one entry of [`entry::ENTRY_BYTES`].
+///
+/// The first of three harnesses that make `parse` total on a 512-byte block and a one-entry
+/// array, the bounded proof the review package asks for before the first tag. `parse` is
+/// `Header::decode`, total by `the_header_checks_before_the_crc_are_total`,
+/// `the_header_crc_in_pieces_is_the_crc_of_the_whole` and `the_header_fields_partition_the_block`;
+/// then a comparison; then `PartitionTable::checked`,
+/// which begins with this check. Every header whose count and entry size this check refuses stops
+/// here, so `the_table_checks_are_total_on_one_entry` and
+/// `the_partition_checks_are_total_on_one_entry` only have to quantify over the rest. The CRC
+/// is a free value, so the comparison with the stored one goes either way.
+/// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.the_entry_array_check_is_total.patch`
+#[kani::proof]
+#[kani::unwind(17)]
+#[kani::stub(crate::crc::crc32, any_crc)]
+fn the_entry_array_check_is_total() {
+    let fields: [u8; header::HEADER_BYTES as usize] = kani::any();
+    let header = Header::decode_fields(&fields);
+    let array: [u8; entry::ENTRY_BYTES] = kani::any();
+    if let Ok(entries) = table::check_entry_array(&header, &array) {
+        assert_eq!(entries.len(), entry::ENTRY_BYTES);
+        assert_eq!(header.entry_count, 1);
+        assert_eq!(header.entry_bytes, entry::ENTRY_BYTES_U32);
+    }
+}
+
+/// The stand-in for `table::check_entry_array` in `the_table_checks_are_total_on_one_entry`: a
+/// refusal, or the first [`entry::ENTRY_BYTES`] of the supplied array, which is everything
+/// `the_entry_array_check_is_total` proves the real check can return on a one-entry header.
+#[allow(dead_code)] // as above
+fn one_entry_or_refused<'a>(_header: &Header, supplied: &'a [u8]) -> Result<&'a [u8], Error> {
+    if kani::any() {
+        Ok(&supplied[..entry::ENTRY_BYTES])
+    } else {
+        Err(Error::EntryCount(0))
+    }
+}
+
+/// The stand-in for `table::check_partitions` in `the_table_checks_are_total_on_one_entry`: either
+/// answer. `the_partition_checks_are_total_on_one_entry` proves the real check on the one entry
+/// and its size that reach it, so the table proof only has to show it is reached safely.
+#[allow(dead_code)] // as above
+fn either_answer(_entries: &[u8], _entry_bytes: usize, _header: &Header) -> Result<(), Error> {
+    if kani::any() {
+        Ok(())
+    } else {
+        Err(Error::PartitionRange { index: 0 })
+    }
+}
+
+/// **The table checks are total on one entry**: for any header fields with one 128-byte entry
+/// and a 512-byte block, `PartitionTable::checked` returns without panicking, and a table it
+/// accepts lays its primary array before the usable range and its backup array after it.
+///
+/// The second of `parse`'s three bounded harnesses, after `the_entry_array_check_is_total` has
+/// shown that no other count or entry size gets this far. The header is built from its fields
+/// rather than decoded, because the decode is proved on its own. The two checks on either side are
+/// replaced by what their own harnesses prove of them: the model checker cannot see through the
+/// moved header that the entry count is one, and with the real checks it unrolls the partition
+/// loops to the bound, which does not finish.
+/// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.the_table_checks_are_total_on_one_entry.patch`
+#[kani::proof]
+#[kani::unwind(17)]
+#[kani::stub(crate::table::check_entry_array, one_entry_or_refused)]
+#[kani::stub(crate::table::check_partitions, either_answer)]
+fn the_table_checks_are_total_on_one_entry() {
+    let fields: [u8; header::HEADER_BYTES as usize] = kani::any();
+    let mut header = Header::decode_fields(&fields);
+    header.entry_count = 1;
+    header.entry_bytes = entry::ENTRY_BYTES_U32;
+    let array: [u8; entry::ENTRY_BYTES] = kani::any();
+    if let Ok(table) = PartitionTable::checked(header, &array, MINIMUM_BLOCK_BYTES) {
+        assert!(
+            table.primary_entry_array_logical_block_address() + table.entry_array_blocks()
+                <= table.first_usable_logical_block_address()
+        );
+        assert!(
+            table.last_usable_logical_block_address()
+                < table.backup_entry_array_logical_block_address()
+        );
+    }
+}
+
+/// **The partition checks are total on one entry**: for any header fields and any 128-byte entry,
+/// `check_partitions` returns without panicking, and accepts a used entry only when it lies in the
+/// header's usable range.
+///
+/// The third of `parse`'s three bounded harnesses: the one entry and the entry size that
+/// `the_entry_array_check_is_total` lets through, passed as the constants they are.
+/// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.the_partition_checks_are_total_on_one_entry.patch`
+#[kani::proof]
+#[kani::unwind(37)]
+fn the_partition_checks_are_total_on_one_entry() {
+    let fields: [u8; header::HEADER_BYTES as usize] = kani::any();
+    let header = Header::decode_fields(&fields);
+    let array: [u8; entry::ENTRY_BYTES] = kani::any();
+    if table::check_partitions(&array, entry::ENTRY_BYTES, &header).is_ok() {
+        let entry = Entry::decode(&array);
+        if entry.is_used() {
+            assert!(entry.first_logical_block_address >= header.first_usable_logical_block_address);
+            assert!(entry.last_logical_block_address <= header.last_usable_logical_block_address);
+        }
+    }
+}

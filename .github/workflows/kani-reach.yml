@@ -90,6 +90,11 @@ jobs:
                 # proved every nifefs and elf mutant against every harness, which is where a kill
                 # outside the computed reach showed (8 of elf's 185 viable mutants).
                 flags="--reached-only"; shards=2 ;;
+              globally_unique_identifier_partition_table)
+                # The same flag script/verify passes: two `parse` totality harnesses stub a function.
+                python3 helpers/kani_reach.py plan --package "$p" --kani-args "-Z stubbing" \
+                  --out "plans/$p.json"
+                shards=$want ;;
               *)
                 python3 helpers/kani_reach.py plan --package "$p" --out "plans/$p.json"
                 shards=$want ;;
