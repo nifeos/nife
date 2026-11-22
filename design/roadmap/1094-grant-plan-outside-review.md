@@ -72,7 +72,7 @@ milestone reaches delivery.
 - Decision, limits carry their unit: Done, [#3822](https://github.com/nifeos/nife/pull/3822), maintainer provisional 2026-11-19 (UTC).
 - Decision, the names `grant_contract` and `program_table`: Done, [#3822](https://github.com/nifeos/nife/pull/3822), ruled 2026-11-19
   (UTC), both as built.
-- Decision, review clearance and the repositories: Waiting on a ruling. The packages
+- Decision, review clearance and the repositories: Waiting on a ruling ([#3977](https://github.com/nifeos/nife/pull/3977)). The packages
   `notes/crate-reviews/grant-plan.md` and `notes/crate-reviews/grant-contract.md` are written
   ([#3822](https://github.com/nifeos/nife/pull/3822)) and read ready for review; the architect clears both crates together, with no tag and
   no publication.
