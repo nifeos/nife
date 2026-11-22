@@ -248,7 +248,7 @@ pub const SYNC: u64 = 19;
 /// resolved. A directory answers as a file does.
 ///
 /// The seconds are the server's stamp of the last change, taken from the wall clock once the clock
-/// page reports a set clock, or the value [`SET_MODIFICATION_TIME_AT`] stored. Until the clock is set
+/// page reports a set clock, or the value [`SET_MODIFICATION_TIME_AT_UNIX_SECONDS`] stored. Until the clock is set
 /// the stamp is a counter, so a file stamped then reads as a time in January 1970.
 ///
 /// Name: provisional, minted 2026-11-22 (UTC) by the file-system-contract-rename lane (ruled 2026-11-22: the getter names its unit).
