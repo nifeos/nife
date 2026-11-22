@@ -21,18 +21,18 @@ fn a_reset_refusal_maps_to_its_reason_and_survives_the_wire() {
         Error::ResetDidNotHappen,
     ];
     for (i, e) in all.iter().enumerate() {
-        assert_eq!(Error::from_ret(*e as i64), Some(*e), "{e:?}");
+        assert_eq!(Error::try_from(*e as i64), Ok(*e), "{e:?}");
         assert!(!all[i + 1..].contains(e), "{e:?} is listed twice");
     }
 }
 
 /// `usage::is_known` is the kernel's answer to "is this a record I serve": exactly the seven
-/// numbered `SIZE..=CHILDREN`, and nothing past the last.
+/// numbered `SIZE_PAGES..=CHILDREN`, and nothing past the last.
 #[test]
 fn usage_records_known_are_exactly_the_seven() {
     use crate::usage;
     for r in [
-        usage::SIZE,
+        usage::SIZE_PAGES,
         usage::COMMITTED,
         usage::FRAMES,
         usage::RENDEZVOUS,
@@ -46,13 +46,13 @@ fn usage_records_known_are_exactly_the_seven() {
     assert!(!usage::is_known(u64::MAX));
 }
 
-/// Every variant round-trips through `from_ret`. The enum's `#[repr(i64)]` discriminants and
-/// `from_ret`'s match arms are two lists that must agree, and this crate is the one place a
+/// Every variant round-trips through `TryFrom<i64>`. The enum's `#[repr(i64)]` discriminants and
+/// `try_from`'s match arms are two lists that must agree, and this crate is the one place a
 /// drift between them would not be a compile error: add a variant, forget the match arm, and
-/// userspace decodes a real kernel error as `None`. (The new variant must be added to `ALL`
+/// userspace decodes a real kernel error as no error at all. (The new variant must be added to `ALL`
 /// for this to guard it; that edit is at least in the same file.)
 #[test]
-fn every_error_round_trips_through_from_ret() {
+fn every_error_round_trips_through_try_from() {
     const ALL: &[Error] = &[
         Error::NoSuchSlot,
         Error::WrongObject,
@@ -71,25 +71,24 @@ fn every_error_round_trips_through_from_ret() {
         Error::ResetDidNotHappen,
     ];
     for &e in ALL {
-        assert_eq!(Error::from_ret(e as i64), Some(e));
+        assert_eq!(Error::try_from(e as i64), Ok(e));
     }
 }
 
 /// Success values and out-of-range negatives are not errors. `>= 0` is a result by the ABI's
-/// own rule, and an unknown negative must surface as "not an error I know" rather than being
-/// silently mapped onto the nearest variant.
+/// own rule, and an unknown negative must surface as "not an error I know", handing the word back
+/// unchanged, rather than being silently mapped onto the nearest variant.
 #[test]
-fn non_errors_decode_to_none() {
-    assert_eq!(Error::from_ret(0), None);
-    assert_eq!(Error::from_ret(1), None);
-    assert_eq!(Error::from_ret(-16), None);
-    assert_eq!(Error::from_ret(i64::MIN), None);
+fn non_errors_hand_the_word_back() {
+    for word in [0, 1, 4096, -16, -99, i64::MIN, i64::MAX] {
+        assert_eq!(Error::try_from(word), Err(word));
+    }
 }
 
 /// The rights words are an ABI, not an implementation detail: the kernel tests them with `&`
 /// and userspace builds masks with `|`, so each must be a distinct single bit, and the exact
 /// values are load-bearing on both sides of the system call boundary. A mutation run
-/// showed nothing pinned them (`1 << 1` could become `1 >> 1`, which is zero, and WRITE would
+/// showed nothing pinned them (`1 << 1` could become `1 >> 1`, which is zero, and `WRITE` would
 /// silently mean nothing). A test that enumerates is a claim about a set, so a new right joins
 /// this list in the change that defines it.
 #[test]
@@ -128,18 +127,20 @@ fn the_fault_slot_is_inside_the_capability_table() {
 /// and the shared form, is refused.
 #[test]
 fn the_address_wait_admits_only_a_private_32_bit_word() {
-    use crate::address_wait::{PRIVATE, SIZE_U8, SIZE_U16, SIZE_U32, SIZE_U64, admitted};
-    assert!(admitted(PRIVATE | SIZE_U32));
-    assert!(!admitted(SIZE_U32));
-    for size in [SIZE_U8, SIZE_U16, SIZE_U64] {
-        assert!(!admitted(PRIVATE | size));
+    use crate::address_wait::{
+        PRIVATE, WIDTH_8_BITS, WIDTH_16_BITS, WIDTH_32_BITS, WIDTH_64_BITS, is_admitted,
+    };
+    assert!(is_admitted(PRIVATE | WIDTH_32_BITS));
+    assert!(!is_admitted(WIDTH_32_BITS));
+    for size in [WIDTH_8_BITS, WIDTH_16_BITS, WIDTH_64_BITS] {
+        assert!(!is_admitted(PRIVATE | size));
     }
 }
 
 /// **The JH7110's line status register is at 0x14, read 32 bits wide**. Every
 /// QEMU machine this tree boots has byte registers, so no emulator run can tell a driver that
 /// honors the shape from one that assumes QEMU's: radon's console did the second and waited
-/// forever on LSR at 0x05. This pins the board's offsets through the word the kernel sends, and
+/// forever on the line status register at 0x05. This pins the board's offsets through the word the kernel sends, and
 /// that the zero word aarch64 and `x86_64` send is byte access.
 #[test]
 fn the_jh7110_shape_survives_the_start_word_and_puts_lsr_at_0x14() {
@@ -222,11 +223,11 @@ fn the_system_call_numbers_and_the_first_object_modules_are_pinned() {
         crate::fault::FAULT_RENDEZVOUS_SLOT => 63,
         crate::fault::EVENT_FAULT => 1,
         crate::fault::EVENT_EXIT => 2,
-        crate::address_wait::SIZE_U8 => 0,
-        crate::address_wait::SIZE_U16 => 1,
-        crate::address_wait::SIZE_U32 => 2,
-        crate::address_wait::SIZE_U64 => 3,
-        crate::address_wait::SIZE_MASK => 3,
+        crate::address_wait::WIDTH_8_BITS => 0,
+        crate::address_wait::WIDTH_16_BITS => 1,
+        crate::address_wait::WIDTH_32_BITS => 2,
+        crate::address_wait::WIDTH_64_BITS => 3,
+        crate::address_wait::WIDTH_MASK => 3,
         crate::address_wait::PRIVATE => 128,
         crate::interrupt::WAIT => 0,
         crate::interrupt::ACKNOWLEDGE => 1,
@@ -304,7 +305,7 @@ fn the_last_object_modules_are_pinned() {
         crate::thread_control_block::RESUME => 5,
         crate::timer::ARM => 0,
         crate::timer::CANCEL => 1,
-        crate::usage::SIZE => 0,
+        crate::usage::SIZE_PAGES => 0,
         crate::usage::COMMITTED => 1,
         crate::usage::FRAMES => 2,
         crate::usage::RENDEZVOUS => 3,
@@ -342,7 +343,7 @@ fn every_error_is_pinned_to_its_number() {
     ];
     for (error, number) in all {
         assert_eq!(error as i64, number, "{error:?}");
-        assert_eq!(Error::from_ret(number), Some(error), "{error:?}");
+        assert_eq!(Error::try_from(number), Ok(error), "{error:?}");
     }
 }
 
@@ -451,6 +452,39 @@ fn every_public_number_is_pinned() {
     assert!(
         unpinned.is_empty(),
         "public numbers with no pinned line: {unpinned:?}"
+    );
+}
+
+/// **A pinned number changes only with `ABI_VERSION`.** `pinned-at-version-<N>.txt`, at the
+/// crate root, holds every pinned line as it stood when `ABI_VERSION` became `N`. Each of its
+/// lines must still appear in this file, so changing or removing a pinned number fails here until
+/// the pull request bumps `ABI_VERSION` and adds the record for the new version. A new number adds
+/// a pinned line and owes nothing, since the record only lists what was. A rename changes no
+/// number, and the pull request that renames edits the record's line to the new name.
+///
+/// Name: provisional.
+#[test]
+fn no_pinned_number_moves_without_a_version_bump() {
+    extern crate std;
+    use std::format;
+    use std::vec::Vec;
+
+    let directory = env!("CARGO_MANIFEST_DIR");
+    let version = crate::ABI_VERSION;
+    let record = std::fs::read_to_string(format!("{directory}/pinned-at-version-{version}.txt"))
+        .unwrap_or_else(|e| panic!("no record of the pinned numbers at version {version}: {e}"));
+    let pinned = std::fs::read_to_string(format!("{directory}/src/tests.rs")).unwrap();
+    let lines: Vec<&str> = pinned.lines().map(str::trim).collect();
+    let moved: Vec<&str> = record
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .filter(|line| !lines.contains(line))
+        .collect();
+    assert!(
+        moved.is_empty(),
+        "pinned at ABI_VERSION {version} and now changed or gone: {moved:?}. Bump ABI_VERSION and \
+         add pinned-at-version-<new>.txt"
     );
 }
 

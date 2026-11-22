@@ -52,7 +52,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
         let va = BASE_VA + mapped * 4096;
         // Retype a page out of our region and map it here.
         let r = map_memory_region_page(MEMORY_REGION, va);
-        if let Some(e) = Error::from_ret(r) {
+        if let Ok(e) = Error::try_from(r) {
             // OutOfMemory means our budget is spent. Any other error is a real bug.
             if e != Error::OutOfMemory {
                 user_mode_runtime::trap();

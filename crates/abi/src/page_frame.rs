@@ -1,3 +1,5 @@
+//! Name: provisional.
+
 /// `invoke(capability, MAP, va, writable, memory_region_slot)` -> 0. Map this frame at `va` in the
 /// caller's own address space. `writable` != 0 maps it read/write (needs `WRITE` on the frame); `0`
 /// maps it read-only (needs `READ`). Page tables to reach `va` come from the untyped named by
@@ -9,6 +11,8 @@
 /// The tables belong to that untyped, so its `DESTROY` cuts them out of this address space,
 /// and every page mapped beneath them stops translating, this frame's included. A mapping
 /// meant to outlive the untyped needs its tables from a region that lives as long.
+///
+/// Name: provisional.
 pub const MAP: u64 = 0;
 
 /// `invoke(capability, REVOKE, _, _, _)` -> 0. **Un-share this page**: unmap it from every address space
@@ -18,6 +22,8 @@ pub const MAP: u64 = 0;
 /// **On a device capability it means take-back** (a device is revoked by taking it back): every `DeviceFrame` capability to the page goes and it is unmapped
 /// everywhere **except the caller's own**, so only the asker still reaches the registers. A device
 /// capability is minted once, at boot, so a symmetric revoke would strand the device.
+///
+/// Name: provisional.
 pub const REVOKE: u64 = 1;
 
 /// `invoke(capability, SLICE, first, count, _)` -> the slot of a new capability in x0, or a negative
@@ -27,4 +33,6 @@ pub const REVOKE: u64 = 1;
 /// - Needs `GRANT`: a revoke is scoped to the exact run (what `PageFrame::REVOKE` owes an
 ///   overlapping run), so a slice escapes its source's revoke, a delegation-class power.
 /// - [`crate::Error::BadPointer`] for `count` of 0 or a range past the run's end.
+///
+/// Name: provisional.
 pub const SLICE: u64 = 2;

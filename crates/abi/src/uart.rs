@@ -1,6 +1,6 @@
 //! **The console UART's register shape, carried as one start word**.
 //!
-//! The NS16550's register stride is the machine's: one byte on QEMU `virt`, four with 32-bit
+//! The `NS16550`'s register stride is the machine's: one byte on QEMU `virt`, four with 32-bit
 //! access on the JH7110 (`reg-shift = <2>`, `reg-io-width = <4>`), where a driver assuming QEMU's
 //! would read line status from the wrong register and wait forever. The kernel reads it from the
 //! device tree and passes it to the progenitor as its first start
@@ -32,17 +32,27 @@ impl RegisterShape {
         reg_io_width: 1,
     };
 
-    /// The shape a device tree states. A width of 0 means unstated, which is byte access.
+    /// The shape a device tree states: `register_shift` is the binding's `reg-shift` (the base-2
+    /// logarithm of the distance between registers, in bytes) and `access_width_bytes` its
+    /// `reg-io-width` (how many bytes one access moves). A width of 0 means unstated, which is
+    /// byte access.
     ///
-    /// Name: provisional, minted 2026-10-20 (UTC) by milestone/890-radon-console-shape.
-    pub const fn new(reg_shift: u8, reg_io_width: u8) -> Self {
+    /// Name: provisional, minted 2026-10-20 (UTC) by milestone/890-radon-console-shape. The
+    /// parameters spell out the binding's `reg-shift` and `reg-io-width`, which stay as aliases.
+    #[doc(alias = "reg-shift")]
+    #[doc(alias = "reg-io-width")]
+    pub const fn new(register_shift: u8, access_width_bytes: u8) -> Self {
         Self {
-            reg_shift: if reg_shift > MAXIMUM_SHIFT {
+            reg_shift: if register_shift > MAXIMUM_SHIFT {
                 MAXIMUM_SHIFT
             } else {
-                reg_shift
+                register_shift
             },
-            reg_io_width: if reg_io_width == 0 { 1 } else { reg_io_width },
+            reg_io_width: if access_width_bytes == 0 {
+                1
+            } else {
+                access_width_bytes
+            },
         }
     }
 

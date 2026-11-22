@@ -31,9 +31,7 @@ Reuse: the template `nifeos/crate-workflows` and its helpers (`spelled_out.py`,
 Every finding not Done blocks the first crates.io publish, which waits until every outside-review
 milestone reaches delivery.
 
-- Item 1 (P0), the crate does not stand alone: At the move. `Cargo.toml` still inherits `license`
-  and carries the allowlist comment; the move commit writes the manifest rows and the license files
-  and rewrites the citations.
+- Item 1 (P0), the crate does not stand alone: Done, [#4002](https://github.com/nifeos/nife/pull/4002).
 - Item 2 (P0), the cut: Done, [#3587](https://github.com/nifeos/nife/pull/3587).
 - Item 3 (P1), public names the naming rules refuse: Done, [#3965](https://github.com/nifeos/nife/pull/3965).
 - Item 4 (P1), names the template's gates refuse: Done, [#3965](https://github.com/nifeos/nife/pull/3965).

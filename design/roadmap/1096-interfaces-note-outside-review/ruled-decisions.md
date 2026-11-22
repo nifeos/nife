@@ -97,3 +97,20 @@ on a cleared review with no tag. Where nife differs: nothing outside nife links 
 
 Example. Once the renames land, `nifeos/interfaces_note` opens with the README of item 2, and nife
 pins it by revision.
+
+## The fuzz crate's dependency hold
+
+Background. The repository's labeler holds any pull request that adds a dependency, and it counts
+the unpublished `fuzz/` crate's `Cargo.toml` too. The fuzz target of item 11 depends on
+`libfuzzer-sys` 0.4 and on this crate by path. Two standing approvals already cover both: the one
+for `libfuzzer-sys` in an unpublished `fuzz/` crate, and the one for any crate of the organization.
+
+Ruled 2026-11-22 UTC (option A): the hold is a false positive under the standing approvals, and the
+pull request lands without a separate dependency review. A separate dependency review of the fuzz
+crate (B) was the alternative.
+
+Prior art. `generational_table` and `block_roster_contract` recorded the same hold as a false
+positive when their fuzz targets landed. Where nife differs: nothing; the rule is the template's.
+
+Example. [nifeos/interfaces_note#2](https://github.com/nifeos/interfaces_note/pull/2) adds
+`fuzz/Cargo.toml` with those two dependencies and landed on this ruling.

@@ -9,7 +9,7 @@ extern crate std;
 use std::string::String;
 use std::vec::Vec;
 
-/// A one-row terminal model: interprets the echo stream the way a VT does, so the tests
+/// A one-row terminal model: interprets the echo stream the way a video terminal (VT) does, so the tests
 /// assert **what the user sees**, not which escape sequences we happened to emit. This is
 /// what lets the engine change its redraw strategy without rewriting every test.
 pub(super) struct Screen {

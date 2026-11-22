@@ -24,7 +24,7 @@ keeps running and prints into the void, which is what every system does to a pro
 is closed. A program whose reader has exited must end. One error for both would allow only one of
 those behaviors.
 
-`Error::from_ret` decodes only the values the kernel assigns. An unassigned negative is not decoded
+`Error::try_from` decodes only the values the kernel assigns. An unassigned negative is not decoded
 as an error, which is what lets a wire contract layered on top, such as `entropy_contract` or
 `credential_contract`, tell "no capability" from "no".
 
