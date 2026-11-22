@@ -200,7 +200,7 @@ The lane has no root. A person copies the three files in `helpers/systemd/` to
 `enable --now nife-fuzz-publish.timer`.
 
 That installs phase 1: the publish unit writes the day's report and clean ranges to local files and
-publishes nothing. Phase 2 publishes the release. It waits on the key and the installed mint helper
+publishes nothing. Phase 2 publishes the release. It waits on the key and the installed mint helper,
 and step P7 of [`finishing-the-setup.md`](finishing-the-setup.md)
 gives its drop-in. The unit as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
 `NIFE_FUZZ_PUBLISH=1` the script refuses to publish. It also refuses, by name and before any `gh`
