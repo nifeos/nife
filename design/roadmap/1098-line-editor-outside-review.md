@@ -59,7 +59,9 @@ milestone reaches delivery.
   ruled 2026-11-19 (UTC), A, in [#3796](https://github.com/nifeos/nife/pull/3796).
 - Decision 6, review clearance and the repositories: At the move. The architect cleared both
   `notes/crate-reviews/line-editor.md` and `notes/crate-reviews/terminal-contract.md` on
-  2026-11-22 (UTC). Neither repository exists yet; each move waits on its own remaining work.
+  2026-11-22 (UTC). `terminal_contract` lives in `nifeos/terminal_contract`, and nife depends on
+  it by rev ([#4015](https://github.com/nifeos/nife/pull/4015)). The move of `line_editor` waits on
+  its own remaining work.
 - Decision 7, the reserved bits of the terminal's first request word: Done,
   [#3972](https://github.com/nifeos/nife/pull/3972), ruled 2026-11-22 (UTC), A.
 
@@ -134,8 +136,9 @@ The P2 items are in [the appendix](1098-line-editor-outside-review/later-items.m
   the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
   program holds the two `QUIESCED` values equal. Items 3 and 4 and decisions 2, 3 and 5: the
   engine's names and the crate root's ratification are built.
-- **Recorded.** The two moves, to `nifeos/line_editor` and `nifeos/terminal_contract`, with item 1
-  and the rest of each review package's "What still blocks the move".
+- **Done.** The move to `nifeos/terminal_contract`, [#4015](https://github.com/nifeos/nife/pull/4015).
+- **Recorded.** The move to `nifeos/line_editor`, with item 1 and the rest of its review package's
+  "What still blocks the move".
 - **Recorded.** The externalization list: `crates/externalization-list.txt` names
   `line_editor` and not `terminal_contract`, checked in that file on main.
 
@@ -321,4 +324,4 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 An outside review of `line_editor` before it leaves. The cut has landed: `terminal_contract` and
 `line_editor_component` hold the contract, and the engine depends on nothing. Thirteen of the
 fourteen items have landed, the engine's renames among them, and the architect cleared both review packages.
-The two moves remain.
+`terminal_contract` has moved to its own repository; the move of `line_editor` remains.
