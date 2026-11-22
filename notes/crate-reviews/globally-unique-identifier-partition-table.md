@@ -17,9 +17,9 @@ moves in the ruled order meanwhile. The package describes the crate as this bran
 The GUID Partition Table of UEFI 2.10 section 5.3 as pure computation. It parses a primary table
 from the bytes a caller read, checks the backup copy against it, builds a new table and lays out the
 protective MBR and both headers. It is `no_std`, with no allocation, no `unsafe` and no I/O. The one
-dependency is `uuid`, with default features off. Eight Kani harnesses prove the CRC, the GUID byte
-order, the entry and header layouts, the overlap rule and that `create` never builds a table
-`parse` would refuse. The tests run against tables that `sgdisk` and macOS's `diskutil` wrote. The
+dependency is `uuid`, with default features off. Seventeen Kani harnesses prove the CRC, the GUID
+byte order, the entry and header layouts, the overlap rule, that `create` never builds a table
+`parse` would refuse, and that `Header::decode` and `parse` are total on a bounded input. The tests run against tables that `sgdisk` and macOS's `diskutil` wrote. The
 architect cleared the crate for its move on 2026-11-20 (UTC) with no tag and no publication, and
 every `Name:` block in it reads ratified.
 
@@ -86,7 +86,7 @@ What a stranger may find surprising:
 
 ## Proofs and falsification patches
 
-Eight harnesses in `src/verification.rs`, each with one patch under `falsifications/`.
+Seventeen harnesses in `src/verification.rs`, each with one patch under `falsifications/`.
 
 | harness | what it proves |
 |---|---|
@@ -98,11 +98,21 @@ Eight harnesses in `src/verification.rs`, each with one patch under `falsificati
 | `the_header_fields_partition_the_block` | decoding then encoding any 512-byte block reproduces bytes 24 to 92, so no two fields share a byte and none goes unclaimed |
 | `overlap_is_exactly_sharing_a_block` | `overlaps` is true exactly when two used entries share a block, and symmetric |
 | `create_never_lays_out_a_table_parse_would_reject` | for any disk size and one partition in a one-entry array, `create` satisfies every geometry rule `parse` checks |
+| `an_entries_block_count_never_panics_and_is_exact` | an entry's block count never overflows and is exact |
+| `a_backup_header_restores_the_table_it_was_written_from` | the backup header maps back to the table it was written from, on every disk size `create` accepts |
+| `the_header_checks_before_the_crc_are_total` | the checks `Header::decode` makes before its CRC never panic on a 512-byte block |
+| `the_header_crc_in_pieces_is_the_crc_of_the_whole` | the CRC fed in three pieces equals the CRC of the joined bytes |
+| `a_span_always_contains_what_was_asked_for` | `Span::covering` contains the requested range |
+| `a_name_always_decodes_into_its_documented_buffer` | an entry's name always fits the buffer its documentation names |
+| `the_entry_array_check_is_total` | for any header and a 128-byte array, the array check never panics and accepts only one 128-byte entry |
+| `the_table_checks_are_total_on_one_entry` | for any header with one 128-byte entry, the table checks never panic and an accepted table keeps both arrays outside the usable range |
+| `the_partition_checks_are_total_on_one_entry` | for any header and one 128-byte entry, the partition check never panics and accepts a used entry only inside the usable range |
 
-Not proved: that `Header::decode` and `parse` are total on hostile bytes. The tests count every
-single-byte corruption of a real header block and of a small table, and nife's fuzz workspace has a
-target for the crate; a harness through the CRC chains does not finish, as `verification.rs` says.
-The CRC harnesses stop at 8 bytes, and the tests cover the real lengths.
+The last three, with the two `Header::decode` stages, make `parse` total on a 512-byte block and a
+one-entry array. The first replaces the CRC with a free value, so every comparison with a stored
+CRC goes either way; the second replaces the checks on either side with what the first and third
+prove of them. They need `-Z stubbing`. The CRC harnesses stop at 8 bytes, and the tests cover the
+real lengths and every single-byte corruption of a real header block and of a small table.
 
 ## Names
 
@@ -199,20 +209,15 @@ For the move lane:
 ## What still blocks
 
 Nothing blocks the move to `nifeos/globally_unique_identifier_partition_table`, which waits only for
-the move lane. The first tag has one condition: a bounded totality harness for `parse` (a 512-byte
-block and a one-entry array) must exist by then, or this package records why it cannot finish. Today
-the fuzz target is the only machine check on `parse`. The eight Kani harnesses do not cover it.
+the move lane. The first tag's condition, a bounded totality harness for `parse`, is met:
+`the_entry_array_check_is_total`, `the_table_checks_are_total_on_one_entry` and
+`the_partition_checks_are_total_on_one_entry`, with the two `Header::decode` harnesses, prove
+`parse` total on a 512-byte block and a one-entry array. They need `-Z stubbing`, so the new
+repository's `proofs.yml` passes it.
 
 ## Open questions
 
-1. Whether `parse` can get a totality harness bounded small enough to finish (a 512-byte block, a
-   one-entry array). The ruling of 2026-11-20 (UTC) makes it a condition of the crate's first tag,
-   not of the repository: the harness exists before the tag, or this package records why it cannot
-   finish. Until then the fuzz target is the only machine check on `parse`; the eight Kani harnesses
-   do not reach it.
-2. Whether `VERSION` should stay, since nothing reads it and 956 classes the crate as no format.
-   Recommendation: keep it, since a released package can then state which reader it carries, and
-   removing it later costs one minor version. The maintainer can decide it.
+None. The `parse` totality harnesses exist, and `VERSION` is removed.
 
 ## Decisions for the architect
 
@@ -224,5 +229,5 @@ no tag and no publication.
 
 Cleared for the move on 2026-11-20 (UTC), with no tag and no publication. The crate builds, proves
 and passes its patches on its own, points nowhere into nife, carries no nife type GUID, and the
-architect ratified every name in it. The condition on the first tag is the bounded `parse` totality harness, or a
-recorded reason it cannot finish, as stated under "What still blocks".
+architect ratified every name in it. The first tag's condition, a bounded `parse` totality
+proof, is met, as stated under "What still blocks".

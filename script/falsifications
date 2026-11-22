@@ -726,7 +726,7 @@ def kernel_tests(pkgs=None):
 
 # Packages whose harnesses use `#[kani::stub]`, which Kani refuses without `-Z stubbing`.
 # `script/verify` passes the same flag for the same package.
-PACKAGES_THAT_STUB = {"domain_name_resolution_contract"}
+PACKAGES_THAT_STUB = {"domain_name_resolution_contract", "globally_unique_identifier_partition_table"}
 
 
 class Harness:
