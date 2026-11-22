@@ -1,5 +1,6 @@
 ---
 status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 672, 994, 1017
 decision_dependencies: 170
@@ -286,7 +287,7 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
   2026-11-19 UTC): 1115 (the gate builds basalt's delivered programs from the candidate tree) in
   every merge group, and 994 in basalt.
 - **Done.** The numbered magic, [#3982](https://github.com/nifeos/nife/pull/3982).
-- **Outstanding.** The repository (ruled 2026-11-14 UTC): a lane creates
+- **Recorded.** The repository (ruled 2026-11-14 UTC): a lane creates
   `nifeos/program_argument_contract`, runs the move check and a dry run, and tags `v0.1.0-pre.1`
   with no publish, after the renames and milestone 994.
 
