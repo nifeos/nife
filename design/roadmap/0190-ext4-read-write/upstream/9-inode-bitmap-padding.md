@@ -11,9 +11,9 @@ filing it is a separate step.
 - The change: [`9-inode-bitmap-padding.patch`](9-inode-bitmap-padding.patch), one commit,
   `git format-patch` output against that base. It changes `fs/rsext4/src/ext4/alloc.rs` only.
 
-Upstream's contributing guide (`docs/community/contributing.md`, its section 4.3 on submitting pull requests) processes a pull request only
-when it links an Issue, so the Issue below goes first and its number fills the pull request's
-`关联 Issue` line. Both follow the repository's templates
+Upstream's contributing guide (`docs/community/contributing.md`, its section 4.3 on submitting
+pull requests) processes a pull request only when it links an Issue, so the Issue below goes first
+and its number fills the pull request's `关联 Issue` line. Both follow the repository's templates
 (`.github/ISSUE_TEMPLATE/development.md` and `.github/PULL_REQUEST_TEMPLATE.md`).
 
 ## Issue to file first
