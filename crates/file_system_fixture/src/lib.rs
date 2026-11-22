@@ -254,6 +254,22 @@ pub mod escape {
     ///
     /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
     pub const GRANTED_ATTRIBUTES_FAILED: u64 = 1 << 7;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 8] = [
+        SECOND_FILE,
+        WROTE,
+        TRUNCATED,
+        CREATED,
+        FORGED_HANDLE,
+        GRANTED_READ_FAILED,
+        WROTE_ATTRIBUTE,
+        GRANTED_ATTRIBUTES_FAILED,
+    ];
 }
 
 /// The attacker's report leads with this so a silent client (a trapped one) cannot be mistaken
@@ -860,6 +876,31 @@ pub mod directory_escape {
     /// `READ`, because the set proxy serves four verbs that read and it
     /// would be a poor trade to close an attribute gap by opening a naming one.
     pub const REACHED_AN_UNMATCHED_NAME: u64 = 1 << 16;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 17] = [
+        REACHED_PARENT,
+        REACHED_SIBLING,
+        WALKED_UP,
+        WIDENED,
+        ENUMERATED,
+        DESCENDED,
+        CREATED,
+        MADE_A_DIRECTORY,
+        WROTE,
+        RENAMED,
+        ENUMERATED_A_STRANGER,
+        FORGED_HANDLE,
+        OPENED_ITS_OWN,
+        GRANTED_ACCESS_FAILED,
+        READ_ATTRIBUTES,
+        SET_AN_ATTRIBUTE,
+        REACHED_AN_UNMATCHED_NAME,
+    ];
 }
 
 /// **What the two-directory witness reports**: one process, two `fs_subtree_caretaker`s,
@@ -897,6 +938,20 @@ pub mod endpoint_boundary {
     /// grant that reaches nothing is trivially unescapable, the same caveat every other
     /// witness in this module carries.
     pub const GRANTED_ACCESS_FAILED: u64 = 1 << 5;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 6] = [
+        OPENED_A,
+        OPENED_B,
+        REACHED_B_VIA_A,
+        REACHED_A_VIA_B,
+        DOT_DOT_CROSSED_MOUNTS,
+        GRANTED_ACCESS_FAILED,
+    ];
 }
 
 /// **What a shell holding two trees reports**, the live half of holding two directory
@@ -955,6 +1010,30 @@ pub mod mounted_tree {
     pub const REACHED_ACROSS: u64 = 1 << 18;
     /// Nothing reachable was reached, so nothing above was proven.
     pub const TWO_TREES_FAILED: u64 = 1 << 19;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 16] = [
+        PWD_STARTS_AT_ROOT,
+        LISTED_ROOT,
+        MOVED_INTO_MOUNT,
+        LISTED_MOUNT,
+        OPENED_RELATIVE_IN_MOUNT,
+        OPENED_ROOT_FROM_MOUNT,
+        UP_FROM_MOUNT_IS_PARENT,
+        ROOT_CLAMPED,
+        REDIRECTED_FROM_MOUNT,
+        HOME_IS_ROOT,
+        BOUND_INTO_MOUNT,
+        RM_IN_MOUNT_REFUSED,
+        MOVED_ON_REFUSAL,
+        CLIMBED_OUT,
+        REACHED_ACROSS,
+        TWO_TREES_FAILED,
+    ];
 }
 
 /// **What a navigating shell reports**.
@@ -1096,6 +1175,46 @@ pub mod navigation {
     /// walk to the same depth would have: the negative control that a bind cannot manufacture
     /// either more reach or a new boundary, only a second name for a position already held.
     pub const BIND_STOPS_AT_TRUE_ROOT: u64 = 1 << 31;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 32] = [
+        PWD_IS_ROOT,
+        CLAMPED_AT_ROOT,
+        WALKED_UP,
+        ABSOLUTE_IS_MY_ROOT,
+        REACHED_INNER,
+        REACHED_SECRET,
+        LISTED,
+        SAW_INNER,
+        SAW_SECRET,
+        DESCENDED,
+        RETURNED,
+        CREATED,
+        MADE_DIRECTORY,
+        UNLINKED,
+        HOLDER_KEPT_READING,
+        NAME_GONE_AFTER_UNLINK,
+        UNLINK_REFUSED_A_DIRECTORY,
+        NAVIGATION_FAILED,
+        RMDIR_REFUSED_NON_EMPTY,
+        RMDIR_REMOVED_EMPTY,
+        ABSOLUTE_REACHED_INNER,
+        ABSOLUTE_REACHED_SECRET,
+        ABSOLUTE_CLAMPED_AT_ROOT,
+        TOUCH_CREATED,
+        TOUCH_PRESERVED,
+        TOUCH_MODIFICATION_TIME_ADVANCED,
+        TOUCH_AT_ROUND_TRIPPED,
+        TOUCH_NOW_NEEDS_ONLY_WRITE,
+        TOUCH_AT_REFUSED_WITHOUT_SETTIME,
+        BIND_REACHED_TARGET,
+        BIND_ASCEND_REACHES_REAL_PARENT,
+        BIND_STOPS_AT_TRUE_ROOT,
+    ];
 }
 
 /// **What the globbing witness reports**: a bitmap, for the same
@@ -1129,6 +1248,21 @@ pub mod globbing {
     /// Something that should have worked did not, so nothing above proves anything. Always a
     /// failure.
     pub const GLOB_FAILED: u64 = 1 << 6;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 7] = [
+        EXPANDED,
+        AGREED,
+        EXCLUDED_A_STRANGER,
+        NO_MATCH_REFUSED,
+        PATTERN_IN_PATH_REFUSED,
+        TEXT_UNTOUCHED,
+        GLOB_FAILED,
+    ];
 }
 
 /// **What the extended-attribute witness reports**, a bitmap for the reason every
@@ -1174,6 +1308,23 @@ pub mod attributes {
     ///
     /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
     pub const ATTRIBUTES_FAILED: u64 = 1 << 8;
+
+    /// Every verdict bit of this witness, in declaration order. A consumer may assert that a
+    /// word it received holds only these bits. The crate's tests check that each entry is a single
+    /// bit, that no two share one, and that the list names every bit constant declared above.
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane 1091-finish-review.
+    pub const ALL: [u64; 9] = [
+        SET_AND_READ_BACK,
+        LISTED,
+        SURVIVED_RENAME,
+        GONE_AFTER_REMOVE,
+        GONE_AFTER_UNLINK,
+        OVERSIZE_REFUSED,
+        STORE_UNNAMEABLE,
+        STORE_UNLISTED,
+        ATTRIBUTES_FAILED,
+    ];
 
     /// What a correct run reports, stated once so the two instruction-set legs' assertions cannot drift.
     /// The eight required claims, bits 0 through 7; a test holds it equal to their union.
