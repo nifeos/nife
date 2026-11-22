@@ -9,8 +9,12 @@ given a separate go.
 
 - [`2-truncate-fix.md`](2-truncate-fix.md): upstream item 2, a depth-2 truncate that failed with
   `extent:empty_index`, and a failed truncate that left the file's tail zeroed.
+- [`9-inode-bitmap-padding.md`](9-inode-bitmap-padding.md): upstream item 9, the first inode
+  allocated in an `INODE_UNINIT` group leaving its inode bitmap's padding clear.
 
 *Name: provisional. For the drafts the parent's upstream round cites. calef names directories.*
 
 - `2-truncate-fix` Name: provisional. The upstream item's number and what it fixes. calef names
   files.
+- `9-inode-bitmap-padding` Name: provisional. The upstream item's number and what it fixes. calef
+  names files.

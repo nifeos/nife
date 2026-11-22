@@ -122,6 +122,10 @@ agent-written submissions is read, and followed, before the first one.
 8. `InodeInfo` reports whole times. Its four times are the raw 32-bit seconds fields, which drop
    nanoseconds, times before 1970 and times past 2106; the crate already decodes all three
    inside, and writes them.
+9. The inode bitmap's padding. The first inode allocated in a group `mke2fs` left `INODE_UNINIT`
+   gets a bitmap with the bits past the group's last inode clear, which `e2fsck` refuses whenever
+   a group's inodes fill less than one bitmap block, as at 1 KiB blocks. The fix sets them as
+   Linux does, and the reproducer requires them set after that first allocation.
 
 **Every issue and pull request text is shown to the architect before it is filed.** An upstream
 submission is an outward step, and the review is of the exact text, not of the idea. A fuzz finding
@@ -196,7 +200,7 @@ it. That ruling is not the adoption ruling above, which stays open.
 
 ## Done when
 
-- Bugs 1 and 2 and the recovery-flag order are fixed in a crates.io release of `rsext4`, each with
+- Bugs 1 to 3 and the recovery-flag order are fixed in a crates.io release of `rsext4`, each with
   its reproducer as a test.
 - Every use of `unsafe` in that release carries a safety argument, and the group-descriptor casts
   are gone.
@@ -243,6 +247,7 @@ it. That ruling is not the adoption ruling above, which stays open.
   give a reader the time Linux wrote until that lands.
 - `write_file` fails with `Corrupted { op: "extent:parent_key" }` when 1,500 single-block extents
   arrive shuffled, in 0.9.2 and on `dev`; in ascending order the file builds. No upstream draft yet.
+- Bug 3 above is upstream item 9, whose draft awaits the architect.
 - The read oracle compares against `debugfs`, which is libext2fs, not the Linux kernel; this host
   could not mount a loop device.
 - No phase is priced. The honest estimate comes after the corpus survey and the first upstream
@@ -264,9 +269,11 @@ it. That ruling is not the adoption ruling above, which stays open.
   sector-size report as a test, and the CI job `ext4-read-oracle` on an x86_64 host.
 - **Done.** The oracle's write half in `tools/ext4_oracle/` and the `ext4-read-oracle` job, bugs
   1 to 3 held as expected outcomes.
+- **Outstanding.** [The inode bitmap padding draft](0190-ext4-read-write/upstream/9-inode-bitmap-padding.md)
+  (item 9, bug 3) awaits the architect.
 - **Outstanding.** Our side: the oracle on aarch64 and riscv64 hosts, the kernel as a
   second read oracle, a volume over 1 GiB, the write-reordering and power-cut sweeps,
-  hostile-image fuzzing, an upstream item and reproducer for bug 3, and `ext4_server` itself.
+  hostile-image fuzzing, and `ext4_server` itself.
 - **Outstanding.** The adoption ruling under §46 (thin primitives or whole subsystems), which no lane can give.
 
 ## Index row
