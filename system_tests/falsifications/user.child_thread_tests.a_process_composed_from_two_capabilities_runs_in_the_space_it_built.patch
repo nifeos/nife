@@ -30,4 +30,4 @@ diff --git a/kernel/src/system_call/thread_control_block.rs b/kernel/src/system_
 +            let _ = (tid, a0, a1, a2);
              Ok(0)
          }
-         abi::thread_control_block::SUSPEND => {
+         moho_abi::thread_control_block::SUSPEND => {

@@ -4,7 +4,7 @@ Architecture: aarch64
 
 The defect is the tree as it stood until milestone 706 (a `CALL` server can tell a Reply from a
 delegation), DECISIONS §245 (a `CALL` server tells a Reply from a delegation). The patch zeroes the
-two stores of `abi::rendezvous::REPLY_DELIVERED` into the receiver's `x4`: `ipc_call_badged`'s
+two stores of `moho_abi::rendezvous::REPLY_DELIVERED` into the receiver's `x4`: `ipc_call_badged`'s
 rendezvous arm (the server parked first) and `ipc_receive_capability`'s collect of a parked caller (the caller
 parked first). With both at `0`, which is what every receive returned before 706, a `CALL`'s Reply
 and a client's `SEND_CAPABILITY` delegation reach the server identically, a real slot in `x1` and `0` in

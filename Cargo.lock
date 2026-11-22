@@ -3,10 +3,6 @@
 version = 4
 
 [[package]]
-name = "abi"
-version = "0.1.0"
-
-[[package]]
 name = "address_space_identifier"
 version = "0.1.0"
 
@@ -169,7 +165,7 @@ dependencies = [
 name = "capability_plan"
 version = "0.1.0"
 dependencies = [
- "abi",
+ "moho_abi",
 ]
 
 [[package]]
@@ -219,7 +215,6 @@ checksum = "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a"
 name = "components"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "block_roster_contract",
  "boot_ladder",
@@ -267,6 +262,7 @@ dependencies = [
  "machine_statistics_contract",
  "measured_boot",
  "memory_region_heap",
+ "moho_abi",
  "network_stack",
  "network_time_protocol",
  "nife_partition_types",
@@ -315,8 +311,8 @@ dependencies = [
 name = "confined_system_call_fuzzer_contract"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
+ "moho_abi",
 ]
 
 [[package]]
@@ -570,7 +566,6 @@ dependencies = [
 name = "fixtures"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "byte_sink_contract",
  "byte_sink_fixture",
@@ -598,6 +593,7 @@ dependencies = [
  "loaded_image_check",
  "login_contract",
  "memory_region_heap",
+ "moho_abi",
  "network_time_protocol",
  "nifefs",
  "primitive_benchmark_contract",
@@ -873,7 +869,6 @@ version = "0.1.0"
 name = "kernel"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_identifier",
  "address_space_layout",
  "base_digest_contract",
@@ -921,6 +916,7 @@ dependencies = [
  "memory_corruption_canary_gate",
  "memory_regions",
  "minicov",
+ "moho_abi",
  "nifefs",
  "page_frames",
  "page_tables",
@@ -1071,8 +1067,8 @@ dependencies = [
 name = "memory_region_heap"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
+ "moho_abi",
  "talc",
  "user_mode_runtime",
 ]
@@ -1094,6 +1090,10 @@ dependencies = [
  "cc",
  "walkdir",
 ]
+
+[[package]]
+name = "moho_abi"
+version = "0.1.0"
 
 [[package]]
 name = "network_stack"
@@ -1189,8 +1189,8 @@ version = "0.1.0"
 name = "pgrep"
 version = "0.1.0"
 dependencies = [
- "abi",
  "byte_glob",
+ "moho_abi",
  "ps",
 ]
 
@@ -1204,7 +1204,7 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 name = "pmap"
 version = "0.1.0"
 dependencies = [
- "abi",
+ "moho_abi",
 ]
 
 [[package]]
@@ -1242,9 +1242,9 @@ dependencies = [
 name = "process_builder"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "counter_frequency_contract",
+ "moho_abi",
  "startup_page_contract",
  "static_elf",
  "supervision_contract",
@@ -1286,7 +1286,7 @@ dependencies = [
 name = "ps"
 version = "0.1.0"
 dependencies = [
- "abi",
+ "moho_abi",
 ]
 
 [[package]]
@@ -1580,7 +1580,6 @@ dependencies = [
 name = "system_initializer"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "base_digest_contract",
  "byte_sink_contract",
@@ -1597,6 +1596,7 @@ dependencies = [
  "login_contract",
  "machine_statistics_contract",
  "measured_boot",
+ "moho_abi",
  "nifefs",
  "package_archive",
  "package_index",
@@ -1637,7 +1637,6 @@ dependencies = [
 name = "system_tests"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "block_roster_contract",
  "byte_sink_contract",
@@ -1669,6 +1668,7 @@ dependencies = [
  "machine_discovery",
  "machine_statistics_contract",
  "measured_boot",
+ "moho_abi",
  "network_time_protocol",
  "nifefs",
  "package_archive",
@@ -1840,8 +1840,8 @@ checksum = "009dbb7700f11c55ef83aebbe4c0e9cf1f1ac0844bd8d6f00dc38f302026e13a"
 name = "top"
 version = "0.1.0"
 dependencies = [
- "abi",
  "machine_statistics_contract",
+ "moho_abi",
  "ps",
  "uptime",
 ]
@@ -1949,12 +1949,12 @@ dependencies = [
 name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",
+ "moho_abi",
  "socket_contract",
 ]
 

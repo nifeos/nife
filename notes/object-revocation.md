@@ -172,7 +172,7 @@ witness that memory came back rather than leaked:
 ## The surface, and what remains
 
 New EL0 methods on the `MemoryRegion` object (the system call boundary stays the three calls; these are methods
-under `invoke`): `SPLIT` (subdivide) and `DESTROY` (reclaim). See `crates/abi` for the contract and
+under `invoke`): `SPLIT` (subdivide) and `DESTROY` (reclaim). See `crates/moho_abi` for the contract and
 `design/decisions/` for the record.
 
 The follow-ons this note once listed are all done: the EL0 spawn benchmark (`lat_proc`, notes/

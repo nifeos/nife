@@ -27,7 +27,7 @@ starts itself. How the progenitor loads its children is in
    is painted, so `crate::progenitor_stack` can say how deep the stack has been.
 3. It routes the UART receive interrupt to an endpoint, creates the thread, and grants the slots.
 4. It configures and starts the thread with three `START` words: the console UART's register shape
-   (`abi::uart`), the archive's length, and the file service's rights (0 for none).
+   (`moho_abi::uart`), the archive's length, and the file service's rights (0 for none).
 5. It arms the interrupts that must wait for the driver to run, and returns without blocking.
 
 The UART's interrupt number comes from the machine's own description when it gave one, else QEMU
@@ -106,7 +106,7 @@ design/roadmap/0047-navigation-and-naming/environment.md's "inheritance with vis
   delegate. It narrows the endpoint into the shell. The pool is every client window as one run, in
   the slot that once held window 0's page (milestone 599 (a frame per filesystem client channel), calef's option-4 ruling of 2026-09-27).
   The progenitor never maps the run into a client: it slices one window per client with
-  `abi::page_frame::SLICE` and deletes the slice once the client is built.
+  `moho_abi::page_frame::SLICE` and deletes the slice once the client is built.
 - The device trios (virtio-rng, virtio-net, the gpu, the keyboard) carry `GRANT` on each
   capability, because the progenitor delegates them into the service it builds and deletes its own
   copies.

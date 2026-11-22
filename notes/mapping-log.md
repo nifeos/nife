@@ -149,7 +149,7 @@ removes that tombstoning.
 
 ## Listing what a space maps
 
-`abi::address_space::LIST` answers from the log rather than from the page tables, the way `ps`
+`moho_abi::address_space::LIST` answers from the log rather than from the page tables, the way `ps`
 reads `/proc`. The kernel already keeps the record, so the answer costs nothing more and agrees with
 what a revoke would find. The log records no permissions, so the system call layer reads each address's
 flags with `arch::mmu::translate_at`.

@@ -180,17 +180,17 @@ fn a_child_with_no_construction_authority_cannot_build() {
     let answer = sched::ipc_receive(report);
     assert_eq!(
         answer[0],
-        abi::Error::NoSuchSlot as u64,
+        moho_abi::Error::NoSuchSlot as u64,
         "a RETYPE on an ungranted slot answered something other than NoSuchSlot",
     );
     assert_eq!(
         answer[1],
-        abi::Error::NoSuchSlot as u64,
+        moho_abi::Error::NoSuchSlot as u64,
         "a SEND on an ungranted slot answered something other than NoSuchSlot",
     );
     assert_eq!(
         answer[2],
-        abi::Error::NoSuchSlot as u64,
+        moho_abi::Error::NoSuchSlot as u64,
         "a RETYPE_OBJECT on an ungranted slot answered something other than NoSuchSlot",
     );
 

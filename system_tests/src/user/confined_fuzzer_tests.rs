@@ -22,9 +22,9 @@
 
 //! Name: provisional, as are the fixture's and the protocol crate's.
 
-use abi::Error;
 use confined_system_call_fuzzer_contract as proto;
 use confined_system_call_fuzzer_contract::report;
+use moho_abi::Error;
 
 use super::*;
 use crate::capability_object::{
@@ -43,7 +43,7 @@ fn wait_for(done: impl FnMut() -> bool) -> bool {
     wait_on_every_core(done).is_ok()
 }
 
-const SLOTS: usize = abi::CAPABILITY_TABLE_SLOTS as usize;
+const SLOTS: usize = moho_abi::CAPABILITY_TABLE_SLOTS as usize;
 /// Fuzzer A, fuzzer B, and the witness.
 const A: usize = 0;
 const WITNESS: usize = 2;
@@ -444,7 +444,7 @@ impl Conductor {
         // The witness holds only GO, which the generator never names: every invoke must be
         // refused, and its table must never fill at all.
         if x == WITNESS {
-            if call.number == abi::SYSTEM_CALL_INVOKE && (call.rets[0] as i64) >= 0 {
+            if call.number == moho_abi::SYSTEM_CALL_INVOKE && (call.rets[0] as i64) >= 0 {
                 escape!(
                     self,
                     "the witness's invoke on slot {} method {} succeeded with {:#x}",
@@ -556,7 +556,7 @@ impl Conductor {
         // A plain `RECEIVE` defines w0..w3 only and leaves x4 as the caller left it, so there is
         // nothing to check there. A deferred fill is checked at the quiet point, with its own x1
         // and x4.
-        if call.number == abi::SYSTEM_CALL_INVOKE
+        if call.number == moho_abi::SYSTEM_CALL_INVOKE
             && (call.rets[0] as i64) >= 0
             && self.was_receive_capability(x, call)
             && (self.pending.is_none() || self.pending.as_ref().unwrap().fuzzer != x)
@@ -569,7 +569,7 @@ impl Conductor {
                     got = call.rets[1]
                 );
             }
-            let tag = u64::from(justified_reply) * abi::rendezvous::REPLY_DELIVERED;
+            let tag = u64::from(justified_reply) * moho_abi::rendezvous::REPLY_DELIVERED;
             if call.rets[4] != tag {
                 escape!(
                     self,
@@ -583,9 +583,9 @@ impl Conductor {
     /// Keep the ledger and the badge record current with a step that revoked a frame or minted a badge.
     fn note_revoke_or_badge(&mut self, x: usize, call: &Call) {
         // A revoke kills the in-flight copy; a badge minted is a badge that may be seen.
-        if call.number == abi::SYSTEM_CALL_INVOKE {
+        if call.number == moho_abi::SYSTEM_CALL_INVOKE {
             match call.words[1] {
-                abi::page_frame::REVOKE => {
+                moho_abi::page_frame::REVOKE => {
                     if let Some(Some((Object::PageFrame(phys, _), _))) =
                         self.fuzzers[x].table.get(call.words[0] as usize)
                     {
@@ -601,7 +601,7 @@ impl Conductor {
                         }
                     }
                 }
-                abi::rendezvous::BADGE
+                moho_abi::rendezvous::BADGE
                     if matches!(
                         self.held(x, call),
                         Some(Object::Rendezvous(ep, _)) if ep == self.world.server
@@ -628,7 +628,7 @@ impl Conductor {
         // A SEND_CAPABILITY that completed spent its delegation: its receiver may be waiting on the
         // record to judge the fill. (Gated on the slot holding an endpoint: `SEND_CAPABILITY` and
         // `RETYPE_OBJECT` share the number 2.)
-        if call.number == abi::SYSTEM_CALL_INVOKE
+        if call.number == moho_abi::SYSTEM_CALL_INVOKE
             && call.words[1] == proto::SEND_CAPABILITY
             && matches!(self.held(x, call), Some(Object::Rendezvous(..)))
             && (call.rets[0] as i64) >= 0
@@ -661,7 +661,7 @@ impl Conductor {
 
     /// Was this call a `RECEIVE_CAPABILITY` on an endpoint, the one call whose fills are deliveries?
     fn was_receive_capability(&self, x: usize, call: &Call) -> bool {
-        call.number == abi::SYSTEM_CALL_INVOKE
+        call.number == moho_abi::SYSTEM_CALL_INVOKE
             && call.words[1] == proto::RECEIVE_CAPABILITY
             && matches!(self.held(x, call), Some(Object::Rendezvous(..)))
     }
@@ -677,7 +677,7 @@ impl Conductor {
         obj: Object,
         rights: u32,
     ) -> bool {
-        if call.number != abi::SYSTEM_CALL_INVOKE {
+        if call.number != moho_abi::SYSTEM_CALL_INVOKE {
             return false;
         }
         match self.held(x, call) {
@@ -713,14 +713,16 @@ impl Conductor {
                         .is_some_and(|(base, size)| within(base, size))
                         && self.record_child(child))
             }
-            Some(Object::Rendezvous(..)) if call.words[1] == abi::rendezvous::BADGE => {
+            Some(Object::Rendezvous(..)) if call.words[1] == moho_abi::rendezvous::BADGE => {
                 // The same endpoint the fuzzer already held, restamped with the badge it named.
                 let same = self.fuzzers[x].table.iter().flatten().any(|(o, r)| {
                     strip_badge(*o) == strip_badge(obj) && *r == rights && badge_of(o) == 0
                 });
                 same && badge_of(&obj) == call.words[2] && call.words[2] != 0
             }
-            Some(Object::PageFrame(phys, count)) if call.words[1] == abi::page_frame::SLICE => {
+            Some(Object::PageFrame(phys, count))
+                if call.words[1] == moho_abi::page_frame::SLICE =>
+            {
                 // Milestone 599 (a frame per filesystem client channel)'s sub-run: `count` pages from `first` pages in, inside the source's
                 // run, at exactly the source's rights, and only from a source holding `GRANT`. A
                 // whole-run slice is the same object at the same rights, which reads as a copy and
@@ -754,8 +756,8 @@ impl Conductor {
     /// process carries no right the invoked region capability lacks. Where the process's page
     /// lies is the caller's check.
     fn process_retype_is_lawful(&self, x: usize, call: &Call, now: &Snap, rights: u32) -> bool {
-        if call.words[1] != abi::memory_region::RETYPE_OBJECT
-            || call.words[2] != abi::object_type::PROCESS
+        if call.words[1] != moho_abi::memory_region::RETYPE_OBJECT
+            || call.words[2] != moho_abi::object_type::PROCESS
         {
             return false;
         }
@@ -1085,7 +1087,7 @@ impl Conductor {
         let (_, Some(Wait::Rendezvous(_, WaitRole::Sender))) = disposition(self, x)? else {
             return None;
         };
-        if report_word(self, x, report::NUMBER) != abi::SYSTEM_CALL_INVOKE {
+        if report_word(self, x, report::NUMBER) != moho_abi::SYSTEM_CALL_INVOKE {
             return None;
         }
         if report_word(self, x, report::ARGS + 1) != proto::SEND_CAPABILITY {
@@ -1431,7 +1433,7 @@ fn a_caller_chosen_list_cursor_is_refused() {
     let r = crate::system_call::invoke(
         &mut frame,
         slot,
-        abi::address_space::LIST,
+        moho_abi::address_space::LIST,
         0x1e1d_3b96_8000,
         0,
         0,
@@ -1442,10 +1444,10 @@ fn a_caller_chosen_list_cursor_is_refused() {
         "a LIST cursor this space never minted was followed rather than refused"
     );
     // The walk's own start cursor stays good: an empty space answers DONE.
-    let r0 = crate::system_call::invoke(&mut frame, slot, abi::address_space::LIST, 0, 0, 0);
+    let r0 = crate::system_call::invoke(&mut frame, slot, moho_abi::address_space::LIST, 0, 0, 0);
     assert_eq!(
         r0,
-        Ok(abi::survey::DONE as i64),
+        Ok(moho_abi::survey::DONE as i64),
         "the cursor the kernel itself mints (0, the walk's start) must still be taken"
     );
     let _ = delete_current_capability(slot);
@@ -1474,7 +1476,7 @@ fn retype_into_kernel_object(region_slot: u64, kind: u64, space_slot: u64, floor
     let slot = crate::system_call::invoke(
         &mut frame,
         region_slot,
-        abi::memory_region::RETYPE_OBJECT,
+        moho_abi::memory_region::RETYPE_OBJECT,
         kind,
         space_slot,
         floor,
@@ -1486,10 +1488,10 @@ fn retype_into_kernel_object(region_slot: u64, kind: u64, space_slot: u64, floor
 /// The `RETYPE_OBJECT` call the conductor reads back from a fuzzer's report page.
 fn retype_call(region_slot: u64, kind: u64, space_slot: u64, floor: u64, slot: u64) -> Call {
     Call {
-        number: abi::SYSTEM_CALL_INVOKE,
+        number: moho_abi::SYSTEM_CALL_INVOKE,
         words: [
             region_slot,
-            abi::memory_region::RETYPE_OBJECT,
+            moho_abi::memory_region::RETYPE_OBJECT,
             kind,
             space_slot,
             floor,
@@ -1512,7 +1514,7 @@ fn retype_call(region_slot: u64, kind: u64, space_slot: u64, floor: u64, slot: u
 /// Falsification: replayable `system_tests/falsifications/user.confined_fuzzer_tests.the_oracle_accepts_a_process_retyped_from_the_callers_own_region.patch`
 #[test_case]
 fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
-    use abi::object_type::{ADDRESS_SPACE, PROCESS, RENDEZVOUS};
+    use moho_abi::object_type::{ADDRESS_SPACE, PROCESS, RENDEZVOUS};
     let region = crate::memory_region::create(32).expect("no region");
     let other = crate::memory_region::create(32).expect("no second region");
     let r = sched::grant(memory_region_capability_rights(region, Rights::ALL))

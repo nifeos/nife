@@ -13,7 +13,7 @@
 //! name), `reply` naming the one-shot capability this pair proves. File, `[[bin]]` and archive-tuple
 //! rename pending the batched 291 sweep. This was `hello`'s `CALL_SERVER` role, number 14, and
 //! matches the kernel-side module that wires it. "Call" here is the IPC operation's own name
-//! (`user_mode_runtime::call`, `abi`'s `CALL`), which is the "standard term a reader already knows" case
+//! (`user_mode_runtime::call`, `moho_abi`'s `CALL`), which is the "standard term a reader already knows" case
 //! AGENTS.md's naming section protects rather than a generic verb.
 
 #![no_std]
@@ -45,7 +45,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // the typed `reply` already consumed its `Reply`, which is the point being tested one level
     // down: the kernel refuses it too.
     // SAFETY: `svc`/`ecall`; the kernel validates the slot, which is now empty.
-    let second = unsafe { invoke(slot, abi::reply::REPLY, 0xBAD, 0, 0) };
+    let second = unsafe { invoke(slot, moho_abi::reply::REPLY, 0xBAD, 0, 0) };
     send(REPORT, if second < 0 { 1 } else { 0 }, 0, 0); // 1 = refused (one-shot held), 0 = a hole
     exit()
 }

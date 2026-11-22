@@ -97,15 +97,16 @@ pub(super) fn build_caretaker(
     care_words: (u64, u64, u64),
     grant: u64,
 ) -> Option<u64> {
-    let narrow_ep = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()?;
-    let ready = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()?;
+    let narrow_ep =
+        retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS).ok()?;
+    let ready = retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS).ok()?;
     let maps = [
         (
             FS_CLIENT_PAGE_VA,
             fs.page,
-            abi::address_space::MAP_READ_WRITE,
+            moho_abi::address_space::MAP_READ_WRITE,
         ),
-        (GRANT_PAGE_VA, grant, abi::address_space::MAP_READ_ONLY),
+        (GRANT_PAGE_VA, grant, moho_abi::address_space::MAP_READ_ONLY),
     ];
     // Its whole authority: no untyped, no clock, no terminal, nothing that names another process.
     let built = build_child(
@@ -114,9 +115,9 @@ pub(super) fn build_caretaker(
         care,
         &ChildEndowment {
             capabilities: &[
-                (fs.ep, abi::rights::WRITE),
-                (narrow_ep, abi::rights::READ),
-                (ready, abi::rights::WRITE),
+                (fs.ep, moho_abi::rights::WRITE),
+                (narrow_ep, moho_abi::rights::READ),
+                (ready, moho_abi::rights::WRITE),
             ],
             maps: &maps,
             stack_pages: CARETAKER_STACK_PAGES,
@@ -197,11 +198,11 @@ pub(super) fn build_net_stack(
     process_builder::give_up_own_page(NET_DMA_PEEK_VA);
     let stack = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let report = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let budget = must(memory_region_split(ut, NET_STACK_BUDGET_PAGES));
     let child = must(build_child(
@@ -210,11 +211,11 @@ pub(super) fn build_net_stack(
         program,
         &ChildEndowment {
             capabilities: &[
-                (report, abi::rights::WRITE),
-                (g.virtual_io_net_interrupt, abi::rights::READ),
-                (g.virtual_io_net, abi::rights::WRITE),
-                (budget, abi::rights::SPEND_ONLY),
-                (stack, abi::rights::READ),
+                (report, moho_abi::rights::WRITE),
+                (g.virtual_io_net_interrupt, moho_abi::rights::READ),
+                (g.virtual_io_net, moho_abi::rights::WRITE),
+                (budget, moho_abi::rights::SPEND_ONLY),
+                (stack, moho_abi::rights::READ),
             ],
             // §255 (each socket is its own capability): the endpoint sockets are minted from, and
             // its own address space, so `CLOSE` can take a socket's page back.
@@ -222,18 +223,18 @@ pub(super) fn build_net_stack(
                 (
                     socket_contract::stack_slots::MINTING_ENDPOINT_SLOT,
                     stack,
-                    abi::rights::WRITE | abi::rights::GRANT,
+                    moho_abi::rights::WRITE | moho_abi::rights::GRANT,
                 ),
                 (
                     socket_contract::stack_slots::OWN_ADDRESS_SPACE_SLOT,
                     supervision_contract::CHILDS_OWN_SPACE,
-                    abi::rights::WRITE,
+                    moho_abi::rights::WRITE,
                 ),
             ],
             maps: &[(
                 NET_DMA_VA,
                 g.virtual_io_net_dma,
-                abi::address_space::MAP_READ_WRITE,
+                moho_abi::address_space::MAP_READ_WRITE,
             )],
             stack_pages: NET_STACK_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -319,7 +320,7 @@ pub(super) fn build_domain_name_resolver(
     use domain_name_resolution_contract::endowment;
     let service = must(retype_into_kernel_object_from(
         ut,
-        abi::object_type::RENDEZVOUS,
+        moho_abi::object_type::RENDEZVOUS,
     ));
     let budget = must(memory_region_split(ut, RESOLVER_BUDGET_PAGES));
     let child = must(build_child(
@@ -328,15 +329,15 @@ pub(super) fn build_domain_name_resolver(
         program,
         &ChildEndowment {
             placed: &[
-                (0, service, abi::rights::READ),
-                (1, stack, abi::rights::WRITE),
+                (0, service, moho_abi::rights::READ),
+                (1, stack, moho_abi::rights::WRITE),
                 // Every right: lending a socket a page retyped from this budget needs `GRANT`.
-                (2, budget, abi::rights::ALL),
-                (3, entropy, abi::rights::WRITE),
+                (2, budget, moho_abi::rights::ALL),
+                (3, entropy, moho_abi::rights::WRITE),
                 (
                     endowment::OWN_SPACE_SLOT,
                     supervision_contract::CHILDS_OWN_SPACE,
-                    abi::rights::WRITE,
+                    moho_abi::rights::WRITE,
                 ),
             ],
             stack_pages: RESOLVER_STACK_PAGES,
@@ -556,12 +557,13 @@ fn start_gpu_driver(
         gpu,
         ..
     } = *l;
-    let Some(display) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+    let Some(display) =
+        retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS).ok()
     else {
         return Err(());
     };
     let Some(driver_report) =
-        retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+        retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS).ok()
     else {
         drop_capabilities(&[display]);
         return Err(());
@@ -576,12 +578,12 @@ fn start_gpu_driver(
         gpu_program,
         &ChildEndowment {
             capabilities: &[
-                (driver_report, abi::rights::WRITE),
-                (gpu[1], abi::rights::READ),
-                (gpu[0], abi::rights::WRITE),
-                (display, abi::rights::READ),
-                (budget, abi::rights::SPEND_ONLY),
-                (gpu[2], abi::rights::READ | abi::rights::WRITE),
+                (driver_report, moho_abi::rights::WRITE),
+                (gpu[1], moho_abi::rights::READ),
+                (gpu[0], moho_abi::rights::WRITE),
+                (display, moho_abi::rights::READ),
+                (budget, moho_abi::rights::SPEND_ONLY),
+                (gpu[2], moho_abi::rights::READ | moho_abi::rights::WRITE),
             ],
             ..ChildEndowment::new(Retention::Nothing)
         },
@@ -592,7 +594,7 @@ fn start_gpu_driver(
     };
     capability_delete(budget);
     // Role 0, the honest driver. No physical address: the run's first page carries it
-    // (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`), and this
+    // (`moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`), and this
     // process could not supply one anyway.
     if !start_child(driver, 0, 0, 0) {
         drop_capabilities(&[display, driver_report]);
@@ -622,12 +624,12 @@ fn start_display_terminal(
         ..
     } = *l;
     let Some(term_report) =
-        retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+        retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS).ok()
     else {
         drop_capabilities(&[display, driver_report]);
         return Err(());
     };
-    let Some(term) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+    let Some(term) = retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS).ok()
     else {
         drop_capabilities(&[display, driver_report, term_report]);
         return Err(());
@@ -646,12 +648,12 @@ fn start_display_terminal(
         disp_program,
         &ChildEndowment {
             capabilities: &[
-                (term_report, abi::rights::WRITE),
-                (display, abi::rights::WRITE),
-                (term, abi::rights::READ),
-                (budget, abi::rights::SPEND_ONLY),
-                (gpu[3], abi::rights::READ | abi::rights::WRITE),
-                (out, abi::rights::READ | abi::rights::WRITE),
+                (term_report, moho_abi::rights::WRITE),
+                (display, moho_abi::rights::WRITE),
+                (term, moho_abi::rights::READ),
+                (budget, moho_abi::rights::SPEND_ONLY),
+                (gpu[3], moho_abi::rights::READ | moho_abi::rights::WRITE),
+                (out, moho_abi::rights::READ | moho_abi::rights::WRITE),
             ],
             ..ChildEndowment::new(Retention::Nothing)
         },
@@ -693,7 +695,7 @@ fn start_keyboard_arm(
 ) -> Result<SessionArm, ()> {
     let GraphicalTerminalLaunch { own_ut, region, .. } = *l;
     let Some(session_term) =
-        retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+        retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS).ok()
     else {
         drop_capabilities(&[term, out]);
         return Err(());
@@ -715,15 +717,16 @@ fn start_keyboard_arm(
         &[
             (
                 session_term,
-                abi::rights::READ | abi::rights::WRITE | abi::rights::GRANT,
+                moho_abi::rights::READ | moho_abi::rights::WRITE | moho_abi::rights::GRANT,
             ),
-            (term, abi::rights::WRITE | abi::rights::GRANT),
-            (out, abi::rights::READ | abi::rights::WRITE),
-            (session_out, abi::rights::READ),
-            (session_in, abi::rights::READ | abi::rights::WRITE),
+            (term, moho_abi::rights::WRITE | moho_abi::rights::GRANT),
+            (out, moho_abi::rights::READ | moho_abi::rights::WRITE),
+            (session_out, moho_abi::rights::READ),
+            (session_in, moho_abi::rights::READ | moho_abi::rights::WRITE),
         ],
     );
-    let Some(report) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+    let Some(report) =
+        retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS).ok()
     else {
         drop_capabilities(&[term, out, session_term, session_out, session_in]);
         return Err(());
@@ -736,12 +739,12 @@ fn start_keyboard_arm(
         kbd_program,
         &ChildEndowment {
             capabilities: &[
-                (report, abi::rights::WRITE),
-                (k[1], abi::rights::READ),
-                (k[0], abi::rights::WRITE),
-                (session_term, abi::rights::WRITE),
+                (report, moho_abi::rights::WRITE),
+                (k[1], moho_abi::rights::READ),
+                (k[0], moho_abi::rights::WRITE),
+                (session_term, moho_abi::rights::WRITE),
             ],
-            maps: &[(KBD_DMA_VA, k[2], abi::address_space::MAP_READ_WRITE)],
+            maps: &[(KBD_DMA_VA, k[2], moho_abi::address_space::MAP_READ_WRITE)],
             ..ChildEndowment::new(Retention::Nothing)
         },
     )
@@ -779,12 +782,16 @@ fn start_session_program(
     } = *l;
     // `components/src/graphical_terminal.rs`'s slots 0 to 2; the line page only on arm 0.
     let mut maps = [
-        (SCREEN_OUT_VA, out_page, abi::address_space::MAP_READ_WRITE),
+        (
+            SCREEN_OUT_VA,
+            out_page,
+            moho_abi::address_space::MAP_READ_WRITE,
+        ),
         (0, 0, 0),
     ];
     let n_maps = match in_page {
         Some(p) => {
-            maps[1] = (SCREEN_IN_VA, p, abi::address_space::MAP_READ_ONLY);
+            maps[1] = (SCREEN_IN_VA, p, moho_abi::address_space::MAP_READ_ONLY);
             2
         }
         None => 1,
@@ -795,9 +802,9 @@ fn start_session_program(
         screen_elf,
         &ChildEndowment {
             capabilities: &[
-                (result_ep, abi::rights::WRITE),
-                (write_ep, abi::rights::WRITE),
-                (keys_ep, abi::rights::WRITE),
+                (result_ep, moho_abi::rights::WRITE),
+                (write_ep, moho_abi::rights::WRITE),
+                (keys_ep, moho_abi::rights::WRITE),
             ],
             maps: &maps[..n_maps],
             fault: Some(deaths),
@@ -863,7 +870,7 @@ pub(super) fn build_terminal(
     use line_editor_component::supervisor as s;
     let budget_pages = must(memory_region_split(budget, s::BUDGET_PAGES));
     let mut all = [(0u64, 0u64); 8];
-    all[0] = (budget_pages, abi::rights::ALL);
+    all[0] = (budget_pages, moho_abi::rights::ALL);
     all[1..=capabilities.len()].copy_from_slice(capabilities);
     let sup = must(build_child(
         ut,

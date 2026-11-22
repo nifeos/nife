@@ -88,3 +88,4 @@ paging,page_tables,e9bd13a9,2026-11-14
 elf,static_elf,3b35516a,2026-11-14
 capability,capability_table,8be5382a,2026-11-16
 usb,universal_serial_bus,5aa60793,2026-11-20
+abi,moho_abi,1cc60cf1,2026-11-22

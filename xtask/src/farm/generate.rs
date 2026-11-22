@@ -54,7 +54,7 @@ pub(super) fn strip_doc_examples(body: &str) -> String {
     out.join("\n")
 }
 
-/// Generate `abi.rs` and the other contracts verbatim from the host-tested crates, so each has
+/// Generate `moho_abi.rs` and the other contracts verbatim from the host-tested crates, so each has
 /// exactly one definition. The files are [`COPIED_FILES`], each read from the directory
 /// [`copied_package_directories`] gives for its package, so a crate pinned outside this tree is
 /// copied from Cargo's checkout of the pin. The heap is [`std_generate_talc`]'s. The transform

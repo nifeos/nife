@@ -12,13 +12,13 @@ diff --git a/kernel/src/system_call/address_space.rs b/kernel/src/system_call/ad
              address_space_list(frame, name, a0)
          }
          // `WRITE`, the right `MAP_INTO` takes: shaping a space is one right in both directions.
--        abi::address_space::UNMAP => {
+-        moho_abi::address_space::UNMAP => {
 -            if !capability.rights.allows(Rights::WRITE) {
 -                return Err(Error::NotPermitted);
 -            }
 -            address_space_unmap(name, a0)
 -        }
-+        abi::address_space::UNMAP => address_space_unmap(name, a0),
++        moho_abi::address_space::UNMAP => address_space_unmap(name, a0),
          // §269 (how threads share a process) fork 2.
-         abi::address_space::WAIT | abi::address_space::WAKE => {
+         moho_abi::address_space::WAIT | moho_abi::address_space::WAKE => {
              address_space_address_wait(capability.rights, name, method, a0, a1, a2)

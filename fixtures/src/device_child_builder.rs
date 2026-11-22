@@ -48,11 +48,11 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     else {
         refuse()
     };
-    let grants = [(REPORT, abi::rights::WRITE)];
+    let grants = [(REPORT, moho_abi::rights::WRITE)];
     let maps = [(
         CHILD_UART_VA,
         UART_DEVICE,
-        abi::address_space::MAP_READ_ONLY,
+        moho_abi::address_space::MAP_READ_ONLY,
     )];
     let endowment = ChildEndowment {
         capabilities: &grants,

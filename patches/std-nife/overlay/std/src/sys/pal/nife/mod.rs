@@ -10,7 +10,7 @@
 
 #![allow(unsafe_op_in_unsafe_fn)]
 
-pub(crate) mod abi;
+pub(crate) mod moho_abi;
 // The net_stack socket-contract wire format (opcodes, frame offsets), generated verbatim from
 // `crates/socket_contract` by `cargo xtask std-src` so the numbers cannot drift from the server.
 // The net PAL (`sys/net`) is a client of it.

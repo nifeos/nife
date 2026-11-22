@@ -48,6 +48,6 @@ both while this milestone might retire them; it did.
 ## What replaced it
 
 Not a flag, but milestone 282 (a thread's CPU time, and the `top` it makes possible), which gave the domain something to rank by: per-thread scheduled CPU
-time (DECISIONS §150 (how does a thread's CPU time reach userspace?)). It is read as `abi::survey::record::CPU_TIME`, through the selector §204 (how
+time (DECISIONS §150 (how does a thread's CPU time reach userspace?)). It is read as `moho_abi::survey::record::CPU_TIME`, through the selector §204 (how
 userspace asks where a thread runs) put on `SURVEY`. The live view came back as `top`, ranked,
 rather than as a refresh flag on a table of two columns.

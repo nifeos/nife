@@ -58,8 +58,8 @@ const CONFIG_VA: u64 = address_space_layout::pair_page(0x00e0_0000);
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
 interfaces_note::carry_interfaces!(&[
     interfaces_note::DeclaredInterface {
-        id: abi::INTERFACE_ID,
-        version: abi::ABI_VERSION
+        id: moho_abi::INTERFACE_ID,
+        version: moho_abi::ABI_VERSION
     },
     interfaces_note::DeclaredInterface {
         id: address_space_layout::INTERFACE_ID,

@@ -300,7 +300,7 @@ def tree_problems():
 
 
 def selftest():
-    versions = {'abi': {'ABI_VERSION'}, 'clock': {'VERSION'}, 'fsc::blk': {'VERSION'},
+    versions = {'moho_abi': {'ABI_VERSION'}, 'clock': {'VERSION'}, 'fsc::blk': {'VERSION'},
                 'fsc::fs': {'VERSION'}}
 
     def entry(path, vpath=None, vconst='VERSION'):
@@ -310,20 +310,20 @@ def selftest():
     def carry(*entries):
         return 'interfaces_note::carry_interfaces!(&[\n' + '\n'.join(entries) + '\n]);\n'
 
-    good = carry(entry('abi', vconst='ABI_VERSION'), entry('clock'))
+    good = carry(entry('moho_abi', vconst='ABI_VERSION'), entry('clock'))
     cases = [
-        ('a complete list passes', good, {'abi', 'clock'}, []),
-        ('no list fails', 'fn main() {}\n', {'abi'}, ['carries no carry_interfaces!']),
-        ('two lists fail', good + good, {'abi', 'clock'}, ['more than one']),
-        ('a missing interface fails', carry(entry('abi', vconst='ABI_VERSION')), {'abi', 'clock'},
+        ('a complete list passes', good, {'moho_abi', 'clock'}, []),
+        ('no list fails', 'fn main() {}\n', {'moho_abi'}, ['carries no carry_interfaces!']),
+        ('two lists fail', good + good, {'moho_abi', 'clock'}, ['more than one']),
+        ('a missing interface fails', carry(entry('moho_abi', vconst='ABI_VERSION')), {'moho_abi', 'clock'},
          ['links clock but does not declare it']),
-        ('an extra interface fails', good, {'abi'}, ['declares clock but does not link it']),
+        ('an extra interface fails', good, {'moho_abi'}, ['declares clock but does not link it']),
         ('a version from another module fails',
-         carry(entry('abi', vconst='ABI_VERSION'), entry('clock', 'abi', 'ABI_VERSION')),
-         {'abi', 'clock'}, ['reads its version from abi']),
-        ('an unknown version constant fails', carry(entry('abi', vconst='VERSION'), entry('clock')),
-         {'abi', 'clock'}, ['abi::VERSION is not a public u32 version']),
-        ('a list in a comment does not count', '// ' + good.replace('\n', '\n// '), {'abi'},
+         carry(entry('moho_abi', vconst='ABI_VERSION'), entry('clock', 'moho_abi', 'ABI_VERSION')),
+         {'moho_abi', 'clock'}, ['reads its version from moho_abi']),
+        ('an unknown version constant fails', carry(entry('moho_abi', vconst='VERSION'), entry('clock')),
+         {'moho_abi', 'clock'}, ['moho_abi::VERSION is not a public u32 version']),
+        ('a list in a comment does not count', '// ' + good.replace('\n', '\n// '), {'moho_abi'},
          ['carries no carry_interfaces!']),
         ('a module interface passes', carry(entry('fsc::fs')), {'fsc::fs'}, []),
         ('a module version from its sibling fails', carry(entry('fsc::fs', 'fsc::blk')),
@@ -337,27 +337,27 @@ def selftest():
             assert len(got) == len(expect) and all(e in g for e, g in zip(expect, got)), \
                 f'{what}: {got}'
 
-    assert named_crates('use abi::x;\n// glob::y\nlet z = grant_plan::P;', {'abi', 'glob', 'grant_plan'}) \
-        == {'abi', 'grant_plan'}
-    assert named_crates('foo_abi::x; self::abi::y', {'abi'}) == set()
-    assert named_crates(good, {'abi', 'clock', 'interfaces_note'}) \
+    assert named_crates('use moho_abi::x;\n// glob::y\nlet z = grant_plan::P;', {'moho_abi', 'glob', 'grant_plan'}) \
+        == {'moho_abi', 'grant_plan'}
+    assert named_crates('foo_moho_abi::x; self::moho_abi::y', {'moho_abi'}) == set()
+    assert named_crates(good, {'moho_abi', 'clock', 'interfaces_note'}) \
         == {'interfaces_note'}
 
-    interfaces = {'fsc': {'fsc::blk', 'fsc::fs'}, 'abi': {'abi'}}
-    assert required('use fsc::{dir, fs, grant};', {'fsc', 'abi'}, interfaces) == {'fsc::fs', 'abi'}
+    interfaces = {'fsc': {'fsc::blk', 'fsc::fs'}, 'moho_abi': {'moho_abi'}}
+    assert required('use fsc::{dir, fs, grant};', {'fsc', 'moho_abi'}, interfaces) == {'fsc::fs', 'moho_abi'}
     assert required('use fsc::blk;\nfsc::req::x();', {'fsc'}, interfaces) == {'fsc::blk'}
     assert required('use other::x;', {'fsc'}, interfaces) == {'fsc::blk', 'fsc::fs'}
     assert required('fsc::helper(1);', {'fsc'}, interfaces) == {'fsc::blk', 'fsc::fs'}
 
-    assert classification_problems({'abi', 'calendar'}, {'abi'}) == []
+    assert classification_problems({'moho_abi', 'calendar'}, {'moho_abi'}) == []
     assert 'not classified' in classification_problems({'unknown_crate'}, set())[0]
     assert 'classified twice' in classification_problems({'calendar'}, {'calendar'})[0]
 
-    rows = table_rows('| id | interface |\n|---|---|\n| 1 | `abi` |\n| 3 | retired, `glob` |\n'
+    rows = table_rows('| id | interface |\n|---|---|\n| 1 | `moho_abi` |\n| 3 | retired, `glob` |\n'
                       '| 14 | `fsc::blk` |\n| 15 | `fsc::fs` |\n')
-    assert rows == [(1, 'abi', False), (3, 'glob', True), (14, 'fsc::blk', False),
+    assert rows == [(1, 'moho_abi', False), (3, 'glob', True), (14, 'fsc::blk', False),
                     (15, 'fsc::fs', False)]
-    agree = {'abi': '1', 'fsc::blk': '14', 'fsc::fs': '15'}
+    agree = {'moho_abi': '1', 'fsc::blk': '14', 'fsc::fs': '15'}
     assert id_problems(agree, rows) == []
 
     def fires(what, found, rows, expect):
@@ -365,7 +365,7 @@ def selftest():
         assert any(expect in g for g in got), f'{what}: {got}'
 
     fires('two interfaces sharing a number fail', {**agree, 'clock': '1'},
-          rows + [(1, 'clock', False)], 'declared by abi, clock')
+          rows + [(1, 'clock', False)], 'declared by clock, moho_abi')
     fires('a duplicate the table does not list still fails', {**agree, 'fsc::fs': '14'},
           [r for r in rows if r[1] != 'fsc::fs'], 'declared by fsc::blk, fsc::fs')
     fires('a retired number fails', {**agree, 'clock': '3'}, rows, 'is retired')
@@ -373,7 +373,7 @@ def selftest():
           'has no row')
     fires('a number other than the table\'s fails', {**agree, 'fsc::fs': '16'}, rows,
           'the table assigns 15')
-    fires('a table row the tree lacks fails', {'abi': '1', 'fsc::blk': '14'}, rows,
+    fires('a table row the tree lacks fails', {'moho_abi': '1', 'fsc::blk': '14'}, rows,
           'carries no INTERFACE_ID')
     fires('a number the table assigns twice fails', agree, rows + [(15, 'clock', False)],
           'assigns 15 more than once')

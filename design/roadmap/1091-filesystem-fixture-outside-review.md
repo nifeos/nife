@@ -52,8 +52,9 @@ then the three decisions.
 - Item 3 (P0), acronyms and British spelling: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 4 (P0), names the gates refuse: Done, [#3910](https://github.com/nifeos/nife/pull/3910) applied
   Decision 2's three tables as provisional names, and the naming gates report none refused.
-- Item 5 (P0), no review package and unratified names: Waiting on a ruling (#4009). The package
-  lists the built names and asks for their ratification and the fixture's half of the clearance.
+- Item 5 (P0), no review package and unratified names: Done, [#4009](https://github.com/nifeos/nife/pull/4009).
+  The architect ratified the crate name, `INTERFACE_ID` 16 at `VERSION` 1 and the item names as
+  built, ruled 2026-11-22 UTC.
 - Item 6 (P1), the crate describes this tree: Done, [#4000](https://github.com/nifeos/nife/pull/4000).
   The externalization lint counts no consumer name, and the crate has no waiver.
 - Item 7 (P1), history residue: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -79,12 +80,13 @@ then the three decisions.
   `file_system_contract`, ruled 2026-11-14 (UTC); nife depends on both crates at commit
   7577a7d0df339107f75747c3681f5990f116cf61.
 - Decision 2, the names: Done, [#3910](https://github.com/nifeos/nife/pull/3910).
-- Decision 3, the review package and clearance: Waiting on a ruling (#4009).
+- Decision 3, the review package and clearance: Done, [#4009](https://github.com/nifeos/nife/pull/4009). Ruled 2026-11-22
+  UTC: `file_system_fixture` is cleared as the second crate of the shared repository
+  `nifeos/file_system_contract`, `publish = false`.
 
 ## Open decisions
 
-None. The review package carries the name ratification and the clearance of the review, which stay
-the architect's.
+None.
 
 ## Goal
 

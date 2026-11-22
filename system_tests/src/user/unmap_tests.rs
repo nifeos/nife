@@ -1,4 +1,4 @@
-//! `unmap_tests`: `abi::address_space::UNMAP` (milestone 95 (an unmap primitive), DECISIONS §162
+//! `unmap_tests`: `moho_abi::address_space::UNMAP` (milestone 95 (an unmap primitive), DECISIONS §162
 //! (whether a holder can give up a mapping), option A), driven
 //! through the real system call dispatcher against a real `Object::AddressSpace`, with what the space
 //! maps read back from its page tables (`arch::mmu::translate_at`) and its mapping record
@@ -17,7 +17,7 @@
 //! - **Intermediate tables are not checked.** `UNMAP` leaves them linked on purpose, and this module
 //!   does not assert either way.
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::Rights;
@@ -77,17 +77,17 @@ fn map_into(aspace: u64, va: u64, frame: u64) -> Result<i64, Error> {
     invoke(
         &mut fr,
         aspace,
-        abi::address_space::MAP_INTO,
+        moho_abi::address_space::MAP_INTO,
         va,
         frame,
-        abi::address_space::MAP_READ_WRITE,
+        moho_abi::address_space::MAP_READ_WRITE,
     )
 }
 
 /// `invoke(capability, UNMAP, va, _, _)`, through the real dispatcher.
 fn unmap(aspace: u64, va: u64) -> Result<i64, Error> {
     let mut fr = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    invoke(&mut fr, aspace, abi::address_space::UNMAP, va, 0, 0)
+    invoke(&mut fr, aspace, moho_abi::address_space::UNMAP, va, 0, 0)
 }
 
 /// What the page tables say `va` maps to in the space rooted at `root`.
@@ -102,8 +102,15 @@ fn listed(name_slot: u64) -> [Option<u64>; 4] {
     let mut cursor = 0;
     for row in out.iter_mut() {
         let mut fr = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-        let next = invoke(&mut fr, name_slot, abi::address_space::LIST, cursor, 0, 0)
-            .expect("LIST refused a viewer");
+        let next = invoke(
+            &mut fr,
+            name_slot,
+            moho_abi::address_space::LIST,
+            cursor,
+            0,
+            0,
+        )
+        .expect("LIST refused a viewer");
         if next == 0 {
             return out;
         }

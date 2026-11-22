@@ -33,7 +33,7 @@ pub(crate) struct KeyboardDevice {
     /// The event interrupt, routed and enabled.
     pub intid: u32,
     /// The one DMA page's physical base, which the page also carries at
-    /// `abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`.
+    /// `moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`.
     pub dma: u64,
     /// The rendezvous the interrupt is bound to, which a bench row watches.
     pub interrupt_ep: RendezvousId,
@@ -49,7 +49,7 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
         .expect("no DMA region for the keyboard driver")
         .physical_address();
     // Where the page is, in the page
-    // (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`): the driver
+    // (`moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`): the driver
     // reads it there rather than from `arg1`, so a supervisor that holds only the frame capability
     // can build it.
     super::write_dma_phys(dma);

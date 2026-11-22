@@ -20,7 +20,7 @@ and this escape takes `outgoing_cap` on the order where the sender parks first, 
 plain `SEND` never sets `cap_delivered`, so the leak is the stale `outgoing_cap`, not the mailbox slot
 634 fixed.
 
-Expected to fail: `assert_eq!(x1, abi::rendezvous::NO_CAP, "a plain SEND after a plain-RECEIVE-collected
+Expected to fail: `assert_eq!(x1, moho_abi::rendezvous::NO_CAP, "a plain SEND after a plain-RECEIVE-collected
 SEND_CAPABILITY delivered the stale delegation at slot {x1} ...")`. Under the patch `x1` is a real slot the
 receiver's `RECEIVE_CAPABILITY` filed the stale delegation into.
 

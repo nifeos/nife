@@ -21,8 +21,10 @@
 //! A module that writes `x3` or `x4` means word 3 or word 4 of this table on the architecture the
 //! reader is on.
 //!
-//! Name: ratified 2026-08-23 (calef). Declined `application_binary_interface`: "ABI" passes the
-//! test of whether an architect has to ask what it means, and this is the most-imported crate.
+//! Name: ratified 2026-11-14 (calef), §323 (the binary interface, and the names of the layers)
+//! ruling 2: the crate carries the name of the binary interface it defines, Moho. Declined
+//! `application_binary_interface`: "ABI" passes the test of whether an architect has to ask what it
+//! means, and this is the most-imported crate.
 
 #![no_std]
 
@@ -72,7 +74,7 @@ pub const SYSTEM_CALL_YIELD: u64 = 1;
 ///
 /// # Examples
 /// ```
-/// use abi::{SYSTEM_CALL_EXIT, SYSTEM_CALL_INVOKE, SYSTEM_CALL_YIELD, rendezvous};
+/// use moho_abi::{SYSTEM_CALL_EXIT, SYSTEM_CALL_INVOKE, SYSTEM_CALL_YIELD, rendezvous};
 ///
 /// assert_eq!([SYSTEM_CALL_EXIT, SYSTEM_CALL_YIELD, SYSTEM_CALL_INVOKE], [0, 1, 2]);
 ///
@@ -293,7 +295,7 @@ pub mod uart;
 ///
 /// # Examples
 /// ```
-/// use abi::Error;
+/// use moho_abi::Error;
 ///
 /// // "There is nothing there" and "there was something there and it is gone" are different facts,
 /// // and a writer branches on them in **opposite** directions: a program never granted a stdout
@@ -394,7 +396,7 @@ pub enum Error {
 ///
 /// # Examples
 /// ```
-/// use abi::Error;
+/// use moho_abi::Error;
 ///
 /// // A successful `invoke` returning a handle, a count, or nothing.
 /// assert_eq!(Error::try_from(0), Err(0));

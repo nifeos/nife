@@ -129,7 +129,7 @@ will never cooperate (milestone 133 (ending a permanently blocked thread, and de
 The replacement and the stand-in that carries the bounded quiesce are both built ahead, since a hung
 component gives the operator no drain to hide a build behind.
 
-What the supervisor can see is two negative results. `abi::rendezvous::SURVEY` (milestone 126 (the
+What the supervisor can see is two negative results. `moho_abi::rendezvous::SURVEY` (milestone 126 (the
 `procps` package)) shows every member `BLOCKED` and none `DEAD`, which is also what a healthy idle
 system looks like. `Rendezvous::REAP` on every member is refused `StillAlive`, and that is the
 supervisor's whole vocabulary over its domain since §32 (a supervisor may collect a corpse without
@@ -151,7 +151,7 @@ queued behind the silence, because the kernel's sender queue is the buffer.
 Reclaiming the hung incumbent is where §32's stronger right was right, and the right is the kept
 region capability. `DESTROY` finishes the `Blocked` incumbent without waking it
 (`sched::finish_blocked_resident`). Freeing it answers every caller it held a reply capability for
-with `abi::Error::Gone` (milestone 254 (a caller stranded by a server that died),
+with `moho_abi::Error::Gone` (milestone 254 (a caller stranded by a server that died),
 `sched::strand_callers_of`), so the client whose request it swallowed asks again and is served by
 the replacement. The destroy comes after `STARTED`, so that second attempt finds a server. The
 incumbent sends no death message, since it was finished rather than killed, and the revoke has no

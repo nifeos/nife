@@ -16,7 +16,7 @@ still between `ASPACES` and `INBOX`/`MAPPINGS`/`KMEM`, only the name moved). So 
 across `kernel/src/` and `crates/` that named the lock by identifier (`thread.rs`, `cpu.rs`,
 `interrupt_stack.rs`, `untyped.rs`, `kmem.rs`, `user.rs`, `drivers/plic.rs`,
 `arch/aarch64/mmu.rs`, `user/tests.rs`, `user/force_kill_tests.rs`, `user/survey_tests.rs`,
-`crates/abi`, `crates/steal_request`, `crates/wake_handshake`). A handful of comments that said "the
+`crates/moho_abi`, `crates/steal_request`, `crates/wake_handshake`). A handful of comments that said "the
 scheduler" to mean this specific lock, not the `sched` module, were reworded to name it directly.
 They were `sync.rs`'s rank commentary, `untyped.rs`'s reap/revoke notes, and similar. That followed
 this file's own instruction to check that every call site still reads correctly under the new name.

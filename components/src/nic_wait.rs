@@ -59,7 +59,7 @@ pub(super) fn wait_for_nic(
     // Wait for a frame **or** that deadline, whichever comes first: the notification in `WAKE` is
     // bound to this thread, so `Interrupt::WAIT` ends on either and the hart is idle in between.
     let microseconds = delay.total_micros();
-    let ticks = abi::timer::counter_ticks_for(
+    let ticks = moho_abi::timer::counter_ticks_for(
         microseconds / 1_000_000,
         ((microseconds % 1_000_000) * 1000) as u32,
         counter_hertz(),
@@ -115,7 +115,8 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
         polled_wait::Next::SleepMicroseconds(0) => return,
         polled_wait::Next::SleepMicroseconds(microseconds) => microseconds,
     };
-    let ticks = abi::timer::counter_ticks_for(0, (microseconds * 1000) as u32, counter_hertz());
+    let ticks =
+        moho_abi::timer::counter_ticks_for(0, (microseconds * 1000) as u32, counter_hertz());
     if sleep_until(RETRANSMIT, WAKE, counter_ticks().saturating_add(ticks)) < 0 {
         user_mode_runtime::yield_now();
     }

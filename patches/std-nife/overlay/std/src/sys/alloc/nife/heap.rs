@@ -82,10 +82,10 @@ pub(super) fn grow(inner: &mut Inner, need: u64) -> bool {
         let virtual_address = start + got * PAGE_BYTES;
         // SAFETY: plain system call; the kernel validates the slot, the address, and the budget.
         let code = unsafe {
-            rt::invoke(rt::MEMORY_REGION_SLOT, abi::memory_region::MAP, virtual_address, 0, 0)
+            rt::invoke(rt::MEMORY_REGION_SLOT, moho_abi::memory_region::MAP, virtual_address, 0, 0)
         };
         if code != 0 {
-            inner.stopped = abi::Error::try_from(code) != Ok(abi::Error::OutOfMemory);
+            inner.stopped = moho_abi::Error::try_from(code) != Ok(moho_abi::Error::OutOfMemory);
             break;
         }
         got += 1;

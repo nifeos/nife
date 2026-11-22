@@ -10,7 +10,7 @@
 //!
 //! Name: provisional, for the module and the file.
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Object, memory_region_capability};
@@ -51,7 +51,12 @@ fn share(counted: Counted) -> u32 {
 fn fill(budget: u64, object_type: u64) -> u32 {
     let mut made = 0;
     for _ in 0..ATTEMPTS {
-        match call(budget, abi::memory_region::RETYPE_OBJECT, object_type, 0) {
+        match call(
+            budget,
+            moho_abi::memory_region::RETYPE_OBJECT,
+            object_type,
+            0,
+        ) {
             Ok(slot) => {
                 let _ = sched::delete_current_capability(slot as u64);
                 made += 1;
@@ -77,16 +82,16 @@ fn fill_processes_and_spaces(budget: u64) -> (u32, u32) {
     for _ in 0..ATTEMPTS {
         let Ok(space) = call(
             budget,
-            abi::memory_region::RETYPE_OBJECT,
-            abi::object_type::ADDRESS_SPACE,
+            moho_abi::memory_region::RETYPE_OBJECT,
+            moho_abi::object_type::ADDRESS_SPACE,
             0,
         ) else {
             break;
         };
         match call(
             budget,
-            abi::memory_region::RETYPE_OBJECT,
-            abi::object_type::PROCESS,
+            moho_abi::memory_region::RETYPE_OBJECT,
+            moho_abi::object_type::PROCESS,
             space as u64,
         ) {
             Ok(slot) => {
@@ -102,7 +107,7 @@ fn fill_processes_and_spaces(budget: u64) -> (u32, u32) {
     }
     (
         processes,
-        processes + fill(budget, abi::object_type::ADDRESS_SPACE),
+        processes + fill(budget, moho_abi::object_type::ADDRESS_SPACE),
     )
 }
 
@@ -111,7 +116,7 @@ fn fill_processes_and_spaces(budget: u64) -> (u32, u32) {
 fn split_until_refused(budget: u64, below: &mut [u64; ATTEMPTS]) -> usize {
     let mut splits = 0;
     for _ in 0..ATTEMPTS {
-        let Ok(slot) = call(budget, abi::memory_region::SPLIT, 1, 0) else {
+        let Ok(slot) = call(budget, moho_abi::memory_region::SPLIT, 1, 0) else {
             break;
         };
         let Object::MemoryRegion(name) = sched::current_capability(slot as u64)
@@ -142,10 +147,16 @@ fn a_region_filled_to_its_subtree_ceilings_leaves_its_siblings_able_to_build() {
     let budget = sched::grant(memory_region_capability(filled)).expect("grant the filled region");
 
     for (object_type, kind) in [
-        (abi::object_type::RENDEZVOUS, ObjectKind::Rendezvous),
-        (abi::object_type::NOTIFICATION, ObjectKind::Notification),
-        (abi::object_type::TIMER, ObjectKind::Timer),
-        (abi::object_type::THREAD_CONTROL_BLOCK, ObjectKind::Thread),
+        (moho_abi::object_type::RENDEZVOUS, ObjectKind::Rendezvous),
+        (
+            moho_abi::object_type::NOTIFICATION,
+            ObjectKind::Notification,
+        ),
+        (moho_abi::object_type::TIMER, ObjectKind::Timer),
+        (
+            moho_abi::object_type::THREAD_CONTROL_BLOCK,
+            ObjectKind::Thread,
+        ),
     ] {
         assert_eq!(
             fill(budget, object_type),

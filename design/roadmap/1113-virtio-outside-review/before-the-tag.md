@@ -4,7 +4,7 @@ An appendix to [the milestone](../1113-virtio-outside-review.md).
 
 ## P1
 
-3. The ring layout is a copy of the proved layout, and nothing checks the copy. NOT DONE (a BUGS entry at the constants records the copy; the move to `abi::virtual_io` adds public constants to `crates/abi`, so it is a pull request of its own). `QSIZE`
+3. The ring layout is a copy of the proved layout, and nothing checks the copy. NOT DONE (a BUGS entry at the constants records the copy; the move to `moho_abi::virtual_io` adds public constants to `crates/moho_abi`, so it is a pull request of its own). `QSIZE`
 (`:72`), `OFF_DESC`, `OFF_AVAIL`, `OFF_USED` (`:99-101`) and the net driver's `0x200` stride
 (`:564-569`) restate `direct_memory_access_validator::{LAYOUT_QSIZE, DESC_OFF, AVAIL_OFF,
 USED_OFF, RING_BLOCK}` as literals. The kernel aliases those constants, so the layout it runs
@@ -13,7 +13,7 @@ A change to the proved layout would leave the driver reading the wrong offsets, 
 fail until a QEMU test did. `components/src/virtual_io_net_transport.rs` lines 28 to 31 records the same copy as
 a bug, and this crate records nothing. `notes/net/the-driver-and-dhcp.md` lines 130 to 137 says §46 (thin primitives or whole subsystems; we write everything in between) priced
 the dependency edge and the tree did not take it. The validator has no dependencies of its own
-(`crates/direct_memory_access_validator/Cargo.toml`). The fix: the constants move to `abi::virtual_io`,
+(`crates/direct_memory_access_validator/Cargo.toml`). The fix: the constants move to `moho_abi::virtual_io`,
 as Decision 2 decides, provisionally, and this crate imports them. Effort: S. Two-way: the layout
 values do not change, only where their names live.
 

@@ -273,8 +273,8 @@ fn vouch_takes_one_path_and_names_it_by_its_last_component() {
         Some(&b"unvouched"[..])
     );
     assert_eq!(vouched_name(b"./a.out"), Some(&b"a.out"[..]));
-    // A name travels on a page (milestone 1122 (every name travels on a page)), so the last
-    // component may be as long as a file's name, and one byte more is refused.
+    // A name travels on a page, so the last component may be as long as a file's name, and one
+    // byte more is refused.
     let mut longest = b"./".to_vec();
     longest.extend([b'v'; crate::MAXIMUM_FILE_NAME_BYTES]);
     assert_eq!(

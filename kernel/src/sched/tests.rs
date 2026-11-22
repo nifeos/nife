@@ -20,7 +20,7 @@ fn a_running_thread_cannot_be_granted_the_cycle_counter() {
     let me = super::current_thread_id();
     assert_eq!(
         super::grant_cycle_counter(me),
-        Err(abi::Error::WrongObject),
+        Err(moho_abi::Error::WrongObject),
         "a live thread was allowed to acquire a timing instrument it was not created with",
     );
 }

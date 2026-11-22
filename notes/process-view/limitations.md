@@ -85,7 +85,7 @@ one line.
   members' cursors. The bandwidth is low and nobody has measured it.
 
   Why accepted rather than fixed here. The honest fix is a per-domain cursor and a domain-local
-  thread name, and both change what a tid *is*: `endpoint::REAP` takes a tid, `abi::fault`'s death
+  thread name, and both change what a tid *is*: `endpoint::REAP` takes a tid, `moho_abi::fault`'s death
   message carries one, and `ps` prints one. So it is a change to something two programs agree on,
   which is the category that cannot be un-shipped by reverting a commit. And it reaches the system call
   surface: the `REAP` of §16 (object revocation) and the death message of §26 (the fault endpoint). That makes it a
@@ -160,7 +160,7 @@ one line.
   this is a spawn-protocol question, not a `pmap` change, and it is not decided here.
 
 - `pmap` shows one row per mapped page, with no VA-range coalescing and no size column.
-  `abi::aspace::LIST` reads the space's revocation log, which records one entry per page and
+  `moho_abi::aspace::LIST` reads the space's revocation log, which records one entry per page and
   nothing about adjacency between them; upstream `pmap` coalesces contiguous same-permission pages
   into ranges, which would need an ordering guarantee this log does not make.
 

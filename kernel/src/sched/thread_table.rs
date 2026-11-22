@@ -16,7 +16,7 @@ pub(super) static PEAK_THREADS: core::sync::atomic::AtomicUsize =
     core::sync::atomic::AtomicUsize::new(0);
 
 /// Scheduled on-CPU time, one timer tick at a time, keyed by thread slot (§150 (how does a thread's
-/// CPU time reach userspace?)). `abi::survey::record::CPU_TIME` reads it.
+/// CPU time reach userspace?)). `moho_abi::survey::record::CPU_TIME` reads it.
 ///
 /// An array beside the table, not a field on `Thread` or `cpu::PerCpu`: [`on_tick`] knows its
 /// running thread only as a tid, so the slot needs no lock. Each core writes only its running

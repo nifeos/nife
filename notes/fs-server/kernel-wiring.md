@@ -103,7 +103,7 @@ middle, and the installer's `BUGS` carries the argument.
 ## Client windows and the server's mapping list
 
 Every client window is in one physically contiguous run. So one `PageFrame` capability names the
-whole pool, and the progenitor slices a window per client (`abi::page_frame::SLICE`). The main FS server
+whole pool, and the progenitor slices a window per client (`moho_abi::page_frame::SLICE`). The main FS server
 maps every window; a client's badge picks which one it reads.
 
 With every window mapped, a server's list of `Mapping`s is about 5.6 KiB, and on a thread's stack it

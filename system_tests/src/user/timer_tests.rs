@@ -17,7 +17,7 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use abi::Error;
+use moho_abi::Error;
 
 use super::wait_for;
 use crate::arch::exceptions::TrapFrame;
@@ -180,11 +180,11 @@ fn a_wait_ends_at_the_deadline_with_no_signal() {
     assert_eq!(
         got,
         [
-            abi::notification::BOUND,
+            moho_abi::notification::BOUND,
             0b1000,
             0,
             0,
-            abi::notification::BOUND
+            moho_abi::notification::BOUND
         ]
     );
     assert!(RECEIVED_AT.load(Ordering::SeqCst) >= deadline);
@@ -248,8 +248,8 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
         .expect("grant the region");
     let full = invoke(
         ut,
-        abi::memory_region::RETYPE_OBJECT,
-        abi::object_type::TIMER,
+        moho_abi::memory_region::RETYPE_OBJECT,
+        moho_abi::object_type::TIMER,
         0,
         0,
     )
@@ -261,8 +261,8 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
     assert_eq!(capability.rights, Rights::ALL);
     let n_slot = invoke(
         ut,
-        abi::memory_region::RETYPE_OBJECT,
-        abi::object_type::NOTIFICATION,
+        moho_abi::memory_region::RETYPE_OBJECT,
+        moho_abi::object_type::NOTIFICATION,
         0,
         0,
     )
@@ -280,31 +280,31 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
 
     let later = now() + milliseconds(10_000);
     assert_eq!(
-        invoke(t_read, abi::timer::ARM, later, n_slot, 1),
+        invoke(t_read, moho_abi::timer::ARM, later, n_slot, 1),
         Err(Error::NotPermitted)
     );
     assert_eq!(
-        invoke(t_read, abi::timer::CANCEL, 0, 0, 0),
+        invoke(t_read, moho_abi::timer::CANCEL, 0, 0, 0),
         Err(Error::NotPermitted)
     );
     assert_eq!(
-        invoke(full, abi::timer::ARM, later, n_read, 1),
+        invoke(full, moho_abi::timer::ARM, later, n_read, 1),
         Err(Error::NotPermitted),
         "arming signals later, so it needs the notification's WRITE"
     );
     assert_eq!(
-        invoke(full, abi::timer::ARM, later, ut, 1),
+        invoke(full, moho_abi::timer::ARM, later, ut, 1),
         Err(Error::WrongObject)
     );
     assert_eq!(invoke(full, 99, 0, 0, 0), Err(Error::BadMethod));
 
     // A deadline already reached: signalled before ARM returns, nothing left armed.
     assert_eq!(
-        invoke(full, abi::timer::ARM, now() - 1, n_slot, 0b11),
+        invoke(full, moho_abi::timer::ARM, now() - 1, n_slot, 0b11),
         Ok(0)
     );
     assert_eq!(sched::notification_poll(n), Ok(0b11));
-    assert_eq!(invoke(full, abi::timer::CANCEL, 0, 0, 0), Ok(0));
+    assert_eq!(invoke(full, moho_abi::timer::CANCEL, 0, 0, 0), Ok(0));
 
     // Armed, then its notification destroyed: the expiry must find nobody and do nothing. The
     // notification lives in a second region so it can go while the timer stays.

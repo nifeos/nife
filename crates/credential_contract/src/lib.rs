@@ -212,7 +212,7 @@ pub fn wipe(page: &mut [u8]) {
 
 /// Read a reply's first word. `Some(code)` when the credential service answered; `None` when the
 /// word did not come from it at all. Every reply code is a small positive, and every kernel failure
-/// from a `CALL` is a small negative (`abi::Error`, -1 to -8), which reads as an enormous `u64`,
+/// from a `CALL` is a small negative (`moho_abi::Error`, -1 to -8), which reads as an enormous `u64`,
 /// so "no credential service" never reads as an answer (`entropy_contract::delivered_bytes`'s shape).
 pub const fn code(r0: u64) -> Option<u64> {
     if r0 >= OK && r0 <= MAXIMUM_CODE {
@@ -237,7 +237,7 @@ pub const fn code(r0: u64) -> Option<u64> {
 /// assert!(!is_authenticated(OK)); // a provisioning success is not an authentication
 /// assert!(!is_authenticated(MALFORMED));
 ///
-/// // `abi::Error` is -1 to -8. As a `u64` each is enormous, so no reply code collides with one,
+/// // `moho_abi::Error` is -1 to -8. As a `u64` each is enormous, so no reply code collides with one,
 /// // and an empty capability slot is distinguishable from an answer without a probe request.
 /// assert_eq!(code(-4i64 as u64), None);
 /// assert!(!is_authenticated(-4i64 as u64));
@@ -536,7 +536,7 @@ mod tests {
 
     /// The property the whole error story rests on: no reply code collides with any error the
     /// kernel can return, so a caller holding no credential capability cannot mistake a refusal
-    /// for a `MATCH`. `abi::Error` is -1..-8; those are the words a `CALL` on an empty slot puts
+    /// for a `MATCH`. `moho_abi::Error` is -1..-8; those are the words a `CALL` on an empty slot puts
     /// in the first register.
     #[test]
     fn a_kernel_refusal_is_never_mistaken_for_a_verdict() {

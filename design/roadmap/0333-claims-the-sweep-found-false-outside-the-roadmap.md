@@ -20,7 +20,7 @@ and `components/src/pmap.rs` both exist). `notes/crates-io-on-nife.md` rows 19 a
 `close_cycle_counter_to_el0` in `kernel/src/arch/aarch64/timer.rs`. `components/src/session_reviver.rs` (eight surviving mentions
 of the deleted durable-session type). And milestone 142 (a text display good enough that people use
 it)'s duplicated paragraphs. Closed: the
-`crates/abi` start invocation, whose doc now says `START` spends all three argument registers rather
+`crates/moho_abi` start invocation, whose doc now says `START` spends all three argument registers rather
 than ignoring them. Unconfirmed: the display-name item, because milestone 126's block still
 carries it under "Fork: a process display name" with a recommendation rather than a ruling, so
 `notes/process-view.md` may be right and the sweep's reading of 126 may be the error. A lane taking
@@ -45,7 +45,7 @@ This is the list, so that fixing the roadmap does not leave the tree quietly dis
 - `notes/crates-io-on-nife.md` rows 19 and 28 still say no verb reports or sets an mtime.
   `crates/file_system_contract` has carried all three verbs since §112 (`touch`'s two behaviors need two rights: write covers "now", a separate right covers "arbitrary") was decided on 2026-08-23, and the
   PAL's own comments under `patches/std-nife/overlay/` repeat the dead claim a third time.
-- `crates/abi`'s start invocation is documented as ignoring its three arguments, which both the
+- `crates/moho_abi`'s start invocation is documented as ignoring its three arguments, which both the
   kernel's own arm and the builder's call contradict. Found by milestone 139's round 7 and left for
   whoever next touched the file.
 - `design/decisions/0102-frame-names-a-run.md` says the decision is still unbuilt and quotes

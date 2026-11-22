@@ -12,7 +12,7 @@
 //! are portable kernel code, so the same bodies run on each architecture (DECISIONS §19
 //! (architectural parity is a tenet)).
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{
@@ -44,10 +44,12 @@ fn a_consumed_capability_cannot_be_reused() {
     let budget = sched::grant(region_capability_rights(region, Rights::ALL)).expect("grant budget");
 
     // A one-page frame (a RETYPE count of 0 is one page); slicing its one page is in range.
-    let frame = call(budget, abi::memory_region::RETYPE, 0, 0, 0).expect("RETYPE refused") as u64;
+    let frame =
+        call(budget, moho_abi::memory_region::RETYPE, 0, 0, 0).expect("RETYPE refused") as u64;
 
     // Positive control: the frame is real and slicing is permitted (it carries GRANT).
-    let slice = call(frame, abi::page_frame::SLICE, 0, 1, 0).expect("SLICE refused a GRANT frame");
+    let slice =
+        call(frame, moho_abi::page_frame::SLICE, 0, 1, 0).expect("SLICE refused a GRANT frame");
     let _ = delete_current_capability(slice as u64);
 
     // Consume the frame capability, the plain capability_delete a program issues on a handle it is done
@@ -56,7 +58,7 @@ fn a_consumed_capability_cannot_be_reused() {
 
     // The slot now names nothing: the identical invocation answers NoSuchSlot, not a second slice.
     assert_eq!(
-        call(frame, abi::page_frame::SLICE, 0, 1, 0),
+        call(frame, moho_abi::page_frame::SLICE, 0, 1, 0),
         Err(Error::NoSuchSlot),
         "a deleted capability was invoked again and the dispatcher acted on it: a consumed \
          capability was reused",
@@ -88,7 +90,8 @@ fn deleting_one_capability_leaves_its_neighbors() {
 
     let first = sched::grant(rendezvous_capability(ep, Rights::READ)).expect("grant first");
     let middle = sched::grant(rendezvous_capability(ep, Rights::WRITE)).expect("grant middle");
-    let frame = call(budget, abi::memory_region::RETYPE, 0, 0, 0).expect("RETYPE refused") as u64;
+    let frame =
+        call(budget, moho_abi::memory_region::RETYPE, 0, 0, 0).expect("RETYPE refused") as u64;
 
     // Delete the middle capability only.
     delete_current_capability(middle).expect("delete of the middle capability failed");
@@ -102,7 +105,7 @@ fn deleting_one_capability_leaves_its_neighbors() {
         current_capability(first).is_ok(),
         "deleting the middle capability emptied a neighbor's slot (claim 5 broke)",
     );
-    let slice = call(frame, abi::page_frame::SLICE, 0, 1, 0)
+    let slice = call(frame, moho_abi::page_frame::SLICE, 0, 1, 0)
         .expect("a neighbor frame could not slice after an unrelated delete");
     let _ = delete_current_capability(slice as u64);
 
@@ -132,7 +135,7 @@ fn a_badge_is_grant_gated_and_mints_no_wider_right() {
     //    unbadged, so the only thing that can refuse is the GRANT gate.
     let write_only = sched::grant(rendezvous_capability(ep, Rights::WRITE)).expect("grant write");
     assert_eq!(
-        call(write_only, abi::rendezvous::BADGE, 0x9001, 0, 0),
+        call(write_only, moho_abi::rendezvous::BADGE, 0x9001, 0, 0),
         Err(Error::NotPermitted),
         "a GRANT-less holder minted a badged view: minting a delegatable capability without the \
          right to delegate",
@@ -144,7 +147,7 @@ fn a_badge_is_grant_gated_and_mints_no_wider_right() {
         Rights::WRITE.union(Rights::GRANT),
     ))
     .expect("grant write|grant");
-    let badged = call(grantor, abi::rendezvous::BADGE, 0x9002, 0, 0)
+    let badged = call(grantor, moho_abi::rendezvous::BADGE, 0x9002, 0, 0)
         .expect("BADGE refused a GRANT holder") as u64;
     let minted = current_capability(badged).expect("nothing at the minted slot");
     assert_eq!(
@@ -166,12 +169,12 @@ fn a_badge_is_grant_gated_and_mints_no_wider_right() {
     // 3. A badge is set once: the already-badged copy refuses a second badge, and a zero badge is
     //    refused, so the method cannot be run in a loop to launder a rights set.
     assert_eq!(
-        call(badged, abi::rendezvous::BADGE, 0x9003, 0, 0),
+        call(badged, moho_abi::rendezvous::BADGE, 0x9003, 0, 0),
         Err(Error::NotPermitted),
         "an already-badged capability was badged again: a badge was not write-once",
     );
     assert_eq!(
-        call(grantor, abi::rendezvous::BADGE, 0, 0, 0),
+        call(grantor, moho_abi::rendezvous::BADGE, 0, 0, 0),
         Err(Error::NotPermitted),
         "a zero (unbadged) badge was accepted",
     );
@@ -201,7 +204,7 @@ fn an_out_of_range_or_empty_slot_names_nothing() {
         "an out-of-range slot resolved to an object",
     );
     assert_eq!(
-        call(out_of_range, abi::rendezvous::SEND, 1, 0, 0),
+        call(out_of_range, moho_abi::rendezvous::SEND, 1, 0, 0),
         Err(Error::NoSuchSlot),
         "invoking a slot past the table named an object: ambient authority past the table's edge",
     );
@@ -214,7 +217,7 @@ fn an_out_of_range_or_empty_slot_names_nothing() {
         "the slot chosen as empty was occupied; the fixture filled the top of the table",
     );
     assert_eq!(
-        call(empty, abi::rendezvous::SEND, 1, 0, 0),
+        call(empty, moho_abi::rendezvous::SEND, 1, 0, 0),
         Err(Error::NoSuchSlot),
         "invoking an empty in-range slot named an object: ambient authority",
     );

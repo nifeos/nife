@@ -9,7 +9,7 @@
 //! The same test runs on each architecture (DECISIONS §19 (architectural parity is a tenet)). See
 //! notes/confinement-claims/the-rights-gate-tests.md.
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{
@@ -17,7 +17,7 @@ use crate::capability_object::{
 };
 use crate::sched::{self, current_capability, delete_current_capability};
 
-const RECEIVE_CAPABILITY: u64 = abi::rendezvous::RECEIVE_CAPABILITY;
+const RECEIVE_CAPABILITY: u64 = moho_abi::rendezvous::RECEIVE_CAPABILITY;
 use crate::system_call::invoke;
 
 /// `invoke` through the real dispatcher, the way a program's `svc`/`ecall` reaches it. Returns the
@@ -60,7 +60,7 @@ fn a_write_only_rendezvous_holder_cannot_receive_reap_or_survey() {
         sched::grant(rendezvous_capability(ep, Rights::WRITE)).expect("grant the WRITE cap");
 
     assert_eq!(
-        call(client, abi::rendezvous::RECEIVE, 0, 0, 0),
+        call(client, moho_abi::rendezvous::RECEIVE, 0, 0, 0),
         Err(Error::NotPermitted),
         "a WRITE-only holder was let RECEIVE: a client became its server",
     );
@@ -82,16 +82,16 @@ fn a_write_only_rendezvous_holder_cannot_receive_reap_or_survey() {
     // REAP (READ) and SURVEY (ENUMERATE) do not block, so a let-open gate returns some other answer
     // (a reap decision, a survey cursor) rather than NotPermitted, which is still observable.
     assert_eq!(
-        call(client, abi::rendezvous::REAP, 0, 0, 0),
+        call(client, moho_abi::rendezvous::REAP, 0, 0, 0),
         Err(Error::NotPermitted),
         "a WRITE-only holder REAPed: it could collect a corpse it does not supervise",
     );
     assert_eq!(
         call(
             client,
-            abi::rendezvous::SURVEY,
+            moho_abi::rendezvous::SURVEY,
             0,
-            abi::survey::record::STATE,
+            moho_abi::survey::record::STATE,
             0
         ),
         Err(Error::NotPermitted),
@@ -102,7 +102,7 @@ fn a_write_only_rendezvous_holder_cannot_receive_reap_or_survey() {
     // through the same dispatcher. This both proves the sender really was parked (so the refusals
     // above meant something) and drains it so the sender thread exits.
     let server = sched::grant(rendezvous_capability(ep, Rights::READ)).expect("grant the READ cap");
-    let got = call(server, abi::rendezvous::RECEIVE, 0, 0, 0);
+    let got = call(server, moho_abi::rendezvous::RECEIVE, 0, 0, 0);
     assert_eq!(
         got,
         Ok(SENT_WORD as i64),
@@ -151,7 +151,7 @@ fn a_read_only_holder_cannot_send_and_an_ungranted_slot_names_nothing() {
     let read_only =
         sched::grant(rendezvous_capability(ep, Rights::READ)).expect("grant the READ cap");
     assert_eq!(
-        call(read_only, abi::rendezvous::SEND, 1, 0, 0),
+        call(read_only, moho_abi::rendezvous::SEND, 1, 0, 0),
         Err(Error::NotPermitted),
         "a READ-only holder SENT: WRITE was forged from the method or an argument register",
     );
@@ -169,7 +169,7 @@ fn a_read_only_holder_cannot_send_and_an_ungranted_slot_names_nothing() {
         "the slot chosen as ungranted was occupied; pick another",
     );
     assert_eq!(
-        call(ungranted, abi::rendezvous::SEND, 1, 0, 0),
+        call(ungranted, moho_abi::rendezvous::SEND, 1, 0, 0),
         Err(Error::NoSuchSlot),
         "invoking an ungranted slot named an object: ambient authority",
     );
@@ -178,7 +178,7 @@ fn a_read_only_holder_cannot_send_and_an_ungranted_slot_names_nothing() {
     let writer =
         sched::grant(rendezvous_capability(ep, Rights::WRITE)).expect("grant the WRITE cap");
     assert_eq!(
-        call(writer, abi::rendezvous::SEND, 1, 0, 0),
+        call(writer, moho_abi::rendezvous::SEND, 1, 0, 0),
         Ok(0),
         "a WRITE holder could not send: the endpoint was not really live",
     );
@@ -214,7 +214,7 @@ fn a_retype_mints_no_right_its_budget_lacks() {
                 .expect("nothing at the slot")
                 .rights
         };
-        let frame = call(budget, abi::memory_region::RETYPE, 0, 0, 0)
+        let frame = call(budget, moho_abi::memory_region::RETYPE, 0, 0, 0)
             .expect("RETYPE refused a GRANT-less budget") as u64;
         assert_eq!(
             minted(frame),
@@ -223,20 +223,20 @@ fn a_retype_mints_no_right_its_budget_lacks() {
              non-delegating budget can lend what it carves",
         );
         assert_eq!(
-            call(frame, abi::page_frame::SLICE, 0, 1, 0),
+            call(frame, moho_abi::page_frame::SLICE, 0, 1, 0),
             Err(Error::NotPermitted),
             "a frame retyped from a GRANT-less budget was sliced: it was passed on without GRANT",
         );
         for &(kind, name) in &[
-            (abi::object_type::RENDEZVOUS, "rendezvous"),
-            (abi::object_type::NOTIFICATION, "notification"),
-            (abi::object_type::TIMER, "timer"),
+            (moho_abi::object_type::RENDEZVOUS, "rendezvous"),
+            (moho_abi::object_type::NOTIFICATION, "notification"),
+            (moho_abi::object_type::TIMER, "timer"),
             (
-                abi::object_type::THREAD_CONTROL_BLOCK,
+                moho_abi::object_type::THREAD_CONTROL_BLOCK,
                 "thread control block",
             ),
         ] {
-            let object = call(budget, abi::memory_region::RETYPE_OBJECT, kind, 0, 0)
+            let object = call(budget, moho_abi::memory_region::RETYPE_OBJECT, kind, 0, 0)
                 .unwrap_or_else(|e| panic!("RETYPE_OBJECT {name} refused: {e:?}"))
                 as u64;
             assert_eq!(
@@ -248,8 +248,8 @@ fn a_retype_mints_no_right_its_budget_lacks() {
         }
         let space = call(
             budget,
-            abi::memory_region::RETYPE_OBJECT,
-            abi::object_type::ADDRESS_SPACE,
+            moho_abi::memory_region::RETYPE_OBJECT,
+            moho_abi::object_type::ADDRESS_SPACE,
             0,
             0,
         )
@@ -261,8 +261,8 @@ fn a_retype_mints_no_right_its_budget_lacks() {
         );
         let process = call(
             budget,
-            abi::memory_region::RETYPE_OBJECT,
-            abi::object_type::PROCESS,
+            moho_abi::memory_region::RETYPE_OBJECT,
+            moho_abi::object_type::PROCESS,
             space,
             0,
         )
@@ -283,7 +283,7 @@ fn a_retype_mints_no_right_its_budget_lacks() {
         let region = crate::memory_region::create(2).expect("no region");
         let budget = sched::grant(memory_region_capability_rights(region, rights))
             .expect("grant the budget");
-        let frame = call(budget, abi::memory_region::RETYPE, 0, 0, 0)
+        let frame = call(budget, moho_abi::memory_region::RETYPE, 0, 0, 0)
             .expect("RETYPE refused a budget holding WRITE") as u64;
         assert_eq!(
             current_capability(frame).expect("no frame").rights,

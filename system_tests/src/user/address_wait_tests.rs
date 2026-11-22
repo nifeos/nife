@@ -14,8 +14,8 @@
 //!   proved below, by a caller refused at each; the end-to-end proof is the milestone's exit test,
 //!   four threads contending a `std::sync::Mutex`.
 
-use abi::Error;
-use abi::address_wait::{PRIVATE, WIDTH_32_BITS, WIDTH_64_BITS};
+use moho_abi::Error;
+use moho_abi::address_wait::{PRIVATE, WIDTH_32_BITS, WIDTH_64_BITS};
 
 use super::*;
 use crate::capability_object::Rights;
@@ -254,7 +254,7 @@ fn a_waiter_whose_region_is_destroyed_leaves_the_address_wait_table() {
 }
 
 /// **Every form §269 reserves is refused, and so is every word a caller has no business naming**,
-/// each with the error `abi::address_space::WAIT` documents and in its order: a shared address wait or
+/// each with the error `moho_abi::address_space::WAIT` documents and in its order: a shared address wait or
 /// another size (`BadMethod`), a capability without `READ` (`NotPermitted`), a misaligned or
 /// kernel-half address (`BadPointer`), and a space that is not the caller's own (`WrongObject`).
 ///
@@ -279,7 +279,7 @@ fn the_reserved_address_wait_forms_and_foreign_words_are_refused() {
     let good = PRIVATE | WIDTH_32_BITS;
     let kernel_half = mmu::phys_to_virt(0);
 
-    for method in [abi::address_space::WAIT, abi::address_space::WAKE] {
+    for method in [moho_abi::address_space::WAIT, moho_abi::address_space::WAKE] {
         for (flags, what) in [
             (WIDTH_32_BITS, "a shared address wait"),
             (PRIVATE | WIDTH_64_BITS, "a 64-bit address wait"),

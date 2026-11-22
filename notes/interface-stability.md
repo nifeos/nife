@@ -14,9 +14,9 @@ column's are provisional.*
 What a program that is not the kernel is written against, and what would break it if it changed.
 The headline measures the boundary, two parts:
 
-- The system call surface: every public constant in `abi`, the `SYSTEM_CALL_*` numbers, the `object_type::*`
+- The system call surface: every public constant in `moho_abi`, the `SYSTEM_CALL_*` numbers, the `object_type::*`
   object types, and the method numbers and argument or result encodings in the object modules.
-  The values of `abi`'s enums (the `Error::*` codes) count too, because a program matches
+  The values of `moho_abi`'s enums (the `Error::*` codes) count too, because a program matches
   them by number exactly as it does a constant.
   A new system call number or a method outside the capability model is a design fork, so this
   surface moves by decision.
@@ -43,13 +43,13 @@ commit (the same commit `script/metrics` picks) is compared with the previous we
 
 | column | counts |
 |---|---|
-| `interface_breaking` | boundary moves: `abi` constants and enum variants (the `Error::*` codes) renumbered, removed, or renamed with the number kept. Format identity value changes count too |
-| `interface_additions` | `abi` constants and enum variants added |
+| `interface_breaking` | boundary moves: `moho_abi` constants and enum variants (the `Error::*` codes) renumbered, removed, or renamed with the number kept. Format identity value changes count too |
+| `interface_additions` | `moho_abi` constants and enum variants added |
 | `interface_std_abi_breaking`, `_additions` | item-level churn in the std copy set; reported, not thresholded |
 | `interface_contract_api_breaking`, `_additions` | item-level churn in the contract crates beyond the boundary; reported, not thresholded |
-| `interface_system_call_changed` | `abi` constants and enum variants removed or renumbered with no successor |
-| `interface_system_call_renamed` | `abi` constants renamed with the number kept |
-| `interface_system_call_added` | `abi` constants and enum variants added |
+| `interface_system_call_changed` | `moho_abi` constants and enum variants removed or renumbered with no successor |
+| `interface_system_call_renamed` | `moho_abi` constants renamed with the number kept |
+| `interface_system_call_added` | `moho_abi` constants and enum variants added |
 | `interface_format_bumps` | a format identity's value changed |
 | `interface_format_amendments` | dated entries in a format's own amendment ledger |
 | `interface_contract_commits`, `_crossing`, `_cochange_pct` | co-change, below |
@@ -79,7 +79,7 @@ the parent becomes an index) split does, moves no surface. A foreign re-export c
 name without a shape.
 
 **The system call rename rule.** `endpoint::SEND` becoming `rendezvous::SEND` at the same value breaks
-every caller's source and no binary. A removed `abi` constant is a rename when exactly one added
+every caller's source and no binary. A removed `moho_abi` constant is a rename when exactly one added
 constant has its value and keeps either its leaf name or its module; a module another constant
 already moved unambiguously resolves the rest. Anything less certain stays a change.
 

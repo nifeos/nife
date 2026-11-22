@@ -30,7 +30,6 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use abi::rights;
 use domain_name_resolution_contract::{
     IPV4_ADDRESSES_OFFSET_BYTES, NAME_OFFSET_BYTES, OPERATION_ATTACH_SHARED_PAGE,
     OPERATION_RESOLVE, Outcome, endowment, request, status,
@@ -38,6 +37,7 @@ use domain_name_resolution_contract::{
 use domain_name_resolution_fixture::{
     CASES, ECHO_FAILED, ECHO_OK, ECHO_SKIPPED, ECHO_UNRESOLVED, WITH_NETWORK,
 };
+use moho_abi::rights;
 use socket_contract as socket;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{

@@ -129,7 +129,7 @@ const TIMER: u64 = 4;
 /// green run exercised in full. Ship the 3.4x; the batcher's remaining win waits on the why.
 const SCREEN_BATCHING_ENABLED: bool = false;
 /// How long the screen may lag the wire: the batching window. Two scheduler ticks (the timer's
-/// resolution is the 10 ms tick, `abi::timer`), which is one to two frames at 60 Hz: a screen that
+/// resolution is the 10 ms tick, `moho_abi::timer`), which is one to two frames at 60 Hz: a screen that
 /// lands within the window reads as instant to the person it is for, while every write a line
 /// generates (echo, output, prompt) folds into one paint instead of one paint per write.
 const SCREEN_BATCH_NANOSECONDS: u32 = 20_000_000;
@@ -312,7 +312,7 @@ fn take_screen(shared: *const u8, len: u64, b: &mut ScreenBatch) {
         // Arm the window. The deadline is in counter ticks (the counter every `counter_ticks()` caller
         // reads); `counter_ticks_for` rounds up so the window is never short, and the saturating
         // add keeps a counter near `u64::MAX` from wrapping into a deadline already long past.
-        let deadline = counter_ticks().saturating_add(abi::timer::counter_ticks_for(
+        let deadline = counter_ticks().saturating_add(moho_abi::timer::counter_ticks_for(
             0,
             SCREEN_BATCH_NANOSECONDS,
             counter_hertz(),
@@ -378,7 +378,7 @@ fn uart_put(byte: u8) {
     registers.DR().set(u32::from(byte));
 }
 
-/// The UART's register shape, the second start word (`abi::uart`), stored before the first byte.
+/// The UART's register shape, the second start word (`moho_abi::uart`), stored before the first byte.
 #[cfg(target_arch = "riscv64")]
 static UART_SHAPE: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
 
@@ -389,7 +389,7 @@ static UART_SHAPE: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64
 const POLLS_BEFORE_CLOCK: u32 = 1024;
 
 /// The NS16550 twin (RISC-V): Transmit Holding Register Empty in the LSR, at the stride and access
-/// width the kernel read from the device tree (`abi::uart`).
+/// width the kernel read from the device tree (`moho_abi::uart`).
 ///
 /// **The wait is bounded at one second, and running out kills this process on purpose.** A UART
 /// that never empties its holding register is almost always a wrong register shape, and a console
@@ -399,7 +399,7 @@ const POLLS_BEFORE_CLOCK: u32 = 1024;
 /// LSR offset this console polled, `0x5` for byte registers and `0x14` for the JH7110's.
 #[cfg(target_arch = "riscv64")]
 fn uart_put(byte: u8) {
-    use abi::uart::RegisterShape;
+    use moho_abi::uart::RegisterShape;
     const THR: u64 = 0; // transmit holding register
     const LSR: u64 = 5; // line status register
     const LSR_THRE: u8 = 1 << 5; // transmit holding register empty
@@ -423,7 +423,7 @@ fn uart_put(byte: u8) {
 
 /// Read register `index` of the NS16550 at `UART_VA`, at the shape's stride and width.
 #[cfg(target_arch = "riscv64")]
-fn uart_read(shape: abi::uart::RegisterShape, index: u64) -> u8 {
+fn uart_read(shape: moho_abi::uart::RegisterShape, index: u64) -> u8 {
     let addr = UART_VA + shape.offset(index);
     // SAFETY: UART_VA is our device mapping of the NS16550, handed to us at spawn, and the largest
     // offset `RegisterShape` allows stays inside that one page. The 32-bit arm is taken only when
@@ -439,7 +439,7 @@ fn uart_read(shape: abi::uart::RegisterShape, index: u64) -> u8 {
 
 /// Write register `index` of the NS16550 at `UART_VA`; see [`uart_read`].
 #[cfg(target_arch = "riscv64")]
-fn uart_write(shape: abi::uart::RegisterShape, index: u64, value: u8) {
+fn uart_write(shape: moho_abi::uart::RegisterShape, index: u64, value: u8) {
     let addr = UART_VA + shape.offset(index);
     // SAFETY: as `uart_read`.
     unsafe {

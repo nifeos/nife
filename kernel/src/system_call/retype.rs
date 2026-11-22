@@ -7,7 +7,7 @@
 //!
 //! Name: provisional (milestone 812's lane, 2026-10-10 UTC).
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::capability_object::{Capability, Object, Rights};
 use crate::sched;
@@ -32,7 +32,7 @@ pub(super) fn memory_region_retype_object(
     floor: u64,
 ) -> Result<i64, Error> {
     match kind {
-        abi::object_type::RENDEZVOUS => {
+        moho_abi::object_type::RENDEZVOUS => {
             let ep = sched::create_rendezvous_from(region).ok_or(Error::OutOfMemory)?;
             // The budget's rights, never a hand-written list, which would stop being full the
             // day a right is added.
@@ -42,33 +42,33 @@ pub(super) fn memory_region_retype_object(
         }
         // The page becomes the root table, and the region backs the space's tables and records
         // (design/init-and-granular-spawn.md).
-        abi::object_type::ADDRESS_SPACE => {
+        moho_abi::object_type::ADDRESS_SPACE => {
             let name = crate::user::user_address_space_create(region).ok_or(Error::OutOfMemory)?;
             let slot = sched::grant_from(floor, budget.mint_child(Object::AddressSpace(name)))
                 .map_err(|_| Error::OutOfMemory)?;
             Ok(slot as i64)
         }
         // An embryo, in no queue and not runnable until `CONFIGURE` and `START`.
-        abi::object_type::THREAD_CONTROL_BLOCK => {
+        moho_abi::object_type::THREAD_CONTROL_BLOCK => {
             let tid = sched::create_thread_control_block(region).ok_or(Error::OutOfMemory)?;
             let slot = sched::grant_from(floor, budget.mint_child(Object::ThreadControlBlock(tid)))
                 .map_err(|_| Error::OutOfMemory)?;
             Ok(slot as i64)
         }
-        abi::object_type::NOTIFICATION => {
+        moho_abi::object_type::NOTIFICATION => {
             let id = sched::create_notification_from(region).ok_or(Error::OutOfMemory)?;
             let slot = sched::grant_from(floor, budget.mint_child(Object::Notification(id)))
                 .map_err(|_| Error::OutOfMemory)?;
             Ok(slot as i64)
         }
-        abi::object_type::TIMER => {
+        moho_abi::object_type::TIMER => {
             let id = sched::create_timer_from(region).ok_or(Error::OutOfMemory)?;
             let slot = sched::grant_from(floor, budget.mint_child(Object::Timer(id)))
                 .map_err(|_| Error::OutOfMemory)?;
             Ok(slot as i64)
         }
         // `space_slot` needs `WRITE` on the space and is consumed, as `CONFIGURE` consumes one.
-        abi::object_type::PROCESS => {
+        moho_abi::object_type::PROCESS => {
             let space = sched::current_capability(space_slot).map_err(|_| Error::NoSuchSlot)?;
             let crate::capability_object::Object::AddressSpace(name) = space.object else {
                 return Err(Error::WrongObject);

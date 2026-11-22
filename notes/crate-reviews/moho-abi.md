@@ -1,6 +1,6 @@
-# Review package: `abi`
+# Review package: `moho_abi`
 
-*Name: provisional. The `abi` package of [crate-reviews.md](../crate-reviews.md), in its own file
+*Name: provisional. The `moho_abi` package of [crate-reviews.md](../crate-reviews.md), in its own file
 because the packages together outgrow the page.*
 
 This package is for the architect's clearance of the crate's move to its own repository, the last
@@ -19,15 +19,15 @@ meaning. It is `no_std`, has no
 dependency and no `unsafe`, and holds only constants, two small enums and a handful of `const fn`
 decoders. Fifteen crates in this tree depend on it, the kernel and the runtime among them, and the
 `std` port carries a generated copy. The architect ruled its published name `moho_abi` in §323 (the
-binary interface, and the names of the layers), ruling 2 of 2026-11-14 (UTC). The rename belongs to
-milestone 1121 (the Moho rename: the order in which the binary interface takes its name). It has not
-landed, so the crate is still `abi` here. No file in the crate names nife, a path in this tree or a private machine.
+binary interface, and the names of the layers), ruling 2 of 2026-11-14 (UTC). Step 3 of
+milestone 1121 (the Moho rename: the order in which the binary interface takes its name) renamed the
+package and its directory, and the commands in the table below name the package as it was when they ran. No file in the crate names nife, a path in this tree or a private machine.
 
 ## Identity
 
 | item | value |
 |---|---|
-| crate | `abi` today, ruled `moho_abi` (§323 ruling 2) |
+| crate | `moho_abi` (§323 ruling 2) |
 | version | `0.1.0`; no tag and no repository yet |
 | edition, `rust-version` | 2024, 1.88 |
 | license | `MIT OR Apache-2.0` in the manifest |
@@ -87,7 +87,7 @@ Not run, and so not claimed:
 Twenty-five names read ratified: the crate, the modules `interrupt` and `object_type`, the five
 system call numbers, `MAP_READ_ONLY`, `MAP_READ_WRITE`, `FAULT_RENDEZVOUS_SLOT`,
 `interrupt::ACKNOWLEDGE`, `REPLY_DELIVERED`, `SUSPEND`, `RESUME`, `READ_REGISTER`, `WRITE_REGISTER`,
-the two `tests` modules and the six size names below. Every other public name reads `Name: provisional.` The ruled rename to `moho_abi` changes
+the two `tests` modules and the six size names below. Every other public name reads `Name: provisional.` The rename to `moho_abi` changed
 the crate's name and no item's.
 
 Four names come from the outside review's items, set provisionally by the maintainer:

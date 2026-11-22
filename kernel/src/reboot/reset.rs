@@ -11,7 +11,7 @@ use super::*;
 /// Returns only when the firmware refused, with the refusal already printed; a successful reset
 /// does not come back. The caller is `system_call::invoke`'s arm for `Object::Reboot`, and the
 /// authority check is the capability itself: §251 asks for no rights bit beyond holding it.
-pub(crate) fn restart() -> abi::Error {
+pub(crate) fn restart() -> moho_abi::Error {
     // Out of the ring first: once the reset starts, the drainer never runs again.
     crate::console::enter_reset();
     println!("{MARKER} the kernel was asked to restart the machine");
@@ -33,7 +33,7 @@ pub(crate) fn restart() -> abi::Error {
     not(any(feature = "reboot_soak_test", feature = "storage_read_matrix")),
     allow(dead_code)
 )]
-pub(crate) fn cold_reset(marker: &str) -> abi::Error {
+pub(crate) fn cold_reset(marker: &str) -> moho_abi::Error {
     crate::user::power_management_chip_route_service::reset(marker);
     arch::reboot(marker)
 }
