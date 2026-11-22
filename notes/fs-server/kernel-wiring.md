@@ -80,7 +80,7 @@ the lost-wakeup watchdog. The test was still waiting for a report from a dead pr
 shell's stack is sized by the largest value `grant_plan` hands it, so a field added there can be a
 page needed here. Size it by measurement. In the debug build the suite boots, the frame sizes summed
 along the deepest call chain from `_start` match where the shell faults. A frame over a few pages
-is allocated by a probe loop (`sub x9, sp, #N`), so read that instruction too. A 512-byte
+takes a probe loop (`sub x9, sp, #N`) to allocate, so read that instruction too. A 512-byte
 directory path held by value in each planner frame puts the two-tree `rm` script near 44 KiB.
 
 ## The disk the FS server mounts
