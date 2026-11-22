@@ -695,7 +695,7 @@ def selftest():
         "crates/documentation/Cargo.toml": '[package]\nname = "documentation"\nversion = "0.1.0"\n',
         "crates/documentation/tests/render.rs":
             '// walks the corpus\nfor dir in ["notes", "design/decisions"] {}\n',
-        "crates/moho_abi/Cargo.toml": '[package]\nname = "abi"\n',
+        "crates/moho_abi/Cargo.toml": '[package]\nname = "moho_abi"\n',
         "crates/moho_abi/src/lib.rs": '//! see notes/commented.md\npub fn f() {}\n',
         "xtask/Cargo.toml": '[package]\nname = "xtask"\n',
         "xtask/src/manual.rs": 'const B: &[&str] = &["notes/pipes.md"];\n',

@@ -86,12 +86,12 @@ pub fn retype_page_frame_run(memory_region_slot: u64, pages: u64) -> i64 {
     unsafe {
         invoke(
             memory_region_slot,
-            moho_abi::memory_region::RETYPE,
+            moho_abi::memory_region::RETYPE, // run wrapper
             pages,
             0,
             0,
         )
-    } // run wrapper
+    }
 }
 
 /// **`page_frame::SLICE`: a capability naming `count` pages of the run in `frame_slot`, from page
