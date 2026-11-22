@@ -33,8 +33,8 @@ No new tool.
 
 - P0-1, names and the ratification table: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The 2026-11-19 (UTC) ruling
   ratified the table. The names ship, and every public name carries a ratified block.
-- P0-2, manifest, license files and README: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The move changes the two path
-  dependencies to pinned git dependencies and adds `repository`.
+- P0-2, manifest, license files and README: Done, [#3801](https://github.com/nifeos/nife/pull/3801). `address_space_layout` is a pinned
+  git dependency already; the move changes `current_cpu_contract` to one and adds `repository`.
 - P0-3, citations of this tree: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-4, saturating totals: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-5, `counter` lifetime and read-only contract: Done,
@@ -174,8 +174,8 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 
 ## Follow-on
 
-- **Milestone 1017.** The move, at step 6, after `address_space_layout` and
-  `current_cpu_contract` leave. With every finding Done, the milestone counts as built; the
+- **Milestone 1017.** The move, at step 6, after `current_cpu_contract` leaves;
+  `address_space_layout` has its own repository and this crate pins it by `rev`. With every finding Done, the milestone counts as built; the
   architect cleared the review package and approved `nifeos/machine_statistics_contract`.
 
 ## Decisions for the architect
@@ -247,4 +247,4 @@ The checks are in [the appendix](1099-machine-statistics-contract-outside-review
 ## Index row
 
 An outside review of `machine_statistics_contract` before it leaves this tree. Three items block the move: thirty-four names without a `Name:` block, a manifest and file set the standalone check refuses, and citations of this tree throughout the source. Eight land before the first tag. Three concern the code: totals that overflow on a page the reader accepted, a `'static` reference under a weaker contract, and a layout whose line count another crate owns. Three concern the proofs and tests: no Kani harness, two `unsafe` functions no host test reaches, and one namespace for indices and offsets. The last two are a type-width inconsistency and six documentation defects. Four follow later. The one one-way door, freezing the identity set with the line count inside it, has its ruling of 2026-11-14 (UTC).
-The 2026-11-19 (UTC) ruling ratified the names, and clearing the review package stays open.
+The 2026-11-19 (UTC) ruling ratified the names, and the 2026-11-20 (UTC) ruling cleared the review package.

@@ -66,6 +66,7 @@ cargo fmt --manifest-path fuzz/Cargo.toml "$@"
 cargo fmt --manifest-path crates/memory_region_heap/fuzz/Cargo.toml "$@"
 cargo fmt --manifest-path crates/master_boot_record/fuzz/Cargo.toml "$@"
 cargo fmt --manifest-path crates/domain_name_resolution_contract/fuzz/Cargo.toml "$@"
+cargo fmt --manifest-path crates/pci_configuration_space/fuzz/Cargo.toml "$@"
 
 # `std_exerciser` is a fifth, and finding it unformatted is the third time this exact lesson has been
 # learned in this file. It has been its own workspace since milestone 27 and this gate has never

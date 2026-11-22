@@ -2253,8 +2253,6 @@ notes/untracked-work-sweep.md	14
 notes/untrusted-input-audit.md	28
 notes/usb.md	24
 notes/user-address-spaces.md	34
-notes/user-mode-runtime.md	15
-notes/user-mode-runtime/time.md	5
 notes/user-proofs.md	28
 notes/user-proofs/what-it-took.md	1
 notes/user-proofs/what-kani-could-not-do.md	8

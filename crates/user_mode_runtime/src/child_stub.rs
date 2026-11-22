@@ -4,7 +4,7 @@
 //!
 //! A parent copies [`SEND_THEN_EXIT`] into a frame it maps writable in its own space, then aliases
 //! that frame as `MAP_CODE` into each child; the kernel makes the I-cache coherent at that map. One
-//! copy, because two hand-assembled copies of three instruction sets would drift (AGENTS.md rule 7).
+//! copy, because two hand-assembled copies of three instruction sets would drift.
 //!
 //! Name: ratified 2026-11-20 (UTC), for the module and the constant, first minted by milestone
 //! 168's lane on 2026-09-19. `child_stub` is what `os_primitives_benchmarker` already called it in prose.
@@ -46,11 +46,12 @@ pub const SEND_THEN_EXIT: [u32; 9] = [
 ];
 
 /// `x86_64`: rdi=slot 0, rsi=`SEND`, rdx=1, r10=0, r8=0, rax=`SYSTEM_CALL_INVOKE`, system call; then rax=`SYSTEM_CALL_EXIT`,
-/// rdi=0, system call (DECISIONS §124 (the x86_64 system call ABI)).
+/// rdi=0, system call. The registers are the `x86_64` system call convention of [`crate::system_call`].
 ///
 /// Bytes rather than words, because x86 instructions are not a fixed width. Each immediate uses
 /// `mov r32, imm32`, which zeroes the upper half and keeps a small constant to five bytes; `r10`
-/// and `r8` need a `REX` prefix (`0x41`), so those rows are six. See notes/user-mode-runtime.md.
+/// and `r8` need a `REX` prefix (`0x41`), so those rows are six. The fourth and fifth argument
+/// registers did not exist on the 386 whose opcode map this still is.
 #[cfg(target_arch = "x86_64")]
 pub const SEND_THEN_EXIT: [u8; 46] = {
     const SEND_METHOD: u32 = abi::rendezvous::SEND as u32;

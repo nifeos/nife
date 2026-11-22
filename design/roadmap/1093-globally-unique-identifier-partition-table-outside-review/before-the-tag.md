@@ -68,7 +68,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    Door: two-way. Effort: S.
 
 5. `parse` cannot tell where the array bytes came from, and every caller guesses block 2.
-   DONE for the cheap form (the `parse` documentation, the README example and the `EntryArrayCrc` documentation). LEFT: the firm form, which changes the signature every caller uses.
+   DONE for the cheap form (the `parse` documentation, the README example and the `EntryArrayCrc` documentation). WILL NOT FIX the firm form (provisional, 2026-11-22 UTC): a wrong block already fails the array CRC, and an added function can give the precise refusal later without breaking a caller.
    Finding: the documentation says `entry_array` "is read from the header's `PartitionEntryLBA`",
    but a caller learns that field only from `Header::decode` or from `parse` itself. All seven nife
    callers, the fuzz target and the README example read block 2 unconditionally. The specification
@@ -125,7 +125,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    Door: two-way until the tag; the `#[non_exhaustive]` choice is one-way after it. Effort: S.
 
 9. The template's name gates are red today, on ten register names and one spelled-out word.
-   LEFT. Names are the architect's, and the rename lane the package plans applies them.
+   DONE. The rename lane applied the ratified names.
    Finding: `register_names` refuses `entry::SIZE`, `entry::SIZE_U32`, `header::HEADER_SIZE`,
    `header::at::HEADER_SIZE`, `header::at::ENTRY_SIZE`, `Header::entry_size`, `MINIMUM_BLOCK_SIZE`,
    `MAXIMUM_BLOCK_SIZE`, `mbr::SIZE_LBA` and the field `block_size`; `spelled_out` refuses the test

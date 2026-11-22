@@ -48,24 +48,15 @@ use uuid::Uuid;
 /// Name: ratified 2026-11-20 (#3864).
 pub const MINIMUM_BLOCK_BYTES: usize = 512;
 
-/// The format's version: the generation of this crate's reading and writing of the two on-disk
-/// tables it implements, the GUID partition table and the master boot record (MBR). The tables' own
-/// identities are the specifications' (`header::REVISION`, the `EFI PART` and `0x55AA` signatures);
-/// this constant is a declaration, so assembly can check what a package was built against. Nothing
-/// checks it at run time.
-///
-/// Name: ratified 2026-11-20 (#3864).
-pub const VERSION: u32 = 1;
-
 /// The largest logical block this crate handles. 4096 is what a native-4K drive reports, and the
 /// header still occupies exactly one block, so the only thing that changes is the LBA arithmetic.
 ///
 /// Name: ratified 2026-11-20 (#3864).
 pub const MAXIMUM_BLOCK_BYTES: usize = 4096;
 
-/// The primary header always lives at LBA 1, immediately after the protective MBR. Not a
-/// convention: the spec fixes it, because it is the one address a reader can know before it has
-/// read anything.
+/// The primary header always lives at LBA 1, immediately after the protective master boot record
+/// (MBR). Not a convention: the spec fixes it, because it is the one address a reader can know
+/// before it has read anything.
 ///
 /// Name: ratified 2026-11-20 (#3864).
 pub const PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS: u64 = 1;

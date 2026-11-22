@@ -1,4 +1,4 @@
-Falsifies `pci::verification::a_fresh_bus_queue_holds_the_root_and_nothing_else`.
+Falsifies `pci_configuration_space::verification::a_fresh_bus_queue_holds_the_root_and_nothing_else`.
 
 The defect: the root bus is queued but not marked seen, dropping `q.seen[0] = 1`. This is the
 base case the induction above it needs, and the harness's own doc comment predicts exactly this
@@ -13,7 +13,7 @@ state, so preserving it proves nothing.
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -311,7 +311,6 @@
+@@ -358,7 +358,6 @@
              head: 0,
              tail: 1,
          };

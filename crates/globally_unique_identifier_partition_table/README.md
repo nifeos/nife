@@ -32,9 +32,7 @@ protective master boot record (MBR).
 - `last_logical_block_address` is inclusive. A one-block partition has `first_logical_block_address == last_logical_block_address`.
 - `entry_count * entry_bytes` from a hostile header is computed without overflow and returns an
   error, never a shortened CRC.
-- `span::Span::covering` turns a byte range into whole transfers, and `VERSION` (1) declares the
-  generation of this crate's reading and writing, so that assembly can check what a package was
-  built against. Nothing checks it at run time.
+- `span::Span::covering` turns a byte range into whole transfers.
 - `guid::types` names the well-known type GUIDs. A system's own private types belong to that system
   and are not listed; `guid::types::name` answers `None` for one it does not know, so a tool prints
   the raw GUID.
@@ -63,7 +61,7 @@ for (index, partition) in table.partitions() {
 
 ## What is proven
 
-Fourteen Kani harnesses, in `src/verification.rs`, each with a falsification patch in
+Seventeen Kani harnesses, in `src/verification.rs`, each with a falsification patch in
 `falsifications/` named `<module>.<harness>.patch`:
 
 - `crc32_matches_its_bitwise_definition` and `a_single_byte_change_always_changes_the_crc`
@@ -75,6 +73,10 @@ Fourteen Kani harnesses, in `src/verification.rs`, each with a falsification pat
 - `the_header_checks_before_the_crc_are_total` and
   `the_header_crc_in_pieces_is_the_crc_of_the_whole`, the two stages of `Header::decode`
 - `a_span_always_contains_what_was_asked_for` and `a_name_always_decodes_into_its_documented_buffer`
+- `the_entry_array_check_is_total`, `the_table_checks_are_total_on_one_entry` and
+  `the_partition_checks_are_total_on_one_entry`, which with the two `Header::decode` stages make
+  `parse` total on a 512-byte block and a one-entry array. Two of them replace a function with
+  what its own harness proves of it, so the proofs need Kani's `-Z stubbing`
 
 The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
 kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
@@ -82,7 +84,7 @@ checker, so it needs network access. CI uses version 0.68.0, and another version
 differently.
 
 Where a domain is small enough to count, the tests count it: every single-byte corruption of a real
-header block and of a small table. Run the proofs with `cargo kani`. Applying a patch with `patch -p3`
+header block and of a small table. Run the proofs with `cargo kani -Z stubbing`. Applying a patch with `patch -p3`
 from the crate root makes its harness fail at its own assertion.
 
 ## What is on the disk
@@ -104,7 +106,7 @@ you it is broken, so every check here is an error and never a warning.
 ```sh
 cargo test --release     # the exhaustive sweeps take minutes in a debug build
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
-cargo kani
+cargo kani -Z stubbing
 ```
 
 ## Regenerating the fixtures

@@ -21,11 +21,6 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
 unsafe_op_in_unsafe_fn = "warn"
 missing_docs = "warn"
 
-[dev-dependencies]
-# The fixture-witness tests (tests/qemu_virt_dtb.rs) parse the riscv virt device tree to hold
-# the kernel's PCI hardcodes and the INTx swizzle against the machine's own routing table.
-device_tree_blob = { version = "0.1.0", git = "https://github.com/nifeos/device_tree_blob", rev = "96ad52af96e38e38577f91a787f53b789dbdda4f" }
-
 [lints.clippy]
 undocumented_unsafe_blocks = "warn"
 cast_ptr_alignment = "warn"
