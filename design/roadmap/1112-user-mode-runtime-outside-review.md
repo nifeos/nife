@@ -274,9 +274,9 @@ has no caller outside the crate. Item 15 is the work.
 
 ## Follow-on
 
-- **Outstanding.** The findings marked Open in Finding status.
-- The move to `nifeos/user_mode_runtime`, approved 2026-11-21 UTC as `publish = false` with no tag
-  and no publish. It waits until `abi`, `address_space_layout`, `current_cpu_contract` and
+- **Outstanding.** The findings marked Open in Finding status, and the move to
+  `nifeos/user_mode_runtime`, approved 2026-11-21 UTC as `publish = false` with no tag and no
+  publish. The move waits until `abi`, `address_space_layout`, `current_cpu_contract` and
   `socket_contract` have left the tree. The thin machine checks are a recorded limitation (the
   package lists them), and a first tag needs its own ruling.
 

@@ -245,8 +245,11 @@ The kernel's scan does not offer the slot, so nothing starts a driver for it.
 
 ## Follow-on
 
-- The shared library that holds the name `virtio`: ruled 2026-11-16 UTC. Whether and when to cut it
-  waits on milestone 1062 (the device control planes leave the kernel), step 7.
+- **Outstanding.** P1-3 and Decision 2, which wait on milestone 1075 item 11, and the names P1-9
+  still lists.
+- **Milestone 1062.** The shared library that holds the name `virtio`, ruled 2026-11-16 UTC.
+  Whether and when to cut it waits on milestone 1062 (the device control planes leave the kernel),
+  step 7.
 
 ## Done when
 
