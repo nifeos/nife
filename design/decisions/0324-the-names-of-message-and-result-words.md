@@ -158,7 +158,7 @@ As set out under the recommendation.
 - It fails where the code is generic. `send(slot, w0, w1, w2)` and the trap wrappers in
   `user_mode_runtime` carry words with no meaning of their own, and a word such as `READ`'s first one
   packs three values, so no single meaning can name it.
-- It is a judgement at each of 593 declaration sites, and the sender and the receiver of one word
+- It is a judgment at each of 593 declaration sites, and the sender and the receiver of one word
   would name it differently.
 - Where the code has decoded a value, (b) is already the rule, and (a) keeps it.
 
