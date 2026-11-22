@@ -72,9 +72,11 @@ pub(super) fn navigate(root: &'static str, run: u64) -> Option<u64> {
             arg: file_system_contract::grant::specification(run as usize, directory::rights::ALL),
             arg2: 0,
             // Measured, not guessed: see `spawn_fs_client`. A shell carries a path stack, a
-            // parsed path and a listing buffer by value. Two pages faulted 656 bytes below the
-            // guard once a directory path packs 512 bytes.
-            stack_pages: 3,
+            // parsed path and a listing buffer by value. In a debug build the deepest direct
+            // chain from `_start` through `navigate`, `Nav::rooted_at` and
+            // `ShellHoldings::default` is about 19.7 KiB, the sum of each frame's prologue; six
+            // pages leave about 4.8 KiB.
+            stack_pages: 5,
             verdict: false,
         },
     )?;
