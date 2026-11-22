@@ -46,7 +46,7 @@ A reader that holds one segment at a time feeds each `PT_NOTE` segment, in table
 file.
 
 Notes inside a segment are padded to 8 bytes when its `p_align` is 8, and to 4 bytes when it is 0,
-1 or 4, the rule LLVM's reader follows. Any other `p_align` refuses the lookup as `BadAlignment`.
+1 or 4, the rule the reader in the toolchain behind Clang follows. Any other `p_align` refuses the lookup as `BadAlignment`.
 
 ## What is proven
 

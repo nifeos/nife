@@ -32,8 +32,8 @@ pub enum NoteError {
     /// A `PT_NOTE` whose file range is not inside the file.
     SegmentOutOfBounds,
     /// A `PT_NOTE` whose `p_align` is not 0, 1, 4 or 8. The reader pads notes to 8 bytes under
-    /// `p_align` 8 and to 4 bytes under the other three, as LLVM's reader does, which accepts 0
-    /// for Linux core dumps and still accepts 1.
+    /// `p_align` 8 and to 4 bytes under the other three, as the reader in LLVM (the compiler toolkit
+    /// behind Clang) does, which accepts 0 for Linux core dumps and still accepts 1.
     BadAlignment,
     /// A note header, name or descriptor (with its padding) runs past the end of its segment.
     Truncated,
