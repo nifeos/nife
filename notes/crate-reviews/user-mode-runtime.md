@@ -182,7 +182,7 @@ The ratification replaced every provisional block with a ratified one dated 2026
 |---|---|
 | Wait for `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` to leave the tree, so they become git pins. The package is cleared (2026-11-21 UTC). | the contract crates' move lanes |
 | Convert the four path dependencies (`abi`, `address_space_layout`, `current_cpu_contract`, `socket_contract`) to `git` and `rev` with `version = "0.1.0"`, once each has left (`counter_frequency_contract` is already a git pin). | move lane, after the contract crates |
-| `helpers/template_report_baseline.txt` holds two rows (`abbreviations` 8, `register_names` 2) and `packages/runtime.package.toml` and `crates/externalization-list.txt` list the crate. | move lane |
+| `helpers/template_report_baseline.txt` holds two rows (`abbreviations` 8, `register_names` 1) and `packages/runtime.package.toml` and `crates/externalization-list.txt` list the crate. | move lane |
 | The template's scaffold findings (the pull request template names the architect, `CONTRIBUTING.md` cites a nife path, the commit hook and `deny.toml` mention nife) are listed in the runbook's `BUGS`. | move lane |
 | Every dependent's manifest (the ones listed above) repoints to the new repository by a full commit. | move lane, step 3 of milestone 1017 |
 | The one test that reads a path outside the crate, `linker_script`, reads `link.ld` inside it, so it moves unchanged. | none |

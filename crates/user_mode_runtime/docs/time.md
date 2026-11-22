@@ -17,22 +17,23 @@ opens it to user mode differently:
 
 On `x86_64` the permissive state is the default, so the kernel would have to act to close it.
 `rdtsc` returns the count split across `edx:eax`, so `counter_ticks` shifts and ors the halves. A
-single `out(reg)` compiles and reads only the low half, which wraps every four seconds at 1 GHz.
+single `out(reg)` compiles and reads only the low half, which wraps every four seconds at one gigahertz.
 `counter_ticks` does not serialize `rdtsc`. The reordering window is tens of cycles, the trade the
 kernel's own calibration accepts.
 
 ## The frequency
 
 `counter_hertz` says how many ticks make a second. aarch64 states it in `CNTFRQ_EL0`, so there it
-cannot fail. QEMU reports 62.5 MHz under TCG and the host's counter frequency under HVF.
+cannot fail. QEMU reports 62.5 megahertz under its own code generator and the host's counter frequency under
+the macOS Hypervisor framework.
 
 RISC-V has no register that reports the timebase. The machine states it in the device tree at
 `/cpus/timebase-frequency`, and a process holds neither a pointer to the blob nor a capability to
 its memory. The kernel reads it on the boot hart and publishes it. A VisionFive 2 runs its `time`
-CSR at 4 MHz, so no constant could stand in for it.
+control and status register (CSR) at 4 megahertz, so no constant could stand in for it.
 
 x86 has no architected rate a ring-3 program can ask for. `CPUID` leaf `0x15` is absent on many
-parts, and calibrating against the 8254 PIT needs port I/O. Ring 3 runs `in` and `out` only on a
+parts, and calibrating against the 8254 programmable interval timer (PIT) needs port I/O. Ring 3 runs `in` and `out` only on a
 `PortRange` it holds, and no program holds one for the PIT. The kernel reads the leaf or
 calibrates, and maps the page into every top-level address space it builds.
 
@@ -48,7 +49,7 @@ no message, the floor every user-mode `expect` has. The checked and unchecked pa
 ## Monotonic nanoseconds
 
 `monotonic_nanoseconds` is here because the naive form is wrong. `ticks * 1_000_000_000` overflows a
-`u64` about five minutes into a boot at 62.5 MHz, so the conversion splits into whole seconds and a
+`u64` about five minutes into a boot at 62.5 megahertz, so the conversion splits into whole seconds and a
 remainder. It needs no capability, because the counter is ambient, so any process can measure a
 duration. The wall clock is this plus an offset only the kernel's clock page carries, and reading
 that page does need a capability.
@@ -56,8 +57,8 @@ that page does need a capability.
 ## The cycle counter
 
 `cycle_reading` returns a count together with what it counts, because the count alone does not
-compare across machines. aarch64 counts core cycles at EL0 and EL1 under the `PMCCFILTR_EL0` of zero
-the kernel writes on every core. riscv64's `cycle` is `mcycle`, every privilege mode. `x86_64`'s TSC
+compare across machines. aarch64 counts core cycles at exception level 0 (EL0) and exception level 1 (EL1) under the `PMCCFILTR_EL0` of zero
+the kernel writes on every core. riscv64's `cycle` is `mcycle`, every privilege mode. `x86_64`'s time-stamp counter (TSC)
 counts reference cycles at a constant rate. A difference of two reads means something only when
 both were taken on the same core, because the aarch64 and riscv64 counters are per core and start at
 different times.

@@ -25,7 +25,7 @@ are `no_run` and only type-checked. The logic that runs anywhere (the window's b
 and copies, the frame accessors, the reply decoder, the link script's base address and the child
 stubs' encodings) has host tests.
 
-## Three ABIs, one surface
+## Three system call conventions, one surface
 
 aarch64 uses `svc #0` with the number in `x8` and arguments in `x0..x5`. RISC-V uses `ecall` with
 `a7` and `a0..a5`. `x86_64` uses `syscall` with `rax` and `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`. All
@@ -47,13 +47,13 @@ For `SYSTEM_CALL_INVOKE`, the capability, the method and three arguments go in t
 registers, and the reply comes back in the same five. The sixth register is an output and goes in
 as zero. The kernel writes argument register 5 (`x5`, `a5`, `r9`) with a dead child's label when it
 delivers a death message to a plain `RECEIVE`, and leaves it alone otherwise. Declared as an input
-only, the register would let LLVM keep a live value in it across the trap. Zero in makes
+only, the register would let the compiler keep a live value in it across the trap. Zero in makes
 `receive_message` read `0` for anything the kernel did not stamp.
 
 On `x86_64`, two operands have no counterpart on the other architectures, and the instruction
 forces both. `syscall` writes the return address into `rcx` and the caller's `RFLAGS` into `r11`,
 so both are declared clobbered. A version without them compiles, then corrupts whichever local the
-register allocator had put there. `r10` carries the fourth word in place of the C ABI's `rcx` for
+register allocator had put there. `r10` carries the fourth word in place of the `rcx` the C calling convention uses, for
 the same reason. `options(nostack)` still holds, because `syscall` does not push, which is also why
 the kernel's entry path parks `rsp` by hand.
 
@@ -66,8 +66,8 @@ no typed wrapper can express.
 The kernel enters a new thread with the stack pointer at the top of its stack page, 16-byte aligned.
 On aarch64 and riscv64 that is what a function expects. On `x86_64` the psABI expects
 `rsp % 16 == 8` at a function's first instruction, because a `call` has just pushed the return
-address. A plain `extern "C" fn _start` therefore runs every frame eight bytes off. Without SSE
-nothing faults, so the mistake stays latent until a local needs 16-byte alignment and lands eight
+address. A plain `extern "C" fn _start` therefore runs every frame eight bytes off. Without vector registers in
+use nothing faults, so the mistake stays latent until a local needs 16-byte alignment and lands eight
 bytes off.
 
 `program_entry!(start)` writes `_start` for a program: a one-`call` shim on `x86_64`, as the
@@ -104,7 +104,7 @@ address derived from the return address, because the kernel prints the faulting 
 ### Mapped windows
 
 `MappedWindow` is one page at a fixed virtual address, read and written by volatile access. The page
-is either a DMA page a driver's wiring maps before `_start` runs, or a shared frame the program maps
+is either a direct memory access (DMA) page a driver's wiring maps before `_start` runs, or a shared frame the program maps
 itself with `PageFrame::MAP`. The invariant every hand-written copy asserted was that an offset lies
 inside the one page the kernel mapped. Nothing checked it, so a wrong offset constant was a silent
 out-of-bounds access. The type takes the trust once, at construction, and turns staying inside the
@@ -139,7 +139,7 @@ aarch64 and riscv64 are weakly ordered, so both the machine and the compiler nee
 instruction. `dmb ish` orders the inner shareable domain, where a coherent DMA agent observes.
 RISC-V takes one full `fence`, the conservative choice.
 
-`x86_64` is TSO. The orderings this barrier is asked for are store-store (descriptor before index,
+`x86_64` is total store order (TSO). The orderings this barrier is asked for are store-store (descriptor before index,
 index before notify) and load-load (used index before payload). The machine already guarantees both
 for the write-back memory a coherent device shares. The store-load case TSO does not give is not
 reachable here, because every notify and register access in these drivers leaves through a system
@@ -200,7 +200,7 @@ cache coherent at that map. Benchmarks that spawn many children share the one co
 
 The `x86_64` stub is bytes, because x86 instructions are not a fixed width. Each immediate uses the
 32-bit form, `mov r32, imm32`, which zeroes the upper half of the register and is the only encoding
-that keeps a small constant to five bytes. `r10` and `r8` need a REX prefix (`0x41`) to be named at
+that keeps a small constant to five bytes. `r10` and `r8` need a register-extension (REX) prefix (`0x41`) to be named at
 all, so those rows are six bytes. The fourth and fifth argument registers did not exist on the 386
 whose opcode map this still is.
 
