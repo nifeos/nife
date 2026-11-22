@@ -54,7 +54,6 @@ WAIVERS = {
     "machine_statistics_contract": (1, PENDING),
     "program_argument_contract": (2, PENDING),
     "socket_contract": (2, PENDING),
-    "user_mode_runtime": (5, PENDING),
     "subtree_scope": (1, PENDING),
 }
 
