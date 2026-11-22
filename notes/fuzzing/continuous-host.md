@@ -201,7 +201,7 @@ The lane has no root. A person copies the three files in `helpers/systemd/` to
 
 That installs phase 1: the publish unit writes the day's report and clean ranges to local files and
 publishes nothing. Phase 2 publishes the release. It waits on the key and the installed mint helper
-(the host clone already carries the clean-range fix), and step P7 of [`finishing-the-setup.md`](finishing-the-setup.md)
+and step P7 of [`finishing-the-setup.md`](finishing-the-setup.md)
 gives its drop-in. The unit as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
 `NIFE_FUZZ_PUBLISH=1` the script refuses to publish. It also refuses, by name and before any `gh`
 call, a missing `GH_TOKEN`, a missing or unreadable `GH_TOKEN_EXPIRES_AT`, and a token that has expired
@@ -217,8 +217,7 @@ unit's user. It prints the tag and the assets and publishes nothing.
 ## BUGS
 
 - The windows have been timed one guest at a time, at about 457 seeds per second for the
-  kernel-thread driver and 205 for the confined driver. Nobody has measured four windows at once
-  through this path, so the rates note's four-guest figures stand in for them.
+  kernel-thread driver and 205 for the confined driver.
 - nife owes a measurement at 1, 4 and 8 guests through this path: seeds per second per driver and
   the false-red count at each, beside [the rates note](rates-on-x86-64-under-kvm.md). Until then
   `NIFE_FUZZ_GUESTS` stays at four.
@@ -237,11 +236,9 @@ unit's user. It prints the tag and the assets and publishes nothing.
 - Each move to a newer main idles every slot until the slowest current window ends, and the first
   window after it rebuilds. Main lands many commits a day, so this costs a share of the rate that
   nobody has measured.
-- Nothing frees the host's disk. Main bumps the pinned nightly most days, the toolchain step
-  installs each one and removes none, and each slot's `target/` and the replay worktree's keep the
-  artifacts of every compiler they built with, since cargo keys artifacts by compiler version. The
-  held directory also only grows. Nobody has measured the rate, and no check warns before the disk
-  fills, so a full disk shows only as missing releases.
+- Nothing frees the host's disk. The toolchain step installs each newly pinned nightly and removes
+  none, each slot's `target/` keeps the artifacts of every compiler it built with, and the held
+  directory only grows. No check warns before the disk fills.
 - An unfinished run of any required check name keeps the current commit, even the skipped duplicate
   that a push to main starts after the merge queue's run. The next look, 5 minutes later, moves.
 - A person who sets `url.<base>.insteadOf` for GitHub in the fuzz account's git configuration to a
