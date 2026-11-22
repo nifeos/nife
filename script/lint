@@ -3426,7 +3426,9 @@ python3 "$(dirname "$0")/../helpers/workflow_checkout_retry.py"
 #     share above the bound, a late release tolerated, an open issue not duplicated, the quiet
 #     pass before the first release, and the filer checks (an unfiled cause, a filer silent for
 #     more than two days or never run, a disabled timer, an unreadable tally, a missing Filer line
-#     in a new report, and an old release without one passing). helpers/fuzz-daily-publish-selftest.sh
+#     in a new report, and an old release without one passing), and the parked notice (parked causes
+#     alone open the fuzz-findings-parked issue, growth comments, no growth stays quiet, an open
+#     issue is never duplicated). helpers/fuzz-daily-publish-selftest.sh
 #     holds the report side of the same line. The workflow that calls it keeps to what was ruled 2026-11-01
 #     (UTC): GitHub-hosted runner, `contents: read` and `issues: write`, no secrets, and only the
 #     schedule and manual triggers.
