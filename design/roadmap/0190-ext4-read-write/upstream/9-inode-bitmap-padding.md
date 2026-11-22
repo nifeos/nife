@@ -12,8 +12,8 @@ filing it is a separate step.
   `git format-patch` output against that base. It changes `fs/rsext4/src/ext4/alloc.rs` only.
 
 Upstream's contributing guide (`docs/community/contributing.md` §4.3) processes a pull request only
-when it links an Issue, so the Issue below is filed first and its number goes into the pull
-request's `关联 Issue` line. Both follow the repository's templates
+when it links an Issue, so the Issue below goes first and its number fills the pull request's
+`关联 Issue` line. Both follow the repository's templates
 (`.github/ISSUE_TEMPLATE/development.md` and `.github/PULL_REQUEST_TEMPLATE.md`).
 
 ## Issue to file first
@@ -143,7 +143,7 @@ inode 之后直到块末尾的位全部置 1。`e2fsck` 要求这些填充位为
   失败的只有 `fs/rsext4/tests/filesystem_growth.rs` 的两个测试和 ax-fs-ng 的
   `root_growth_preserves_other_partitions_and_ext4_contents`，它们在基准提交上不带本改动时以同样方式失败。
   原因相同：本机 `mke2fs` 默认启用 `orphan_file`，而扩容拒绝该特性
-  （`fs/rsext4/src/ext4/grow/layout.rs:93`，`grow:features_or_durability`），与本改动无关。
+  （`GrowthLayout::check` in `fs/rsext4/src/ext4/grow/layout.rs`，`grow:features_or_durability`），与本改动无关。
 - 在 `mke2fs` 默认参数、1 KiB 块创建的镜像上，通过 rsext4 创建文件、创建并删除目录、扩展 htree 目录之后，
   修复前 `e2fsck -fn` 以状态 4 退出并报告填充位未设置；修复后这些情况全部干净通过。
 - 没有运行 QEMU 或板卡测试：本改动只影响主机测试能覆盖的 rsext4 行为，不改变任何运行时启动路径。
@@ -193,7 +193,7 @@ bitmap is not set" and exits with status 4.
   failures are two tests in `fs/rsext4/tests/filesystem_growth.rs` and ax-fs-ng's
   `root_growth_preserves_other_partitions_and_ext4_contents`, which fail the same way at the base
   commit without this change. They share one cause: the host's `mke2fs` enables `orphan_file` by
-  default, and growth refuses that feature (`fs/rsext4/src/ext4/grow/layout.rs:93`,
+  default, and growth refuses that feature (`GrowthLayout::check` in `fs/rsext4/src/ext4/grow/layout.rs`,
   `grow:features_or_durability`), which is unrelated to this change.
 - On images `mke2fs` made with its defaults and 1 KiB blocks, after creating files, creating and
   removing a directory, and growing an htree directory through rsext4, `e2fsck -fn` exited with
@@ -233,7 +233,7 @@ ax-fs-ng failed `root::grow::tests::root_growth_preserves_other_partitions_and_e
 in every test binary: 428 unit tests pass, and the same two `filesystem_growth` tests fail with the
 same messages. The ax-fs-ng test failed the same way with only the test hunk applied, which touches
 no ax-fs-ng code. All three share one cause: the host's `mke2fs` enables `orphan_file` by default,
-and growth refuses that feature (`fs/rsext4/src/ext4/grow/layout.rs:93`,
+and growth refuses that feature (`GrowthLayout::check` in `fs/rsext4/src/ext4/grow/layout.rs`,
 `grow:features_or_durability`, the error the second `filesystem_growth` test prints).
 
 nife's write oracle (`tools/ext4_oracle`), with `rsext4` taken from the base commit and then from
