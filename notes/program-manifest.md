@@ -50,7 +50,7 @@ struct Manifest {
 }
 ```
 
-**The struct in `crates/grant_contract/src/manifest.rs` is the authority, not this page.** This list said
+**The struct in `src/manifest.rs` of `nifeos/grant_contract` is the authority, not this page.** This list said
 five fields against the code's ten from some point before 2026-08-14, when milestone 117's first
 stranger run found it and reported that following the note produces a struct that does not compile.
 It then carried `reports` and `interruptible` twice, and was missing `domain`, `config` and

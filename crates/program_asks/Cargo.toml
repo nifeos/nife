@@ -24,5 +24,5 @@ package_archive = { version = "0.1.0", path = "../package_archive" }
 [dev-dependencies]
 # The `Manifest` the test manifests start from, and the program manifests that name them. Test
 # dependencies: no shipped binary reads a manifest through this crate's tests.
-grant_contract = { version = "0.1.0", path = "../grant_contract" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "ce12324c374e1bb31c870f4142af1a71d3d3be9c" }
 program_table = { version = "0.1.0", path = "../program_table" }

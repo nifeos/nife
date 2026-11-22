@@ -52,7 +52,7 @@ walk_pricing = { path = "../crates/walk_pricing" }
 # encoding and the manifest it encodes, both no_std, so a `std` program carries one the same way a
 # native program does. The manifests start from the progenitor's unvouched one, which is nife's
 # program table's; neither links the planner.
-grant_contract = { path = "../crates/grant_contract" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "ce12324c374e1bb31c870f4142af1a71d3d3be9c" }
 program_table = { path = "../crates/program_table" }
 capability_manifest_note = { path = "../crates/capability_manifest_note" }
 

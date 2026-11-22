@@ -273,6 +273,7 @@ dependencies = [
 [[package]]
 name = "grant_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/grant_contract?rev=ce12324c374e1bb31c870f4142af1a71d3d3be9c#ce12324c374e1bb31c870f4142af1a71d3d3be9c"
 dependencies = [
  "program_argument_contract",
 ]
