@@ -19,7 +19,7 @@
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-use moho_abi::{Error, address_space};
+use moho_abi::{Error, address_space, page_frame};
 
 use crate::arch::exceptions::TrapFrame;
 use crate::arch::mmu;
@@ -396,13 +396,7 @@ fn the_pair_is_refused_through_page_frame_map_in_either_order() {
         )
         .expect("MAP_INTO refused the code mapping");
         WRITABLE_AFTER_CODE.store(
-            encode(call(
-                f1,
-                moho_abi::page_frame::MAP,
-                base + page,
-                1,
-                tables_slot,
-            )),
+            encode(call(f1, page_frame::MAP, base + page, 1, tables_slot)),
             Ordering::SeqCst,
         );
         WRITABLE_LANDED.store(
@@ -411,14 +405,8 @@ fn the_pair_is_refused_through_page_frame_map_in_either_order() {
         );
 
         // Writable through PageFrame::MAP, then code through MAP_INTO.
-        call(
-            f2,
-            moho_abi::page_frame::MAP,
-            base + 2 * page,
-            1,
-            tables_slot,
-        )
-        .expect("PageFrame::MAP refused the writable mapping");
+        call(f2, page_frame::MAP, base + 2 * page, 1, tables_slot)
+            .expect("PageFrame::MAP refused the writable mapping");
         CODE_AFTER_WRITABLE.store(
             encode(call(
                 own,
