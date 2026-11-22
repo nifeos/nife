@@ -143,6 +143,11 @@ fn a_grant_page_that_does_not_fit_is_refused() {
     assert_eq!(grant::write_page(&too_long, true, &[], &mut page), None);
     let big_set = [1u8; nameset::MAXIMUM_BYTES + 1];
     assert_eq!(grant::write_page(b"d", true, &big_set, &mut page), None);
+    // A set of exactly the maximum fits: the bound is inclusive.
+    assert_eq!(
+        grant::write_page(b"d", true, &big_set[..nameset::MAXIMUM_BYTES], &mut page),
+        Some(())
+    );
     let mut short = [0u8; grant::PAGE_USED_BYTES - 1];
     assert_eq!(grant::write_page(b"d", true, &[], &mut short), None);
 }

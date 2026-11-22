@@ -21,16 +21,18 @@ pub(super) const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 =
 /// notes/system-initializer/budgets.md.
 pub const CHILD_STACK_PAGES: u64 = 12;
 
-/// **Stack pages the shell gets**, more than [`CHILD_STACK_PAGES`], measured with four pages of
-/// headroom: `script/swish-check`'s aarch64 leg passes at seventeen and faults at sixteen, in
-/// `installed/jig rollback`, where a program run by its path has its words designated. A debug
-/// shell keeps a copy of each `Endowment` it passes or returns, and an `Endowment` holds four file
-/// grants whose names may be 252 bytes (milestone 946 (a granted file name can be longer than sixteen bytes)). The shell is built from the progenitor's own
-/// pages, once a boot, so the pages are not a job's. `pipeline_service`'s `SHELL_EXTRA_STACK` stays
-/// level with this. See notes/system-initializer/budgets.md.
+/// **Stack pages the shell gets**, more than [`CHILD_STACK_PAGES`]. A debug shell keeps a copy of
+/// each `Endowment` it passes or returns, an `Endowment` holds four file grants whose names may be
+/// 252 bytes (milestone 946 (a granted file name can be longer than sixteen bytes)), and its
+/// directory paths pack up to `grant_plan::navigation::MAXIMUM_PATH_BYTES`. Twenty-one faults on the
+/// boot's first pipeline once a path holds 512 bytes; twenty-eight adds the 1920 bytes each of a
+/// pipeline's four planned endowments grew by, and the copies a debug build keeps of them. The shell
+/// is built from the progenitor's own pages, once a boot, so the pages are not a job's.
+/// `pipeline_service`'s `SHELL_EXTRA_STACK` stays level with this. See
+/// notes/system-initializer/budgets.md.
 ///
 /// Name: provisional (milestone 946).
-pub const SHELL_STACK_PAGES: u64 = 21;
+pub const SHELL_STACK_PAGES: u64 = 28;
 
 /// Where a child that declares a clock maps it, read-only. Must match `components/src/date.rs`'s
 /// `CLOCK_VA` and `kernel/src/user/clock_service.rs`.
