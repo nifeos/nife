@@ -17,9 +17,8 @@ pub const MAXIMUM_FILE_NAME_BYTES: usize = 252;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, duplicated from
 /// `file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES` for [`MAXIMUM_FILE_NAME_BYTES`]'s reason and pinned the same
-/// way. A name the shell sends that way is held to it at the prompt: the directory a grant descends
-/// into ([`crate::navigation::MAXIMUM_DIRECTORY_NAME_BYTES`]), an identity `user` names, and the name `vouch`
-/// records.
+/// way. A name the shell sends that way is held to it at the prompt: an identity `user` names, and
+/// the name `vouch` records.
 ///
 /// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_WORDS_NAME_BYTES: usize = 16;

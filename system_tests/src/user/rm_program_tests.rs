@@ -21,28 +21,29 @@ struct Outcome {
     printed: usize,
 }
 
-/// Run `rm` once inside a `fs_subtree_caretaker` holding [`tree::RMTREE`] with exactly
-/// `rights`, told to remove `name` with `flags`.
+/// Run `rm` once inside a `fs_nameset_caretaker` holding `name` in [`tree::RMTREE`] with exactly
+/// `rights`, with `flags`: the grant the shell plans for `rm <name>`.
 ///
 /// `None` when no RedoxFS disk is attached (nothing to test; do not fail).
 fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
-    let (lo, hi) = file_system_contract::grant::pack_name(name.as_bytes())
-        .expect("the operand rides in two argument words");
-    let (report, verdict, held) = fs_service::start_granted_dir(
+    let (report, verdict, held) = fs_service::start_granted_set(
         dir_capability_tests::blk_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),
-        program("fs_subtree_caretaker")
-            .expect("no fs_subtree_caretaker program in the initial ramdisk"),
+        program("fs_nameset_caretaker")
+            .expect("no fs_nameset_caretaker program in the initial ramdisk"),
         program("rm").expect("no rm program in the initial ramdisk"),
-        fs_service::DirGrant {
-            name: tree::RMTREE,
+        fs_service::SetGrant {
+            dir: tree::RMTREE,
+            // The type is what a listing reports, and `rm` asks the filesystem what each name is
+            // rather than trusting it, so a missing name can be listed as a file.
+            names: &[(name.as_bytes(), false)],
             rights,
             // `rm` is started with a **grant's** three words rather than a role and a number:
-            // the spec (the operand's length, and the options where a caretaker's rights ride),
-            // then the two words of name.
-            role: file_system_contract::grant::specification(name.len(), flags),
-            arg: lo,
-            arg2: hi,
+            // the spec (the options where a caretaker's rights ride), then two name words, zero
+            // because the operand is the set.
+            role: file_system_contract::grant::specification(0, flags),
+            arg: 0,
+            arg2: 0,
             // Measured the way `spawn_fs_client` asks for: the recursion is real stack, each
             // level holding a listing buffer by value, and this program has no allocator.
             stack_pages: 6,

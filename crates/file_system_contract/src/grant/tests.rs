@@ -114,3 +114,77 @@ fn a_root_grant_is_an_empty_name_carrying_its_rights() {
         crate::directory::rights::REMOVE
     );
 }
+
+/// **A granted name of any length up to the limit comes back from the grant page whole**, beside a
+/// name set at its own offset, and an empty name reads as the empty name, not as a refusal.
+#[test]
+fn a_grant_page_carries_every_name_length_up_to_the_limit() {
+    let long = [b'n'; grant::MAXIMUM_NAME_BYTES];
+    let mut set = [0u8; nameset::MAXIMUM_BYTES];
+    let n = nameset::encode(&[(&long[..], false), (b"b", true)], &mut set).unwrap();
+    for len in [0, 1, 16, 17, 64, grant::MAXIMUM_NAME_BYTES] {
+        let mut page = [0xa5u8; grant::PAGE_USED_BYTES];
+        grant::write_page(&long[..len], true, &set[..n], &mut page).unwrap();
+        assert_eq!(grant::page_name(&page), Some(&long[..len]), "length {len}");
+        assert!(nameset::contains(grant::page_name_set(&page), &long));
+        assert!(nameset::contains(grant::page_name_set(&page), b"b"));
+    }
+    let mut page = [0xa5u8; grant::PAGE_USED_BYTES];
+    grant::write_page(b"dir", true, &[], &mut page).unwrap();
+    assert_eq!(nameset::iter(grant::page_name_set(&page)).count(), 0);
+}
+
+/// **The writer refuses rather than truncates**: a name past the limit, a set past its maximum,
+/// or a page too short for both.
+#[test]
+fn a_grant_page_that_does_not_fit_is_refused() {
+    let too_long = [b'n'; grant::MAXIMUM_NAME_BYTES + 1];
+    let mut page = [0u8; grant::PAGE_USED_BYTES];
+    assert_eq!(grant::write_page(&too_long, true, &[], &mut page), None);
+    let big_set = [1u8; nameset::MAXIMUM_BYTES + 1];
+    assert_eq!(grant::write_page(b"d", true, &big_set, &mut page), None);
+    // A set of exactly the maximum fits: the bound is inclusive.
+    assert_eq!(
+        grant::write_page(b"d", true, &big_set[..nameset::MAXIMUM_BYTES], &mut page),
+        Some(())
+    );
+    let mut short = [0u8; grant::PAGE_USED_BYTES - 1];
+    assert_eq!(grant::write_page(b"d", true, &[], &mut short), None);
+}
+
+/// **A malformed granted name is `None`, never the empty name.** An empty name narrows nothing, so
+/// a page that read as one by accident would hand the caretaker its whole namespace.
+#[test]
+fn a_malformed_grant_page_name_is_refused_not_read_as_the_root() {
+    // A second record after the first.
+    let mut two = [0u8; 16];
+    nameset::encode(&[(b"a", true), (b"b", true)], &mut two).unwrap();
+    assert_eq!(grant::page_name(&two), None);
+    // A record that runs off the page.
+    assert_eq!(grant::page_name(&[5, 1, b'a', b'b']), None);
+    // No terminator after the record.
+    assert_eq!(grant::page_name(&[1, 1, b'a']), None);
+    // A length past the limit, though the bytes are there.
+    let mut over = [0u8; 300];
+    over[0] = 253;
+    over[1] = 1;
+    assert_eq!(grant::page_name(&over), None);
+    // A flags bit nothing defines.
+    assert_eq!(grant::page_name(&[1, 0x80, b'a', 0]), None);
+    assert_eq!(grant::page_name(&[]), None);
+    assert_eq!(grant::page_name(&[0]), Some(&b""[..]));
+}
+
+/// **START words that still carry a name are told apart from the ones a grant page goes with.**
+#[test]
+fn start_words_carrying_a_name_are_recognized() {
+    let spec = grant::specification(0, 3);
+    assert!(grant::words_carry_no_name(0, 0, spec));
+    assert!(!grant::words_carry_no_name(1, 0, spec));
+    assert!(!grant::words_carry_no_name(0, 1, spec));
+    assert!(!grant::words_carry_no_name(
+        0,
+        0,
+        grant::specification(4, 3)
+    ));
+}

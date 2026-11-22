@@ -42,10 +42,9 @@ and nothing that names the FS server, so "it cannot reach a second file" is a pr
 capability table, not of a branch it is trusted to take. The boundary is an address space. That is the same
 reason milestone 36's checker lives outside the component it checks.
 
-The grant costs no memory. The name and the direction ride in the caretaker's three `START` argument
-words (`file_system_contract::grant`, at most `WORDS_NAME`, 16 bytes of name; `pack_name` refuses a
-longer one). A longer file name, up to `grant::MAXIMUM_NAME_BYTES`, reaches a program on a page instead: a
-name set's frame, which `fs_nameset_caretaker` serves (milestone 946 (a granted file name can be longer than sixteen bytes)). One frame is shared by all three processes.
+The grant costs one page. The direction rides in the caretaker's `START` words, and the name, up to
+`file_system_contract::grant::MAXIMUM_NAME_BYTES`, on its read-only grant page (milestone 1122 (every
+name travels on a page)). One file-service frame is shared by all three processes.
 That is sound because every request on both hops is a blocking `CALL`: the client is parked inside its own
 call for the whole time the caretaker touches the page.
 

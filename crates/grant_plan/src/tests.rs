@@ -37,8 +37,8 @@ fn parse_u64_rejects_junk() {
 #[test]
 fn the_planning_types_have_the_sizes_the_stack_budget_assumes() {
     use core::mem::size_of;
-    assert_eq!(size_of::<Endowment>(), 2424);
-    assert_eq!(size_of::<ShellHoldings>(), 1008);
+    assert_eq!(size_of::<Endowment>(), 4344);
+    assert_eq!(size_of::<ShellHoldings>(), 3312);
     assert_eq!(size_of::<expansion::NameSet>(), 544);
-    assert_eq!(size_of::<navigation::DirectoryPath>(), 144);
+    assert_eq!(size_of::<navigation::DirectoryPath>(), 528);
 }
