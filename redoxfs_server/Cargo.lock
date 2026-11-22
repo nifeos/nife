@@ -529,6 +529,7 @@ version = "0.1.0"
 dependencies = [
  "address_space_layout",
  "capability_manifest_note",
+ "clock_contract",
  "file_system_contract",
  "file_system_fixture",
  "globally_unique_identifier_partition_table",

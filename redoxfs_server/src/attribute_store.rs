@@ -68,7 +68,7 @@ pub(crate) fn write_attrs<D: Disk>(
     transaction: &mut Transaction<D>,
     node_id: u32,
     blob: &[u8],
-    now: u64,
+    now: (u64, u32),
 ) -> Result<()> {
     if blob.is_empty() {
         return purge_attrs(transaction, node_id);
@@ -84,23 +84,23 @@ pub(crate) fn write_attrs<D: Disk>(
                 TreePtr::root(),
                 extended_attribute::STORE_DIRECTORY,
                 Node::MODE_DIR | 0o700,
-                now,
-                0,
+                now.0,
+                now.1,
             )?
             .ptr(),
     };
     let ptr = match transaction.find_node(dir_ptr, name) {
         Ok(node) => node.ptr(),
         Err(e) if e.errno == ENOENT => transaction
-            .create_node(dir_ptr, name, Node::MODE_FILE | 0o600, now, 0)?
+            .create_node(dir_ptr, name, Node::MODE_FILE | 0o600, now.0, now.1)?
             .ptr(),
         Err(e) => return Err(e),
     };
-    transaction.write_node(ptr, 0, blob, now, 0)?;
+    transaction.write_node(ptr, 0, blob, now.0, now.1)?;
     // Then shrink to exactly the new length: a write does not truncate, and a shorter blob would
     // leave the old tail for the reader to walk (DECISIONS §27 (the filesystem service: a
     // capability-shaped contract)'s failure).
-    transaction.truncate_node(ptr, blob.len() as u64, now, 0)?;
+    transaction.truncate_node(ptr, blob.len() as u64, now.0, now.1)?;
     Ok(())
 }
 

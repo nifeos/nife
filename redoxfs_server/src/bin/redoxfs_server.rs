@@ -13,6 +13,9 @@
 //! - **slot 2**: the file-service endpoint, `READ`. Clients `CALL` here; this is the directory
 //!   capability, bound in the server to the image's root (phase 2). A client without it opens
 //!   nothing.
+//! - **slot 4** (optional): the clock page's `PageFrame`, `READ`, mapped read-only at [`CLOCK_VA`]. With
+//!   it the server stamps modification times from the wall clock once the clock reads as set;
+//!   without it, or before that, it counts (the `BUGS` of [`redoxfs_server::Server`]).
 //! - **[`BLK_PAGE`]**: the base of the block channel shared with the block server,
 //!   `block::MAXIMUM_TRANSFER_BYTES` bytes of contiguous pages (the block buffer).
 //! - **[`FILE_PAGE`]**: the base of the file channel shared with the client, `file_system::MAXIMUM_TRANSFER_BYTES`
@@ -50,6 +53,26 @@ const BLK: u64 = 1;
 const FILE: u64 = 2;
 /// A readiness endpoint: the server SENDs one word here once the image is open, before it serves.
 const READY: u64 = 3;
+/// The clock page's capability, when this boot granted one (a server spawned by a test may not).
+const CLOCK: u64 = 4;
+/// Where the kernel maps the clock page, read-only: the address `date` reads it at.
+const CLOCK_VA: u64 = address_space_layout::pair_page(0x00c0_0000);
+
+/// The wall clock, read from the clock page: its reading is the page's offset plus the monotonic
+/// counter, and `None` until the page says the clock is set.
+struct ClockPageClock(clock_contract::ClockPage);
+
+impl redoxfs_server::WallClock for ClockPageClock {
+    fn wall_nanoseconds(&mut self) -> Option<u64> {
+        let reading = self.0.read();
+        clock_contract::state::is_known(reading.state).then(|| {
+            clock_contract::wall_nanoseconds(
+                reading.offset_nanoseconds,
+                user_mode_runtime::monotonic_nanoseconds(),
+            )
+        })
+    }
+}
 
 /// Where the kernel maps the two shared regions: the block channel, a service window on the
 /// address-space map (`nifeos/address_space_layout`), above the heap band and below the image band.
@@ -419,6 +442,12 @@ fn start(crash_at_write: u64, crash_after_blocks: u64, crash_tear_bytes: u64) ->
         Ok(s) => s,
         Err(_) => panic!(), // not a RedoxFS image, or the disk misbehaved: die legibly.
     };
+    if user_mode_runtime::is_granted(CLOCK) {
+        // SAFETY: the kernel maps the clock page read-only at CLOCK_VA together with the capability
+        // in slot CLOCK, and `is_granted` just found that capability.
+        let page = unsafe { clock_contract::ClockPage::new(CLOCK_VA) };
+        server.set_wall_clock(alloc::boxed::Box::new(ClockPageClock(page)));
+    }
     // The image is open: signal readiness (so the test can tell an open-path hang from a serve-path
     // one), then serve forever.
     send(READY, file_system_contract::READY, 0, 0);

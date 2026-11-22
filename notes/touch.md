@@ -54,13 +54,20 @@ down, applied to a file's timestamp instead of the machine's clock. See
 
 ## What "now" is, honestly
 
-The FS server has no RTC wired to it. "Now" for `SETMTIME` is the server's own advancing logical
-clock. It is the same mechanism that has stamped every `WRITE`, `CREATE`, `TRUNCATE` and the
-extended attribute verbs since before this lane. A `touch` on two names in sequence is guaranteed to
-observe the second mtime strictly greater than the first (what a make-style staleness check depends
-on). It is not guaranteed to agree with a wall-clock reading (`date`, DECISIONS §43 (reading the clock is a page)) taken at the same
-instant. Wiring the FS server to the real wall clock milestone 51 landed is a follow-up (see `BUGS`
-below). It is not a difference in what `SETMTIME` promises today.
+"Now" for `SETMTIME` is the wall clock. The FS server holds the clock page read-only, the same
+authority `date` holds (DECISIONS §43 (reading the clock is a page)), and reads it as `date` does:
+`clock_contract::wall_nanoseconds(offset, monotonic_nanoseconds())`. Every stamp the server writes
+comes from one function. That covers `WRITE`, `CREATE`, `TRUNCATE`, `SETMTIME` and the extended
+attribute verbs. The function returns the wall time as seconds and nanoseconds. When the reading is
+not strictly later than the previous stamp, it returns the previous stamp plus one nanosecond.
+
+So a `touch` after a `WRITE` never lands earlier than the write. Two touches in sequence see
+strictly increasing times, which a make-style staleness check depends on. A clock that steps backward
+does not move a stamp backward. The wire carries whole seconds, so a stamp agrees with a `date`
+reading taken at the same instant to the second, except while a step backward holds it ahead.
+
+Until the clock page reports a set clock, and when the server has no clock page, "now" is a counter
+that adds one per stamp. The server reads the counter as Unix seconds (see `BUGS`).
 
 ## The wire: three verbs, and why not one
 
@@ -176,17 +183,12 @@ mtime probes are not (yet) independently witnessed from the host. See `BUGS`.
 
 ## BUGS
 
-- "Now" is this server's own advancing logical clock, not a reading of the real wall clock
-  milestone 51 (wall-clock time) landed (`clock_contract`, DECISIONS §43). Two bare touches in sequence are guaranteed
-  to observe strictly increasing mtimes. A bare touch is not guaranteed to observe a mtime close to
-  what `date` reports at the same instant. The FS server could get a read-only mapping of the clock
-  page (the same authority `date` itself holds), so `SETMTIME` records a real wall-clock second. That
-  is a follow-up, not started here. It is a new capability grant to a process that currently holds
-  none beyond the block-IPC endpoint. DECISIONS §43's own read/set split argues for exactly the
-  narrow, read-only half. **Since 2026-09-19 it reaches `std` too**: milestone 64 bound
-  `Metadata::modified` to `GETMTIME`, so every std program reading a file this system wrote gets the
-  counter as a `SystemTime` in early 1970 (notes/std/file-times.md). Proposed as
-  design/roadmap/0497-a-filesystem-server-that-knows-the-time.md.
+- **While the clock is not set, stamps are a counter.** Until the clock page reports a set clock, and
+  for a server with no clock page (the crash tests' servers), every stamp is a counter that starts at
+  2 and adds one per stamp. The server reads it as Unix seconds, so a file stamped then shows a time
+  in January 1970 (notes/std/file-times.md has what `std` makes of it). Once the clock is set, stamps
+  continue from the later of the wall time and the last stamp. They never go backward, and a file
+  stamped before that keeps its 1970 time until something changes it.
 - **`-t` accepts RFC 3339, not Unix's compact `[[CC]YY]MMDDhhmm[.ss]]`.** See "`-t`'s syntax" above
   for why. A script written against Unix's `touch -t` syntax will not work unmodified here.
 - **No `-c` (don't create)**, because Unix's `-c` exists to suppress the create half, and there is
