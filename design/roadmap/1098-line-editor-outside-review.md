@@ -1,6 +1,7 @@
 ---
 status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: 1017
 decision_dependencies: 232, 295
 machine_requirements: none
@@ -135,14 +136,14 @@ The P2 items are in [the appendix](1098-line-editor-outside-review/later-items.m
   the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
   program holds the two `QUIESCED` values equal. Items 3 and 4 and decisions 2, 3 and 5: the
   engine's names and the crate root's ratification are built.
-- **Outstanding.** Every finding marked Open or Waiting on under "Finding status", each checked
-  against the crates' sources on main.
-- **Outstanding.** The externalization list: `crates/externalization-list.txt` names
+- **Recorded.** The two moves, to `nifeos/line_editor` and `nifeos/terminal_contract`, with item 1
+  and the rest of each review package's "What still blocks the move".
+- **Recorded.** The externalization list: `crates/externalization-list.txt` names
   `line_editor` and not `terminal_contract`, checked in that file on main.
 
 ## Decisions for the architect
 
-Decisions 1 to 6 are the rules in force.
+Decisions 1 to 7 are the rules in force.
 
 ### Where the cut falls: `proto` and `component` leave the crate, `handoff` stays
 
