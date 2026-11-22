@@ -73,7 +73,7 @@ digit renames. The rule is chosen on the merits, not on effort.
   the kernel writes `[msg[0], msg[1], delivered, 0, 0]` (kernel/src/sched/rendezvous.rs), so the
   slot is in `x2`. An index would not survive either trip, so each function returns the slot by
   name beside the words.
-- **`const fn` decoders.** Constant indexing builds in `const fn`, and three decoders take an array
+- `const fn` decoders. Constant indexing builds in `const fn`, and three decoders take an array
   already.
 
 ### Code generation: why the wrappers carry `#[inline]`

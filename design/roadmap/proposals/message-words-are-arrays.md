@@ -9,11 +9,11 @@ needs_person: no
 ---
 # A message's words are arrays and every decoded value takes the name of its meaning
 
-Raised 2026-11-22 (UTC) by lane `lane/message-word-names`, after section 324 (the names of a
+Lane `lane/message-word-names` raised this on 2026-11-22 (UTC), after section 324 (the names of a
 message's words and a system call's result words) ruled the rule.
 
 Reuse: the trap boundary already passes `words: [u64; 6]`; three `const fn` contract decoders already
-take arrays. Name: provisional. No new dependency.
+take arrays. The name is provisional. No new dependency.
 
 ## The problem
 
