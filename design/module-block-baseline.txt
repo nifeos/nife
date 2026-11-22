@@ -6285,45 +6285,25 @@ crates/system_log_contract/src/lib.rs::word
 crates/system_log_contract/src/lib.rs::wrote
 
 
-crates/terminal_contract/src/lib.rs::BAD_REQUEST
 
-crates/terminal_contract/src/lib.rs::CTL_QUIT
 
-crates/terminal_contract/src/lib.rs::CTL_RESUME
 
-crates/terminal_contract/src/lib.rs::FLAG_EOF
 
-crates/terminal_contract/src/lib.rs::FLAG_INTERRUPTED
 
-crates/terminal_contract/src/lib.rs::NOTE_ABSORBED
 
-crates/terminal_contract/src/lib.rs::OPERATION_BYTES
 
-crates/terminal_contract/src/lib.rs::OPERATION_INTRCOUNT
 
-crates/terminal_contract/src/lib.rs::OPERATION_PRINT
 
-crates/terminal_contract/src/lib.rs::OPERATION_RAWMODE
 
-crates/terminal_contract/src/lib.rs::OPERATION_READLINE
 
-crates/terminal_contract/src/lib.rs::OPERATION_READRAW
 
-crates/terminal_contract/src/lib.rs::OPERATION_SHIFT
 
-crates/terminal_contract/src/lib.rs::OPERATION_WRITE
 
-crates/terminal_contract/src/lib.rs::QUIESCED
 
-crates/terminal_contract/src/lib.rs::START_ABSORB
 
-crates/terminal_contract/src/lib.rs::is_retry
 
-crates/terminal_contract/src/lib.rs::len
 
-crates/terminal_contract/src/lib.rs::operation
 
-crates/terminal_contract/src/lib.rs::req
 
 
 crates/test_times/src/lib.rs::DEFAULT_BUDGET_SECONDS

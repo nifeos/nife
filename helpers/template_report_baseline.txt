@@ -228,8 +228,6 @@ system_log_contract readme_acronyms 2
 system_log_contract register_names 2
 system_manifest abbreviations 1
 system_manifest prose_acronyms 1
-terminal_contract abbreviations 14
-terminal_contract prose_acronyms 3
 test_and_set_lock abbreviations 1
 test_and_set_lock prose_acronyms 1
 test_and_set_lock readme_acronyms 1
