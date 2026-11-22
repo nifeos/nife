@@ -303,3 +303,10 @@ fn the_fast_demonstrations_take_no_interrupt() {
     assert!(!Program::LeastAuthorityDemo.manifest().interruptible);
     assert!(!Program::MemoryGrantDepleter.manifest().interruptible);
 }
+
+#[test]
+fn every_program_counts_as_well_formed_and_an_empty_list_counts_none() {
+    assert_eq!(manifests::well_formed_count(Program::ALL), Program::ALL.len());
+    assert_eq!(manifests::well_formed_count(&Program::ALL[..1]), 1);
+    assert_eq!(manifests::well_formed_count(&[]), 0);
+}

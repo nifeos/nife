@@ -132,19 +132,26 @@ impl Program {
     }
 }
 
+/// How many of `programs` have a manifest that agrees with itself ([`Manifest::is_well_formed`]).
+pub(super) const fn well_formed_count(programs: &[Program]) -> usize {
+    let mut i = 0;
+    let mut count = 0;
+    while i < programs.len() {
+        if programs[i].manifest().is_well_formed() {
+            count += 1;
+        }
+        i += 1;
+    }
+    count
+}
+
 // Every row's manifest agrees with itself, checked by the compiler: a directory grant that names a
 // widening option declares that option, so the planner's narrow reading of an undeclared one is
 // never what a shipped program meets. A row that breaks it fails the build, not a test run.
-const _: () = {
-    let mut i = 0;
-    while i < Program::ALL.len() {
-        assert!(
-            Program::ALL[i].manifest().is_well_formed(),
-            "a program's manifest names a widening option it does not declare"
-        );
-        i += 1;
-    }
-};
+const _: () = assert!(
+    well_formed_count(Program::ALL) == Program::ALL.len(),
+    "a program's manifest names a widening option it does not declare"
+);
 
 /// The manifest of `least_authority_demo`, [`Program::LeastAuthorityDemo`].
 const fn least_authority_demo_manifest() -> Manifest {
