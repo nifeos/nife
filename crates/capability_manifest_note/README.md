@@ -83,14 +83,39 @@ use capability_manifest_note::{
     DESCRIPTOR_BYTES, Error, asks_service, decode, encode, encode_zoned, zoned_descriptor_bytes,
     zones,
 };
-use grant_contract::{Manifest, MemoryGrantDeclaration};
-use program_table::NO_NOTE_MANIFEST;
+use grant_contract::{
+    DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration, InputDeclaration,
+    Manifest, MemoryGrantDeclaration, NO_SHORT_OPTIONS, OutputDeclaration,
+    ProgramArgumentDeclaration, StartupContract,
+};
 
-// What the program asks for: between 4 and 64 pages of memory, and the clock.
+// What the program asks for: bytes out, between 4 and 64 pages of memory, and the clock. Every
+// field is stated, and the ones it does not ask for are forbidden or false.
 const ASKS: Manifest = Manifest {
+    program_argument: ProgramArgumentDeclaration::Forbidden,
     memory_grant: MemoryGrantDeclaration::Required { minimum: 4, maximum: 64 },
+    file: FileGrantDeclaration::Forbidden,
+    directory: DirectoryGrantDeclaration::Forbidden,
+    short_options: NO_SHORT_OPTIONS,
+    output: OutputDeclaration::Bytes,
+    input: InputDeclaration::Forbidden,
+    reports: true,
+    interruptible: false,
     clock: true,
-    ..NO_NOTE_MANIFEST
+    domain: false,
+    configuration: false,
+    entropy: false,
+    network: false,
+    machine: false,
+    share: false,
+    reboot: false,
+    sync: false,
+    installer: false,
+    catalog: false,
+    indexes: IndexStoreDeclaration::Forbidden,
+    activation_directory: false,
+    console_input: false,
+    startup: StartupContract::Native,
 };
 
 // The compiler builds the descriptor. A manifest with no spelling fails the build here.

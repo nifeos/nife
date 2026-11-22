@@ -1269,7 +1269,10 @@ pub const fn with_divider(word: u32, divider: u32) -> u32 {
 /// `DesignWare` databook's `IC_SS_SCL_HCNT` and `IC_SS_SCL_LCNT` registers are described. No
 /// permissively licensed driver that this crate could cite states the equations (OpenBSD's
 /// `dwiic.c` takes the counts from firmware and FreeBSD has no `DesignWare` I2C driver), so they
-/// are derived here from those two sources and from nothing else.
+/// are derived here from those two sources and from nothing else. The smallest counts the
+/// controller accepts come from Zephyr's driver (\[zephyr-dw-header\]).
+///
+/// [zephyr-dw-header]: https://github.com/zephyrproject-rtos/zephyr/blob/1b3f4f14ad2002beb743dba17b455a1f0c688639/drivers/i2c/i2c_dw.h
 ///
 /// 100 kHz rather than a faster mode, because the `AXP15060`'s datasheet timing is met by every
 /// standard-mode controller and the failure this answers was OpenSBI trusting a controller at
@@ -1310,6 +1313,16 @@ const STANDARD_MODE_CONTROL: u32 = 0b0110_0011;
 const STANDARD_HIGH_NANOSECONDS: u128 = 4_000;
 /// Standard mode's minimum SCL low time, in nanoseconds.
 const STANDARD_LOW_NANOSECONDS: u128 = 4_700;
+/// The smallest `IC_SS_SCL_HCNT` the controller accepts. \[zephyr-dw-header\]'s
+/// `I2C_MIN_SCL_HCNT(spk)` gives the spike suppression length plus 6 (section 2.14.1 of the
+/// databook it cites, for a controller built without `IC_CLK_FREQ_OPTIMIZATION`; one built with it
+/// accepts less). This crate does not program `IC_FS_SPKLEN`, so it takes the length 1, the
+/// shortest that suppresses a spike.
+const MINIMUM_STANDARD_HIGH_COUNT: u32 = 1 + 6;
+/// The smallest `IC_SS_SCL_LCNT` the controller accepts: \[zephyr-dw-header\]'s
+/// `I2C_MIN_SCL_LCNT(spk)`, the spike suppression length plus 8, at the length 1 as
+/// [`MINIMUM_STANDARD_HIGH_COUNT`] takes it.
+const MINIMUM_STANDARD_LOW_COUNT: u32 = 1 + 8;
 /// The `SDA` hold a device provides to bridge SCL's undefined falling edge, in nanoseconds.
 const STANDARD_SDA_HOLD_NANOSECONDS: u128 = 300;
 /// The bus rate this module programs, in hertz.
@@ -1330,8 +1343,9 @@ const fn counts(clock_frequency: u64, period_nanoseconds: u128) -> u32 {
 ///
 /// The controller spends a few cycles more than the programmed count in each phase (Linux's
 /// `i2c_dw_scl_hcnt` and `i2c_dw_scl_lcnt` account for `HCNT + 3` and `LCNT + 1`), so the bus runs
-/// slightly under 100 kHz, which is the safe direction. The floor of 1 count is this crate's, not
-/// the databook's; only an input clock under about 1.5 MHz reaches it.
+/// slightly under 100 kHz, which is the safe direction. The high count is never below 7 and the low
+/// count never below 9, the smallest counts the controller accepts; only an input clock under
+/// 2 MHz reaches either floor, and there the bus runs slower still.
 ///
 /// Each phase is rounded up to a whole count, so it never falls short of its specification
 /// minimum: the high count covers 4000 ns and the low count covers 4700 ns. Those two alone make a
@@ -1341,15 +1355,21 @@ const fn counts(clock_frequency: u64, period_nanoseconds: u128) -> u32 {
 /// hold SCL low for longer anyway), and the high count stays at the specification minimum. The
 /// result guarantees that `high_count + low_count` counts never span less than 10 microseconds, so the bus
 /// never runs faster than 100 kHz, and that each phase meets its minimum. Rise and fall times on
-/// the wire only add to the period. An input clock below 100 kHz still yields counts of at least 1
+/// the wire only add to the period. An input clock below 100 kHz still yields the floor counts
 /// and cannot reach 100 kHz; a caller that logs the computed input clock makes that case visible
 /// as one.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
 #[must_use]
 pub const fn standard_mode_100_kilohertz(clock_frequency: u64) -> StandardMode {
-    let high_count = counts(clock_frequency, STANDARD_HIGH_NANOSECONDS);
-    let minimum_low_count = counts(clock_frequency, STANDARD_LOW_NANOSECONDS);
+    // Each count is the larger of the specification's and the controller's minimum, written as the
+    // controller's floor plus whatever the specification's count exceeds it by.
+    let high_count = MINIMUM_STANDARD_HIGH_COUNT
+        + counts(clock_frequency, STANDARD_HIGH_NANOSECONDS)
+            .saturating_sub(MINIMUM_STANDARD_HIGH_COUNT);
+    let minimum_low_count = MINIMUM_STANDARD_LOW_COUNT
+        + counts(clock_frequency, STANDARD_LOW_NANOSECONDS)
+            .saturating_sub(MINIMUM_STANDARD_LOW_COUNT);
     let period = counts(clock_frequency, 1_000_000_000 / STANDARD_BUS_HERTZ);
     let shortfall = period.saturating_sub(high_count);
     // The larger of the two, written as the minimum plus whatever the shortfall exceeds it by.

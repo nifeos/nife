@@ -41,7 +41,7 @@ is never published, so the public API holds the wire and nothing else.
 | kind | where |
 |---|---|
 | path dependency with a `version` key | `components`, `crates/primitive_benchmark_contract`, `crates/system_initializer`, `crates/system_log`, `fixtures`, `kernel`; `system_tests` as a development dependency; `fuzz` with a path and no `version` key; the in-tree crate `byte_sink_fixture` |
-| source copied into `std` | `cargo xtask std-src` copies `src/lib.rs` into the patched standard library as `sys/pal/nife/sinkproto.rs` (`xtask/src/farm/copied.rs`), so `println!` and every sink share one definition. The move must keep that source reachable (see What still blocks the move) |
+| source copied into `std` | `cargo xtask std-src` copies `src/lib.rs` into the patched standard library as `sys/pal/nife/sinkproto.rs` (`xtask/src/farm/copied.rs`), so `println!` and every sink share one definition. The farm reads the source from the pinned checkout cargo fetches (`copied_package_directories`) |
 | prose and tables | `crates/externalization-list.txt`, `packages/contracts.package.toml`, `helpers/trust_boundary_crates.tsv`, `helpers/interface_stability.py`, the comments in `uefi_loader/Cargo.toml`, `system_tests/Cargo.toml` and `crates/std_runtime_contract/Cargo.toml` |
 | users of `byte_sink_fixture` | `fixtures/src/sink_transcript_writer.rs`, `file_sink.rs`, `file_source.rs`, and the kernel-side `system_tests/src/user/sink_tests.rs` and `system_log_tests.rs`; `fixtures` and `system_tests` depend on it in their manifests |
 
@@ -108,7 +108,7 @@ The other P1 and P2 items:
 
 | item | state |
 |---|---|
-| P0-1, the crate stands alone | open; the move carries it (README, both licenses, literal `license`, `lints` and `rust-version`, the scaffold, the `Name:` strip, the `b"nife"` payload) |
+| P0-1, the crate stands alone | done; the move commit in nifeos/byte_sink_contract carries the README, both licenses, literal `license`, `lints` and `rust-version`, and the scaffold, with no `Name:` block ([#3900](https://github.com/nifeos/nife/pull/3900)) |
 | P0-2, `VERSION` text | done |
 | P1-4, `abi` dev-dependency | done; the crate has no dependency |
 | P1-5, proofs | done, six harnesses each with a patch that fails it |
@@ -118,7 +118,7 @@ The other P1 and P2 items:
 | P2-11, narrow `usize` | done; `unpack` compares the count as `u64` |
 | P2-12, `first_word` typed parameters | done (ruled 2026-11-21 UTC); `first_word` takes a `u8` opcode and a `u32` length, and the opcodes are `u8` |
 | P2-13, a words struct for `pack` | done (ruled 2026-11-21 UTC); `pack` returns `(MessageWords, taken)` and `unpack` takes the struct |
-| P2-14, mutant exemptions | open; they go into the new repository's `.github/mutants-exempts` |
+| P2-14, mutant exemptions | done (nifeos/byte_sink_contract#1); the four survivors the repository's mutation run names are exempted with their reasons |
 | P2-15, severity on any first word | done |
 
 ## Names
@@ -141,17 +141,11 @@ The architect ratified every name below on 2026-11-21 (UTC), except `MessageWord
 
 The std copy (`sys/pal/nife/sinkproto.rs`) is copied from `src/lib.rs` by `cargo xtask std-src`.
 
-## What still blocks the move
+## The move
 
-All of these belong to the move itself. No in-tree item blocks it.
-
-| item | owner |
-|---|---|
-| P0-1: README in the template's section order, both licenses, literal `license`, `lints` and `rust-version`, the scaffold, the `Name:` strip, the `b"nife"` test payload, the path in `verification.rs` line 3. | move lane |
-| The `std` farm must read the pinned checkout's source; until then the move breaks the platform layer's build. | maintainer |
-| Convert the path dependencies (and `fuzz`'s, and `byte_sink_fixture`'s) to `git` and `rev` with `version = "0.1.0"`, and read every file `script/crate-move --dry-run` lists. | move lane |
-| The four mutant exemptions (P2-14). | move lane |
-| Run the stranger test and the template's workflows in the new repository. | move lane |
+The crate lives in nifeos/byte_sink_contract, and nife depends on it by `git` and `rev`
+([#3900](https://github.com/nifeos/nife/pull/3900)). The repository's `check` and `proofs` workflows
+pass on its main branch.
 
 ## Recommendation
 

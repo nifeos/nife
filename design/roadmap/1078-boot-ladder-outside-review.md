@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: 972, 1017
 decision_dependencies: 305
 machine_requirements: none
@@ -68,8 +69,8 @@ The P1 items are in [the appendix](1078-boot-ladder-outside-review/before-the-ta
 ## Decisions for the architect
 
 Each states the background first, then the recommendation, prior art and a concrete example.
-The architect ruled the heads, the printed check names and the public names, below. The review
-clearance that is the go for the repository waits; it is under [Open decisions](#open-decisions).
+The architect ruled the heads, the printed check names, the public names and the review
+clearance, below.
 
 ### The heads are fixed shapes after the caller's system name
 
@@ -133,15 +134,21 @@ imports, so a misnomer is in their code too.
 Example: a reader written against the released crate calls `Heads::new("nife").shell_banner()` and
 knows without the `BUGS` entry that it is not waiting for a `$ `.
 
+### The review clears, and the crate carries only the console lines
+
+Ruled 2026-11-21 (UTC), option A. The crate moves to nifeos/boot_ladder with `publish = false`, no
+tag and no publication. It carries the heads, the check names and the verdict's grammar. The pages
+and slots the kernel, the progenitor and the self-test program agree on (`kernel_half` and
+`self_test_program`) stay in nife as `self_test_contract`, so their names are nife's to rule.
+
 ## Prior art
 
 The comparison with nearby work is in [the appendix](1078-boot-ladder-outside-review/prior-art.md).
 
 ## What needs the architect
 
-The review clearance, under [Open decisions](#open-decisions). The architect has ruled on the heads,
-the check names and the public names.
-Nothing else here is one-way: the manifest, the README, the tests, the `Verdict` type and the
+Nothing. The architect has ruled on the heads, the check names, the public names and the review
+clearance. Nothing else here is one-way: the manifest, the README, the tests, the `Verdict` type and the
 nife-side gate are the maintainer's.
 
 ## Done when
@@ -150,61 +157,53 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 
 ## Finding status
 
-- P0-1, manifest stands alone: Done. The license, `rust-version`, description, readme, keywords,
-  categories and lints are literal ([#3655](https://github.com/nifeos/nife/pull/3655)), and the
-  move wrote the `repository` line.
-- P0-2, the files a stranger needs: Open. The README, both licenses, `CHANGELOG.md`,
-  `_typos.toml` and `docs/stranger-test.md` exist in nifeos/boot_ladder. No stranger run is on
-  record yet, and the README's proof steps are nifeos/boot_ladder#1.
-- P0-3, shipped text points into the tree: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
-  [#3655](https://github.com/nifeos/nife/pull/3655). Tree references remain only in `Name:` blocks,
-  which the move strips.
+Read against nifeos/boot_ladder `main` at `6f2dfda` and nife `main`.
+
+- P0-1, the manifest stands alone: Done, [#3655](https://github.com/nifeos/nife/pull/3655) and the
+  move ([#3894](https://github.com/nifeos/nife/pull/3894)). `license`, `rust-version`,
+  `description`, `repository`, `readme` and the template's lints are literals, and the `publish`
+  line carries the one-sentence comment.
+- P0-2, the files a stranger needs: Done, nifeos/boot_ladder#1 and nifeos/boot_ladder#2. The
+  README, both licenses, `CHANGELOG.md` and `_typos.toml` exist, #1 gave the README its proof
+  steps, and `docs/stranger-test.md` records a passing stranger run.
+- P0-3, shipped text points into this tree: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3655](https://github.com/nifeos/nife/pull/3655) and the move
+  ([#3894](https://github.com/nifeos/nife/pull/3894)). No doc comment in nifeos/boot_ladder names a
+  nife path, a milestone, a pull request or a person.
 - P1-4, one verdict code for the writer and the readers: Done,
-  [#3655](https://github.com/nifeos/nife/pull/3655). The kernel prints through `Verdict`, and
-  `serial_console` and `xtask` read through `ParsedVerdict`.
-- P1-5, check list invariants: Done, [#3565](https://github.com/nifeos/nife/pull/3565). A test
-  (`the_check_names_are_plain_and_distinct`), not a `const` block, because a `const` block drew five
-  mutation survivors no test can kill.
-- P1-6, tests and proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3655](https://github.com/nifeos/nife/pull/3655). The self-test program prints through
+  `boot_ladder::verdict`, and `serial_console` and `xtask` read through `ParsedVerdict`.
+- P1-5, the check list's invariants: Done, [#3565](https://github.com/nifeos/nife/pull/3565). The
+  test `the_check_names_are_plain_and_distinct` holds them, not a `const` block, because a `const`
+  block drew five mutation survivors no test can kill.
+- P1-6, tests and proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565) and
   [#3655](https://github.com/nifeos/nife/pull/3655). Two Kani harnesses in `src/verdict.rs`, each
-  with a falsification patch.
-- P1-7, head literals in `xtask`: Open. The literals are gone
-  ([#3655](https://github.com/nifeos/nife/pull/3655)); the `script/lint` section that refuses a head
-  literal outside `boot_ladder`, tests and fixtures is not written, and as a new lint section
-  it is a reviewed interface.
-- P1-8, the ten public names: Done, [#3589](https://github.com/nifeos/nife/pull/3589),
-  [#3655](https://github.com/nifeos/nife/pull/3655). Ratified as built (ruled 2026-11-19 UTC).
-- P1-8b, the `self_test_program` names: out of this crate. The module is in nife's
-  `self_test_contract`, so its names, and the proposed change of
-  `DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS` to `DIRECT_MEMORY_ACCESS_OBSERVER_VIRTUAL_ADDRESS`,
-  are nife's to rule and not this review's.
+  with a falsification patch under `falsifications/`.
+- P1-7, head literals in `xtask`: Done, [#3655](https://github.com/nifeos/nife/pull/3655) and
+  [#3943](https://github.com/nifeos/nife/pull/3943). The literals went in #3655, and `script/lint` section 5c
+  (`helpers/boot_line_heads.py`) refuses a head spelled by hand outside test modules, fixtures and
+  a copy marked `boot-line-head: copy, <reason>`.
+- P1-8, the ten public names: Done, [#3589](https://github.com/nifeos/nife/pull/3589) and
+  [#3655](https://github.com/nifeos/nife/pull/3655), ratified as built (ruled 2026-11-19 UTC).
+- P1-8b, the `self_test_program` names: Will not fix in this review, because the module stays in
+  nife's `self_test_contract` (ruled 2026-11-21 UTC). Its names stay provisional there, on nife's
+  name worklist, with the proposal that `DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS` become
+  `DIRECT_MEMORY_ACCESS_OBSERVER_VIRTUAL_ADDRESS`.
 - P1-9, the boundary claim and the matching rule: Done,
-  [#3586](https://github.com/nifeos/nife/pull/3586),
-  [#3655](https://github.com/nifeos/nife/pull/3655).
+  [#3586](https://github.com/nifeos/nife/pull/3586) and
+  [#3655](https://github.com/nifeos/nife/pull/3655). The README's "The matching rule" states it.
 - P2-10, abbreviated check names: Done, [#3586](https://github.com/nifeos/nife/pull/3586). The
-  kernel's name column is still ten wide, which the README's `BUGS` records.
-- P2-11, a version policy: Done, [#3655](https://github.com/nifeos/nife/pull/3655). The README
-  states it; no identity constant exists.
-- P2-12, growth already proposed: Open. Milestone 972 (the boot stick's shared names are code) and
-  the two hoists of soak markers and job-mix fields wait; each lands in nifeos/boot_ladder and moves
-  the pin.
-- P2-13, the banner's tail: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
-  [#3586](https://github.com/nifeos/nife/pull/3586). The crate states that the tail is free text and
-  a reader takes the architecture from the machine line.
-- Decision, heads after the caller's system name: Done (ruled 2026-11-14 UTC, option A),
-  [#3586](https://github.com/nifeos/nife/pull/3586).
-- Decision, the ten public names: Done (ruled 2026-11-19 UTC, option A), built in
-  [#3589](https://github.com/nifeos/nife/pull/3589).
-- Decision, printed check names spelled out: Done (ruled 2026-11-14 UTC),
-  [#3586](https://github.com/nifeos/nife/pull/3586).
-- Decision, clear the review: Done (ruled 2026-11-21 UTC, option A). The crate moves with
-  `publish = false`, no tag and no publication, and carries only the console lines; `kernel_half`
-  and `self_test_program` stay in nife as `self_test_contract`.
-- The move: Done. The review package is
-  [notes/crate-reviews/boot-ladder.md](../../notes/crate-reviews/boot-ladder.md). The crate lives in
-  [nifeos/boot_ladder](https://github.com/nifeos/boot_ladder), and nife depends on it by git and
-  `rev`, a commit on its `main`, with `version = "0.1.0"`. It keeps `publish = false`; no tag
-  exists, and crates.io holds no release.
+  kernel's name column stays ten wide, which the crate's `BUGS` records.
+- P2-11, a version policy: Done, [#3655](https://github.com/nifeos/nife/pull/3655). The README's
+  "Version policy" states it, and no identity constant exists.
+- P2-12, growth already proposed: Done, [#3943](https://github.com/nifeos/nife/pull/3943), by the
+  record the item allows. Milestone 972 (the boot stick's shared names are code) and the two
+  hoists in
+  `notes/bugs-without-milestones/drivers-boot-and-install-1.md` (soak markers, job-mix field names)
+  each land in nifeos/boot_ladder after the move and then move nife's pin.
+- P2-13, the banner's tail: Done, [#3565](https://github.com/nifeos/nife/pull/3565) and
+  [#3586](https://github.com/nifeos/nife/pull/3586). The crate states that the tail is free text
+  and a reader takes the architecture from the machine line.
 
 ## Open decisions
 
@@ -212,21 +211,19 @@ None. The publishing hold stands.
 
 ## Follow-on
 
-- **Outstanding.** The Open lines under [Finding status](#finding-status).
+- **None.**
 
 ## BUGS
 
 - The prior-art rows come from memory and say so. A lane that writes the README should read each source before citing it.
-- Item 7's gate is nife's, not the crate's, and is not written yet. After the move the crate cannot know that a consumer
-  spelled a head by hand; only the consumer's own lint can.
+- Item 7's gate is nife's, not the crate's: after the move the crate cannot know that a consumer
+  spelled a head by hand. It cannot see a head assembled from pieces, or a Rust test module that
+  is not at the end of its file.
 - The version policy adds no checkable version. A tenth rung that printed one would itself be a
   wording to freeze, and this review found no reader that needs it yet.
 - The review did not run the template's name-check helpers over the crate; `script/names` and
   `helpers/name_release.py` in nife cover the same ten names, and the printed check names are
   string literals no helper reads.
-- `xtask/src/time_record.rs` line 929 and 1010 (`"nife on riscv64"`, `"nife on x86_64"`) spell the
-  banner inside `#[cfg(test)] mod tests`, so item 7 omits them; item 7's gate must exempt test
-  modules the same way.
 
 ## Index row
 

@@ -31,15 +31,16 @@ build and test from.
 
 ## Finding status
 
-- P0-1, it cannot leave before `nifefs` and `measured_boot`: Ruled (Decision A, 2026-11-16 UTC).
-  Not built: nothing to do in the crate; it waits for those two crates to have repositories.
+- P0-1, it cannot leave before `nifefs` and `measured_boot`: Waiting on repositories for `nifefs`
+  and `measured_boot`. Decision A ruled the order on 2026-11-16 UTC, and the crate needs nothing
+  more.
 - P1-2, the loader's digest words and the three-file card set: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-3, a bad table line reported as an unreadable table: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
-- P1-4, the crate does not stand alone: Open. The scaffold files, a measured `rust-version`,
-  inlined lints, rewritten citations, a README and the `Name:` strip all belong to the move, which
-  Decision A orders.
+- P1-4, the crate does not stand alone: At the move. The scaffold files, a measured
+  `rust-version`, inlined lints, rewritten citations, a README and the `Name:` strip remain, and
+  Decision A orders the move.
 - P1-5, `BOOT_PROGRAMS` restates `PROGENITOR`: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-6, the notice constant is a sentence: Done, [#3610](https://github.com/nifeos/nife/pull/3610).
@@ -53,18 +54,21 @@ build and test from.
 - P2-11, duplicate and non-UTF-8 entries unreported: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580), by the item's own alternative: the crate's
   `BUGS` states the three facts.
-- P2-12, the stick-path haystack contains the archive: Done. `embedded_archive` returns the
-  archive's span, `card_check` zeroes that span before it judges the rest of the boot file, and a
-  test carries the `progenitor` digest in an archive entry. The `BUGS` line is gone.
+- P2-12, the stick-path haystack contains the archive: Done,
+  [#3810](https://github.com/nifeos/nife/pull/3810). `embedded_archive` returns the archive's
+  span, `card_check` zeroes that span before it judges the rest of the boot file, and a test
+  carries the `progenitor` digest in an archive entry.
 - P2-13, the cost of the `contains` window scan: Done,
   [#3610](https://github.com/nifeos/nife/pull/3610) (about 1.6 ms per MiB).
-- P2-14, no proof: Done. The `contains` harness and the table-comparison harness each carry a
-  falsification patch and share one `script/verify` row.
-- P2-15, `hex_string` and `measured_entries` public with one reader: Open. Both stay public until
-  the move decides; a two-way door the maintainer rules then.
+- P2-14, no proof: Done, [#3610](https://github.com/nifeos/nife/pull/3610) and
+  [#3810](https://github.com/nifeos/nife/pull/3810). The `contains` harness and the
+  table-comparison harness each carry a falsification patch and share one `script/verify` row.
+- P2-15, `hex_string` and `measured_entries` public with one reader: At the move. Both stay
+  public until then; a two-way door the maintainer rules at the move.
 - P2-16, the stale list in `notes/boot-stick.md`: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
-- Decision A, when it leaves: Ruled (2026-11-16 UTC). Recorded in the `sealed_pair` row of
+- Decision A, when it leaves: Done, [#3810](https://github.com/nifeos/nife/pull/3810) (ruled
+  2026-11-16 UTC). Recorded in the `sealed_pair` row of
   `notes/releasable-crates-2026-10-07/inventory.md` and in milestone 1017's order.
 - Decision B, two public names: Done, [#3610](https://github.com/nifeos/nife/pull/3610)
   (maintainer, provisional, 2026-11-14 UTC).
@@ -183,11 +187,6 @@ What is left of this review is under "Finding status" above.
 - **Milestone 1017.** The contract crates leave in its order; items 1, 4 and 15 follow the order
   Decision A rules.
 - **Recorded.** Item 11 is in `crates/sealed_pair/src/lib.rs`'s `BUGS`.
-- **Done.** Items 6, 9, 12, 13 and 14: `AUTHORITY_NOTICE` and `build` are the provisional names of
-  Decision B, `embedded_archive` returns the archive's span, a measurement shows `contains` is
-  fast enough, and both harnesses prove. Decision A is in the inventory row and in milestone
-  1017's order.
-- **Outstanding.** Nothing in this crate; items 1, 4 and 15 wait for the move.
 
 ## Index row
 

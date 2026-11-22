@@ -29,9 +29,7 @@ what it leaves to them. They can build, test, prove and falsify it from the READ
 a working polled driver against QEMU from its example without first reading the specification. Every name they meet says what it holds, and every claim of the README is a
 harness that fails under its patch.
 
-Publishing stays held. No crate from this organization publishes to crates.io until the
-maintainers have extracted several crates and a review has decided whether any of them combine.
-Nothing in this block lifts that hold, and a green gate here is not permission to publish.
+Publishing stays held, and nothing in this block lifts that hold.
 
 ## What the review covered
 
@@ -55,8 +53,6 @@ one-way after it. The maintainers decide every two-way item provisionally.
 the crate's own words that says why it is unpublished, the publishing hold above. The release that
 publishes, whenever the hold lifts, deletes the line. Two-way. XS.
 
-Status: Landed in nifeos/non_volatile_memory_express#15.
-
 #### P0-2. Four public register names needed a ruling before the tag
 
 `src/registers.rs` spells four offsets differently from the spellings an earlier record of their
@@ -74,8 +70,6 @@ These, and not `CAPABILITIES`, `DOORBELL_BASE`, `ADMIN_SUBMISSION_QUEUE_BASE_ADD
 registers hold physical addresses, and [the naming conventions](../naming.md) put
 `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` on an address in every location. No code change follows.
 One-way (public names). XS.
-
-Status: Ruled, and `main` already spelled them so.
 
 ### P1: before the first release
 
@@ -96,8 +90,6 @@ unit as its second argument, and `holds_whole_block` and `transfer_command` drop
 gains the block bound, `starting_logical_block + blocks <= namespace.blocks` for every accepted
 command, with its falsification patch. One-way (three signatures). S.
 
-Status: Landed in nifeos/non_volatile_memory_express#19.
-
 #### P1-2. Parameters and methods hold a quantity or an address without saying so
 
 - `Capabilities::minimum_page_size` (`src/capabilities.rs`) returns bytes with no unit in its name.
@@ -116,9 +108,6 @@ Every address parameter takes a `_physical_address` suffix: `data_physical_addre
 `queue_physical_address` for the two queue builders. The doorbell parameter becomes `role`, and the
 shift takes the one spelling `logical_block_size_shift`. One-way at the tag. S.
 
-Status: Landed in nifeos/non_volatile_memory_express#19; `doorbell_stride` later became
-`doorbell_stride_exponent` in nifeos/non_volatile_memory_express#35.
-
 #### P1-3. Two harness names and their patch files carry `sq` and `cq`
 
 `sq_push_stays_in_bounds` and `cq_pop_stays_in_bounds_and_flips_only_at_the_wrap`
@@ -128,8 +117,6 @@ head reads harness names. Change: `submission_push_stays_in_bounds` and
 `completion_pop_stays_in_bounds_and_flips_only_at_the_wrap`, with the patch files and their
 `Falsifies` lines renamed alongside. The functions are private, so the door is two-way and the
 names are the maintainers' provisional call. XS.
-
-Status: Landed in nifeos/non_volatile_memory_express#19.
 
 #### P1-4. Most decoded fields lack the specification's mnemonic as an alias
 
@@ -147,8 +134,6 @@ specification's term finds nothing:
 Change: one `#[doc(alias)]` per mnemonic, and the mnemonic in the opening sentence of each doc
 comment that lacks it. Two-way. XS.
 
-Status: Landed in nifeos/non_volatile_memory_express#17.
-
 #### P1-5. The direction of a transfer is a bare `bool`
 
 `transfer_command(.., write: bool)` takes seven arguments and carries
@@ -157,8 +142,6 @@ the prior art names the direction.
 
 Ruled 2026-11-09: a two-variant enum, `Direction` with the variants `Read` and `Write`, replaces
 the `bool`, and one builder stays rather than two methods. One-way at the tag. XS.
-
-Status: Landed in nifeos/non_volatile_memory_express#19.
 
 #### P1-6. Nothing states the memory ordering either ring needs
 
@@ -178,9 +161,6 @@ three dwords. A helper, `Completion::phase_of(dword_three: u32) -> bool` (name p
 caller test ownership before it has the whole entry. The text is two-way; the helper is a new
 public name. XS.
 
-Status: Landed in nifeos/non_volatile_memory_express#16 (the text) and
-nifeos/non_volatile_memory_express#23 (the helper, `Completion::is_phase_tag_set`).
-
 #### P1-7. The example of the README teaches a completion that frees nothing
 
 The worked completion is `[0, 1 | (1 << 16), 0, 1 | (1 << 16)]`. Dword 2 is zero, so
@@ -193,8 +173,6 @@ Change: dword 2 becomes `1` (head 1, queue 1) and dword 1 becomes `0`. A sentenc
 BUGS and on `is_owned` says that ownership is the phase tag only and that the caller matches
 identifiers. Two-way. XS.
 
-Status: Landed in nifeos/non_volatile_memory_express#16.
-
 #### P1-8. Two panics on caller input that no documentation names
 
 `Command::create_io_completion_queue` and `create_io_submission_queue` (`src/command.rs`) compute
@@ -205,8 +183,6 @@ comment says so. Neither checks `entries` against `Capabilities::maximum_queue_e
 comment does not say so. No value the controller writes reaches either panic. Change: an `assert!` with a message for `entries >= 2` in both queue builders and a sentence
 in each doc comment, and the page-size condition in the doc comment of `physical_region_page_pair`.
 The depth check against the capabilities stays with the caller, and the doc says so. Two-way. XS.
-
-Status: Landed in nifeos/non_volatile_memory_express#16.
 
 #### P1-9. The controller configuration fixes the memory page at 4 KiB
 
@@ -221,8 +197,6 @@ its falsification patch shows that the encoded value decodes back to the page si
 One-way (a signature and a new
 name). S.
 
-Status: Landed in nifeos/non_volatile_memory_express#20.
-
 #### P1-10. The admin queue attributes have a formula in a comment and no builder
 
 The doc comment of `ADMIN_QUEUE_ATTRIBUTES_REGISTER` (`src/registers.rs`) gives the packing. Every
@@ -230,8 +204,6 @@ other value a driver writes has a builder, and a caller who writes this formula 
 off-by-one the queue builders exist to prevent. Change: `admin_queue_attributes(submission_entries,
 completion_entries) -> u32` (name provisional) with the `entries >= 2` assertion of P1-8, a unit
 test of the packing, and a line in the example of the README. A new public name. XS.
-
-Status: Landed in nifeos/non_volatile_memory_express#22 as `admin_queue_attributes`.
 
 #### P1-11. The README lags the shared section order of the template
 
@@ -242,15 +214,11 @@ are relative paths, which docs.rs cannot resolve, since `src/lib.rs` includes th
 crate documentation. Change: the section, `cargo install cargo-fuzz` before the run line, and
 absolute links to the two license files. Two-way. XS.
 
-Status: Landed in nifeos/non_volatile_memory_express#16.
-
 #### P1-12. The keywords miss the word a user searches for
 
 `keywords = ["no-std", "kani", "driver"]` in `Cargo.toml`, so a crates.io search for `nvme` misses
 the crate, whose name lacks those letters too. Change: add `nvme` and `storage`, within the limit of
 five. Two-way. XS.
-
-Status: Landed in nifeos/non_volatile_memory_express#16.
 
 #### P1-13. The template pin predates the mutation stack, and the ruleset does not require it
 
@@ -264,10 +232,6 @@ Change: when the template releases, take the pin bump from Dependabot, and in th
 add the scaffold's `mutation.yml` caller and budgets file. The settings script then makes the tenth
 check required, and one dispatch on `main` gives the release gate a green run. Two-way. S.
 
-Status: Landed: nifeos/non_volatile_memory_express#13 added the mutation caller, and
-nifeos/non_volatile_memory_express#34 pins template release `v8`. The ruleset requires `check /
-mutation-diff`, and `mutation / mutation` has a green full run on `main`.
-
 #### P1-14. `IdentifyNamespace::default()` reads as a namespace
 
 `Default` (`src/identify.rs`) yields zero blocks of 512 bytes, standing for "before Identify has
@@ -277,14 +241,53 @@ removing it before costs nothing.
 Ruled 2026-11-09: the `Default` implementation goes before the tag, and the state before Identify
 answers becomes `None` in an `Option<IdentifyNamespace>`. One-way at the tag. XS.
 
-Status: Landed in nifeos/non_volatile_memory_express#19.
+## Finding status
+
+- P0-1, the publish comment: Done, nifeos/non_volatile_memory_express#15.
+- P0-2, four register names: Done, ruled 2026-11-09; `main` already spelled them so.
+- P1-1, `Namespace` carries its unit: Done, nifeos/non_volatile_memory_express#19.
+- P1-2, unit and address names on parameters: Done, nifeos/non_volatile_memory_express#19 and
+  nifeos/non_volatile_memory_express#35.
+- P1-3, `sq` and `cq` in two harness names: Done, nifeos/non_volatile_memory_express#19.
+- P1-4, mnemonics as aliases: Done, nifeos/non_volatile_memory_express#17.
+- P1-5, `Direction` in place of a `bool`: Done, nifeos/non_volatile_memory_express#19.
+- P1-6, the ordering both rings need: Done, nifeos/non_volatile_memory_express#16 and
+  nifeos/non_volatile_memory_express#23.
+- P1-7, a README completion that frees nothing: Done, nifeos/non_volatile_memory_express#16.
+- P1-8, two undocumented panics: Done, nifeos/non_volatile_memory_express#16.
+- P1-9, a fixed 4 KiB memory page: Done, nifeos/non_volatile_memory_express#20.
+- P1-10, a builder for the admin queue attributes: Done, nifeos/non_volatile_memory_express#22.
+- P1-11, the README section order: Done, nifeos/non_volatile_memory_express#16.
+- P1-12, `nvme` among the keywords: Done, nifeos/non_volatile_memory_express#16.
+- P1-13, the template pin and the mutation stack: Done, nifeos/non_volatile_memory_express#13 and
+  nifeos/non_volatile_memory_express#34.
+- P1-14, no `Default` on the Identify parse: Done, nifeos/non_volatile_memory_express#19.
+- P2-1, the PRP list: Done, nifeos/non_volatile_memory_express#26.
+- P2-2, the completion status by its parts: Done, nifeos/non_volatile_memory_express#23 and
+  nifeos/non_volatile_memory_express#36.
+- P2-3, the shutdown value and status bits: Done, nifeos/non_volatile_memory_express#21 and
+  nifeos/non_volatile_memory_express#36.
+- P2-4, Identify Controller and the namespace list: Done, nifeos/non_volatile_memory_express#24 and
+  nifeos/non_volatile_memory_express#38.
+- P2-5, command identifiers in flight: Done, nifeos/non_volatile_memory_express#25 and
+  nifeos/non_volatile_memory_express#36.
+- P2-6, the software controller example: Done, nifeos/non_volatile_memory_express#27.
+- P2-7, the mutation ledger by configuration: Done, nifeos/non_volatile_memory_express#18.
+- P2-8, the package ships its CI: Done, nifeos/non_volatile_memory_express#16 and
+  nifeos/non_volatile_memory_express#32.
+- P2-9, the minimum Rust version: Done, nifeos/non_volatile_memory_express#16.
+- P2-10, small text fixes: Done, nifeos/non_volatile_memory_express#16.
+- The QEMU run at depth 2 and with a 16 KiB page: Done, nifeos/non_volatile_memory_express#33 and
+  nifeos/non_volatile_memory_express#38.
+- The driver on a real controller with a non-zero `FLBAS`: Waiting on a board run.
+- The long ordering run on a weakly ordered host: Waiting on a board run.
 
 ## Decisions this block needs
 
 1. The four register spellings (P0-2). Ruled 2026-11-09: ratified as `src/registers.rs` spells
    them.
-2. The tag. Ruled: `v0.1.0-pre.1` and `v0.1.0-pre.2` exist, and #37 prepares the `v0.1.0-pre.3`
-   ruled on 2026-11-19. A plain `v0.1.0` waits with the first publish, which stays held until every
+2. The tag. Ruled: `v0.1.0-pre.1`, `v0.1.0-pre.2` and `v0.1.0-pre.3` exist. A plain `v0.1.0`
+   waits with the first publish, which stays held until every
    outside review milestone has delivered (ruled 2026-11-18).
 3. The public API of P1-1, P1-2, P1-5, P1-9 and P1-14. All five ruled 2026-11-09, as the items
    state, and landed.
@@ -298,17 +301,15 @@ Status: Landed in nifeos/non_volatile_memory_express#19.
    `IdentifyController::maximum_data_transfer_bytes`, `NotInFlightError` and
    `CompletionQueue::expects_phase_tag_set`.
 5. Every two-way item, the harness names of P1-3 among them, is a provisional call of the
-   maintainers and not a ruling. So are the two of #38: two kernel command line words that shape
-   the QEMU example, and a BUGS line in place of a parse for P2-4's entry sizes.
-
+   maintainers and not a ruling. So are the two of nifeos/non_volatile_memory_express#38: two
+   kernel command line words that shape the QEMU example, and a BUGS line in place of a parse for
+   P2-4's entry sizes.
 6. Whether the first release waits for the two hardware rows. Ruled 2026-11-19: it waits for both.
    One is the driver on one real controller with a non-zero `FLBAS`, a drive with a 4096-byte
    logical block format. The other is the long ordering run on a weakly ordered host. Both must
    run on real hardware. The planned host is radon (VisionFive 2, JH7110, RVWMO) with an M.2 NVMe
    drive, once milestone 163 (the JH7110 PCIe driver) lands. An emulated NVMe device under QEMU may serve as interim
    evidence and satisfies neither row.
-
-The publishing hold stands.
 
 ## Open decisions
 
@@ -338,26 +339,12 @@ claims none of the QEMU or hardware steps.
 
 ## Where this stands
 
-Every finding has landed but the queue entry sizes of P2-4 (#38). Two steps need the bench, and
-they block the first release.
-
-| item | what remains | blocker |
-|---|---|---|
-| P2-4, QEMU | The entry size BUGS line and the QEMU runs at depth 2 and with a 16 KiB page, all in #38 | #38 is a draft until `v0.1.0-pre.3` is tagged |
-| Hardware | The driver on one real controller with a non-zero `FLBAS` | bench; blocks the first release |
-| Ordering | A long ordering run on a weakly ordered host | bench; blocks the first release |
-| Tag | `v0.1.0-pre.3`, ruled and prepared in #37 | another lane tags it |
-| Release | `publish = false` goes, and `v0.1.0`, only when the hold lifts | publishing hold |
+Every finding has landed. The two bench rows of the finding status block the first release.
 
 ## Follow-on
 
-- **Done.** Each finding's status line cites the pull request in
-  `nifeos/non_volatile_memory_express` that landed it.
-- **Done.** The tags `v0.1.0-pre.1` (`27aa19c`) and `v0.1.0-pre.2` (`73b335c`), and the stranger
-  and QEMU runs of #33.
-- **Outstanding.** Every row of the table above, checked on `main` and in the open
-  pull requests. The two bench rows block delivery, and the first publish of every reviewed crate
-  waits for them (decision 6).
+- **Outstanding.** The two bench rows, for which the first publish of every reviewed crate waits
+  (decision 6).
 
 ## Index row
 

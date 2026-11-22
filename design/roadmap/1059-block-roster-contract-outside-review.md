@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-09
+built: 2026-11-22
 milestone_dependencies: 1017, 1034
 decision_dependencies: 305
 machine_requirements: none
@@ -238,40 +239,37 @@ None needs hardware or QEMU.
 
 - The review read the template's checks through the repository's CI results, not locally, so a
   check the template adds before a lane starts is missing from the list.
-- P1-1 waits on a template release; until then the lag check passes at the current pin, and nothing
-  in this repository can move it.
 - The P2 order is the judgment of the reviewer on what a user asks for first. Nobody outside has
   asked for anything yet.
 
-## Where this stands
+## Finding status
 
-Every finding has one current status. The repository is `nifeos/block_roster_contract`; `v0.1.0-pre.2`
-is tagged, and the weekly jobs pass on `main`.
+Each line names the pull request that closed the finding in `nifeos/block_roster_contract`, read on its `main`.
 
-| finding | status |
-|---|---|
-| P0-1 stranger test | DONE: #3, #5; `docs/stranger-test.md` carries a run date |
-| P0-2 mutation survivors | DONE: #6; `.cargo/mutants.toml` and one exemption |
-| P1-1 CI pin and mutation caller | DONE: #4, #7, #19; every caller pins release `v8`, which carries `mutation.yml`, and the ruleset requires `check / mutation-diff` |
-| P1-2 `ReadError` | DONE: #9; nife #3568 moved the two call sites |
-| P1-3 capacity word checked | DONE: #9; the variants `CapacityBeyondPage` and `CountBeyondCapacity` are the maintainers' provisional names, open to the naming review before any tag |
-| P1-4 `Display` and `Error` on `TooManyDevices` | DONE: #9 |
-| P1-5 `forbid(unsafe_code)` | DONE: #9 |
-| P1-6 `index` and the transport aliases | DONE: #9 |
-| P1-7 shipped text | DONE: #5, #8, #9, #10 |
-| P1-8 `Hash`, `Ord`, exact-size `devices()` | DONE: #9 |
-| P2-1 publishing metadata | DONE: #10 |
-| P2-2 `rust-version` | Declined: stays 1.88 because the reader uses `slice::as_chunks`; README BUGS, #18 |
-| P2-3 package contents | DONE: #10 |
-| P2-4 fuzz targets | DONE: #12 |
-| P2-5 proofs on longer pages | DONE: #11 |
-| P2-6 what a reader may trust | DONE: #10 |
-| P2-7 repository topics | DONE: the topics are `rust`, `no-std`, `formal-verification`, `kani`, `block-device`, `storage`, `virtio` and `nvme` |
-| P2-8 single-letter locals | DONE: #10 |
-| `capacity_of(len)` becomes `entry_capacity(page_bytes)` | DONE: #20 |
-| any further tag | None now: decision 6 |
+- P0-1, the stranger test: Done, `nifeos/block_roster_contract#3` and `nifeos/block_roster_contract#5`.
+- P0-2, mutation survivors: Done, `nifeos/block_roster_contract#6`.
+- P1-1, the CI pin and the mutation caller: Done, `nifeos/block_roster_contract#4`, `nifeos/block_roster_contract#7` and `nifeos/block_roster_contract#19`.
+- P1-2, `ReadError`: Done, `nifeos/block_roster_contract#9`, with the two call sites in nifeos/nife#3568.
+- P1-3, the capacity word checked: Done, `nifeos/block_roster_contract#9`. `CapacityBeyondPage` and `CountBeyondCapacity`
+  are provisional names, open to the naming review before any tag.
+- P1-4, `Display` and `Error` on `TooManyDevices`: Done, `nifeos/block_roster_contract#9`.
+- P1-5, `forbid(unsafe_code)`: Done, `nifeos/block_roster_contract#9`.
+- P1-6, `index` and the transport aliases: Done, `nifeos/block_roster_contract#9`.
+- P1-7, the shipped text: Done, `nifeos/block_roster_contract#5`, `nifeos/block_roster_contract#8`, `nifeos/block_roster_contract#9` and `nifeos/block_roster_contract#10`.
+- P1-8, `Hash`, `Ord` and an exact-size `devices()`: Done, `nifeos/block_roster_contract#9`.
+- P2-1, publishing metadata: Done, `nifeos/block_roster_contract#10`.
+- P2-2, `rust-version` 1.85: Won't fix. The reader uses `slice::as_chunks`, stable since 1.88; the
+  maintainers ruled it provisionally on 2026-11-18, and the README BUGS says so (`nifeos/block_roster_contract#18`).
+- P2-3, package contents: Done, `nifeos/block_roster_contract#10`.
+- P2-4, fuzz targets: Done, `nifeos/block_roster_contract#12`.
+- P2-5, proofs on longer pages: Done, `nifeos/block_roster_contract#11`.
+- P2-6, what a reader may trust: Done, `nifeos/block_roster_contract#10`.
+- P2-7, repository description and topics: Done, a settings change recorded in `nifeos/block_roster_contract#18`; the topics
+  carry `block-device`, `virtio` and `nvme`.
+- P2-8, single-letter locals: Done, `nifeos/block_roster_contract#10`.
+- Decision 6, `capacity_of(len)` becomes `entry_capacity(page_bytes)`: Done, `nifeos/block_roster_contract#20`.
 
-The publishing hold keeps `publish = false`.
+The publishing hold keeps `publish = false`, and `v0.1.0-pre.2` stays the last tag (decision 6).
 
 ## Open decisions
 
@@ -279,13 +277,14 @@ None. The publishing hold stands.
 
 ## Follow-on
 
-- **Done.** P0-1 to P0-2, P1-1 to P1-8 and every P2 item landed in
-  `nifeos/block_roster_contract`; the table above names the pull request of each. nife #3568 moved
+- **Done.** P0-1 to P0-2, P1-1 to P1-8 and every P2 item but P2-2 landed in
+  `nifeos/block_roster_contract`; the finding status above names the pull request of each. nife #3568 moved
   the two call sites.
 - **Done.** The rename of `capacity_of` to `entry_capacity` is `nifeos/block_roster_contract` #20,
   merged. Read from the repository through the GitHub API.
-- **Outstanding.** A tag for the rename waits until nife needs a newer pin or a release is near
-  (decision 6). `v0.1.0-pre.2` is the last tag, and the repository's tags list confirms it.
+- **Recorded.** A tag for the rename waits until nife needs a newer pin or a release is near
+  (decision 6, ruled 2026-11-19). `v0.1.0-pre.2` is the last tag, and the repository's tags list
+  confirms it.
 
 ## Index row
 
