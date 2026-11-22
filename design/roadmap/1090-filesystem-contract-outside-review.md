@@ -64,8 +64,10 @@ now are `file_system_contract`, `directory`, `extended_attribute` and `block`.
   `block::request` does (provisional, restrictive first). No call site needed a change: each proxy
   forwards fields it decoded through the masks, each server mints handles from a table far below
   `MAXIMUM_HANDLE`, and no attack fixture sends a field past its bound.
-- Item 8 (P1), seven unproven properties: Open. Six harnesses with falsification patches are in
-  [#3566](https://github.com/nifeos/nife/pull/3566) and [#3637](https://github.com/nifeos/nife/pull/3637); the termination of the four walkers is still unproven.
+- Item 8 (P1), seven unproven properties: Done, [#3566](https://github.com/nifeos/nife/pull/3566), [#3637](https://github.com/nifeos/nife/pull/3637) and [#4010](https://github.com/nifeos/nife/pull/4010).
+  Ten harnesses carry falsification patches. Four of them prove that the four walkers end on every
+  buffer up to eight bytes (sixteen for the store). Each yielded record takes a fixed least number of
+  bytes, which bounds a walk over a page; a host test walks a page of the smallest records for each.
 - Item 9 (P1), equivalent mutants need a home: At the move. The classes go into the new
   repository's `.github/mutants-exempts`, with one green full run before the tag.
 - Item 10 (P1), the README is short of the scaffold: Done, [#3911](https://github.com/nifeos/nife/pull/3911) and [#3999](https://github.com/nifeos/nife/pull/3999). The badge row,
