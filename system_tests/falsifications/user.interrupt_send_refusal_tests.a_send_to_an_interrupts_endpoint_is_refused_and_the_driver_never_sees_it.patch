@@ -9,16 +9,17 @@ because the send rendezvouses with the driver parked in `Interrupt::WAIT`. That 
 `1`, which is exactly what its interrupt looks like.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
+index d894909c1..3dbc6aa04 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -249,9 +249,7 @@ impl<T: Node> Rendezvous<T> {
+@@ -396,9 +396,7 @@ impl<T: Node> Rendezvous<T> {
      pub fn send(&mut self, me: Unqueued<T>) -> SendVerdict<T> {
          // Before a receiver is popped: the receiver here is the driver, and handing it a sender's
          // words is the forgery the refusal exists to stop.
 -        if self.bound_to_interrupt {
 -            SendVerdict::Refused(me)
--        } else if let Some(receiver) = self.receivers.pop_front() {
-+        if let Some(receiver) = self.receivers.pop_front() {
+-        } else if let Some(receiver) = self.take_receiver() {
++        if let Some(receiver) = self.take_receiver() {
              SendVerdict::Rendezvous(receiver, me)
          } else {
-             self.senders.push_back(me);
+             self.queue_sender(me);

@@ -17,10 +17,10 @@ is written the only way it can be, by minting a second token with `unsafe`. That
 catch the result.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index c26669cca..70c718f9a 100644
+index d894909c1..01bc0918e 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -82,10 +82,10 @@ fn take_out<T: Node>(queue: &mut Queue<T>, victim: NonNull<T>) -> Option<Unqueue
+@@ -81,10 +81,10 @@ fn take_out<T: Node>(queue: &mut Queue<T>, victim: NonNull<T>) -> Option<Unqueue
      let mut kept: Queue<T> = Queue::new();
      let mut found = None;
      while let Some(node) = queue.pop_front() {

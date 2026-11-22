@@ -11,10 +11,10 @@ rendezvous, which is the loss this ordering exists to prevent: a signal delivere
 waiting must not be overtaken by a sender that arrived later.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index c26669cca..d631ab582 100644
+index d894909c1..f2a268d03 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -413,11 +413,11 @@ impl<T: Node> Rendezvous<T> {
+@@ -412,11 +412,11 @@ impl<T: Node> Rendezvous<T> {
      ///
      /// Name: ratified 2026-11-21 (UTC).
      pub fn receive(&mut self, me: Unqueued<T>) -> ReceiveVerdict<T> {

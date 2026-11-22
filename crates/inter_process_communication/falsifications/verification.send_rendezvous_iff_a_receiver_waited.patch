@@ -10,10 +10,10 @@ senders would be told they had met each other, so one thread's message is delive
 that never asked for one and both are released as though a transfer happened.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index c26669cca..d73c29dfb 100644
+index d894909c1..2a7d49573 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -399,7 +399,7 @@ impl<T: Node> Rendezvous<T> {
+@@ -398,7 +398,7 @@ impl<T: Node> Rendezvous<T> {
          // words is the forgery the refusal exists to stop.
          if self.bound_to_interrupt {
              SendVerdict::Refused(me)

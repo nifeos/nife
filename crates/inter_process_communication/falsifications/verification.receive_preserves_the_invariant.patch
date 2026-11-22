@@ -10,10 +10,10 @@ with one sender and no pending signal, after the receive collects it. The rendez
 itself busy with nobody on it.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index c26669cca..050e06ab6 100644
+index d894909c1..617dd85be 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -354,11 +354,7 @@ impl<T: Node> Rendezvous<T> {
+@@ -353,11 +353,7 @@ impl<T: Node> Rendezvous<T> {
          let Waiting::Senders(senders) = &mut self.waiting else {
              return None;
          };
