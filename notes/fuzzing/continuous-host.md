@@ -234,10 +234,9 @@ unit's user. It prints the tag and the assets and publishes nothing.
   the held seed. Only clean rows leave the host, so nothing has leaked; the filer's milestone should
   move held rows' seeds under the held directory.
 - Each move to a newer main idles every slot until the slowest current window ends, and the first
-  window after it rebuilds. Main lands many commits a day, so this costs a share of the rate that
-  nobody has measured.
+  window after it rebuilds. Main lands many commits a day, and nobody has measured the cost.
 - Nothing frees the host's disk. The toolchain step installs each newly pinned nightly and removes
-  none, each slot's `target/` keeps the artifacts of every compiler it built with, and the held
+  none, each slot's `target/` keeps the artifacts of every compiler it used, and the held
   directory only grows. No check warns before the disk fills.
 - An unfinished run of any required check name keeps the current commit, even the skipped duplicate
   that a push to main starts after the merge queue's run. The next look, 5 minutes later, moves.
