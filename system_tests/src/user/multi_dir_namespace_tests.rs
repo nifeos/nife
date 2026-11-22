@@ -110,7 +110,7 @@ fn two_tree_shell() -> Option<u64> {
             b: (file_system_fixture::tree::OTHER, rights),
             role: ROLE_TWO_TREES,
             arg: file_system_contract::grant::specification(0, rights),
-            // **Eleven.** This script plans an `rm`, and in a debug build the deepest direct chain
+            // **Eleven.** This script plans an `rm`, and in a debug build the deepest chain
             // from `_start` through `two_tree_rm` and the planner (`plan_against_with_streams`,
             // `plan_input_operand`, `designate`) is about 43.8 KiB, the sum of each frame's
             // prologue, most of it 512-byte directory paths held by value. Twelve pages leave about

@@ -66,12 +66,12 @@ fn shell_expanded() -> Option<u64> {
                 directory::rights::ENUMERATE | directory::rights::DESCEND | directory::rights::READ,
             ),
             arg2: 0,
-            // Six pages ran within a few dozen bytes of the guard once `ShellHoldings` learned a
-            // second tree's mount point, and `ShellHoldings` grew 2304 bytes when a directory path
-            // came to pack 512 bytes, so seven leaves too little; eight is this wiring's ceiling.
+            // In a debug build the deepest chain from `_start` through `globbing` and the planner
+            // is about 44.3 KiB, the frame sizes summed; `globbing`'s own frame is 21 KiB, most
+            // of it 512-byte directory paths held by value. Twelve pages leave about 4.8 KiB.
             // See notes/two-trees.md, "The globbing witness's stack, measured", and its BUGS for
             // the smaller frame that should replace the extra pages.
-            stack_pages: 8,
+            stack_pages: 11,
             verdict: false,
         },
     )?;
