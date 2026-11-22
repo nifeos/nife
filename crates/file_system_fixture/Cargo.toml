@@ -5,10 +5,11 @@ edition = "2024"
 rust-version = "1.88"
 description = "Test data for a filesystem stack: the names and contents of the files a test image ships, the verdict words of the witnesses that probe it, and the shapes of the walk and throughput benchmarks"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/nifeos/file_system_contract"
 readme = "README.md"
 keywords = ["no-std", "filesystem", "testing"]
 categories = ["no-std", "embedded", "filesystem"]
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+publish = false     # this crate is test data and never publishes
 
 # The filesystem test fixture: the names and contents of the files the test image ships, the
 # witnesses' verdict words, and the shapes of the walk and throughput benchmarks. It is test data
