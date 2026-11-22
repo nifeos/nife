@@ -5206,7 +5206,6 @@ crates/pmap/src/lib.rs::write_report
 
 
 
-crates/program_argument_contract/src/lib.rs::MAGIC
 
 
 crates/program_table/src/image.rs
