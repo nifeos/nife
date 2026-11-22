@@ -64,7 +64,7 @@ rows.
 Three things the trial found serve the driver nife keeps, and are on it:
 
 - Every `no_std` program enters through `user_mode_runtime::program_entry!`, which gives `x86_64`
-  the entry stack its psABI promises (notes/user-mode-runtime.md, "Entering a process").
+  the entry stack its psABI promises (crates/user_mode_runtime/docs/design.md, "Entering a process").
 - `script/bench --keyboard` and its two rows, which never gate.
 - A used-ring entry naming a buffer the driver never posted stops `keyboard_driver` with
   `E_COMPLETION` rather than being dropped.

@@ -938,7 +938,7 @@ echo "rule 1: no asm outside kernel/src/arch/"
 # A program enters through `user_mode_runtime::program_entry!`, never a hand-written `_start`. On
 # x86_64 the kernel enters a thread with `rsp % 16 == 0` and the psABI promises `rsp % 16 == 8`, so
 # a plain `extern "C" fn _start` misplaces every 16-byte-aligned local; the macro's one-`call` shim
-# is the fix (notes/user-mode-runtime.md, "Entering a process"). `loaded_image_check` proves the
+# is the fix (crates/user_mode_runtime/docs/design.md, "Entering a process"). `loaded_image_check` proves the
 # alignment at run time for one program; this holds every other one to the same entry. `$$` for
 # the reason rule 1 gives above.
 echo "==> programs enter through program_entry!"

@@ -4,8 +4,7 @@
 //! Each wrapper's only obligation is `invoke`'s own; `abi::virtual_io` states what the kernel checks
 //! (`WRITE_REGISTER` refuses the queue-address and notify registers; `SETUP_QUEUE` and `NOTIFY` are
 //! bounds-checked against the DMA region and its high-water mark). A module rather than crate-root
-//! items, because only a program that owns a `VirtualIo` capability needs them. See
-//! notes/user-mode-runtime.md.
+//! items, because only a program that owns a `VirtualIo` capability needs them.
 
 /// `READ_REGISTER` at `offset` on the `VirtualIo` capability in `virtual_io_slot`. Reads are DMA-safe, so any
 /// aligned register in the device's own slot. Returns the register value, or a negative
@@ -121,8 +120,7 @@ pub fn doorbell_barrier() {
 /// before its available index, that index before the notify, a used index before its payload.
 ///
 /// `dmb ish` on aarch64, `fence` on riscv64; on `x86_64`, TSO and a serializing system call leave only a
-/// compiler fence to supply. A fourth architecture fails to build. See notes/user-mode-runtime.md
-/// and notes/architecture-list-sweep.md, finding 9.
+/// compiler fence to supply. A fourth architecture fails to build rather than run unordered.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted, the lane for milestone 186 (derive the architecture list), #1143, 2026-09-23
 /// (UTC); marker written 2026-10-12 (UTC). Milestone 139 (drive the unsafe count down) round 11
@@ -151,8 +149,7 @@ pub fn virtual_io_ring_barrier() {
     // fence to name. So this is deliberately one-sided: the machine half of the pairing is TSO
     // plus cache coherence, and this fence supplies only the half a compiler could break, which is
     // sinking a descriptor store past the index store that advertises it. The aarch64 and riscv64
-    // arms above are one-sided for the same reason and against the same non-fence partner. See
-    // notes/memory-ordering.md.
+    // arms above are one-sided for the same reason and against the same non-fence partner.
     core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
 
     // A `cfg` chain with no `else` compiles to an empty body, so a fourth architecture fails to

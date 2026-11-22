@@ -1,10 +1,9 @@
-//! **The socket contract's shared frame, as a value** (milestone 410 (six copies of the
-//! shared-frame accessors)): one mapped page laid out by [`socket_contract`], its header fields
+//! **The socket contract's shared frame, as a value**: one mapped page laid out by [`socket_contract`], its header fields
 //! and payload reached as methods over offsets, each bounds-checked through
 //! [`MappedWindow`]. Each program maps its own frame wherever
 //! its image leaves room, so the type is constructed with its base. It lives here rather than in
-//! `crates/socket_contract` because a contract crate never links the runtime: the dependency runs
-//! from this crate to that one. See notes/user-mode-runtime.md.
+//! [`socket_contract`] because a contract crate never links the runtime: the dependency runs
+//! from this crate to that one, and one copy here replaces one per program.
 
 //! ```no_run
 //! use user_mode_runtime::socket_frame::Frame;
@@ -18,7 +17,7 @@
 //!
 //! // Nothing below is unsafe: the bounds check is the window's.
 //! FRAME.set_destination([10, 0, 2, 2], 69);
-//! FRAME.payload_write(b"nife");
+//! FRAME.payload_write(b"hello");
 //! // The length of a send rides in the CALL's argument word, never in the frame.
 //! ```
 
