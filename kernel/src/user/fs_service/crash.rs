@@ -82,6 +82,7 @@ pub fn start_crash(
             // property is about.
             crash: (2, 1, 2048),
             extra_windows: 0, // a single-client crash service maps only window 0
+            clock_page: None,
         },
     );
 
@@ -134,6 +135,7 @@ pub fn recover_crash(
             budget_pages: CRASH_BUDGET_PAGES,
             crash: (0, 0, 0), // this one is not armed: it is the one that has to survive
             extra_windows: 0, // single-client crash service
+            clock_page: None,
         },
     );
     let report = crate::sched::create_rendezvous();

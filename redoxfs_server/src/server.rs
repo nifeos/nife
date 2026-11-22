@@ -3,6 +3,8 @@
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
+use alloc::boxed::Box;
+
 use super::*;
 
 /// What one handle names, and what may be done through it. The rights ride on the handle, so a
@@ -17,9 +19,30 @@ pub(crate) enum Entry {
     File(TreePtr<Node>, Rights),
 }
 
+/// **Where the server reads the wall clock** (the clock page, in the EL0 binary; a fake in the host
+/// tests). One reading is Unix nanoseconds, or `None` while the clock is not set.
+///
+/// Name: provisional, minted 2026-11-22 (UTC) by lane/file-server-wall-clock-stamps.
+pub trait WallClock {
+    /// The wall time now in nanoseconds since 1970, or `None` while the clock reads as unknown.
+    fn wall_nanoseconds(&mut self) -> Option<u64>;
+}
+
 /// A file service over one RedoxFS image on one [`Disk`]. Generic over the disk so the host tests
 /// drive a `DiskMemory`/`DiskFile` and the EL0 binary drives the block-IPC client, with identical
 /// filesystem code between them.
+///
+/// Every time the server writes into a node (creation, write, truncate, `touch`, an attribute
+/// change) comes from one function, [`Server::stamp`]: the wall clock as (seconds, nanoseconds),
+/// and always later than the previous stamp.
+///
+/// # BUGS
+///
+/// - Until the clock page reports a set clock (or when the server holds no clock page), stamps are a
+///   counter that starts at 2 and adds 1 per stamp, read as Unix seconds, so every file looks
+///   modified in January 1970. Once the clock is set, stamps continue from the larger of the wall
+///   time and the last stamp, so a time never moves backward, but a file stamped before the clock was
+///   set keeps its 1970 time. See notes/touch.md.
 pub struct Server<D: Disk> {
     pub(crate) fs: FileSystem<D>,
     /// The open-handle table: `handles[h]` is what handle `h` names, or `None` for a freed slot. A
@@ -27,10 +50,15 @@ pub struct Server<D: Disk> {
     /// ([`filesystem_contract::fs::ROOT`]), installed by [`Server::open`] and never closeable, so
     /// every name resolves under a handle.
     handles: Vec<Option<Entry>>,
-    /// A monotonically increasing stand-in for wall-clock seconds, so a write advances the node's
-    /// mtime deterministically. The server has no RTC; the value only needs to move forward, and the
-    /// host tests assert on file *contents*, not timestamps.
+    /// The counter every stamp falls back to while no wall clock reads as set: it advances by one
+    /// per stamp and is read as Unix seconds, so it is a stand-in and not a time. See
+    /// [`Server::stamp`] and the `BUGS` of [`Server`].
     clock: u64,
+    /// Where the wall clock comes from, or `None` for a server that was given no clock page.
+    wall: Option<Box<dyn WallClock>>,
+    /// The last wall stamp this server issued, in Unix nanoseconds, or 0 before the first one. The
+    /// next stamp is always later than it, whatever the clock reads.
+    last_stamp: u64,
     /// Listings and small files, remembered until something changes them (milestone 606). Only
     /// [`Server::look`], [`Server::change`] and [`Server::change_file`] open a transaction, and
     /// the last two are what keep this honest; `memo.rs` has the rule.
@@ -64,10 +92,44 @@ impl<D: Disk> Server<D> {
                 Rights::root(directory::ALL)
             ))],
             clock: 1,
+            wall: None,
+            last_stamp: 0,
             memo: Memo::default(),
             owners: alloc::vec![0],
             bindings: subtree_scope::Bindings::new(),
         })
+    }
+
+    /// Give the server a wall clock. Until it reads as set, stamps stay the counter
+    /// (see the `BUGS` of [`Server`]).
+    ///
+    /// Name: provisional, minted 2026-11-22 (UTC) by lane/file-server-wall-clock-stamps.
+    pub fn set_wall_clock(&mut self, clock: Box<dyn WallClock>) {
+        self.wall = Some(clock);
+    }
+
+    /// **The one place a modification time is chosen**, as (Unix seconds, nanoseconds).
+    ///
+    /// The wall clock when it reads as set; the counter before that. A reading that is not strictly
+    /// later than the last stamp (a clock stepped backward, or two calls inside one tick) returns
+    /// the last stamp plus one nanosecond, so a stamp never lands earlier than one before it and a
+    /// touch after a write is always later than the write.
+    pub(crate) fn stamp(&mut self) -> (u64, u32) {
+        let reading = self
+            .wall
+            .as_mut()
+            .and_then(|clock| clock.wall_nanoseconds());
+        if reading.is_none() && self.last_stamp == 0 {
+            self.clock += 1;
+            return (self.clock, 0);
+        }
+        // A reading of `None` after a set clock was seen can only continue from the last stamp.
+        let nanoseconds = reading.unwrap_or(0).max(self.last_stamp.saturating_add(1));
+        self.last_stamp = nanoseconds;
+        (
+            nanoseconds / 1_000_000_000,
+            (nanoseconds % 1_000_000_000) as u32,
+        )
     }
 
     /// Resolve `name` under the **bound directory** and return a handle for it: the shorthand for
@@ -178,13 +240,12 @@ impl<D: Disk> Server<D> {
         if granted != Rights::root(requested) {
             return Err(Error::new(EPERM));
         }
-        self.clock += 1;
-        let now = self.clock;
+        let now = self.stamp();
         let node = self.change(|transaction| {
             if transaction.find_node(parent, name).is_ok() {
                 return Err(Error::new(EEXIST));
             }
-            transaction.create_node(parent, name, Node::MODE_DIR | 0o755, now, 0)
+            transaction.create_node(parent, name, Node::MODE_DIR | 0o755, now.0, now.1)
         })?;
         Ok(self.install(Entry::Dir(node.ptr(), granted)))
     }
@@ -258,10 +319,9 @@ impl<D: Disk> Server<D> {
             Some(end) if end <= MAXIMUM_FILE_END => {}
             _ => return Err(Error::new(EFBIG)),
         }
-        self.clock += 1;
-        let now = self.clock;
+        let now = self.stamp();
         self.change_file(ptr, |transaction| {
-            transaction.write_node(ptr, offset, data, now, 0)
+            transaction.write_node(ptr, offset, data, now.0, now.1)
         })
     }
 
@@ -296,13 +356,13 @@ impl<D: Disk> Server<D> {
         }
         // Existence is checked inside the same transaction as the create, so two clients racing on
         // one name cannot both be told they created it.
-        self.clock += 1;
-        let now = self.clock;
+        let now = self.stamp();
         let ptr = self.change(|transaction| {
             if transaction.find_node(parent, name).is_ok() {
                 return Err(Error::new(EEXIST));
             }
-            let node = transaction.create_node(parent, name, Node::MODE_FILE | 0o644, now, 0)?;
+            let node =
+                transaction.create_node(parent, name, Node::MODE_FILE | 0o644, now.0, now.1)?;
             // Registered as open exactly as `open_file_at` registers, and for its reason: a file
             // created and then unlinked with its handle still open is the temp-file idiom.
             transaction.on_open_node(node.ptr())?;
@@ -331,10 +391,9 @@ impl<D: Disk> Server<D> {
         if size > MAXIMUM_FILE_END {
             return Err(Error::new(EFBIG));
         }
-        self.clock += 1;
-        let now = self.clock;
+        let now = self.stamp();
         self.change_file(ptr, |transaction| {
-            transaction.truncate_node(ptr, size, now, 0)
+            transaction.truncate_node(ptr, size, now.0, now.1)
         })
     }
 
@@ -457,6 +516,8 @@ impl<D: Disk> Server<D> {
     // checked against one.
 
     /// **The modification time of `name`, in Unix seconds** (`filesystem_contract::fs::GET_MODIFICATION_TIME`).
+    /// The seconds are the server's stamp (the wall clock once it reads as set, the counter before
+    /// that; see the `BUGS` of [`Server`]), or the value `touch -t` stored.
     ///
     /// Needs [`directory::READ`], and its absence is `ENOENT` rather than a mutating-right's `EROFS`:
     /// this is a naming right, [`Server::open_file_at`]'s own rule, checked before the name is
@@ -474,8 +535,10 @@ impl<D: Disk> Server<D> {
 
     /// Set `name`'s modification time to now (`filesystem_contract::fs::SET_MODIFICATION_TIME`, bare `touch`).
     ///
-    /// "Now" is this server's advancing logical clock, not a wall clock (it has no RTC): two touches
-    /// in sequence observe increasing times. Needs [`directory::WRITE`], refused with [`directory::EROFS`]
+    /// "Now" is [`Server::stamp`]: the wall clock as seconds and nanoseconds once the clock page
+    /// reads as set, and strictly later than every earlier stamp, so a touch after a write never
+    /// lands earlier than the write, even across a clock step backward. Two touches in sequence
+    /// observe increasing times. Needs [`directory::WRITE`], refused with [`directory::EROFS`]
     /// before the name is resolved, and no more, because the server observed the value (DECISIONS
     /// §112). See `filesystem_contract::fs::SET_MODIFICATION_TIME` and notes/touch.md's `BUGS`.
     pub fn set_mtime_now(&mut self, handle: u32, name: &NameCopy) -> Result<()> {
@@ -484,11 +547,10 @@ impl<D: Disk> Server<D> {
         if !rights.allows(directory::WRITE) {
             return Err(Error::new(EROFS));
         }
-        self.clock += 1;
-        let now = self.clock;
+        let now = self.stamp();
         self.change(|transaction| {
             let mut node = transaction.find_node(parent, name)?;
-            node.data_mut().set_mtime(now, 0);
+            node.data_mut().set_mtime(now.0, now.1);
             transaction.sync_tree(node)
         })
     }
@@ -559,8 +621,7 @@ impl<D: Disk> Server<D> {
             return Err(Error::new(extended_attribute::E2BIG));
         }
         let ptr = self.node_at(handle, directory::WRITE, EROFS)?;
-        self.clock += 1;
-        let now = self.clock;
+        let now = self.stamp();
         self.change(|transaction| {
             let blob = read_attrs(transaction, ptr.id())?;
             // Replacing can only shrink, so the old blob plus one whole new record is always enough
@@ -597,8 +658,7 @@ impl<D: Disk> Server<D> {
             return Err(Error::new(extended_attribute::ERANGE));
         }
         let ptr = self.node_at(handle, directory::WRITE, EROFS)?;
-        self.clock += 1;
-        let now = self.clock;
+        let now = self.stamp();
         self.change(|transaction| {
             let blob = read_attrs(transaction, ptr.id())?;
             let mut out = alloc::vec![0u8; blob.len()];

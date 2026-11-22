@@ -245,6 +245,10 @@ pub const SYNC: u64 = 19;
 /// [`super::directory::READ`], a naming right, so its absence is `ENOENT`, checked before the name is
 /// resolved. A directory answers as a file does.
 ///
+/// The seconds are the server's stamp of the last change, taken from the wall clock once the clock
+/// page reports a set clock, or the value [`SET_MODIFICATION_TIME_AT`] stored. Until the clock is set
+/// the stamp is a counter, so a file stamped then reads as a time in January 1970.
+///
 /// Name: provisional (2026-08-24); an architect's
 /// to ratify.
 pub const GET_MODIFICATION_TIME: u64 = 20;
@@ -252,10 +256,12 @@ pub const GET_MODIFICATION_TIME: u64 = 20;
 /// **Set `name`'s modification time to now**. [`GET_MODIFICATION_TIME`]'s shape, `w1` 0.
 /// Reply `r0` = 0, or an error.
 ///
-/// "Now" is this server's own advancing logical clock, the one that stamps every [`WRITE`], not
-/// the wall clock, so two `touch`es in order see increasing mtimes. Needs [`super::directory::WRITE`],
+/// "Now" is the wall clock the server reads from the clock page, as seconds and nanoseconds, once
+/// that page reports a set clock; before then it is the counter that stamps every [`WRITE`]. The stamp
+/// is always later than the server's previous one, so a `touch` never lands earlier than an earlier
+/// write or `touch`, even if the clock steps backward. Needs [`super::directory::WRITE`],
 /// else [`super::directory::EROFS`], checked before the name is resolved: the value is one the server
-/// observed, so recording it needs no more than writing the file. The server has no wall clock to stamp with.
+/// observed, so recording it needs no more than writing the file.
 ///
 /// Name: provisional (2026-08-24); an architect's to ratify.
 pub const SET_MODIFICATION_TIME: u64 = 21;

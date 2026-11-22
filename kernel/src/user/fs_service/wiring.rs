@@ -112,6 +112,7 @@ fn wire_servers(
             crash: (0, 0, 0),
             // The main service maps every pool window; a client's badge picks which one it reads.
             extra_windows: CLIENT_WINDOWS - 1,
+            clock_page: crate::user::device_starters::booted_clock_page(),
         },
     );
     Some((blk_ready, ready, file_ep, file_shared))
@@ -229,11 +230,16 @@ pub(super) struct FsServer {
     /// lands in its own frame; the crash-test servers serve one client and map 0 extra, keeping
     /// their footprint and their disks separate from the pool.
     pub(super) extra_windows: usize,
+    /// The clock page, mapped read-only and granted at slot 4 so the server stamps modification
+    /// times from the wall clock; `None` for a server whose boot made no clock page (the crash
+    /// test's), which then counts.
+    pub(super) clock_page: Option<u64>,
 }
 
 /// How many mapping entries one FS server's list can need: its block channel, every client
 /// window, and its stack.
-const SERVER_MAPS_LEN: usize = BLK_PAGES + CLIENT_WINDOWS * FILE_PAGES + FS_STACK_PAGES as usize;
+const SERVER_MAPS_LEN: usize =
+    BLK_PAGES + CLIENT_WINDOWS * FILE_PAGES + FS_STACK_PAGES as usize + 1;
 
 /// Each FS server slot's mapping list, in a static rather than on a stack: about 5.6 KiB, over the
 /// 4 KiB guard page every kernel frame stays under (`script/stack-frame-check`), and the kernel has
@@ -307,19 +313,35 @@ pub(super) fn spawn_fs_server(fs_server_image: &'static [u8], cfg: FsServer) {
         }
         // Only the filled prefix: a single-client server leaves the pool's share of the list
         // unused, and an unused entry is a mapping at VA 0 that collides with the next one.
-        let used = n + stack.len();
+        let mut used = n + stack.len();
+        if let Some(phys) = cfg.clock_page {
+            maps[used] = Mapping {
+                va: CLOCK_PAGE_FS,
+                phys,
+                flags: Flags::user_read_only_data(),
+            };
+            used += 1;
+        }
+        let mut granted = [
+            memory_region_capability(budget), // slot 0: the heap's untyped budget
+            rendezvous_capability(cfg.blk_ep, Rights::WRITE), // slot 1: CALL the block server
+            rendezvous_capability(cfg.file_ep, Rights::READ), // slot 2: RECEIVE file requests
+            rendezvous_capability(cfg.ready, Rights::WRITE), // slot 3: signal readiness once
+            // Slot 4, only when there is a clock page: the wall clock, read-only.
+            memory_region_capability(0),
+        ];
+        let mut granted_count = 4;
+        if let Some(phys) = cfg.clock_page {
+            granted[4] = page_frame_capability(phys, Rights::READ);
+            granted_count = 5;
+        }
         run(
             fs_server_image,
             Spawn {
                 arg0: cfg.crash.0,
                 arg1: cfg.crash.1,
                 arg2: cfg.crash.2,
-                grants: &[
-                    memory_region_capability(budget), // slot 0: the heap's untyped budget
-                    rendezvous_capability(cfg.blk_ep, Rights::WRITE), // slot 1: CALL the block server
-                    rendezvous_capability(cfg.file_ep, Rights::READ), // slot 2: RECEIVE file requests
-                    rendezvous_capability(cfg.ready, Rights::WRITE), // slot 3: signal readiness once
-                ],
+                grants: &granted[..granted_count],
                 maps: &maps[..used],
                 windows: &[],
             },

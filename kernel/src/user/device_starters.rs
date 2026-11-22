@@ -50,6 +50,24 @@ pub(super) fn boot_usb_keyboard() -> Option<usb_keyboard_service::Wiring> {
 /// machine. The progenitor gets `READ` only (DECISIONS §43 (reading the clock is a page)), so
 /// nothing it builds can set the time.
 pub(super) fn boot_clock_page() -> u64 {
+    let page = boot_clock_page_made();
+    BOOT_CLOCK_PAGE.store(page, core::sync::atomic::Ordering::Release);
+    page
+}
+
+/// The physical address of the page [`boot_clock_page`] made, or 0 before it ran. The file server
+/// maps it read-only to stamp modification times from the wall clock.
+static BOOT_CLOCK_PAGE: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+
+/// The clock page this boot made, if it has made one (see [`BOOT_CLOCK_PAGE`]).
+pub(super) fn booted_clock_page() -> Option<u64> {
+    match BOOT_CLOCK_PAGE.load(core::sync::atomic::Ordering::Acquire) {
+        0 => None,
+        page => Some(page),
+    }
+}
+
+fn boot_clock_page_made() -> u64 {
     match program("clock") {
         Some(image) => {
             let wiring = clock_service::start(image);
