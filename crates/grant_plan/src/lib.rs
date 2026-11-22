@@ -17,6 +17,10 @@
 
 #![no_std]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 pub mod expansion;
 pub mod line;
 pub mod navigation;
