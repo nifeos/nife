@@ -101,3 +101,83 @@ fn a_resolved_request_never_widens() {
     // widen. The sentinel is the one word `substitute_parent_rights` rewrites, and it must become the parent's own.
     assert!(parent.substitute_parent_rights(directory::rights::PARENT_RIGHTS) == parent.bits());
 }
+
+/// **A directory listing's walk ends, and every entry it yields is a whole record inside the
+/// buffer.** The records it yields take at most the buffer's bytes, and each takes at least its
+/// two-byte header, so a buffer of `n` bytes yields at most `n / 2` entries. Kani's unwinding check
+/// proves the loop ends on every buffer of up to eight bytes. Nothing in `next` reads the buffer's
+/// length except through a bounds check, and each step moves forward by at least two bytes, so the
+/// same count bounds a page; `a_page_of_the_smallest_records_walks_to_its_end` in the tests walks one.
+/// Falsification: replayable `crates/file_system_contract/falsifications/proofs.the_directory_entry_walk_ends.patch`
+#[kani::proof]
+#[kani::unwind(6)]
+fn the_directory_entry_walk_ends() {
+    let bytes: [u8; 8] = kani::any();
+    let length: usize = kani::any();
+    kani::assume(length <= bytes.len());
+    let (mut consumed, mut records) = (0, 0);
+    for (name, _) in directory_entry::iter(&bytes[..length]) {
+        consumed += directory_entry::record_len(name.len());
+        records += 1;
+    }
+    assert!(consumed <= length);
+    assert!(records * directory_entry::record_len(0) <= length);
+}
+
+/// **A name set's walk ends, and every name it yields is a whole record inside the buffer.** Each
+/// record takes at least three bytes (a length, a flags byte and one byte of name), for the
+/// directory listing's reason above. The walk would end after [`nameset::MAXIMUM_NAMES`] records
+/// even without that, so the proof checks the stronger bound: the bytes, not the cap.
+/// Falsification: replayable `crates/file_system_contract/falsifications/proofs.the_name_set_walk_ends.patch`
+#[kani::proof]
+#[kani::unwind(6)]
+fn the_name_set_walk_ends() {
+    let bytes: [u8; 8] = kani::any();
+    let length: usize = kani::any();
+    kani::assume(length <= bytes.len());
+    let (mut consumed, mut records) = (0, 0);
+    for (name, _) in nameset::iter(&bytes[..length]) {
+        consumed += 2 + name.len();
+        records += 1;
+    }
+    assert!(consumed <= length);
+    assert!(records * 3 <= length);
+}
+
+/// **An attribute listing's walk ends, and every name it yields is a whole record inside the
+/// buffer.** Each record takes at least two bytes, since a zero length ends the walk, for the
+/// directory listing's reason above.
+/// Falsification: replayable `crates/file_system_contract/falsifications/proofs.the_attribute_list_walk_ends.patch`
+#[kani::proof]
+#[kani::unwind(6)]
+fn the_attribute_list_walk_ends() {
+    let bytes: [u8; 8] = kani::any();
+    let length: usize = kani::any();
+    kani::assume(length <= bytes.len());
+    let (mut consumed, mut records) = (0, 0);
+    for name in extended_attribute::list::iter(&bytes[..length]) {
+        consumed += extended_attribute::list::record_len(name.len());
+        records += 1;
+    }
+    assert!(consumed <= length);
+    assert!(records * extended_attribute::list::record_len(1) <= length);
+}
+
+/// **An attribute store's walk ends, and every attribute it yields is a whole record inside the
+/// blob.** Each record takes at least its header and one byte of name, for the directory listing's
+/// reason above. Sixteen bytes hold two of the smallest records.
+/// Falsification: replayable `crates/file_system_contract/falsifications/proofs.the_attribute_store_walk_ends.patch`
+#[kani::proof]
+#[kani::unwind(4)]
+fn the_attribute_store_walk_ends() {
+    let bytes: [u8; 16] = kani::any();
+    let length: usize = kani::any();
+    kani::assume(length <= bytes.len());
+    let (mut consumed, mut records) = (0, 0);
+    for (name, _, value) in extended_attribute::store::iter(&bytes[..length]) {
+        consumed += extended_attribute::store::record_len(name.len(), value.len());
+        records += 1;
+    }
+    assert!(consumed <= length);
+    assert!(records * extended_attribute::store::record_len(1, 0) <= length);
+}

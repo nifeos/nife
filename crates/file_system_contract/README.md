@@ -73,12 +73,15 @@ assert_ne!(file_system::OPEN, 0, "0 is not a verb: a zeroed word must not decode
 
 ## What is proven
 
-Eleven Kani harnesses prove the contract, and each has a falsification patch in `falsifications/`.
+Fifteen Kani harnesses prove the contract, and each has a falsification patch in `falsifications/`.
 Three are in `src/directory.rs`: `attenuate_never_widens`, `a_grandchild_is_bounded_by_the_root`
 and `a_root_carries_nothing_undefined`. Two are in `src/error.rs` and cover the reply word's error
-range for every `i64`: `every_word_decodes_within_the_bound` and `a_sent_code_round_trips`. Six are
+range for every `i64`: `every_word_decodes_within_the_bound` and `a_sent_code_round_trips`. Ten are
 in `src/proofs.rs`. They show that every field a request word carries comes back out unchanged, that
-the verb table is total over the opcode space, and that a resolved request never widens.
+the verb table is total over the opcode space, and that a resolved request never widens. Four of
+them show that the walkers over a directory listing, a name set, an attribute listing and an
+attribute store end and yield only whole records; a host test walks a page of the smallest records
+for each.
 
 ## Building and testing
 

@@ -110,6 +110,6 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`file_system_contract`](crate-reviews/filesystem-contract.md) | 2 | ready for review; one clearance of the repository shared with `file_system_fixture`, and the names |
 | [`file_system_fixture`](crate-reviews/filesystem-fixture.md) | 2 | ready for review with `file_system_contract`; the item names wait for the rename lane of milestone 1091 (`file_system_fixture`: what an outside maintainer would fix before it leaves) |
 | [`byte_sink_contract`](crate-reviews/byte-sink-contract.md) | contract | cleared and moved (no tag, no publish); nife pins `nifeos/byte_sink_contract` by commit, and every finding of milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves) has landed |
-| [`line_editor`](crate-reviews/line-editor.md) | 1098 | ready for review; the move waits for the item 3 rename lane |
-| [`terminal_contract`](crate-reviews/terminal-contract.md) | contract | ready for review; the move waits for its interface number and the reserved-bit ruling |
+| [`line_editor`](crate-reviews/line-editor.md) | 1098 | cleared to move (2026-11-22 UTC, `publish = false`, no tag, no publish); the move waits on its own remaining work |
+| [`terminal_contract`](crate-reviews/terminal-contract.md) | contract | cleared and moved (2026-11-22 UTC, `publish = false`, no tag, no publish); nife pins `nifeos/terminal_contract` by commit |
 | [`moho_abi`](crate-reviews/moho-abi.md) | contract | cleared to move, with step 3 of milestone 1121 (the Moho rename: the order in which the binary interface takes its name) landed (ruled 2026-11-22 UTC, `publish = false`, no tag, no publish); six size names ratified |

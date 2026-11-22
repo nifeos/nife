@@ -6,8 +6,8 @@ the packages together outgrow the page. Its twin is [`line_editor`](line-editor.
 this crate's protocol serves.*
 
 The architect cleared this package on 2026-11-22 (UTC), with `publish = false`, no tag and no
-publish: the clearance is the go to create `nifeos/terminal_contract`, and the move waits on the
-work under What still blocks the move. It describes the crate as `main` leaves it at `97d16ae8b`,
+publish: the clearance was the go to create `nifeos/terminal_contract`. The crate now lives there,
+and nife depends on it by rev ([#4015](https://github.com/nifeos/nife/pull/4015)). It describes the crate as `main` leaves it at `97d16ae8b`,
 with the interface identity and the reserved-bit refusal built since. The crate came out of `line_editor` by decision 1 of
 [milestone 1098 (`line_editor`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1098-line-editor-outside-review.md),
 which holds the rulings this package relies on. No outside review of this crate alone exists, so
@@ -134,29 +134,27 @@ the first tag even though the values are not.
 
 ## What still blocks the move
 
+Nothing: the move landed in [#4015](https://github.com/nifeos/nife/pull/4015). The repository's
+root commit carries the README, both licenses, the literal manifest keys and the documentation
+rewritten without citations of this tree, and the six dependents take the crate by `git` and `rev`.
+What remains belongs to the repository and to later lanes:
+
 | item | owner |
 |---|---|
 | The declaration of interface 25, version 1 in every program that carries an `INTERFACES` note and links the crate; none of the first cut's three packages links it. | the lane that adds such a program |
-| The crate root's `Name:` block records decision 5's ratification. | the lane that records milestone 1098's rulings |
-| Add the crate to `crates/externalization-list.txt` and give it its place in milestone 1017's order. | maintainer |
-| README in the template's section order, both licenses, literal `license`, `lints` and `rust-version`, the manifest rows, the `Name:` strip, the citations of this tree, and the three lines that quote the architect. | move lane |
-| Convert the six dependents to `git` and `rev` with `version = "0.1.0"`, the kernel included, and read every file `script/crate-move --dry-run` lists. | move lane |
-| Run the stranger test and the template's workflows in the new repository. | move lane |
+| The stranger test (`docs/stranger-test.md` in the repository) and the outside review of step 11a of `notes/crate-move.md`. | the maintainer's next lanes |
 
 ## Recommendation
 
 Cleared 2026-11-22 (UTC). The crate is a dependency-free leaf with no `unsafe` and no nife type in
-a signature, and the template's gating name checks pass. The move waits for its place on the
-externalization list and milestone 1017's order, and the rest of What still blocks the move.
+a signature, and the template's gating name checks pass. It moved to `nifeos/terminal_contract`
+the same day.
 
 ## Open questions
 
 - No Kani harness covers the crate. `admits` and the first word's packing are small enough for an
   exhaustive harness over the opcode byte and the four badges, with a falsification patch each, as
   `byte_sink_contract` carries. Two-way; the maintainer can rule it.
-- The documentation that names nife programs and other crates' items states context a stranger
-  cannot check. The move lane rewrites it as the protocol's own rule or links
-  `notes/terminal-contract.md`'s successor in the new repository.
 
 ## Rulings
 
