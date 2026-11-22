@@ -285,7 +285,10 @@ fn drain(q: &mut RawQueue) -> Vec<u8> {
         let Some((n, packed)) = q.pop_up_to_eight() else {
             return bytes;
         };
-        assert!((1..=8).contains(&n), "a pop returns one to eight bytes, got {n}");
+        assert!(
+            (1..=8).contains(&n),
+            "a pop returns one to eight bytes, got {n}"
+        );
         bytes.extend_from_slice(&packed.to_le_bytes()[..n]);
     }
     panic!("the queue never emptied");
