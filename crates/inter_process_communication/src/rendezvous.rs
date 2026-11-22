@@ -261,23 +261,13 @@ impl<T: Node> Rendezvous<T> {
     /// Take one specific sender back off the queue, returning its token if it was there.
     ///
     /// For reaping a corpse parked as a sender, which must be unlinked before its TCB is freed.
-    /// `victim` is compared by pointer and never dereferenced. The survivors keep their FIFO order,
-    /// and the cost is the queue's length. See `notes/inter-process-communication.md` ("Taking a
-    /// thread back off a queue").
+    /// `victim` is compared by pointer and never dereferenced unless the queue holds it. The
+    /// survivors keep their FIFO order, and the cost is a walk to it. See
+    /// `notes/inter-process-communication.md` ("Taking a thread back off a queue").
     ///
     /// Name: ratified 2026-11-21 (UTC).
     pub fn remove_sender(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
-        let mut kept: Queue<T> = Queue::new();
-        let mut found = None;
-        while let Some(node) = self.senders.pop_front() {
-            if node == victim {
-                found = Some(node);
-            } else {
-                kept.push_back(node);
-            }
-        }
-        self.senders = kept;
-        found
+        self.senders.remove(victim)
     }
 
     /// Take one specific receiver back off the queue, returning its token if it was there. The
@@ -287,17 +277,7 @@ impl<T: Node> Rendezvous<T> {
     ///
     /// Name: ratified 2026-11-21 (UTC).
     pub fn remove_receiver(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
-        let mut kept: Queue<T> = Queue::new();
-        let mut found = None;
-        while let Some(node) = self.receivers.pop_front() {
-            if node == victim {
-                found = Some(node);
-            } else {
-                kept.push_back(node);
-            }
-        }
-        self.receivers = kept;
-        found
+        self.receivers.remove(victim)
     }
 
     /// A sender `me` arrives. Rendezvous with a waiting receiver if there is one, otherwise `me`

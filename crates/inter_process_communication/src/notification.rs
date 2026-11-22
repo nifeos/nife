@@ -253,23 +253,13 @@ impl<T: Node> Notification<T> {
 
     /// Take one specific waiter back off the queue, returning its token if it was there. For a
     /// teardown that ends a thread blocked in `WAIT`, which must unlink it before its page is
-    /// freed. The same drain-and-repush as
+    /// freed. The same unlink as
     /// [`Rendezvous::remove_receiver`](crate::Rendezvous::remove_receiver): `victim` is only
-    /// compared.
+    /// compared unless the queue holds it.
     ///
     /// Name: ratified 2026-11-21 (UTC).
     pub fn remove_waiter(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
-        let mut kept: Queue<T> = Queue::new();
-        let mut found = None;
-        while let Some(node) = self.waiters.pop_front() {
-            if node == victim {
-                found = Some(node);
-            } else {
-                kept.push_back(node);
-            }
-        }
-        self.waiters = kept;
-        found
+        self.waiters.remove(victim)
     }
 
     /// **Empty the wait queue, handing every waiter to `f`** (the notification is being destroyed).
