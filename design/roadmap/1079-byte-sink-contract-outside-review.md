@@ -1,5 +1,6 @@
 ---
 status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 151, 242
@@ -193,9 +194,9 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
   `first_word` takes `operation: u8` and `len: u32`.
 - P2-13, `pack` returns a bare four-tuple: Done, [#3880](https://github.com/nifeos/nife/pull/3880).
   `pack` and `unpack` take and return `MessageWords`, whose name waits for the release review.
-- P2-14, equivalent mutants: Done, nifeos/byte_sink_contract#1. The four survivors the
-  repository's mutation run names are exempted with their reasons, and the Kani module is left out
-  of the run.
+- P2-14, equivalent mutants: Done, nifeos/byte_sink_contract#1. The repository's
+  `.github/mutants-exempts` lists the four survivors its mutation run names, each with its reason,
+  and its mutation configuration skips the Kani module.
 - P2-15, severity bits on any first word: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Decision A, no wire version operation: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Decision B, `fixture` out of the published crate: Done,
@@ -208,7 +209,7 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
 
 ## Follow-on
 
-- **Outstanding.** The release review of `MessageWords`.
+- **Recorded.** The release review of `MessageWords`, under P2-13.
 
 ## BUGS
 
