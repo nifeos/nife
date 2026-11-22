@@ -8,6 +8,8 @@ raised: 2026-11-22
 *(The section number and title are provisional until the merge lands them. Every name and number
 below is provisional until ruled.)*
 
+Counts are from `nifeos/nife@c9d63ae99`.
+
 ## Background
 
 The ruling of 2026-11-22 (UTC) on §325 (the services' wire error vocabulary, #3918): the services
@@ -15,135 +17,181 @@ stop sending negated Linux `errno` and send nife's own codes in `-256..=-4095`, 
 `-1..=-255`, and each server translates once at its boundary. It left the names and the numbers to
 a follow-on ruling, which comes before any code changes. This is that ruling's draft.
 
-The services send 27 `errno` numbers today (the table in §325). Some of them carry one meaning
-under two numbers, and one number carries two meanings, so a one-to-one rename would copy POSIX's
-history into nife's table. The proposal below gives one code per meaning instead.
+§325's table lists 27 `errno` numbers found in the source. Not all of them can reach a reply, and a
+few carry a nife meaning that differs from the POSIX one, so a rename number for number would copy
+both problems into nife's table.
 
 ## The decision
 
-Which codes the services' table holds, the name and number of each, and which
-`errno` values map to each.
+Which codes the services' table holds, the name and number of each, where the table lives, and
+which `errno` values map to each.
+
+## Is the premise true
+
+Partly. Seven of the 27 cannot reach the wire, measured by reading which engine files nife
+compiles. `redoxfs_server` builds `vendor/redoxfs` with `default-features = false`, and
+`mount/redox/` and `disk/ring.rs` build only for `target_os = "redox"`, so neither is in nife's
+build:
+
+- `EACCES`, `EBUSY` and `EBADFD` appear only under `mount/redox/`; `ENOMEM` only there and in
+  `disk/ring.rs`. No nife site writes any of them.
+- `ENOKEY` and `EKEYREJECTED` come only from `FileSystem::open` (`filesystem.rs`), which runs when
+  the server mounts its volume, before it answers any request.
+- `ENOSYS` comes only from `create_reserved_with_uuid`, which formats a volume (`mkfs`).
+
+Two more carry a nife meaning by number that differs by site. The engine's `ERANGE`
+(`transaction.rs`, three sites) is a record offset past what a node can address, while nife's
+`ERANGE` is an attribute name it refuses. `EROFS` is mostly a capability without the mutating right
+(`grant.rs`, `disk_tree`), and on the SD card and NVMe servers a read-only device.
 
 ## Proposal
 
-- One code per meaning. A name says what went wrong, spelled out, and takes the standard library's
-  `io::ErrorKind` spelling where that kind means the same thing (the ruling of 2026-11-03 on
-  standard library names).
-- Each code carries its POSIX names as `#[doc(alias = "...")]`, so a reader who knows `ENOENT` finds
-  `NotFound`. These are spec-term aliases, which the ruling of 2026-11-03 on old nife names keeps.
-- Numbers start at -256 and run down without gaps, in the order of the table. A new code takes the
-  next number below the last one in use, and a retired code's number is never reused.
-- The table is one enum, `file_system_contract::error::Code`, `#[repr(i64)]`, with
-  `Code::from_word` and `Code::word`, in the shape of `abi::Error`.
-- An unknown number inside `-256..=-4095` decodes as a failure the client cannot name
-  (`Unrecognized`), not as a violation, so a code added later reaches an older client as a failure.
-  A word below -4095 stays a protocol violation (the rule of 2026-11-14, block 1090, decision C).
-- Two bounds replace `MAXIMUM_ERRNO`: `FIRST_SERVICE_CODE` (-256) and `LAST_SERVICE_CODE` (-4095).
+- One code per meaning that can reach a reply: 19 codes. A name says what went wrong, spelled out.
+  It takes `io::ErrorKind`'s spelling where the kind means the same thing, per the ruling of
+  2026-11-03 on standard library names.
+- Each code carries its POSIX name as `#[doc(alias = "...")]`, a spec-term alias the ruling of
+  2026-11-03 on old nife names keeps.
+- Numbers start at -256 and run down without gaps in the order of the table. The space past the
+  last code, down to -4095, is for codes added later. Each takes the next free number by ruling,
+  with no per-protocol ranges. A retired number is never reused.
+- The table lives in a new leaf crate (provisional name `service_error`), one `#[repr(i64)] enum
+  Code` that every contract depends on. Putting it in `file_system_contract` would make
+  `graphics_contract` and the compositor depend on the file service for one constant. Rule 7 asks
+  for a shared crate, and a leaf keeps it small.
+- `Code::from_word` and `Code::word` replace `error::code` and `error::word`, and the bounds
+  `FIRST_SERVICE_CODE` (-256) and `LAST_SERVICE_CODE` (-4095) replace `MAXIMUM_ERROR_NUMBER`, the
+  names ruled on 2026-11-22. The kernel's `abi::Error` decodes with `from_ret`; this follows the
+  contracts' own word.
+- `from_word` answers one of three things, and only the first has a number: a `Code`. It answers
+  `Unrecognized` for an unknown number in the range, so a code added later reaches an older client
+  as a failure it cannot name. It answers `ProtocolViolation` for a word below -4095 (the rule of
+  2026-11-14, block 1090, decision C). Both sit outside the `#[repr(i64)]` enum, since no server
+  sends either.
 
 | word | name | `doc(alias)` | meaning | `std` `ErrorKind` |
 |---:|---|---|---|---|
-| -256 | `PermissionDenied` | `EPERM`, `EACCES` | the capability or the node does not allow this | `PermissionDenied` |
+| -256 | `PermissionDenied` | `EPERM` | the capability does not carry that right | `PermissionDenied` |
 | -257 | `NotFound` | `ENOENT` | no such name | `NotFound` |
-| -258 | `InputOutputFailed` | `EIO` | the device or the engine failed under the request | `Other` |
-| -259 | `ValueTooLarge` | `E2BIG` | an attribute value over the stored bound | `InvalidInput` |
-| -260 | `BadHandle` | `EBADF`, `EBADFD` | a handle this server did not mint, or one that cannot do this now | `InvalidInput` |
-| -261 | `OutOfMemory` | `ENOMEM` | the server ran out of memory | `OutOfMemory` |
-| -262 | `ResourceBusy` | `EBUSY` | the node is in use | `ResourceBusy` |
-| -263 | `AlreadyExists` | `EEXIST` | another node holds the name | `AlreadyExists` |
-| -264 | `CrossesDevices` | `EXDEV` | the request crosses a mount point | `CrossesDevices` |
-| -265 | `NotADirectory` | `ENOTDIR` | the request needs a directory | `NotADirectory` |
-| -266 | `IsADirectory` | `EISDIR` | the request needs a file | `IsADirectory` |
-| -267 | `InvalidInput` | `EINVAL` | an argument the protocol refuses | `InvalidInput` |
-| -268 | `TooManyHandles` | `EMFILE` | as many handles open as this client may hold | `Other` |
-| -269 | `FileTooLarge` | `EFBIG` | a size over the file bound | `FileTooLarge` |
-| -270 | `StorageFull` | `ENOSPC` | no space left | `StorageFull` |
-| -271 | `ReadOnlyFilesystem` | `EROFS` | the filesystem or the device is read-only | `ReadOnlyFilesystem` |
-| -272 | `InvalidAttributeName` | `ERANGE` | an attribute name empty, too long, or holding a zero byte | `InvalidInput` |
-| -273 | `Unsupported` | `ENOSYS`, `ENOTSUP`, `EOPNOTSUPP` | this server does not do that operation | `Unsupported` |
-| -274 | `DirectoryNotEmpty` | `ENOTEMPTY` | the directory still has entries | `DirectoryNotEmpty` |
-| -275 | `FilesystemLoop` | `ELOOP` | too many links followed | `FilesystemLoop` |
-| -276 | `AttributeNotFound` | `ENODATA` | the named attribute is not set | `NotFound` |
-| -277 | `ProtocolViolation` | `EPROTO` | the decoder's answer to a malformed word; never sent | `InvalidData` |
-| -278 | `KeyMissing` | `ENOKEY` | an encrypted filesystem with no key given | `PermissionDenied` |
-| -279 | `KeyRejected` | `EKEYREJECTED` | the key given does not open it | `PermissionDenied` |
+| -258 | `InputOutputError` | `EIO` | the device or the engine failed under the request | `InputOutputError` |
+| -259 | `ValueTooLarge` | `E2BIG` | an attribute value over the stored bound | `Uncategorized` |
+| -260 | `BadHandle` | `EBADF` | a handle or a verb this capability never minted | `Uncategorized` |
+| -261 | `AlreadyExists` | `EEXIST` | another node holds the name | `AlreadyExists` |
+| -262 | `CrossesDevices` | `EXDEV` | the request crosses a mount point | `CrossesDevices` |
+| -263 | `NotADirectory` | `ENOTDIR` | the request needs a directory | `NotADirectory` |
+| -264 | `IsADirectory` | `EISDIR` | the request needs a file | `IsADirectory` |
+| -265 | `InvalidInput` | `EINVAL` | a request the protocol cannot resolve | `InvalidInput` |
+| -266 | `TooManyOpenFiles` | `EMFILE` | as many handles open as this client may hold | `TooManyOpenFiles` |
+| -267 | `FileTooLarge` | `EFBIG` | an offset or size past what a file can hold | `FileTooLarge` |
+| -268 | `StorageFull` | `ENOSPC` | no space left | `StorageFull` |
+| -269 | `ReadOnlyFilesystem` | `EROFS` | read-only through this capability, or on this device | `ReadOnlyFilesystem` |
+| -270 | `InvalidAttributeName` | `ERANGE` | an attribute name empty, too long, or holding a zero byte | `Uncategorized` |
+| -271 | `Unsupported` | `ENOTSUP`, `EOPNOTSUPP` | this server or capability does not do that | `Unsupported` |
+| -272 | `DirectoryNotEmpty` | `ENOTEMPTY` | the directory still has entries | `DirectoryNotEmpty` |
+| -273 | `FilesystemLoop` | `ELOOP` | a symbolic link, which a grant never follows | `FilesystemLoop` |
+| -274 | `AttributeNotFound` | `ENODATA` | the named attribute is not set | `Uncategorized` |
 
-That is 24 codes for 27 numbers. The `std` column is a proposal for the overlay, which decides its
-own mapping; a kind it does not take stays `Other`.
+The `std` column is what the standard library answers for that `errno` on Linux. The overlay
+chooses its own mapping and may do better (`AttributeNotFound` as `NotFound`, for one).
 
-## The map from each `errno` in use
+## The map from each `errno`
 
-| `errno` | name | code | note |
-|---:|---|---:|---|
-| 1 | `EPERM` | -256 | |
-| 2 | `ENOENT` | -257 | |
-| 5 | `EIO` | -258 | |
-| 7 | `E2BIG` | -259 | |
-| 9 | `EBADF` | -260, or -273 | -273 where a caretaker answers a verb its contract does not carry |
-| 12 | `ENOMEM` | -261 | |
-| 13 | `EACCES` | -256 | merged with `EPERM` |
-| 16 | `EBUSY` | -262 | |
-| 17 | `EEXIST` | -263 | |
-| 18 | `EXDEV` | -264 | |
-| 20 | `ENOTDIR` | -265 | |
-| 21 | `EISDIR` | -266 | |
-| 22 | `EINVAL` | -267, or -273 | -273 for virtio block's unimplemented opcode, `graphics_contract`'s and `compositor`'s unknown operation (`EBADOP`) |
-| 24 | `EMFILE` | -268 | |
-| 27 | `EFBIG` | -269 | |
-| 28 | `ENOSPC` | -270 | |
-| 30 | `EROFS` | -271 | |
-| 34 | `ERANGE` | -272 | |
-| 38 | `ENOSYS` | -273 | merged with `ENOTSUP` |
-| 39 | `ENOTEMPTY` | -274 | |
-| 40 | `ELOOP` | -275 | |
-| 61 | `ENODATA` | -276 | |
-| 71 | `EPROTO` | -277 | decoder only |
-| 77 | `EBADFD` | -260 | merged with `EBADF` |
-| 95 | `ENOTSUP` / `EOPNOTSUPP` | -273 | |
-| 126 | `ENOKEY` | -278 | |
-| 129 | `EKEYREJECTED` | -279 | |
+Every number maps by itself except `ERANGE`, which maps by origin.
 
-The file server's one translating function is this table by number. The caretakers, the block and
-graphics servers, and the compositor do not translate: they name the code at the site, so the two
-site picks between the split rows by meaning.
+| `errno` | code | | `errno` | code |
+|---|---:|---|---|---:|
+| 1 `EPERM` | -256 | | 27 `EFBIG` | -267 |
+| 2 `ENOENT` | -257 | | 28 `ENOSPC` | -268 |
+| 5 `EIO` | -258 | | 30 `EROFS` | -269 |
+| 7 `E2BIG` | -259 | | 34 `ERANGE`, nife's | -270 |
+| 9 `EBADF` | -260 | | 34 `ERANGE`, the engine's | -267 |
+| 17 `EEXIST` | -261 | | 39 `ENOTEMPTY` | -272 |
+| 18 `EXDEV` | -262 | | 40 `ELOOP` | -273 |
+| 20 `ENOTDIR` | -263 | | 61 `ENODATA` | -274 |
+| 21 `EISDIR` | -264 | | 95 `ENOTSUP` / `EOPNOTSUPP` | -271 |
+| 22 `EINVAL` | -265 | | 71 `EPROTO` | none: `ProtocolViolation` |
+| 24 `EMFILE` | -266 | | | |
+
+Left out, with no number: `EACCES`, `EBUSY`, `EBADFD`, `ENOMEM`, `ENOSYS`, `ENOKEY` and
+`EKEYREJECTED`, because none can reach a reply (above). Giving a number to a code nothing sends is
+the loose choice; adding one when it can be sent stays compatible. The file server's one translating
+function maps any engine number without a row to `InputOutputError`. That fallback is a foot gun: a
+vendor update that adds an engine code reaches clients as `InputOutputError` until someone adds the
+row. The proposal is that a vendor update's review checks the engine's codes against this map.
 
 ## The choices inside it
 
-These are the places where the proposal is more than a rename. An architect can rule each on its
-own.
+These are the places where the proposal is more than a rename.
 
-1. `EPERM` and `EACCES` become one `PermissionDenied`. In POSIX `EPERM` is a privilege and `EACCES`
-   a mode bit; nife has no users, and both answer "not allowed". `std` already folds both into
-   `PermissionDenied`.
-2. `EBADF` and `EBADFD` become one `BadHandle`. The engine returns `EBADFD` for a mapping it no
-   longer holds, which a client sees as a handle that cannot do this.
-3. Every "this server does not do that" becomes `Unsupported`: `ENOSYS`, `EOPNOTSUPP`, and the
-   sites that answer an unknown verb with `EBADF` or `EINVAL` today. A client then tells "not here"
-   from "bad argument".
-4. Codes borrowed for a nearby meaning take the nife meaning's name: `E2BIG` is `ValueTooLarge`,
-   `ERANGE` is `InvalidAttributeName`, `ENODATA` is `AttributeNotFound`.
-5. `ProtocolViolation` takes a number though no server sends it, so the decoder's whole answer is
-   one enum.
-6. `Unrecognized` for an unknown in-range number, so adding a code is compatible.
+1. Seven numbers get no code, since none can reach a reply.
+2. The engine's `ERANGE` becomes `FileTooLarge` and nife's becomes `InvalidAttributeName`: one
+   number, two meanings, mapped by meaning.
+3. `EROFS` stays one code, `ReadOnlyFilesystem`, for a capability without the mutating right and for
+   a read-only device. `grant.rs` chose it over a permission answer on purpose: no policy could have
+   said yes, the capability carries one direction, so the answer is about the thing. A code of its
+   own for the capability case would split what `std` callers already read as one kind.
+4. `EBADF` stays one code. `fs_file_caretaker` refuses a forged handle and a forged opcode with one
+   number at one site on purpose, and `verb/tests.rs` pins that. Other servers answer a verb they
+   do not carry with `EINVAL` (`fs_subtree_caretaker`, `fs_nameset_caretaker`, NVMe, SD card, virtio
+   block, `graphics_contract`, the compositor), each by its own reasoning. Moving every unknown
+   verb to `Unsupported` would overturn those choices and change the tests that pin -22
+   (`compositor/tests.rs`, `graphics_contract`). That is its own question; this table renames each
+   site's answer as it stands.
+5. `ENOTSUP` and `EOPNOTSUPP` are one number on Linux and one code here, `Unsupported`, which
+   already covers "this capability does not carry extended attributes" (`directory.rs`).
+6. `ReadOnlyFilesystem` and `FilesystemLoop` keep `std`'s one-word "Filesystem", though the
+   module spells `file_system`. The standard library rule makes `std`'s spelling win where the
+   meaning matches, and a reader moving between `io::ErrorKind` and `Code` meets one spelling.
+   `FilesystemLoop` matches by meaning too: `std` reports an `O_NOFOLLOW` refusal, the case
+   `subtree_scope`'s `Symlink` copies, as `FilesystemLoop`.
+7. `InputOutputError` and `TooManyOpenFiles` are `std`'s spellings, so they win over shorter nife
+   ones.
 
 ## What else was considered
 
-- A one-to-one rename, 27 codes. It keeps POSIX's two-numbers-one-meaning pairs and the one
-  number with two meanings, which is the inherited vocabulary §325 moved away from.
-- Numbers that keep the `errno` as an offset (-256 minus `errno`). It is easier to read beside a
-  Linux trace, and leaves gaps and a numbering nife did not choose; §325 refused that as option (G).
-- Grouped ranges (files from -256, attributes from -512, keys from -768). It reads well, but it
-  fixes categories before there are enough codes to need them, and a range can fill.
+- Every number in §325's table, 27 codes. It numbers codes that nothing can send, which are then
+  part of the contract forever.
+- Folding every unknown verb into `Unsupported`. Item 4 above leaves it for its own ruling.
+- `-256 - errno` as the number. Easier beside a Linux trace, but it keeps a numbering nife did not
+  choose; §325 refused that as option (G).
+- Grouped ranges (files from -256, attributes from -512). They fix categories before there are
+  enough codes to need them, and a range can fill.
+- The enum in `file_system_contract`. Simpler today, but it makes graphics depend on the file
+  service.
 
 ## Prior art
 
-Fuchsia's `zx_status_t` and WASI's `errno` both chose their own numbers and names by meaning;
-WASI kept POSIX names beside its own numbers and added `NOTCAPABLE`. Rust's `io::ErrorKind`
-folds `EPERM` and `EACCES`, and `ENOSYS` and `EOPNOTSUPP`, the merges proposed here.
+- Rust `std` (read: the pinned toolchain's `std/src/sys/io/error/unix.rs`). Folds `EACCES` with
+  `EPERM` and `ENOTSUP` with `ENOSYS`; maps `EMFILE` to `TooManyOpenFiles` and `EIO` to
+  `InputOutputError`, the spellings taken here.
+- Fuchsia (read for §325: `zircon/errors.h`). Its own numbers and names by meaning, one table.
+- WASI (read for §325: wasi-libc `wasip1.h`). POSIX names on its own numbers, and its own code
+  `NOTCAPABLE`, which is what `PermissionDenied` means here.
+
+## What it costs
+
+At `c9d63ae99`, 192 production code lines in 54 files name an `errno` constant or call
+`reply_err`, comments excluded, by §325's pattern restricted to non-test files. Add the bare
+numbers (seven `reply_err(22)`-style calls in components, `block_driver_roles`' raw literals,
+`subtree_scope`'s three) and the tests, about 490 lines by §325's estimate. Nearly every change is a
+constant renamed; the new work is the leaf crate and the file server's one function.
+
+## Who has acted on it
+
+Nobody outside this tree. #3914 renames the module and keeps the `errno` constants as they are.
+§325's example writes `Code::NotADirectory` and its word, marked provisional. No code uses any name
+here.
+
+## Would we still choose this if both cost the same
+
+Yes. The cheapest table renames all 27 numbers in one pass, and this one costs a little more: a
+reachability test, one map by origin and a leaf crate. Each of those is on the merits. Leaving out
+unreachable codes is the restrictive choice, and keeping `EBADF` and `EINVAL` as they are avoids
+deciding a second question inside a naming ruling.
 
 ## How reversible it is
 
-Two-way until §325 says it is not: no installs, nothing published, and no server outside nifeos.
-A merged code can be split later by adding a number, which older clients read as `Unrecognized`.
+Two-way until §325 says it is not: no installs, nothing published, and no server outside nifeos. A
+code left out can be added later, which older clients read as `Unrecognized`.
 
 ## A concrete example
 
@@ -151,18 +199,16 @@ A merged code can be split later by adding a number, which older clients read as
 #[repr(i64)]
 pub enum Code {
     #[doc(alias = "EPERM")]
-    #[doc(alias = "EACCES")]
     PermissionDenied = -256,
     #[doc(alias = "ENOENT")]
     NotFound = -257,
     // ...
     #[doc(alias = "ENOTDIR")]
-    NotADirectory = -265,
+    NotADirectory = -263,
 }
 ```
 
 ## What was not checked
 
-Whether every engine code reaches the wire (the same gap as §325). The engine's own meaning of
-`ERANGE`, which this assumes matches the attribute-name use. Every `EBADF` and `EINVAL` site one by
-one: the split rows name the sites found by reading, and the building lane confirms each.
+Whether each reachable engine code can arrive through every verb. Each `EINVAL` site's reasoning,
+beyond those named in item 4. Whether the overlay should map more kinds than `std` does.
