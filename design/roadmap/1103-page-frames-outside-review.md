@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
 milestone_dependencies: 1034
 decision_dependencies: none
@@ -33,9 +33,12 @@ The repository's `check` and `proofs` runs are green on the first push for the c
 
 ## Finding status
 
-- P0-1, the manifest stands alone: Open. It still inherits `license` and the lints from the
-  workspace, carries `publish = false` and has no license files.
-- P0-2, a README: Open. None exists.
+- P0-1, the manifest stands alone: Done, [#3971](https://github.com/nifeos/nife/pull/3971). The manifest writes its license, lint
+  set and measured `rust-version` (1.87) itself, and both license files sit beside it.
+  `publish = false` stays, as the soak allows, and `script/crate-move --dry-run` reports the crate
+  clean.
+- P0-2, a README: Done, [#3971](https://github.com/nifeos/nife/pull/3971), in the template's shape with the three design arguments,
+  the nine harnesses, the measured proof run and one falsification.
 - P0-3, documentation that cites this tree: Done, [#3805](https://github.com/nifeos/nife/pull/3805).
   The sentences in `src/lib.rs`, `tests/allocator.rs` and the falsification headers carry their
   reasons and cite no section, milestone, path or program of this tree.
@@ -53,17 +56,20 @@ The repository's `check` and `proofs` runs are green on the first push for the c
   for the regeneration and [#3567](https://github.com/nifeos/nife/pull/3567) for the patches in
   the tree.
 - P2-11, `#[must_use]`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-12, a `free` for a run: Open. No `free_contiguous` exists, and the two kernel loops stay.
+- P2-12, a `free` for a run: Done, [#3971](https://github.com/nifeos/nife/pull/3971), as `free_contiguous` (provisional name). The
+  two kernel loops call it.
 - P2-13, the alignment BUGS entry: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-14, a fallible `from_addr`: Done, [#3567](https://github.com/nifeos/nife/pull/3567), as
   `PageFrame::try_aligned`.
 - P2-15, the 64-bit `usize`: Done, [#3567](https://github.com/nifeos/nife/pull/3567), a `const`
   assertion at the crate root.
 - P2-16, the `Name:` paragraph: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-17, the mutation exemptions: At the move. The new repository writes them.
+- P2-17, the mutation exemptions: At the move. The move lane writes the three entries the
+  census argued equivalent into the new repository's `.github/mutants-exempts`.
 - P2-18, `Hash`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-19, the scan hint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-20, the stale note: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2-20, the stale note: Done, [#3567](https://github.com/nifeos/nife/pull/3567), and the note
+  points at the README in [#3971](https://github.com/nifeos/nife/pull/3971).
 - Decision 1, `FRAME_SIZE` or `FRAME_BYTES`: Done, [#3805](https://github.com/nifeos/nife/pull/3805),
   as `FRAME_BYTES`, ratified.
 - Decision 2, `physical_address` and `from_physical_address`: Done,
@@ -230,9 +236,7 @@ The checks are in [the appendix](1103-page-frames-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Each finding that "Finding status" marks Open or At the move, checked against
-  `crates/page_frames` and its manifest. Items 1, 2, 12 and 17 are the move lane's; the review
-  package has its clearance.
+- **The move.** Item 17 is the move lane's, and the review package has its clearance.
 
 ## BUGS
 
@@ -250,9 +254,9 @@ The checks are in [the appendix](1103-page-frames-outside-review/done-when.md).
 
 ## Index row
 
-An outside review of `page_frames` before its move. Two items block the move: a manifest that does
-not stand alone and no README while the design arguments stay behind in nife; the third, documentation
-that cites the tree, is done. Seven land before the first release. Among them are `mark_free` rounding usable
+An outside review of `page_frames` before its move. The three items that gate the move are done: a
+manifest that stands alone, a README that carries the design arguments, and documentation that
+cites nothing of the tree. Seven land before the first release. Among them are `mark_free` rounding usable
 memory outward against its own documentation and every comparable system, and proofs that leave the
 rounding and the accounting unproven. Another is a malformed regenerated falsification patch that
 stops the dry run, and two public names that fail the naming rules. Ten
