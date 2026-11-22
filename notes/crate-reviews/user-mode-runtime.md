@@ -59,8 +59,7 @@ In the order of milestone 1017 the crate leaves at step 3, after `abi`, `address
 because every program of that package depends on it. After the move each of those manifests pins the
 new repository by a full commit.
 
-Outside the dependency lines: `notes/user-mode-runtime.md` and its `user-mode-runtime/` directory
-describe the crate and move into its `docs/` (the move lane's work, below). `helpers/` and
+Outside the dependency lines: the crate's design notes live in its own `docs/`. `helpers/` and
 `packages/runtime.package.toml` list it, and `crates/externalization-list.txt` holds its row.
 
 ## What was run
@@ -182,7 +181,6 @@ The ratification replaced every provisional block with a ratified one dated 2026
 | item | owner |
 |---|---|
 | Wait for `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` to leave the tree, so they become git pins. The package is cleared (2026-11-21 UTC). | the contract crates' move lanes |
-| Move `notes/user-mode-runtime.md` and `notes/user-mode-runtime/` into the crate's `docs/`, and drop the externalized-crates ceiling to zero (milestone 1112 P1-8). The text cites 34 nife paths, 31 milestones, 31 sections and the architect's name in the sources and the manifest, which the standalone `citations` check lists. | move lane |
 | Convert the four path dependencies (`abi`, `address_space_layout`, `current_cpu_contract`, `socket_contract`) to `git` and `rev` with `version = "0.1.0"`, once each has left (`counter_frequency_contract` is already a git pin). | move lane, after the contract crates |
 | `helpers/template_report_baseline.txt` holds two rows (`abbreviations` 8, `register_names` 2) and `packages/runtime.package.toml` and `crates/externalization-list.txt` list the crate. | move lane |
 | The template's scaffold findings (the pull request template names the architect, `CONTRIBUTING.md` cites a nife path, the commit hook and `deny.toml` mention nife) are listed in the runbook's `BUGS`. | move lane |
