@@ -236,8 +236,8 @@ it. That ruling is not the adoption ruling above, which stays open.
 - No reader can address a block smaller than the device's logical sector, so `rsext4` refuses
   1 KiB and 2 KiB blocks on a 4,096-byte-sector device, as Linux does. It reports the refusal as a bare `Io`
   with no context, the error a failed read gives (upstream item 7).
-- `rsext4` refuses to mount an `inline_data` image, even read-only. `mke2fs` does not enable the
-  feature by default.
+- `rsext4` refuses to mount an `inline_data` image, even read-only. `mke2fs` does not enable it
+  by default.
 - `rsext4`'s `InodeInfo` reports each time as the 32-bit seconds field alone. A file's nanoseconds,
   a time before 1970 and a time past 2106 read back wrong (upstream item 8), so `ext4_server` cannot
   give a reader the time Linux wrote until that lands.

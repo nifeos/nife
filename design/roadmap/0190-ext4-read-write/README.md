@@ -14,7 +14,9 @@ main page's prose budget has no room for.
 - [`write-oracle.md`](write-oracle.md): the write oracle, its cases and bases, what `rsext4`
   writes that `e2fsck` and a `debugfs` readback accept, and the three bugs they do not.
 - [`upstream/`](upstream/): one draft per submission to `rsext4` upstream, each a text for the
-  architect's review with the change beside it as a `.patch`.
+  architect's review with the change beside it as a `.patch`: so far
+  [`2a-free-empty-extent-index.md`](upstream/2a-free-empty-extent-index.md) and
+  [`2b-restore-truncate-tail.md`](upstream/2b-restore-truncate-tail.md), the two truncate fixes.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default,
 `design/roadmap/X/` beside `design/roadmap/X.md`. calef names directories.*

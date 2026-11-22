@@ -2,9 +2,9 @@
 
 [Milestone 190 (ext4, read and write: a Rust implementation with libext2fs as the host-side
 oracle)](../../0190-ext4-read-write.md) sends its `rsext4` fixes to `rcore-os/tgoskits`.
-Upstream takes one task per pull request and processes none without a linked Issue, so each
-submission has a draft here holding both: the Issue to file first and the pull request, each with
-its Chinese text and an English rendering, then the base commit and the test evidence. A `.patch`
+Upstream takes one task per pull request and processes none without a linked Issue. Each
+submission therefore has a draft here holding the Issue to file first and the pull request, each in
+Chinese with an English rendering, then the base commit and the test evidence. A `.patch`
 beside it holds the `git format-patch` output. Nobody files a draft until the architect has
 reviewed its text and given a separate go.
 
