@@ -27,8 +27,8 @@ word in a tuple, and names by meaning for every decoded value.
   `(i64, u64)` and `reply` takes `(i64, u64)`. About 113 `let (..) = call(` bindings and 112
   `reply(` calls in 43 files change, plus the 197 group sites and 122 single-word sites.
 - The thin wrappers carry `#[inline]`. Check that a release build's assembly for a caller before and
-  after is identical, on aarch64, riscv64 and x86_64, and keep that check so the attribute cannot
-  be dropped unseen.
+  after is identical, on aarch64, riscv64 and x86_64, and keep that check so nobody can drop the
+  attribute unseen.
 - `byte_sink_contract` changes first in its own repository and nife bumps its pin; regenerate and
   replay the 16 falsification patches; check that the Kani harnesses and mutation baselines do not
   name these parameters.
