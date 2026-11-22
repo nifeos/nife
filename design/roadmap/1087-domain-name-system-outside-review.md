@@ -232,6 +232,11 @@ creates `nifeos/domain_name_system` with the three mutant exemptions and the fuz
 
 The checks are in [the appendix](1087-domain-name-system-outside-review/done-when.md).
 
+## Follow-on
+
+- **Done.** Every finding, by the pull requests under [Finding status](#finding-status). The crate
+  lives in `nifeos/domain_name_system`, and its later work is that repository's.
+
 ## BUGS
 
 - The template's `abbreviations` helper judged one name when run here. That is almost certainly a
