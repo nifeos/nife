@@ -18,8 +18,9 @@ would widen the grant. `admit` decides whether a request may touch a handle, and
 which badge may use which root, failing closed for a badge it never bound. The crate is `no_std`,
 has no `unsafe`, and has one dependency, `file_system_contract`, for the rights arithmetic. Six Kani
 harnesses prove that a step is one name, that a walk asks for every component before the last `/`
-in order and never widens, follows a link or crosses a mount, and that a bound badge reaches only its own root and the handles it minted. Its one consumer
-is `redoxfs_server`. The crate refers to nife by milestone number in its documentation; the move
+in order, and that it never widens, follows a link or crosses a mount. They also prove that a
+bound badge reaches only its own root and the handles it minted. Its one consumer is
+`redoxfs_server`. The crate refers to nife by milestone number in its documentation; the move
 lane rewrites that text (P0-2 of the milestone).
 
 ## Identity
