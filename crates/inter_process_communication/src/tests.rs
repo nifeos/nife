@@ -419,3 +419,16 @@ fn binding_to_an_interrupt_is_visible_and_one_way() {
 fn a_rendezvous_is_five_words() {
     assert_eq!(core::mem::size_of::<Rendezvous<N>>(), 5 * 8);
 }
+
+/// **A tag that names an empty queue breaks the invariant**, and the check says so. The public
+/// operations never leave this state, so the test builds it by hand: the check is what the
+/// harnesses lean on, and a check that always answers yes would prove nothing.
+#[test]
+fn a_tag_naming_an_empty_queue_breaks_the_invariant() {
+    let mut e: Rendezvous<N> = Rendezvous::new();
+    assert!(e.one_queue_invariant_holds());
+    e.waiting = rendezvous::Waiting::Senders(Queue::new());
+    assert!(!e.one_queue_invariant_holds());
+    e.waiting = rendezvous::Waiting::Receivers(Queue::new());
+    assert!(!e.one_queue_invariant_holds());
+}
