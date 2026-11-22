@@ -104,6 +104,12 @@ pub const fn fits_words(name: &[u8]) -> bool {
 
 /// Pack the name length and the granted rights into the caretaker's third argument word.
 ///
+/// # Panics
+///
+/// When `len` is past [`MAXIMUM_NAME_BYTES`] or `rights` needs more than the 56 bits above the
+/// length byte. A masked length of 256 would read back as [`WHOLE_NAMESPACE`], a grant of
+/// everything. The panic is provisional (restrictive first).
+///
 /// # Examples
 ///
 /// `wc` starts holding one file, read-only, with the name in two argument words.
@@ -132,7 +138,8 @@ pub const fn fits_words(name: &[u8]) -> bool {
 ///
 /// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `file_system_contract`).
 pub const fn specification(len: usize, rights: u64) -> u64 {
-    ((len as u64) & 0xff) | (rights << 8)
+    assert!(len <= MAXIMUM_NAME_BYTES && rights >> 56 == 0);
+    (len as u64) | (rights << 8)
 }
 
 /// The granted name's length from a spec word.

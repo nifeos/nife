@@ -409,6 +409,13 @@ pub const MAXIMUM_HANDLE: u64 = 0xffff;
 /// [`READ`]/[`WRITE`] pass the handle and the byte count; [`CLOSE`]/[`FSTAT`]/[`TRUNCATE`] pass
 /// the handle and length 0 ([`TRUNCATE`]'s new size rides in the second word).
 ///
+/// # Panics
+///
+/// When `handle` is past [`MAXIMUM_HANDLE`] or `len` past [`MAXIMUM_LENGTH_BYTES`]. A masked field
+/// would reach the server as a different handle or a shorter length, a request the caller never
+/// made. The panic is provisional (restrictive first); a caller that must forward a value it did
+/// not check refuses it first, as a caretaker does with a handle outside its table.
+///
 /// # Examples
 ///
 /// Control needs no shared page; the page is for the bytes.
@@ -430,9 +437,8 @@ pub const MAXIMUM_HANDLE: u64 = 0xffff;
 ///
 /// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `file_system_contract`).
 pub const fn request(operation: u64, handle: u64, len: u64) -> u64 {
-    (operation << super::OPERATION_SHIFT)
-        | ((handle & MAXIMUM_HANDLE) << 40)
-        | (len & MAXIMUM_LENGTH_BYTES)
+    assert!(handle <= MAXIMUM_HANDLE && len <= MAXIMUM_LENGTH_BYTES);
+    (operation << super::OPERATION_SHIFT) | (handle << 40) | len
 }
 /// The handle of a file request word.
 ///
@@ -451,9 +457,14 @@ pub const fn request_length_bytes(w0: u64) -> usize {
 /// fields [`request`] uses, minus the opcode, because a rename names two directories and one word
 /// cannot carry both. Read back with [`destination_handle`] and [`destination_length_bytes`].
 ///
+/// # Panics
+///
+/// On the bounds [`request`] asserts, for its reason.
+///
 /// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `file_system_contract`).
 pub const fn rename_destination(handle: u64, len: u64) -> u64 {
-    ((handle & MAXIMUM_HANDLE) << 40) | (len & MAXIMUM_LENGTH_BYTES)
+    assert!(handle <= MAXIMUM_HANDLE && len <= MAXIMUM_LENGTH_BYTES);
+    (handle << 40) | len
 }
 /// The destination directory handle of a [`RENAME`]'s second word.
 ///

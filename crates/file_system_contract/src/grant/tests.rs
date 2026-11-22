@@ -188,3 +188,16 @@ fn start_words_carrying_a_name_are_recognized() {
         grant::specification(4, 3)
     ));
 }
+
+#[test]
+#[should_panic]
+fn a_specification_refuses_a_name_past_the_maximum() {
+    // Masked to the length byte, 256 would read back as `WHOLE_NAMESPACE`.
+    let _ = grant::specification(256, grant::rights::READ);
+}
+
+#[test]
+#[should_panic]
+fn a_specification_refuses_rights_past_the_field() {
+    let _ = grant::specification(1, 1 << 56);
+}
