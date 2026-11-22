@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017, 956
 decision_dependencies: 111, 305
@@ -42,11 +43,13 @@ and the release steps.
 - Item 4 (P1), the abbreviated accessors: Done, [#3726](https://github.com/nifeos/nife/pull/3726).
   `time_zone`, `locale`, `terminal_type`, `is_known_*` and `Unknown*`, each accessor with its POSIX
   alias, ratified 2026-11-19 UTC.
-- Item 5 (P1), no Kani proof: Waiting on
-  [nifeos/environment_contract#2](https://github.com/nifeos/environment_contract/pull/2). Kani
-  proves `field_bytes_never_panics_for_any_length_byte` on `main`, with its falsification patch
-  ([#3529](https://github.com/nifeos/nife/pull/3529)). The pull request adds the round-trip and
-  domain-member harnesses with their patches, after the reader stops decoding page bytes as UTF-8.
+- Item 5 (P1), no Kani proof: Done,
+  [nifeos/environment_contract#2](https://github.com/nifeos/environment_contract/pull/2). Two
+  harnesses, each with its falsification patch: `field_bytes_never_panics_for_any_length_byte` and
+  `an_accessor_answers_only_the_member_its_field_holds`, which takes a fully symbolic page. The
+  round trip is the host test `every_member_round_trips_through_the_safe_reader`, which writes and
+  reads every member of every finite list; a Kani harness over a symbolic member did not finish in
+  under seven minutes.
 - Item 6 (P1), the crate does not stand alone: Done, [#3827](https://github.com/nifeos/nife/pull/3827).
   The manifest carries its license, lints and `rust-version`, the crate has a README that says
   fuzzing stays off because it has `unsafe`, and both license files, and no text cites this tree.
@@ -61,7 +64,7 @@ and the release steps.
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 10 (P2), five documentation sentences: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 11 (P2), a safe reader over borrowed bytes: Waiting on
+- Item 11 (P2), a safe reader over borrowed bytes: Done,
   [nifeos/environment_contract#2](https://github.com/nifeos/environment_contract/pull/2).
   `ConfigurationView::new` takes `&[u8; PAGE_CONTENT_BYTES]` and needs no `unsafe`, a provisional
   name; `ConfigurationPage` keeps its address constructor and reads through it.
@@ -238,9 +241,6 @@ The checks are in [the appendix](1089-environment-contract-outside-review/done-w
 
 - The review did not test a `std` program against a corrupt page under QEMU, so the
   claim that `seed()` aborts before `main` on such a page comes from reading `sys/env/nife.rs`, not from a run.
-- The review has no Kani verdict: its one trial harness was too wide to finish inside a
-  seven-minute cap on one machine. Item 5's two wider harness shapes are a proposal, not a measured
-  run; the lane that lands them measures with `/usr/bin/time -v` for the README.
 - The glibc and terminfo lengths in decision 1 come from recall, not from the databases, and carry a mark saying so. The review read the IANA lengths from this host's tzdata.
 - The review did not run `script/crate-move --dry-run`. The template scaffold's findings (the pull
   request template, `CONTRIBUTING.md`, the commit hook) are the runbook's and are not repeated here.
@@ -248,13 +248,13 @@ The checks are in [the appendix](1089-environment-contract-outside-review/done-w
 
 ## Follow-on
 
-- **Outstanding.** Every finding that Finding status above marks Open or Waiting, each with what
-  remains, and each open decision under Open decisions. A lane checked each finding line against
-  the crate and its pull requests on main.
+- **Done.** Every finding and step in Finding status above, each line citing the pull request
+  that landed it, checked against the crate on `main` in its own repository.
 
 ## Index row
 
-An outside review of `environment_contract` before it left. Of 16 findings and steps, fourteen are
-done: the reader panic, reader-side validation, the names, the identity freeze, the standalone
-files and the growth path among them, and the crate has its own repository. Two wait on one pull
-request in that repository: the two wider Kani harnesses and a safe reader over borrowed bytes.
+An outside review of `environment_contract` before it left. All 16 findings and steps are
+done, and the crate has its own repository. They include the reader panic, reader-side
+validation, the names, the identity freeze, the standalone files and the growth path. Two Kani
+harnesses and an exhaustive round-trip test prove the reader, and a safe reader takes borrowed
+bytes.

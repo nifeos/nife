@@ -31,7 +31,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
    as "send the rest". Lands with item 1.
    Door: two-way (it documents the wire as spoken). Effort: S.
 
-5. The README does not yet meet the template's scaffold. LEFT: README scaffold sections belong to the move lane's staged tree.
+5. The README does not yet meet the template's scaffold. AT THE MOVE: README scaffold sections belong to the move lane's staged tree.
    Finding: against `scaffold/README-crate.md` the README lacks several things. It has no badge row
    and no `rustup target add` line before the bare-metal build. It does not say how long `cargo
    kani` takes or its peak memory. It does not say how to run one harness (`cargo kani --harness
@@ -46,7 +46,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
    a README to fail against.
    Door: two-way. Effort: S.
 
-6. The three surviving mutants need exemptions, or the release gate reads a red verdict. LEFT: `.github/mutants-exempts` exists only in the new repository.
+6. The three surviving mutants need exemptions, or the release gate reads a red verdict. AT THE MOVE: `.github/mutants-exempts` exists only in the new repository. The three are the `|` sites in `listen_grant`, `udp_bind_grant` and `peer_word`.
    Finding: the census records 93 mutants, 87 caught, 3 missed, 0 timeouts, 3 unviable, in three
    consecutive weekly runs. The triage classifies all three as equivalent. Two are `|` to `^` in
    `listen_grant` (line 147) and `udp_bind_grant` (line 195), where the operands have no bit in

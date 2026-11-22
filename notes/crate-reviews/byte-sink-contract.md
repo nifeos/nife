@@ -118,7 +118,7 @@ The other P1 and P2 items:
 | P2-11, narrow `usize` | done; `unpack` compares the count as `u64` |
 | P2-12, `first_word` typed parameters | done (ruled 2026-11-21 UTC); `first_word` takes a `u8` opcode and a `u32` length, and the opcodes are `u8` |
 | P2-13, a words struct for `pack` | done (ruled 2026-11-21 UTC); `pack` returns `(MessageWords, taken)` and `unpack` takes the struct |
-| P2-14, mutant exemptions | waiting on nifeos/byte_sink_contract#1, which lists the four survivors the repository's first mutation run names |
+| P2-14, mutant exemptions | done (nifeos/byte_sink_contract#1); the four survivors the repository's mutation run names are exempted with their reasons |
 | P2-15, severity on any first word | done |
 
 ## Names
