@@ -147,9 +147,9 @@ lost because it keeps the overlap, and because its one argument, compatibility, 
 **(B) nife's own codes, disjoint from the kernel's (recommended).**
 
 **(C) One vocabulary shared with `abi::Error`.** Fuchsia's model: one table, one
-decoder. It lost on where the table lives: `abi` is the system call surface (§10), and this puts
-file-system meanings the kernel never returns into it, so each new service code needs a kernel ABI
-review. Merging the tables later stays compatible, because (B)'s ranges are disjoint.
+decoder. It lost on where the table lives: `abi` is the system call surface, §10 (process model:
+capability-based, microkernel), and this puts file-system meanings the kernel never returns into
+it, so each new service code needs a kernel ABI review. Merging the tables later stays compatible, because (B)'s ranges are disjoint.
 
 **(D) Keep the numbers, give them nife names.** Fixes the naming rule and nothing else: the
 overlap stays.
