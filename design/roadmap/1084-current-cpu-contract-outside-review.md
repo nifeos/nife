@@ -1,6 +1,7 @@
 ---
 status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: 1017, 956
 decision_dependencies: 204
 machine_requirements: none
@@ -238,8 +239,8 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 ## Follow-on
 
-- **Outstanding.** Item 1's `repository` key, which the move commit adds.
-- **Milestone 1017.** The contract crates leave in its order, and this crate is ready to move.
+- **Milestone 1017.** The contract crates leave in its order, and this crate is ready to move. The
+  move commit adds item 1's `repository` key.
 
 ## Index row
 
