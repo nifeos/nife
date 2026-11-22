@@ -47,11 +47,11 @@ defines its own wire error codes and each server translates at its boundary.
 - `errno` stays where POSIX is the contract: the C library's `errno` (`c_library_errno`), which is
   already translated from `io::ErrorKind` and never reads the wire.
 
-The reason is on the merits, not effort; it is the dearer option. Two things are wrong today, and
-(B) is the one option that fixes both. The spaces collide: one collision is live (-1) and six are
-latent, and the `std` overlay trades an answer away to live with the live one. And the vocabulary is
-not one nife chose: `std` tells 10 of the 27 numbers apart and folds 17 into `Other`. An offset (G)
-or a moved kernel range (H) fixes the first more cheaply and leaves the second.
+The reason is on the merits, not effort; it is the dearer option. The spaces collide: one
+collision is live (-1) and six are latent, and the `std` overlay trades an answer away to live with
+the live one. (B) removes that by construction and puts the vocabulary on nife's own meanings and
+names, as every newer contract does. An offset (G) fixes the collision more cheaply; against it the
+case is that taking (G) now and (B) later renumbers twice.
 
 ## Is the premise true
 
@@ -100,9 +100,10 @@ and `subtree_scope`'s `Refusal::errno`. Passed through: what the RedoxFS engine 
 | 126 | `ENOKEY` | | yes | `Other` |
 | 129 | `EKEYREJECTED` | | yes | `Other` |
 
-That is 27 numbers. The overlay (`sys/fs/nife/errors.rs`) distinguishes ten of them; the other 17
-are `Other`. It also reads -3 as the kernel's `NotPermitted` and answers `Unsupported`
-(`reachable.rs`). Whether every engine code is reachable through the server was not checked.
+That is 27 numbers. The overlay (`sys/fs/nife/errors.rs`) has arms for ten of them, which give nine
+kinds (9 and 22 are both `InvalidInput`); the other 17 are `Other`. That is the overlay's mapping
+choice, and no wire vocabulary changes it on its own. Whether every engine code is reachable through
+the server was not checked.
 
 The block protocol (`filesystem_contract::block`), all synthesized: virtio block
 (`block_driver_roles`) `EINVAL` 22, `EIO` 5, `EOPNOTSUPP` 95; NVMe
@@ -114,8 +115,8 @@ passes through. Only `kernel/src/storage_bench.rs` and the system tests read the
 The graphics protocol: `graphics_contract::EINVAL` and `compositor`'s `EBADOP`, both -22.
 
 Sockets (`socket_contract`): no `errno`. Per-protocol outcomes (`CONNECT_REFUSED` 1,
-`PORT_CLAIM_DENIED` 1, `PORT_CLAIM_IN_USE` 2) and one sentinel, `REPLY_ERROR` = `1 << 32`, a positive
-word, so it never meets the kernel's range.
+`PORT_CLAIM_DENIED` 1, `PORT_CLAIM_IN_USE` 2) and one sentinel, `REPLY_ERROR` = `1 << 32`, a
+positive word, so it never meets the kernel's range.
 
 ### The overlap, measured
 
@@ -149,15 +150,14 @@ lost because it keeps the overlap, and because its one argument, compatibility, 
 **(C) One vocabulary shared with `abi::Error`.** Fuchsia's model: one table, one
 decoder. It lost on where the table lives: `abi` is the system call surface, §10 (process model:
 capability-based, microkernel), and this puts file-system meanings the kernel never returns into
-it, so each new service code needs a kernel ABI review. Merging the tables later stays compatible, because (B)'s ranges are disjoint.
+it, so each new service code needs a kernel ABI review.
 
 **(D) Keep the numbers, give them nife names.** Fixes the naming rule and nothing else: the
 overlap stays.
 
-**(E) Per-protocol code sets.** Sockets already work this way, and it suits a small vocabulary whose
-outcomes are not failures (`PORT_CLAIM_IN_USE`). It lost as the general rule because the file and
-block protocols share most codes and `SYNC` passes a block code through the file service. (B) still
-lets a protocol answer its own outcome words in its results.
+**(E) Per-protocol code sets.** Sockets already work this way. It lost as the general rule because
+the file and block protocols share most codes and `SYNC` passes a block code through the file
+service. (B) still lets a protocol answer its own outcome words in its results.
 
 **(F) A tag bit instead of a range.** A flag in the word (bit 62) would separate the spaces too. It
 lost because it changes the ruled 2026-11-14 shape (`-4095..=-1` is an error) and makes every
@@ -166,9 +166,9 @@ decoder test a bit as well as a sign.
 **(G) An offset: servers send `-(256 + errno)`.** The other fix notes/std/fs.md names. It separates
 the spaces as (B) does and keeps every constant: only `reply_err`, `reply_errno`, the three raw
 literals and the tests' expected words change. It is the cheapest fix of the collision, and the
-strongest rival. It lost because it keeps the inherited vocabulary inside the new range: 27 Linux
-meanings, 17 of them `Other` to `std`, with no place for a capability system's own answer (WASI's
-`NOTCAPABLE`). Taking (G) now and (B) later renumbers twice.
+strongest rival. It can grow nife's own codes above the Linux ones. It lost on one point: it keeps
+Linux's numbering as the base of the table, so a later move to nife's own numbering, which the
+naming rule and the newer contracts point to, renumbers twice. Taking (B) once avoids that.
 
 **(H) Move the kernel's codes out of the services' way.** Renumber `abi::Error` to, say,
 `-200..=-215`, above Redox's 133 numbers; the services change nothing. It lost because it moves the
@@ -235,7 +235,9 @@ overlay's checks.
 | prose naming an `errno` | notes | 150 Markdown files |
 | `c_library_errno`, `c_library` | nothing | 0 |
 
-The rows are a floor. This count is the ceiling (it also catches comments and engine-side lines):
+The rows are a floor. This count is an estimate, not a bound: it catches comments and engine-side
+lines that would not change, and misses bare numbers (the overlay's numbered arms, `reachable.rs`'s
+`-1 | -2 | -3`, `block_driver_roles`' raw numbers):
 
 ```sh
 R='\bE(PERM|NOENT|IO|2BIG|BADF|NOMEM|ACCE[S]|BUSY|EXIST|XDEV|NOTDIR|ISDIR|INVAL|MFILE|FBIG|NOSPC|ROFS|RANGE|NOSYS|NOTEMPTY|LOOP|NODATA|PROTO|BADFD|NOTSUP|OPNOTSUPP|NOKEY|KEYREJECTED|BADOP)\b|reply_errno?\(|MAXIMUM_ERRNO|\berrno\b'
@@ -256,8 +258,8 @@ that was not checked against §301 (exit status and output).
 
 Two-way today: nife has no installs, no third-party server or client speaks the file or block
 protocol, and nothing is on crates.io (the ruling of 2026-11-18 holds every first publish until the
-review milestones deliver). It becomes one-way at the first of: a release of `file_system_contract` to
-crates.io; a server or client written outside nifeos; a basalt image whose packages outside nife
+review milestones deliver). It becomes one-way at the first of: a release of `file_system_contract`
+to crates.io; a server or client written outside nifeos; a basalt image whose packages outside nife
 read these words. After that, renumbering is a protocol version.
 
 The disjoint ranges are the restrictive choice: a later decision can merge them into one table (C)
@@ -265,12 +267,12 @@ compatibly; separating two spaces that shared numbers cannot.
 
 ## Would we still choose this if both cost the same
 
-Yes, against each rival. At equal cost (B) beats (A) and (D) because it removes the collision, (H)
-because it leaves the system call surface alone, and (G) because it also replaces a vocabulary
-`std` can tell only 10 of 27 apart in. It follows every newer contract in the tree and the naming
-rule. The real costs run the other way: (A) is free, (G) and (H) are small, and (B) is the hundreds
-of lines above. So the recommendation is not about effort. If the ruling wants only the collision
-gone, (G) is the cheapest way to do that.
+Yes, against each rival. At equal cost (B) beats (A) and (D) because it removes the collision and
+(H) because it leaves the system call surface alone. Against (G) the margin is thin: both separate
+the spaces, and (B) wins only by numbering from nife's own table, as the newer contracts and the
+naming rule do, so the table is not renumbered a second time. The real costs run the other way: (A)
+is free, (G) and (H) are small, and (B) is the hundreds of lines above. So the recommendation is not
+about effort. If the ruling wants only the collision gone, (G) is the cheapest way to do that.
 
 ## A concrete example
 
@@ -297,8 +299,7 @@ Code::NotADirectory => io::const_error!(io::ErrorKind::NotADirectory, "that name
 ## What waits on this
 
 - The names `MAXIMUM_ERRNO` and `EPROTO` in `file_system_contract::error` (#3914). Under (B) they
-  become a nife bound and a nife protocol-violation code; under (A) they keep their meaning and only
-  the naming question remains. #3914 can land the module rename with both names as they are.
+  become a nife bound and a nife protocol-violation code; under (A) only their naming remains. #3914 can land the module rename with both names as they are.
 - The constants `file_system_contract` copies (`EPERM`, `EROFS`, `ENOTDIR` and the rest).
 - §324 (the names of message and result words) does not wait: it names the positions of result
   words, not the codes in them.
@@ -313,6 +314,6 @@ leaves both alone; whichever lane builds the ruling corrects them.
 ## What was not checked
 
 Whether every engine code can reach the wire through the file server. What every object's method 4
-answers when a misbuilt spawn puts it in a service slot. The macOS numbers, taken from
-the brief. §301's view of an exit status. The fixtures' and system tests' sites one by one, counted
-in the total only. And the exact numbers inside `-256..=-4095`, which the naming ruling assigns.
+answers when a misbuilt spawn puts it in a service slot. §301's view of an exit status. The
+fixtures' and system tests' sites one by one, counted in the total only. And the exact numbers
+inside `-256..=-4095`, which the naming ruling assigns.
