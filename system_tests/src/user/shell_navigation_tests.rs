@@ -72,8 +72,9 @@ pub(super) fn navigate(root: &'static str, run: u64) -> Option<u64> {
             arg: file_system_contract::grant::specification(run as usize, directory::rights::ALL),
             arg2: 0,
             // Measured, not guessed: see `spawn_fs_client`. A shell carries a path stack, a
-            // parsed path and a listing buffer by value, and one page is 192 bytes short.
-            stack_pages: 2,
+            // parsed path and a listing buffer by value. Two pages faulted 656 bytes below the
+            // guard once a directory path packs 512 bytes.
+            stack_pages: 3,
             verdict: false,
         },
     )?;

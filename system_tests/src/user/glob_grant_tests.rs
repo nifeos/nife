@@ -66,11 +66,12 @@ fn shell_expanded() -> Option<u64> {
                 directory::rights::ENUMERATE | directory::rights::DESCEND | directory::rights::READ,
             ),
             arg2: 0,
-            // A measurement: six pages ran within a few dozen bytes of the guard once `ShellHoldings`
-            // learned a second tree's mount point. See notes/two-trees.md, "The globbing
-            // witness's stack, measured", and its BUGS for the smaller frame that should replace
-            // the seventh page.
-            stack_pages: 7,
+            // Six pages ran within a few dozen bytes of the guard once `ShellHoldings` learned a
+            // second tree's mount point, and `ShellHoldings` grew 2304 bytes when a directory path
+            // came to pack 512 bytes, so seven leaves too little; eight is this wiring's ceiling.
+            // See notes/two-trees.md, "The globbing witness's stack, measured", and its BUGS for
+            // the smaller frame that should replace the extra pages.
+            stack_pages: 8,
             verdict: false,
         },
     )?;
