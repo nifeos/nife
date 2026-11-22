@@ -32,9 +32,7 @@ protective master boot record (MBR).
 - `last_logical_block_address` is inclusive. A one-block partition has `first_logical_block_address == last_logical_block_address`.
 - `entry_count * entry_bytes` from a hostile header is computed without overflow and returns an
   error, never a shortened CRC.
-- `span::Span::covering` turns a byte range into whole transfers, and `VERSION` (1) declares the
-  generation of this crate's reading and writing, so that assembly can check what a package was
-  built against. Nothing checks it at run time.
+- `span::Span::covering` turns a byte range into whole transfers.
 - `guid::types` names the well-known type GUIDs. A system's own private types belong to that system
   and are not listed; `guid::types::name` answers `None` for one it does not know, so a tool prints
   the raw GUID.
