@@ -256,7 +256,7 @@ it. That ruling is not the adoption ruling above, which stays open.
   the cast replacement as a patch, and the
   [Kani harnesses draft](0190-ext4-read-write/upstream/6-kani-harnesses.md) offers the harnesses
   as an issue that asks whether upstream wants them. Neither goes upstream until the architect
-  clears its text. The harnesses run here meanwhile, in
+  clears its text. The harnesses run here, in
   `tools/ext4_oracle/tests/parser_proofs.rs`, as `script/verify`'s `ext4_oracle` row.
 - **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
