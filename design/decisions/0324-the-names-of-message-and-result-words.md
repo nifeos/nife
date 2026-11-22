@@ -1,11 +1,13 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-11-22
+decided: 2026-11-22
+ratified_by: calef
 ---
 
 # 324. The names of a message's words and a system call's result words
 
-*(The section number and title are provisional until the merge lands them.)*
+*(The section number and title are provisional until the merge lands them. Ruled 2026-11-22 (UTC).)*
 
 ## Background
 
@@ -17,68 +19,83 @@ word of a `READ` packs the operation, the handle and the byte count, and the sec
 offset. [notes/abi.md](../../notes/abi.md) lays the words out by position.
 
 The tree names those positions `w0` to `w5` (the words of a message) and `r0` to `r2` (the result
-words), in doc prose and as parameter, local and field names. Nothing defines them:
-[design/naming.md](../naming.md) never mentions them, and its rule that every name the tree authors
-spells out its abbreviations, parameters included, would refuse them if they were on its list.
+words), in doc prose and as parameter, local and field names. design/naming.md requires every name
+the tree authors to spell out its abbreviations, parameters included, so these names are refused.
+Spelled numbers (`word_zero`) and ordinals (`first_word`) are refused in identifiers too, and the
+tree must not permit them.
 
-Three package rulings spelled them out, each for one package:
+## The rule
 
-- `user_mode_runtime` (ruled 2026-11-20, built in #3856): `word_zero` to `word_two`,
-  `result_word_zero` and `argument_zero`.
-- `byte_sink_contract` (ruled 2026-11-21, built in #3880): the fields `word_zero` to `word_two` of
-  `MessageWords`.
-- `domain_name_resolution_contract` (ruled 2026-11-19): the parameters `first_word` and
-  `second_word`.
-
-On 2026-11-22 calef ruled that spelled numbers (`word_zero`) and ordinals (`first_word`) are wrong
-in identifiers, and that the tree must not permit them. That ruling refuses all three package
-spellings and leaves two candidates: a digit (`word_0`), or no numbered name at all, with the words
-held in an array (`words[0]`).
-
-## The decision
-
-How nife names the words of a message and the result words of a system call, in identifiers and
-in prose, across nife, its `std` overlay and the kernel.
-
-## Recommendation: (g), an array of words, and names by meaning once decoded
+How nife names the words of a message and the result words of a system call, in identifiers and in
+prose, across nife, its `std` overlay and the kernel:
 
 - The message words a call sends or a receive delivers are an array: `send(slot, words: [u64; 3])`,
   `call(slot, words: [u64; 2])`, `Message { words: [u64; 3], badge, label, delivered }`.
-- Result words are never an array. This decision adopts a rule: the first result word carries a sign,
-  a negative error or a value, so results are a tuple whose first element is `i64`, as SBI's
-  `sbiret` is a struct: `call(..) -> (i64, u64)`, `reply(to, results: (i64, u64))`, and `survey`
-  keeps `(i64, u64, u64)`.
-- A value the code has decoded takes the name of what it is, as design/naming.md already requires:
-  `let (handle, length) = call(slot, request);`, or `let [operation, offset, _] = message.words;`.
+- Result words are never an array. The first result word carries a sign, a negative error or a
+  value, so results are a tuple whose first element is `i64`, as SBI's `sbiret` is a struct:
+  `call(..) -> (i64, u64)`, `reply(to, results: (i64, u64))`, and `survey` keeps `(i64, u64, u64)`.
+- No numbered word name exists. A value the code has decoded takes the name of what it is, as
+  design/naming.md requires: `let (handle, length) = call(slot, request);`, or
+  `let [operation, offset, _] = message.words;`.
 - A function that decodes one word takes a parameter named by meaning, or plain `word`.
 - In prose and in notes/abi.md, `words[i]` and `results[i]` are notation for position `i` of the
-  message table and the result table. They name a position, not a variable: a decoder that takes
-  `word` documents that it reads `words[1]` of a `MKDIR`, and no `results` identifier exists.
+  message table and the result table. They name a position, not a variable.
+- The thin wrappers `send`, `call` and `receive` carry `#[inline]`, so the generated code matches
+  what a digit-named form would produce (the measurements are below).
+- Counting starts at zero: notes/abi.md numbers the words from 0, the registers that carry them are
+  `x0` and `a0` onward, and a Rust index starts at 0.
 - `w0`..`w5` and `r0`..`r2` join the `[spelled_out]` list.
 
-The reasons are on the merits. An array leaves no numbered identifier to rule on, so the tree needs
-no convention for one. The compiler checks the position: `words[3]` on a `[u64; 3]` fails to build,
-where a name `word_3` is only a name. And the tree already works this way. The trap
-boundary is `raw_system_call(number, words: [u64; 6]) -> [u64; 6]` and `trap6(number, a: [u64; 6])`,
-and the kernel's saved registers are `x: [u64; 31]`. A parameter `words: [u64; N]` appears 16 times
-in 12 files, three of them in `const fn` contract decoders.
+The reasons: an array leaves no numbered identifier to rule on, so the tree needs no convention for
+one. The compiler checks the position: `words[3]` on a `[u64; 3]` fails to build, where a name
+`word_3` is only a name. And the tree already works this way. The trap boundary is
+`raw_system_call(number, words: [u64; 6]) -> [u64; 6]` and `trap6(number, a: [u64; 6])`, and the
+kernel's saved registers are `x: [u64; 31]`. A parameter `words: [u64; N]` appears 16 times in 12
+files, three of them in `const fn` contract decoders.
 
-Would I still choose this if both options cost the same? Yes, and they do not: (g) changes
-signatures and call sites where (a) renames, so (g) is the dearer option. The recommendation is not
-about effort.
+This costs more than the refused digit form, since it changes signatures and call sites where a
+digit renames. The rule is chosen on the merits, not on effort.
 
-## Where the count starts
+### Where an array fits badly, and what the rule does there
 
-Zero-based, under either candidate. notes/abi.md numbers the words from 0, the registers that carry
-them are `x0` and `a0` onward, and a Rust index starts at 0.
+- **`Message` is not all words.** `x0` to `x2` are the sender's, `x3` the badge, `x4` the kernel's
+  account of what arrived and `x5` a label. Only the first three form the array; the rest keep
+  names by meaning, so the array index matches the register only up to 2.
+- **A signed first word.** Four local `reply` helpers take `r0: i64` (`fs_file_caretaker`,
+  `fs_nameset_caretaker`, `fs_subtree_caretaker`, `redoxfs_server`); other servers cast
+  `r0 as u64` on 21 lines in 16 files. The clock's `page.read().state` and the resolver's
+  `outcome.word()` are non-negative and pass as an `i64` unchanged, and `Outcome::from_word` takes
+  an `i64` and refuses a negative one.
+- **The kernel writes `x4`.** It is never a sender's word, so it stays outside the array as
+  `delivered`.
+- **A capability moves the words.** `receive_capability` returns the slot (in `x1`) by name beside
+  a two-word array holding the sender's words. A reply carrying a capability uses another order:
+  the kernel writes `[msg[0], msg[1], delivered, 0, 0]` (kernel/src/sched/rendezvous.rs), so the
+  slot is in `x2`. An index would not survive either trip, so each function returns the slot by
+  name beside the words.
+- **`const fn` decoders.** Constant indexing builds in `const fn`, and three decoders take an array
+  already.
 
-## Is the premise true
+### Code generation: why the wrappers carry `#[inline]`
 
-Checked on `main` at `nifeos/nife@830de0623`: design/naming.md and design/naming/ contain no
-`w0`..`w5` or `r0`..`r5`. The names are live in the kernel (39 code uses in 8 files), the `std`
-overlay (82 in 9 files) and 23 other packages.
+Measured by compiling `send`, `call` and `receive` both ways, with each architecture's `trap6`
+copied in and `call` returning `(i64, u64)`. Callers' instruction counts, digits against arrays:
 
-## The count
+| Build | aarch64 | riscv64 | x86_64 |
+|---|---:|---:|---:|
+| `opt-level=3`, wrappers inlined | identical | identical | identical |
+| `opt-level=3`, not inlined | 22 / 27 | 27 / 35 | 25 / 30 |
+| `opt-level=0` (debug), not inlined | 44 / 49 | 39 / 46 | 42 / 47 |
+
+Not inlined, a `[u64; 3]` or `[u64; 2]` argument travels by pointer. Inlined, both forms compile
+to identical code, so the `#[inline]` on the wrappers is what makes the array form free in a
+release build, and a change that removes it is a code-size and speed regression. The release
+profile sets no LTO. `script/board-image` packs debug programs, and `user_mode_runtime` builds
+there at `opt-level=0`. Even with the wrappers forced `#[inline(always)]`, the aarch64 debug caller
+grows from 178 to 188 instructions and from a 624-byte to a 672-byte frame, a cost a debug image
+pays for the rule.
+
+## The count (before the rule)
 
 All counts are of lowercase identifiers with an underscore-separated segment from `w0`..`w5` or
 `r0`..`r5` (`w1`, `carries_w1`, `r0_after`, `_w1`), on `main` at `830de0623`, excluding `vendor/`:
@@ -135,90 +152,24 @@ The first three rows hold a group: 197 sites. The last two, 122 sites, never hel
 all 319 carry a digit; under (g) none needs a positional name, because a word with no meaning yet
 stays inside its array.
 
-## The options
+## Refused options
 
-### (a) Digit: `word_0`, `result_word_0`, `argument_0`
-
-Every position keeps a name, numbered as the tables number it. The tree's ratified names for a
-numbered word of a fixed layout already use a digit: `RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK`
-(milestone 1074 (`designware_ethernet`: what an outside maintainer would fix before the move),
-ruled 2026-11-14) and the parameter `receive_descriptor_word_3`.
-
-- Changes: 1588 code uses in 148 files, 602 prose uses in 131 files, the 16 falsification patches,
-  the 130 spelled-out lines, and `MessageWords`'s three fields in `byte_sink_contract`. About 300
-  files, and `clock_contract`'s prose.
-- Keeps: every signature's shape. It is a rename, with the smallest diff of the two candidates.
-- Costs: a positional name at all 319 sites in the table above, which the compiler cannot check
-  against the length, and a convention a reviewer applies by hand.
-
-### (b) Spelled number: `word_zero`
-
-Refused by the ruling of 2026-11-22: a spelled number in an identifier.
-
-### (c) Ordinal: `first_word`
-
-Refused by the ruling of 2026-11-22: an ordinal in an identifier.
-
-### (d) Name every word by its meaning, per verb
-
-It fails where the code is generic. `send` carries words with no meaning of its own, and `READ`'s
-first word packs three values. Where the code has decoded a value, (d) is already the rule, and
-(a) and (g) both keep it.
-
-### (e) Keep `w0`..`w5`, `r0`..`r2` and define them in design/naming.md
-
-Cheapest, and the only option whose case is effort. The stay list holds terms whose expansion
-nobody says (§154 (the acronym test is whether the phrase is spoken, applied recursively)), and
-people say "word zero" aloud, so `w0` fails that test.
-
-### (f) Hybrid: keep `w0`..`w5` in the three register-level modules
-
-They hold 151 code uses. The register already has a name, `x0` or `a0`, so a third spelling adds
-a word to remember.
-
-### (g) An array of words (recommended)
-
-As set out under the recommendation. Where an array fits badly:
-
-- **`Message` is not all words.** `x0` to `x2` are the sender's, `x3` the badge, `x4` the kernel's
-  account of what arrived and `x5` a label. Only the first three form the array; the rest keep
-  names by meaning, so the array index matches the register only up to 2.
-- **A signed first word is a rule, not yet a fact.** Four local `reply` helpers
-  take `r0: i64` (`fs_file_caretaker`, `fs_nameset_caretaker`, `fs_subtree_caretaker`,
-  `redoxfs_server`); other servers cast, `reply(to, r0 as u64, ..)`, on 21 lines in 16 files. Two
-  first words are not signed: the clock's `page.read().state` and the resolver's
-  `outcome.word()`, a packed status below 2^24. Both are non-negative, so both pass as an `i64`
-  unchanged, and `Outcome::from_word` takes an `i64` and refuses a negative one, the kernel error
-  its doc already describes.
-- **The kernel writes `x4`.** It is never a sender's word, so it stays outside the array as
-  `delivered`.
-- **A capability moves the words.** `receive_capability` documents its return as
-  `(w0, capability_slot, w1)`: the slot is in `x1` and the sender's second word in `x2`. Its body
-  binds `let (w0, w1, w2, ..)`, so the local `w1` holds `x1`, the slot, while the doc's `w1` is the
-  sender's word. A reply carrying a capability uses another order: the kernel writes
-  `[msg[0], msg[1], delivered, 0, 0]` (kernel/src/sched/rendezvous.rs, line 885), so the slot is
-  in `x2`. An index would not survive either trip, so each function returns the slot by name beside
-  the words. The current names hide both shifts.
-- **`const fn` decoders.** Not a problem: constant indexing builds in `const fn`, and three
-  `const fn` decoders take an array already.
-- **Code generation.** I compiled `send`, `call` and `receive` both ways, with each
-  architecture's `trap6` copied in, using the script posted on the pull request. Callers'
-  instruction counts, digits against arrays:
-
-  | Build | aarch64 | riscv64 | x86_64 |
-  |---|---:|---:|---:|
-  | `opt-level=3`, wrappers inlined | identical | identical | identical |
-  | `opt-level=3`, not inlined | 22 / 27 | 27 / 35 | 25 / 30 |
-  | `opt-level=0` (debug), not inlined | 44 / 49 | 39 / 46 | 42 / 47 |
-
-  The array form measured is the one proposed: `call(slot, words: [u64; 2]) -> (i64, u64)`. Not
-  inlined, a `[u64; 3]` or `[u64; 2]` argument travels by pointer.
-  The wrappers carry no `#[inline]` and the release profile sets no LTO, so release callers pay
-  this today. `script/board-image` packs debug programs, and `user_mode_runtime` builds there at
-  `opt-level=0`. Even with the wrappers forced `#[inline(always)]`, the aarch64 debug caller grows
-  from 178 to 188 instructions and from a 624-byte to a 672-byte frame. That cost stays: a debug
-  image pays a few instructions per call for (g). The rename lane marks the wrappers `#[inline]`
-  and checks a release build's assembly before and after.
+- **A digit: `word_0`, `result_word_0`, `argument_0`.** Refused. Every position would keep a name,
+  numbered as the tables number it, and the diff is the smallest of the candidates (a rename of
+  about 300 files). But it puts a positional name at all 319 declaration sites in the table above,
+  which the compiler cannot check against the length, and it leaves a numbering convention that a
+  reviewer applies by hand. The tree's numbered names for a fixed layout
+  (`RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK`, milestone 1074) describe a hardware
+  descriptor, not a message.
+- **A spelled number: `word_zero`.** Refused: a spelled number in an identifier.
+- **An ordinal: `first_word`.** Refused: an ordinal in an identifier.
+- **Name every word by its meaning, per verb.** It fails where the code is generic: `send` carries
+  words with no meaning of its own, and `READ`'s first word packs three values. Where the code has
+  decoded a value it is already the rule, and the array form keeps it.
+- **Keep `w0`..`w5` and `r0`..`r2` and define them in design/naming.md.** Refused. The stay list
+  holds terms whose expansion nobody says (section 154), and people say "word zero" aloud.
+- **Keep `w0`..`w5` in the three register-level modules.** Refused. The register already has a
+  name, `x0` or `a0`, so a third spelling adds a word to remember.
 
 ## The follow-on: a check that refuses spelled numbers and ordinals
 
@@ -304,29 +255,28 @@ pub const fn destination_handle(word: u64) -> u64 { ... }
 and at the server: `let destination = fs::destination_handle(message.words[1]);`. Under (a) the
 parameter is `word_1` and the reply's word is `result_word_0`.
 
-## Effort, stated plainly
+## Effort
 
-(a) is a mechanical rename. About 10 files hold both `w1` and `word_one`, so each needs reading for
-a shadowed name, and rustfmt rewraps the lines that grow. (g) is larger. The 197 group sites change
-shape, and every caller of `send`, `call` and `receive` changes. The typed first word reaches 113
-`let (..) = call(` bindings and 112 `reply(` calls in 43 files. The single-word sites still need
-names by meaning, chosen one at a time. Under both, `byte_sink_contract` changes first in its own
-repository and nife bumps its pin, and the lane regenerates and replays the 16 falsification patches.
-The Kani harnesses and mutation baselines name functions, not parameters; the lane checks that.
-One lane, in commits by area, after the in-flight renames of the same files land. The naming
-check's instance sweep is a second lane under either option: 109 names (177 uses), and a reading
-of the 283 `first` and `last` names.
+The 197 group sites change shape, and every caller of `send`, `call` and `receive` changes. The
+typed first word reaches 113 `let (..) = call(` bindings and 112 `reply(` calls in 43 files. The
+single-word sites need names by meaning, chosen one at a time. `byte_sink_contract` changes first
+in its own repository and nife bumps its pin, and the lane regenerates and replays the 16
+falsification patches. The Kani harnesses and mutation baselines name functions, not parameters;
+the lane checks that. One lane, in commits by area, after the in-flight renames of the same files
+land. The naming check's instance sweep is a second lane: 109 names (177 uses), and a reading of the
+283 `first` and `last` names. The implementation sweep is the proposed milestone
+[design/roadmap/proposals/message-words-are-arrays.md](../roadmap/proposals/message-words-are-arrays.md).
 
 ## How reversible it is
 
 A two-way door today. nife has published no crate, and nothing outside the tree reads these names.
 The public fields (`Message::w0` and the rest, `Verb::carries_w1`, `MessageWords::word_zero`) and
 the shapes of `send` and `call` become one-way at each crate's first release. The wire format does
-not change under any option.
+not change.
 
 ## What waits on this
 
-- The rename lane for (a) or (g).
+- The implementation sweep above.
 - The naming check above.
 - The name reviews of every contract that still writes `w0` (`filesystem_contract`,
   `credential_contract`, `terminal_contract`, `program_table`'s spawn protocol and the rest).
