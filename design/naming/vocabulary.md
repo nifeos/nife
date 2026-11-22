@@ -16,7 +16,7 @@ test each word sets, the stems the tree keeps, and examples of choosing a word.*
 | `sink` | the end of a stream nobody reads further | name a program for a terminus only if no capability grant could end it |
 | grant | authority a program receives (`FileGrant`) | what a program asks for is a declaration (`FileGrantDeclaration`); not every `Spec` is one, so `RunSpec` is `ParsedInvocation` |
 | contract | an agreement between two programs | the `_contract` crate suffix; a type that selects which agreement applies may say so (`StartupContract`) |
-| right | a permission carried on a capability: held, delegated, and only narrowed (`abi::rights`, a directory's rights, a grant) | a permission attached to an object, a page or a file mode is a `permission`; ruled 2026-11-22 (UTC) |
+| right | a permission carried on a capability: held, delegated, and only narrowed (`abi::rights`, a directory's rights, a grant) | access that belongs to an object, a page or a file mode is a `permission`; ruled 2026-11-22 (UTC) |
 | permission | access attached to an object, a page or a file mode (page-table bits, a Unix mode, `PermissionDenied`) | what a capability carries is a `right`, so a capability's "permission" is loose usage |
 | option | a letter or word on a command line, as POSIX says | a flag is a bit, so `options`, never `flags` |
 | `nife` | the project | lowercase everywhere, prose included |

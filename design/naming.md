@@ -112,7 +112,7 @@ megahertz or millihertz. The IEC binary prefixes (`kib`, `mib`, `gib`) are symbo
   `FileGrant`). A contract is an agreement between two programs.
 - A letter or word after a command is an option, never a flag; a flag is a bit.
 - A `right` is a permission carried on a capability: held, delegated, and only ever narrowed
-  (`abi::rights`, a directory's rights, a grant). A `permission` is attached to an object, a page
+  (`abi::rights`, a directory's rights, a grant). A `permission` belongs to an object, a page
   or a file mode (page-table bits, a Unix mode, `PermissionDenied`). Ruled 2026-11-22 (UTC).
 - `nife` is lowercase everywhere, prose included.
 - Avoid a word whose kernel meaning differs from yours (`schedule`, `swap`, `map`, `tick`, `probe`,
