@@ -34,8 +34,8 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
 
 ## Finding status
 
-The crate lives in nifeos/capability_table, which the kernel pins. Each line was read against that
-repository's `main` and nife's.
+The crate lives in nifeos/capability_table, which the kernel pins. Each line states what that repository's
+`main` and nife's show.
 
 - P0-1, the manifest stands alone: Done, [#3888](https://github.com/nifeos/nife/pull/3888). The
   manifest carries its own license, lints, `rust-version` 1.85, `description` and `repository`, and
@@ -47,8 +47,8 @@ repository's `main` and nife's.
   [#3656](https://github.com/nifeos/nife/pull/3656), [#3888](https://github.com/nifeos/nife/pull/3888).
   `Capability::delegate` holds the rule once, the kernel's `Delegation::derive` calls it, and
   `delegation_needs_grant_and_never_widens` proves it. The two `REVOKE` arms in
-  `kernel/src/system_call.rs` test `GRANT` inline with no harness, and the reason sits beside them:
-  a revoke mints nothing, `allows` has its proof in the crate, and a harness of the arm needs stubs
+  `kernel/src/system_call.rs` test `GRANT` inline with no harness. The reason sits beside them: a
+  revoke mints nothing, `allows` has its proof in the crate, and a harness of the arm needs stubs
   the kernel proofs do not have.
 - P1-4, a slot truncates on a 32-bit target: Done,
   [#3565](https://github.com/nifeos/nife/pull/3565).
