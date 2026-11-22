@@ -248,8 +248,8 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
 
 - Item 1 (P0), the template's naming and prose gates: Done, [#3569](https://github.com/nifeos/nife/pull/3569), [#3624](https://github.com/nifeos/nife/pull/3624) and [#3634](https://github.com/nifeos/nife/pull/3634).
 - Item 2 (P0), the manifest's outside pointers and `repository`: Done, [#3624](https://github.com/nifeos/nife/pull/3624).
-- Item 3 (P1), the receive and reclaim bounds: Waiting on [nifeos/designware_ethernet#10](https://github.com/nifeos/designware_ethernet/pull/10). The bounds are built
-  ([#3624](https://github.com/nifeos/nife/pull/3624)); #10 adds the test that reaches the receive budget.
+- Item 3 (P1), the receive and reclaim bounds: Done, [#3624](https://github.com/nifeos/nife/pull/3624) and
+  [nifeos/designware_ethernet#10](https://github.com/nifeos/designware_ethernet/pull/10), whose test reaches the receive budget.
 - Item 4 (P1), `Link` and `Speed` in a `link` module: Done, [#3569](https://github.com/nifeos/nife/pull/3569).
 - Item 5 (P1), the sixteen compile-time gates: Done, [#3569](https://github.com/nifeos/nife/pull/3569).
 - Item 6 (P1), one visibility rule for the register constants: Done, [#3624](https://github.com/nifeos/nife/pull/3624).
