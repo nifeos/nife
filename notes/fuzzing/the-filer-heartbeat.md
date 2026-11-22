@@ -33,14 +33,23 @@ line says `unknown`. The line holds counts and timestamps only, and nothing read
 - `fuzz-filer.timer` has its enable switch off.
 - the timer last ran more than two UTC days before the report's day, or never ran.
 
-Parked causes are not a failure of the filer, so they never open `fuzz-loop-broken`. They open the
-separate `fuzz-findings-parked` issue instead, described in
-[`continuous-host.md`](continuous-host.md#when-the-loop-breaks).
-
 A green heartbeat therefore proves a recent release, an ok window, a bounded infrastructure share, an
 enabled filer timer that fired within two days, and no held cause waiting for an advisory. It does not
 prove that an advisory is correct. The maintainer chose the two-day bound and the start day,
 provisionally.
+
+## Parked causes notify a person
+
+Parked causes are not a failure of the filer, so they never open `fuzz-loop-broken`. The filer parks
+budget and hang causes and never files them; each waits for a `file` or `suppress` rule in fuzz-host
+`etc/fuzz-filer/rules.tsv` ([the filer's rules](https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-filer.md#rules)).
+When the `Filer:` line shows more parked causes than the
+count already noticed, the heartbeat opens one issue with the label `fuzz-findings-parked`
+(provisional), or comments on the one already open. The count already noticed is a marker in that
+issue's body, rewritten to the latest count, so the workflow keeps no state of its own. The issue
+carries the count and the release day only, since issues are public and the findings stay on the
+host. A person reads the day's report on the host, writes a rule for each parked cause through a
+fuzz-host pull request, and closes the issue once every parked cause has one.
 
 `python3 helpers/fuzz-heartbeat.py --selftest` and `helpers/fuzz-daily-publish-selftest.sh` test these
 rules, and `script/lint` runs both.
