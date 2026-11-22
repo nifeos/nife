@@ -251,13 +251,13 @@ it. That ruling is not the adoption ruling above, which stays open.
   targets, the mount's error report and whole times in `InodeInfo`. Each text goes to the
   architect before anyone files it.
 - **Outstanding.** Items 5 and 6 await review, listed with the other
-  [upstream drafts](0190-ext4-read-write/upstream/README.md). The
-  [unsafe review](0190-ext4-read-write/upstream/5-unsafe-review.md) holds the safety arguments and
-  the cast replacement as a patch, and the
-  [Kani harnesses draft](0190-ext4-read-write/upstream/6-kani-harnesses.md) offers the harnesses
-  as an issue that asks whether upstream wants them. Neither goes upstream until the architect
-  clears its text. The harnesses run here, in
-  `tools/ext4_oracle/tests/parser_proofs.rs`, as `script/verify`'s `ext4_oracle` row.
+  [upstream drafts](0190-ext4-read-write/upstream/README.md): the
+  [CRC32C safety arguments](0190-ext4-read-write/upstream/5a-crc32c-safety-arguments.md) and the
+  [descriptor fix](0190-ext4-read-write/upstream/5b-group-descriptor-decode.md), each an issue and
+  a patch, and the [Kani harnesses](0190-ext4-read-write/upstream/6-kani-harnesses.md), an issue
+  asking whether upstream wants them. None goes upstream until the architect clears its text. The
+  harnesses run here, in `tools/ext4_oracle/tests/parser_proofs.rs`, as `script/verify`'s
+  `ext4_oracle` row.
 - **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the

@@ -7,14 +7,18 @@ title, the body in Chinese and in English and the test evidence, and a `.patch` 
 the `git format-patch` output. Nobody files a draft until the architect has reviewed its text and
 given a separate go.
 
-- [`5-unsafe-review.md`](5-unsafe-review.md): upstream item 5, a safety argument at each CRC32C
-  `unsafe` use, and group descriptors decoded instead of cast from the table bytes.
+- [`5a-crc32c-safety-arguments.md`](5a-crc32c-safety-arguments.md): upstream item 5, first half,
+  a safety argument at each CRC32C `unsafe` use.
+- [`5b-group-descriptor-decode.md`](5b-group-descriptor-decode.md): upstream item 5, second half,
+  group descriptors decoded instead of cast from the table bytes.
 - [`6-kani-harnesses.md`](6-kani-harnesses.md): upstream item 6, an issue offering Kani harnesses
   for the on-disk parsers; it has no `.patch`, and the harnesses run in nife meanwhile.
 
 *Name: provisional. For the drafts the parent's upstream round cites. calef names directories.*
 
-- `5-unsafe-review` Name: provisional. The upstream item's number and what it reviews. calef names
-  files.
+- `5a-crc32c-safety-arguments` Name: provisional. The upstream item's number and what it adds.
+  calef names files.
+- `5b-group-descriptor-decode` Name: provisional. The upstream item's number and what it fixes.
+  calef names files.
 - `6-kani-harnesses` Name: provisional. The upstream item's number and what it offers. calef names
   files.

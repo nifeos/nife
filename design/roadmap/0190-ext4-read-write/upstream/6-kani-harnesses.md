@@ -78,11 +78,21 @@ test(rsext4): Kani harnesses for the on-disk parsers, would you take them?
 ## Issue body (Chinese, as filed)
 
 ```markdown
-## 背景
+## 当前问题
 
-我们在自己的项目中用 Kani 模型检查器证明自己的磁盘格式解析器的几条性质：对给定上界以内的每一个输入，解析只读取给定切片内的字节、不会 panic；目录块遍历一定结束并且不越出块。我们为 `rsext4` 0.9.2 的公共接口写了对应的 Kani 证明，目前放在我们自己的仓库中，每次验证都运行。
+`fs/rsext4` 目前没有 Kani 证明，也没有运行 Kani 的 CI 任务。我们在自己的项目中用 Kani 模型检查器证明自己的磁盘格式解析器的几条性质：对给定上界以内的每一个输入，解析只读取给定切片内的字节、不会 panic；目录块遍历一定结束并且不越出块。我们为 `rsext4` 0.9.2 的公共接口写了对应的 Kani 证明，目前放在我们自己的仓库中，每次验证都运行。
 
-## 已证明的性质
+想问的问题：是否希望把这些证明放进 `fs/rsext4`？CI 中是否引入 Kani 需要你们决定，所以先在这里询问。
+
+## 修改方案
+
+如果希望，我们会提交一个 PR：证明放在 `#[cfg(kani)]` 下，普通构建和测试中不编译；`Cargo.toml` 加上 `cfg(kani)` 的 `check-cfg`，使 clippy 不报警告；再加一个运行 `cargo kani` 的 CI 任务。
+
+如果不需要，我们会继续在自己的仓库中针对已发布版本运行它们，发现的问题会单独报告。
+
+不包含：本 Issue 本身不修改代码；任何 PR 都等你们答复之后再提交。兼容性：证明在 `#[cfg(kani)]` 下，普通构建、测试和公共接口都不受影响。
+
+## 测试验证
 
 在 0.9.2 上全部通过，每条都标明输入大小（写“以内”的覆盖其中每一个长度）：
 
@@ -96,21 +106,27 @@ test(rsext4): Kani harnesses for the on-disk parsers, would you take them?
 
 每个证明都做过反证：在 crate 的副本中删掉对应的边界检查（或改错一个偏移），证明随之失败。
 
-## 想问的问题
-
-是否希望把这些证明放进 `fs/rsext4`？如果希望，我们会提交一个 PR：证明放在 `#[cfg(kani)]` 下，普通构建和测试中不编译；`Cargo.toml` 加上 `cfg(kani)` 的 `check-cfg`，使 clippy 不报警告；再加一个运行 `cargo kani` 的 CI 任务。最后一项需要你们决定是否在 CI 中引入 Kani，所以先在这里询问。
-
-如果不需要，我们会继续在自己的仓库中针对已发布版本运行它们，发现的问题会单独报告。
+验证方法：`cargo kani --tests -Z stubbing`（Kani 0.68.0），每个证明都在 15 分钟内完成。
 ```
 
-## English rendering of the body
+## English rendering of the issue
 
 ```markdown
-## Background
+## Current problem
 
-In our own project we use the Kani model checker to prove a few properties of our on-disk format parsers: for every input up to a stated bound, a parse reads only bytes inside the slice it was given and does not panic, and a directory block walk ends and stays inside its block. We wrote the matching Kani proofs against the public API of `rsext4` 0.9.2. They live in our repository for now, and every verification run runs them.
+`fs/rsext4` has no Kani proofs today, and no CI job that runs Kani. In our own project we use the Kani model checker to prove a few properties of our on-disk format parsers: for every input up to a stated bound, a parse reads only bytes inside the slice it was given and does not panic, and a directory block walk ends and stays inside its block. We wrote the matching Kani proofs against the public API of `rsext4` 0.9.2. They live in our repository for now, and every verification run runs them.
 
-## What is proved
+The question: would you like these proofs in `fs/rsext4`? Bringing Kani into CI is your decision, which is why we ask here first.
+
+## Proposed change
+
+If you would, we would send a PR: the proofs under `#[cfg(kani)]`, so ordinary builds and tests do not compile them; a `check-cfg` for `cfg(kani)` in `Cargo.toml`, so clippy does not warn; and a CI job that runs `cargo kani`.
+
+If not, we will keep running them in our repository against each release, and report anything they find separately.
+
+Not included: this issue changes no code, and any PR waits for your answer. Compatibility: the proofs sit under `#[cfg(kani)]`, so ordinary builds, tests and the public API are unaffected.
+
+## Test and verification
 
 All pass on 0.9.2. Each states its input size, and where it says "up to", every length up to it is covered:
 
@@ -124,11 +140,7 @@ All pass on 0.9.2. Each states its input size, and where it says "up to", every 
 
 Each proof was falsified: with the matching bounds check removed (or one offset made wrong) in a copy of the crate, the proof fails.
 
-## The question
-
-Would you like these proofs in `fs/rsext4`? If so, we would send a PR: the proofs under `#[cfg(kani)]`, so ordinary builds and tests do not compile them; a `check-cfg` for `cfg(kani)` in `Cargo.toml`, so clippy does not warn; and a CI job that runs `cargo kani`. The last part needs your decision on bringing Kani into CI, which is why we ask here first.
-
-If not, we will keep running them in our repository against each release, and report anything they find separately.
+Method: `cargo kani --tests -Z stubbing` (Kani 0.68.0); each proof finishes within 15 minutes.
 ```
 
 ## Test evidence
