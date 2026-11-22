@@ -4,7 +4,8 @@ name: fuzz heartbeat
 #   for 2026-11-21 or 2026-11-20 (the newest was fuzz-2026-11-19) and opened #3912 with the label
 #   fuzz-loop-broken. The run itself ends green by design; the issue is the alarm.
 #   helpers/fuzz-heartbeat.py --selftest still drives the other arms (no ok window, infrastructure
-#   share above the bound, an open issue stopping a second) over fixture reports.
+#   share above the bound, an open issue stopping a second) over fixture reports, and the parked
+#   notice (first issue, growth, no growth, an issue already open) the same way.
 
 # **Is the continuous fuzz loop still producing?** Asked daily, answered by an issue.
 #
@@ -18,6 +19,16 @@ name: fuzz heartbeat
 # While no fuzz-* release has ever existed it passes quietly, so it switches on by itself at the first
 # release. It takes no secret (GITHUB_TOKEN is the runner's own), runs only on schedule and by hand,
 # and fetches the release list and report.md, nothing else.
+#
+# **A parked fuzz finding notifies a person** (ruled 2026-11-22 UTC). The fuzz filer parks budget and
+# hang causes and never files them; each waits for a person to write a `file` or `suppress` rule in
+# nifeos/fuzz-host etc/fuzz-filer/rules.tsv. When the report's Filer line shows more parked causes
+# than the count already noticed, the heartbeat opens one issue labeled fuzz-findings-parked (label
+# provisional), or comments on the one already open; it never opens a second. The count already
+# noticed is read back from a marker in that issue's body, so the workflow keeps no state and takes
+# no secret. **Privacy:** the issue and its comments carry the parked count and the release day only,
+# never a signature, an ID, an input or a log line. Issues are public; the findings stay private on
+# the fuzz host.
 
 on:
   schedule:

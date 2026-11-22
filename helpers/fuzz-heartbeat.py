@@ -21,6 +21,17 @@ On a failure it opens one issue carrying ISSUE_LABEL that names the check and th
 with that label is already open. On success it does nothing. It repairs nothing: a person turns the
 issue into an action (notes/fuzzing/continuous-host.md).
 
+**Parked causes notify a person.** The filer parks budget and hang causes and never files them; each
+waits for a person to write a `file` or `suppress` rule in fuzz-host `etc/fuzz-filer/rules.tsv`. So,
+separately from the checks above, when the same report's `Filer:` line shows `parked` above zero and
+above the count already noticed, this opens one issue carrying PARKED_LABEL. With one already open it
+adds a comment instead, and never opens a second. The count already noticed is read back from the
+open issue's body, which carries it in a PARKED_MARKER comment and is rewritten to the latest count
+each day the count changes, so a fall followed by a rise is noticed and the workflow keeps no state of
+its own. With no open issue the count already noticed is zero. The issue and its comments carry the
+count and the release day only, never a signature, an ID, an input or a log line: issues are public
+and the findings stay private on the fuzz host.
+
 **Quiet before the first release.** The host publishes only after a person enables it. While no
 `fuzz-*` release has ever existed, this passes with a log line and opens nothing. The first release
 switches the checks on by itself.
@@ -34,7 +45,8 @@ check stayed green. The report carries counts and timestamps only, so this reads
 this script prints check names and numbers, never report text.
 
 Decided by the maintainer, provisional; reversing costs one pull request: the bound, the label and
-the two-day window below.
+the two-day window below. The parked notice was ruled 2026-11-22 (UTC); its label, PARKED_LABEL, is
+provisional.
 
 Name: provisional, minted 2026-11-01 (UTC) by lane/fuzz-dead-mans-switch.
 """
@@ -49,6 +61,11 @@ REPO = "nifeos/nife"
 # Failing share: infrastructure windows divided by all windows. The check passes below the bound.
 INFRASTRUCTURE_SHARE_BOUND = 0.5
 ISSUE_LABEL = "fuzz-loop-broken"
+# Name: provisional, minted 2026-11-22 (UTC) by maintainer/fuzz-heartbeat-parked.
+PARKED_LABEL = "fuzz-findings-parked"
+PARKED_MARKER = "fuzz-heartbeat parked="
+PARKED_MARKER_RE = re.compile(r"<!-- fuzz-heartbeat parked=(\d+) -->")
+RULES_LINK = "https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-filer.md#rules"
 WINDOW_DAYS = 2
 # The filer must have run within this many UTC days of the report's day.
 FILER_QUIET_DAYS = 2
@@ -143,12 +160,93 @@ def evaluate(today, tags, fetch_report):
             % (day, counts["ok"], share))
 
 
+def newest_report(today, tags, fetch_report):
+    """(day, report) of the newest release in the window, or None when the window has none."""
+    dated = {m.group(1) for t in tags if (m := TAG_RE.match(t))}
+    t = datetime.date.fromisoformat(today)
+    for i in range(WINDOW_DAYS):
+        day = (t - datetime.timedelta(days=i)).isoformat()
+        if day in dated:
+            return day, fetch_report("fuzz-" + day)
+    return None
+
+
+def parked_count(report):
+    """The report's parked cause count, or None when its Filer line is absent or the count unreadable."""
+    fields = parse_filer_line(report)
+    if fields is None or not fields.get("parked", "").isdigit():
+        return None
+    return int(fields["parked"])
+
+
+def noticed_count(body):
+    """The parked count an open issue's body records, or 0 when it records none."""
+    m = PARKED_MARKER_RE.search(body or "")
+    return int(m.group(1)) if m else 0
+
+
+def parked_body(day, parked):
+    # Counts and the release day only. Issues are public; signatures, IDs, inputs and log lines stay
+    # on the fuzz host.
+    return ("The daily fuzz heartbeat (.github/workflows/fuzz-heartbeat.yml) found fuzz causes parked "
+            "on the fuzz host.\n\n"
+            "Release day: %s (UTC)\nParked causes: %d\n\n"
+            "The fuzz filer parks budget and hang causes and never files them on its own. Each needs a "
+            "person to decide it:\n\n"
+            "1. Read the day's report on the fuzz host.\n"
+            "2. For each parked cause, write a `file` or `suppress` rule in nifeos/fuzz-host "
+            "`etc/fuzz-filer/rules.tsv` through a pull request. See %s.\n"
+            "3. Close this issue once every parked cause has a rule.\n\n"
+            "This issue names no cause on purpose: it is public, and the findings stay private on the "
+            "fuzz host. A comment is added when the count grows.\n\n"
+            "<!-- %s%d -->\n" % (day, parked, RULES_LINK, PARKED_MARKER, parked))
+
+
+def notify_parked(day, report, backend):
+    """Open or update the parked issue when the parked count grows past the count already noticed."""
+    parked = parked_count(report)
+    if parked is None:
+        return
+    issues = backend.open_issues(PARKED_LABEL)
+    if not issues:
+        if parked == 0:
+            return
+        backend.open_issue(PARKED_LABEL, "Fuzz causes parked for a person (%s)" % day,
+                           parked_body(day, parked))
+        print("fuzz-heartbeat: %d parked cause(s) on %s; opened an issue labeled %s"
+              % (parked, day, PARKED_LABEL))
+        return
+    number, body = issues[0]
+    noticed = noticed_count(body)
+    if parked == noticed:
+        print("fuzz-heartbeat: %d parked cause(s), already noticed in #%d" % (parked, number))
+        return
+    backend.edit_issue_body(number, parked_body(day, parked))
+    if parked > noticed:
+        backend.comment(number, "Parked causes grew from %d to %d in the release of %s (UTC). "
+                        "Each needs a `file` or `suppress` rule; see %s." % (noticed, parked, day, RULES_LINK))
+        print("fuzz-heartbeat: parked causes grew from %d to %d; commented on #%d" % (noticed, parked, number))
+    else:
+        print("fuzz-heartbeat: parked causes fell from %d to %d; updated #%d" % (noticed, parked, number))
+
+
 def run(today, backend):
-    kind, day, message = evaluate(today, backend.release_tags(), backend.report)
+    tags = backend.release_tags()
+    cache = {}
+
+    def fetch(tag):
+        if tag not in cache:
+            cache[tag] = backend.report(tag)
+        return cache[tag]
+
+    kind, day, message = evaluate(today, tags, fetch)
     print("fuzz-heartbeat: %s: %s" % (kind, message))
+    newest = newest_report(today, tags, fetch)
+    if newest is not None:
+        notify_parked(newest[0], newest[1], backend)
     if kind != "fail":
         return 0
-    if backend.open_issue_count() > 0:
+    if backend.open_issues(ISSUE_LABEL):
         print("fuzz-heartbeat: an issue labeled %s is already open; not opening another" % ISSUE_LABEL)
         return 0
     title = "Fuzz loop check failed for %s" % day
@@ -158,7 +256,7 @@ def run(today, backend):
             "is a written spec the architect hands to the homelab agent. See "
             "notes/fuzzing/continuous-host.md. Close this issue when the loop is healthy again."
             % (day, message))
-    backend.open_issue(title, body)
+    backend.open_issue(ISSUE_LABEL, title, body)
     print("fuzz-heartbeat: opened an issue for %s" % day)
     return 0
 
@@ -175,22 +273,34 @@ class GhBackend:
         return self._gh("release", "download", tag, "--repo", REPO, "--pattern", "report.md",
                         "--output", "-")
 
-    def open_issue_count(self):
-        out = self._gh("issue", "list", "--repo", REPO, "--label", ISSUE_LABEL, "--state", "open",
-                       "--json", "number")
-        return len(json.loads(out))
+    def open_issues(self, label):
+        """[(number, body)] of the open issues carrying label, oldest first."""
+        out = self._gh("issue", "list", "--repo", REPO, "--label", label, "--state", "open",
+                       "--limit", "100", "--json", "number,body")
+        return sorted((i["number"], i["body"]) for i in json.loads(out))
 
-    def open_issue(self, title, body):
+    def open_issue(self, label, title, body):
         # The label may not exist yet; creating it is idempotent here because an existing one is fine.
-        subprocess.run(["gh", "label", "create", ISSUE_LABEL, "--repo", REPO,
-                        "--description", "the continuous fuzz loop is broken"], capture_output=True)
-        self._gh("issue", "create", "--repo", REPO, "--label", ISSUE_LABEL, "--title", title,
-                 "--body", body)
+        description = {ISSUE_LABEL: "the continuous fuzz loop is broken",
+                       PARKED_LABEL: "fuzz causes parked on the fuzz host wait for a rule"}[label]
+        subprocess.run(["gh", "label", "create", label, "--repo", REPO, "--description", description],
+                       capture_output=True)
+        self._gh("issue", "create", "--repo", REPO, "--label", label, "--title", title, "--body", body)
+
+    def edit_issue_body(self, number, body):
+        self._gh("issue", "edit", str(number), "--repo", REPO, "--body", body)
+
+    def comment(self, number, body):
+        self._gh("issue", "comment", str(number), "--repo", REPO, "--body", body)
 
 
 class FixtureBackend:
-    def __init__(self, reports, open_issues=0):
-        self.reports, self.open_issues, self.created = reports, open_issues, []
+    """open_issues is the count of open ISSUE_LABEL issues; parked_issue is the body of an open
+    PARKED_LABEL issue (number 7), or None."""
+
+    def __init__(self, reports, open_issues=0, parked_issue=None):
+        self.reports, self.loop_open, self.created = reports, open_issues, []
+        self.parked_issue, self.comments, self.edits = parked_issue, [], []
         self.fetched = []
 
     def release_tags(self):
@@ -200,15 +310,27 @@ class FixtureBackend:
         self.fetched.append(tag)
         return self.reports[tag]
 
-    def open_issue_count(self):
-        return self.open_issues
+    def open_issues(self, label):
+        if label == ISSUE_LABEL:
+            return [(n, "") for n in range(1, self.loop_open + 1)]
+        return [] if self.parked_issue is None else [(7, self.parked_issue)]
 
-    def open_issue(self, title, body):
-        self.created.append((title, body))
+    def open_issue(self, label, title, body):
+        self.created.append((label, title, body))
+
+    def edit_issue_body(self, number, body):
+        self.edits.append((number, body))
+        self.parked_issue = body
+
+    def comment(self, number, body):
+        self.comments.append((number, body))
+
+    def labeled(self, label):
+        return [(t, b) for (l, t, b) in self.created if l == label]
 
 
 def filer_line(unfiled=0, enabled="yes", last="2026-11-19T09:30:00Z", held=10616, causes=17,
-               filed=1, parked=16, ledger="2026-11-07T12:00:00Z"):
+               filed=17, parked=0, ledger="2026-11-07T12:00:00Z"):
     return ("Filer: held=%s causes=%s filed=%s parked=%s unfiled=%s ledger-newest=%s timer-enabled=%s "
             "timer-last-run=%s\n" % (held, causes, filed, parked, unfiled, ledger, enabled, last))
 
@@ -233,7 +355,7 @@ def selftest():
         assert want_text in msg, "%s: message %r lacks %r" % (name, msg, want_text)
         b = FixtureBackend(reports, open_issues)
         assert run(today, b) == 0
-        assert len(b.created) == want_issues, "%s: %d issues opened" % (name, len(b.created))
+        assert len(b.labeled(ISSUE_LABEL)) == want_issues, "%s: %d issues opened" % (name, len(b.created))
         assert len(b.fetched) <= 1, "%s: fetched %s" % (name, b.fetched)
         return b
 
@@ -255,7 +377,7 @@ def selftest():
     case("newest in window wins", {"fuzz-2026-11-10": good, "fuzz-2026-11-09": report_text(ok=0)}, 0,
          "pass", 0)
     b = case("issue names day and label", {"fuzz-2026-11-10": report_text(ok=0)}, 0, "fail", 1)
-    assert "2026-11-10" in b.created[0][0] and "2026-11-10" in b.created[0][1]
+    assert "2026-11-10" in b.created[0][1] and "2026-11-10" in b.created[0][2]
 
     # The filer checks. Reports from FILER_LINE_FROM on must carry a live Filer line.
     later = "2026-11-20"
@@ -275,7 +397,9 @@ def selftest():
     filer_case("timer state missing", "Filer: unfiled=0 timer-last-run=2026-11-20T01:00:00Z\n", "fail",
                "timer not enabled")
     filer_case("one unfiled cause", filer_line(unfiled=1), "fail", "1 cause(s) unfiled")
-    filer_case("parked budget causes alone pass", filer_line(parked=16, unfiled=0), "pass")
+    b = case("parked causes alone open the parked issue",
+             {tag: report_text(filer=filer_line(filed=1, parked=16))}, 0, "pass", 0, today=later)
+    assert [t for t, _ in b.labeled(PARKED_LABEL)] == ["Fuzz causes parked for a person (%s)" % later]
     filer_case("tally unavailable", filer_line(unfiled="unknown"), "fail", "tally unavailable")
     filer_case("line absent from a new report", "", "fail", "filer line absent")
     case("line absent from the first day that requires it", {"fuzz-2026-11-19": report_text()}, 0,
@@ -284,7 +408,40 @@ def selftest():
          today="2026-11-18")
     b = FixtureBackend({tag: report_text(filer=filer_line(unfiled=3))})
     run(later, b)
-    assert "unfiled" in b.created[0][1] and "10616" not in b.created[0][1]
+    assert "unfiled" in b.created[0][2] and "10616" not in b.created[0][2]
+
+    # The parked notice. It opens one issue, comments on growth, and never opens a second.
+    def parked_case(name, parked, issue_body, want_new, want_comment, want_edit):
+        b = FixtureBackend({tag: report_text(filer=filer_line(filed=17 - parked, parked=parked))},
+                           parked_issue=issue_body)
+        assert run(later, b) == 0
+        assert len(b.labeled(PARKED_LABEL)) == want_new, "%s: %d parked issues" % (name, len(b.created))
+        assert len(b.comments) == want_comment, "%s: %d comments" % (name, len(b.comments))
+        assert len(b.edits) == want_edit, "%s: %d edits" % (name, len(b.edits))
+        assert not b.labeled(ISSUE_LABEL), "%s: opened %s" % (name, ISSUE_LABEL)
+        return b
+
+    noticed_16 = parked_body("2026-11-19", 16)
+    b = parked_case("parked issue states counts and day only", 16, None, 1, 0, 0)
+    _, body = b.labeled(PARKED_LABEL)[0]
+    assert "16" in body and later in body and RULES_LINK in body and "10616" not in body
+    assert noticed_count(body) == 16
+    parked_case("no parked causes open nothing", 0, None, 0, 0, 0)
+    parked_case("no growth with an issue open stays quiet", 16, noticed_16, 0, 0, 0)
+    b = parked_case("growth with an issue open comments, no second issue", 18, noticed_16, 0, 1, 1)
+    assert "16 to 18" in b.comments[0][1] and b.comments[0][0] == 7 and noticed_count(b.parked_issue) == 18
+    b = parked_case("a fall updates the noticed count without a comment", 10, noticed_16, 0, 0, 1)
+    assert noticed_count(b.parked_issue) == 10
+    parked_case("an open issue with no marker counts as zero noticed", 3, "opened by hand", 0, 1, 1)
+    b = FixtureBackend({tag: report_text(filer="Filer: unfiled=0 parked=unknown timer-enabled=yes "
+                                                "timer-last-run=2026-11-20T01:00:00Z\n")})
+    run(later, b)
+    assert not b.created and not b.comments, "unknown parked count opened something"
+    # A broken loop and parked causes are two issues, each under its own label.
+    b = FixtureBackend({tag: report_text(filer=filer_line(filed=1, parked=16, enabled="no"))})
+    run(later, b)
+    assert len(b.labeled(ISSUE_LABEL)) == 1 and len(b.labeled(PARKED_LABEL)) == 1
+    assert b.fetched == [tag], "fetched %s" % b.fetched
     print("fuzz-heartbeat: selftest ok")
 
 

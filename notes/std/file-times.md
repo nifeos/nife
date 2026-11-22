@@ -64,20 +64,18 @@ assert_eq!(f.metadata()?.modified().unwrap_err().kind(), ErrorKind::Unsupported)
 
 BUGS:
 
-- A file written on nife reads as early 1970. The FS server holds no clock, so every mutation
-  stamps `Server::clock`, a counter that starts at 1 on each mount (notes/touch.md's `BUGS`). The
-  contract says Unix seconds and the PAL reports what the contract says, so `modified()` of a file
-  this system wrote is `UNIX_EPOCH` plus a few seconds. It orders correctly against other writes in
-  the same boot, wrongly against files the host tool made (those carry real seconds), and wrongly
-  across a reboot. The PAL cannot detect it, because `SETMTIME_AT` may legitimately assert a small
-  number. Proposed as its own work: design/roadmap/0497-a-filesystem-server-that-knows-the-time.md.
-- A write on nife never moves a real timestamp. The engine (`vendor/redoxfs`'s `write_node` and
-  `truncate_node`) only ever moves an mtime *forward*, and the server's counter is always behind a
-  real second. So a file the host tool made keeps its host time through every write this system
-  makes to it, and a file `set_times` put in the future stays there. So `std_exerciser` asserts a
-  write moving a *made* file forward, before the `set_times`, which is what the stamp can promise.
-- Whole seconds only. The wire carries seconds and the server stores a zero nanosecond part, so
-  `set_times` truncates. A second-granularity filesystem does the same on Unix and std documents
+- A file nife writes while the clock reads unknown shows early 1970. Once the clock page knows the
+  time, the FS server stamps from the wall clock. Before that every mutation stamps a counter
+  (notes/touch.md's `BUGS`), and the contract says Unix seconds. So `modified()` of such a file is
+  `UNIX_EPOCH` plus a few seconds. The PAL cannot tell, because `SETMTIME_AT` may legitimately assert
+  a small number.
+- A write only ever moves a timestamp forward. The engine (`vendor/redoxfs`'s `write_node` and
+  `truncate_node`) never moves an mtime back. A file the host tool made keeps its host time through
+  any write with an earlier stamp, which is every write while the clock reads unknown. A file that `set_times` moved to the future
+  stays there. So `std_exerciser` asserts a write moving a *made* file forward, before the
+  `set_times`, which is what the stamp can promise.
+- Whole seconds only. The wire carries seconds, so `set_times` stores a zero nanosecond part and
+  truncates. A second-granularity filesystem does the same on Unix and std documents
   precision as platform-dependent, so this is recorded rather than refused.
 - A time past `i64::MAX` seconds is refused, though the server would accept it: `GETMTIME`'s
   reply word is signed, so the time could be written and never read back.

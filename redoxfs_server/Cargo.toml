@@ -78,7 +78,7 @@ hosttest = ["redoxfs/std", "redox_syscall/std", "dep:memory_region_heap"]
 # The EL0 binary's world: the userspace runtime and the ABI constants. Enabled only for the target
 # build, which also drops the default (`--no-default-features --features el0`), so the pure no_std
 # core is what links into the kernel image.
-el0 = ["dep:user_mode_runtime", "dep:memory_region_heap"]
+el0 = ["dep:user_mode_runtime", "dep:memory_region_heap", "dep:clock_contract"]
 
 # The initial ramdisk carries this binary's ELF, so keep it small and deterministic (the same knobs
 # std_exerciser uses). Only the target build uses the release profile; host tests use dev and unwind.
@@ -125,6 +125,9 @@ nife_partition_types = { version = "0.1.0", path = "../crates/nife_partition_typ
 # absent from the host test build. (`abi` went with milestone 706 (a `CALL` server can tell a Reply
 # from a delegation): the server's one raw `REPLY` became `user_mode_runtime::reply`.)
 user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime", optional = true }
+# EL0-only, optional (behind `el0`): the clock page's layout, so the server stamps modification times from
+# the wall clock (`Server::set_wall_clock`). The same pin `components` reads it at.
+clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166", optional = true }
 # The heap the EL0 binaries allocate from. The host build takes it too (`hosttest`), for the
 # `second_mount` repro, which runs the engine under this heap over a host page source.
 memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap", optional = true }
