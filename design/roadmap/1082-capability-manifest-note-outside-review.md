@@ -1,5 +1,6 @@
 ---
 status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017, 1034
 decision_dependencies: none
@@ -29,7 +30,7 @@ helpers, Kani, cargo-fuzz, the crate's own encoders as seed writers. No new tool
 
 ## Finding status
 
-Every finding is Done or At the move. The move itself is step 6 of milestone 1017: it creates
+No finding remains Open or Waiting. The move itself is step 6 of milestone 1017: it creates
 nifeos/capability_manifest_note from the cleared review package and does the At the move lines.
 
 - P0-1, the manifest cannot stand alone: Done, [#3643](https://github.com/nifeos/nife/pull/3643), [#3951](https://github.com/nifeos/nife/pull/3951). The only path dependencies left are the
@@ -208,7 +209,7 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 
 ## Follow-on
 
-- **The move.** Step 6 of milestone 1017 does the At the move lines under [Finding status](#finding-status).
+- **Milestone 1017.** Its step 6, the move, does the At the move lines under [Finding status](#finding-status).
 
 ## BUGS
 
