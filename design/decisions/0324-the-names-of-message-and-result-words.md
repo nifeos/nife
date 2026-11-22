@@ -83,15 +83,18 @@ name (as Linux writes `arg1`) would put every position one off from the table th
 `word_0` or `word_zero`. This is the open question, and the tree points both ways:
 
 - For the digit: every ratified name in the tree that numbers a slot or an instance uses a digit
-  (the four names above), and names not yet reviewed do the same (`mainline_port_1`). The digit
-  matches the table, the register (`x0`) and the descriptor words.
+  (the four names above), and an unreviewed test helper, `mainline_port_1`, does the same. The
+  digit matches the table, the register (`x0`) and the descriptor words.
 - For the spelled number: the two rulings of this week chose it, and about 100 lines in 40 files
-  already carry it. Outside the `word_`, `argument_` and `result_word_` families, a spelled number
-  in an identifier is a value or a count, never a position (`is_zero`, `is_power_of_two`,
-  `fires_at_two`).
+  already carry it. Spelled instances exist elsewhere too: `domain_one` and `domain_two` in
+  `system_tests`' label tests, the ordinals `first_partition`, `second_region` and
+  `second_directory_grant`, and the provisional `first_ethernet_port_transmit_parent` in
+  `machine_discovery`.
 - Neither form abbreviates, and design/naming.md has no rule on digits in names.
 
-The descriptor-word case is the closer precedent: a ratified public name for a numbered word of a
+Those spelled names are locals and test names that count things in a scene (the first partition
+on a disk, a second domain), and none numbers a slot of a layout a table defines. The
+descriptor-word case is the closer precedent: a ratified public name for a numbered word of a
 fixed layout, made because a gate refused the specification's abbreviation. The spelled rulings
 came from parameter reviews of two packages and set no tree-wide rule.
 
@@ -159,13 +162,16 @@ a few uses. It also counts the excluded paths as foreign, so its rows add up to 
 | Falsification patches and a metrics file, which quote the code above | 47 | 16 |
 | Foreign: aarch64 assembly, disassembly in notes, bench logs, SVG namespace URLs | 108 | 9 |
 
-- Code identifiers are 1189 message-word uses (`w0` 540, `w1` 363, `w2` 222) and 399 result-word
-  uses (`r0` 296), at 593 declaration sites.
+- Code identifiers are 1183 message-word uses and 405 result-word uses, at 593 declaration sites.
+  By spelling, `w` names are 1189 (`w0` 540) and `r` names 399, but the spelling misleads twice.
+  `user_mode_runtime`'s `survey_record` and `virtual_address_space_list` bind
+  `let (r0, w1, w2, ..)`: all three are result words, so under (a) `w1` and `w2` become
+  `result_word_1` and `result_word_2` (8 uses). A `program_table` test binds a request's first word
+  as `r0` (2 uses), which becomes `word_0`.
 - The public API is 61 names: 55 `pub fn` parameters in 16 files (mostly contract decoders, and
   the `std` overlay's `rt`), the `pub` fields of `user_mode_runtime`'s `Message` and `Request`,
   and `filesystem_contract`'s `Verb::carries_w1`.
-- 25 packages carry code uses; `components`, `system_tests`, `filesystem_contract`,
-  `user_mode_runtime` and `fixtures` hold most.
+- 25 packages carry code uses.
 - About 15 uses in 3 files reuse the spelling for something else, and foreign names stay: AArch64
   `w0`..`w30`, x86 `r8`..`r15`, the SD card's `R1` response. No option renames them.
 - Outside the tree, `clock_contract` has 4 prose uses in 1 file.
@@ -201,8 +207,7 @@ The spelling two packages carry now.
 
 The spelling `domain_name_resolution_contract` ratified for itself.
 
-- It reads naturally for two words and less well for six (`sixth_word` against `word_5`), and it
-  is one-based in effect: `second` names position 1.
+- It reads less well for six words (`sixth_word` against `word_5`), and `second` names position 1.
 - It reopens the two rulings that agree with each other instead of the one that does not.
 
 ### (d) Name every word by its meaning, per verb
@@ -247,8 +252,8 @@ parameter, a field, a local, a word in prose. A function's name says what it ret
 meanings. Under (a) its doc says it builds `word_0` and the unpackers' parameter becomes `word_0`;
 under (b) nothing in it changes.
 
-The function has no callers in nife: the crate calls it in its own codec and tests, and nife's
-components use `pack` and `unpack`. The two `first_word` names in nife are unrelated and stay.
+Nothing in nife calls it; nife's components use `pack` and `unpack`. Two unrelated `first_word`
+names in nife stay.
 `kernel/src/user/disk_service.rs`'s `HolderWiring::first_word` reads the first word of a block
 roster frame, and `xtask/src/swish_check/gauge.rs`'s `first_word` binds the first word of a
 template's text. Neither names a message word.
@@ -269,16 +274,13 @@ Read for this decision unless marked otherwise.
   seL4 manual writes a message register as `MR0` onward.
 - Fuchsia (`zx_channel_call` reference): a message is bytes and handles, and nothing names a word
   at all. The call's parameters take names by meaning: `handle`, `options`, `deadline`, `args`,
-  `actual_bytes`, `actual_handles`. Inside `args`, a matched pair names the two directions:
-  `wr_bytes` and `wr_handles` for the message out, `rd_bytes`, `rd_handles` and `rd_num_bytes` for
-  the reply.
+  `actual_bytes`, `actual_handles`; inside `args`, the `wr_`/`rd_` pair described above.
 - Redox (`redox_syscall` 0.9.5, read from the local cargo registry): the raw calls take single
   letters, `syscall4(a, b, c, d, e)`. The scheme protocol's `Sqe` holds `opcode`, `tag`,
   `args: [u64; 6]` and `caller`, and `Cqe` holds a `result`: an indexed array for the words and a
-  meaning name for the answer. I recall an older `Packet { a, b, c, d }` and did not read it.
+  meaning name for the answer.
 
-Where nife differs: like seL4, a nife message is positional words whose meaning each contract sets,
-so a position needs a name, which Fuchsia's byte messages never do. Unlike seL4 and Redox, nife
+Where nife differs: like seL4, a nife message is positional words, so a position needs a name. Unlike seL4 and Redox, nife
 spells its names out, so nife writes the word and its position (`word_0`) where seL4 indexes `MR`
 and Redox writes `a`. The result side follows SBI and Linux in naming the answer for what it is,
 a result.
