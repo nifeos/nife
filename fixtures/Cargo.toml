@@ -648,7 +648,7 @@ capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
 # The serving loop both swappable programs run; the wire format stays in `hot_swap_contract`.
 hot_swap_server = { version = "0.1.0", path = "../crates/hot_swap_server" }
-grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The soak workload's shared page (milestone 219). The kernel reads what the soaker writes, so the

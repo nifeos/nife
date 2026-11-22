@@ -70,7 +70,7 @@ globally_unique_identifier_partition_table = { path = "../crates/globally_unique
 http_response = { path = "../crates/http_response" }
 package_archive = { path = "../crates/package_archive" }
 capability_manifest_note = { path = "../crates/capability_manifest_note" }
-grant_contract = { path = "../crates/grant_contract" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 domain_name_resolution_contract = { path = "../crates/domain_name_resolution_contract" }
 package_index = { path = "../crates/package_index" }
 video_terminal = { path = "../crates/video_terminal" }
