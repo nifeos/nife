@@ -17,8 +17,8 @@ The survey reads `nifeos/nife@af1ed9df6`.
 A request to a nife service carries an operation number, the verb, in its first word. A service
 knows a fixed set of verbs. When a request names a number outside that set, the service still has
 to answer, because the caller waits in a blocking `CALL` until it does. That answer is a word from
-the table that §326 (the names and numbers of the services' wire error codes, #3923, ruled
-2026-11-22) drafts: 19 codes from -256 down, spelled as `io::ErrorKind` spells them.
+the table that §326 (the names and numbers of the services' wire error codes) sets in #3923,
+ruled 2026-11-22: 19 codes from -256 down, spelled as `io::ErrorKind` spells them.
 
 §326 renames each site's present answer and leaves this question open (its item 4). Today the
 services disagree. The file caretaker answers an unknown verb with `EBADF`, the number it also gives

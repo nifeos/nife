@@ -57,3 +57,7 @@ and did not re-read. Milestone 784 (reuse what the tree wrote: which first-party
 No producer in the tree writes either value. Change: a sentence in the doc of
 `NoteError::BadAlignment` saying which padding the reader treats each value as, and why, with the LLVM
 behavior checked against its source at that time. Door: two-way. Effort: XS.
+
+LLVM's source settles it: `ELFFile::notes_begin` in `llvm/include/llvm/Object/ELF.h` accepts a
+`p_align` of 0, 1, 4 or 8 for any segment and pads to the larger of `p_align` and 4. The recollection
+above was wrong, and the crate's rule matches LLVM's.
