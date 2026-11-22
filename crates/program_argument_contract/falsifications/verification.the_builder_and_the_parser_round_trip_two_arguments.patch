@@ -3,8 +3,8 @@ Falsifies `program_argument_contract::verification::the_builder_and_the_parser_r
 The defect: `push` writes the length prefix and then zeros where the argument's bytes belong, so
 the page parses with the right count and lengths but the wrong bytes.
 
-Expected to fail: the harness's `assert_eq!(read.next(), Some(arguments[0]))`, on any first
-argument of one byte or more that is not all zeros.
+Expected to fail: the harness's `assert_eq!(read.next(), Some(&first[..]))`, on any first
+argument that is not all zeros.
 
 diff --git a/crates/program_argument_contract/src/lib.rs b/crates/program_argument_contract/src/lib.rs
 --- a/crates/program_argument_contract/src/lib.rs
