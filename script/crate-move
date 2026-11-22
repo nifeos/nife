@@ -39,7 +39,10 @@
 #    inherited keys from the workspace root in the staged copy, so the build reports the next
 #    blocker instead of stopping at the inherited `license`.
 # 5. Unless `--no-build`: writes `Cargo.lock`, runs the host tests and builds each target at the
-#    manifest's `rust-version`.
+#    manifest's `rust-version`. Then runs the template's `clippy` job on stable with `-D warnings`:
+#    the host over all targets, each bare-metal target over the library, and the `--cfg kani` pass
+#    over the template's `kani-lint-shim`. This tree runs clippy on its pinned nightly, so a lint
+#    only stable fires would otherwise first show in the new repository.
 # 5b. Applies every staged patch with `patch -p1 --dry-run -F0` and `git apply --check -p1`, and
 #    refuses to finish when one applies at an offset, with fuzz, or not at all (`patch applies
 #    exactly`). A hunk header that drifted from its file passes plain `patch` with a note, so the
@@ -63,7 +66,9 @@
 #    them. The list is read from the template's own check.yml: a helper the `standalone` job
 #    enforces (a step not named `report only`) that this script has no runner for fails the run
 #    as `template coverage`, so a gate added to the template cannot go unchecked here. Plus two it lacks: citations of this
-#    tree, and the word `nife` anywhere in the staged files. Those two report the crate's own files
+#    tree (a section, a milestone, a `Name:` block, and a path such as `crates/...`, `kernel/...` or
+#    `xtask/...` that the staging left pointing outside the crate), and the word `nife` anywhere in
+#    the staged files. Those two report the crate's own files
 #    first and the scaffold's under `(template scaffold)`, so the scaffold's lines never come first.
 # 8. Prints the nife-side follow-up: each consumer manifest's replacement line, every other
 #    tracked file outside `design/` and `notes/` that names the crate, and the removals the fuzz
@@ -87,7 +92,7 @@
 #   (`falsify.py --check`), not replayed.
 # - `check / standalone`'s shellcheck step does not run, and typos is a note, not a pass, when the
 #   binary is missing here.
-# - The template's heavy jobs (coverage, clippy, supply chain, Miri, mutation) do not run;
+# - The template's heavy jobs (coverage, supply chain, Miri, mutation) do not run;
 #   the repository's first CI run is their first run.
 # - There is no live mode. Creating the repository, pushing and tagging are the runbook's steps,
 #   taken by hand, because each is a person's or needs one's approval.

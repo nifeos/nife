@@ -180,55 +180,40 @@ The checks are in [the appendix](1076-address-space-map-outside-review/done-when
 
 ## Finding status
 
-- Item 1, the host test reads a file outside the crate: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 2, falsification records carry nife's tree paths: Open until the move. `helpers/crate_move.py`
-  rewrites the eleven records and regenerates every patch in crate-relative form; on the staged copy
-  every patch applies with no offset, and each turns exactly its own harness red. [#3886](https://github.com/nifeos/nife/pull/3886) refreshed the
-  patches against the renamed source.
-- Item 3, the manifest does not stand alone: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 4, documentation addressed to a reader inside nife: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 5, no README, licenses, changelog or scaffold: Open.
-  [#3659](https://github.com/nifeos/nife/pull/3659) added the README and [#3886](https://github.com/nifeos/nife/pull/3886) the license files;
-  `CHANGELOG.md`, `_typos.toml`, caller workflows, `.github` files and the recorded stranger run
-  come with the move.
-- Item 6, parameter and helper names the template refuses: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 7 and decision 2, the address and length constants: Done, [#3886](https://github.com/nifeos/nife/pull/3886). `PAGE_BYTES` and the
-  `_VIRTUAL_ADDRESS` stem on the five address constants and the three `ImagePlacement` fields,
-  ratified and renamed at every call site.
-- Item 8 and decision N1, the crate's name: Done, [#3593](https://github.com/nifeos/nife/pull/3593).
-- Item 9 and decision 3, a whole-window check: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
-  The review clearance of 2026-11-21 (UTC) ratifies the name `window`.
-- Item 10, `const` assertions under Kani's toolchain: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 11, the surviving mutant's exemption: Done, [#3886](https://github.com/nifeos/nife/pull/3886). The crate carries its own
-  `.github/mutants-exempts` line and a `.cargo/mutants.toml` that leaves the `cfg(kani)` module
-  out, and the template's mutation gate passes on the staged copy.
-- Item 12, the layout is the same in every process: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 13, the template's `register_names.py` misreads harness names: Open. The template still
-  reads `address` in a function name as an address, so the crate's `check / standalone` is red on
-  its first run until nifeos/crate-workflows fixes it.
-- Item 14, `BANDS` fixes the band count in its type: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 15, a caller can build `Band` inverted: Done, [#3886](https://github.com/nifeos/nife/pull/3886). `Band::new` asserts `start < end` and
-  page alignment at both ends; the fields stay public.
-- Item 16, `#![forbid(unsafe_code)]`: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 17, nife's checks that walk `crates/` lose this crate: Open. [#3886](https://github.com/nifeos/nife/pull/3886) made
-  `LOW_HALF_SPLIT_SHIFTS` public and `page_tables` tests its three `SPLIT_SHIFT`s against it; the
-  declarations check still has to read the pinned checkout, in the pins pull request.
-- Item 18, milestone 1017's stale blocker row: Open. The row that says the `link.ld` test must move
-  is stale, and the lane that owns milestone 1017 drops it.
-- nife's pins: Open. All twenty-seven manifests move to one `rev` in one pull request after the
-  move. `cargo xtask std-src` reads the crate from Cargo's git checkout when the manifests name a
-  git dependency; a dry run against a local git repository of the staged crate copied that
-  checkout's `src/lib.rs`.
-- The move: Open. The architect cleared the review; the repository and the first push follow this tree's
-  preparation.
-- Publishing: Open. No first publish happens until the last outside-review milestone closes
-  (ruled 2026-11-18 UTC).
+One line per finding, in the review's order. Each state was read against
+`nifeos/address_space_layout` at `02d497b`, its `main`, where `check` run 44924529322 and `proofs`
+run 44924529336 are green.
+
+- P0 item 1, the host test reads a file outside the crate: Done, #3659; the test lives in
+  `user_mode_runtime`.
+- P0 item 2, falsification records carry nife's tree paths: Done, #3895; the records and patches
+  are crate-relative, and `proofs / falsify` replays all eleven red.
+- P0 item 3, the manifest does not stand alone: Done, #3659.
+- P1 item 4, documentation addressed to a reader inside nife: Done, #3659.
+- P1 item 5, no README, licenses, changelog or scaffold: Waiting on
+  `nifeos/address_space_layout#2`, which records the first stranger run and closes the five README
+  gaps it found. #3659, #3886 and #3895 brought the rest.
+- P1 item 6, parameter and helper names the template refuses: Done, #3659.
+- P1 item 7, address and length constants: Done, #3886; names ratified 2026-11-21 UTC.
+- P1 item 8, the crate's name: Done, #3593; ruled 2026-11-14 UTC.
+- P1 item 9, a whole-window check: Done, #3659; `window` ratified 2026-11-21 UTC.
+- P1 item 10, `const` assertions under Kani's toolchain: Done, #3659.
+- P1 item 11, the surviving mutant's exemption: Done, #3886 and #3895; the crate's
+  `.github/mutants-exempts` carries it.
+- P1 item 12, the layout is the same in every process: Done, #3659.
+- P2 item 13, `register_names.py` misreads harness names: Done, #3896; the harnesses say
+  `virtual_address`, and `check / standalone` is green.
+- P2 item 14, `BANDS` fixes the band count in its type: Done, #3659.
+- P2 item 15, a caller can build `Band` inverted: Done, #3886.
+- P2 item 16, `#![forbid(unsafe_code)]`: Done, #3659.
+- P2 item 17, nife's checks that walk `crates/` lose this crate: Done, #3886 (`page_tables` tests
+  its split shifts) and #3895; the declarations check reads interface id 2 from the pinned
+  checkout.
+- P2 item 18, milestone 1017's stale blocker row: Done, #3635.
+- The move and nife's pins: Done, #3895; all twenty-seven manifests name one `rev`.
+
+Publishing is not a finding: no first publish happens until the last outside-review milestone
+closes (ruled 2026-11-18 UTC).
 
 ## Open decisions
 
@@ -236,24 +221,14 @@ None.
 
 ## Follow-on
 
-- **Done.** The crate's own name, `address_space_layout`. Items 1, 3, 4, 6, 8, 9, 10, 12, 14 and 16,
-  and the README of item 5, are done in this tree: the crate has `window` and a
-  manifest that stands alone.
-- **Done.** The review package, [notes/crate-reviews/address-space-layout.md](../../notes/crate-reviews/address-space-layout.md),
-  lists every public name with its state.
-- **Done.** The clearance, and items 7, 11 and 15, with item 17's `page_tables` test.
-- **Outstanding.** The repository and the move (items 2 and 5's scaffold), the pins and item 17's
-  declarations check, and item 13 in the template; item 18 is left to 1017.
+- **Done.** The crate lives in `nifeos/address_space_layout`, and nife pins it by `rev`.
+- **Outstanding.** Item 5's stranger run, `nifeos/address_space_layout#2`.
 
 ## BUGS
 
-- Item 13 is the template's to fix, and until it lands the crate's `check / standalone` is red on
-  the first run for a reason no change here removes.
 - The 1.88 floor is the lowest installed toolchain that builds the crate (1.85 fails on
-  `is_multiple_of`); no 1.86 or 1.87 toolchain was installed, and the template's `msrv` job is the
-  check.
-- The template's prose, README and history gates have not run on the crate's README, because they
-  run in the crate's own repository; the move runs them.
+  `is_multiple_of`), and 1.87 refuses it; the weekly `msrv` job is the check.
+- The crate's first full `mutation` run is the scheduled one; none has run yet.
 
 ## Index row
 

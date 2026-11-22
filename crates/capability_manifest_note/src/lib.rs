@@ -438,9 +438,20 @@ fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
 /// # Examples
 ///
 /// ```
+/// # use grant_contract::*;
+/// # // What a program that asks for nothing but its output and its exit report declares.
+/// # const OUTPUT_ONLY: Manifest = Manifest {
+/// #     program_argument: ProgramArgumentDeclaration::Forbidden, memory_grant: MemoryGrantDeclaration::Forbidden,
+/// #     file: FileGrantDeclaration::Forbidden, directory: DirectoryGrantDeclaration::Forbidden,
+/// #     short_options: NO_SHORT_OPTIONS, output: OutputDeclaration::Bytes, input: InputDeclaration::Forbidden,
+/// #     reports: true, interruptible: false, clock: false, domain: false, configuration: false,
+/// #     entropy: false, network: false, machine: false, share: false, reboot: false, sync: false,
+/// #     installer: false, catalog: false, indexes: IndexStoreDeclaration::Forbidden,
+/// #     activation_directory: false, console_input: false, startup: StartupContract::Native,
+/// # };
 /// const M: grant_contract::Manifest = grant_contract::Manifest {
 ///     clock: true,
-///     ..program_table::NO_NOTE_MANIFEST
+///     ..OUTPUT_ONLY
 /// };
 /// let m = M;
 /// let bytes = capability_manifest_note::encode(&m);
@@ -651,8 +662,19 @@ pub const fn zoned_descriptor_bytes(zones: &[&str]) -> usize {
 /// `zones`, named by the caller's type, as [`encode_verbs`] does:
 ///
 /// ```
+/// # use grant_contract::*;
+/// # // What a program that asks for nothing but its output and its exit report declares.
+/// # const OUTPUT_ONLY: Manifest = Manifest {
+/// #     program_argument: ProgramArgumentDeclaration::Forbidden, memory_grant: MemoryGrantDeclaration::Forbidden,
+/// #     file: FileGrantDeclaration::Forbidden, directory: DirectoryGrantDeclaration::Forbidden,
+/// #     short_options: NO_SHORT_OPTIONS, output: OutputDeclaration::Bytes, input: InputDeclaration::Forbidden,
+/// #     reports: true, interruptible: false, clock: false, domain: false, configuration: false,
+/// #     entropy: false, network: false, machine: false, share: false, reboot: false, sync: false,
+/// #     installer: false, catalog: false, indexes: IndexStoreDeclaration::Forbidden,
+/// #     activation_directory: false, console_input: false, startup: StartupContract::Native,
+/// # };
 /// const ZONES: &[&str] = &["", "example.net"];
-/// const M: grant_contract::Manifest = program_table::NO_NOTE_MANIFEST;
+/// const M: grant_contract::Manifest = OUTPUT_ONLY;
 /// const D: [u8; capability_manifest_note::zoned_descriptor_bytes(ZONES)] = capability_manifest_note::encode_zoned(&M, ZONES);
 /// assert_eq!(capability_manifest_note::decode(&D), Ok(M));
 /// let zones = capability_manifest_note::zones(&D).unwrap();
@@ -1454,21 +1476,46 @@ extern crate std;
 #[cfg(test)]
 mod verb_tests {
     use grant_contract::{ManifestAuthorities, VerbGrant};
-    use program_table::Program;
 
     use super::*;
 
-    const JIG: &[VerbGrant] = Program::Jig.verbs();
-    const JIG_BYTES: [u8; verbs_descriptor_bytes(JIG.len())] = encode_verbs(JIG);
+    /// **A package tool's verbs**, sorted by their bytes as the record requires, each with the
+    /// least it needs. `list` sorts before `list -u` because the word's padding is zero.
+    const PACKAGES: &[VerbGrant] = &[
+        VerbGrant {
+            verb: "approve",
+            authorities: ManifestAuthorities::INSTALLER.union(ManifestAuthorities::ACTIVATION),
+        },
+        VerbGrant {
+            verb: "install",
+            authorities: ManifestAuthorities::INSTALLER
+                .union(ManifestAuthorities::CATALOG)
+                .union(ManifestAuthorities::NETWORK)
+                .union(ManifestAuthorities::CLOCK),
+        },
+        VerbGrant {
+            verb: "list",
+            authorities: ManifestAuthorities::CATALOG.union(ManifestAuthorities::INDEXES),
+        },
+        VerbGrant {
+            verb: "list -u",
+            authorities: ManifestAuthorities::ACTIVATION,
+        },
+        VerbGrant {
+            verb: "remove",
+            authorities: ManifestAuthorities::INSTALLER,
+        },
+    ];
+    const PACKAGES_BYTES: [u8; verbs_descriptor_bytes(PACKAGES.len())] = encode_verbs(PACKAGES);
 
     /// **A program's verb table round-trips, and so does an empty one**. What a distribution writes
     /// is what the decoder reads back, entry for entry, and the length is exactly the count's.
     #[test]
     fn a_verb_table_round_trips() {
-        assert_eq!(JIG_BYTES.len(), 8 + JIG.len() * VERB_RECORD_BYTES);
-        let v = decode_verbs(&JIG_BYTES).unwrap();
-        assert_eq!(v.len(), JIG.len());
-        for (want, (word, grants)) in JIG.iter().zip(v.iter()) {
+        assert_eq!(PACKAGES_BYTES.len(), 8 + PACKAGES.len() * VERB_RECORD_BYTES);
+        let v = decode_verbs(&PACKAGES_BYTES).unwrap();
+        assert_eq!(v.len(), PACKAGES.len());
+        for (want, (word, grants)) in PACKAGES.iter().zip(v.iter()) {
             assert_eq!(word, want.verb.as_bytes());
             assert_eq!(grants, want.authorities);
             assert_eq!(v.grants_for(word), Some(want.authorities));
@@ -1476,9 +1523,9 @@ mod verb_tests {
         assert_eq!(v.grants_for(b"upgrade"), None);
         // The iterator ends after the last verb, which `take` checks without waiting on one that
         // never ends, and it counts down as it goes: each step leaves one fewer, the last none.
-        assert_eq!(v.iter().take(JIG.len() + 1).count(), JIG.len());
+        assert_eq!(v.iter().take(PACKAGES.len() + 1).count(), PACKAGES.len());
         let mut walk = v.iter();
-        for left in (0..JIG.len()).rev() {
+        for left in (0..PACKAGES.len()).rev() {
             assert!(walk.next().is_some());
             assert_eq!(walk.len(), left);
         }
@@ -1532,11 +1579,11 @@ mod verb_tests {
     }
 
     /// **One table, one encoding**: every byte the layout fixes is checked, and the order too, so
-    /// no second spelling of a table decodes. Falsified: decoding `jig`'s records swapped, which
+    /// no second spelling of a table decodes. Falsified: decoding the table's records swapped, which
     /// `encode_verbs` would refuse to write, is refused here.
     #[test]
     fn an_unsorted_or_respelled_table_is_refused() {
-        let good = JIG_BYTES;
+        let good = PACKAGES_BYTES;
         let refused = |at: usize, b: u8| {
             let mut d = good;
             d[at] = b;
@@ -1554,10 +1601,10 @@ mod verb_tests {
         );
         assert_eq!(refused(8, 0), Some(Error::BadField(8)), "an empty word");
         // Each refusal names the byte at fault, which is what a person reading a bad note needs.
-        let jig = JIG[0].verb.len();
+        let word = PACKAGES[0].verb.len();
         assert_eq!(
-            refused(8 + jig + 1, b'x'),
-            Some(Error::BadField(8 + jig + 1)),
+            refused(8 + word + 1, b'x'),
+            Some(Error::BadField(8 + word + 1)),
             "a byte after the word's end"
         );
         assert_eq!(

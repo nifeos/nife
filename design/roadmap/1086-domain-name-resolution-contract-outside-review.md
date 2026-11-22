@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-22
 raised: 2026-11-11
 milestone_dependencies: 1017, 956
 decision_dependencies: 248, 252
@@ -35,58 +36,76 @@ the proofs this block asks for. No new tool.
 
 Items 1 to 3 are under [P0](#p0-blocks-the-move), 4 to 11 in [the before-the-tag
 appendix](1086-domain-name-resolution-contract-outside-review/before-the-tag.md), and 12 to 14 in
-[the later items](1086-domain-name-resolution-contract-outside-review/later-items.md).
+[the later items](1086-domain-name-resolution-contract-outside-review/later-items.md). Read against
+nife `main`; the crate has not yet left.
 
-- 1, the crate describes its consumers in 54 lines: Done,
-  [#3641](https://github.com/nifeos/nife/pull/3641) and [#3838](https://github.com/nifeos/nife/pull/3838). One hit is left, the ratified
-  crate-name `Name:` block, which the move strips with the others; the externalization waiver's
-  ceiling is 1.
-- 2, `fixture` is nife's boot-test data: Done, [#3838](https://github.com/nifeos/nife/pull/3838). The cases live in
-  `crates/domain_name_resolution_fixture`, which stays in nife and is never published, the shape the
-  maintainer's provisional ruling of 2026-11-19 (UTC) gave `socket_fixture`. Decision 7 ratified its
-  crate name and `ECHO_UNRESOLVED` (for `ECHO_NO_ADDRESS`, which `register_names` refuses).
-- 3, the manifest does not stand alone: Open. [#3641](https://github.com/nifeos/nife/pull/3641)
-  wrote the manifest and [#3838](https://github.com/nifeos/nife/pull/3838) added the two license files. The pinned `git` dependency on
-  `domain_name_system` waits until that crate has left, at step 5 of milestone 1017.
-- 4, the limits and offsets break the current rules: Open.
-  [#3641](https://github.com/nifeos/nife/pull/3641) built the renames, and decision 1 ratified
-  them. `udp`, `tcp` and `ipv` stay abbreviated, as ruled 2026-11-16 (UTC), and
-  [nifeos/crate-workflows#76](https://github.com/nifeos/crate-workflows/pull/76) adds them to the
-  template's accepted words. nife's vendored copy follows when its pin moves.
-- 5, the interface identity: Done, [#3583](https://github.com/nifeos/nife/pull/3583).
-- 6, the reply word to a control `CALL`: Done, [#3583](https://github.com/nifeos/nife/pull/3583).
-- 7, one field with three bounds: Done, [#3641](https://github.com/nifeos/nife/pull/3641). The
-  layout assertion names the page size `PAGE_BYTES` ([#3838](https://github.com/nifeos/nife/pull/3838)).
-- 8, `Outcome::from_word` decodes words the resolver cannot send: Done,
+- Item 1 (P0), the crate describes its consumers in 54 lines: Done,
+  [#3641](https://github.com/nifeos/nife/pull/3641) and
+  [#3838](https://github.com/nifeos/nife/pull/3838). `helpers/lint_externalized_crates.py` counts
+  one hit, the ratified crate-name `Name:` block, which the move strips with the others.
+- Item 2 (P0), `fixture` is nife's boot-test data: Done,
+  [#3838](https://github.com/nifeos/nife/pull/3838). The cases live in
+  `crates/domain_name_resolution_fixture`, which stays in nife and is never published.
+- Item 3 (P0), the manifest does not stand alone: Done,
+  [#3641](https://github.com/nifeos/nife/pull/3641),
+  [#3838](https://github.com/nifeos/nife/pull/3838) and
+  [#3818](https://github.com/nifeos/nife/pull/3818). `Cargo.toml` carries every field the shape
+  asks for and explicit lints, the crate carries a README and the two license files, and
+  `domain_name_system` is a `git` dependency pinned at its `v0.1.0-pre.1` tag.
+- Item 4 (P1), the limits and offsets break the current rules: Done,
+  [#3641](https://github.com/nifeos/nife/pull/3641),
+  [nifeos/crate-workflows#76](https://github.com/nifeos/crate-workflows/pull/76) and
+  [#3865](https://github.com/nifeos/nife/pull/3865). The template's `spelled_out`,
+  `register_names`, `unit_symbols` and `question_shape` judge 319 names in the crate and refuse
+  none.
+- Item 5 (P1), the interface identity: Done, [#3583](https://github.com/nifeos/nife/pull/3583).
+- Item 6 (P1), the reply word to a control `CALL`: Done,
+  [#3583](https://github.com/nifeos/nife/pull/3583).
+- Item 7 (P1), one field with three bounds: Done,
+  [#3641](https://github.com/nifeos/nife/pull/3641) and
+  [#3838](https://github.com/nifeos/nife/pull/3838). The resolver, the grant table and the std
+  client all read `MAXIMUM_NAME_FIELD_BYTES`, and two layout assertions bound the page.
+- Item 8 (P1), `Outcome::from_word` decodes words the resolver cannot send: Done,
   [#3641](https://github.com/nifeos/nife/pull/3641).
-- 9, the documentation does not stand alone: Done, [#3641](https://github.com/nifeos/nife/pull/3641)
-  and [#3838](https://github.com/nifeos/nife/pull/3838). `prose_acronyms` finds nothing: the protocols are expanded at first use, and the
-  standard and response names are code.
-- 10, the grant table has no proof: Done. [#3641](https://github.com/nifeos/nife/pull/3641) added
-  the two harnesses and their falsification patches, and [#3838](https://github.com/nifeos/nife/pull/3838) the fuzz target
-  `domain_name_resolution_grants_control`, in the crate's own `fuzz/` workspace so it leaves with
-  the crate.
-- 11, the six surviving mutants: Open. The move lists them in `.github/mutants-exempts` after a
-  census.
-- 12, `wire` carries the spawner's half into the standard library: Done,
+- Item 9 (P1), the documentation does not stand alone: Done,
+  [#3641](https://github.com/nifeos/nife/pull/3641) and
+  [#3838](https://github.com/nifeos/nife/pull/3838). The template's `prose_acronyms` finds every
+  acronym expanded.
+- Item 10 (P1), the grant table has no proof: Done,
+  [#3641](https://github.com/nifeos/nife/pull/3641) and
+  [#3838](https://github.com/nifeos/nife/pull/3838). Two Kani harnesses with falsification
+  patches, and the fuzz target `domain_name_resolution_grants_control` in the crate's own `fuzz/`
+  workspace.
+- Item 11 (P1), the six surviving mutants: At the move. `script/crate-move` carries the census row
+  into the new repository's `.github/mutants-exempts`, where the six equivalent mutants are listed
+  with the reason, and deletes the row from `.cargo/mutants-baseline.txt`.
+- Item 12 (P2), `wire` carries the spawner's half into the standard library: Done,
   [#3641](https://github.com/nifeos/nife/pull/3641).
-- 13, the root zone has three spellings: Done, [#3641](https://github.com/nifeos/nife/pull/3641).
-- 14, small shapes: Done. [#3641](https://github.com/nifeos/nife/pull/3641) added `Debug`, the size
-  test and the dead branch's removal, and the `Grants` documentation says every index it hands back
-  is the window. [#3785](https://github.com/nifeos/nife/pull/3785) built decision 4.
-- Decision 1, the reopened names: Done, ratified as built. The `Name:` blocks in the crate source
-  still say provisional, and a later lane or the move rewrites them.
+- Item 13 (P2), the root zone has three spellings: Done,
+  [#3641](https://github.com/nifeos/nife/pull/3641).
+- Item 14 (P2), small shapes: Done, [#3641](https://github.com/nifeos/nife/pull/3641) and
+  [#3785](https://github.com/nifeos/nife/pull/3785), which built decision 4.
+- Decision 1, the reopened names: Done, ruled as built,
+  [#3641](https://github.com/nifeos/nife/pull/3641) and
+  [#3785](https://github.com/nifeos/nife/pull/3785). The `Name:` blocks that still say provisional
+  go at the move with the others.
 - Decision 2, the control reply: Done, [#3583](https://github.com/nifeos/nife/pull/3583).
 - Decision 3, the identity: Done, [#3583](https://github.com/nifeos/nife/pull/3583).
-- Decision 4, the reply to an unknown transport: Done, [#3785](https://github.com/nifeos/nife/pull/3785).
-- Decision 5, the attach operation's name: Done, renamed in both contracts and every user.
-- F-attach, the attach operation's name: Done, decision 5.
-- F-log, a runtime log channel for the spawner: Moved to the BUGS list of
-  `crates/system_initializer`. The spawner reads why the resolver refused a grant, but cannot write
-  a line once the shell runs.
-- F-package, the review package: Done, [the review package](../../notes/crate-reviews/domain-name-resolution-contract.md) (decision 6).
-- F-clearance, review clearance: Done, decision 7. The architect cleared the review package and
-  approved `nifeos/domain_name_resolution_contract` on 2026-11-20 (UTC).
+- Decision 4, the reply to an unknown transport: Done,
+  [#3785](https://github.com/nifeos/nife/pull/3785).
+- Decision 5, the attach operation's name: Done, [#3785](https://github.com/nifeos/nife/pull/3785).
+- Decision 6, the review and the move: Done, [#3798](https://github.com/nifeos/nife/pull/3798),
+  which wrote [the review package](../../notes/crate-reviews/domain-name-resolution-contract.md).
+- Decision 7, the fixture's names and the repository go: Done,
+  [#3838](https://github.com/nifeos/nife/pull/3838).
+- F-attach, the attach operation's name: Done, decision 5,
+  [#3785](https://github.com/nifeos/nife/pull/3785).
+- F-log, a runtime log channel for the spawner: Done,
+  [#3583](https://github.com/nifeos/nife/pull/3583), as an entry in the BUGS list of
+  `crates/system_initializer`.
+- F-package, the review package: Done, [#3798](https://github.com/nifeos/nife/pull/3798).
+- F-clearance, review clearance: Done, [#3838](https://github.com/nifeos/nife/pull/3838). The
+  architect cleared the review package and approved `nifeos/domain_name_resolution_contract`.
 
 ## Open decisions
 
@@ -274,8 +293,8 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
 
 ## Follow-on
 
-- **Outstanding.** The open lines under [Finding status](#finding-status): items 3, 4 and 11, which
-  the move carries out.
+- **Recorded.** Item 11 is at the move: the move lists the six equivalent mutants, with the
+  reason, in the new repository's mutation exemptions.
 
 ## Index row
 
