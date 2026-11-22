@@ -1,6 +1,6 @@
-From 047a1b6aeff539f66fb2bc9274e748d11c18c7d2 Mon Sep 17 00:00:00 2001
-From: Chris Alef <chris@crickertech.com>
-Date: Sun, 22 Nov 2026 19:11:14 +0000
+From f935ca20dcb3853013472facc9228453252a4685 Mon Sep 17 00:00:00 2001
+From: Chris Alef <476570+calef@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 22:31:01 +0000
 Subject: [PATCH] docs(rsext4): state the safety argument at each CRC32C unsafe
  use
 

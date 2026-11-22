@@ -1,6 +1,6 @@
-From 756e325acc99f9b9cf0601658501a0285b1247b8 Mon Sep 17 00:00:00 2001
-From: Chris Alef <chris@crickertech.com>
-Date: Sun, 22 Nov 2026 21:02:07 +0000
+From 61f93d4e9523b143595eab9560cd9f306791fb3e Mon Sep 17 00:00:00 2001
+From: Chris Alef <476570+calef@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 22:31:01 +0000
 Subject: [PATCH] fix(rsext4)!: decode group descriptors instead of casting
 
 BlockGroupDescTable::get_desc and BlockGroupDescTableMut::get_desc_mut
