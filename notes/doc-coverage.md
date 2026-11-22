@@ -107,7 +107,8 @@ a hard gate, so those crates cannot regress:
 `intrusive_queue`, `line_editor`,
 `manual`, `measured_boot`, `nifefs`, `network_time_protocol`, `non_volatile_memory_express`,
 `page_tables`, `pgrep`. `ps`, `memory_regions`, `byte_sink_contract`, `generational_table`,
-`socket_contract`, `work_steal_slot`, `supervision_contract`,
+`grant_contract`, `grant_plan`, `program_table`, `socket_contract`, `work_steal_slot`,
+`supervision_contract`,
 `hot_swap_contract`, `swish`, `system_initializer`, `timetable`, `user_mode_runtime`, `video_terminal`,
 `virtio`, `thread_wake_handshake`.
 
@@ -120,11 +121,10 @@ The worklist, largest first, so the next person can take one crate and turn its 
 | `multicast_dns_protocol` (removed 2026-09-15) | 41 |
 | `pci` | 24 |
 | `globally_unique_identifier_partition_table` | 23 |
-| `grant_plan` | 22 |
 | `compositor` | 19 |
 
 Every crate that was one item from clean on 2026-08-17, and every crate under about a dozen items, is
-now closed. What remains is seven substantially larger crates (19 to 54 items each); none is close to
+now closed. What remains is six substantially larger crates (19 to 54 items each); none is close to
 clean, so there is no more "cheapest item" shortcut left in this table.
 
 Outside `crates/`: `xtask` has 176, `user` has 50, and `kernel` has 2 (both

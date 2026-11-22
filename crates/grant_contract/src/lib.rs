@@ -14,11 +14,6 @@
 //! it is published under waits on the decision about naming layers.
 
 #![no_std]
-// The `missing_docs` ratchet of milestone 68 (code-quality gates: one lint policy) is
-// workspace-wide, opt-out rather than opt-in (§107 (`missing_docs` moves to
-// `workspace.lints.rust`)); this crate opts out with the planner it came from until its worklist
-// (notes/doc-coverage.md) is burned down.
-#![allow(missing_docs)]
 
 /// The version of the capability slot numbers the progenitor grants into and a program reads: 1. A
 /// break bumps it, with the dated ledger entry the interface-stability discipline owes; an addition
