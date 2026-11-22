@@ -3,6 +3,13 @@
 An appendix to [the milestone](../1050-designware-mobile-storage-outside-review.md), which lists
 each one and its state. One decision per section, ordered by what blocks the first publish.
 
+## A shared DMA region trait: provisional answer
+
+Option A, provisional: `designware_mobile_storage` keeps its own `DirectMemoryAccessRegion` for its
+first release. Nothing has published, no repository is created and no dependency is added, so the
+answer is a two-way door that the maintainers take; the release review of the first of the three
+drivers to publish rechecks it. The brief below is the reasoning.
+
 ## A shared DMA region trait
 
 Background. A DMA region is the memory a device reads and writes on its own: here, the page of
@@ -67,5 +74,5 @@ own DMA channel API on it. From memory, not re-read: U-Boot's `dw_mmc` and Linux
 What the tree already does: each driver crate defines the trait it needs, and the kernel adapts its
 own mapping to each, in the three files named above. No shared DMA trait exists in nife.
 
-What waits on the answer: the first publish of this crate (with every other review
-milestone), and the closing of this block. Nothing else in the crate waits on it.
+What the answer touches: the first publish of this crate, at whose release review it is rechecked.
+Nothing else in the crate waits on it.
