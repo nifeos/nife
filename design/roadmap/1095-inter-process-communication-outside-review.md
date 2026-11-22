@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 101, 154
@@ -64,9 +64,9 @@ milestone reaches delivery.
   queue only while a thread is on it, and every rendezvous harness has a falsification patch cut
   against the new code.
 - P2-12a, `Futexes<T, 0>` panics: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-12b, `Futexes` as a stranger reads it: Waiting on nifeos/intrusive_queue#2, which adds the
-  read-only `Queue::iter` that lets `AddressWaitTable::waiter_count` take `&self`.
-  [#3824](https://github.com/nifeos/nife/pull/3824) built the names (D5),
+- P2-12b, `Futexes` as a stranger reads it: Done, [#3963](https://github.com/nifeos/nife/pull/3963)
+  and nifeos/intrusive_queue#2, which adds the read-only `Queue::iter` that lets
+  `AddressWaitTable::waiter_count` take `&self`. [#3824](https://github.com/nifeos/nife/pull/3824) built the names (D5),
   [#3874](https://github.com/nifeos/nife/pull/3874) spelled the type out as `AddressWaitTable`,
   and [#3883](https://github.com/nifeos/nife/pull/3883) ratified them.
 - P2-13, `Timer::deadline` answers with a sentinel: Done, [#3842](https://github.com/nifeos/nife/pull/3842). `Timer::deadline` and

@@ -174,21 +174,14 @@ impl<T: Node, const BUCKETS: usize> AddressWaitTable<T, BUCKETS> {
     }
 
     /// How many waiters are parked under `key`. For tests and diagnostics; a wake does not need it.
-    /// `&mut` because the queue is intrusive and walked by popping, in order, then put back as it was.
+    /// A read-only walk of the key's bucket, which leaves every queue as it was.
     ///
     /// Name: ratified 2026-11-21 (UTC).
-    pub fn waiter_count(&mut self, key: Key, key_of: impl Fn(NonNull<T>) -> Key) -> usize {
-        let bucket = &mut self.buckets[Self::bucket(key)];
-        let mut kept = Queue::new();
-        let mut count = 0;
-        while let Some(waiter) = bucket.pop_front() {
-            if key_of(waiter.as_non_null()) == key {
-                count += 1;
-            }
-            kept.push_back(waiter);
-        }
-        *bucket = kept;
-        count
+    pub fn waiter_count(&self, key: Key, key_of: impl Fn(NonNull<T>) -> Key) -> usize {
+        self.buckets[Self::bucket(key)]
+            .iter()
+            .filter(|&waiter| key_of(waiter) == key)
+            .count()
     }
 }
 
