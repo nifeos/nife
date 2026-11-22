@@ -13,7 +13,7 @@
 //! # The layout
 //! ```text
 //!   offset  size  field
-//!   0       8     MAGIC, b"PROGARG1"
+//!   0       8     MAGIC, b"PROGARG2"
 //!   8       4     count, little-endian u32: how many arguments
 //!   12      4     total, little-endian u32: how many bytes of records follow
 //!   16      ...   count records, each a little-endian u32 length and then that many bytes
@@ -29,6 +29,14 @@
 //! typed. That holds for damage to any one field. The layout has no checksum, so a header whose
 //! `count` and `total` both describe a prefix of the records is a shorter, consistent argv and reads
 //! as one (see BUGS below).
+
+//! # Versions
+//!
+//! - 2, 2026-11-22 (UTC): the magic became the page's name and the version's digit. The fields
+//!   after it did not move. A reader migrates by comparing the new magic. A reader built for
+//!   version 1 refuses the new magic and reads no arguments, so the writer and every reader move
+//!   in one change.
+//! - 1: the layout above, under an unnumbered magic.
 
 //! # BUGS
 //!
@@ -91,7 +99,7 @@ const _: () = assert!(MAXIMUM_RECORDS_BYTES <= u32::MAX as usize);
 /// [`VERSION`], so a reader that meets a later layout refuses it at the first comparison.
 ///
 /// Name: provisional, awaiting a ruling on the spelling.
-pub const MAGIC: [u8; 8] = *b"PROGARG1";
+pub const MAGIC: [u8; 8] = *b"PROGARG2";
 
 // The magic's last byte is the version's digit, so the two cannot drift apart.
 #[allow(clippy::cast_possible_truncation)]
@@ -101,7 +109,7 @@ const _: () = assert!(MAGIC[7] == b'0' + VERSION as u8);
 /// version, and the magic's digit changes in the same coordinated change.
 ///
 /// Name: ratified 2026-11-21 (UTC).
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 
 /// This interface's identity in a program's `INTERFACES` note: 18, naming the argument page. The
 /// number is this interface's for good: no other interface takes it, and a format change is a new
