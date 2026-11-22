@@ -36,8 +36,8 @@ and needs to know whether their vocabulary stays.
 Ruled 2026-11-22 (UTC): option (B), nife's own codes in a range disjoint from the kernel's.
 
 - A reply's error word is a nife code. One table names every code a service may send, by meaning,
-  with spelled-out names (`NotFound`, `ReadOnly`, `NotADirectory`; the names and numbers are a
-  follow-on naming ruling, which assigns them before any code changes).
+  with spelled-out names (`NotFound`, `ReadOnlyFilesystem`, `NotADirectory`; the names and
+  numbers are a follow-on naming ruling, which assigns them before any code changes).
 - This decision fixes the two ranges now and keeps them disjoint. The kernel keeps `-1..=-255` (it
   uses 15). Services use `-256..=-4095`. A word below -4095 stays a protocol violation, the rule of
   2026-11-14 (block 1090, decision C), so the bound 4095 survives with a nife name.
@@ -293,7 +293,7 @@ After (names provisional):
 
 ```rust
 // redoxfs_server/src/dispatch.rs
-(result.unwrap_or_else(|e| error::word(engine_code(e))), size) // Code::NotADirectory, word -265
+(result.unwrap_or_else(|e| engine_code(e).word()), size) // Code::NotADirectory, word -263
 // std overlay, errors.rs
 Code::NotADirectory => io::const_error!(io::ErrorKind::NotADirectory, "that name is not a directory"),
 // -1 is only ever the kernel's NoSuchSlot; reachable.rs needs no trade
