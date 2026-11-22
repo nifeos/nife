@@ -139,7 +139,7 @@ the harness cannot see the break. Milestone 211 rewrote it (below).
 
 `subset_is_reflexive` can be turned red, but its red cases are a strict subset of
 `subset_matches_allows`'s, so it adds no discrimination.
-`filesystem_contract::a_grandchild_is_bounded_by_the_root` is the same shape one crate along.
+`file_system_contract::a_grandchild_is_bounded_by_the_root` is the same shape one crate along.
 
 The patch path was wrong at first, because `paging` states six properties once per ISA under shared
 function names. calef amended §134 on 2026-08-31: the module path is always included, with no

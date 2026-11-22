@@ -10,4 +10,4 @@ workspace = true
 
 [dependencies]
 credential_contract = { version = "0.1.0", path = "../credential_contract" }
-filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
+file_system_contract = { version = "0.1.0", path = "../file_system_contract" }

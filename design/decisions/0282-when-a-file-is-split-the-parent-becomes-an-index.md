@@ -112,7 +112,7 @@ which is a wrapper. The fourth line is the first statement that is logic. Every 
 of 117 `impl` blocks are over it, which is right: those are features.
 
 Why 8. Of the 8 parents that are indexes already, the most small items any holds is 6, in
-`crates/filesystem_contract/src/lib.rs`, cut by §274 (the filesystem-protocol crate root splits
+`crates/file_system_contract/src/lib.rs`, cut by §274 (the filesystem-protocol crate root splits
 into its module files). Eight leaves room for two more, and refuses the case that motivated a
 count: the system-initializer crate root holds 82 small items, 71 of them constants, which together
 are a feature. Past 8, every small item in the parent counts.
@@ -127,7 +127,7 @@ code lines outside the index: 31,563 in all. The rules are the file-length ratch
 - A row only falls (`--bank`), may not be added, moves with a rename, and must go when its file is
   an index or no longer a parent.
 
-Planting a four-line function at the end of `crates/filesystem_contract/src/lib.rs`, an index, turns
+Planting a four-line function at the end of `crates/file_system_contract/src/lib.rs`, an index, turns
 `--check` red and names the function. Adding one statement to `trim` in
 `crates/grant_plan/src/lib.rs`, a listed parent, turns it red twice: over its row, and grown against
 the merge base.

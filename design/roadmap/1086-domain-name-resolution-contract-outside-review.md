@@ -149,7 +149,7 @@ provisional; the architect names.
    names that only one test harness answers, and an address only one virtual network has. Change:
    move the module to a crate that stays in nife. The test client, the kernel test and the std
    exerciser must all reach that crate (the `fixtures` package, or a small `name_resolver_fixture`
-   crate beside it, the way `filesystem_fixture` sits beside `filesystem_contract`). The
+   crate beside it, the way `file_system_fixture` sits beside `file_system_contract`). The
    `package_index` doc comment that cites the module (`crates/package_index/src/lib.rs` line 795)
    follows it. Door: two-way. The `socket_contract` review package puts the same question to the
    architect as its decision 2 (where `socket_contract::fixture` lives). One ruling should settle

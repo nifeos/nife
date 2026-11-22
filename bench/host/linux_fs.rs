@@ -1,7 +1,7 @@
 //! **The ext4 side of milestone 38's filesystem-throughput comparison.** Built as a static aarch64
 //! binary and booted as PID 1 in a one-file initramfs under QEMU-HVF, on the same M-series core and
 //! tier, through the same virtio-blk-device model and raw host image file as nife's own bench boot.
-//! It mounts a scratch ext4 disk, runs the four phases `filesystem_fixture::throughput` defines in
+//! It mounts a scratch ext4 disk, runs the four phases `file_system_fixture::throughput` defines in
 //! each variant, prints them, and powers the machine off (it is PID 1: exiting would panic the
 //! kernel). The variants are buffered, `O_DIRECT`, `O_DIRECT | O_DSYNC`, `O_DIRECT` at 64 KiB and
 //! the raw device. Only `O_DIRECT` is apples to apples with nife, which caches no data and commits
@@ -46,7 +46,7 @@ const O_DSYNC: i32 = 0o10000;
 const O_DIRECT: i32 = 0o200000; // aarch64 Linux
 const RB_POWER_OFF: i32 = 0x4321fedc_u32 as i32;
 
-/// The measurement's shape, kept identical to `filesystem_fixture::throughput` by hand. It is not
+/// The measurement's shape, kept identical to `file_system_fixture::throughput` by hand. It is not
 /// shared as a crate because this file is compiled by `rustc` alone, outside the workspace, exactly
 /// as `linux_all.rs` is: a benchmark that needed the workspace to build could not be run on a
 /// machine that is not this one.
@@ -87,7 +87,7 @@ fn next_offset(state: &mut u64, unit: usize) -> i64 {
 /// `direct` adds `O_DIRECT` (no page cache) and `dsync` adds `O_DSYNC` (durable on the medium
 /// before the write returns). nife sits between the two: its FS server commits each write's RedoxFS
 /// transaction before replying but sends no `VIRTIO_BLK_T_FLUSH` unless a client asks
-/// (`filesystem_contract::fs::SYNC`, milestone 55 (Time Machine: SMB3 with Apple's extensions, and mDNS)).
+/// (`file_system_contract::file_system::SYNC`, milestone 55 (Time Machine: SMB3 with Apple's extensions, and mDNS)).
 /// A `path` under `/dev` is the raw block device: nothing is unlinked or created, and the result
 /// is the floor under both filesystems. notes/benchmarks/host-programs.md has the reasoning.
 fn phases(path: &[u8], tag: &str, direct: bool, dsync: bool, unit: usize) {

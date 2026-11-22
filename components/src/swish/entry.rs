@@ -46,10 +46,10 @@ user_mode_runtime::program_entry!(start);
 /// Name: provisional.
 const HEADS: boot_ladder::Heads<'static> = boot_ladder::Heads::new("nife");
 
-/// **What `arg1` carries into every role that holds a directory**: the `filesystem_contract::directory`
+/// **What `arg1` carries into every role that holds a directory**: the `file_system_contract::directory`
 /// rights that capability was granted, 0 for none. Told rather than asked, because nothing on that
 /// wire reports what a handle carries and `OPENDIR` refuses a request wider than the parent, so a
-/// guess of `directory::ALL` could not `cd` (notes/shell-navigation.md). **`x2` carries the clock slot**
+/// guess of `directory::rights::ALL` could not `cd` (notes/shell-navigation.md). **`x2` carries the clock slot**
 /// (milestone 86 (`time`: the shell times a command)), or [`NO_CLOCK`]: the slot moves with what
 /// else the boot granted, and a probe of the wrong number would map some other object as a clock.
 /// See [`CLOCK_SLOT`].
@@ -92,7 +92,7 @@ fn start(role: u64, arg: u64, clock: u64) -> ! {
 /// The interactive prompt, role 0: a terminal at slot 0, a spawn channel, a result channel and a
 /// budget. `crates/system_initializer` starts this program with `(0, fs_rights, clock_slot)`, and
 /// any unrecognized role falls through here, because this program's failure mode should be a
-/// prompt. `rights` is the [`_start`] convention: the `filesystem_contract::directory` rights of the
+/// prompt. `rights` is the [`_start`] convention: the `file_system_contract::directory` rights of the
 /// directory capability at [`DIR_TERMINAL`], or 0 for a boot that wired no filesystem.
 pub(super) fn interactive(rights: u64) -> ! {
     // **The line that says userspace is up**, and it is the top rung of milestone 268's boot

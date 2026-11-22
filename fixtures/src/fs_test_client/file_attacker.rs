@@ -8,8 +8,8 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{extended_attribute, fs, grant};
-use filesystem_fixture as fixture;
+use file_system_contract::{extended_attribute, file_system, grant};
+use file_system_fixture as fixture;
 use fixture::escape;
 use user_mode_runtime::{call, exit, send};
 
@@ -38,7 +38,11 @@ pub(crate) fn attacker(writable: bool) -> ! {
     // 1. A second file, by name. It exists, it sits in the same directory, and the caretaker could
     //    open it. This capability names one file, so this must find nothing.
     put_page(neighbour.as_bytes());
-    let (r, _) = call(FILE, fs::request(fs::OPEN, 0, neighbour.len() as u64), 0);
+    let (r, _) = call(
+        FILE,
+        file_system::request(file_system::OPEN, 0, neighbour.len() as u64),
+        0,
+    );
     if (r as i64) >= 0 {
         verdict |= escape::SECOND_FILE;
     }
@@ -51,14 +55,14 @@ pub(crate) fn attacker(writable: bool) -> ! {
     put_page(&probe[..PROBE_LEN]);
     let (w, _) = call(
         FILE,
-        fs::request(fs::WRITE, grant::HANDLE, PROBE_LEN as u64),
+        file_system::request(file_system::WRITE, grant::HANDLE, PROBE_LEN as u64),
         0,
     );
     if (w as i64) >= 0 {
         verdict |= escape::WROTE;
         let (rb, _) = call(
             FILE,
-            fs::request(fs::READ, grant::HANDLE, PROBE_LEN as u64),
+            file_system::request(file_system::READ, grant::HANDLE, PROBE_LEN as u64),
             0,
         );
         get_page(PROBE_LEN, &mut buf);
@@ -69,7 +73,11 @@ pub(crate) fn attacker(writable: bool) -> ! {
 
     // 3. Truncation is a write that carries no bytes, so a guard that only covered WRITE would miss
     //    it, and truncating to zero destroys a file just as thoroughly.
-    let (t, _) = call(FILE, fs::request(fs::TRUNCATE, grant::HANDLE, 0), 0);
+    let (t, _) = call(
+        FILE,
+        file_system::request(file_system::TRUNCATE, grant::HANDLE, 0),
+        0,
+    );
     if (t as i64) >= 0 {
         verdict |= escape::TRUNCATED;
     }
@@ -77,7 +85,7 @@ pub(crate) fn attacker(writable: bool) -> ! {
     // 4. Creating a new name: the way to get a second file without opening one that exists. Refused
     //    in both directions, because a file capability is not a directory.
     put_page(b"made-by-attacker");
-    let (c, _) = call(FILE, fs::request(fs::CREATE, 0, 16), 0);
+    let (c, _) = call(FILE, file_system::request(file_system::CREATE, 0, 16), 0);
     if (c as i64) >= 0 {
         verdict |= escape::CREATED;
     }
@@ -87,7 +95,7 @@ pub(crate) fn attacker(writable: bool) -> ! {
     //    it is not addressing. Every miss must be refused by the same check.
     let mut guess = 1u64;
     while guess < 8 {
-        let (g, _) = call(FILE, fs::request(fs::READ, guess, 8), 0);
+        let (g, _) = call(FILE, file_system::request(file_system::READ, guess, 8), 0);
         if (g as i64) >= 0 {
             verdict |= escape::FORGED_HANDLE;
         }
@@ -106,12 +114,12 @@ pub(crate) fn attacker(writable: bool) -> ! {
         put_page(pat);
         let (rw, _) = call(
             FILE,
-            fs::request(fs::WRITE, grant::HANDLE, pat.len() as u64),
+            file_system::request(file_system::WRITE, grant::HANDLE, pat.len() as u64),
             0,
         );
         let (rr, _) = call(
             FILE,
-            fs::request(fs::READ, grant::HANDLE, pat.len() as u64),
+            file_system::request(file_system::READ, grant::HANDLE, pat.len() as u64),
             0,
         );
         get_page(pat.len(), &mut buf);
@@ -139,17 +147,25 @@ fn read_the_granted_file(granted: &str, writable: bool) -> u64 {
     // the file reads back the number of bytes `FSTAT` says it has, and, further down, that the bytes
     // it writes are the bytes it reads back.
     put_page(granted.as_bytes());
-    let (h, _) = call(FILE, fs::request(fs::OPEN, 0, granted.len() as u64), 0);
+    let (h, _) = call(
+        FILE,
+        file_system::request(file_system::OPEN, 0, granted.len() as u64),
+        0,
+    );
     if (h as i64) < 0 {
         verdict |= escape::GRANTED_READ_FAILED;
     } else {
-        let (size, _) = call(FILE, fs::request(fs::FSTAT, h, 0), 0);
+        let (size, _) = call(FILE, file_system::request(file_system::FSTAT, h, 0), 0);
         let want = if writable {
             size as usize
         } else {
             fixture::MOTD.len()
         };
-        let (n, _) = call(FILE, fs::request(fs::READ, h, want as u64), 0);
+        let (n, _) = call(
+            FILE,
+            file_system::request(file_system::READ, h, want as u64),
+            0,
+        );
         if (size as i64) < 0 || (n as i64) < 0 || n as usize != want || want > buf.len() {
             verdict |= escape::GRANTED_READ_FAILED;
         } else {
@@ -175,7 +191,11 @@ fn probe_attributes(writable: bool) -> u64 {
     //    A listing works through **either** direction, because it is a read. Zero attributes is a
     //    successful listing (`r0` = 0), so this distinguishes "forwarded and there were none" from
     //    "refused".
-    let (l, _) = call(FILE, fs::request(fs::LISTXATTR, grant::HANDLE, 0), 0);
+    let (l, _) = call(
+        FILE,
+        file_system::request(file_system::LISTXATTR, grant::HANDLE, 0),
+        0,
+    );
     if (l as i64) < 0 {
         verdict |= escape::GRANTED_ATTRIBUTES_FAILED;
     }
@@ -186,14 +206,14 @@ fn probe_attributes(writable: bool) -> u64 {
     put_page(fixture::attributes::NAME);
     let (g0, _) = call(
         FILE,
-        fs::request(
-            fs::GETXATTR,
+        file_system::request(
+            file_system::GETXATTR,
             grant::HANDLE,
             fixture::attributes::NAME.len() as u64,
         ),
         0,
     );
-    if filesystem_contract::reply_errno(g0 as i64) == Some(extended_attribute::ENOTSUP) {
+    if file_system_contract::error::code(g0 as i64) == Some(extended_attribute::ENOTSUP) {
         verdict |= escape::GRANTED_ATTRIBUTES_FAILED;
     }
 
@@ -205,8 +225,8 @@ fn probe_attributes(writable: bool) -> u64 {
     put_page_at(fixture::attributes::NAME.len(), fixture::attributes::VALUE);
     let (s, _) = call(
         FILE,
-        fs::request(
-            fs::SETXATTR,
+        file_system::request(
+            file_system::SETXATTR,
             grant::HANDLE,
             fixture::attributes::NAME.len() as u64,
         ),
@@ -220,8 +240,8 @@ fn probe_attributes(writable: bool) -> u64 {
         put_page(fixture::attributes::NAME);
         let (g, _) = call(
             FILE,
-            fs::request(
-                fs::GETXATTR,
+            file_system::request(
+                file_system::GETXATTR,
                 grant::HANDLE,
                 fixture::attributes::NAME.len() as u64,
             ),
@@ -238,8 +258,8 @@ fn probe_attributes(writable: bool) -> u64 {
         put_page(fixture::attributes::NAME);
         let (rm, _) = call(
             FILE,
-            fs::request(
-                fs::REMOVEXATTR,
+            file_system::request(
+                file_system::REMOVEXATTR,
                 grant::HANDLE,
                 fixture::attributes::NAME.len() as u64,
             ),

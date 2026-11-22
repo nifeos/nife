@@ -47,7 +47,7 @@ From `bench/radon-2026-10-22/53-ordinary-and-reboot.log`, `script/board-image --
    persistent filesystem behind milestones 163, 242 and 859. Until then, a bench image can carry a
    blank RedoxFS image in its archive, made host-side by `tools/redoxfs_host` as every fixture is.
    The kernel can serve it from RAM through a small block server answering
-   `filesystem_contract::blk`, the way the NVMe and MSHC servers do. The archive entry is the
+   `file_system_contract::blk`, the way the NVMe and MSHC servers do. The archive entry is the
    switch, so no CI boot changes. Nothing survives a power cycle, and the bench note says what that
    leaves unproven.
 3. The wall clock. TLS checks a certificate's dates against the clock page, and radon's reads
@@ -74,7 +74,7 @@ Reuse: everything but the RAM block server exists. The TRNG's service is milesto
 hardware entropy source: the JH7110's TRNG)'s, the resolver 892's, `network_time_client` 290's,
 and the RedoxFS tool and server milestone 32 (a real filesystem: RedoxFS behind a capability FS
 server)'s. The
-block server is about a hundred lines over `filesystem_contract::blk`, modeled on
+block server is about a hundred lines over `file_system_contract::blk`, modeled on
 `virtio::run_blk_server`; no RAM-disk server exists in the tree to take.
 
 ## Exit criteria

@@ -12,7 +12,7 @@ This is the caretaker that needs a per-verb answer, and the other two do not. Th
 directory protocol their client speaks, so every verb means what it always meant and the attenuation
 lives elsewhere. A file capability is a *different protocol*: nothing to enumerate, nothing to
 create a name in, one handle. So "which verbs exist" is not a filter over a wider surface, it is
-what the capability is, and it is written down in `filesystem_contract::verb::file_grant::POLICY`, one row
+what the capability is, and it is written down in `file_system_contract::verb::file_grant::POLICY`, one row
 per opcode, in a crate host tests and Kani can reach.
 
 Three policies, and the third is the one worth keeping distinct:
@@ -43,7 +43,7 @@ capability table, not of a branch it is trusted to take. The boundary is an addr
 reason milestone 36's checker lives outside the component it checks.
 
 The grant costs no memory. The name and the direction ride in the caretaker's three `START` argument
-words (`filesystem_contract::grant`, at most `WORDS_NAME`, 16 bytes of name; `pack_name` refuses a
+words (`file_system_contract::grant`, at most `WORDS_NAME`, 16 bytes of name; `pack_name` refuses a
 longer one). A longer file name, up to `grant::MAXIMUM_NAME_BYTES`, reaches a program on a page instead: a
 name set's frame, which `fs_nameset_caretaker` serves (milestone 946 (a granted file name can be longer than sixteen bytes)). One frame is shared by all three processes.
 That is sound because every request on both hops is a blocking `CALL`: the client is parked inside its own
@@ -109,7 +109,7 @@ The wire. As predicted: a request is three words and what follows it is *capabil
 directory grant travels as its own messages. It is two, not one, and the shape is better than the
 "five words of names" this note guessed: each message is a process's three `START` words, the
 caretaker's and then the program's, forwarded by the progenitor without being decoded. That is what lets
-`grant_plan` carry a filesystem grant while keeping its deliberate non-dependency on `filesystem_contract`.
+`grant_plan` carry a filesystem grant while keeping its deliberate non-dependency on `file_system_contract`.
 
 The depth. As predicted, and it is the one thing still open. Every caretaker wiring in this tree
 descends exactly one name, so `rm rmtree/rm-solo` descends with `OPENDIR`. The root has no name to

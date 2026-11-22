@@ -1,5 +1,5 @@
 //! `std::fs` for nife (milestone 27 phase two): `File` bound to the FS-service contract
-//! (DECISIONS §27, `crates/filesystem_contract`). See notes/std/fs.md and notes/std/fs-descent.md.
+//! (DECISIONS §27, `crates/file_system_contract`). See notes/std/fs.md and notes/std/fs-descent.md.
 //!
 //! There is no global namespace. A std program holds a **directory capability** (the FS-service
 //! endpoint, slot 4 of the std slot convention in `pal/nife/rt.rs`), and `File::open("foo")` means
@@ -17,7 +17,7 @@
 //! (`CREATE`), `truncate` and `File::set_len` (`TRUNCATE`), `read_dir`, `create_dir`,
 //! `remove_file`, `remove_dir` and `rename` (`OPENDIR`, `READDIR`, `MKDIR`, `UNLINK`, `RMDIR`,
 //! `RENAME`), [`copy`], [`Dir`] (`#![feature(dirfd)]`), `remove_dir_all`, `Metadata::modified`
-//! (`GET_MODIFICATION_TIME`, by name only: see [`Mtime`]) and `set_times`/`set_times_nofollow` (`SET_MODIFICATION_TIME_AT`,
+//! (`GET_MODIFICATION_TIME_UNIX_SECONDS`, by name only: see [`Mtime`]) and `set_times`/`set_times_nofollow` (`SET_MODIFICATION_TIME_AT_UNIX_SECONDS`,
 //! §112).
 
 //! # What stays Unsupported
@@ -35,7 +35,7 @@ use crate::fs::TryLockError;
 use crate::io::{self, BorrowedCursor, IoSlice, IoSliceMut, SeekFrom};
 use crate::path::{Component, Path, PathBuf};
 use crate::sync::atomic::{AtomicU8, AtomicU64, Ordering};
-use crate::sys::pal::nife::fsproto::{self, fs as proto};
+use crate::sys::pal::nife::fsproto::{self, file_system as proto};
 use crate::sys::pal::nife::rt;
 use crate::sys::time::{SystemTime, UNIX_EPOCH};
 use crate::sys::{unsupported, unsupported_err};
@@ -62,7 +62,7 @@ pub use unsupported_fs::rename_noreplace;
 ///
 /// It is written in terms of `read_dir`, `remove_file` and `remove_dir` on paths it composes with
 /// `DirEntry::path`, and [`walk`] resolves those holding one directory capability per level. The
-/// rights it needs at every level are `dir::REMOVE_TREE`'s (`ENUMERATE` to see, `DESCEND` to walk
+/// rights it needs at every level are `directory::rights::REMOVE_TREE`'s (`ENUMERATE` to see, `DESCEND` to walk
 /// in, `REMOVE` to take the name out), asked for one verb at a time by the walk. See
 /// notes/std/fs-descent.md.
 pub use crate::sys::fs::common::remove_dir_all;

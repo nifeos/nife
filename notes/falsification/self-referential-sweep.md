@@ -43,7 +43,7 @@ the ratio it prints is not the tree's) landed between the two and widened the de
 merged figure rather than either branch's.
 
 **Three more were rewritten and are recorded as *not* findings**, which is the half worth being
-strict about. `filesystem_contract`'s two attenuation harnesses state their property through
+strict about. `file_system_contract`'s two attenuation harnesses state their property through
 `allows`, and `capability_table::a_deleted_capability_stays_deleted` states it through `get`. Each
 looks like the class and is not: the sweep tried to exhibit a defect their original phrasing
 misses and could not. `attenuate` does not call `allows`, and a widening `attenuate` shows up on

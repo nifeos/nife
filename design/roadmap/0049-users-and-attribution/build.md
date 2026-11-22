@@ -39,7 +39,7 @@ Proven end to end by `system_tests/src/user/login_tests.rs` on both ISAs, with `
 ## Per-identity subtrees
 
 Landed 2026-08-23, under DECISIONS §117 (a principal's subtree is named by its identity string). `login` used to
-attenuate every principal to the same fixed subtree, `filesystem_contract::fixture::tree::SUB`, with the same
+attenuate every principal to the same fixed subtree, `file_system_contract::fixture::tree::SUB`, with the same
 rights. It now attenuates each authenticated identity to a subtree named by the identity string
 itself. The string is used directly, with no lookup table. That matches exactly what milestone 155
 (a provisioning tool)'s `identity_provisioner` creates at provisioning time; nothing is auto-vivified
@@ -57,7 +57,7 @@ from a wrong password. `components/src/login.rs`'s own BUGS gives the reasoning.
 
 A third bound surfaced here and is now recorded rather than left implicit. An identity longer than
 sixteen bytes cannot get a per-identity subtree in this slice at all. The grant name travels in two
-argument words to the caretaker (`filesystem_contract::grant::MAX_NAME`). That is narrower than
+argument words to the caretaker (`file_system_contract::grant::MAX_NAME`). That is narrower than
 `login_contract::MAX_IDENTITY`'s sixty-four. `login` refuses rather than silently truncating.
 
 ## The channel-per-client front door

@@ -499,7 +499,7 @@ fn load_current(p: &Installed) -> Option<(static_elf::Elf<'static>, grant_contra
 /// mapped at `timetable::contract::STORE_PAGE_VA`. Every call is a blocking `CALL`, so the page is
 /// this process's between them.
 mod store {
-    use filesystem_contract::{PAGE_BYTES, directory, fs};
+    use file_system_contract::{PAGE_BYTES, directory, file_system};
     use installed_programs::{CURRENT, generation_name, lookup, parse_current};
     use timetable::contract;
     use user_mode_runtime::call;
@@ -530,12 +530,12 @@ mod store {
             return -1;
         }
         page()[..name.len()].copy_from_slice(name);
-        call(ep, fs::request(verb, at, name.len() as u64), w1).0 as i64
+        call(ep, file_system::request(verb, at, name.len() as u64), w1).0 as i64
     }
 
     fn close(ep: u64, h: i64) {
         if h >= 0 {
-            call(ep, fs::request(fs::CLOSE, h as u64, 0), 0);
+            call(ep, file_system::request(file_system::CLOSE, h as u64, 0), 0);
         }
     }
 
@@ -550,7 +550,7 @@ mod store {
             let want = (out.len() - done).clamp(1, PAGE_BYTES);
             let n = call(
                 ep,
-                fs::request(fs::READ, h as u64, want as u64),
+                file_system::request(file_system::READ, h as u64, want as u64),
                 done as u64,
             )
             .0 as i64;
@@ -571,14 +571,26 @@ mod store {
 
     /// The live generation's text into `buf`, and its length.
     fn live_table(buf: &mut [u8; PAGE_BYTES]) -> Option<usize> {
-        let h = named(ACTIVATION, fs::OPEN, fs::ROOT, CURRENT.as_bytes(), 0);
+        let h = named(
+            ACTIVATION,
+            file_system::OPEN,
+            file_system::ROOT,
+            CURRENT.as_bytes(),
+            0,
+        );
         let mut line = [0u8; 32];
         let n = read_into(ACTIVATION, h, &mut line);
         close(ACTIVATION, h);
         let number = parse_current(core::str::from_utf8(&line[..n?]).ok()?)?;
         let mut digits = [0u8; 10];
         let name = generation_name(number, &mut digits);
-        let h = named(ACTIVATION, fs::OPEN, fs::ROOT, name.as_bytes(), 0);
+        let h = named(
+            ACTIVATION,
+            file_system::OPEN,
+            file_system::ROOT,
+            name.as_bytes(),
+            0,
+        );
         let n = read_into(ACTIVATION, h, buf);
         close(ACTIVATION, h);
         n
@@ -596,15 +608,33 @@ mod store {
         // `packages/<name>/<version>/<program>`.
         let entry = lookup(table, name).ok()??;
         let (package, version) = (entry.package, entry.version);
-        let walk = directory::READ | directory::DESCEND;
-        let d1 = named(PACKAGES, fs::OPENDIR, fs::ROOT, package.as_bytes(), walk);
+        let walk = directory::rights::READ | directory::rights::DESCEND;
+        let d1 = named(
+            PACKAGES,
+            file_system::OPENDIR,
+            file_system::ROOT,
+            package.as_bytes(),
+            walk,
+        );
         let d2 = if d1 >= 0 {
-            named(PACKAGES, fs::OPENDIR, d1 as u64, version.as_bytes(), walk)
+            named(
+                PACKAGES,
+                file_system::OPENDIR,
+                d1 as u64,
+                version.as_bytes(),
+                walk,
+            )
         } else {
             -1
         };
         let f = if d2 >= 0 {
-            named(PACKAGES, fs::OPEN, d2 as u64, entry.program.as_bytes(), 0)
+            named(
+                PACKAGES,
+                file_system::OPEN,
+                d2 as u64,
+                entry.program.as_bytes(),
+                0,
+            )
         } else {
             -1
         };

@@ -191,7 +191,7 @@ client's code does not, because it never sees the grant.
 
 - P1. The socket contract's shape: the client attaches a page, writes the name, calls a resolve verb,
   and reads up to eight addresses, a TTL and a status word from the page. One round trip.
-- P2. Plan 9's shape over `filesystem_contract`: the resolver serves a file the client writes a name
+- P2. Plan 9's shape over `file_system_contract`: the resolver serves a file the client writes a name
   to and reads answers from. No new protocol, and a grant is a directory capability, at the price
   of a file server's machinery for one exchange.
 - P3. Names in message words. A name is up to 255 bytes, so it does not fit, which is why P1 and P2

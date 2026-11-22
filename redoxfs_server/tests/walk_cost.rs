@@ -6,8 +6,8 @@
 //! deterministic: the requests a walk sends and the device reads they cost. `walk_model` replays
 //! the walk `std`'s PAL sends; this asserts on what it cost.
 
-use filesystem_contract::directory;
-use filesystem_fixture::walk as tree;
+use file_system_contract::directory;
+use file_system_fixture::walk as tree;
 use redoxfs::{DiskMemory, FileSystem};
 use redoxfs_server::walk_model::{self, Counting};
 use redoxfs_server::{CachedDisk, NameCopy, Server};
@@ -22,7 +22,8 @@ fn staged() -> Server<CachedDisk<Counting<DiskMemory>>> {
     let disk = DiskMemory::new(32 * 1024 * 1024);
     let fs = FileSystem::create(disk, None, 0, 0).expect("create");
     let mut srv = Server::open(fs.disk).expect("open the fresh image");
-    walk_model::stage(&mut srv, filesystem_contract::fs::ROOT as u32).expect("stage the tree");
+    walk_model::stage(&mut srv, file_system_contract::file_system::ROOT as u32)
+        .expect("stage the tree");
     let disk = srv.into_disk();
     Server::open(CachedDisk::new(
         Counting::new(disk),
@@ -40,7 +41,7 @@ fn the_replayed_walk_visits_the_fixture() {
         .open_dir(
             0,
             &named(tree::ROOT),
-            directory::ENUMERATE | directory::READ | directory::DESCEND,
+            directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
         )
         .expect("open the tree");
     let w = walk_model::walk(&mut srv, root).expect("walk");
@@ -61,7 +62,7 @@ fn a_warm_walk_reads_nothing_from_the_device() {
         .open_dir(
             0,
             &named(tree::ROOT),
-            directory::ENUMERATE | directory::READ | directory::DESCEND,
+            directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
         )
         .expect("open the tree");
     walk_model::walk(&mut srv, root).expect("the cold walk");

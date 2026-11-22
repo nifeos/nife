@@ -33,10 +33,10 @@ redoxfs = { path = "../../vendor/redoxfs", default-features = false, features = 
 # The attribute store's on-disk format, from the crate that defines it (milestone 57). The FS server
 # writes these blobs and this tool reads them, so what the two must agree on is a crate rather than a
 # second copy of the record layout in a comment (CLAUDE.md rule 7). A change to the record header is
-# then a compile error here instead of a recovery that quietly reads garbage. `filesystem_contract` is `no_std`
+# then a compile error here instead of a recovery that quietly reads garbage. `file_system_contract` is `no_std`
 # with no dependencies of its own, so it costs this build nothing; `redoxfs_server` already takes the same
 # path dependency across the same workspace boundary, which is what shows cargo permits it.
-filesystem_contract = { version = "0.1.0", path = "../../crates/filesystem_contract" }
+file_system_contract = { version = "0.1.0", path = "../../crates/file_system_contract" }
 
 # The partition table, from the crate that already parses it (milestone 110). A real disk has a GPT
 # where an image file has a filesystem, so finding the filesystem means reading the table first, and
@@ -44,7 +44,7 @@ filesystem_contract = { version = "0.1.0", path = "../../crates/filesystem_contr
 # `disk_surveyor` use. That identity is the point: the host reads the partition by the same rules
 # the board wrote it by, rather than by a second implementation that could disagree about which
 # bytes are the partition. `no_std` with no dependencies of its own, so it costs this build nothing,
-# and it crosses the workspace boundary the same way `filesystem_contract` already does.
+# and it crosses the workspace boundary the same way `file_system_contract` already does.
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../../crates/globally_unique_identifier_partition_table" }
 nife_partition_types = { version = "0.1.0", path = "../../crates/nife_partition_types" }
 uuid = { version = "1.28.0", default-features = false }

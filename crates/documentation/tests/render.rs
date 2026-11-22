@@ -83,7 +83,7 @@ fn a_code_span_protects_its_contents() {
 #[test]
 fn underscores_are_never_emphasis() {
     let out = render(
-        "the __rust_alloc symbol and filesystem_contract\n",
+        "the __rust_alloc symbol and file_system_contract\n",
         Style {
             width: 80,
             color: true,

@@ -38,7 +38,7 @@ or eMMC driver exists. So a disk mix built today would run only under QEMU, and 
 result** for this instrument (milestone 168's gate). It would be a job whose only output is fiction.
 
 2. The file service shares one channel among all its clients. `fs_service::ensure` wires one
-FS server with one contiguous file channel (`file_channel()`, `filesystem_contract::fs::TRANSFER_PAGES`
+FS server with one contiguous file channel (`file_channel()`, `file_system_contract::file_system::TRANSFER_PAGES`
 pages) and `spawn_fs_client` maps that **same** channel into every client. That is safe today because
 each client is started one at a time by a test and every request is a blocking `CALL`. It is not
 safe for 32 tasks issuing requests at once: task A writes its request payload into the shared page,
@@ -52,7 +52,7 @@ task B overwrites it before A's `CALL` is served. The job would measure a data r
    AIM7's disk jobs contend on one filesystem. Cheap to build, wrong shape.
 2. A channel per client on one server. The FS server accepts a per-client channel at connect
    (for example, a client grants its own frame on its first request), so N clients contend on one
-   server and one disk, which is the AIM7 shape. Costs a `filesystem_contract` change, which every
+   server and one disk, which is the AIM7 shape. Costs a `file_system_contract` change, which every
    file client in the tree speaks. This is the fork.
 3. Serialize file jobs in the mix behind a lock held across the request. Refused: it turns the
    one category that should show kernel blocking under load into a queue the workload itself

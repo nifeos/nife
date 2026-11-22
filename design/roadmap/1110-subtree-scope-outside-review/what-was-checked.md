@@ -11,7 +11,7 @@ Verified firsthand, on the clone, every heavy run under a 12 GiB memory cap:
   regenerated falsification patches apply with no offset and no fuzz, so the open `crate_move.py`
   fix (#3521, diff output no longer stripped) did not come into play here.
 - `script/crate-review-packet subtree_scope`: 17 public items, one foreign type in a public
-  signature (`filesystem_contract::dir::Rights` in `walk`), 0 `unsafe` sites, 5 harnesses each
+  signature (`file_system_contract::dir::Rights` in `walk`), 0 `unsafe` sites, 5 harnesses each
   paired with a falsification patch, one dependent (`redoxfs_server`).
 - `helpers/lint_externalized_crates.py`: 1 consumer-name hit, under its ceiling of 1.
 - The template's head helpers over the staged tree: `spelled_out.py` refuses 2 names,

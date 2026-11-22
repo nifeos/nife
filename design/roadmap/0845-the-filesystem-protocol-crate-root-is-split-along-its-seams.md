@@ -12,7 +12,7 @@ needs_person: no
 
 *(The title and slug are provisional.)*
 
-`crates/filesystem_contract/src/lib.rs` is 5,744 lines at `0435a9aeb`. It was 5,327 on 2026-09-24,
+`crates/file_system_contract/src/lib.rs` is 5,744 lines at `0435a9aeb`. It was 5,327 on 2026-09-24,
 so it is the slowest grower of the six files over 4,000. §266 (a Rust source file stays under 2,000
 lines) sets the ceiling and a 2026-12-31 goal of no file over 4,000. Milestone 840 (the scheduler
 file is split along its seams) is the model.
@@ -115,7 +115,7 @@ Found with `grep` at `0435a9aeb`.
   `    pub const TRANSFER_BLOCKS` and its sibling, indented four spaces. After step 2 the constant is
   in `blk.rs` or `fs.rs` with no indent. Both scripts grep for their edit and fail loudly, so this
   breaks visibly.
-- Three falsification patches under `crates/filesystem_contract/falsifications/` patch the Kani
+- Three falsification patches under `crates/file_system_contract/falsifications/` patch the Kani
   proofs in `dir`. Their harness paths, `dir::proofs::*`, do not change; their diffs do. Each must be
   regenerated and shown to fail again. `kani-reach.yml` lists the crate by name and is unaffected.
 - 112 Rust files outside the crate use it; none changes.

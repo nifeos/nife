@@ -102,7 +102,7 @@ a name had been refused. Read before sweeping.
 
 - **This does not settle whether `user_rt` keeps its name.** `rt` is an abbreviation needing a
   decoder, the first failure mode `AGENTS.md` names, and the 2026-08-23 batch expanded eleven such
-  names in one pass (`fs_proto` to `filesystem_contract`, `cred_proto` to `credential_contract`). That
+  names in one pass (`fs_proto` to `file_system_contract`, `cred_proto` to `credential_contract`). That
   ruling is an architect's and is independent of this move; whichever way it goes, the crate being
   split is the same crate.
 - **A harness is not yet a proof of anything useful.** Reaching the code is a precondition. Milestone

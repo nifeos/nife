@@ -50,7 +50,7 @@ What is bound, in `patches/std-nife/overlay/std/src/sys/fs/nife.rs`:
 | `std` call | verb | answer |
 |---|---|---|
 | `fs::metadata(p).modified()`, `DirEntry::metadata().modified()` | `GETMTIME` by name, after the existing `OPEN`/`FSTAT`/`CLOSE` | bound, files and directories |
-| `fs::set_times(p, ..)`, `set_times_nofollow` | `SETMTIME_AT`, walking with `dir::WRITE \| dir::SETTIME` | bound, whole seconds |
+| `fs::set_times(p, ..)`, `set_times_nofollow` | `SETMTIME_AT`, walking with `dir::WRITE \| dir::SET_MODIFICATION_TIME_AT` | bound, whole seconds |
 | `File::metadata().modified()`, `File::set_times`, `File::set_modified` | none: the verbs take a name and a handle has none | `Unsupported`, with a message naming the path form |
 | an access time in `FileTimes` | none | `Unsupported`, and the mtime beside it is not written |
 | `accessed()`, `created()` | none | `Unsupported` |
@@ -63,11 +63,11 @@ this pass bound only that.
 Why the `File` forms refuse rather than remember the name they were opened by: the answer would
 describe whatever holds that name now, so after a rename it would report, or stamp, another file,
 and succeed. That is a wire question (a handle-taking form, which runs into §112 because a file
-handle can never carry `dir::SETTIME`), proposed in
+handle can never carry `dir::SET_MODIFICATION_TIME_AT`), proposed in
 `design/roadmap/0504-an-mtime-for-an-open-file.md` rather than decided here.
 
 Why `set_times` never falls back to `SETMTIME`: the caller's `SystemTime` is an assertion, which
-§112 (`touch`'s two behaviors need two rights) put behind `dir::SETTIME`. Writing the server's own
+§112 (`touch`'s two behaviors need two rights) put behind `dir::SET_MODIFICATION_TIME_AT`. Writing the server's own
 "now" in its place and reporting success would be exactly the silent substitution this PAL refuses
 everywhere else.
 

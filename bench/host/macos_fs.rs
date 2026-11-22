@@ -30,7 +30,7 @@ const F_NOCACHE: i32 = 48;
 /// macOS `<sys/fcntl.h>`: flush the drive's own write cache, which `fsync` does not do.
 const F_FULLFSYNC: i32 = 51;
 
-/// The measurement's shape, identical to `filesystem_fixture::throughput` and to `linux_fs.rs`.
+/// The measurement's shape, identical to `file_system_fixture::throughput` and to `linux_fs.rs`.
 const UNIT: usize = 4096;
 const BLOCKS: u64 = 256;
 const WARMUP: u64 = 8;

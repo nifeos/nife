@@ -217,7 +217,7 @@ What is not a way out is an adapter process at the file end. The obvious move fo
 out.txt` is to give the writing end to a component so the shell is only the producer. It does not
 work, for the reason ["The file behind a `>` is this
 shell"](the-file-end.md#the-file-behind-a--is-this-shell-and-that-was-not-the-plan) already gives:
-`filesystem_contract` shares one page between the FS server and its clients, and this line has the
+`file_system_contract` shares one page between the FS server and its clients, and this line has the
 shell reading the filesystem while the adapter writes it. Same race, same page, and no ordering fix.
 
 The way taken: hand an unredirected tail's output to an adapter that already exists

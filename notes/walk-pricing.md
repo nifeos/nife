@@ -14,7 +14,7 @@ the contract?
 
 `crates/walk_pricing` is plain `std::fs` code with no nife in it. `std_exerciser` runs it through a
 granted directory; `cargo run --release -p walk_pricing --example host` runs the same function on a
-host. The tree is `filesystem_contract::fixture::walk`, staged into the RedoxFS test image by the
+host. The tree is `file_system_contract::fixture::walk`, staged into the RedoxFS test image by the
 same `stage` function a host uses:
 
 | region | shape | the slope it gives |

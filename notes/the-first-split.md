@@ -34,7 +34,7 @@ cost.
 
 | precondition | source | met? | measured |
 |---|---|---|---|
-| Protocols carry version numbers | milestone 39 (repository structure for a loosely-coupled OS) | no | All 93 crates in the tree are `version = "0.1.0"`. Of 19 `*_protocol` crates, 5 carry a numbered magic on a shared-page layout (`TIMEBAS1`, `CURRCPU1`, `ENVCONF1`, `MACHSTA1`, `CLOCKv01`) and 2 an unnumbered one (`nifeargv`, `nifeklog`). None of the IPC operation sets (`filesystem_contract`, `socket_contract`, `login_contract`, `hot_swap_contract` and the rest) carries a version a peer could check. Formats do better: `capability_manifest_note` (`VERSION = 1`), `boot_slot` (`SLOT_VERSION = 1`), `package_archive` (`NIFEPKG1`), `nifefs` (`CRKR0002`). |
+| Protocols carry version numbers | milestone 39 (repository structure for a loosely-coupled OS) | no | All 93 crates in the tree are `version = "0.1.0"`. Of 19 `*_protocol` crates, 5 carry a numbered magic on a shared-page layout (`TIMEBAS1`, `CURRCPU1`, `ENVCONF1`, `MACHSTA1`, `CLOCKv01`) and 2 an unnumbered one (`nifeargv`, `nifeklog`). None of the IPC operation sets (`file_system_contract`, `socket_contract`, `login_contract`, `hot_swap_contract` and the rest) carries a version a peer could check. Formats do better: `capability_manifest_note` (`VERSION = 1`), `boot_slot` (`SLOT_VERSION = 1`), `package_archive` (`NIFEPKG1`), `nifefs` (`CRKR0002`). |
 | Protocols stopped churning weekly | milestone 39 | no | Milestone 610's own series, last four weeks (2026W37 to W40): 6, 44, 46 and 61 breaking changes to the contract crates, 157 in all against the proposed threshold of four. Co-change excluding mass commits: 66.7%, 51.9%, 74.4%, 74.4%, against the proposed 50% line. System call surface: 3 changed and 1 renamed in W40. |
 | A package format exists | milestone 198 (a package manager) | yes | §197 (a package is one archive file)'s archive (`crates/package_archive`), `cargo xtask package` from a reviewed recipe, and `package install`, `remove` and `rollback` at the prompt on all three architectures (milestone 198, rung 3a, built 2026-09-26). |
 | A per-package co-change column, which informs how packages group and holds no move | §235 "How big a repository is" | yes | Milestone 610 carries it. Section 2 below is a one-off reading at one commit, not the column. |
@@ -58,7 +58,7 @@ merged 2026-10-04T05:32Z) is broken out because the brief named it. It touched 1
 | crate | commits | #1599 | sweeps | alone | breaking, 4 weeks |
 |---|---|---|---|---|---|
 | `abi` | 29 | 0 | 6 | 1 | 4 |
-| `filesystem_contract` | 23 | 1 | 6 | 1 | 10 |
+| `file_system_contract` | 23 | 1 | 6 | 1 | 10 |
 | `login_contract` | 15 | 1 | 5 | 0 | 1 |
 | `hot_swap_contract` | 14 | 1 | 7 | 0 | 10 |
 | `supervision_contract` | 10 | 0 | 4 | 0 | 2 |
@@ -66,7 +66,7 @@ merged 2026-10-04T05:32Z) is broken out because the brief named it. It touched 1
 | `byte_sink_contract`, `credential_contract`, `std_runtime_contract` | 6 each | 1, 1, 0 | 4, 3, 2 | 0 | 5, 4, 0 |
 | the other ten | 2 to 5 each | | | 0 to 2 | 0 to 5 |
 
-Even net of sweeps and `#1599`, `abi` moved 23 times and `filesystem_contract` 17 times in thirty
+Even net of sweeps and `#1599`, `abi` moved 23 times and `file_system_contract` 17 times in thirty
 days, and **six commits in thirty days changed a protocol crate and nothing else**. A protocol here
 changes together with its server and its client, which is what a monorepo is good at and a split
 makes into two or three pull requests.
@@ -112,8 +112,8 @@ What the table says, read rather than summarized:
 - **`redoxfs` is the most separable build and among the most coupled code.** It is already three
   workspaces of its own, outside the root workspace, with its own `Cargo.lock` files, gated by
   `--manifest-path`, and nothing links it. But 12 of its 17 focused commits crossed, almost all
-  milestone 606 (a directory walk costs what it does on Linux)'s subtree-grant work against `filesystem_contract`, `subtree_scope` and
-  `capability_manifest_note`. Its interfaces are the least settled ones: `filesystem_contract` 10 breaking
+  milestone 606 (a directory walk costs what it does on Linux)'s subtree-grant work against `file_system_contract`, `subtree_scope` and
+  `capability_manifest_note`. Its interfaces are the least settled ones: `file_system_contract` 10 breaking
   changes in four weeks, the partition table 27, `entropy_contract` 3. Every QEMU runner starts it,
   which is the 254 path references.
 - **Programs in `components` cannot move at all yet.** `mdr`, `demos`, `core-tools`,

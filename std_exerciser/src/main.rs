@@ -41,7 +41,7 @@ fn main() {
 
     // `Unsupported` means no FS-service endpoint in slot 4 and no ambient filesystem to fall back
     // on. Any other failure means a directory was granted, so it must not fall through to the net.
-    match File::open(filesystem_fixture::MOTD_NAME) {
+    match File::open(file_system_fixture::MOTD_NAME) {
         Ok(f) => return fs_demo(f),
         Err(e) if e.kind() == ErrorKind::Unsupported => {}
         // A directory, and not the image root: the only narrower grant any spawn hands this
@@ -289,7 +289,7 @@ fn fs_demo(mut motd: File) {
         .expect("reading the motd through std::fs failed");
     assert_eq!(
         bytes,
-        filesystem_fixture::MOTD,
+        file_system_fixture::MOTD,
         "std::fs read the wrong bytes off the image"
     );
     print!(
@@ -299,20 +299,20 @@ fn fs_demo(mut motd: File) {
     drop(motd); // Drop CLOSEs the handle the server minted for us.
 
     // read_to_string reopens the same name and leans on the size hint the PAL answers with FSTAT.
-    let text = std::fs::read_to_string(filesystem_fixture::MOTD_NAME)
+    let text = std::fs::read_to_string(file_system_fixture::MOTD_NAME)
         .expect("read_to_string through std::fs failed");
     println!("read_to_string {}", text.len());
 
     let meta =
-        std::fs::metadata(filesystem_fixture::MOTD_NAME).expect("metadata through std::fs failed");
+        std::fs::metadata(file_system_fixture::MOTD_NAME).expect("metadata through std::fs failed");
     assert!(meta.is_file(), "the motd is a regular file");
     println!("metadata len {}", meta.len());
 
     // `/` is the root of this process's namespace (milestone 47's namespace half), so `/motd` and
     // `motd` must read one file.
     let by_name =
-        std::fs::read(filesystem_fixture::MOTD_NAME).expect("reading motd by name failed");
-    let rooted = format!("/{}", filesystem_fixture::MOTD_NAME);
+        std::fs::read(file_system_fixture::MOTD_NAME).expect("reading motd by name failed");
+    let rooted = format!("/{}", file_system_fixture::MOTD_NAME);
     let by_root = std::fs::read(&rooted).expect("reading motd by absolute path failed");
     assert_eq!(by_name, by_root, "`/motd` and `motd` named different files");
     // And `current_dir` says where that root is, in a spelling this process can type back.
@@ -326,7 +326,7 @@ fn fs_demo(mut motd: File) {
     // The negative control: rooting a path grants nothing, because no wire message names a
     // directory's parent, so `/..` is refused exactly as `..` is.
     refused(
-        &format!("/../{}", filesystem_fixture::MOTD_NAME),
+        &format!("/../{}", file_system_fixture::MOTD_NAME),
         "absolute dotdot",
     );
     refused("../motd", "dotdot");
@@ -335,9 +335,9 @@ fn fs_demo(mut motd: File) {
     refused(
         &format!(
             "{}/../{}/{}",
-            filesystem_fixture::tree::SUB,
-            filesystem_fixture::tree::OTHER,
-            filesystem_fixture::tree::SECRET
+            file_system_fixture::tree::SUB,
+            file_system_fixture::tree::OTHER,
+            file_system_fixture::tree::SECRET
         ),
         "inner dotdot",
     );
@@ -394,17 +394,17 @@ fn fs_demo(mut motd: File) {
     // to prove the bytes reached the disk rather than a cache.
     let mut scratch = std::fs::OpenOptions::new()
         .write(true)
-        .open(filesystem_fixture::SCRATCH_NAME)
+        .open(file_system_fixture::SCRATCH_NAME)
         .expect("opening scratch for writing through std::fs failed");
     scratch
-        .write_all(filesystem_fixture::WRITE_PATTERN)
+        .write_all(file_system_fixture::WRITE_PATTERN)
         .expect("writing scratch through std::fs failed");
     drop(scratch);
-    let back = std::fs::read(filesystem_fixture::SCRATCH_NAME)
+    let back = std::fs::read(file_system_fixture::SCRATCH_NAME)
         .expect("reading scratch back through std::fs failed");
     assert_eq!(
         back,
-        filesystem_fixture::WRITE_PATTERN,
+        file_system_fixture::WRITE_PATTERN,
         "the write did not read back"
     );
     println!("write readback ok");
@@ -450,7 +450,7 @@ fn namespace_transcript() {
     for entry in std::fs::read_dir(".").expect("read_dir of the granted directory failed") {
         let entry = entry.expect("a directory entry did not decode");
         let name = entry.file_name();
-        if name == filesystem_fixture::MOTD_NAME {
+        if name == file_system_fixture::MOTD_NAME {
             saw_motd = true;
             assert!(
                 entry.file_type().expect("file_type failed").is_file(),
@@ -514,7 +514,7 @@ fn namespace_transcript() {
         "a directory did not answer is_dir",
     );
     assert!(
-        !std::path::Path::new(filesystem_fixture::MOTD_NAME).is_dir(),
+        !std::path::Path::new(file_system_fixture::MOTD_NAME).is_dir(),
         "a file answered is_dir",
     );
     assert!(
@@ -625,7 +625,7 @@ fn file_times() {
         }
     }
 
-    let motd = std::fs::metadata(filesystem_fixture::MOTD_NAME)
+    let motd = std::fs::metadata(file_system_fixture::MOTD_NAME)
         .expect("metadata of the motd failed")
         .modified()
         .expect("modified() refused for a name reached through the granted directory")
@@ -685,7 +685,7 @@ fn file_times() {
 /// Nothing widens the grant: each hop's rights are the last hop's intersected with the request,
 /// and `sub/../other/secret`, reachable as `other/secret`, is refused because there is no ascent.
 fn descent_transcript() {
-    use filesystem_fixture::tree;
+    use file_system_fixture::tree;
 
     // One descent, and the bytes are the fixture's own, so this is the whole stack again (disk,
     // block server, FS server, contract, PAL) with a directory capability minted in the middle.
@@ -745,7 +745,11 @@ fn descent_transcript() {
     println!("walk entry ok");
 
     // `OPENDIR` of a file is `ENOTDIR`, a fact about the name, so it does not read as a refusal.
-    match File::open(format!("{}/{}", filesystem_fixture::MOTD_NAME, tree::INNER)) {
+    match File::open(format!(
+        "{}/{}",
+        file_system_fixture::MOTD_NAME,
+        tree::INNER
+    )) {
         Err(e) if e.kind() == ErrorKind::NotADirectory => println!("through a file refused"),
         other => panic!("a path walking through a file was not refused: {other:?}"),
     }
@@ -866,7 +870,7 @@ fn file_time_refusals(asserted: SystemTime, back: SystemTime) {
 
 /// The `dir handle ok` line of [`descent_transcript`]: `std::fs::Dir`.
 fn held_directories() {
-    use filesystem_fixture::tree;
+    use file_system_fixture::tree;
 
     // `std::fs::Dir` (milestone 122): `inner` resolves against a held directory, with no path
     // composition anywhere.
@@ -885,7 +889,7 @@ fn held_directories() {
     drop(f);
 
     // A held directory is bound exactly as the granted one is: `..` names nothing through it either.
-    match dir.open_file(format!("../{}", filesystem_fixture::MOTD_NAME)) {
+    match dir.open_file(format!("../{}", file_system_fixture::MOTD_NAME)) {
         Err(e) if e.kind() == ErrorKind::InvalidFilename => {}
         other => panic!("`..` through a held directory was not refused: {other:?}"),
     }
@@ -894,13 +898,13 @@ fn held_directories() {
     // what the endpoint is bound to rather than a name inside anything.
     let granted = Dir::open(".").expect("Dir::open of the granted directory failed");
     let mut motd = granted
-        .open_file(filesystem_fixture::MOTD_NAME)
+        .open_file(file_system_fixture::MOTD_NAME)
         .expect("the granted directory would not open its own file");
     let mut bytes = Vec::new();
     motd.read_to_end(&mut bytes).expect("read failed");
     assert_eq!(
         bytes,
-        filesystem_fixture::MOTD,
+        file_system_fixture::MOTD,
         "the granted directory read the wrong file"
     );
     println!("dir handle ok");
@@ -908,13 +912,13 @@ fn held_directories() {
 
 /// **Milestone 121's two halves, chosen by the rights of the one directory this process holds.**
 ///
-/// Granted [`filesystem_fixture::walk`]'s tree with `ENUMERATE`, it prices a walk
+/// Granted [`file_system_fixture::walk`]'s tree with `ENUMERATE`, it prices a walk
 /// (`walk_pricing`) and prints the figures. Granted the same tree without `ENUMERATE`, the same
 /// walk must be **refused loudly**: `read_dir` answers `PermissionDenied`, and the walker a search
 /// tool is built on returns that error rather than a walk of nothing. The program does not know
 /// which grant it holds and does not ask; it tries to list, and the capability answers.
 fn walk_transcript() {
-    use filesystem_fixture::walk as tree;
+    use file_system_fixture::walk as tree;
 
     // Whichever grant this is, the tree is here: a name the program can spell opens under both,
     // because reaching what you can name is `READ` and `DESCEND`, and `ENUMERATE` is only the
@@ -950,7 +954,7 @@ fn price_walk() {
 
 /// The same walk against a grant lacking `ENUMERATE`, refused at every level and never empty.
 fn enumeration_withheld() {
-    use filesystem_fixture::walk as tree;
+    use file_system_fixture::walk as tree;
     println!("walk granted without enumerate");
     println!("read_dir refused");
 

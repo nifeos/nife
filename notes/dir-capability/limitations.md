@@ -16,7 +16,7 @@ full. Known limitations, next to the feature rather than only in a tracker.
 - ~~`UNLINK` does not exist.~~ Built by the commands lane, along with the unlink/revoke split the
   roadmap argues for: see [shell-navigation.md](../shell-navigation.md). `REMOVE` now gates two
   verbs. That lane found two things and did not fix them. There was no `RMDIR`, so `MKDIR` could make
-  a directory this contract could not remove. `RMDIR` exists now (`filesystem_contract`'s verb 13;
+  a directory this contract could not remove. `RMDIR` exists now (`file_system_contract`'s verb 13;
   corrected 2026-10-11 UTC). And no verb reports what rights a handle carries, so a program handed a
   directory capability must be told out of band or discover by probing.
 - A directory cannot be moved between directories (`EINVAL`). The argument is in
@@ -66,7 +66,7 @@ full. Known limitations, next to the feature rather than only in a tracker.
   capabilities is being handed over in a sentence ("...and everything under it: -r grants the
   walk") rather than as a rights mask. So a reader learns the shape of the grant and not its bits.
   (§27's amendment records an older refusal, from before the boot had a filesystem at all.)
-- A wrong row in `filesystem_contract::verb` is wrong in three programs at once (milestone 61 (the
+- A wrong row in `file_system_contract::verb` is wrong in three programs at once (milestone 61 (the
   caretakers: one verb table)). The
   mitigation is that it is pure data in a host-testable crate, so the tests and Kani can reach it,
   which a hand-written match in a `no_std` binary could not. The row that decides a security

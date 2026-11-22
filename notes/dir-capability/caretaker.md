@@ -25,24 +25,24 @@ reaches *through the handle that request minted*. There is no branch in the care
 be wrong about it.
 
 What the process does is translate a namespace. The client numbers its handles in its own space
-starting at `fs::ROOT`, which is the granted directory. The caretaker maps each to the FS server's
+starting at `file_system::ROOT`, which is the granted directory. The caretaker maps each to the FS server's
 number and forwards the request otherwise unchanged. A client that guesses a handle is guessing in
 a table with a handful of inhabitants, none of which it chose. A number the caretaker never minted
 is `EBADF` from one check.
 
 It costs no memory: the granted name and the rights mask ride in the three `START` argument words
-(`filesystem_contract::grant`), and one frame is shared by all three processes.
+(`file_system_contract::grant`), and one frame is shared by all three processes.
 
 ## The verb table, and how it stayed a translation (milestone 61 (the caretakers: one verb table))
 
 Each of the three caretakers had a hand-written `match` over the opcode, and nothing made a
-`match` and the contract agree. So the way it failed was that a verb added to `filesystem_contract`
+`match` and the contract agree. So the way it failed was that a verb added to `file_system_contract`
 was absent from a caretaker, and the capability silently was not there. That is not hypothetical.
 Milestone 57 (partitioning and formatting a real drive, and extended attributes) added the four
 extended-attribute verbs, none of the three was taught them, and nothing
 failed. Programs behind every kind of grant could not reach their files' attributes.
 
-`filesystem_contract::verb` is a row per verb. It says what the request word's length field counts
+`file_system_contract::verb` is a row per verb. It says what the request word's length field counts
 (`Operand::None`, `Name`, `Payload`, `Rename`), whether the second word means anything, whether the
 reply is a new handle, and which `dir` rights the server will demand. `verb::of(op)` is the whole of
 a caretaker's dispatch now. A verb with no row is a compile error, so forgetting fails the build
@@ -89,9 +89,9 @@ The caretaker's startup `OPENDIR` can fail, and the failure is answered rather t
 waiter on its report endpoint is the progenitor, which serves every command the prompt runs and has
 no second thread. A caretaker that died before answering would leave the progenitor parked in
 `RECEIVE` and the whole machine with it, and `rm nosuchdir/x` is an ordinary thing to type. So a
-refused descent sends `filesystem_contract::DESCENT_REFUSED` with the errno, and the caretaker
+refused descent sends `file_system_contract::DESCENT_REFUSED` with the errno, and the caretaker
 exits. It does not serve: it holds no narrowed handle, and serving anyway would mean answering from
-`fs::ROOT`, which is the whole directory it was meant to attenuate. What the prompt then says about
+`file_system::ROOT`, which is the whole directory it was meant to attenuate. What the prompt then says about
 the cause is in [limitations.md](limitations.md).
 
 The destructive verbs are forwarded like every other verb. The FS server resolves the name under the

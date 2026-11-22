@@ -3,17 +3,17 @@
 use crate::*;
 
 #[test]
-fn a_grant_name_limit_matches_the_filesystem_contract() {
-    // `grant_plan` deliberately does not depend on `filesystem_contract` (the shell's parser must not need the
+fn a_grant_name_limit_matches_the_file_system_contract() {
+    // `grant_plan` deliberately does not depend on `file_system_contract` (the shell's parser must not need the
     // filesystem contract to check a command line), so the constant is duplicated. That is only
     // safe if a change to one without the other fails here, on the host, in milliseconds.
     assert_eq!(
         MAXIMUM_FILE_NAME_BYTES,
-        filesystem_contract::grant::MAXIMUM_NAME_BYTES
+        file_system_contract::grant::MAXIMUM_NAME_BYTES
     );
     assert_eq!(
         MAXIMUM_WORDS_NAME_BYTES,
-        filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES
+        file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES
     );
     assert!(is_valid_file_name(b"least_authority_demo"));
     assert!(is_valid_file_name(&[b'n'; MAXIMUM_FILE_NAME_BYTES]));

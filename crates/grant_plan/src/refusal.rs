@@ -40,7 +40,7 @@ pub enum Refusal {
     /// whose printed preview and actual transfer could disagree.
     NoSuchOption,
     /// The named file is not something this shell can express: empty, a component longer than the
-    /// two argument words a grant's name rides in (`filesystem_contract::grant::MAXIMUM_NAME_BYTES`),
+    /// two argument words a grant's name rides in (`file_system_contract::grant::MAXIMUM_NAME_BYTES`),
     /// deeper than the shell tracks, or a path that designates a directory rather than a file.
     FileNotNameable,
     /// The program takes no memory grant, but `--mem` was given.

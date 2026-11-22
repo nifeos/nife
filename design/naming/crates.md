@@ -7,7 +7,7 @@ file's stem are provisional names; naming is an architect's.*
 ## One rule, with no second tier
 
 A crate takes `snake_case`: one word where one word will do, and an underscore where the name is a
-qualifier applied to a thing (`filesystem_contract` is the contract for the filesystem,
+qualifier applied to a thing (`file_system_contract` is the contract for the filesystem,
 `measured_boot` the measurement of boot). A name never runs two words together (`lineedit`,
 `bitfont`): that shape produced every abbreviation a reader had to decode. A standard term keeps its
 standard shape: `nifefs` follows `procfs`, which nobody writes `proc_fs`.
@@ -30,7 +30,7 @@ standard terms is the acronym test's call:
 
 ## Suffixes
 
-- A nife wire-contract crate ends in `_contract`: `filesystem_contract`, `socket_contract`,
+- A nife wire-contract crate ends in `_contract`: `file_system_contract`, `socket_contract`,
   `supervision_contract`. An external standard keeps its own word (`network_time_protocol`), which
   is why nife's suffix is not `_protocol`. `abi` is the system call boundary and takes no suffix.
   `script/lint` check 3 holds the spelling and names `network_time_protocol` as its one exception.

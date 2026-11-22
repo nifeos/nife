@@ -23,7 +23,7 @@ than shortening it: *"B"*. The fix is to lift the limit that refuses the name. c
 
 ## What a name may be
 
-- A file's name is at most `filesystem_contract::grant::MAX_NAME`, 252 bytes ("The bound"
+- A file's name is at most `file_system_contract::grant::MAX_NAME`, 252 bytes ("The bound"
   below). `grant_plan::MAX_FILE_NAME` mirrors it, pinned by a host test. It is the
   last component of a path the shell opens, a name a pattern matched, and a name in a grant's set.
 - A name that rides two `START` words is at most `grant::WORDS_NAME`, 16 bytes: a caretaker's

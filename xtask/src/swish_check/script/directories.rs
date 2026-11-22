@@ -53,7 +53,7 @@ pub(super) const LINES: &[Line] = &[
     // **The top prompt, which used to be the one refusal and is now a grant** (milestone 328 (a grant on the root of the shell's namespace), §173 (narrowing the root of the shell's namespace)).
     // A caretaker's attenuation was one `OPENDIR` *into* the granted directory, and a name typed at
     // the top prompt designates the root of this shell's namespace, which has no name to descend
-    // into. `fs::NARROW` is the verb for "the directory I already hold, with fewer rights": the
+    // into. `file_system::NARROW` is the verb for "the directory I already hold, with fewer rights": the
     // caretaker narrows the root it holds to `REMOVE`, exactly as `rm rmtree/rm-solo` narrows
     // `rmtree`. The preview first, to show the narrower capability being chosen, then the removal.
     line(

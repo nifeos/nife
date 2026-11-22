@@ -56,7 +56,7 @@ use children::*;
 use client_windows::*;
 pub use endowment::{BootEndowment, MountedTreeGrant};
 use fault::*;
-use filesystem_contract::{directory, fs as fs_operation};
+use file_system_contract::{directory, file_system as fs_operation};
 use image_request::*;
 use layout::*;
 pub use layout::{

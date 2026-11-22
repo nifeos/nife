@@ -7,9 +7,9 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# 1090. `filesystem_contract`: what an outside maintainer would fix before it leaves
+# 1090. `file_system_contract`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only review of `crates/filesystem_contract` as a stranger would meet it, the way
+Raised by a read-only review of `crates/file_system_contract` as a stranger would meet it, the way
 milestone 1048 (`generational_table`: what an outside maintainer would fix before 0.1.0) reviewed
 that crate. It changes nothing; it lists what the move lane and the lanes after it change.
 
@@ -27,7 +27,7 @@ leaves the reopening to the architect, under the ruling that a release review re
 ratified before a later rule.
 
 The crate is on `crates/externalization-list.txt` and is step 2 of milestone 1017 (the contract
-crates leave in this order), paired there with `filesystem_fixture`. The manifest has no
+crates leave in this order), paired there with `file_system_fixture`. The manifest has no
 dependencies of any kind, and the README says where the fixture's tests went. The two crates share
 one workspace repository, ruled 2026-11-14 (UTC); the fixture never publishes.
 
@@ -51,7 +51,7 @@ are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `b
 - Item 2 (P0), clippy refuses `RedoxFS` without a `clippy.toml`: Open. The crate-root
   `clippy.toml` with `doc-valid-idents` comes with the move commit.
 - Item 3 (P0), the falsification patches carry this tree's path: Open. All eleven patches diff
-  `a/crates/filesystem_contract/...` and the README says `patch -p3`; the move commit rewrites them
+  `a/crates/file_system_contract/...` and the README says `patch -p3`; the move commit rewrites them
   to `a/src/...` and `git apply -p1`.
 - Item 4 (P0), `rm.rs` uncovered: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
   `a_status_is_the_errno_and_success_is_zero`.
@@ -59,7 +59,7 @@ are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `b
   The renames are in force ([#3726](https://github.com/nifeos/nife/pull/3726)), each kept POSIX verb
   and errno name carries `#[doc(alias)]` and a source line, `fs` and `statfs` carry their aliases, and
   the test that `spelled_out` refused follows the `specification` row. Not built: the
-  `register_names` exemption for `block::SIZE`, because the template has no exemption file for it.
+  `register_names` exemption for `block::GET_SIZE_BYTES`, because the template has no exemption file for it.
 - Item 6 (P1), `reply_errno` not total: Done, [#3577](https://github.com/nifeos/nife/pull/3577).
   Built with Decision C.
 - Item 7 (P1), the packers mask: Open. `fs::request`, `rename_destination` and both `specification` packers
@@ -120,7 +120,7 @@ the architect's.
 
 ## Goal
 
-A stranger who finds `filesystem_contract` in its own repository can tell in one screen what the two
+A stranger who finds `file_system_contract` in its own repository can tell in one screen what the two
 protocols are. The stranger can build, test, prove and falsify it from the README alone on the
 stated minimum Rust version. Every required check is green for the crate's own reasons. Nothing in
 the crate names nife, a nife program or a nife package; the one on-disk name that does is ruled on
@@ -219,14 +219,14 @@ Rust's RFCs keep their original text and point to a successor; this tree chose t
 Concrete example: a reader of §99's cost table counts "one 4096-byte block for the node's blob under
 `.extended-attributes`" and then finds `STORE_DIRECTORY` holding the same name.
 
-### E. The review package and clearance of `filesystem_contract` and `filesystem_fixture`: maintainer ruling, provisional, 2026-11-19 (UTC)
+### E. The review package and clearance of `file_system_contract` and `file_system_fixture`: maintainer ruling, provisional, 2026-11-19 (UTC)
 
 In force: a lane writes one review package that covers both crates, which share one workspace
 repository (ruled 2026-11-14 UTC; the fixture never publishes), once the other items here land. The
 move is not held for it. The package step is the maintainer's provisional ruling on a two-way door.
 Ratifying the names and clearing the review, which is also the go to create the repository as
 `publish = false`, stay the architect's, and the package asks for them. The move follows, with
-items 1 to 3 and 10 here and items 6 and 11 of milestone 1091 (`filesystem_fixture`: what an outside
+items 1 to 3 and 10 here and items 6 and 11 of milestone 1091 (`file_system_fixture`: what an outside
 maintainer would fix before it leaves).
 
 Prior art: `jh7110_clock_and_reset` and `designware_ethernet` each had a review package cleared
@@ -260,7 +260,7 @@ The checks are in [the appendix](1090-filesystem-contract-outside-review/done-wh
 
 ## Index row
 
-An outside review of `filesystem_contract` before it leaves nife. Five items are red at the moving
+An outside review of `file_system_contract` before it leaves nife. Five items are red at the moving
 commit (the stand-alone text, clippy's proper-noun list, the falsification patch paths, one
 uncovered file, 22 names the gates refuse). Eight come before the first tag (a non-total errno
 decoder, packers that mask, seven unproven properties, the equivalent-mutant list, the README and

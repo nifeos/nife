@@ -20,7 +20,7 @@ lane let a granted file's name be 252 bytes. Every name that rides two `START` w
 §307 (how long a name may be) rule 5 holds `jig install` to a package name of at most 16 bytes. So
 nothing is installed that `jig remove` cannot remove. `jig remove <package>` and the shell's
 `vouch <file>` send their name to the progenitor in one message. It is packed into two words by
-`filesystem_contract::grant::pack_name`, whose bound is `grant::WORDS_NAME`. Milestone 946 (a
+`file_system_contract::grant::pack_name`, whose bound is `grant::WORDS_NAME`. Milestone 946 (a
 granted file name can be longer than sixteen bytes) made `pack_name` refuse a longer name. It did
 not widen the message. §307's rule 1 bounds a package or program name at 252 bytes. The activation
 messages are the last 16-byte bound between such a package and its install.

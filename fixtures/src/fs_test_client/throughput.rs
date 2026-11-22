@@ -8,8 +8,8 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::fs;
-use filesystem_fixture as fixture;
+use file_system_contract::file_system;
+use file_system_fixture as fixture;
 use user_mode_runtime::{call, counter_ticks, exit, require, send};
 
 use crate::channel::{FILE, REPORT, STAGE_WRITE, WINDOW, fail, open, put_page, read};
@@ -20,7 +20,7 @@ use crate::channel::{FILE, REPORT, STAGE_WRITE, WINDOW, fail, open, put_page, re
 /// as `fs_seq_write`, `fs_seq_read`, `fs_rand_read`, `fs_record_read`, `fs_rand_write` and
 /// `fs_payload_fill`.
 ///
-/// One request moves at most `fs::MAXIMUM_TRANSFER_BYTES` bytes (`UNIT`), and each phase moves
+/// One request moves at most `file_system::MAXIMUM_TRANSFER_BYTES` bytes (`UNIT`), and each phase moves
 /// `tp::TOTAL` whatever `UNIT` is. The write phase runs first because it creates the file. Random
 /// offsets come from a fixed seed, page-aligned and inside the file. A read loop issues only the
 /// `CALL`; a write loop repaints the page first. See notes/benchmarks/filesystem-throughput.md.
@@ -60,7 +60,7 @@ pub(crate) fn throughput() -> ! {
     let ticks = counter_ticks().wrapping_sub(start);
     // The file is exactly as long as the phase claims to have written it. Without this a server
     // that answered every write with a short count would still produce a throughput number.
-    let (size, _) = call(FILE, fs::request(fs::FSTAT, handle, 0), 0);
+    let (size, _) = call(FILE, file_system::request(file_system::FSTAT, handle, 0), 0);
     require(size == tp::BLOCKS * tp::UNIT_BYTES as u64);
     send(REPORT, ticks, tp::BLOCKS, tp::SEQUENTIAL_WRITE);
 
@@ -123,7 +123,7 @@ pub(crate) fn throughput() -> ! {
     }
     let ticks = counter_ticks().wrapping_sub(start);
     // The file did not grow: a random write that appended would be measuring allocation.
-    let (size, _) = call(FILE, fs::request(fs::FSTAT, handle, 0), 0);
+    let (size, _) = call(FILE, file_system::request(file_system::FSTAT, handle, 0), 0);
     require(size == tp::BLOCKS * tp::UNIT_BYTES as u64);
     send(REPORT, ticks, tp::BLOCKS, tp::RANDOM_WRITE);
 
@@ -131,17 +131,21 @@ pub(crate) fn throughput() -> ! {
 }
 
 /// Open the throughput file, creating it if this is the first run against this image and emptying
-/// it if it is not. `CREATE` answers `EEXIST` rather than opening (`filesystem_contract`'s note says why), so
+/// it if it is not. `CREATE` answers `EEXIST` rather than opening (`file_system_contract`'s note says why), so
 /// the fallback is an explicit open-and-truncate.
 fn throughput_file() -> u64 {
     let name = fixture::THROUGHPUT_NAME;
     put_page(name.as_bytes());
-    let (r0, _) = call(FILE, fs::request(fs::CREATE, 0, name.len() as u64), 0);
+    let (r0, _) = call(
+        FILE,
+        file_system::request(file_system::CREATE, 0, name.len() as u64),
+        0,
+    );
     if (r0 as i64) >= 0 {
         return r0;
     }
     let h = open(name);
-    let (t, _) = call(FILE, fs::request(fs::TRUNCATE, h, 0), 0);
+    let (t, _) = call(FILE, file_system::request(file_system::TRUNCATE, h, 0), 0);
     require((t as i64) >= 0);
     h
 }
@@ -150,7 +154,11 @@ fn throughput_file() -> u64 {
 /// measured window holds the request and not a 4 KiB byte-at-a-time fill.
 fn write_unit(handle: u64, offset: u64) {
     let unit = fixture::throughput::UNIT_BYTES;
-    let (r0, _) = call(FILE, fs::request(fs::WRITE, handle, unit as u64), offset);
+    let (r0, _) = call(
+        FILE,
+        file_system::request(file_system::WRITE, handle, unit as u64),
+        offset,
+    );
     if (r0 as i64) < 0 {
         fail(STAGE_WRITE, r0);
     }

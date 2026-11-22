@@ -47,7 +47,7 @@ Measured at `nifeos/nife@a8b7524d7` with one script, reproduced in the measureme
   22. Only 5 spanned two of the 22 and stayed inside them, so grouping them saves almost no
   crossings.
 - `grant_plan` dominates: 151 commits in 30 days, 120 crossing, 227 breaking API items in four
-  weeks. `filesystem_contract` follows with 263, item-level churn that milestone 610's note
+  weeks. `file_system_contract` follows with 263, item-level churn that milestone 610's note
   attributes to the fixture extraction and the file splits.
 - Identity values (a `MAGIC`, a `VERSION`) changed five times in 90 days. Two reverts followed
   within a day, `current_cpu_contract` on 2026-10-21 and `program_argument_contract` on 2026-10-30, because
@@ -68,7 +68,7 @@ points from nife to the crate, which the direction permits. Beyond those, five r
 |---|---|---|
 | `address_space_layout` | a test reads `../../user_mode_runtime/link.ld` | the test moves to `user_mode_runtime` |
 | `byte_sink_contract` | dev-dependency on `abi` | leaves after `abi` |
-| `filesystem_contract` | dev-dependency on `filesystem_fixture`, which links it | the two leave together |
+| `file_system_contract` | dev-dependency on `file_system_fixture`, which links it | the two leave together |
 | `grant_plan` | dev-dependency on `primitive_benchmark_contract`, which stays | that test moves, or the crate leaves too |
 | `capability_manifest_note` | a test reads `../../fuzz/seeds/`, and nife's fuzz workspace builds it | its seeds and fuzz target leave with it |
 
@@ -98,7 +98,7 @@ order too (ruled 2026-11-01 UTC); only the offer waits.
 |---|---|---|
 | 0, the review pilot | `jh7110_entropy` | tag it, then the architect reads it; the others follow only as each review clears |
 | 1, the contract pilot | `block_roster_contract` | a leaf with no blocking reference; one writer in the kernel, one reader in `disk_surveyor`; its magic carries its version, so a reader refuses a mismatch today |
-| 2, leaves for `disk-tools` | `entropy_contract`, `clock_contract`, `socket_contract`, `globally_unique_identifier_partition_table`, `counter_frequency_contract`, then `filesystem_contract` with `filesystem_fixture`, then `abi` | cheapest first by crossing commits and outside dependents; `abi` last, at 66 crossing commits and 12 dependents |
+| 2, leaves for `disk-tools` | `entropy_contract`, `clock_contract`, `socket_contract`, `globally_unique_identifier_partition_table`, `counter_frequency_contract`, then `file_system_contract` with `file_system_fixture`, then `abi` | cheapest first by crossing commits and outside dependents; `abi` last, at 66 crossing commits and 12 dependents |
 | 3 | `address_space_layout`, then `current_cpu_contract`, then `user_mode_runtime`, then `interfaces_note` | after the `link.ld` test moves; `user_mode_runtime` links six crates of step 2. `interfaces_note`, the `INTERFACES` leaf crate (provisional), leaves like any leaf (below) |
 | 4, first package | `disk-tools` | leaves as soon as its 12 crates and `interfaces_note` have left; milestone 756's condition 4 has it carry the `INTERFACES` macro, and it never waits for `grant_plan` |
 | 5, leaves for `process-tools` | `byte_sink_contract`, `byte_glob`, `program_argument_contract`, `domain_name_system` | leaves |

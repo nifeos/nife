@@ -1,0 +1,19 @@
+Falsifies `file_system_contract::error::proofs::every_word_decodes_within_the_bound`.
+
+The defect: the bound dropped from `code`, so a negative word below `-MAXIMUM_ERRNO`
+negates and truncates as before instead of reading as `EPROTO`.
+
+Expected to fail: the harness's `contains(&decoded)` assertion, on any word below the bound.
+
+diff --git a/crates/file_system_contract/src/error.rs b/crates/file_system_contract/src/error.rs
+--- a/crates/file_system_contract/src/error.rs
++++ b/crates/file_system_contract/src/error.rs
+@@ -81,7 +81,7 @@ pub const fn word(code: i32) -> i64 {
+ pub const fn code(word: i64) -> Option<i32> {
+     if word >= 0 {
+         None
+-    } else if word >= -(MAXIMUM_ERRNO as i64) {
++    } else if word >= i64::MIN + 1 {
+         Some((-word) as i32)
+     } else {
+         Some(EPROTO)

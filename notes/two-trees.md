@@ -101,7 +101,7 @@ the filesystem server, kept apart by its own transfer window (calef, 2026-10-18 
 - Slot 1, its own request endpoint (READ), and slot 2, a report endpoint (WRITE).
 - Mapped read-only at the block channel's address: that window's pages. The controller fills them
   by DMA, and the server only copies out of them.
-- Mapped read/write directly above: `fs::CLIENT_WINDOWS` client windows.
+- Mapped read/write directly above: `file_system::CLIENT_WINDOWS` client windows.
 
 Window 0 is the file service's own window 0 frame, not the pool's first window. The boot shell holds
 both trees and maps one page for both, which is sound because it has one `CALL` in flight. The pool's

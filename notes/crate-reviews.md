@@ -107,8 +107,8 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`test_and_set_lock`](crate-reviews/test-and-set-lock.md) | 1109 | cleared to move (2026-11-20 UTC, `publish = false`, no tag, no publish); the first tag waits for a litmus run on real Arm and RISC-V hardware |
 | [`boot_ladder`](crate-reviews/boot-ladder.md) | 1078 | ready for review |
 | [`capability_table`](crate-reviews/capability-table.md) | kernel | cleared to move (2026-11-21 UTC, no tag, no publish); milestone 1081 (`capability_table`: what an outside maintainer would fix before it leaves) tracks the move |
-| [`filesystem_contract`](crate-reviews/filesystem-contract.md) | 2 | ready for review; one clearance of the repository shared with `filesystem_fixture`, and the names |
-| [`filesystem_fixture`](crate-reviews/filesystem-fixture.md) | 2 | ready for review with `filesystem_contract`; the item names wait for the rename lane of milestone 1091 (`filesystem_fixture`: what an outside maintainer would fix before it leaves) |
+| [`file_system_contract`](crate-reviews/filesystem-contract.md) | 2 | ready for review; one clearance of the repository shared with `file_system_fixture`, and the names |
+| [`file_system_fixture`](crate-reviews/filesystem-fixture.md) | 2 | ready for review with `file_system_contract`; the item names wait for the rename lane of milestone 1091 (`file_system_fixture`: what an outside maintainer would fix before it leaves) |
 | [`byte_sink_contract`](crate-reviews/byte-sink-contract.md) | contract | ready for review; milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves) asks for the clearance |
 | [`line_editor`](crate-reviews/line-editor.md) | 1098 | ready for review; the move waits for the item 3 rename lane |
 | [`terminal_contract`](crate-reviews/terminal-contract.md) | contract | ready for review; the move waits for its interface number and the reserved-bit ruling |

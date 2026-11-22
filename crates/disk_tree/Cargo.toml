@@ -10,7 +10,7 @@ license.workspace = true
 # a block range. The server supplies the two endpoints and the pages.
 
 [dependencies]
-filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
+file_system_contract = { version = "0.1.0", path = "../file_system_contract" }
 
 [lints]
 workspace = true
