@@ -630,7 +630,7 @@ pub(super) fn background(nav: &mut Nav, cmd: &[u8]) {
         Err(Say::Cannot(r)) => return refuse(spec, r),
         Err(said) => return say(said),
     };
-    match program_table::plan(&spec, holdings(nav), expanded) {
+    match program_table::plan(&spec, &holdings(nav), &expanded) {
         Err(r) => refuse(spec, r),
         Ok((program, endow)) if endow.interruptible => {
             spawn_background(&mut nav.jobs, program, endow);

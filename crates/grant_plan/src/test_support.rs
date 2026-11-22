@@ -145,7 +145,7 @@ pub(crate) fn plan_named_stage(
         return Err(Refusal::IsolationNotBuilt);
     }
     let manifest = rows::named(run.program).ok_or(Refusal::NoSuchProgram)?;
-    plan_against_with_streams(run, manifest, shell_holdings, expanded, streams)
+    plan_against_with_streams(run, manifest, &shell_holdings, &expanded, &streams)
 }
 
 /// [`plan_named_stage`] with no operators on the line.
@@ -172,7 +172,7 @@ pub(crate) fn plan_against(
     m: Manifest,
     shell_holdings: ShellHoldings,
 ) -> Result<Endowment, Refusal> {
-    crate::plan_against(run, m, shell_holdings, Expansion::none())
+    crate::plan_against(run, m, &shell_holdings, &Expansion::none())
 }
 
 /// A manifest no shipped program declares yet: one endowed a readable file. Checked through
@@ -260,12 +260,12 @@ pub(crate) fn plan_line(text: &[u8], shell_holdings: ShellHoldings) -> Planned {
     let l = line::split(text).map_err(|r| (0, r))?;
     let out = match l.output {
         Some(t) => {
-            Some(output_file_grant(t, shell_holdings).map_err(|r| (l.stage_count() - 1, r))?)
+            Some(output_file_grant(t, &shell_holdings).map_err(|r| (l.stage_count() - 1, r))?)
         }
         None => None,
     };
     let inp = match l.input {
-        Some(t) => Some(input_file_grant(t, shell_holdings).map_err(|r| (0, r))?),
+        Some(t) => Some(input_file_grant(t, &shell_holdings).map_err(|r| (0, r))?),
         None => None,
     };
     // A `2>` target is designated exactly as a `>` target is, and it is one destination for the
@@ -273,7 +273,7 @@ pub(crate) fn plan_line(text: &[u8], shell_holdings: ShellHoldings) -> Planned {
     // it, so every stage sees the same answer here.
     let diag = match l.diagnostics {
         Some(t) => Some((
-            output_file_grant(t, shell_holdings).map_err(|r| (l.stage_count() - 1, r))?,
+            output_file_grant(t, &shell_holdings).map_err(|r| (l.stage_count() - 1, r))?,
             l.diagnostics_mode(),
         )),
         None => None,

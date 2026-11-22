@@ -436,7 +436,7 @@ fn plan_as(m: Manifest, text: &[u8], streams: Streams) -> Endowment {
     let CommandLine::Run(r) = parse(text) else {
         panic!()
     };
-    plan_against_with_streams(&r, m, WITH_DIRECTORY, Expansion::none(), streams).unwrap()
+    plan_against_with_streams(&r, m, &WITH_DIRECTORY, &Expansion::none(), &streams).unwrap()
 }
 
 /// **The declaration reaches the endowment**, which is what lets a whole line be checked rather

@@ -424,8 +424,8 @@ fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
         super::plan_against(
             &r,
             READS_A_FILE,
-            WITH_DIRECTORY,
-            Expansion::new(0, expanded(b"*.txt").unwrap()),
+            &WITH_DIRECTORY,
+            &Expansion::new(0, expanded(b"*.txt").unwrap()),
         ),
         Err(Refusal::AmbiguousFile),
     );
@@ -436,8 +436,8 @@ fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
     let g = super::plan_against(
         &r,
         READS_A_FILE,
-        WITH_DIRECTORY,
-        Expansion::new(0, expanded(b"*.log").unwrap()),
+        &WITH_DIRECTORY,
+        &Expansion::new(0, expanded(b"*.log").unwrap()),
     )
     .unwrap()
     .file

@@ -53,11 +53,11 @@ fn plan_line(text: &[u8], holdings: ShellHoldings) -> Result<Vec<Endowment>, Ref
     let split = line::split(text)?;
     let output = split
         .output
-        .map(|name| output_file_grant(name, holdings))
+        .map(|name| output_file_grant(name, &holdings))
         .transpose()?;
     let input = split
         .input
-        .map(|name| input_file_grant(name, holdings))
+        .map(|name| input_file_grant(name, &holdings))
         .transpose()?;
     let mut plans = Vec::new();
     for (i, stage) in split.stages().iter().enumerate() {
@@ -75,9 +75,9 @@ fn plan_line(text: &[u8], holdings: ShellHoldings) -> Result<Vec<Endowment>, Ref
         plans.push(plan_against_with_streams(
             &run,
             COUNT,
-            holdings,
-            Expansion::none(),
-            streams,
+            &holdings,
+            &Expansion::none(),
+            &streams,
         )?);
     }
     Ok(plans)

@@ -292,7 +292,7 @@ fn a_grant_under_a_mount_point_is_in_the_mounted_tree() {
     );
 
     // The redirection planner is the same resolver.
-    let g = output_file_grant(b"/media/usb/out", mounted()).unwrap();
+    let g = output_file_grant(b"/media/usb/out", &mounted()).unwrap();
     assert_eq!(
         (g.side, g.directory),
         (
@@ -675,8 +675,13 @@ fn a_designation_becomes_one_grant_at_the_current_directory() {
     let run = parse_invocation(b"search needle src");
     let mut d = Designation::none();
     d.try_add_name(b"src", true).unwrap();
-    let e =
-        super::plan_against(&run, rows::SEARCH, WITH_DIRECTORY, Expansion::designated(d)).unwrap();
+    let e = super::plan_against(
+        &run,
+        rows::SEARCH,
+        &WITH_DIRECTORY,
+        &Expansion::designated(d),
+    )
+    .unwrap();
     let g = e.directory.expect("src was designated");
     assert_eq!(g.directory, WITH_DIRECTORY.working_directory);
     assert_eq!(g.names.only(), Some(&b"src"[..]));
@@ -685,8 +690,8 @@ fn a_designation_becomes_one_grant_at_the_current_directory() {
     let none = super::plan_against(
         &parse_invocation(b"search needle"),
         rows::SEARCH,
-        WITH_DIRECTORY,
-        Expansion::designated(Designation::none()),
+        &WITH_DIRECTORY,
+        &Expansion::designated(Designation::none()),
     )
     .unwrap();
     assert_eq!(
@@ -699,8 +704,8 @@ fn a_designation_becomes_one_grant_at_the_current_directory() {
     let e = super::plan_against(
         &parse_invocation(b"search needle ."),
         rows::SEARCH,
-        WITH_DIRECTORY,
-        Expansion::designated(here),
+        &WITH_DIRECTORY,
+        &Expansion::designated(here),
     )
     .unwrap();
     assert!(
@@ -713,7 +718,7 @@ fn a_designation_becomes_one_grant_at_the_current_directory() {
         ..WITH_DIRECTORY
     };
     assert_eq!(
-        super::plan_against(&run, rows::SEARCH, holds_none, Expansion::designated(d)),
+        super::plan_against(&run, rows::SEARCH, &holds_none, &Expansion::designated(d)),
         Err(Refusal::NoSuchCapability(CapabilityKind::File))
     );
 }
@@ -732,8 +737,8 @@ fn a_designation_under_a_mount_point_is_in_the_mounted_tree() {
     let e = super::plan_against(
         &parse_invocation(b"search needle n1"),
         rows::SEARCH,
-        shell_holdings,
-        Expansion::designated(d),
+        &shell_holdings,
+        &Expansion::designated(d),
     )
     .unwrap();
     let g = e.directory.expect("n1 was designated");
