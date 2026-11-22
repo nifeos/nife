@@ -38,8 +38,8 @@ so each later name review applies it rather than choosing again.
 
 ## The decision
 
-How a word of a message and a result word of a system call are named, in identifiers and in prose,
-across nife, its `std` overlay and the kernel.
+What nife calls a word of a message and a result word of a system call, in identifiers and in
+prose, across nife, its `std` overlay and the kernel.
 
 ## Recommendation: (a), spell the position out, in the words already ruled
 
@@ -48,9 +48,9 @@ across nife, its `std` overlay and the kernel.
 - A result word, including a `CALL`'s reply, is `result_word_zero` to `result_word_two`, the spelling
   `user_mode_runtime` already uses for `reply`.
 - A system call's argument that is not a message word stays `argument_zero` and onward, as ruled.
-- Once a word is decoded, the value takes the name of what it is (`offset`, `handle`, `operation`).
-  That is design/naming.md's general rule and most of the tree already does it; it is stated here
-  so nobody reads (a) as licence to pass `word_one` around after its meaning is known.
+- Once the code decodes a word, the value takes the name of what it is (`offset`, `handle`, `operation`).
+  That is design/naming.md's general rule and most of the tree already does it; this section states it
+  so nobody reads (a) as license to pass `word_one` around once its meaning is plain.
 - Prose uses the same names in backticks (`word_one`), so a reader meets one spelling in the
   documentation and in the signature beneath it. A wire table in notes/abi.md lists the positions
   as `word_zero` to `word_five`, beside the registers that carry them on each architecture.
@@ -59,7 +59,7 @@ across nife, its `std` overlay and the kernel.
 
 The reason is elegance more than effort: one spelling for one concept, the same in the
 documentation and in the code it documents, and already the spelling two packages carry. The two
-rulings that agree are kept, and only `first_word` and `second_word` change.
+rulings that agree stand, and only `first_word` and `second_word` change.
 
 Would I still choose this if every option cost the same? Yes. Option (c) costs the least and loses
 on that test, because it leaves the tree writing one concept two or more ways.
@@ -73,7 +73,7 @@ Checked on `main` at `nifeos/nife@830de0623`:
 - The names are live in every layer the convention reaches: the kernel (39 code uses in 8 files),
   the `std` overlay (82 code uses in 9 files), and 23 other packages.
 - `Message` and `Request` in `user_mode_runtime` carry public fields `w0`, `w1` and `w2`. The
-  struct names were ratified on 2026-11-20; the field names were not part of that ruling.
+  ruling of 2026-11-20 ratified the struct names and left the field names out.
 
 ## The count
 
@@ -82,14 +82,15 @@ All counts are of lowercase identifiers with an underscore-separated segment fro
 The headline numbers come from one command:
 
 ```sh
-P='(?<![A-Za-z0-9_.])(?:[a-z0-9]+_)*_?[wr][0-5](?:_[a-z0-9]+)*(?![A-Za-z0-9_])'
-git grep -I -o -P "$P" -- ':!vendor' ':!bench' ':!*.s' ':!*.S' ':!*.svg' | wc -l   # 2245
-git grep -I -l -P "$P" -- ':!vendor' ':!bench' ':!*.s' ':!*.S' ':!*.svg' | wc -l   # 257
+P='(?<![A-Za-z0-9_.])(?:[a-z0-9]+_)*_?(?:[wr][0-5])(?:_[a-z0-9]+)*(?![A-Za-z0-9_])'
+git grep -I -o -P "$P" 830de0623 -- ':!vendor' ':!bench' ':!*.s' ':!*.S' ':!*.svg' | wc -l   # 2245
+git grep -I -l -P "$P" 830de0623 -- ':!vendor' ':!bench' ':!*.s' ':!*.S' ':!*.svg' | wc -l   # 257
 ```
 
 The split comes from a classifier posted on the pull request. It strips Rust comments and strings,
-and tells a parameter, a struct field, a binding and a use apart by where the name sits. A
-heuristic, so each row is within a few uses of the truth; the totals are exact.
+and tells a parameter, a struct field, a binding and a use apart by where the name sits. It is a
+heuristic, so each row may be off by a few uses. It also reads the paths the commands exclude and
+counts them as foreign, which is why its rows add up to more than 2245.
 
 | Kind | Uses | Files |
 |---|---:|---:|
@@ -140,7 +141,7 @@ As set out under the recommendation.
   regenerated, and `first_word`/`second_word` in `domain_name_resolution_contract` (about 30 uses
   in 5 files). About 260 files in all; `clock_contract` in its own repository.
 - Keeps: the `user_mode_runtime` and `byte_sink_contract` rulings exactly.
-- The brief's spelling, `request_word_1` and `reply_word_0`, was weighed and loses. A digit inside a
+- I weighed a one-based spelling, `request_word_1` and `reply_word_0`, and it loses. A digit inside a
   name is the shape design/naming.md spells out elsewhere, and one-based numbering would turn
   position 0 into `_1` and break the mapping to the wire tables. Both would also reopen two rulings
   made this week.
@@ -152,11 +153,11 @@ As set out under the recommendation.
 ### (b) Name every word by its meaning, per verb
 
 `destination_handle(w1: u64)` would become `destination_handle(packed: u64)` or similar, and
-`offset` would replace `w1` wherever a `READ`'s second word is meant.
+`offset` would replace `w1` wherever the code means a `READ`'s second word.
 
 - It fails where the code is generic. `send(slot, w0, w1, w2)` and the trap wrappers in
   `user_mode_runtime` carry words with no meaning of their own, and a word such as `READ`'s first one
-  packs three values, so it has no single meaning to be named for.
+  packs three values, so no single meaning can name it.
 - It is a judgement at each of 593 declaration sites, and the sender and the receiver of one word
   would name it differently.
 - Where the code has decoded a value, (b) is already the rule, and (a) keeps it.
@@ -164,11 +165,11 @@ As set out under the recommendation.
 ### (c) Keep `w0`..`w5`, `r0`..`r2` and define them in design/naming.md
 
 - Changes: design/naming.md gains a definition and the abbreviations join the stay list. No code
-  changes, unless the three package rulings are reverted, which would be 38 files for `word_zero` and
+  changes, unless calef reverts the three package rulings, which would touch 38 files for `word_zero` and
   its siblings plus `domain_name_resolution_contract` and `user_mode_runtime`'s `reply`.
 - Costs: either the tree keeps two spellings for one concept, or three rulings made in the last
   week are undone. The stay list is for terms whose expansion nobody says (§154 (the acronym test is
-  whether the phrase is spoken, applied recursively)); "word zero" is said aloud, so `w0` does not
+  whether the phrase is spoken, applied recursively)); people say "word zero" aloud, so `w0` does not
   pass that test.
 - Cheapest, and the only option whose case is effort.
 
@@ -189,7 +190,7 @@ The modules where a word is one register: `user_mode_runtime`'s `system_call.rs`
 
 Read for this decision unless marked otherwise.
 
-- RISC-V SBI binary encoding (`riscv-sbi-doc`, `binary-encoding.adoc`): arguments are named by
+- RISC-V SBI binary encoding (`riscv-sbi-doc`, `binary-encoding.adoc`): the specification names arguments by
   register, `a0` to `a5`, with the function in `a6` and the extension in `a7`. The two results are a
   struct named by meaning, `struct sbiret { long error; long value; }`, in `a0` and `a1`.
 - Linux `syscall(2)` (man7.org): the calling-convention tables name the positions `arg1` to `arg7`,
@@ -198,19 +199,18 @@ Read for this decision unless marked otherwise.
 - seL4 (`libsel4`, `functions.h` and the Arm `syscalls.h`): words are message registers, reached by
   index with `seL4_GetMR(int i)` and `seL4_SetMR(int i, seL4_Word mr)`. The fast-path wrappers
   `seL4_CallWithMRs` and `seL4_SendWithMRs` take `seL4_Word *mr0` to `*mr3`: abbreviated and
-  zero-based, the shape nife has now. That the seL4 manual defines `MR0` as a term is recalled, not
-  read.
-- Fuchsia (`zx_channel_call` reference): a message is bytes and handles, and no word is named at
-  all. The call's parameters are named by meaning: `handle`, `options`, `deadline`, `args`,
+  zero-based, the shape nife has now. I recall, and did not read, that the seL4 manual defines `MR0` as a term.
+- Fuchsia (`zx_channel_call` reference): a message is bytes and handles, and nothing names a word
+  at all. The call's parameters take names by meaning: `handle`, `options`, `deadline`, `args`,
   `actual_bytes`, `actual_handles`.
 - Redox (`redox_syscall` 0.9.5, read from the local cargo registry): the raw calls take single
   letters, `syscall4(a, b, c, d, e)`. The scheme protocol's `Sqe` holds `opcode`, `tag`,
   `args: [u64; 6]` and `caller`, and `Cqe` holds a `result`: an indexed array for the words and a
-  meaning name for the answer. An older `Packet { a, b, c, d }` is recalled, not read.
+  meaning name for the answer. I recall an older `Packet { a, b, c, d }` and did not read it.
 
 Where nife differs: like seL4, a nife message is positional words whose meaning each contract sets,
 so a position needs a name, which Fuchsia's byte messages never do. Unlike seL4 and Redox, nife
-spells its names out, so the position is spelled (`word_zero`) where seL4 writes `mr0` and Redox
+spells its names out, so nife spells the position (`word_zero`) where seL4 writes `mr0` and Redox
 writes `a`. The result side follows SBI and Linux in naming the answer for what it is, a result.
 
 ## A concrete example
@@ -238,16 +238,16 @@ and at the server, once decoded: `let destination = fs::destination_handle(word_
 (a) is a mechanical rename, but it is not a one-line `sed`. About 10 files already hold both
 `w1` and `word_one` (a `MessageWords` field beside a local), so each of those needs reading for a
 shadowed name. rustfmt rewraps the lines that grow. The 16 falsification patches quote the old
-lines and must be regenerated and replayed. The Kani harnesses and mutation baselines name
+lines, so the lane regenerates and replays each one. The Kani harnesses and mutation baselines name
 functions, not these parameters, so they should not move; the rename lane checks that. One lane,
 in a few large commits by area, after the in-flight renames of the same files land.
 
 ## How reversible it is
 
-A two-way door today. No nife crate is published, a Rust parameter's name is not part of a crate's
+A two-way door today. nife has published no crate, a Rust parameter's name is not part of a crate's
 compatibility promise, and nothing outside the tree reads these names. The public struct fields
 (`Message::w0` and the rest, `Verb::carries_w1`) become one-way at each crate's first release, which
-is why the convention is wanted before the release reviews reach them. The wire format does not
+is why the convention should come before the release reviews reach them. The wire format does not
 change under any option.
 
 ## What waits on this
