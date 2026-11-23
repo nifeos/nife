@@ -28,3 +28,7 @@ publish = false
 # would add nothing the oracle reads.
 [dependencies]
 rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/nifeos/rsext4", rev = "f1d6776e30800ccabe8a623d654a76389687aca7", default-features = false }
+
+# `cfg(kani)` gates the harnesses in tests/parser_proofs.rs, which `script/verify` runs.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }

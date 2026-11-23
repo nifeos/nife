@@ -374,6 +374,43 @@ FALSIFICATION = re.compile(
 # third such file and is already outside every caller's file set.
 NOT_A_PACKAGE = ('helpers/', 'patches/')
 
+# Workspace roots apart from the main one whose harnesses `script/verify` proves, each a row of its
+# crate table run by `--manifest-path`. A workspace of its own keeps a dependency out of every
+# shipping lockfile: `tools/ext4_oracle` holds the harnesses milestone 190 (ext4, read and write)
+# states for `rsext4`, a host-only dependency by the ruling its Cargo.toml cites. The text-only count above already counts
+# them, so `script/lint`'s two harness walks and `script/falsifications` read these packages through
+# `proved_packages` as well, and the three counts keep agreeing. Name: provisional.
+PROVED_WORKSPACES = ('tools/ext4_oracle',)
+
+
+def proved_packages(repository_root, main_metadata):
+    """Every package a proof can reach, as (package, repository-relative directory) pairs.
+
+    `main_metadata` is the main workspace's `cargo metadata`, which each caller already holds; each
+    root in PROVED_WORKSPACES adds its own `cargo metadata --no-deps --locked`. A package at the
+    repository root and every package outside the repository (a registry dependency) are left out,
+    as the callers always left them out. A target's `src_path` is left absolute; the caller relativizes
+    it against `repository_root`.
+    """
+    import json
+    import os
+    import subprocess
+
+    metas = [main_metadata]
+    for workspace in PROVED_WORKSPACES:
+        metas.append(json.loads(subprocess.run(
+            ['cargo', 'metadata', '--format-version', '1', '--locked', '--no-deps',
+             '--manifest-path', os.path.join(repository_root, workspace, 'Cargo.toml')],
+            capture_output=True, text=True, check=True).stdout))
+    out = []
+    for meta in metas:
+        for package in meta['packages']:
+            rel = os.path.relpath(os.path.dirname(package['manifest_path']), repository_root)
+            if rel == '.' or rel.startswith('..'):
+                continue
+            out.append((package, rel))
+    return out
+
 
 def falsification_records(text):
     """The state of each `Falsification:` record that annotates a `#[kani::proof]`.
