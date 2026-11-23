@@ -1,5 +1,5 @@
 //! The file caretaker: a directory capability attenuated to one file (milestone 31 phase 2,
-//! DECISIONS §27, nifeos/record:notes/grant-expression.md).
+//! DECISIONS §27 (the filesystem service: a capability-shaped contract), nifeos/record:notes/grant-expression.md).
 //!
 //! It holds the FS service's directory capability ([`FS`]), opens the granted name once at startup,
 //! and serves the same [`file_system_contract::file_system`] protocol on [`CLIENT`] with a namespace of

@@ -1,4 +1,4 @@
-//! **`rm`: remove a name, and with `-r` the tree under it** (milestone 47, nifeos/record:notes/rm.md).
+//! **`rm`: remove a name, and with `-r` the tree under it** (milestone 47 (navigation and naming), nifeos/record:notes/rm.md).
 //!
 //! A **program, not a shell builtin**: a builtin would run with the shell's entire endowment, where
 //! a program takes an explicit attenuated grant, so `caps rm -r logs` prints the subtree at risk

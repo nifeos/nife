@@ -1,4 +1,4 @@
-//! **`pmap`: what is mapped, and who is allowed to ask** (milestone 126, nifeos/record:notes/process-view.md,
+//! **`pmap`: what is mapped, and who is allowed to ask** (milestone 126 (the `procps` package, now `process-tools`), nifeos/record:notes/process-view.md,
 //! DECISIONS §114).
 //!
 //! Walk one address space with `moho_abi::address_space::LIST`, then say what it found on one stream

@@ -89,7 +89,7 @@ pub(super) fn dispatch(nav: &mut Nav, cmd: &[u8]) {
     }
 }
 
-/// **Run a command and say how long it took** (milestone 86, nifeos/record:notes/time-command.md).
+/// **Run a command and say how long it took** (milestone 86 (`time`: the shell times a command), nifeos/record:notes/time-command.md).
 ///
 /// The tail goes back through [`dispatch`], so what you time is what you run: a pipeline as a
 /// pipeline, a builtin as a builtin, a refusal as a refusal. The command is told nothing. The number

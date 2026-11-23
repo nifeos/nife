@@ -112,7 +112,7 @@ pub(super) fn redirecting(rights: u64) -> ! {
         // diagnostics ride it, so the operator names nothing and the line does not run. The
         // sentence is the assertion; what it is *not* is a permission.
         b"wc out.txt 2> err.txt",
-        // ---- milestone 67's grammar, on this same shell (nifeos/record:notes/swish-language.md) ----
+        // ---- milestone 67 (`swish` the language)'s grammar, on this same shell (nifeos/record:notes/swish-language.md) ----
         //
         // On this shell, not a seventh: another live scripted shell puts `time_tests` over the
         // frame pool (`nifeos/record:notes/swish-language/witness.md`, "One witness, not a seventh").

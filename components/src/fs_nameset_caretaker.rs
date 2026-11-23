@@ -1,5 +1,5 @@
 //! The nameset caretaker: a directory capability attenuated to the names a pattern matched
-//! (milestone 47's globbing lane, nifeos/record:notes/glob-grant.md).
+//! (milestone 47 (navigation and naming)'s globbing lane, nifeos/record:notes/glob-grant.md).
 //!
 //! `fs_file_caretaker` narrows a directory capability to one file and `fs_subtree_caretaker` to
 //! one subtree; this narrows it to a set of names in one directory, which is what `rm *.txt`

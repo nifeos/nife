@@ -1,5 +1,5 @@
 //! **`printenv`**: print the inert-configuration page (milestone 47's environment-variable fork,
-//! DECISIONS §111, nifeos/record:notes/env-config.md).
+//! DECISIONS §111 (inert configuration is a read-only page), nifeos/record:notes/env-config.md).
 //!
 //! Read a page, print what it carries. Its two capabilities can change nothing: `date`'s shape,
 //! [`grant_contract::Manifest::configuration`] in place of [`grant_contract::Manifest::clock`]. The page
