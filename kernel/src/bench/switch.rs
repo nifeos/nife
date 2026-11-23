@@ -34,7 +34,7 @@ pub(super) fn yield_switch() {
 /// a device capability is when the device has no page: x86 port I/O).
 ///
 /// [`yield_switch`] plus one [`crate::arch::segments::bench_write_io_bitmap`] call on every resume
-/// in both threads; read against it from the same boot. See notes/benchmarks/x86-tss-iomap.md.
+/// in both threads; read against it from the same boot. See nifeos/record:notes/benchmarks/x86-tss-iomap.md.
 #[cfg(target_arch = "x86_64")]
 pub(super) fn tss_iomap_switch() {
     use core::sync::atomic::AtomicU8;
@@ -80,7 +80,7 @@ pub(super) fn tss_iomap_switch() {
 /// [`yield_switch`] with the two threads installing different grants on resume, none and COM1's
 /// production `(0x3F8, 8)`; read against it from the same boot. Nothing runs `in`/`out`, and the
 /// loop restores `None` so the TSS is left denying all ports. See
-/// notes/benchmarks/x86-tss-iomap.md.
+/// nifeos/record:notes/benchmarks/x86-tss-iomap.md.
 #[cfg(target_arch = "x86_64")]
 pub(super) fn tss_iomap_lazy_switch() {
     const COM1: Option<(u16, u16)> = Some((0x3F8, 8));

@@ -24,7 +24,7 @@
 // ## 2. Bits 63:48 are not translated, so ONE table serves as both maps
 //
 // A virtual address `PA + 0xffff_0000_0000_0000` has the same L0/L1/L2/L3 indices as `PA`
-// itself, because the index only ever reads bits 47:12 (see notes/page-tables.md). So the
+// itself, because the index only ever reads bits 47:12 (see nifeos/record:notes/page-tables.md). So the
 // identity map and the high-half map are **the same table contents**, and we simply point
 // TTBR0 and TTBR1 at the same root.
 //
@@ -61,9 +61,9 @@
 //
 // After step 8, everything is virtual and Rust never has to think about this again.
 //
-// See notes/higher-half.md.
+// See nifeos/record:notes/higher-half.md.
 
-// CFI (call-frame information) below: see notes/cfi-unwind.md for what these directives mean and
+// CFI (call-frame information) below: see nifeos/record:notes/cfi-unwind.md for what these directives mean and
 // why this file's shape is `.cfi_undefined lr` almost everywhere. Short version: nothing in this
 // file is reached by `bl`, so `lr` (x30) never holds a real return address here, and inventing a
 // CFA formula anyway would tell a debugger to unwind into whatever garbage x30 last held. Marking
@@ -400,7 +400,7 @@ park:
     .cfi_startproc
     .cfi_undefined lr
     // wfi, not wfe: QEMU idles the host thread on wfi and merely spins on wfe. A parked core
-    // that burns 100% of a host CPU is not parked. See notes/qemu.md.
+    // that burns 100% of a host CPU is not parked. See nifeos/record:notes/qemu.md.
     wfi
     b       park
     .cfi_endproc

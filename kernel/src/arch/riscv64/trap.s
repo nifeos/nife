@@ -21,10 +21,10 @@
 
 # `.text.hot.*` puts trap_entry, and the trap_return it falls through to, in the pinned hot
 # section: milestone 796 (pin the hot trap path's placement). See
-# notes/benchmarks/kernel-footprint-and-caches.md, "The hot section".
+# nifeos/record:notes/benchmarks/kernel-footprint-and-caches.md, "The hot section".
 .section ".text.hot.trap_entry", "ax"
 .balign 4                       # stvec direct mode needs the vector 4-byte aligned
-# CFI: see notes/cfi-unwind.md, "The hard case: a trap is not a call" (written for aarch64's
+# CFI: see nifeos/record:notes/cfi-unwind.md, "The hard case: a trap is not a call" (written for aarch64's
 # vectors.s; the same reasoning applies here). `.cfi_signal_frame` marks this as an
 # interrupt/exception frame, not an ordinary call. The GP-register offsets below are correct, plain
 # arithmetic on this function's own stores and let a debugger recover x1..x31 from any PC in this
@@ -197,7 +197,7 @@ trap_return:
     #     compile-time assertion next to it that keeps SIE out; see exceptions.rs.
     #
     # If you add a third way to build a frame, that assertion is the thing to copy. See
-    # notes/arch-audit.md, finding 1.
+    # nifeos/record:notes/arch-audit.md, finding 1.
 
     ld      t0, 35*8(sp)        # sstatus
     andi    t1, t0, 0x100       # SPP (bit 8): 1 = return to S-mode, 0 = return to U-mode
@@ -224,7 +224,7 @@ trap_return:
     # and switch_to preserves it across a migration), so for an S-mode return we KEEP it and skip the
     # frame's copy. t0 still holds the frame's sstatus (loaded just above for the CSR write); SPP
     # (bit 8) is 1 for a return to S-mode. This is the return-path mirror of trap_entry's
-    # `ld tp, 8(t0)`. See notes/riscv-port.md.
+    # `ld tp, 8(t0)`. See nifeos/record:notes/riscv-port.md.
     andi    t1, t0, 0x100
     bnez    t1, 4f
     ld      x4,  4*8(sp)

@@ -3,8 +3,8 @@
 //! With `--features job_mix`, [`run`] replaces the boot tour's halt: it builds a pool of
 //! [`job_mix::MAXIMUM_TASKS`] tasks (`fixtures/src/job_mix_task.rs`) once, releases the first N per
 //! subrun over [`job_mix::TASK_SWEEP`], prints each point, then [`job_mix::DONE`], and halts. The
-//! number feeds §96 (process kernel or event kernel, and how to decide it). See notes/job-mix.md
-//! and notes/job-mix/supervisor.md.
+//! number feeds §96 (process kernel or event kernel, and how to decide it). See nifeos/record:notes/job-mix.md
+//! and nifeos/record:notes/job-mix/supervisor.md.
 
 //! # BUGS
 //! - A single boot's jobs-per-minute is not a result: placement spans the rate fifteenfold.
@@ -134,7 +134,7 @@ fn spawn_echo_servers(
 /// Spawn every task with its five grants and record the core each was placed on.
 ///
 /// The grants are in `crates/job_mix`'s slot order, each the least its use needs. See
-/// notes/job-mix/supervisor.md.
+/// nifeos/record:notes/job-mix/supervisor.md.
 fn spawn_tasks(image: &'static [u8], pool: &Pool, placed: &mut [u8; ECHO_SERVERS + MAXIMUM_TASKS]) {
     let &Pool {
         report,
@@ -194,7 +194,7 @@ fn print_preamble(cpus: usize, hertz: u64, placed: &[u8; ECHO_SERVERS + MAXIMUM_
     );
     println!(
         "job-mix: this measures THIS kernel under multi-tasking load; it compares nothing against an \
-         event kernel and does not decide design/decisions/0096-process-kernel-or-event-kernel.md"
+         event kernel and does not decide nifeos/record:design/decisions/0096-process-kernel-or-event-kernel.md"
     );
     println!(
         "job-mix: each point is the median of {REPEATS} repeats, with the fastest and slowest \
@@ -205,8 +205,8 @@ fn print_preamble(cpus: usize, hertz: u64, placed: &[u8; ECHO_SERVERS + MAXIMUM_
     print_census(placed);
     println!(
         "{CENSUS} placement decides throughput on real silicon by up to fifteenfold \
-         (notes/soak.md, milestone 240), so a jobs-per-minute figure from ONE boot is a draw and \
-         not a result; notes/job-mix.md's procedure asks for repeated boots"
+         (nifeos/record:notes/soak.md, milestone 240), so a jobs-per-minute figure from ONE boot is a draw and \
+         not a result; nifeos/record:notes/job-mix.md's procedure asks for repeated boots"
     );
 }
 
@@ -348,7 +348,7 @@ fn print_lock_wait(tasks: usize) {
 ///
 /// `placed[i]` is where thread `i` was put at spawn, servers first and then tasks, and `u8::MAX`
 /// means nothing knows yet. Tokens are `S<n>` for a server and `T<n>` for a task. It draws no
-/// conclusion from the placement. See notes/soak/placement-census.md.
+/// conclusion from the placement. See nifeos/record:notes/soak/placement-census.md.
 fn print_census(placed: &[u8]) {
     println!("{CENSUS} where the kernel placed each thread at spawn: S=echo server, T=task");
     let mut accounted = 0usize;

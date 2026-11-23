@@ -34,7 +34,7 @@ moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev 
 address_space_identifier = { version = "0.1.0", path = "../crates/address_space_identifier" }
 # The corruption canary's arm/check/disarm serialization (2026-08-15), lifted out of `sched.rs`
 # after its hand-written two-flag protocol raced: the kernel calls the loom-searched gate rather
-# than keeping a copy of it, the third retrofit of work_steal_slot's move. See notes/interleaving.md.
+# than keeping a copy of it, the third retrofit of work_steal_slot's move. See nifeos/record:notes/interleaving.md.
 #
 # **BUGS: every `--features bench` build warns that this dependency is unused, on every
 # architecture, and that is a deliberate exception and a foot gun** (calef, 2026-10-03 UTC, on PR
@@ -233,13 +233,13 @@ generational_table = { version = "0.1.0-pre.3", git = "https://github.com/nifeos
 # The lock under `InterruptSafeMutualExclusionLock`: an Acquire compare-exchange and a Release store, written in
 # the
 # tree so loom can check them, the fourth retrofit of work_steal_slot's move. Its `unsafe` and what
-# checks it: notes/kernel-dependency-unsafe.md. See notes/interleaving.md.
+# checks it: nifeos/record:notes/kernel-dependency-unsafe.md. See nifeos/record:notes/interleaving.md.
 test_and_set_lock = { version = "0.1.0", path = "../crates/test_and_set_lock" }
 # The work-steal handshake (milestone 80): the one lock-free cross-core protocol in the scheduler,
 # lifted out of `cpu.rs` so a model checker can reach it. The kernel calls the checked type rather
 # than keeping a second copy of the compare-exchange, the same move `memory_regions`,
 # `inter_process_communication` and `direct_memory_access_validator` made for Kani. See
-# notes/interleaving.md.
+# nifeos/record:notes/interleaving.md.
 work_steal_slot = { version = "0.1.0", path = "../crates/work_steal_slot" }
 # The VT engine, and through it the font (milestone 29 (a display terminal: framebuffer, virtio-gpu,
 # and a foreign component)'s text increment, milestone 142 (a text display good enough that people
@@ -250,13 +250,13 @@ work_steal_slot = { version = "0.1.0", path = "../crates/work_steal_slot" }
 video_terminal = { version = "0.1.0", path = "../crates/video_terminal" }
 # The scheduler's block/wake handshake, so the kernel calls the loom-searched transitions rather
 # than keeping a copy of them: the second retrofit of work_steal_slot's move, asked for by the
-# fourth bench stop's audit. See notes/interleaving.md.
+# fourth bench stop's audit. See nifeos/record:notes/interleaving.md.
 thread_wake_handshake = { version = "0.1.0", path = "../crates/thread_wake_handshake" }
 
 # **A test-build dependency only** (milestone 781 (measure kernel and service coverage under QEMU),
 # ruled 2026-10-27). `minicov` is the LLVM profiling runtime without a libc: the `.profraw`
 # serializer behind `-C instrument-coverage`. Optional, behind `coverage`, so no shipping build links
-# it. Pinned exactly. Audit and bar: notes/kernel-coverage.md.
+# it. Pinned exactly. Audit and bar: nifeos/record:notes/kernel-coverage.md.
 minicov = { version = "=0.3.9", default-features = false, optional = true }
 
 [build-dependencies]
@@ -288,7 +288,7 @@ system_tests = [
 # The board build (milestone 16a): the kernel targets the VisionFive 2 (JH7110) rather than
 # QEMU's `virt` machine. A property of the target, not the build mode: the board has no
 # sifive_test finisher, so the test exit prints a UART marker and calls SBI SRST shutdown
-# instead of storing to a nonexistent MMIO word. See notes/visionfive2.md.
+# instead of storing to a nonexistent MMIO word. See nifeos/record:notes/visionfive2.md.
 board = []
 # The T-Head TH1520 (milestone 89 (Scaleway EM-RV1)): the board build, for Scaleway's Elastic Metal
 # RV1 rather than radon. It moves the early console to UART0 at 0xff_e701_4000 (arch/riscv64/
@@ -325,7 +325,7 @@ icount = ["bench"]
 # Name provisional.
 xhci_port_probe = []
 # The soak boot (milestone 219): the tour does not halt, it builds a pool of user-mode IPC workers
-# and watches them forever, so `design/fatal-risks/README.md` risk 5's decisive experiment has something to
+# and watches them forever, so `nifeos/record:design/fatal-risks/README.md` risk 5's decisive experiment has something to
 # run. Off by default; every ordinary boot still halts. See kernel/src/soak.rs and script/soak-test.
 #
 # Spelled `soak_test` since milestone 297 (`soak` becomes `soak-test`), calef's ruling of
@@ -334,7 +334,7 @@ xhci_port_probe = []
 soak_test = ["dep:soak_page"]
 # The multi-tasking workload benchmark (milestone 168): the tour does not halt, it sweeps a pool of
 # EL0 tasks through a heterogeneous job mix and prints jobs-per-minute against task count, which is
-# the instrument design/decisions/0096-process-kernel-or-event-kernel.md says it is missing. Off by
+# the instrument nifeos/record:design/decisions/0096-process-kernel-or-event-kernel.md says it is missing. Off by
 # default. A feature rather than a `bench.rs` row because the number has to be taken on a board, and
 # the path a board takes is script/board-image plus script/board-console. See kernel/src/job_mix.rs
 # and script/job-mix. Name provisional.
@@ -343,7 +343,7 @@ job_mix = ["dep:job_mix"]
 # waited, printed as `job-mix-lock:` lines after each sweep point (2026-10-04, for fatal risk 4's
 # `null_system_call` question). Its own feature so the plain job-mix image stays the kernel that ships:
 # this one adds a flag and a counter to every `invoke`. See kernel/src/lock_wait.rs and
-# notes/job-mix/null-system-call-under-load.md. Name provisional.
+# nifeos/record:notes/job-mix/null-system-call-under-load.md. Name provisional.
 lock_wait = ["job_mix"]
 # **Fatal risk 6's bench boot** (milestone 261 (the NVMe driver leaves the kernel)): after the tour, print two preflight verdicts (does
 # the VT-d unit this kernel programs own the NVMe's requester id; does the namespace's LBA size give
@@ -351,13 +351,13 @@ lock_wait = ["job_mix"]
 # one verdict line. **It writes**: a window of blocks from 1 MiB into the namespace is overwritten
 # and read back. Off by default and in no gate; `cargo xtask disk-throughput` rehearses it under
 # OVMF and stages the stick image. See kernel/src/disk_throughput.rs and
-# notes/risk-6-bench-evening.md. Name provisional.
+# nifeos/record:notes/risk-6-bench-evening.md. Name provisional.
 disk_throughput = []
 # **Milestone 494 (a driver for the network card a PC actually has)'s bench boot**: after the tour,
 # bring up the `e1000e` NIC, print which IOMMU unit owns it, take a DHCP lease, drain a TCP stream
 # from the peer named at build time (`NIFE_NETWORK_BENCH_PEER=a.b.c.d:port`) and halt with one
 # verdict. Off by default and in no gate; `cargo xtask network-bench` rehearses it under OVMF and
-# stages the stick. See kernel/src/network_bench.rs and notes/e1000e.md. Name provisional.
+# stages the stick. See kernel/src/network_bench.rs and nifeos/record:notes/e1000e.md. Name provisional.
 network_bench = []
 # **Milestone 53 (the board's own peripherals: network and storage on real silicon)'s storage bench
 # boot**, riscv64 only: after the tour, bring up radon's microSD controller, identify the card,
@@ -365,7 +365,7 @@ network_bench = []
 # socket, and halt with one verdict. **Read-only** unless built with
 # `NIFE_STORAGE_BENCH_WRITE=scratch`, which adds a write test confined to the sectors before the
 # card's first partition and restores what it found there. Off by default and in no gate. See
-# kernel/src/storage_bench.rs and notes/designware-mobile-storage.md. Name provisional.
+# kernel/src/storage_bench.rs and nifeos/record:notes/designware-mobile-storage.md. Name provisional.
 storage_bench = []
 # Milestone 53 (the board's own peripherals)'s multi-block read diagnosis: after the storage bench,
 # read the same blocks at three card clocks, four lengths and two FIFO depths, print how full the
@@ -450,7 +450,7 @@ kernel_log_panic_probe = ["console_flood"]
 self_test_injection = []
 # Adds a test that deliberately livelocks while making IPC progress, to prove the per-test wall-clock
 # ceiling catches what the no-progress heartbeat cannot see (testing.rs). It is EXPECTED TO FAIL the
-# run, so it is not part of the normal suite; see notes/scheduler.md for the command that runs it.
+# run, so it is not part of the normal suite; see nifeos/record:notes/scheduler.md for the command that runs it.
 watchdog_probe = []
 # The cycle-counter instrument (milestone 237): builds milestone 229's per-thread cycle-counter
 # grant, the mechanism DECISIONS 139 decided. Off by default, so a production kernel does not carry
@@ -468,7 +468,7 @@ watchdog_probe = []
 # and ctx_switch +36.0 ticks per switch on aarch64. They are now `#[cfg]`-gated at the switch site
 # (see `sched::install_cycle_counter_grant`) rather than threaded through the switch tuple and trusted
 # to fold, the same fix milestone 299 gave the port grant, so a feature-off boot pays nothing on any
-# build. See design/roadmap/0237-the-cycle-grant-is-a-measurement-build.md.
+# build. See nifeos/record:design/roadmap/0237-the-cycle-grant-is-a-measurement-build.md.
 #
 # **The gate on every piece is `any(test, feature = "cycle_counter_grant")`, not the feature
 # alone**, and that is deliberate. Milestone 229's proofs (the embryo refusal in `sched`, the EL0
@@ -486,7 +486,7 @@ watchdog_probe = []
 # (`Thread::cycle_counter_grant`) rather than a new word for it. Names are an architect's.
 cycle_counter_grant = []
 # E3's footprint-perturbation experiment (milestone 134,
-# design/roadmap/0134-the-measurements-that-decide.md): adds a large, reachable-but-never-taken
+# nifeos/record:design/roadmap/0134-the-measurements-that-decide.md): adds a large, reachable-but-never-taken
 # function to the IPC fastpath's call graph, roughly doubling `ipc_fastpath`'s measured footprint,
 # so `script/fastpath-footprint --features fastpath_pad` and `cargo xtask bench --real
 # --extra-features fastpath_pad` can compare the padded build against the un-padded baseline while
@@ -503,7 +503,7 @@ cycle_counter_grant = []
 # produce identical binaries apart from the sled's own bytes. Not features because a feature's
 # *name* enters cargo's `-C metadata` hash, which reorders codegen units: seven sibling features
 # were built and measured, and each reshuffled up to 11 KB of code ahead of the sled, drowning the
-# shift it was meant to control. notes/footprint-perturbation.md has the procedure.
+# shift it was meant to control. nifeos/record:notes/footprint-perturbation.md has the procedure.
 fastpath_pad = []
 # Milestone 134's per-IPC kernel stack depth (kernel/src/ipc_stack_depth.rs): paints a thread's own
 # kernel stack before each IPC operation and scans it after, so the deepest byte one SEND, RECEIVE,
@@ -512,7 +512,7 @@ fastpath_pad = []
 # shape, so the path cannot rot); this feature exists so the **release** kernel, which is what radon
 # boots and what E1 ran on, can be measured too, by a bench boot that prints the same lines. Off by
 # default and in every build that measures time or footprint: it adds a call at the end of
-# `system_call::dispatch`. See notes/stack-high-water.md. Name provisional.
+# `system_call::dispatch`. See nifeos/record:notes/stack-high-water.md. Name provisional.
 ipc_stack_depth = ["dep:soak_page"]
 # The single-hart boot (milestone 134's E1/E3/E4 on radon): `smp::bring_up_secondaries` marks the
 # boot core online and starts nobody, so the kernel runs on one hart on a machine that seats four.
@@ -531,7 +531,7 @@ ipc_stack_depth = ["dep:soak_page"]
 #
 # Name provisional (2026-09-04): it says what the machine will do, the same test `reboot_soak`'s
 # name was chosen by. (That feature is spelled `reboot_soak_test` since 2026-09-14; the account
-# above keeps the name it was decided under, which is what `design/naming.md` asks for.) `bench_single_core` was refused as naming the caller rather than the effect.
+# above keeps the name it was decided under, which is what `nifeos/record:design/naming.md` asks for.) `bench_single_core` was refused as naming the caller rather than the effect.
 # **Ratified by calef, 2026-09-04.** `one_core` and `no_secondaries` were the alternatives; `hart` is
 # RISC-V's own word and the reader who knows the ISA knows it, which is the same argument that keeps
 # `elf` and `pci` unrenamed. The feature is not riscv64-only and the name is, which is the cost taken.

@@ -11,7 +11,7 @@
 /// Time-based, not a yield count (§28 (SMP placement)): on an idle core a yield returns at once, so a
 /// count elapses in no real time. Two seconds lets other cores finish and stays far under the 60 s
 /// hang watchdog. Here rather than in `user::tests`, which not every target compiles. See
-/// notes/hvf-leg.md.
+/// nifeos/record:notes/hvf-leg.md.
 pub fn wait_for(mut done: impl FnMut() -> bool) -> bool {
     let deadline = crate::arch::timer::now() + 2 * crate::arch::timer::frequency();
     while crate::arch::timer::now() < deadline {

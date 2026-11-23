@@ -8,7 +8,7 @@
 //! map, and spawns `components/src/power_management_chip_route.rs` once per boot with the
 //! controller's first page, device-typed, and the receive side of one endpoint. The progenitor
 //! holds the send side at slot 41. QEMU's `virt` names no PMIC bus, so [`ensure`] answers `None`
-//! on every machine CI boots. See notes/board-reboot.md.
+//! on every machine CI boots. See nifeos/record:notes/board-reboot.md.
 //!
 //! # BUGS
 //!

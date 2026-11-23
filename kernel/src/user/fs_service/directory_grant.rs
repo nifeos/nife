@@ -1,5 +1,5 @@
 //! A per-directory grant: the root directory capability, a subtree caretaker that narrows it, and
-//! the program confined to that subtree. See notes/dir-capability.md.
+//! the program confined to that subtree. See nifeos/record:notes/dir-capability.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -12,7 +12,7 @@ use super::*;
 ///
 /// The FS server's handle table is per server, so a rights-carrying handle alone would not confine
 /// a program that could still name [`file_system_contract::file_system::ROOT`]. See
-/// notes/fs-server/kernel-wiring.md.
+/// nifeos/record:notes/fs-server/kernel-wiring.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub struct DirGrant {
     /// The directory the caretaker descends into, one component under the image root, at most

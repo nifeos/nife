@@ -6,8 +6,8 @@
 //! carrying on. The checks that need a user program run in `boot_self_test`, which the progenitor
 //! starts before the shell; the kernel hands it this half's tally in the page
 //! `self_test_contract::kernel_half` describes, and that program prints the one verdict
-//! (`boot_ladder::Heads::self_test`, matched by `crates/serial_console`). notes/boot-ladder.md has the
-//! verdict's contract, and notes/self-test-checks.md each check's design and the full account of
+//! (`boot_ladder::Heads::self_test`, matched by `crates/serial_console`). nifeos/record:notes/boot-ladder.md has the
+//! verdict's contract, and nifeos/record:notes/self-test-checks.md each check's design and the full account of
 //! the BUGS below.
 
 //! # BUGS
@@ -208,7 +208,7 @@ fn exceptions(tally: &mut Checks) {
 /// kernel stack allocator stands on.
 ///
 /// The address is computed from this machine's RAM, one gigabyte above the direct map's end,
-/// rather than a constant that is free on one machine only. See notes/self-test-checks.md.
+/// rather than a constant that is free on one machine only. See nifeos/record:notes/self-test-checks.md.
 fn mapping(tally: &mut Checks) {
     use page_tables::Flags;
 
@@ -417,7 +417,7 @@ fn timer(tally: &mut Checks) {
 
 /// **A thread the kernel spawned runs, and carries what it captured**: the context switch, end
 /// to end. The wait is bounded by the clock, not by a count of yields, because the new thread may
-/// be placed on another core. See notes/self-test-checks.md.
+/// be placed on another core. See nifeos/record:notes/self-test-checks.md.
 fn scheduler(tally: &mut Checks) {
     static SAW: AtomicU64 = AtomicU64::new(0);
 

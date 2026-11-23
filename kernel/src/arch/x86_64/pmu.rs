@@ -1,9 +1,9 @@
 //! Unhalted core cycles, `x86_64`: `IA32_PERF_FIXED_CTR1`, not the TSC ([`super::timer::now()`]).
 //! Read by `rdmsr` in ring 0 with `CR4.PCE` clear (§139 (who may read the cycle counter)); a stuck
-//! or TSC-aliased counter is refused, and [`cycles`] answers `None`. See notes/pmu.md.
+//! or TSC-aliased counter is refused, and [`cycles`] answers `None`. See nifeos/record:notes/pmu.md.
 //!
 //! # BUGS
-//! - Never read on silicon (design/roadmap/0309-x86-64-core-cycles.md).
+//! - Never read on silicon (nifeos/record:design/roadmap/0309-x86-64-core-cycles.md).
 //! - The in-step check is exact: a hypervisor aliasing the two with an offset passes as `1.00`.
 //! - Boot CPU only: a secondary that never ran [`initialize`] reads zero.
 //! - The counter runs for the whole boot, read only as a difference.
@@ -103,7 +103,7 @@ static CHECK_TSC: AtomicU64 = AtomicU64::new(0);
 /// printed by [`print_summary`].
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     OUTCOME.store(CycleCounter::Unknown as u8, Ordering::Relaxed);
     COUNTER_BITS.store(0, Ordering::Relaxed);
@@ -320,7 +320,7 @@ mod tests {
     //! `NoPerfmonLeaf`, because the emulator models no PMU unless asked, so the assertions here are
     //! about the plumbing: that the gate held, that the outcome is decided, and that the three
     //! records agree. The measurement is xenon's first bench boot and it has not been run; see
-    //! design/roadmap/0309-x86-64-core-cycles.md.
+    //! nifeos/record:design/roadmap/0309-x86-64-core-cycles.md.
 
     use super::*;
 

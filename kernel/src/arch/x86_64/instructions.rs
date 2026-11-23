@@ -6,7 +6,7 @@
 //! Here: the control-register accesses, `clts`, `invlpg`, `hlt`, `sfence` and the `rsp` read
 //! (`port.rs`, `msr.rs` and `interrupts.rs` hold theirs). `lidt`, the GDT reload, `int3`, `rdseed`
 //! and `fp::touch` stay `asm!`. A model replacing a function is a claim about the silicon, so each
-//! says what a model must honor (notes/kernel-proofs/stubbing-an-instruction.md). Every function
+//! says what a model must honor (nifeos/record:notes/kernel-proofs/stubbing-an-instruction.md). Every function
 //! is `#[inline(always)]` and carries its call site's `options` unchanged.
 
 use core::arch::asm;

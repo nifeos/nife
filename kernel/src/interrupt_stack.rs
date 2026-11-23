@@ -3,7 +3,7 @@
 //! One stack per core, over an unmapped guard page, in the `.interrupt_stacks` region. A trap from
 //! kernel mode saves its frame on the interrupted stack and runs the handler here, so a thread's
 //! stack no longer pays for a whole interrupt. A trap from user mode does not switch. See
-//! notes/stack/interrupt-stack.md.
+//! nifeos/record:notes/stack/interrupt-stack.md.
 //!
 //! Nothing that runs on an interrupt stack may context-switch away from it: the thread would resume
 //! on a core's stack that the next interrupt has overwritten. `sched::schedule` debug-asserts it
@@ -58,7 +58,7 @@ static ARMED: AtomicBool = AtomicBool::new(false);
 /// The low end of core `id`'s slot, which is its guard page.
 ///
 /// An array index rather than a multiply, so `id` is bounds-checked against `MAXIMUM_CPUS`; a
-/// multiply's overflow check would pass an `id` of `MAXIMUM_CPUS` (notes/overflow-checks.md).
+/// multiply's overflow check would pass an `id` of `MAXIMUM_CPUS` (nifeos/record:notes/overflow-checks.md).
 pub(crate) fn guard(id: usize) -> u64 {
     // SAFETY: `STACKS.0.get()` points at the live static. `&raw const` of an element place projects
     // the address (bounds-checked) and neither reads the slot nor makes a reference to memory a
@@ -87,7 +87,7 @@ pub fn region() -> (u64, u64) {
 /// secondary is up and no trap has run with the switch armed.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     #[cfg(any(test, feature = "system_tests"))]
     {
@@ -129,7 +129,7 @@ pub(crate) fn top_for_trap(from_user: bool) -> u64 {
 ///
 /// `sched::schedule` asks it of its own `sp` on every switch. One subtraction and one compare over
 /// the whole contiguous region, because a per-slot loop cost a debug build's `ctx_switch` 49.7%
-/// (notes/stack/interrupt-stack.md). An `sp` in a guard page would already have faulted.
+/// (nifeos/record:notes/stack/interrupt-stack.md). An `sp` in a guard page would already have faulted.
 #[inline(always)]
 pub(crate) fn contains(addr: u64) -> bool {
     addr.wrapping_sub(STACKS.0.get() as u64) < (MAXIMUM_CPUS * SLOT) as u64
@@ -174,7 +174,7 @@ mod tests {
 
     /// A slot's guard page begins exactly one byte past the slot below it.
     ///
-    /// Reading a fault at a guard base depends on it (notes/stack/reading-a-guard-page-report.md).
+    /// Reading a fault at a guard base depends on it (nifeos/record:notes/stack/reading-a-guard-page-report.md).
     #[test_case]
     fn a_slots_guard_page_begins_where_the_slot_below_it_ends() {
         for id in 1..MAXIMUM_CPUS {

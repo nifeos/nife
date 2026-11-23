@@ -1,5 +1,5 @@
 //! The thread running on this core: its id, and its capability table held per core so a system call's
-//! lookup takes no global lock. See notes/thread-control-block.md ("The running thread, per core").
+//! lookup takes no global lock. See nifeos/record:notes/thread-control-block.md ("The running thread, per core").
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
@@ -25,7 +25,7 @@ pub(super) fn current_thread_id() -> ThreadId {
 /// Null before this core runs a thread. Written only by [`set_current`] and read only by the owning
 /// core with interrupts masked. Its own array, one cache line an entry, because `PerCpu` is held to
 /// 128 bytes and a shared line would trade the lock for line traffic. The pointer stays valid
-/// because a running thread's page is never recycled. See notes/thread-control-block.md ("The
+/// because a running thread's page is never recycled. See nifeos/record:notes/thread-control-block.md ("The
 /// running thread, per core").
 #[repr(align(64))]
 pub(super) struct CurrentCapabilities(AtomicPtr<CapabilityTableLock>);

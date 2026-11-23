@@ -1,5 +1,5 @@
 //! **Loading an image**: checking an ELF against the image band, mapping its segments and the
-//! timebase page, and finding a program in the initial ramdisk. See notes/user-address-spaces.md.
+//! timebase page, and finding a program in the initial ramdisk. See nifeos/record:notes/user-address-spaces.md.
 //!
 //! Name: provisional (milestone 872's lane, 2026-10-11 UTC; §281 (the kernel's user-mode file
 //! splits into child modules of `user`)).
@@ -84,7 +84,7 @@ fn check_image_band(elf: &Elf) -> Result<(), LoadError> {
 ///
 /// Mapped windows cost table and log pages out of this space's own region, so the budget charges
 /// `windowed` here, less [`WINDOW_IN_OVERHEAD`], rather than asking each caller to widen it. See
-/// notes/user-address-spaces.md.
+/// nifeos/record:notes/user-address-spaces.md.
 pub fn load(
     image: &[u8],
     windowed: u64,
@@ -196,7 +196,7 @@ fn timebase_page_phys() -> Option<u64> {
 ///
 /// [`spawn_elf_child_builder`] and the test harnesses that hand a narrowed archive to one program
 /// build their spaces this way, and `load`'s own mapping reaches none of them. One function, so
-/// every such site maps the page the same way; see notes/user-address-spaces.md.
+/// every such site maps the page the same way; see nifeos/record:notes/user-address-spaces.md.
 #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
 pub fn map_timebase_page(space: &mut AddressSpace) -> Result<(), MapError> {
     if let Some(phys) = timebase_page_phys() {

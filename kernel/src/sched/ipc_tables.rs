@@ -1,7 +1,7 @@
 //! The tables behind `IPC_TABLES`: [`IpcTables`] itself, the one lock it sits behind, the limits
 //! that size it ([`MAXIMUM_THREADS`], [`MAXIMUM_RENDEZVOUS`], the address wait buckets and the kernel's
 //! endpoint chunks), and the rendezvous-pressure instrument. See
-//! notes/ipc-tables-lock-inventory.md.
+//! nifeos/record:notes/ipc-tables-lock-inventory.md.
 //!
 //! The fields are `pub(super)`, which in a child of `sched` reaches `sched` and its children, the
 //! set §271 (the scheduler file splits into submodules of `sched`) keeps the table to. The
@@ -16,7 +16,7 @@ use super::*;
 ///
 /// The state machine is the `inter_process_communication` crate, which proves its one invariant,
 /// "at most one wait queue is ever non-empty" (§14 (the project's direction),
-/// notes/verification.md); the kernel's IPC functions add only the bookkeeping the queues cannot
+/// nifeos/record:notes/verification.md); the kernel's IPC functions add only the bookkeeping the queues cannot
 /// express. A wait-queue entry is the TCB itself, threaded through the run queues' link, so
 /// blocking cannot allocate and a thread waits on one rendezvous at a time. The pointers' contract
 /// is at [`thread_control_block_ptr`].
@@ -25,7 +25,7 @@ pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 /// The most threads that can be alive at once, whole machine: a documented limit of the image, so
 /// spawn past it fails cleanly, as out-of-memory does. Several times the peak [`PEAK_THREADS`]
 /// reports, which leaves room for many more concurrent programs than the boot runs. What scales
-/// with it, and why 1024, are in notes/ipc-tables-lock-inventory.md ("What the tables hold").
+/// with it, and why 1024, are in nifeos/record:notes/ipc-tables-lock-inventory.md ("What the tables hold").
 ///
 /// # BUGS
 ///
@@ -47,7 +47,7 @@ pub const MAXIMUM_THREADS: usize = 1024;
 
 pub(super) struct IpcTables {
     /// The thread table: generational names over page-resident TCBs. See [`Threads`] and
-    /// notes/thread-control-block.md.
+    /// nifeos/record:notes/thread-control-block.md.
     pub(super) threads: Threads,
     /// The rendezvous registry: generational name to the physical address of the page the
     /// rendezvous lives at, retyped from a region that stays pinned while it lives.
@@ -85,7 +85,7 @@ pub(crate) const MAXIMUM_RENDEZVOUS: usize = 2048;
 
 /// The most rendezvous that were ever live at once on this boot, and how many of those sat on the
 /// kernel's own chunks, which only rises. [`MAXIMUM_RENDEZVOUS`]'s instrument; it reports and does
-/// not gate. The measured peaks are in notes/ipc-tables-lock-inventory.md.
+/// not gate. The measured peaks are in nifeos/record:notes/ipc-tables-lock-inventory.md.
 ///
 /// Context: updated at the one insert, under `IPC_TABLES`.
 pub(super) static PEAK_RENDEZVOUS: core::sync::atomic::AtomicUsize =
@@ -260,7 +260,7 @@ pub(super) const MAXIMUM_KERNEL_EP_CHUNKS: usize =
 ///
 /// Ranked above the allocators, because the reaper (`finish_switch`) drops a dead `Thread` while
 /// holding it and that drop frees through the kernel MMU lock. Nothing under it allocates, so §9
-/// (locking)'s no-allocation-in-interrupt rule holds. See notes/ipc-tables-lock-inventory.md.
+/// (locking)'s no-allocation-in-interrupt rule holds. See nifeos/record:notes/ipc-tables-lock-inventory.md.
 pub(super) static IPC_TABLES: InterruptSafeMutualExclusionLock<Option<IpcTables>> =
     InterruptSafeMutualExclusionLock::new(rank::IPC_TABLES, None);
 

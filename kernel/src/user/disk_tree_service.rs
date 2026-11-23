@@ -4,7 +4,7 @@
 //! It holds the NVMe request endpoint badged with
 //! [`::driver_process_contract::non_volatile_memory_express::DISK_TREE_WINDOW`], its own request and report endpoints, that
 //! window read-only, and the client windows. Window 0 is the file service's own window 0 frame. See
-//! notes/two-trees.md, "The disk tree's server".
+//! nifeos/record:notes/two-trees.md, "The disk tree's server".
 //!
 //! Name: provisional (lane `lane/ioping-direct-io`, 2026-10-18 UTC), with the program's.
 

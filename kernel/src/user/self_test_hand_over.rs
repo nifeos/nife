@@ -3,7 +3,7 @@
 //! service the `clock` and `true_random_number_generator` checks read, and disk 0's virtio trio for
 //! `block_device`. The progenitor passes all of it to `boot_self_test` and keeps none of it. On a
 //! machine with a screen it also grants the endpoint the verdict comes back on, for the kernel to
-//! paint ([`paint_the_verdict`]). See notes/self-test-checks.md, "The two halves".
+//! paint ([`paint_the_verdict`]). See nifeos/record:notes/self-test-checks.md, "The two halves".
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`.

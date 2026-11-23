@@ -24,7 +24,7 @@ const APPDISP_TARGET_TOUCHES: u64 = 8_000_000;
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 const APPDISP_IPC_PAIRS: usize = 8;
 /// Background IPC pairs for the higher-load condition: [`SCALE_MAXIMUM_PAIRS`], 96 threads, past
-/// E1's knee. See notes/benchmarks/kernel-bench-harness.md.
+/// E1's knee. See nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 const APPDISP_IPC_PAIRS_HIGH: usize = SCALE_MAXIMUM_PAIRS;
 
@@ -149,7 +149,7 @@ fn appdisp_best(
 /// Times [`appdisp_workload`] over each of [`APPDISP_WORKINGSET_KIBIBYTES`] alone, with
 /// [`APPDISP_IPC_PAIRS`] background pairs on the same core, and with [`APPDISP_IPC_PAIRS_HIGH`];
 /// the throughput lost between conditions is the number. Skips off a real single hart. See
-/// notes/benchmarks/kernel-bench-harness.md and notes/register-of-measures/cache-experiments.md.
+/// nifeos/record:notes/benchmarks/kernel-bench-harness.md and nifeos/record:notes/register-of-measures/cache-experiments.md.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 pub(super) fn app_displacement() {
     if !real_single_hart_or_skip("app_displacement") {

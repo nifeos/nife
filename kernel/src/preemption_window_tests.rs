@@ -6,7 +6,7 @@
 //! `arch::interrupts::disable` suppresses the scheduler tick, and `restore` delivers the held one.
 //! Each window spins on the wall clock and then waits until the tick is architecturally pending
 //! ([`until_the_tick_is_raised`]), because the emulator raises it late. See
-//! notes/load-sensitive-assertions.md and notes/benchmarks.md.
+//! nifeos/record:notes/load-sensitive-assertions.md and nifeos/record:notes/benchmarks.md.
 
 use crate::sched;
 

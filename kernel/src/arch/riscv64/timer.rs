@@ -4,7 +4,7 @@
 //! extension, which also clears the pending interrupt. SBI `set_timer` is write-only, so this file
 //! keeps each hart's deadline grid itself, in [`DEADLINE`].
 //!
-//! See notes/riscv-port/timer.md.
+//! See nifeos/record:notes/riscv-port/timer.md.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -33,7 +33,7 @@ static TIMEBASE_HERTZ: AtomicU64 = AtomicU64::new(0);
 /// Read the counter rate out of the device tree at `dtb_ptr` (a physical address).
 ///
 /// Called once, on the boot hart, before [`initialize`] arms the first deadline there. Secondaries
-/// share its reading. See notes/riscv-port/timer.md, BUGS.
+/// share its reading. See nifeos/record:notes/riscv-port/timer.md, BUGS.
 ///
 /// # Panics
 ///
@@ -134,7 +134,7 @@ pub fn interval() -> u64 {
 /// take them.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     // Anchor this hart's grid before arming it: `rearm` adds whole intervals to this value.
     let first = now() + interval();
@@ -145,7 +145,7 @@ pub fn initialize() {
 
     // `scounteren` is per hart, so every hart writes it here. A whole-register write, not a bit
     // set: afterwards it is exactly `TM` whatever firmware left in it, so U-mode can read `time`
-    // and not `cycle`, `instret` or the HPM counters. See notes/riscv-port/timer.md.
+    // and not `cycle`, `instret` or the HPM counters. See nifeos/record:notes/riscv-port/timer.md.
     //
     // SAFETY: setting scounteren.TM only *permits* a read U-mode could already attempt; it grants no
     // authority to affect anything. The same eyes-open exception to §10 that aarch64 records, with
@@ -169,7 +169,7 @@ const CY: u64 = 1 << 0;
 ///
 /// Returns `true` even where firmware left `mcounteren.CY` clear, in which case a granted `rdcycle`
 /// still traps. Built only under `test` or `--features cycle_counter_grant`. See
-/// notes/riscv-port/timer.md.
+/// nifeos/record:notes/riscv-port/timer.md.
 // Only tests call it, which must skip rather than fault where no counter can be granted.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
@@ -182,7 +182,7 @@ pub fn is_cycle_counter_grantable() -> bool {
 ///
 /// Called on every context switch. It reads `scounteren` back and writes only when `CY` changes,
 /// leaving `TM` as it found it. Built only under `test` or `--features cycle_counter_grant`. See
-/// notes/riscv-port/timer.md.
+/// nifeos/record:notes/riscv-port/timer.md.
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
 pub(crate) fn set_cycle_counter_grant(granted: bool) {
     let current = instructions::read_scounteren();
@@ -201,7 +201,7 @@ pub(crate) fn set_cycle_counter_grant(granted: bool) {
 /// pending interrupt. Called from the trap dispatcher on `scause` = timer.
 ///
 /// `#[inline(never)]` keeps these bytes out of `riscv64_trap_body`, which `script/fastpath-footprint`
-/// counts as system call entry. See notes/riscv-port/timer.md.
+/// counts as system call entry. See nifeos/record:notes/riscv-port/timer.md.
 ///
 /// Context: interrupt context.
 #[inline(never)]
@@ -220,7 +220,7 @@ pub(crate) fn tick() {
 /// (where the timer re-arm seam goes), milestone 360 (`crates/timetable`'s proved `next_after` is
 /// not what the timer calls)). A tick that arrives late is counted in [`MISSED_TICKS`] and comes
 /// back onto its original beat, firing once rather than in a loop. The arch layer only reads the
-/// state, counts the miss and arms. See notes/riscv-port/timer.md.
+/// state, counts the miss and arms. See nifeos/record:notes/riscv-port/timer.md.
 ///
 /// Context: interrupt context.
 fn rearm() {
@@ -252,7 +252,7 @@ fn rearm() {
 /// The most instructions `icount::run` allows between a deadline and the handler observing it.
 ///
 /// Because `set_timer` cannot be read back, this bound is what shows firmware was armed with
-/// [`DEADLINE`]'s word. See notes/riscv-port/timer.md and notes/instruction-clock.md.
+/// [`DEADLINE`]'s word. See nifeos/record:notes/riscv-port/timer.md and nifeos/record:notes/instruction-clock.md.
 #[cfg(feature = "icount")]
 pub(crate) const ARRIVAL_BOUND: u64 = 1_500;
 
@@ -260,7 +260,7 @@ pub(crate) const ARRIVAL_BOUND: u64 = 1_500;
 /// whole handler, SBI `ecall` included.
 ///
 /// Larger than aarch64's because the firmware round trip is inside the span. See
-/// notes/riscv-port/timer.md.
+/// nifeos/record:notes/riscv-port/timer.md.
 #[cfg(feature = "icount")]
 pub(crate) const HANDLER_BOUND: u64 = 2_500;
 
@@ -291,7 +291,7 @@ pub fn ticks() -> u64 {
 }
 
 /// Ticks since boot on `hart`, so a test whose thread may migrate between two reads compares one
-/// counter (DECISIONS §28 (SMP placement), part 3). See notes/load-sensitive-assertions.md.
+/// counter (DECISIONS §28 (SMP placement), part 3). See nifeos/record:notes/load-sensitive-assertions.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) fn ticks_on(hart: usize) -> u64 {
     TICKS[hart].load(Ordering::Relaxed)
@@ -301,9 +301,9 @@ pub(crate) fn ticks_on(hart: usize) -> u64 {
 ///
 /// True from the moment the deadline is signalled until the handler's `sbi_set_timer` clears it.
 /// Tests that hold a tick across a masked window wait on this rather than on the clock, because
-/// QEMU raises the timer late. See notes/load-sensitive-assertions/preemption-window-tick.md.
+/// QEMU raises the timer late. See nifeos/record:notes/load-sensitive-assertions/preemption-window-tick.md.
 ///
-/// Name: ratified 2026-09-24 (calef, the Rust predicate-naming rule in design/naming.md). Refused
+/// Name: ratified 2026-09-24 (calef, the Rust predicate-naming rule in nifeos/record:design/naming.md). Refused
 /// `tick_pending` (a bare participle reads as a getter, and Rust asks the question with `is_`).
 /// The three architectures' copies are named alike on purpose.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
@@ -354,7 +354,7 @@ pub(crate) fn deadline() -> u64 {
 /// How late each hart's last missed tick was, kept only in test builds.
 ///
 /// Holds the last miss and a count, per hart. Late by under one interval points at a slow handler;
-/// by a whole interval or more, at a descheduled emulator. See notes/riscv-port/timer.md.
+/// by a whole interval or more, at a descheduled emulator. See nifeos/record:notes/riscv-port/timer.md.
 #[cfg(any(test, feature = "system_tests"))]
 pub mod miss_detail {
     use core::sync::atomic::{AtomicU64, Ordering};
@@ -487,7 +487,7 @@ mod tests {
     /// Over a window with no recorded miss, [`rearm`] must move the deadline by exactly one
     /// interval per delivered tick. Re-arming from `now()` fails on the first tick; a descheduled
     /// emulator cannot fail it, since a long deschedule is a counted miss and the window is
-    /// retried. Skips when no miss-free window comes. See notes/riscv-port/timer.md.
+    /// retried. Skips when no miss-free window comes. See nifeos/record:notes/riscv-port/timer.md.
     #[test_case]
     fn ticks_arrive_at_the_configured_rate() {
         use crate::arch::timer;
@@ -534,7 +534,7 @@ mod tests {
                  periods, so a window containing one proves nothing about the one-interval law, and whether these misses are a \
                  contended host or a slow handler is the one question a wall clock cannot answer \
                  from inside the guest. `script/icount` answers it and asserts this same law with \
-                 no host term in it. Milestone 62; notes/load-sensitive-assertions.md.)",
+                 no host term in it. Milestone 62; nifeos/record:notes/load-sensitive-assertions.md.)",
                 ATTEMPTS,
                 misses,
                 now.saturating_sub(next),
@@ -564,7 +564,7 @@ mod tests {
 
     // The handler's speed with no lock held is asserted by `script/icount`, in instructions, not
     // here: from inside the guest a slow handler and a descheduled host look alike. See
-    // notes/riscv-port/timer.md.
+    // nifeos/record:notes/riscv-port/timer.md.
 
     /// Holding an `InterruptSafeMutualExclusionLock` across more than one tick deadline loses a tick.
     ///
@@ -593,7 +593,7 @@ mod tests {
         assert!(
             within_periods(20, || timer::missed_ticks_on(hart) > before),
             "holding a lock across two tick periods did NOT lose a tick, which means \
-             InterruptSafeMutualExclusionLock is not masking interrupts and the deadlock in notes/locking.md \
+             InterruptSafeMutualExclusionLock is not masking interrupts and the deadlock in nifeos/record:notes/locking.md \
              is live"
         );
     }
@@ -671,7 +671,7 @@ mod tests {
     ///
     /// Confirms ticks flow, spins three periods under a lock asserting none lands, waits for one to
     /// be raised, then releases and waits for delivery. This is the deadlock DECISIONS §9 and
-    /// notes/locking.md exist to prevent.
+    /// nifeos/record:notes/locking.md exist to prevent.
     #[test_case]
     fn holding_a_lock_masks_the_timer() {
         use crate::arch::{interrupts, timer};
@@ -709,7 +709,7 @@ mod tests {
                 timer::ticks_on(hart),
                 before,
                 "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutualExclusionLock is not masking \
-                 sstatus.SIE, and the deadlock in notes/locking.md is live: a handler that touched \
+                 sstatus.SIE, and the deadlock in nifeos/record:notes/locking.md is live: a handler that touched \
                  this lock would spin forever waiting for code that cannot run."
             );
 
@@ -725,7 +725,7 @@ mod tests {
                 timer::ticks_on(hart),
                 before,
                 "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutualExclusionLock is not masking \
-                 sstatus.SIE, and the deadlock in notes/locking.md is live: a handler that touched \
+                 sstatus.SIE, and the deadlock in nifeos/record:notes/locking.md is live: a handler that touched \
                  this lock would spin forever waiting for code that cannot run."
             );
             (hart, before)

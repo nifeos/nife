@@ -8,7 +8,7 @@
 //! the device's register base physical address (§320 (the JH7110 clock and reset wire)), through
 //! `sched::ipc_call_badged`. The kernel's starters are its only clients. Reached only on riscv64:
 //! QEMU's `virt` names no window, so [`ensure`] answers `None` on every machine CI boots. See
-//! notes/jh7110-clock-and-reset.md.
+//! nifeos/record:notes/jh7110-clock-and-reset.md.
 //!
 //! # BUGS
 //!

@@ -1,5 +1,5 @@
 //! **The `AddressSpace` methods**: map into, unmap, the address wait pair and the listing, with the run
-//! arithmetic `PageFrame::MAP` shares. See notes/system-call-boundary.md.
+//! arithmetic `PageFrame::MAP` shares. See nifeos/record:notes/system-call-boundary.md.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -8,7 +8,7 @@ use super::*;
 use crate::arch::mmu;
 
 /// Decode an `AddressSpace` method on the space `name` and run it, out of line like every method
-/// off the IPC round trip (notes/system-call-boundary.md).
+/// off the IPC round trip (nifeos/record:notes/system-call-boundary.md).
 #[inline(never)]
 pub(super) fn address_space_invoke(
     frame: &mut TrapFrame,
@@ -163,7 +163,7 @@ fn address_space_layout_into(
 /// and out of the space's mapping record (DECISIONS §162 (whether a holder can give up a mapping),
 /// option A). Returns 0, or `BadPointer` when nothing is mapped there; no capability is read,
 /// consumed or changed (both as §162's 2026-10-05 amendment rules). The TLB flush is
-/// `mmu::unmap_user_at`'s, the function every revoke unmaps with. See notes/unmap.md.
+/// `mmu::unmap_user_at`'s, the function every revoke unmaps with. See nifeos/record:notes/unmap.md.
 ///
 /// Context: takes `USER_SPACES` (rank `ADDRESS_SPACES`), then the mapping hold (`MAPPINGS`), the
 /// order `MAP_INTO` takes them, so the two are ordered whole on one `va`.
@@ -218,7 +218,7 @@ pub(super) fn map_refusal(e: page_tables::MapError) -> Error {
 /// # BUGS
 ///
 /// The page tables the prefix retyped are not returned: a region is spend-only, so a failed
-/// multi-page map still costs the caller those tables. Recorded in notes/frames.md.
+/// multi-page map still costs the caller those tables. Recorded in nifeos/record:notes/frames.md.
 pub(super) fn unmap_run_prefix(
     hold: &mut crate::revoke::MappingHold,
     root: u64,

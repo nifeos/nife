@@ -50,7 +50,7 @@ pub(super) fn ipc_rtt() {
 /// FS server and `net_stack` use. Four rendezvous and four switches per iteration.
 ///
 /// Its difference from [`ipc_rtt`] is what one confined intermediary costs, deterministic and on
-/// the icount baseline. See notes/benchmarks/kernel-bench-harness.md.
+/// the icount baseline. See nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 pub(super) fn relay_rtt() {
     let cl_req = sched::create_rendezvous(); // client -> relay
     let cl_reply = sched::create_rendezvous(); // relay -> client
@@ -139,7 +139,7 @@ pub(super) fn call_reply() {
 /// The broker serves its front endpoint with `RECEIVE_CAPABILITY`, holds the client's one-shot Reply
 /// capability while it CALLs the backend, and answers through it. Its difference from
 /// [`call_reply`], the same client and backend with nothing between, is the opt-in rung's whole
-/// tax. See notes/benchmarks/kernel-bench-harness.md.
+/// tax. See nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 pub(super) fn broker_rtt() {
     let front = sched::create_rendezvous(); // client -> broker
     let back = sched::create_rendezvous(); // broker -> backend

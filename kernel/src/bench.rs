@@ -4,8 +4,8 @@
 //! the milestone tour, runs each benchmark in a fixed order, prints one
 //! `bench: <name> <counter_ticks> <iters>` line each after the counter frequency, prints
 //! `bench: done` and halts. `xtask bench` watches for that marker and ends QEMU; nothing semihosts.
-//! See notes/benchmarks.md for the two instruments and the numbers, and
-//! notes/benchmarks/kernel-bench-harness.md for how each row is built.
+//! See nifeos/record:notes/benchmarks.md for the two instruments and the numbers, and
+//! nifeos/record:notes/benchmarks/kernel-bench-harness.md for how each row is built.
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 use crate::capability_object::{Rights, rendezvous_capability};

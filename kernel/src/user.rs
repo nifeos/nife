@@ -1,8 +1,8 @@
 //! Userspace: entering user mode, and the confined services the kernel wires there. From here on
 //! the machine runs code the kernel did not compile and does not trust, and the kernel's job is
 //! deciding what is allowed. Entering user mode is returning from an exception that never happened:
-//! a forged [`TrapFrame`] falls into `exception_restore`. See notes/userspace.md, and
-//! notes/kernel-wired-services.md for the services.
+//! a forged [`TrapFrame`] falls into `exception_restore`. See nifeos/record:notes/userspace.md, and
+//! nifeos/record:notes/kernel-wired-services.md for the services.
 
 use page_frames::{FRAME_BYTES, PageFrame};
 use page_tables::{Flags, Half, MapError, Mapper};
@@ -89,7 +89,7 @@ pub mod virtual_io_service;
 
 /// **Which grant a starter gives a virtio driver**, mediated or direct, and the direct grant's
 /// carve-out: the confinement, the structure pages and the handoff. See
-/// design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
+/// nifeos/record:design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
 // The PCI disk's starters in `virtual_io_service` are its callers, and the tour does not start them.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[doc(alias = "virtio")]
@@ -98,27 +98,27 @@ pub mod virtual_io_grant;
 /// **A service's memory, remembered so a finished test can hand it back.** The bookkeeping half of
 /// DECISIONS §16 object revocation, applied to the services the test boot builds: without it a boot
 /// that runs many service-shaped tests runs out of frames, and does so in whichever innocent test
-/// happens to allocate next. See the module note and notes/frames.md.
+/// happens to allocate next. See the module note and nifeos/record:notes/frames.md.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 // the tests are the callers; the tour never tears down
 pub mod holding;
 
 /// The RedoxFS filesystem service: a block server, an FS server and a client, confined, and the
 /// endpoints and shared pages that wire them. `None` if this run has no second MMIO block disk. See
-/// notes/kernel-wired-services.md.
+/// nifeos/record:notes/kernel-wired-services.md.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // spawned only by the phase-2 test
 pub mod fs_service;
 
 /// The block-device roster and the disk surveyor: a read-only listing of every block device, and a
 /// block-service endpoint for exactly one. The kernel never reads a partition table. See
-/// notes/kernel-wired-services.md and notes/block-devices.md.
+/// nifeos/record:notes/kernel-wired-services.md and nifeos/record:notes/block-devices.md.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the tests are its only caller today
 pub mod disk_service;
 
 /// The display service: a confined virtio-gpu driver and a client that draws, wired by the kernel
 /// and then left alone. The driver's DMA region is the rings page plus the surface, one contiguous
-/// run, so the device can reach the pixels and nothing else. See notes/kernel-wired-services.md and
-/// notes/framebuffer-contract.md.
+/// run, so the device can reach the pixels and nothing else. See nifeos/record:notes/kernel-wired-services.md and
+/// nifeos/record:notes/framebuffer-contract.md.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 // spawned only by the milestone-29 test
 pub mod display_service;
@@ -126,14 +126,14 @@ pub mod display_service;
 /// The compositor: one screen, several mutually distrusting clients. The isolation is a property of
 /// the grants' shape: each client's surface is its own frames at the same virtual address, the
 /// clients' frames are physically adjacent so the attack test is fair, and the screen is mapped
-/// read-only only into a client granted it. See notes/kernel-wired-services.md.
+/// read-only only into a client granted it. See nifeos/record:notes/kernel-wired-services.md.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 // spawned only by the milestone-33 tests
 pub mod compositor_service;
 
 /// The keyboard service: a confined virtio-input driver that turns key events into terminal bytes
 /// on a ring the compositor reads. The driver gets no client's endpoint, so it cannot choose who
-/// receives what it types; focus is the compositor's. See notes/kernel-wired-services.md.
+/// receives what it types; focus is the compositor's. See nifeos/record:notes/kernel-wired-services.md.
 // The driver is spawned only by the milestone-29 test; the boot calls `wire_device` alone and the
 // progenitor builds the driver (milestone 600 (provisional)).
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
@@ -157,7 +157,7 @@ pub mod usb_keyboard_service;
 
 /// The clock service: the RTC's registers, the wall clock's offset and the propose endpoint, in one
 /// confined process. The kernel finds the RTC and hands it over, and never reads the clock. See
-/// notes/kernel-wired-services.md and notes/clock.md.
+/// nifeos/record:notes/kernel-wired-services.md and nifeos/record:notes/clock.md.
 // The interactive boot calls `start` on both ISAs since milestone 51's wiring lane; the rest of the
 // module (the propose helper, the kernel-side page reader) is still the tests' alone.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
@@ -165,8 +165,8 @@ pub mod clock_service;
 
 /// The entropy service: a virtio-rng device, its DMA page, its interrupt, and the request endpoint
 /// clients hold, in one confined process. The service holds the device; a client holds only "you
-/// may obtain randomness". The kernel holds no entropy. See notes/kernel-wired-services.md and
-/// notes/entropy.md.
+/// may obtain randomness". The kernel holds no entropy. See nifeos/record:notes/kernel-wired-services.md and
+/// nifeos/record:notes/entropy.md.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 // the system tests, std_service, the installer and boot_progenitor are its callers
 pub mod entropy_service;
@@ -228,14 +228,14 @@ pub mod designware_ethernet_service;
 /// makes a second customer possible), rung 2a): ask whether to put this system on the machine's own
 /// disk, and wire the two confined programs that do it. Boot policy only; nothing in it holds a
 /// disk. `x86_64` only, because the other loaders hand over no copy of the boot file and the
-/// aarch64 console has no receive path. See notes/kernel-wired-services.md.
+/// aarch64 console has no receive path. See nifeos/record:notes/kernel-wired-services.md.
 #[cfg(target_arch = "x86_64")]
 pub mod install_service;
 
 /// The credential service, its provisioner and its clients. Four processes, three of them differing
 /// by one field of a `Spawn` literal. The kernel never sees a secret: it creates two endpoints, two
 /// separate frames and a budget, and hands each process a different subset. See
-/// notes/kernel-wired-services.md and notes/credentials.md.
+/// nifeos/record:notes/kernel-wired-services.md and nifeos/record:notes/credentials.md.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 // the milestone-56 credential tests are its callers
 pub mod credential_service;
@@ -263,8 +263,8 @@ pub mod identity_provisioner_service;
 
 /// The NTP client, and the test server that answers it. The client gets five slots and no mapping
 /// of the clock page; the test server holds `READ` on the endpoint the client holds `WRITE` on, so
-/// substituting the peer is invisible to the client. See notes/kernel-wired-services.md and
-/// notes/ntp.md.
+/// substituting the peer is invisible to the client. See nifeos/record:notes/kernel-wired-services.md and
+/// nifeos/record:notes/ntp.md.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the tests are its callers
 pub mod ntp_service;
 

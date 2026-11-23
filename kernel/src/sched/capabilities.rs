@@ -1,7 +1,7 @@
 //! The current thread's capabilities, and deleting capabilities across every table: lookup,
 //! `grant` and delegation, and the page-frame, device-frame and port-range deleters, which walk
 //! every thread's table under `IPC_TABLES` and so stay in `sched` (§271 part 2). See
-//! notes/capability-lifecycle.md ("The sweeps that delete capabilities from every table").
+//! nifeos/record:notes/capability-lifecycle.md ("The sweeps that delete capabilities from every table").
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).
@@ -14,7 +14,7 @@ use super::*;
 ///
 /// Matches by object equality: a narrowed copy matches, a different sub-range of the same memory
 /// does not. A `count` of 0 deletes nothing. Reclamation wants
-/// [`delete_page_frame_capabilities_overlapping`] instead. See notes/capability-lifecycle.md.
+/// [`delete_page_frame_capabilities_overlapping`] instead. See nifeos/record:notes/capability-lifecycle.md.
 ///
 /// Context: takes `IPC_TABLES`, then each table's lock.
 pub(crate) fn delete_page_frame_capabilities(phys: u64, count: u64) {
@@ -31,7 +31,7 @@ pub(crate) fn delete_page_frame_capabilities(phys: u64, count: u64) {
 ///
 /// Overlap, because equality misses a run capability that covers a page of the range. The end
 /// saturates, so a run near `u64::MAX` overlaps everything rather than wrapping out. See
-/// notes/capability-lifecycle.md.
+/// nifeos/record:notes/capability-lifecycle.md.
 ///
 /// Context: takes `IPC_TABLES`, then each table's lock.
 pub(crate) fn delete_page_frame_capabilities_overlapping(base: u64, size: u64) {
@@ -50,7 +50,7 @@ pub(crate) fn delete_page_frame_capabilities_overlapping(base: u64, size: u64) {
 ///
 /// A capability in flight to a receiver is in no table, so a sweep of tables alone would leave it
 /// alive. The send still delivers its data word and the receiver sees `NO_CAPABILITY`. See
-/// notes/capability-lifecycle.md.
+/// nifeos/record:notes/capability-lifecycle.md.
 ///
 /// Context: takes `IPC_TABLES`, then each table's lock.
 pub(super) fn delete_page_frame_capabilities_where(
@@ -97,12 +97,12 @@ pub(crate) fn delete_device_frame_capabilities_from_others(phys: u64) {
 ///
 /// Deletes every `PortRange(base, count)` capability but the caller's, clears each affected
 /// thread's cached grant, and resets every other core's TSS bitmap, so the holder faults on its
-/// next `in`/`out`. See notes/capability-lifecycle.md.
+/// next `in`/`out`. See nifeos/record:notes/capability-lifecycle.md.
 ///
 /// # BUGS
 ///
 /// Matches by object equality, so a capability over a wider or narrower range of the same ports is
-/// left alone. No system call can name a sub-range today (notes/capability-lifecycle.md, "BUGS").
+/// left alone. No system call can name a sub-range today (nifeos/record:notes/capability-lifecycle.md, "BUGS").
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `delete_port_range_capabilities_from_others` under the capability ruling of 2026-10-06 (UTC).
@@ -166,7 +166,7 @@ pub(super) fn delete_port_range_capabilities_impl(base: u16, count: u16, keeper:
 /// Remove the capability in `slot` from the current thread's table. This is how a one-shot `Reply`
 /// is consumed the instant it is invoked (§12 (call/reply IPC)). On `x86_64`, deleting the
 /// `PortRange` behind the thread's cached grant also drops the grant and resets this core's TSS
-/// bitmap. Returns the table's error for an empty slot. See notes/capability-lifecycle.md.
+/// bitmap. Returns the table's error for an empty slot. See nifeos/record:notes/capability-lifecycle.md.
 ///
 /// Context: takes the thread's own table lock; on `x86_64` a deleted `PortRange` then takes
 /// `IPC_TABLES`.
@@ -297,7 +297,7 @@ pub fn current_capability_slots() -> (usize, usize) {
 
 /// Hand the current thread a capability at an explicit `slot`, leaving lower slots empty.
 ///
-/// [`grant`] fills the first free slot. Some conventions (notes/abi.md, section 4) name a fixed
+/// [`grant`] fills the first free slot. Some conventions (nifeos/record:notes/abi.md, section 4) name a fixed
 /// slot whose lower neighbors' emptiness is meaningful: a std program holding slot 4 with 2 and 3
 /// empty has no network. The kernel's counterpart of `ThreadControlBlock::CAPABILITY_INSERT`.
 pub fn grant_at(
@@ -338,7 +338,7 @@ pub(crate) fn grant_from(
 /// provisional.
 ///
 /// The source is a slot, not a capability, so it is read in the same critical section that files
-/// the copy, which excludes every revocation sweep. See notes/capability-lifecycle.md
+/// the copy, which excludes every revocation sweep. See nifeos/record:notes/capability-lifecycle.md
 /// ("Delegation reads its source in the critical section that files the copy").
 #[derive(Clone, Copy)]
 pub(crate) struct Delegation {

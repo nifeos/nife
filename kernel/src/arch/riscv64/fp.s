@@ -23,7 +23,7 @@
 #
 # a0 = the state block. `f0`-`f31` at offset 16 (the `live` flag and `fcsr` are the first sixteen
 # bytes; see `FpState` in fp.rs).
-# CFI: see notes/cfi-unwind.md. Ordinary leaf functions, `call`ed and `ret`urning; sp never moves,
+# CFI: see nifeos/record:notes/cfi-unwind.md. Ordinary leaf functions, `call`ed and `ret`urning; sp never moves,
 # so the default frame (CFA = sp, return address in ra) is already correct.
 .global fp_save
 .type fp_save, @function

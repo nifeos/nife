@@ -5,7 +5,7 @@
 //! `crates/jh7110_pci_express` owns the offsets, bits and order, host-tested against a simulation.
 //! This stores to the pages it is handed and refuses any offset outside them. It reaches into no
 //! kernel global (§4 (kernel shape)): every base, the clock and reset windows and the delay come
-//! from the caller. See notes/jh7110-pci-express.md.
+//! from the caller. See nifeos/record:notes/jh7110-pci-express.md.
 //!
 //! # SAFETY
 //!

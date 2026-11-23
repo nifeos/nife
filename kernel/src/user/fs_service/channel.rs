@@ -1,7 +1,7 @@
 //! The file and block channels, and where every party maps them: the virtual addresses
 //! each program expects, the channel sizes the contract fixes, and the frames behind them.
 //!
-//! See notes/fs-server/kernel-wiring.md.
+//! See nifeos/record:notes/fs-server/kernel-wiring.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -19,7 +19,7 @@ pub(super) const BLK_PAGE_FS: u64 = 0x5000_0000; // FS server's block region (re
 pub(super) const FILE_PAGE_FS: u64 = BLK_PAGE_FS + (BLK_PAGES as u64) * FRAME_BYTES;
 pub(super) const FILE_VA_CLIENT: u64 = 0x0000_0000_0060_0000; // client's file page (fs_test_client/channel.rs FILE_VA)
 
-/// A std program's half of the same agreement (notes/abi.md section 4, notes/std.md): the slot the PAL
+/// A std program's half of the same agreement (nifeos/record:notes/abi.md section 4, nifeos/record:notes/std.md): the slot the PAL
 /// looks for the FS-service endpoint in, and the VA it expects the shared file page at. Read from
 /// `std_runtime_contract`, which the std PAL has generated into it, so the two cannot drift. A std
 /// program's slot layout differs from the hand-written client's because std already owes slots 0

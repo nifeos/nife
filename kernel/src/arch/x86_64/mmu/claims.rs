@@ -154,7 +154,7 @@ fn device_claims(each: &mut dyn FnMut(Claim)) {
     // write-combining, which is still device memory to every rule here and selects the PAT entry
     // `cpu_initialization` made WC on every core; the console only writes it, and WC reads are as
     // slow as UC ones. An aperture inside a RAM region is a different problem; see
-    // notes/x86-port/kernel-page-tables.md.
+    // nifeos/record:notes/x86-port/kernel-page-tables.md.
     if let Some((base, size)) = memory::framebuffer() {
         each(Claim {
             what: "framebuffer",
@@ -249,7 +249,7 @@ fn firmware_claims(each: &mut dyn FnMut(Claim)) {
     // The initial ramdisk, by its recorded bounds, however the memmap classified its bytes: the
     // reserved entry above the top of RAM can widen over the ramdisk's tail. `bring_up_memory`
     // already claimed the range as forbidden, and a guarded claim is idempotent. See
-    // notes/x86-port/kernel-page-tables.md.
+    // nifeos/record:notes/x86-port/kernel-page-tables.md.
     if let Some((istart, isize)) = memory::initial_ramdisk_region() {
         each(Claim {
             what: "initial ramdisk",

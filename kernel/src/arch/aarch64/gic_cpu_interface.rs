@@ -1,5 +1,5 @@
 //! The GICv3 CPU interface, `ICC_*_EL1`; the rest of the GIC is `drivers/gicv3.rs`. Registers and
-//! barriers (Linux v6.16's): notes/aarch64-port.md, "The GICv3 CPU interface".
+//! barriers (Linux v6.16's): nifeos/record:notes/aarch64-port.md, "The GICv3 CPU interface".
 //!
 //! # BUGS
 //!

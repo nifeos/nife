@@ -1,4 +1,4 @@
-//! Waking a blocked thread. See notes/scheduler.md ("Wakes") and notes/interleaving.md.
+//! Waking a blocked thread. See nifeos/record:notes/scheduler.md ("Wakes") and nifeos/record:notes/interleaving.md.
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
@@ -7,10 +7,10 @@ use super::*;
 /// Move the blocked thread `tid` back to a ready queue on this core.
 ///
 /// The decision is `thread_wake_handshake::Handshake::try_wake`, which loom searches on the host
-/// (notes/interleaving.md); this is the queue push and the trace ring. A wake whose critical
+/// (nifeos/record:notes/interleaving.md); this is the queue push and the trace ring. A wake whose critical
 /// section delivered nothing is refused (the undelivered-wake gate, recorded as `refuse:tid`), and
 /// a thread still on its CPU has its wake parked for its own core's `finish_switch` to complete
-/// once its context is saved (notes/intrusive-queues.md). In the pinned hot section (milestone 796
+/// once its context is saved (nifeos/record:notes/intrusive-queues.md). In the pinned hot section (milestone 796
 /// (pin the hot trap path's placement)).
 ///
 /// Context: caller holds `IPC_TABLES`.

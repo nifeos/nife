@@ -2,7 +2,7 @@
 //!
 //! The twins of aarch64's, against the same properties (DECISIONS §19 (architectural parity is a
 //! tenet)). `translate` walks the live kernel root, so they inspect the tables the hardware walks.
-//! See notes/riscv-port/memory.md.
+//! See nifeos/record:notes/riscv-port/memory.md.
 
 /// A physical address one gigabyte above the top of every RAM region this machine described, for
 /// tests that need a spare page outside the direct map. Read from the machine, since a fixed
@@ -20,7 +20,7 @@ fn a_physical_address_outside_every_ram_region() -> u64 {
 ///
 /// RISC-V permits zero bits, and the VisionFive 2's U74 implements zero, so the test asserts that
 /// the kernel knows whether the width is enough rather than that it is. See
-/// notes/riscv-port/memory.md.
+/// nifeos/record:notes/riscv-port/memory.md.
 #[test_case]
 fn the_hardware_has_at_least_the_asid_bits_the_allocator_assumes() {
     let bits = super::asid_bits();
@@ -190,7 +190,7 @@ fn the_stack_is_writable_and_not_executable() {
 /// The UART is mapped as device memory in the kernel's flags.
 ///
 /// Base Sv39 has no memory-type field, so this checks the RSW bit `page_tables::Sv39` keeps, not what
-/// the hardware was told. See notes/riscv-port/memory.md and notes/page-tables.md.
+/// the hardware was told. See nifeos/record:notes/riscv-port/memory.md and nifeos/record:notes/page-tables.md.
 #[test_case]
 fn the_uart_is_mapped_as_device_memory() {
     use crate::arch::mmu;
@@ -306,7 +306,7 @@ fn the_kernel_mapper_refuses_to_overwrite() {
 /// and PPN intact.
 ///
 /// That switching between them flushes nothing is
-/// `system_tests/src/user/address_space_tests.rs`'s to prove (notes/riscv-tlb-shootdown.md).
+/// `system_tests/src/user/address_space_tests.rs`'s to prove (nifeos/record:notes/riscv-tlb-shootdown.md).
 #[test_case]
 fn the_satp_carries_the_address_spaces_asid() {
     use crate::user::AddressSpace;

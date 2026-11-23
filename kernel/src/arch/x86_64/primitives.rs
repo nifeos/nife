@@ -30,7 +30,7 @@ pub fn current_sp() -> u64 {
 ///
 /// `sfence`. x86 is TSO, so ordinary stores are already ordered against each other; `sfence` covers
 /// the exceptions TSO does not, non-temporal stores and write-combining memory, either of which a
-/// DMA buffer can be. See notes/x86-port/what-does-not-fit.md.
+/// DMA buffer can be. See nifeos/record:notes/x86-port/what-does-not-fit.md.
 pub fn direct_memory_access_write_barrier() {
     instructions::sfence();
 }
@@ -40,7 +40,7 @@ pub fn direct_memory_access_write_barrier() {
 /// Nothing to do: x86's instruction cache is architecturally coherent with the data caches, so a
 /// fetch sees an earlier store, on this core and on every other. A serializing instruction would
 /// still be needed if the store and the fetch were separated by a jump the CPU may already have
-/// speculated past; no caller here does that. See notes/x86-port/what-does-not-fit.md.
+/// speculated past; no caller here does that. See nifeos/record:notes/x86-port/what-does-not-fit.md.
 pub fn sync_icache(va: u64, len: usize) {
     let _ = (va, len);
 }

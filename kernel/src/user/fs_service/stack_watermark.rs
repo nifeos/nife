@@ -1,7 +1,7 @@
 //! The FS server's stack, and the instrument that measures it: the stack size, the
 //! poison its pages are filled with, and [`fs_stack_used`], which reads the high-water back.
 //!
-//! See notes/fs-server/stack-sizing.md.
+//! See nifeos/record:notes/fs-server/stack-sizing.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.

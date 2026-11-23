@@ -4,7 +4,7 @@
 //! [`run`] replaces the hand-over: it brings up the NIC (or, on a JH7110, the Ethernet port),
 //! preflights the condition that makes its numbers mean anything, waits for a DHCP lease, times one
 //! TCP transfer from the peer the image was built for, prints a `network-bench:` verdict and halts.
-//! See notes/bench-boots.md.
+//! See nifeos/record:notes/bench-boots.md.
 
 //! # BUGS
 //! - The DHCP wait has no bound; a boot with no lease ends on the `waiting` line, before any
@@ -139,7 +139,7 @@ type Frames = crate::e1000e::FrameCounts;
 
 /// The `frames` line: good frames received and transmitted, and the two receive error counts, from
 /// the device's own counters, totaled since bring-up. These are the counts in both directions the
-/// cabled I219 run records (notes/e1000e/the-i219-cabled-run.md).
+/// cabled I219 run records (nifeos/record:notes/e1000e/the-i219-cabled-run.md).
 fn print_frames(when: &str, total: &mut Frames) {
     let Some(read) = service::frame_counts() else {
         println!("network-bench: frames    : {when}, no counters (no bring-up recorded a device)");
@@ -169,7 +169,7 @@ fn print_transfer(bytes: u64, ticks: u64) {
 /// The `receive` line, from the drain client's second report: how many `RECEIVE` calls carried
 /// the stream, how full each was, and where the time went, inside a call (the server's
 /// turnaround: one poll of the NIC, smoltcp, the copy into the frame and the IPC round trip) or
-/// between calls (the client's own loop). See notes/designware-ethernet/the-receive-rate.md.
+/// between calls (the client's own loop). See nifeos/record:notes/designware-ethernet/the-receive-rate.md.
 fn print_receive(cli: crate::sched::RendezvousId, bytes: u64, ticks: u64) {
     let [calls, inside, full, ..] = crate::sched::ipc_receive(cli);
     let hertz = arch::timer::frequency().max(1);

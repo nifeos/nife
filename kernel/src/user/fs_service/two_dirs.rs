@@ -1,4 +1,4 @@
-//! Two directory grants to one process. See notes/fs-server/kernel-wiring.md.
+//! Two directory grants to one process. See nifeos/record:notes/fs-server/kernel-wiring.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -38,7 +38,7 @@ pub struct TwoDirGrant {
 /// return its report endpoint. `None` when no RedoxFS disk is attached.
 ///
 /// Both caretakers map the same file-channel frame, which is safe because the program has at most
-/// one `CALL` in flight. See notes/fs-server/kernel-wiring.md.
+/// one `CALL` in flight. See nifeos/record:notes/fs-server/kernel-wiring.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn start_granted_two_dirs(
     blk_image: &'static [u8],

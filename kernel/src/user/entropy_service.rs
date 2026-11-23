@@ -263,7 +263,7 @@ const TRNG_VA: u64 = address_space_layout::pair_page(0x0000_0000_0094_0000);
 /// riscv64 only, since the JH7110 is a RISC-V `SoC`. QEMU's `virt` board has no such node, so CI
 /// takes the `None` path (`discover_finds_nothing_on_qemus_virt_board` pins it).
 ///
-/// Name: recorded (design/roadmap/0388-an-acronym-sweep-the-tree-can-do-at-once.md). The block
+/// Name: recorded (nifeos/record:design/roadmap/0388-an-acronym-sweep-the-tree-can-do-at-once.md). The block
 /// argues the abbreviation is the hardware block's own, spelled `starfive,jh7110-trng` by the
 /// vendor's tree and `jh7110-trng.c` by mainline, a name received rather than authored. It does
 /// not settle that: AGENTS.md puts public function names in an architect's hands, and calef has
@@ -287,7 +287,7 @@ pub fn jh7110_trng_device() -> Option<jh7110_entropy::Discovered> {
 /// The driver holds a request endpoint, a readiness endpoint, and one page of device memory: the
 /// first `0x1000` of the TRNG's `0x4000` register window at [`TRNG_VA`], which covers every
 /// register `jh7110_entropy::registers` names. No DMA page, interrupt or transport. See
-/// notes/entropy/jh7110-trng.md.
+/// nifeos/record:notes/entropy/jh7110-trng.md.
 fn start_jh7110(image: &'static [u8]) -> Option<Wiring> {
     let device = jh7110_trng_device()?;
 
@@ -335,7 +335,7 @@ fn start_jh7110(image: &'static [u8]) -> Option<Wiring> {
 /// beside the bring-up report: [`Wiring::clock`] records what the hardware answered, not where it
 /// was asked. `None` on a machine that is not a JH7110.
 ///
-/// Name: recorded (design/roadmap/0388-an-acronym-sweep-the-tree-can-do-at-once.md). The same
+/// Name: recorded (nifeos/record:design/roadmap/0388-an-acronym-sweep-the-tree-can-do-at-once.md). The same
 /// received-spelling question as `jh7110_trng_device`, sharpened by calef's 2026-09-13 ruling
 /// that the crate spelling this block's clocks expands to `jh7110_clock_and_reset`. The function
 /// waits on the name ratification queue beside its sibling; it does not rule for itself.

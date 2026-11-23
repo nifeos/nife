@@ -18,7 +18,7 @@ use super::*;
 // a process's root must carry the kernel's high half ([`share_kernel_half`]). PCID, the ASID
 // equivalent, is off (`CR4.PCIDE` clear), so no tag can be written into `CR3` and every `mov cr3`
 // discards the whole non-global TLB; [`ttbr0_value`] and [`flush_asid`] say so. See
-// notes/x86-port/kernel-page-tables.md.
+// nifeos/record:notes/x86-port/kernel-page-tables.md.
 // ---------------------------------------------------------------------------------------------
 
 /// The raw `CR3`, flag and PCID bits included. [`current_root`] is this with the address masked

@@ -1,6 +1,6 @@
 //! The machine description, printed on every boot that is not a test or a measurement.
 //!
-//! `script/lint` reads [`print_machine_description`] from this file. See notes/boot-ladder.md.
+//! `script/lint` reads [`print_machine_description`] from this file. See nifeos/record:notes/boot-ladder.md.
 //!
 //! Name: provisional (milestone 876's lane, 2026-10-12 UTC).
 
@@ -13,7 +13,7 @@ use super::*;
 /// `hvm_start_info`). On a board with no readable serial console these lines are the transcript,
 /// so nothing in the body may be gated on a boot-mode feature, which `script/lint` checks. The
 /// `test` and `bench` exclusions on the signature are not that switch: neither boot reaches here.
-/// See notes/boot-ladder.md, "The machine description".
+/// See nifeos/record:notes/boot-ladder.md, "The machine description".
 #[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
 pub(super) fn print_machine_description(boot_info_pointer: usize) {
     println!();
@@ -111,7 +111,7 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
     }
 
     // 8. The IOMMU, or its absence: without one, DMA confinement has no hardware half
-    //    (notes/dma.md).
+    //    (nifeos/record:notes/dma.md).
     arch::iommu::print_summary();
 
     // After the eight: what this kernel did to the machine, not what the machine is.
@@ -137,7 +137,7 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
 
 /// Return the address of the linker script's `__stack_top`.
 ///
-/// The symbol's address is the value; there is nothing stored at it. See notes/linker-scripts.md.
+/// The symbol's address is the value; there is nothing stored at it. See nifeos/record:notes/linker-scripts.md.
 #[cfg(not(any(test, feature = "system_tests")))]
 #[cfg(not(feature = "bench"))] // tour-only, and the bench boot skips the tour
 fn stack_top() -> usize {

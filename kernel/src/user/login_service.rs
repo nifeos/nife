@@ -12,7 +12,7 @@ const CRED_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e3_0000);
 /// It pays `page_frame::MAP`'s page-table cost when the run maps the frame `login`'s `CONNECT`
 /// step delegates, before the run holds any other budget, and one page for the run's report
 /// endpoint. [`wait_client`] reclaims it once the run's thread is dead, since it pays for tables in
-/// that run's address space. See notes/login.md, "The kernel's test harness".
+/// that run's address space. See nifeos/record:notes/login.md, "The kernel's test harness".
 const CLIENT_SCRATCH_UT_PAGES: u64 = 5;
 
 /// Stack pages beyond the one page `run` maps. `login` parses an ELF and builds a child address
@@ -161,7 +161,7 @@ fn map_blob(space: &mut AddressSpace, base: u64, bytes: &[u8]) {
 /// service's root directory and shared page (`fs_service::root_directory`). After
 /// `construction_pages` is spent every login is answered [`login_contract::DENIED`], since nothing
 /// reclaims a caretaker's region (`components/src/login.rs`'s BUGS). `schedule`
-/// maps the durable-session programs. See notes/login.md, "The kernel's test harness".
+/// maps the durable-session programs. See nifeos/record:notes/login.md, "The kernel's test harness".
 pub fn start(
     image: &'static [u8],
     verify: RendezvousId,
@@ -363,7 +363,7 @@ fn grant_in_slot_order(tid: crate::thread::ThreadId, slots: &LoginSlots) {
     } = slots;
     // Granted one at a time, not from an array: an unoptimised build materialises a `[(&str, Cap);
     // 8]` whole, and that took `start`'s frame past the 4096-byte guard page
-    // `script/stack-frame-check` gates against. See notes/login.md, "The kernel's test harness".
+    // `script/stack-frame-check` gates against. See nifeos/record:notes/login.md, "The kernel's test harness".
     let mut next_slot = 0u64;
     let mut grant_in_order = |name: &str, capability: crate::capability_object::Capability| {
         let slot = sched::thread_control_block_insert_capability(tid, capability, None)

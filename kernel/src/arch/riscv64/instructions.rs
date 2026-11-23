@@ -6,7 +6,7 @@
 //! CSR: `wfi`, the fences and the two general-register moves live here too.*
 //!
 //! Each function stays one instruction, or one fixed sequence, and says what a model must honour.
-//! A stub is an assumption about the hardware. See notes/kernel-proofs/stubbing-an-instruction.md.
+//! A stub is an assumption about the hardware. See nifeos/record:notes/kernel-proofs/stubbing-an-instruction.md.
 
 //! # Codegen
 //!

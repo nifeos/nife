@@ -1,5 +1,5 @@
 //! **Booting the progenitor**: loading it, measuring it and endowing it with the boot capability
-//! set. See notes/progenitor-boot.md.
+//! set. See nifeos/record:notes/progenitor-boot.md.
 //!
 //! Name: provisional (milestone 872's lane, 2026-10-11 UTC; §281 (the kernel's user-mode file
 //! splits into child modules of `user`)).
@@ -22,7 +22,7 @@ pub const PROGENITOR_ENTRY: &str = measured_boot::PROGENITOR;
 /// Fourteen pages (56 KiB), from `crate::progenitor_stack`'s measured peaks on
 /// `script/swish-check`. Debug is the deep build, at 42 to 44 KB after `jig rollback` on all three
 /// architectures, and the gauge's floor (`progenitor_stack::HEADROOM_FLOOR`, 8 KiB) is what fails
-/// `swish-check`. notes/stack/progenitor-stack.md has the frames and the tables.
+/// `swish-check`. nifeos/record:notes/stack/progenitor-stack.md has the frames and the tables.
 ///
 /// Name: ratified 2026-10-18 (calef: "Progenitors numbers are ratified."), replacing `INIT_STACK_PAGES`.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
@@ -35,7 +35,7 @@ const _: () = assert!(PROGENITOR_STACK_PAGES <= address_space_layout::MAXIMUM_ST
 /// `archive` is the initial ramdisk, which must hold [`PROGENITOR_ENTRY`]. This measures the
 /// progenitor, builds its address space (its segments, a deep stack and the whole archive
 /// read-only), endows it with the boot capability set and starts it, without blocking. The slot
-/// layout is one on all three architectures (notes/progenitor-boot.md has it).
+/// layout is one on all three architectures (nifeos/record:notes/progenitor-boot.md has it).
 ///
 /// Returns the progenitor's thread, or the [`LoadError`] that refused its image.
 ///
@@ -126,7 +126,7 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
         .expect("start");
 
     // riscv64 arms only once the driver is running, because the boot-hart lottery forbids arming
-    // earlier (`notes/harts-and-pes.md`, [`VirtualIoBootGrant::intid`]): the UART's PLIC source, the
+    // earlier (`nifeos/record:notes/harts-and-pes.md`, [`VirtualIoBootGrant::intid`]): the UART's PLIC source, the
     // virtio-rng device's and the NIC's, all pinned to the boot hart, then external interrupts.
     #[cfg(target_arch = "riscv64")]
     {
@@ -323,7 +323,7 @@ fn grant_file_service(tid: crate::thread::ThreadId) -> (u64, Option<u64>) {
 /// The trio carries `GRANT` so the progenitor can delegate it to the entropy service it builds; its
 /// probe of an ungranted slot (`NoSuchSlot`) is how it tells an absent device. The slots are
 /// explicit rather than first-free, because the file-service pair before them is conditional. See
-/// [`boot_virtual_io_rng_device`], [`boot_instruction_entropy`] and notes/progenitor-boot.md.
+/// [`boot_virtual_io_rng_device`], [`boot_instruction_entropy`] and nifeos/record:notes/progenitor-boot.md.
 fn grant_entropy_source(tid: crate::thread::ThreadId) -> Option<VirtualIoBootGrant> {
     let virtual_io_rng = boot_virtual_io_rng_device();
     if let Some(g) = &virtual_io_rng {
@@ -381,7 +381,7 @@ fn grant_entropy_source(tid: crate::thread::ThreadId) -> Option<VirtualIoBootGra
 /// the grants to the shell, and a `graphical_terminal` launch builds the drivers. No gpu is wired
 /// without `gpu_driver` and `display_terminal` in the archive, and no keyboard without a gpu beside
 /// it; a graphical session's keystrokes then come over the UART (milestone 192 (a keyboard on real
-/// silicon)'s option A). See notes/progenitor-boot.md.
+/// silicon)'s option A). See nifeos/record:notes/progenitor-boot.md.
 fn wire_graphics() -> (
     Option<display_service::GpuDevice>,
     Option<keyboard_service::KeyboardDevice>,
@@ -417,7 +417,7 @@ fn wire_graphics() -> (
 /// progenitor can `UNMAP` the scratch pages it filled for a child and can pass the right to nobody.
 /// The reboot object is `WRITE | GRANT` (DECISIONS §251 (restarting the machine is a kernel
 /// object)): the progenitor never invokes it, but it must hold the `WRITE` it places in the one
-/// child whose manifest declares `reboot`. See notes/progenitor-boot.md.
+/// child whose manifest declares `reboot`. See nifeos/record:notes/progenitor-boot.md.
 fn grant_machine_slots(tid: crate::thread::ThreadId, aspace_name: u64) {
     let s23 = crate::sched::thread_control_block_insert_capability(
         tid,
@@ -481,7 +481,7 @@ fn grant_disk_tree(tid: crate::thread::ThreadId, fs_pool: Option<u64>) {
 /// check the table itself before it reads it. `READ` alone: the progenitor maps it read-only and can
 /// neither change it nor hand it on, since it has no `GRANT`. Past slot 33, the highest any other
 /// grant reaches, so no slot moves and the number never depends on what the machine has. See
-/// notes/progenitor-boot.md.
+/// nifeos/record:notes/progenitor-boot.md.
 fn grant_base_digest(tid: crate::thread::ThreadId) {
     let digest = crate::trust::base_digest()
         .expect("the table was held to the loader's nife.base before the progenitor was built");
@@ -513,7 +513,7 @@ fn grant_base_digest(tid: crate::thread::ThreadId) {
 /// machine is a kernel object the progenitor hands out), "A board's PMIC route runs in userspace").
 /// `WRITE | GRANT`, the reboot object's rights at slot 31: the spawn service keeps it and hands
 /// `WRITE` to the program that declares reboot. Past slot 40, the self-test's screen endpoint, so no slot moves; empty on every
-/// machine CI boots. See notes/progenitor-boot.md.
+/// machine CI boots. See nifeos/record:notes/progenitor-boot.md.
 fn grant_power_management_chip_route(tid: crate::thread::ThreadId) {
     let Some(route) = super::power_management_chip_route_service::ensure() else {
         return;

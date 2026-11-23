@@ -35,7 +35,7 @@ pub(crate) fn print_summary() {
         );
         // The cost, measured, and the leaf size that set it: RAM goes in the largest block the
         // machine offers and everything else in 4 KiB pages (the BUGS of
-        // notes/x86-port/kernel-page-tables.md).
+        // nifeos/record:notes/x86-port/kernel-page-tables.md).
         crate::println!(
             "                  : {} KiB of page tables (ram in {} blocks), no identity map, guard pages are holes",
             TABLE_FRAMES.load(Ordering::Relaxed) * PAGE_SIZE / 1024,
@@ -94,7 +94,7 @@ static KERNEL_MMU: crate::sync::InterruptSafeMutualExclusionLock<()> =
 /// nothing here can silence the console.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     let free_before = memory::free_page_frames();
     let root = memory::alloc()
@@ -108,7 +108,7 @@ pub fn initialize() {
 
     // SAFETY: `root` is zeroed and page-aligned; `phys_to_ptr` is valid because `boot.s` installed
     // the direct map over the low 4 GiB before any Rust ran, so every frame the mapper allocates is
-    // addressable through it (notes/x86-port/kernel-page-tables.md's BUGS has the >4 GiB case).
+    // addressable through it (nifeos/record:notes/x86-port/kernel-page-tables.md's BUGS has the >4 GiB case).
     let mut mapper = unsafe {
         Mapper::<_, _, Ia32e>::new(
             root,

@@ -1,7 +1,7 @@
 //! **The virtio keyboard driver's cost**: `keyboard_up` and `keyboard_event`, reported only by
 //! `script/bench --keyboard`, which attaches the keyboard and presses its keys. Never gated: an
 //! ordinary bench boot has no keyboard and prints neither row. See
-//! notes/benchmarks/kernel-bench-harness.md, "The keyboard rows".
+//! nifeos/record:notes/benchmarks/kernel-bench-harness.md, "The keyboard rows".
 //!
 //! Name: provisional (2026-10-24 UTC), for the module, the file and both rows.
 

@@ -2,7 +2,7 @@
 //!
 //! `thread.rs` asks for a context for a kernel or a user thread and never names a register. This
 //! module owns which callee-saved register (`ra`, `s0`..`s11`) carries the closure, the entry or
-//! the return; `sp` is the context pointer itself. See notes/riscv-port/hal-leaks.md.
+//! the return; `sp` is the context pointer itself. See nifeos/record:notes/riscv-port/hal-leaks.md.
 
 /// The callee-saved registers, as `switch_to` pushes them.
 ///

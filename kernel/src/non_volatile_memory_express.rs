@@ -3,7 +3,7 @@
 //! process can reach BAR0. Everything else about NVMe (reset, the admin rings, IDENTIFY, the I/O
 //! queues, every command) runs in userspace, in the two roles of the `non_volatile_memory_express`
 //! program (`components/src/non_volatile_memory_express.rs`). See
-//! notes/non-volatile-memory-express.md.
+//! nifeos/record:notes/non-volatile-memory-express.md.
 //!
 //! Name: ratified 2026-09-17 (calef, DECISIONS §154), performed 2026-09-18. Introduced 2026-08-15
 //! with milestone 53 (the board's own peripherals)'s NVMe block driver as `nvme.rs`, and it takes
@@ -131,7 +131,7 @@ pub fn find_and_confine() -> Result<Found, Absent> {
 /// The caller has had the admin process take the controller down
 /// ([`driver_process_contract::non_volatile_memory_express::RETIRE`]) and has outlived every
 /// process that mapped the run, because freeing under an enabled controller is use-after-free by
-/// hardware (notes/dma.md). The IOMMU domain still names the run until the next
+/// hardware (nifeos/record:notes/dma.md). The IOMMU domain still names the run until the next
 /// [`find_and_confine`], reachable only by a controller that is off.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.

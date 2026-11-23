@@ -1,6 +1,6 @@
 //! Region reaping: what a region's destruction does to every thread, rendezvous, notification and
 //! timer it pinned, `reclaim_region`, and the supervised reap and survey built on them (§271 part
-//! 3). See notes/region-reaping.md.
+//! 3). See nifeos/record:notes/region-reaping.md.
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).
@@ -8,7 +8,7 @@
 use super::*;
 
 /// What the refuse phase of [`reap_region_objects`] decides about one resident thread. See
-/// notes/region-reaping.md ("The verdict on one resident").
+/// nifeos/record:notes/region-reaping.md ("The verdict on one resident").
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum RegionReap {
     /// Free its pages: it can never run again and no core is standing on its stack.
@@ -33,9 +33,9 @@ pub(super) enum RegionReap {
 /// [`being_reaped`](crate::thread::Thread::being_reaped): a core is standing on the thread's kernel
 /// stack, or the reaper is freeing it outside `IPC_TABLES`. `state` says whether the thread can run
 /// again and `standing` whether freeing it would unmap a stack in use; they are different
-/// questions. Returns the verdict; the table and the reasons are in notes/region-reaping.md ("The
+/// questions. Returns the verdict; the table and the reasons are in nifeos/record:notes/region-reaping.md ("The
 /// verdict on one resident"), and the stack fault behind `standing` in
-/// notes/stack/kernel-stack-freed-under-its-owner.md.
+/// nifeos/record:notes/stack/kernel-stack-freed-under-its-owner.md.
 pub(super) fn region_reap_verdict(state: State, standing: bool) -> RegionReap {
     if matches!(state, State::Ready | State::Running) {
         RegionReap::RefuseAndArm
@@ -56,8 +56,8 @@ pub(super) fn region_reap_verdict(state: State, standing: bool) -> RegionReap {
 /// without waking it.
 ///
 /// `tid` must be `Blocked` with its wait recorded in `handshake.wait_on`. Waking it would let a
-/// stale `Reply` forge an answer to its next `CALL`. See notes/region-reaping.md ("Ending a blocked
-/// resident") and notes/blocked-thread-teardown.md.
+/// stale `Reply` forge an answer to its next `CALL`. See nifeos/record:notes/region-reaping.md ("Ending a blocked
+/// resident") and nifeos/record:notes/blocked-thread-teardown.md.
 ///
 /// Context: caller holds `IPC_TABLES`.
 pub(super) fn finish_blocked_resident(sched: &mut IpcTables, tid: ThreadId) {
@@ -126,7 +126,7 @@ pub(super) fn finish_blocked_resident(sched: &mut IpcTables, tid: ThreadId) {
 /// Removes the region's rendezvous, notifications, timers and processes on every pass and ends each
 /// `Blocked` resident in place. `Err`, with the region still pinned, if a resident can still run
 /// (its kill is armed) or stands on its kernel stack; otherwise every resident is removed. See
-/// notes/region-reaping.md ("The phases of `reap_region_objects`").
+/// nifeos/record:notes/region-reaping.md ("The phases of `reap_region_objects`").
 ///
 /// Context: takes `IPC_TABLES`, so it must run outside any teardown `Drop`.
 pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
@@ -141,7 +141,7 @@ pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
     // Rendezvous phase, first and refusal or not: draining a rendezvous wakes its waiters, which
     // lets a resident parked in `RECEIVE` here become schedulable and spend its kill. Every phase
     // that removes rescans for one victim at a time, because a list of victims would be a scratch
-    // array on one of the kernel's deepest frames (notes/stack-high-water.md).
+    // array on one of the kernel's deepest frames (nifeos/record:notes/stack-high-water.md).
     loop {
         let doomed = sched
             .rendezvous_table
@@ -267,7 +267,7 @@ pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
 ///
 /// Each refusing check overwrites it and nothing clears it, so read it right after the refusal it
 /// explains. For a resident it records the last one the refuse phase turned away, with the two
-/// flags that make up `standing`. See notes/region-reaping.md ("The supervised reap").
+/// flags that make up `standing`. See nifeos/record:notes/region-reaping.md ("The supervised reap").
 ///
 /// Name: provisional, minted 2026-10-22 (UTC) by lane/321-reclaim-refused.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
@@ -325,7 +325,7 @@ pub fn last_reclaim_refusal() -> Option<ReclaimRefusal> {
 ///
 /// Context: takes `IPC_TABLES`, then the address-space registry's lock; never inside a `Drop`.
 ///
-/// # BUGS (in full in notes/region-reaping.md)
+/// # BUGS (in full in nifeos/record:notes/region-reaping.md)
 /// - `Err` and `Ok` both end what they find, so `reclaim_region(r).is_err()` dooms the answer.
 /// - It reaches outside the region: callers of its rendezvous and of reaped threads get `Gone`.
 pub fn reclaim_region(region: u64) -> Result<(), ()> {
@@ -406,7 +406,7 @@ const fn survey_includes(
 /// `ep` is the invoked rendezvous and `tid` the id on the death message. Authorized when the
 /// thread's `fault_ep` is `ep` (`reap_decision`), it reclaims the region the TCB came
 /// from. Returns `NotSupervised`, `StillAlive`, or `NotPermitted` when the reclaim refuses. See
-/// notes/region-reaping.md ("The supervised reap").
+/// nifeos/record:notes/region-reaping.md ("The supervised reap").
 ///
 /// Context: takes and releases `IPC_TABLES`, yielding while the corpse is still on its core.
 pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), moho_abi::Error> {
@@ -445,8 +445,8 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), moho_abi::
 /// `record` a `moho_abi::survey::record` selector. Returns `(next_cursor, tid, word)`, where `word` is
 /// the selected fact; a `next_cursor` of `moho_abi::survey::DONE` ends the walk and the other words are
 /// 0. A thread is in the domain when its `fault_ep` is `ep` (`survey_includes`). An
-/// unknown `record` is `BadMethod`, before the walk. See notes/process-view.md and
-/// notes/region-reaping.md ("The survey").
+/// unknown `record` is `BadMethod`, before the walk. See nifeos/record:notes/process-view.md and
+/// nifeos/record:notes/region-reaping.md ("The survey").
 ///
 /// Context: takes `IPC_TABLES` for one entry and releases it before returning.
 pub fn survey_supervised(
@@ -615,7 +615,7 @@ mod tests {
             .expect("retype a TCB from the region");
 
         // Named, not counted: a headcount races neighboring threads. See
-        // notes/load-sensitive-assertions.md.
+        // nifeos/record:notes/load-sensitive-assertions.md.
         assert!(
             crate::sched::is_thread_present(tid),
             "the embryo should be in the table before reclaim"

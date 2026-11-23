@@ -3,7 +3,7 @@
 //!
 //! Three routes, strongest first, each announced first since a reset that works never returns: the
 //! FADT's reset register, port `0xCF9` written `0x02` then `0x0E` (full reset, so cold), then the
-//! 8042's `0xFE` pulse, a tenth of a second each. See notes/board-reboot.md.
+//! 8042's `0xFE` pulse, a tenth of a second each. See nifeos/record:notes/board-reboot.md.
 
 //! # BUGS
 //!

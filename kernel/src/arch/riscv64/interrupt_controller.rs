@@ -3,7 +3,7 @@
 //! The arch side of the portable `arch::interrupt_controller` surface, the twin of aarch64's GIC
 //! adapter, resolving
 //! to `drivers::plic` so the driver name stays inside `arch/` (DECISIONS §4 (kernel shape)). See
-//! notes/riscv-port/traps.md.
+//! nifeos/record:notes/riscv-port/traps.md.
 //!
 //! Name: ratified 2026-10-27 (#2797). `interrupts` already names the masking module, so this one names the controller.
 
@@ -14,7 +14,7 @@ use core::sync::atomic::{AtomicU16, AtomicUsize, Ordering};
 /// which case [`s_context_of`] falls back to the `2*hart + 1` formula.
 ///
 /// A table, because the formula is QEMU's layout: on the JH7110 hart h's S context is `2h`. See
-/// notes/riscv-port/traps.md.
+/// nifeos/record:notes/riscv-port/traps.md.
 static S_CTX: [AtomicUsize; machine_discovery::plic::MAXIMUM_CONTEXT_HARTS] =
     [const { AtomicUsize::new(CTX_UNKNOWN) }; machine_discovery::plic::MAXIMUM_CONTEXT_HARTS];
 const CTX_UNKNOWN: usize = usize::MAX;
@@ -131,7 +131,7 @@ pub fn enable(intid: u32) {
 ///
 /// PCI functions here raise INTx onto PLIC inputs from `mmu::PCI_INTERRUPT_NUMBER_BASE`, which
 /// `kernel/src/pci.rs` falls back to. A board with the AIA's IMSIC would implement this. See
-/// notes/riscv-port/traps.md.
+/// nifeos/record:notes/riscv-port/traps.md.
 pub(crate) fn alloc_msi_vector(
     _requester_id: u32,
 ) -> Option<(u32, pci_configuration_space::MsiTarget)> {
@@ -162,7 +162,7 @@ pub(crate) fn device_line_interrupts() -> Option<u64> {
 /// source stays disabled until [`enable`] routes it.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     if let Some((plic_phys, _)) = crate::memory::plic_region() {
         // SAFETY: `mmu::initialize` mapped the PLIC device-typed in the direct map, and this is its

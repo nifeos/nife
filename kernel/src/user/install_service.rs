@@ -1,12 +1,12 @@
 //! The offer a booted stick makes to install itself onto an NVMe disk not already carrying nife,
 //! asked before the capability to destroy the disk exists; a person must type [`CONFIRMATION`] in
-//! time. Nothing here writes a byte to a disk. See notes/installing.md.
+//! time. Nothing here writes a byte to a disk. See nifeos/record:notes/installing.md.
 //!
 
 //! # BUGS
 //!
-//! - x86_64 only (design/roadmap/0568): the kernel reads the UART to ask, before the input driver.
-//! - The disk is named by size, not model (design/roadmap/0569).
+//! - x86_64 only (nifeos/record:design/roadmap/0568): the kernel reads the UART to ask, before the input driver.
+//! - The disk is named by size, not model (nifeos/record:design/roadmap/0569).
 //! - It checks for nife and nothing else, so a disk holding Windows looks empty (0570).
 //! - A disk already carrying nife, even half-installed, is never offered again (0572).
 //! - Not crash-atomic: a power cut between the partitioner and `mkfs` leaves an unmountable disk.
@@ -178,7 +178,7 @@ pub(crate) fn offer() {
 /// that window, and a map budget; no entropy and no boot file. A `blk` endpoint is the whole disk,
 /// as `system_installer`'s `BUGS` records. What it writes is the partition table, which the
 /// filesystem server never reads after mounting, so the two never contend for a block. See
-/// notes/boot-slots.md.
+/// nifeos/record:notes/boot-slots.md.
 pub(crate) fn confirm() {
     let Some(slot) = crate::memory::boot_slot() else {
         return; // No chooser started this boot: there is nothing to confirm.

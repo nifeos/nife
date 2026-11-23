@@ -3,7 +3,7 @@
 //!
 //! `tp` is a general register, so it travels in the trap frame and the context switch moves
 //! nothing. The kernel's copy matters only at the first entry to U-mode and when a thread sets its
-//! own. U-mode may also write `tp` itself. See notes/thread-pointer.md.
+//! own. U-mode may also write `tp` itself. See nifeos/record:notes/thread-pointer.md.
 
 use super::exceptions::TrapFrame;
 

@@ -1,9 +1,9 @@
 //! **The `x86_64` architecture layer.** The third implementation of the `arch/` contract (milestone
-//! 161, notes/x86-port.md), and the one milestone 20 said would be the real test of it: the first
+//! 161, nifeos/record:notes/x86-port.md), and the one milestone 20 said would be the real test of it: the first
 //! two architectures are both RISC machines with a device tree, weak memory and a similar MMU, and
 //! this one is none of those things.
 //!
-//! notes/x86-port.md says what runs here, how to build, boot and test it, and what had to change
+//! nifeos/record:notes/x86-port.md says what runs here, how to build, boot and test it, and what had to change
 //! above `arch/`; its appendix what-does-not-fit.md records where the seam did not stretch and the
 //! two names calef ratified for it, `arch::cpu_start` and `boot_info_pointer`.
 

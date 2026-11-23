@@ -1,4 +1,4 @@
-//! A file behind a byte sink, and a file behind a byte source. See notes/sink-protocol.md.
+//! A file behind a byte sink, and a file behind a byte source. See nifeos/record:notes/sink-protocol.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.

@@ -21,7 +21,7 @@ static TP_GO: AtomicBool = AtomicBool::new(false);
 /// ticks to complete them all.
 ///
 /// Threads are spawned first and released together by `TP_GO` after the clock starts, and the
-/// caller blocks on `done`, one signal per pipeline. See notes/benchmarks/kernel-bench-harness.md.
+/// caller blocks on `done`, one signal per pipeline. See nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 pub(super) fn tp_batch(
     req: &[sched::RendezvousId],
     reply: &[sched::RendezvousId],
@@ -148,7 +148,7 @@ fn tc_best(done: sched::RendezvousId, workers: usize) -> u64 {
 /// Prints `smp_compute_*` (independent CPU-bound workers) and `smp_pipe_*` (ping-pong pairs), each
 /// solo and with every pipeline; the scaling factor is solo ns/iter over all ns/iter. `--real
 /// --smp` only, and never gates. Under HVF compute scales and pipelines do not, a property of the
-/// host. See notes/benchmarks/kernel-bench-harness.md.
+/// host. See nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 pub(super) fn smp_throughput() {
     let cpus = crate::smp::online_count();
     if cpus <= 1 {

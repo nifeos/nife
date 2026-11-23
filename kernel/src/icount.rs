@@ -4,7 +4,7 @@
 //! instruction, so a busy host cannot move these numbers. [`run`] asserts four claims: the timer
 //! fired at the armed deadline, the handler stays under a bound, no tick is missed, and the
 //! deadline advances one interval per tick. Its own boot, `-smp 1`, behind the `icount` feature,
-//! which implies `bench`. See notes/instruction-clock.md.
+//! which implies `bench`. See nifeos/record:notes/instruction-clock.md.
 //!
 //! *Provisional names throughout: the `icount` feature, this module, `tick_trace`,
 //! `script/icount`.*
@@ -117,7 +117,7 @@ fn instructions_per_tick() -> u64 {
 ///
 /// Booted without `-icount shift=0` every number would be wall clock in instruction units. A loop
 /// of a known instruction count must advance virtual time by that many nanoseconds, within 1%,
-/// which one tick admits and plain TCG or HVF does not (notes/instruction-clock.md).
+/// which one tick admits and plain TCG or HVF does not (nifeos/record:notes/instruction-clock.md).
 fn calibrate(per_tick: u64) {
     let before = crate::arch::timer::now();
     let expected = crate::arch::timer::calibration_loop(CALIBRATION_ITERS);

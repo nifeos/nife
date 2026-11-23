@@ -12,7 +12,7 @@ use super::*;
 /// After the first read the FS server serves it from memory, so the row is the confined IPC path
 /// plus a copy; the device path is `fs_seq_read`'s. `--real --smp` only, and never on the icount
 /// baseline, because the path is interrupt-driven. It is not a throughput number. See
-/// notes/benchmarks/kernel-bench-harness.md.
+/// nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 pub(super) fn fs_read() {
     // Only the `--real --smp` boot attaches the RedoxFS disk.
     if crate::smp::online_count() <= 1 {
@@ -50,8 +50,8 @@ pub(super) fn fs_read() {
 /// Six phases over one file: sequential write, sequential read, random read, a record-aligned
 /// read, random write, and the cost of producing a page of payload, which the write phases pay.
 /// Each prints a row in per-request ticks and a MiB/s probe. One transfer is 4096 bytes, the one
-/// shared page. `--real --smp` only. See notes/benchmarks/filesystem-throughput.md and
-/// notes/benchmarks/kernel-bench-harness.md.
+/// shared page. `--real --smp` only. See nifeos/record:notes/benchmarks/filesystem-throughput.md and
+/// nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 pub(super) fn fs_throughput() {
     // Only the `--real --smp` boot attaches the RedoxFS disk.
     if crate::smp::online_count() <= 1 {

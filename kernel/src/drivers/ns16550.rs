@@ -3,8 +3,8 @@
 //! The register block's shape is the board's ([`Shape`]): QEMU `virt` wires byte registers at
 //! consecutive addresses, the JH7110's `DW_apb_uart` four bytes apart with 32-bit accesses. How the
 //! registers are reached is a type parameter ([`RegisterSpace`]): memory by default, I/O ports on
-//! x86 (`arch/x86_64/port.rs`). It reaches into no globals (§4 (kernel shape)). See notes/uart.md,
-//! "The NS16550 driver", and notes/visionfive2.md.
+//! x86 (`arch/x86_64/port.rs`). It reaches into no globals (§4 (kernel shape)). See nifeos/record:notes/uart.md,
+//! "The NS16550 driver", and nifeos/record:notes/visionfive2.md.
 
 // Register indices from the UART base (multiply by the stride, `1 << reg_shift`, for the byte
 // offset: index 5 is byte offset 5 on QEMU `virt` and byte offset 0x14 on the JH7110).
@@ -84,7 +84,7 @@ impl Shape {
 }
 
 // The two clocks this kernel expects to meet, proved at compile time so the arithmetic cannot
-// drift: the JH7110's 24 MHz and QEMU virt's 3.6864 MHz (notes/visionfive2.md).
+// drift: the JH7110's 24 MHz and QEMU virt's 3.6864 MHz (nifeos/record:notes/visionfive2.md).
 const _: () = {
     assert!(Shape::divisor_for(24_000_000) == 13);
     assert!(Shape::divisor_for(3_686_400) == 2);
@@ -230,7 +230,7 @@ impl<S: RegisterSpace> Ns16550<S> {
     /// written, since the part ignores LCR writes while busy.
     ///
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-    /// design/naming/acronyms-and-abbreviations.md.
+    /// nifeos/record:design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self) {
         self.write(IER, 0x00); // interrupts off: the console polls LSR
 
@@ -306,7 +306,7 @@ impl<S: RegisterSpace> Ns16550<S> {
     /// Bounded at 64 reads, four times the FIFO depth, so a busy wire cannot hold it forever.
     ///
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/acronyms-and-abbreviations.md; `discard_waiting_bytes` drops the bytes
+    /// nifeos/record:design/naming/acronyms-and-abbreviations.md; `discard_waiting_bytes` drops the bytes
     /// `is_byte_waiting` would have reported.
     pub fn discard_waiting_bytes(&self) {
         let mut bound = 64u32;
@@ -318,14 +318,14 @@ impl<S: RegisterSpace> Ns16550<S> {
 
     /// Raise this UART's interrupt line: set `IER.ETBEI` with `LSR.THRE` set, which asserts at
     /// once on a polling console. For the RISC-V interrupt-delivery tests, which have no SGI
-    /// (notes/interrupts.md, "Testing it on RISC-V, which has no SGI"). Test builds only.
+    /// (nifeos/record:notes/interrupts.md, "Testing it on RISC-V, which has no SGI"). Test builds only.
     ///
     /// Waits, bounded, for `LSR.THRE` first: on real silicon setting `ETBEI` while THRE is 0 only
     /// arms the interrupt for the next 0-to-1 edge, which a polling console may never make. QEMU
-    /// has no transmit latency and never shows it. See notes/uart.md, "The NS16550 driver".
+    /// has no transmit latency and never shows it. See nifeos/record:notes/uart.md, "The NS16550 driver".
     ///
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/acronyms-and-abbreviations.md; `enable_transmit_interrupt` names the interrupt
+    /// nifeos/record:design/naming/acronyms-and-abbreviations.md; `enable_transmit_interrupt` names the interrupt
     /// it raises.
     #[cfg(any(test, feature = "system_tests"))]
     pub fn enable_transmit_interrupt(&self) {

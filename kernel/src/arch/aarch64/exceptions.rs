@@ -1,7 +1,7 @@
 //! Exception handling.
 //!
 //! One mechanism serves faults, interrupts and system calls: each switches to EL1 and jumps to the
-//! vector table the kernel installed. See notes/exceptions.md, "The dispatcher's arms".
+//! vector table the kernel installed. See nifeos/record:notes/exceptions.md, "The dispatcher's arms".
 
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
@@ -60,7 +60,7 @@ impl TrapFrame {
     }
 
     /// Build the frame that drops a brand-new thread to EL0 at `entry` on `user_sp`, with `args` in
-    /// `x0`..`x2`, so portable `user.rs` never names `elr`, `spsr` or `sp_el0` (notes/riscv-port.md,
+    /// `x0`..`x2`, so portable `user.rs` never names `elr`, `spsr` or `sp_el0` (nifeos/record:notes/riscv-port.md,
     /// leak #3).
     ///
     /// `spsr = 0` returns to `EL0t`, AArch64, with interrupts unmasked, so a tight-loop user thread
@@ -89,7 +89,7 @@ unsafe extern "C" {
 
 /// Drop to EL0 by returning from the exception into `frame`, built by
 /// [`TrapFrame::for_user_entry`]. `#[inline(always)]` is load-bearing, and a frame with `elr == 0`
-/// is refused. See notes/exceptions.md, "Entering EL0 for the first time".
+/// is refused. See nifeos/record:notes/exceptions.md, "Entering EL0 for the first time".
 ///
 /// # Safety
 /// `frame` must be a correctly-built, writable `TrapFrame` at the top of the current thread's kernel
@@ -250,7 +250,7 @@ const VECTOR_NAMES: [&str; 16] = [
 /// Until it returns, it doesn't.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     unsafe extern "C" {
         static exception_vectors: core::ffi::c_void;
@@ -262,7 +262,7 @@ pub fn initialize() {
     unsafe { instructions::write_vbar(base) };
 
     // Without the `isb` the VBAR_EL1 write need not be in effect for the next instruction, which is
-    // when a fault might arrive. See notes/exceptions.md, "The ISB that is easy to forget".
+    // when a fault might arrive. See nifeos/record:notes/exceptions.md, "The ISB that is easy to forget".
     instructions::isb();
 }
 
@@ -284,10 +284,10 @@ unsafe extern "C" {
 }
 
 /// **The outer half of the trap path, on the interrupted stack**, called from every vector entry
-/// with the saved state and which slot fired (`x0`, `x1`, per AAPCS64; notes/registers.md).
+/// with the saved state and which slot fired (`x0`, `x1`, per AAPCS64; nifeos/record:notes/registers.md).
 ///
 /// It picks the stack the handler runs on, and runs any deferred `schedule()` afterwards, which may
-/// run only on a stack the thread owns. See `kernel/src/interrupt_stack.rs` and notes/exceptions.md,
+/// run only on a stack the thread owns. See `kernel/src/interrupt_stack.rs` and nifeos/record:notes/exceptions.md,
 /// "The split around the interrupt stack".
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
@@ -362,7 +362,7 @@ extern "C" fn exception_body(frame: &mut TrapFrame, index: u64) -> bool {
 /// Did this exception come from a lower exception level, i.e. from EL0?
 ///
 /// Slots 8-11 are "Lower EL, AArch64" (see `VECTOR_NAMES`). `#[inline(always)]` and two written-out
-/// comparisons because the icount gate measures a debug build; see notes/exceptions.md, "Costs the
+/// comparisons because the icount gate measures a debug build; see nifeos/record:notes/exceptions.md, "Costs the
 /// debug build pays".
 #[inline(always)]
 // A measured exception to clippy's `(8..=11).contains(&index)`, for the reason above.
@@ -373,7 +373,7 @@ fn is_from_lower_el(index: u64) -> bool {
 
 /// **System calls served, counted for the system tests only** (`system_tests/src/user/el0_boundary_tests.rs`
 /// watches it rise). Compiled out of every other build: it is a shared write on the cheapest
-/// system call's path (notes/job-mix/null-system-call-under-load.md).
+/// system call's path (nifeos/record:notes/job-mix/null-system-call-under-load.md).
 #[cfg(any(test, feature = "system_tests"))]
 pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 
@@ -437,7 +437,7 @@ fn classify(esr: u64) -> UserFault {
 /// A user thread did something it is not allowed to do. Kill it.
 ///
 /// Records the fault, then hands the thread to `sched::fault`, which does not return. See
-/// notes/exceptions.md, "A user fault is published, then counted".
+/// nifeos/record:notes/exceptions.md, "A user fault is published, then counted".
 fn user_fault(frame: &TrapFrame, esr: u64) -> ! {
     let class = (esr >> 26) & 0x3f;
     let far = instructions::read_far();
@@ -497,7 +497,7 @@ fn handle_interrupt(frame: &mut TrapFrame) {
         }
         other => {
             // Masked before the notification, or a level-triggered line re-fires on the EOI; the
-            // driver's ACKNOWLEDGE re-enables it. See notes/interrupts.md.
+            // driver's ACKNOWLEDGE re-enables it. See nifeos/record:notes/interrupts.md.
             if let Some(ep) = crate::sched::interrupt_route(other) {
                 ROUTED_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
                 interrupt_controller::disable(other);
