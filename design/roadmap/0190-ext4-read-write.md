@@ -90,7 +90,7 @@ and performance.
 | condition | `rsext4` as nife takes it, from nifeos/rsext4 | what closes it |
 |---|---|---|
 | a safety argument on every use of `unsafe` | the casts are gone, and each CRC32C use states one | the review below, in the `rsext4` release nife uses |
-| proofs that match ours | none upstream; eight Kani harnesses here, against its public API | the harnesses below, upstream or in nifeos/rsext4 |
+| proofs that match ours | none upstream; eight Kani harnesses here | the harnesses below, upstream or in nifeos/rsext4 |
 | aarch64, riscv64 and x86_64 | builds for all three; hardware CRC32C on two, a software path on riscv64 | the oracle suite passing on each |
 | maintained | upstream is active in `tgoskits`, at least 24 commits by six people from 2026-08-04 to 2026-11-08 | met by nifeos/rsext4 while it carries unreleased fixes |
 
@@ -248,15 +248,10 @@ it. That ruling is not the adoption ruling above, which stays open.
 
 - **Done.** The plan: this block and its survey appendix name the crate, the measurements, the
   upstream work, our own tests and the conditions above.
-- **Outstanding.** The upstream round: [the two truncate fixes](0190-ext4-read-write/upstream/README.md)
-  (drafted), the fuzz targets, the mount's error report and whole times in `InodeInfo`. Each text
-  goes to the architect before anyone files it. `rcore-os/tgoskits@dde4020be` fixes bug 1 and the
-  recovery-flag order.
-- **Outstanding.** Items 5 and 6 await review: the
-  [CRC32C safety arguments](0190-ext4-read-write/upstream/5a-crc32c-safety-arguments.md) and the
-  [descriptor fix](0190-ext4-read-write/upstream/5b-group-descriptor-decode.md), each an issue with
-  a patch, and the [Kani harnesses](0190-ext4-read-write/upstream/6-kani-harnesses.md), an issue
-  only; `script/verify` runs them here.
+- **Outstanding.** The upstream round: [the two truncate fixes, safety arguments, cast
+  replacement and Kani harnesses](0190-ext4-read-write/upstream/README.md) (drafted), the fuzz
+  targets, the mount's error report and whole times in `InodeInfo`. Each text goes to the architect
+  before anyone files it. `rcore-os/tgoskits@dde4020be` fixes bug 1 and the recovery-flag order.
 - **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the
