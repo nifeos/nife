@@ -44,7 +44,16 @@
 # `gh release create` and refuses unless NIFE_FUZZ_PUBLISH=1 is set. It also refuses, by name and
 # before any `gh` call, a missing GH_TOKEN, a missing or unparseable GH_TOKEN_EXPIRES_AT (UTC,
 # `YYYY-MM-DDTHH:MM:SSZ`), and a token that has expired or expires within `safety_margin_seconds`.
-# The mint helper's token file supplies both variables (nifeos/fuzz-host, docs/fuzz-token.md). A
+# The mint helper's token file supplies both variables (nifeos/fuzz-host, docs/fuzz-token.md).
+#
+# **A second run on the same day.** Before creating the release, `--publish` reads it with
+# `gh release view`. If the day's release already holds exactly report.md and clean-ranges.tsv, the
+# run logs that and exits 0: the release keeps the day's first report, and this run's report stays in
+# the local directory. A release with any other set of assets (one missing after a failed upload, or
+# one added by hand) is refused with exit 1 and left alone; the script never deletes, replaces or adds
+# an asset, so a person decides. Assets are compared by name, not content, because every run writes a
+# newer report than the last. A `gh release view` failure other than `release not found` is refused
+# too, since it cannot tell whether the release exists. A
 # refusal never prints the token. The credential is a one-hour
 # installation token of the `nife-fuzz` App, minted from the App's root-only key (Contents write and
 # Repository security advisories write on nifeos/nife alone; notes/fuzzing/the-fuzz-app.md). Main's
@@ -201,6 +210,23 @@ publish_output() {
         return 1
     fi
     require_fresh_token || return 1
+    view_err="$(mktemp "${TMPDIR:-/tmp}/fuzz-daily-publish.XXXXXX")"
+    if names="$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name' 2>"$view_err")"; then
+        rm -f "$view_err"
+        names="$(printf '%s\n' "$names" | sed '/^$/d' | sort | tr '\n' ' ')"
+        if [ "$names" = "clean-ranges.tsv report.md " ]; then
+            echo "fuzz-daily-publish: release $tag already exists on $repo with report.md and clean-ranges.tsv; nothing published, the release keeps the day's first report and this run's stays in $out"
+            return 0
+        fi
+        echo "fuzz-daily-publish: release $tag already exists on $repo with assets '${names% }', want 'clean-ranges.tsv report.md'; refusing to change it, a person decides" >&2
+        return 1
+    fi
+    reason="$(head -1 "$view_err")"
+    rm -f "$view_err"
+    if [ "$reason" != "release not found" ]; then
+        echo "fuzz-daily-publish: cannot tell whether release $tag exists on $repo ($reason); nothing published" >&2
+        return 1
+    fi
     gh release create "$tag" --repo "$repo" --title "Continuous fuzzing, $today (UTC)" \
         --notes-file "$out/report.md" "$out/report.md" "$out/clean-ranges.tsv"
 }
