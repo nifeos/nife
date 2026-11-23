@@ -254,14 +254,11 @@ it. That ruling is not the adoption ruling above, which stays open.
   (drafted), the fuzz targets, the mount's error report and whole times in `InodeInfo`. Each text
   goes to the architect before anyone files it. `rcore-os/tgoskits@dde4020be` fixes bug 1 and the
   recovery-flag order.
-- **Outstanding.** Items 5 and 6 await review, listed with the other
-  [upstream drafts](0190-ext4-read-write/upstream/README.md): the
+- **Outstanding.** Items 5 and 6 await review: the
   [CRC32C safety arguments](0190-ext4-read-write/upstream/5a-crc32c-safety-arguments.md) and the
-  [descriptor fix](0190-ext4-read-write/upstream/5b-group-descriptor-decode.md), each an issue and
+  [descriptor fix](0190-ext4-read-write/upstream/5b-group-descriptor-decode.md), each an issue with
   a patch, and the [Kani harnesses](0190-ext4-read-write/upstream/6-kani-harnesses.md), an issue
-  asking whether upstream wants them. None goes upstream until the architect clears its text. The
-  harnesses run here, in `tools/ext4_oracle/tests/parser_proofs.rs`, as `script/verify`'s
-  `ext4_oracle` row.
+  only; `script/verify` runs them here.
 - **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the
