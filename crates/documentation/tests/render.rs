@@ -286,10 +286,17 @@ fn every_character_survives() {
         .unwrap()
         .to_path_buf();
     let mut checked = 0;
+    // The corpus is the record's markdown, read from this work tree. A missing folder fails the
+    // test rather than shrinking the corpus: once the record leaves for `nifeos/record`, this reads
+    // it where helpers/record_root.py says it is, or the test goes, and nothing passes unchecked.
     for dir in ["notes", "design/decisions", "design/roadmap"] {
-        let Ok(entries) = std::fs::read_dir(root.join(dir)) else {
-            continue;
-        };
+        let entries = std::fs::read_dir(root.join(dir)).unwrap_or_else(|e| {
+            panic!(
+                "{}: {e}; the corpus is the record's markdown, and helpers/record_root.py says \
+                 where the record is",
+                root.join(dir).display()
+            )
+        });
         // One level down as well: §212 (a prose budget) puts appendices under `notes/<stem>/`.
         let mut paths = Vec::new();
         for e in entries.flatten() {
