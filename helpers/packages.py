@@ -471,6 +471,9 @@ def evaluate(tracked, texts):
             # naming a path is its owner. helpers/interface_stability.py's per-package co-change
             # reads it to place every path a past commit touched.
             'claims': {prefix: owner for prefix, (owner, _h, _a) in claims.items()},
+            # {prefix: its home}, for helpers/record_paths.py, which writes the record's extraction
+            # path lists from the claims whose home is the record and those nested under them.
+            'claim_homes': {prefix: home for prefix, (_o, home, _a) in claims.items()},
             # {path: its home}, for helpers/record_links.py, which sorts the record by it.
             'file_home': {path: home for path, (_o, home, _a) in file_home.items()}}
 

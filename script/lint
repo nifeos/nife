@@ -4293,6 +4293,12 @@ python3 helpers/ci_job_times.py --selftest >/dev/null
 python3 helpers/time_record.py --selftest >/dev/null
 python3 helpers/time_record.py lint
 python3 helpers/packages.py --check
+# Milestone 1018 (the design record moves to `nifeos/record` and is published as a website), step 6:
+# the record's extraction path lists, written from the same homes, select exactly the tracked files
+# whose home is the record, plus its tooling. A home added under design/ or notes/ changes the
+# lists, and this keeps the two passes able to express the new sort.
+python3 helpers/record_paths.py --selftest >/dev/null
+python3 helpers/record_paths.py --check
 
 # The region claim protocol has ONE decision path (milestone 136).
 #
