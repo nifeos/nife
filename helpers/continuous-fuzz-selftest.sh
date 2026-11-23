@@ -200,8 +200,11 @@ exit 1
 STUB
 chmod +x "$disk/home/.cargo/bin/df" "$disk/home/.cargo/bin/du" "$disk/home/.cargo/bin/python3"
 kib() { echo $(($1 * 1000000000 / 1024)); }  # GIGABYTES, as the supervisor counts them
+# With `disk_exec=exec` (in a subshell started with `&`), the supervisor replaces that subshell, so
+# `$!` is the supervisor's own pid and `kill` reaches it rather than orphaning it.
+disk_exec=""
 disk_env() {
-    env HOME="$disk/home" NIFE_FUZZ_HOME="$disk/fuzz" STUB_CALLS=/dev/null STUB_LOOKS="$disk/looks" \
+    $disk_exec env HOME="$disk/home" NIFE_FUZZ_HOME="$disk/fuzz" STUB_CALLS=/dev/null STUB_LOOKS="$disk/looks" \
         STUB_FREE_KIB="$disk/free" STUB_SIZE_KIB="$disk/size" NIFE_RUSTUP_ATTEMPTS=1 NIFE_RUSTUP_BACKOFF=0 "$@"
 }
 
@@ -224,8 +227,8 @@ printf '%s' "$once_low" | grep -q 'below the 1000000000 GB floor' || fail "floor
 # many times it checks, runs neither look, and writes one more line when the space comes back.
 echo 0 > "$disk/free"
 : > "$disk/looks"
-disk_env NIFE_FUZZ_GUESTS=0 NIFE_FUZZ_KVM_DEVICE=/dev/null NIFE_FUZZ_FOLLOW_EVERY=1 NIFE_FUZZ_REPLAY_EVERY=1 \
-    "$sup" > "$disk/journal" 2>&1 &
+(disk_exec='exec'; disk_env NIFE_FUZZ_GUESTS=0 NIFE_FUZZ_KVM_DEVICE=/dev/null NIFE_FUZZ_FOLLOW_EVERY=1 \
+    NIFE_FUZZ_REPLAY_EVERY=1 "$sup" > "$disk/journal" 2>&1) &
 supervisor=$!
 sleep 3
 [ ! -s "$disk/looks" ] || { kill "$supervisor"; fail "floor: a look ran below it: $(cat "$disk/looks")"; }
