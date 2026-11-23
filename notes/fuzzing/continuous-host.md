@@ -19,7 +19,7 @@ directory. A window builds the x86_64 archive and the system test image once, ba
 range in at build time, then starts one QEMU process through the PVH runner with `-accel kvm` and sweeps
 in that guest. It does not call `cargo xtask test`, which clears `NIFE_ACCEL` and boots the
 OVMF legs under TCG. The driver stops itself after 60 seconds of guest time, so each window costs a
-rebuild, a boot and one minute of seeds. The BUGS list below records that limit.
+rebuild, a boot and one minute of seeds.
 
 Before each window the supervisor checks that KVM is usable: the device exists, the user may open it,
 and QEMU can start a machine on it. If not, it names the problem on standard error and does not run
@@ -30,26 +30,17 @@ covers the guest, so a window that reaches the second is a hung guest, and the s
 
 Before it starts any slot, the supervisor installs, or confirms, the toolchain that
 `rust-toolchain.toml` pins, once and serially, through `helpers/rustup-retry.sh show active-toolchain`
-with the same `PATH` it uses for everything else. On the host's first start the repository pinned a
-newer nightly than the `lane` account had, all four slots downloaded it at once and collided, and the
-first windows failed as infrastructure within seconds. If the install fails, the supervisor stops
+with the same `PATH` it uses for everything else. If the install fails, the supervisor stops
 with a message that names it, starts no slot and writes no row to `windows.tsv`.
 `helpers/continuous-fuzz-selftest.sh`, run by `script/lint`, holds this against a stub `rustup`.
 Decided by the maintainer 2026-11-01 (UTC), provisional; reversing costs one pull request.
 
-The supervisor bounds its own disk use. Before each window, and before each look at main or for a
-red shard, it checks the free space on the filesystem holding `$NIFE_FUZZ_HOME`. Below
-`NIFE_FUZZ_FREE_FLOOR_GIGABYTES` (default 20) no window starts and main is not followed. The
-journal gets one line when the space drops below the floor and one when it rises again, and the
-slots wait in between. A full disk therefore stops the fuzzing instead of writing failed windows
-and cut-off rows. Each slot's `target/` is cleared before its first build with a newer pinned
-nightly, and before any window once it passes `NIFE_FUZZ_TARGET_CAP_GIGABYTES` (default 10). The
-cap exists because cargo gives a crate new artifacts whenever a commit changes its inputs and
-removes none: on the host, a slot's `target/` held about 1.5 GB after its first build with one
-nightly and grew by about 4.4 GB in the next 13 hours under that same nightly as main moved. At
-that rate each slot clears about once a day and pays one cold build for it. The selftest holds both
-bounds against a stub `df` and `du`. Decided by the maintainer 2026-11-23 (UTC), provisional, with
-both names; reversing costs one pull request.
+Below `NIFE_FUZZ_FREE_FLOOR_GIGABYTES` (default 20) free under `$NIFE_FUZZ_HOME`, no window
+starts and main is not followed. The journal says so once, and once more when the space returns.
+Each slot's `target/` is cleared before its first build with a newer pinned nightly, and whenever it
+passes `NIFE_FUZZ_TARGET_CAP_GIGABYTES` (default 10), since cargo keeps the artifacts of every commit
+a slot builds. The maintainer chose both,
+provisionally.
 
 `helpers/systemd/nife-fuzz.service` starts the supervisor at boot and restarts it on failure. The
 supervisor exits non-zero after five windows in a row fail without a finding. A broken build reaches
@@ -145,7 +136,7 @@ A budget expiry outranks the other classes. The drivers begin the message of eve
 `budget-expired:` (`BUDGET_EXPIRED_MARKER` in `kernel/src/testing.rs`, which the supervisor's selftest
 checks). The supervisor files the window as `held-budget-expired` whether or not the message
 also carries a `replay:` line. That line, when there is one, still sets where the slot resumes and is
-what the filer replays. A budget expiry is held, logged and replayed like any other class. The class only keeps a host that
+what the filer replays. The class only keeps a host that
 stalled apart from a model that disagreed. A real bug can also look like a budget expiry (a region
 that never reclaims, an actor that never wakes). A replay that fails again at a quiet host is a finding.
 
@@ -182,8 +173,7 @@ old release without touching history, and no clone carries it. An architect rule
 which also records the rejected branch of artifacts.
 
 The publish path refuses unless the host's environment holds `NIFE_FUZZ_PUBLISH=1`, and the timer
-stays disabled until a person installs the credential and sets that variable. `--dry-run` prints the tag
-and the asset list and runs nothing else.
+stays disabled until a person installs the credential and sets that variable.
 
 The credential is a one-hour installation token of the `nife-fuzz` GitHub App, which a mint helper
 on the host makes from the App's private key, readable by root alone. The helper is `fuzz-token` in
@@ -249,11 +239,9 @@ unit's user. It prints the tag and the assets and publishes nothing.
   move held rows' seeds under the held directory.
 - Each move to a newer main idles every slot until the slowest current window ends, and the first
   window after it rebuilds. Nobody has measured what that costs at main's rate of merges.
-- The supervisor bounds each slot's `target/` and stops below a free-space floor, but two stores
-  sit outside it. The toolchain step installs each pinned nightly and removes none; a daily job the
-  maintainers keep on the host, outside this repository, uninstalls the dated nightlies no pin
-  names. The held directory only grows, by at most about 30 MB a day. The floor stops the windows
-  but frees nothing, so a disk that falls below it stays stopped until a person frees space.
+- The free-space floor stops the windows and frees nothing. The supervisor bounds the slots'
+  `target/` directories, and a daily job the maintainers keep on the host prunes old nightlies,
+  but the held directory grows by about 30 MB a day.
 - An unfinished run of any required check name keeps the current commit, even the skipped duplicate
   that a push to main starts after the merge queue's run. The next look, 5 minutes later, moves.
 - A person who sets `url.<base>.insteadOf` for GitHub in the fuzz account's git configuration to a
