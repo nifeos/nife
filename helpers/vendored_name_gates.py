@@ -231,6 +231,8 @@ UNIT_KEPT = {
     'c_library/src/lib.rs': ({'tv_sec', 'tv_nsec', 'tv_usec'}, _POSIX),
     'notes/filesystem-crates-2026-10-07/probes/btrfs-transaction.rs':
         ({'sec', 'nsec'}, 'a field of btrfs_disk::items::Timespec, an external crate'),
+    'tools/ext4_oracle/src/main.rs':
+        ({'sec', 'nsec'}, 'a field of rsext4::Ext4Timestamp, an external crate'),
     'kernel/src/drivers/gicv3.rs': ({'GICD_CTLR_ARE_NS'}, 'the Arm GICv3 bit name; NS is Non-secure'),
     'components/src/clock.rs': ({'offset_nanos'}, _OVERLAY),
     'components/src/date.rs': ({'offset_nanos'}, _OVERLAY),

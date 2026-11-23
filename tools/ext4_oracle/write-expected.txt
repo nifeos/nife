@@ -1,6 +1,6 @@
 create	default-4k	4096	applied	clean	equal
 create	default-4k	512	applied	clean	equal
-create	default-1k	512	applied	exit4:Padding at end of inode bitmap is not set. Fix? no	equal
+create	default-1k	512	applied	clean	equal
 overwrite	default-4k	4096	applied	clean	equal
 overwrite	default-4k	512	applied	clean	equal
 overwrite	default-1k	512	applied	clean	equal
@@ -18,25 +18,25 @@ unlink	default-4k	512	applied	clean	equal
 unlink	default-1k	512	applied	clean	equal
 mkdir-rmdir	default-4k	4096	applied	clean	equal
 mkdir-rmdir	default-4k	512	applied	clean	equal
-mkdir-rmdir	default-1k	512	applied	exit4:Padding at end of inode bitmap is not set. Fix? no	equal
+mkdir-rmdir	default-1k	512	applied	clean	equal
 links	default-4k	4096	applied	clean	equal
 links	default-4k	512	applied	clean	equal
 links	default-1k	512	applied	clean	equal
 inode-bitmap-padding	default-4k	4096	applied	clean	equal
 inode-bitmap-padding	default-4k	512	applied	clean	equal
-inode-bitmap-padding	default-1k	512	applied	exit4:Padding at end of inode bitmap is not set. Fix? no	equal
+inode-bitmap-padding	default-1k	512	applied	clean	equal
 htree-growth	default-4k	4096	applied	clean	equal
 htree-growth	default-4k	512	applied	clean	equal
-htree-growth	default-1k	512	applied	exit4:Padding at end of inode bitmap is not set. Fix? no	equal
+htree-growth	default-1k	512	applied	clean	equal
 directory-past-inline-extents	default-4k	4096	applied	exit4:Inode 3070 extent tree (at level 1) could be narrower.  Optimize? no | Inode 3070, i_blocks is 72, should be 88.  Fix? no	equal
 directory-past-inline-extents	default-4k	512	applied	exit4:Inode 3070 extent tree (at level 1) could be narrower.  Optimize? no | Inode 3070, i_blocks is 72, should be 88.  Fix? no	equal
-directory-past-inline-extents	default-1k	512	applied	exit4:Inode 3070 extent tree (at level 1) could be narrower.  Optimize? no | Inode 3070, i_blocks is 58, should be 62.  Fix? no | Padding at end of inode bitmap is not set. Fix? no	equal
-truncate-depth-2-to-zero	default-4k	4096	failed@2:Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }	exit0:Inode 3070 extent tree (at level 1) could be narrower.  Optimize? no	equal
-truncate-depth-2-to-zero	default-4k	512	failed@2:Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }	exit0:Inode 3070 extent tree (at level 1) could be narrower.  Optimize? no	equal
-truncate-depth-2-to-zero	default-1k	512	failed@2:Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }	exit0:Inode 3070 extent tree (at level 1) could be narrower.  Optimize? no	equal
-truncate-depth-2-inside-a-block	default-4k	4096	failed@2:Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }	exit0:Inode 3070 extent tree (at level 1) could be narrower.  Optimize? no	differs /cut:content
-truncate-depth-2-inside-a-block	default-4k	512	failed@2:Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }	exit0:Inode 3070 extent tree (at level 1) could be narrower.  Optimize? no	differs /cut:content
-truncate-depth-2-inside-a-block	default-1k	512	failed@2:Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }	exit0:Inode 3070 extent tree (at level 1) could be narrower.  Optimize? no	differs /cut:content
+directory-past-inline-extents	default-1k	512	applied	exit4:Inode 3070 extent tree (at level 1) could be narrower.  Optimize? no | Inode 3070, i_blocks is 58, should be 62.  Fix? no	equal
+truncate-depth-2-to-zero	default-4k	4096	applied	clean	equal
+truncate-depth-2-to-zero	default-4k	512	applied	clean	equal
+truncate-depth-2-to-zero	default-1k	512	applied	clean	equal
+truncate-depth-2-inside-a-block	default-4k	4096	applied	exit0:Inode 3070 extent tree (at level 1) could be shorter.  Optimize? no	equal
+truncate-depth-2-inside-a-block	default-4k	512	applied	exit0:Inode 3070 extent tree (at level 1) could be shorter.  Optimize? no	equal
+truncate-depth-2-inside-a-block	default-1k	512	applied	exit0:Inode 3070 extent tree (at level 1) could be shorter.  Optimize? no	equal
 truncate-linux-depth-2	default-4k	4096	applied	clean	equal
 truncate-linux-depth-2	default-4k	512	applied	clean	equal
 truncate-linux-depth-2	default-1k	512	applied	clean	equal

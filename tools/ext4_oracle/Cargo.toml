@@ -19,12 +19,15 @@ publish = false
 # The implementation under test. Ruled 2026-11-16 (UTC) on pull request #3639: a host-only
 # dependency of this tool, pinned exactly, in a workspace of its own, never in a nife image,
 # kernel, program or shipping lockfile. That ruling is not the §46 (thin primitives or whole
-# subsystems) ruling on whether nife ships `rsext4`, which stays open. Pinned exactly because the
-# expected results in `expected.txt` describe what 0.9.2 reads; a bump re-measures them.
+# subsystems) ruling on whether nife ships `rsext4`, which stays open. Taken from nifeos/rsext4,
+# the fork that carries nife's fixes until upstream releases them (ruled 2026-11-23 UTC), pinned
+# by `rev` under §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed
+# commit), because `expected.txt` and `write-expected.txt` describe what that commit reads and
+# writes; a bump re-measures them.
 # Default features off: the reader needs no `std` integration from the crate, and the defaults
 # would add nothing the oracle reads.
 [dependencies]
-rsext4 = { version = "=0.9.2", default-features = false }
+rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/nifeos/rsext4", rev = "f1d6776e30800ccabe8a623d654a76389687aca7", default-features = false }
 
 # `cfg(kani)` gates the harnesses in tests/parser_proofs.rs, which `script/verify` runs.
 [lints.rust]

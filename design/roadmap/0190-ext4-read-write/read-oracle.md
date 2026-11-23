@@ -1,8 +1,10 @@
-# The read oracle: what `rsext4` 0.9.2 reads, against `debugfs`
+# The read oracle: what `rsext4` reads, against `debugfs`
 
 The measurement behind phase 1 of [milestone 190 (ext4, read and write: a Rust implementation
-with libext2fs as the host-side oracle)](../0190-ext4-read-write.md). Measured 2026-11-16 (UTC) on
-a Linux host with e2fsprogs 1.47.2. The lane generated every image there and read no real drive.
+with libext2fs as the host-side oracle)](../0190-ext4-read-write.md). The reader is the `rsext4`
+that `tools/ext4_oracle/Cargo.toml` pins: nifeos/rsext4, which is upstream's 0.9.2 with the fixes
+its `CHANGES.md` lists. Measured on a Linux host with e2fsprogs 1.47.2, against 0.9.2 on 2026-11-16
+(UTC) and against the fork on 2026-11-23. Every image was generated there; no real drive was read.
 
 ## How it compares
 
@@ -68,18 +70,22 @@ reporting 4,096-byte sectors.
 
 | image | 512-byte sectors | 4,096-byte sectors |
 |---|---|---|
-| `default-4k` | 3,057 of 3,060 equal | 3,057 of 3,060 equal |
-| `default-2k` | 3,057 of 3,060 equal | refused, reported as `Io` |
-| `default-1k` | 3,057 of 3,060 equal | refused, reported as `Io` |
-| `no-metadata-csum-4k` | 3,057 of 3,060 equal | 3,057 of 3,060 equal |
-| `no-metadata-csum-1k` | 3,057 of 3,060 equal | refused, reported as `Io` |
+| `default-4k` | all 3,060 equal | all 3,060 equal |
+| `default-2k` | all 3,060 equal | refused: `BadSuperblock`, `device:filesystem_geometry` |
+| `default-1k` | all 3,060 equal | refused: the same |
+| `no-metadata-csum-4k` | all 3,060 equal | all 3,060 equal |
+| `no-metadata-csum-1k` | all 3,060 equal | refused: the same |
 | `inline-data-4k` | refused: `UnsupportedFeature`, incompatible bit `0x8000` | the same |
-| `no-orphan-file-4k` | 3,057 of 3,060 equal | 3,057 of 3,060 equal |
+| `no-orphan-file-4k` | all 3,060 equal | all 3,060 equal |
 
-On every image that mounts, every field of 3,057 entries agrees with `debugfs`. That covers the
+On every image that mounts, every field of every entry agrees with `debugfs`. That covers the
 directory walk, every byte of every file, every link target, every extended attribute and every
-extent, the depth-2 extent trees and the htree directory included. The three entries that differ
-are the three in `/timestamps`, and only in the fields below.
+extent, the depth-2 extent trees and the htree directory included, and the four times with their
+nanoseconds and epoch bits.
+
+Upstream's 0.9.2 differs in two ways, and the fork fixes both. It reports the three refusals as a
+bare `Io` (upstream item 7, below). And three entries differ, the three in `/timestamps`, in the
+fields below (upstream item 8).
 
 | file | field | on disk (seconds field, extra field) | `debugfs`, decoded as Linux does | `rsext4` |
 |---|---|---|---|---|
@@ -91,7 +97,7 @@ are the three in `/timestamps`, and only in the fields below.
 | `after-2106` | modification | `0x00000010`, `0x00000001` | 4294967312 | 16 |
 | `after-2106` | birth | `0x00000020`, `0x00000002` | 8589934624 | 32 |
 
-`InodeInfo`'s four times are the raw 32-bit seconds fields, so the API drops the nanoseconds, the
+In 0.9.2, `InodeInfo`'s four times are the raw 32-bit seconds fields, so the API drops the nanoseconds, the
 sign and the epoch bits. The crate decodes them correctly inside (`Ext4Inode`'s
 `decode_extra_time` matches Linux's `ext4_decode_extra_time`), and its write path takes a full
 `Ext4Timestamp`; only the read side drops them. `debugfs` 1.47.2 itself prints the before-1970
@@ -110,12 +116,11 @@ error from `read_superblock` to a bare `Ext4Error::io()`, so the caller sees the
 gives, with no context. Two other call sites do the same: `device_has_error_state` and
 `reload_after_journal_replay`.
 
-With the mapping removed, the same mount reports
+The fork removes the mapping, and the same mount reports
 `BadSuperblock, Operation { op: "device:filesystem_geometry" }`. The crate's own
 `tests/linux_image_repro.rs` opens its images with 4,096-byte sectors, which is how the 2026-11-14
 measurement met it. [`tools/ext4_oracle/tests/sector_size_refusal.rs`](../../../tools/ext4_oracle/tests/sector_size_refusal.rs)
-pins 0.9.2's bare `Io`, so a release that fixes it fails the test, and the fix inverts the assertion.
-The draft upstream report waits for the architect's review, and nobody has filed it.
+requires that report.
 
 ## What this does not measure
 

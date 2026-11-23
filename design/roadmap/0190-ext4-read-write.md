@@ -14,7 +14,8 @@ calef's ext4 drives hold the family's borg repositories. They were formatted by 
 writes ext4 as Linux wrote it. The requirement is standing and has no deadline.
 
 The implementation is the Rust crate `rsext4`. We bring it up to the bar of §46 (thin primitives
-or whole subsystems; we write everything in between) by contributing to it upstream. We test it here
+or whole subsystems; we write everything in between) by contributing to it upstream, and take it
+from nifeos/rsext4, a fork that carries each contribution until an upstream release does. We test it here
 against libext2fs and against Linux itself, under §136 (a mature foreign implementation earns its
 place as an oracle, not as a dependency). This is the ext4 row of milestone 140 (mount a drive this
 system did not create). It does not change 140's order for FAT32 or ext2, and it does not touch
@@ -23,6 +24,8 @@ RedoxFS.
 Reuse: `rsext4` 0.9.2 on crates.io (Apache-2.0, `no_std` with `alloc`, depending on `bitflags` and
 `thiserror`), developed in `rcore-os/tgoskits` under `fs/rsext4`. The `Starry-OS/rsext4`
 repository that its manifest names has not moved since 2026-04-02 and is not where work happens.
+nife uses [nifeos/rsext4](https://github.com/nifeos/rsext4), 0.9.2 with our fixes on top, which
+its `CHANGES.md` lists.
 e2fsprogs 1.47 and a Linux kernel are the host-side oracles. The other candidates and the
 reason each lost are in [the survey](0190-ext4-read-write/survey.md).
 
@@ -40,13 +43,15 @@ public API:
 - Read. On a 640 MiB image `mke2fs` made with its defaults (3,025 entries, an extent tree of
   depth 2, an htree directory), every file read back byte-identical to what Linux wrote. Images
   with 1 KiB and 2 KiB blocks failed to mount because the test device reported 4,096-byte sectors,
-  which cannot hold such a block; the refusal is right and its `Io` report is not (`BUGS`).
+  which cannot hold such a block. The refusal is right; 0.9.2 reports it as a bare `Io`, the fork
+  as the geometry refusal (item 7).
 - Read oracle, 2026-11-16 (UTC). Seven images `mke2fs` 1.47.2 generated, of 3,060 entries each:
   its defaults at 4, 2 and 1 KiB blocks, without `metadata_csum` at 4 and 1 KiB, with
   `inline_data`, and without `orphan_file`. `debugfs` and `rsext4` each list every entry's kind,
   mode, owner, links, size, four times, content, extended attributes and extents. On each image
   that mounts, on 512-byte and 4,096-byte sectors, 3,057 entries are equal, depth-2 extent trees and
-  the htree included; the three that differ are the times `rsext4` cannot report (`BUGS`).
+  the htree included. In 0.9.2 three differ, the times `InodeInfo` drops (item 8); in the fork
+  none do.
   `inline_data` refuses to mount. The tables are in
   [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - Write, bug 1. When a directory grows past its inline extents into a level-1 extent leaf, the
@@ -54,19 +59,23 @@ public API:
   should be 504"). The directory's contents are correct.
 - Write, bug 2. `truncate_inode` on a file whose extent tree has depth 2 returns
   `Corrupted { op: "extent:empty_index" }` in 2 of 8 seeds. It is not atomic: when it fails, the
-  bytes from the new end of file to the end of that block are already zeroed.
+  bytes from the new end of file to the end of that block are already zeroed. The fork fixes both
+  (upstream items 2a and 2b).
 - Write, bug 3 (upstream item 9). At 1 KiB blocks `rsext4` leaves clear the padding of an inode bitmap it
-  initializes, and `e2fsck -fn` exits 4.
+  initializes, and `e2fsck -fn` exits 4. The fork fixes it.
 - Write oracle, 2026-11-22 (UTC). Sixteen cases, extended attributes included, fail only on bugs
-  1 to 3 ([the write-oracle appendix](0190-ext4-read-write/write-oracle.md)).
+  1 to 3 in 0.9.2 and only on bug 1 in the fork
+  ([the write-oracle appendix](0190-ext4-read-write/write-oracle.md)).
 - Journal. It writes descriptor, revoke and commit blocks with journal checksum v3, and Linux's
   `e2fsck` replays them. Across two images, 158 power-cut points all recovered to a clean volume.
   In 2 of 79 cuts on one image the `needs_recovery` flag was
   cleared before the journal's start was reset; both recovered, and the order is still wrong.
-- `unsafe`. Eleven uses. Nine are the hardware CRC32C paths for aarch64 and x86_64. Two are in
-  `blockgroup_description/table.rs`, which casts a `&[u8]` to `*const Ext4GroupDesc` and to
-  `*mut Ext4GroupDesc` with no `SAFETY` comment and no proof of alignment.
-- Fuzzing and proofs. The crate has no fuzz targets and no Kani harnesses.
+- `unsafe`. In 0.9.2, eleven uses. Nine are the hardware CRC32C paths for aarch64 and x86_64. Two
+  are in `blockgroup_description/table.rs`, which casts a `&[u8]` to `*const Ext4GroupDesc` and to
+  `*mut Ext4GroupDesc` with no `SAFETY` comment and no proof of alignment. In the fork the casts
+  are gone and each CRC32C use states its argument (item 5).
+- Fuzzing and proofs. 0.9.2 has no fuzz targets and no Kani harnesses. The fork carries item 4's
+  fuzz targets in `fuzz/`; it has no harnesses yet.
 - Targets. It builds unchanged for nife's three targets, measured by milestone 997 (ext4
   through rsext4, under milestone 37's crash injector). Nothing has run it under nife.
 
@@ -78,12 +87,12 @@ and performance.
 
 §46's four conditions, as amended:
 
-| condition | `rsext4` 0.9.2 | what closes it |
+| condition | `rsext4` as nife takes it, from nifeos/rsext4 | what closes it |
 |---|---|---|
-| a safety argument on every use of `unsafe` | none on the two casts, and none on five of the nine CRC32C uses | the review below, landed upstream |
-| proofs that match ours | none upstream; eight Kani harnesses here, against its public API | the harnesses below, upstream where they fit, here otherwise |
+| a safety argument on every use of `unsafe` | the casts are gone, and each CRC32C use states one | the review below, in the `rsext4` release nife uses |
+| proofs that match ours | none upstream; eight Kani harnesses here, against its public API | the harnesses below, upstream or in nifeos/rsext4 |
 | aarch64, riscv64 and x86_64 | builds for all three; hardware CRC32C on two, a software path on riscv64 | the oracle suite passing on each |
-| maintained | active in `tgoskits`; at least 24 commits by six people from 2026-08-04 to 2026-11-08 | a crates.io release that carries our fixes |
+| maintained | upstream is active in `tgoskits`, at least 24 commits by six people from 2026-08-04 to 2026-11-08 | met by nifeos/rsext4 while it carries unreleased fixes |
 
 ## What we contribute upstream
 
@@ -101,35 +110,27 @@ agent-written submissions is read, and followed, before the first one.
 4. Fuzz targets: mount and walk an arbitrary image; parse a superblock, a group descriptor
    table, an extent tree, a directory block and an htree index; and replay an arbitrary journal.
    Each target runs under `cargo fuzz` with a seed corpus of small images `mke2fs` made.
-5. The `unsafe` review. A `SAFETY` comment on each of the nine CRC32C uses, stating the CPU
-   feature the call needs and where it is detected. For the two group-descriptor casts, a sound
-   replacement: decode each field from the byte slice with `from_le_bytes`, or use a
-   zero-copy derive that checks size and alignment, so the casts and their `unsafe` go. The
-   replacement keeps the 32-byte and 64-byte descriptor sizes and is tested against both.
-6. Kani harnesses that match ours. The claims nife proves of its own on-disk parsers, written
-   for `rsext4`'s. Decoding a superblock, a group descriptor, an extent header or entry, or a
-   directory entry reads only inside the slice it was given, for every input up to a stated bound.
-   A directory block walk ends and stays inside its block. The software CRC32C equals the bitwise
-   definition. Harnesses that upstream does not want are kept here, against the crate's public
-   API.
-7. Mount reports why it refused. `mount_with_services`, `device_has_error_state` and
-   `reload_after_journal_replay` map every error from `read_superblock` to a bare `Io`, so a block
-   size the device's sectors cannot hold reads as a failed read. The reproducer mounts a 1 KiB-block
-   superblock on a 4,096-byte-sector device and requires an error other than `Io`.
-8. `InodeInfo` reports whole times. Its four times are the raw 32-bit seconds fields, which drop
-   nanoseconds, times before 1970 and times past 2106; the crate already decodes all three
-   inside, and writes them.
+5. The `unsafe` review: a `SAFETY` comment on each CRC32C use, naming the CPU feature it needs
+   and where it is detected, and the group-descriptor casts replaced by decoding each field from
+   its bytes, at both descriptor sizes.
+6. Kani harnesses that match ours. Decoding a superblock, a group descriptor, an extent header or
+   entry, or a directory entry reads only inside its slice, for every input up to a stated bound.
+   A directory block walk ends inside its block. The software CRC32C equals the bitwise definition.
+7. Mount reports why it refused, rather than mapping every error from `read_superblock` to a bare
+   `Io`.
+8. `InodeInfo` reports whole times: nanoseconds, times before 1970 and times past 2106.
 9. The inode bitmap's padding (bug 3), set as `e2fsck` requires when a group `mke2fs` left
    `INODE_UNINIT` gets its first inode, with the crate's own allocation test strengthened.
 
 **Every issue and pull request text is shown to the architect before it is filed.** An upstream
 submission is an outward step, and the review is of the exact text, not of the idea. A fuzz finding
-in `rsext4` is reported the same way. If upstream declines a change the bar needs, this milestone
-stops and takes the choice to the architect.
+in `rsext4` is reported the same way. Upstream merge is the goal of every contribution, not a
+gate: nifeos/rsext4 carries each fix until an upstream release does.
 
 No contribution is consumed from a branch. §305 (git dependencies are allowed on `nifeos/*` only,
-pinned to a landed commit) rules out a git dependency on `tgoskits`, so nife takes a fix when a
-crates.io release carries it.
+pinned to a landed commit) rules out a git dependency on `tgoskits`. A fix counts once it is in the
+`rsext4` release nife uses: a crates.io release of upstream's, or a commit on nifeos/rsext4's main
+that nife pins by `rev` under §305.
 
 ## What we test on our side
 
@@ -186,20 +187,21 @@ pull request, which carries `needs-architect` and shows, for the version it pins
 Phase 1 may start against the oracle on the host before the ruling. Nothing links `rsext4` into a
 nife image until it is given.
 
-The rule in force for the oracle, ruled 2026-11-16 (UTC) on pull request #3639: `rsext4`, pinned at
-exactly 0.9.2, is a host-only dependency of `tools/ext4_oracle`, in a workspace and lockfile of its
-own. It never enters a nife image, kernel, program or the lockfile of a shipping package. deny.toml
+The rule in force for the oracle, ruled 2026-11-16 (UTC) on pull request #3639: `rsext4` is a
+host-only dependency of `tools/ext4_oracle`, in a workspace and lockfile of its own. It is pinned to
+nifeos/rsext4 at one commit by `rev`, under the 2026-11-23 (UTC) ruling to fork. It never enters a nife image, kernel, program or the lockfile of a shipping package. deny.toml
 refuses the crate anywhere else, and the oracle is a `test` package, so no shipping package may link
 it. That ruling is not the adoption ruling above, which stays open.
 
 ## Done when
 
-- Bugs 1 to 3 and the recovery-flag order are fixed in a crates.io release of `rsext4`, each with
-  its reproducer as a test.
+- Bugs 1 to 3 and the recovery-flag order are fixed in the `rsext4` release nife uses (upstream's
+  crates.io release, or nifeos/rsext4 at a pinned `rev`), each with its reproducer as a test.
 - Every use of `unsafe` in that release carries a safety argument, and the group-descriptor casts
   are gone.
-- The Kani harnesses above pass, upstream or here, and `script/verify` runs the ones held here.
-- Fuzz targets are upstream, and nife's rotation runs them and `ext4_server`'s with no open finding.
+- The Kani harnesses above pass, upstream or in nifeos/rsext4.
+- Fuzz targets are upstream or in nifeos/rsext4, and nife's rotation runs them and `ext4_server`'s
+  with no open finding.
 - The oracle passes in CI on aarch64, riscv64 and x86_64, every image in the corpus included.
 - The write-reordering and power-cut sweeps recover every point to a clean volume under Linux
   replay.
@@ -232,13 +234,9 @@ it. That ruling is not the adoption ruling above, which stays open.
   without `metadata_csum_seed` and `orphan_file`, which `mke2fs` enables by default only from
   e2fsprogs 1.47.0.
 - No reader can address a block smaller than the device's logical sector, so `rsext4` refuses
-  1 KiB and 2 KiB blocks on a 4,096-byte-sector device, as Linux does. It reports the refusal as a bare `Io`
-  with no context, the error a failed read gives (upstream item 7).
+  1 KiB and 2 KiB blocks on a 4,096-byte-sector device, as Linux does.
 - `rsext4` refuses to mount an `inline_data` image, even read-only. `mke2fs` does not enable it
   by default.
-- `rsext4`'s `InodeInfo` reports each time as the 32-bit seconds field alone. A file's nanoseconds,
-  a time before 1970 and a time past 2106 read back wrong (upstream item 8), so `ext4_server` cannot
-  give a reader the time Linux wrote until that lands.
 - `write_file` fails with `Corrupted { op: "extent:parent_key" }` when 1,500 single-block extents
   arrive shuffled, in 0.9.2 and on `dev`; in ascending order the file builds. No upstream draft yet.
 - The read oracle compares against `debugfs`, which is libext2fs, not the Linux kernel; this host
@@ -267,6 +265,12 @@ it. That ruling is not the adoption ruling above, which stays open.
   1 to 3 held as expected outcomes.
 - **Outstanding.** [Item 9's draft](0190-ext4-read-write/upstream/9-inode-bitmap-padding.md), for
   bug 3, awaits the architect.
+- **Done.** The oracle takes `rsext4` from nifeos/rsext4 at a pinned `rev`, and its expected
+  outcomes describe the fork.
+- **Outstanding.** nifeos/rsext4 does not carry upstream's fix for bug 1 and the recovery-flag
+  order (`rcore-os/tgoskits@dde4020be`); the write oracle still holds bug 1 as expected.
+- **Outstanding.** In nifeos/rsext4: the Kani harnesses, fuzzing in its CI, and the crate-standard
+  gates upstream's code fails.
 - **Outstanding.** Our side: the oracle on aarch64 and riscv64 hosts, the kernel as a
   second read oracle, a volume over 1 GiB, the write-reordering and power-cut sweeps,
   hostile-image fuzzing, and `ext4_server` itself.
@@ -275,7 +279,8 @@ it. That ruling is not the adoption ruling above, which stays open.
 ## Index row
 
 calef's ext4 drives hold the family's borg repositories, so nife reads and writes the format Linux
-wrote. The implementation is `rsext4`, brought to the bar of §46 by contributing upstream: write-path
+wrote. The implementation is `rsext4`, from nifeos/rsext4, a fork that carries our fixes until
+upstream releases them. Contributing upstream brings it to the bar of §46: write-path
 bug fixes with reproducers, fuzz targets, safety arguments and a sound replacement for
 two unchecked casts, and Kani harnesses. Here, a differential oracle against libext2fs and Linux
 judges four phases: read-only, the oracle itself, write, and jbd2 with Linux replay, plus write
