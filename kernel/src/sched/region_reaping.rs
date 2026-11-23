@@ -33,9 +33,9 @@ pub(super) enum RegionReap {
 /// [`being_reaped`](crate::thread::Thread::being_reaped): a core is standing on the thread's kernel
 /// stack, or the reaper is freeing it outside `IPC_TABLES`. `state` says whether the thread can run
 /// again and `standing` whether freeing it would unmap a stack in use; they are different
-/// questions. Returns the verdict; the table and the reasons are in nifeos/record:notes/region-reaping.md ("The
+/// questions. Returns the verdict; the table and the reasons are in notes/region-reaping.md ("The
 /// verdict on one resident"), and the stack fault behind `standing` in
-/// nifeos/record:notes/stack/kernel-stack-freed-under-its-owner.md.
+/// notes/stack/kernel-stack-freed-under-its-owner.md.
 pub(super) fn region_reap_verdict(state: State, standing: bool) -> RegionReap {
     if matches!(state, State::Ready | State::Running) {
         RegionReap::RefuseAndArm

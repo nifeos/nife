@@ -84,7 +84,7 @@ impl TrapFrame {
         x[2] = user_sp; // sp
         // tp is the thread's own pointer (§269 (how threads share a process) fork 4), zero if it
         // has none, never the kernel's per-hart one. Read now, while the frame is a value: once
-        // written at the stack top no call may run (`enter_user`). See nifeos/record:notes/riscv-port.md, the
+        // written at the stack top no call may run (`enter_user`). See notes/riscv-port.md, the
         // per-hart `tp` hazard.
         x[4] = crate::sched::current_thread_pointer();
         TrapFrame {
