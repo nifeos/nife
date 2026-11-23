@@ -14,7 +14,7 @@ unsafe extern "C" {
 /// **Which exception level did firmware enter this kernel at?** 1 or 2.
 ///
 /// The kernel always runs at EL1; `boot.s` drops from EL2 when entered there. The PSCI conduit
-/// follows the entry level, and the boot banner prints it first. See notes/aarch64-port.md, "PSCI
+/// follows the entry level, and the boot banner prints it first. See nifeos/record:notes/aarch64-port.md, "PSCI
 /// and the entry exception level".
 ///
 /// The name is provisional (AGENTS.md: names are an architect's).
@@ -61,13 +61,13 @@ pub fn percpu() -> usize {
 }
 
 /// **This core's `PerCpu::current`, read with interrupts masked**, so no interrupt can fall between
-/// finding the block and reading the field (notes/mmu.md, BUGS).
+/// finding the block and reading the field (nifeos/record:notes/mmu.md, BUGS).
 ///
 /// [`percpu()`] then a load is two steps, and a thread migrated between them reads another core's
 /// block. aarch64 has no load relative to a system register, so this masks interrupts across the
 /// pair,
 /// in one `asm!` block because the icount gate measures an opt-level 0 kernel. Returns
-/// `PerCpu::current`; restores `DAIF` whole. See notes/aarch64-port.md, "The per-CPU block".
+/// `PerCpu::current`; restores `DAIF` whole. See nifeos/record:notes/aarch64-port.md, "The per-CPU block".
 ///
 /// Name: provisional.
 #[inline(always)]

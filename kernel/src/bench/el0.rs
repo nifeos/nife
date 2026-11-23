@@ -21,7 +21,7 @@ const IPC_CLIENT_READS_CYCLES: u64 = 1;
 
 /// The spawner's untyped budget, in pages: one child plus the shared code frame and scratch tables,
 /// since children are destroyed LIFO and return their pages (§16 (object revocation: reclaim the
-/// objects a process built)). See notes/benchmarks/kernel-bench-harness.md.
+/// objects a process built)). See nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 const SPAWN_EL0_BUDGET: u64 = 64;
 
 /// Spawn `os_primitives_benchmarker` in `role`, granting it `report` (slot 0) to answer on.
@@ -272,7 +272,7 @@ fn el0_cycle_counter_refusal() -> Option<&'static str> {
 /// earlier in the boot. A disagreement means the core's clock moved between the two (frequency
 /// scaling), and this line, read across the loop itself, is the one to believe. A second line says
 /// what the client's counter counts, as the client reported it. See
-/// notes/benchmarks/kernel-bench-harness.md.
+/// nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 #[cfg(feature = "cycle_counter_grant")]
 fn print_ipc_rtt_el0_cycles(cycles: u64, meaning: u64, ticks: u64, iters: u64) {
     if cycles == 0 || cycles > u64::MAX / 200 {
@@ -309,7 +309,7 @@ fn print_ipc_rtt_el0_cycles(cycles: u64, meaning: u64, ticks: u64, iters: u64) {
 /// `a | b` throughput, measured from EL0: a producer with `WRITE` and a consumer with `READ` on one
 /// endpoint, sixteen bytes a message, reported as `[ticks, bytes]`.
 ///
-/// See notes/pipes.md, and notes/benchmarks/kernel-bench-harness.md for the Unix comparison.
+/// See notes/pipes.md, and nifeos/record:notes/benchmarks/kernel-bench-harness.md for the Unix comparison.
 pub(super) fn sink_throughput() {
     let pipe = sched::create_rendezvous();
     let report = sched::create_rendezvous();

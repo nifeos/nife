@@ -1,7 +1,7 @@
 //! **Which grant a starter gives a virtio driver, and the direct grant's carve-out.** Mediated:
 //! a `VirtualIo` capability, and the kernel validates every descriptor on `NOTIFY`. Direct: the
 //! function's structure pages and a DMA region the IOMMU confines. See
-//! design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
+//! nifeos/record:design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
 //!
 //! The default, ruled 2026-11-11 (UTC), lives here: [`choose`] grants direct only when the active
 //! IOMMU owns the function's requester id, the function offers `VIRTIO_F_ACCESS_PLATFORM`, and no

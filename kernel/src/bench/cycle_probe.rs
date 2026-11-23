@@ -10,8 +10,8 @@ use super::*;
 ///
 /// Core cycles over reference ticks across one timed spin, with a `cycles_per_tick_means` line
 /// naming both counters on this architecture. Prints the reason instead when the cycle counter is
-/// unavailable or the spin migrated. See notes/benchmarks/kernel-bench-harness.md and
-/// notes/pmu.md.
+/// unavailable or the spin migrated. See nifeos/record:notes/benchmarks/kernel-bench-harness.md and
+/// nifeos/record:notes/pmu.md.
 pub(super) fn cycles_per_tick() {
     // Checked at each end: on aarch64 each core's cycle counter is its own number.
     let cpu = crate::cpu::id();
@@ -71,7 +71,7 @@ const CYCLE_PROBE_MEANING: &str = "unhalted core cycles (IA32_PERF_FIXED_CTR1) p
      cycles are not, so this ratio moves with frequency scaling and turbo";
 
 /// Ticks to spin for: 10 ms on QEMU and 25 ms on radon, a constant so radon runs stay comparable
-/// with the one on record. See notes/benchmarks/kernel-bench-harness.md.
+/// with the one on record. See nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 #[cfg(target_arch = "riscv64")]
 fn cycle_probe_window_ticks() -> u64 {
     100_000

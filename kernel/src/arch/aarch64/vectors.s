@@ -28,7 +28,7 @@
 // branch, and not enough to do real work. The constraint is why every aarch64 kernel
 // on earth looks nearly identical right here.
 //
-// See notes/exceptions.md.
+// See nifeos/record:notes/exceptions.md.
 
 // Save the interrupted CPU state onto the kernel stack.
 //
@@ -36,7 +36,7 @@
 // here and the Rust side silently reads the wrong field. There is a compile-time size
 // assertion over there, which catches half of the ways to get this wrong.
 //
-// CFI: see notes/cfi-unwind.md, "The hard case: a trap is not a call". `.cfi_signal_frame` tells
+// CFI: see nifeos/record:notes/cfi-unwind.md, "The hard case: a trap is not a call". `.cfi_signal_frame` tells
 // the unwinder this is not an ordinary call frame (a PC saved here is the interrupted instruction
 // itself, not one past a `bl`, which matters for symbolizing it correctly). The GP-register offsets
 // below are plain, correct arithmetic on this macro's own pushes and hold regardless of what
@@ -240,7 +240,7 @@
 
 // In the hot trap path's pinned section, which link-aarch64.ld places first in it so the
 // 2 KiB alignment costs no padding (milestone 796 (pin the hot trap path's placement); see
-// notes/benchmarks/kernel-footprint-and-caches.md, "The hot section").
+// nifeos/record:notes/benchmarks/kernel-footprint-and-caches.md, "The hot section").
 .section ".text.hot.exception_vectors", "ax"
 
 // The hardware requires 2048-byte alignment. 16 entries x 128 bytes = 2048.
@@ -368,7 +368,7 @@ exception_restore:
 //
 // This is the second time this project has pulled the same trick. `Thread::spawn_into` fakes a
 // `switch_to` frame so that the `ret` which RESUMES a thread also STARTS one
-// (notes/threads.md). Here we fake a TrapFrame so that the `eret` which RETURNS to
+// (nifeos/record:notes/threads.md). Here we fake a TrapFrame so that the `eret` which RETURNS to
 // interrupted code also ENTERS userspace. Both times, the "start" path turned out to be the
 // "resume" path with a forged frame, and no new code at all.
 //

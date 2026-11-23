@@ -41,7 +41,7 @@ pub(super) fn memory_region_retype_object(
             Ok(slot as i64)
         }
         // The page becomes the root table, and the region backs the space's tables and records
-        // (design/init-and-granular-spawn.md).
+        // (nifeos/record:design/init-and-granular-spawn.md).
         moho_abi::object_type::ADDRESS_SPACE => {
             let name = crate::user::user_address_space_create(region).ok_or(Error::OutOfMemory)?;
             let slot = sched::grant_from(floor, budget.mint_child(Object::AddressSpace(name)))

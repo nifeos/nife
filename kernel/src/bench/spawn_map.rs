@@ -88,7 +88,7 @@ pub(super) fn map_new() {
 ///
 /// That legal call takes the whole `ecall`-into-firmware path a shootdown pays. It must be
 /// single-hart, because under `-icount` a second hart's idle time lands in the window. See
-/// notes/benchmarks/kernel-bench-harness.md.
+/// nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 #[cfg(target_arch = "riscv64")]
 pub(super) fn rfence_self() {
     const RFENCE_ITERS: u64 = 512;

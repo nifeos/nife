@@ -1,6 +1,6 @@
 //! **The `ThreadControlBlock` methods**: `CONFIGURE`, `CAPABILITY_INSERT`, `START` and
 //! `SET_THREAD_POINTER`, the spawn machinery a loader runs once per child, and §300 (the paused
-//! state, a TCB verb, silent)'s `SUSPEND` and `RESUME`. See notes/system-call-boundary.md.
+//! state, a TCB verb, silent)'s `SUSPEND` and `RESUME`. See nifeos/record:notes/system-call-boundary.md.
 //!
 //! Name: provisional (milestone 812's lane, 2026-10-10 UTC).
 

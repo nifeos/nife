@@ -4,8 +4,8 @@
 //! until the machine stops unless something hands them back. A [`Holding`] remembers the threads
 //! and regions the kernel handed a service, and spends the existing verbs of DECISIONS §16 (object
 //! revocation) on them in the order that works: arm the kill, reclaim the regions, wait for the
-//! threads. It adds no system call and no kernel object. See notes/frames.md and
-//! notes/user-address-spaces.md.
+//! threads. It adds no system call and no kernel object. See nifeos/record:notes/frames.md and
+//! nifeos/record:notes/user-address-spaces.md.
 //!
 
 //! # BUGS
@@ -19,7 +19,7 @@
 //! Name: provisional (this lane, 2026-08-16). `Holding` is a noun and says what the thing is:
 //! what a service holds. It is deliberately *not* `Lease`, which reads better in the abstract and
 //! would collide head-on with the DHCP lease this file's biggest caller talks about on every other
-//! line (`notes/net.md`). Crate, module and type names are
+//! line (`nifeos/record:notes/net.md`). Crate, module and type names are
 //! an architect's call; expect this one to change.
 
 use crate::sched;
@@ -64,7 +64,7 @@ fn reclaim(region: u64, deadline: u64) -> bool {
 ///
 /// The `add_*` methods mutate rather than consuming and returning `self`: a consuming builder copies
 /// this 320-byte value per link at `opt-level=0`, which put `start_net_std`'s frame past the 4 KiB
-/// guard page under every kernel thread stack (notes/stack-high-water.md).
+/// guard page under every kernel thread stack (nifeos/record:notes/stack-high-water.md).
 pub struct Holding {
     threads: [Option<ThreadId>; MAXIMUM_THREADS],
     regions: [Option<u64>; MAXIMUM_REGIONS],
@@ -187,7 +187,7 @@ impl Holding {
              still refuses: a service blocked on an endpoint that is not in any region this holding \
              names cannot be woken, and so cannot spend the kill (see this module's BUGS). This is \
              the leak rather than a flake. Left alone it takes the boot's free frames down until an \
-             innocent later test fails as Unmappable(OutOfPageFrames); notes/frames.md.",
+             innocent later test fails as Unmappable(OutOfPageFrames); nifeos/record:notes/frames.md.",
         );
     }
 }

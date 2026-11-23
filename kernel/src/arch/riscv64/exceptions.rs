@@ -5,7 +5,7 @@
 //! which fans out on `scause`. The portable system call dispatcher reads `ecall`'s `a7` and `a0`..`a5`
 //! through `TrapFrame::{system_call_nr, arg, set_arg}`.
 //!
-//! See notes/riscv-port/traps.md.
+//! See nifeos/record:notes/riscv-port/traps.md.
 
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
@@ -64,7 +64,7 @@ impl TrapFrame {
     /// `a0`..`a2` and its own thread pointer in `tp`.
     ///
     /// `sstatus` has SPP = 0 (return to U-mode), SPIE = 1 (interrupts on after `sret`, so the
-    /// thread stays preemptible) and UXL = 64-bit. See notes/riscv-port/hal-leaks.md.
+    /// thread stays preemptible) and UXL = 64-bit. See nifeos/record:notes/riscv-port/hal-leaks.md.
     pub fn for_user_entry(entry: u64, user_sp: u64, args: [u64; 3]) -> Self {
         // `trap_return` writes this whole word into sstatus, so UXL (bits 33:32) must be 2 here or
         // the first user instruction faults on an illegal XLEN.
@@ -73,7 +73,7 @@ impl TrapFrame {
 
         // SIE must be clear in a fabricated frame. `sstatus` holds the live interrupt enable as
         // well as the staged fields, so SIE = 1 would unmask interrupts inside `trap_return` after
-        // `sepc` is staged (notes/exceptions.md, the exception-return race).
+        // `sepc` is staged (nifeos/record:notes/exceptions.md, the exception-return race).
         const SIE: u64 = 1 << 1;
         const _: () = assert!((SPIE | UXL_64) & SIE == 0);
 
@@ -115,7 +115,7 @@ unsafe extern "C" {
 #[inline(always)]
 pub unsafe fn enter_user(frame: *mut TrapFrame) -> ! {
     // A load and a branch, no call: nothing is pushed over the frame on the hot path. `sepc == 0`
-    // would surface as a lost-wakeup hang far from its cause. See notes/riscv-port/traps.md.
+    // would surface as a lost-wakeup hang far from its cause. See nifeos/record:notes/riscv-port/traps.md.
     //
     // SAFETY: the caller's contract says `frame` is a valid, writable `TrapFrame`.
     let sepc = unsafe { (*frame).sepc };
@@ -182,7 +182,7 @@ pub static ROUTED_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 pub(crate) static SPURIOUS_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 
 /// System calls served, in test builds only, for `system_tests/src/user/el0_boundary_tests.rs`:
-/// every system call on every core writes this one line (notes/job-mix/null-system-call-under-load.md).
+/// every system call on every core writes this one line (nifeos/record:notes/job-mix/null-system-call-under-load.md).
 #[cfg(any(test, feature = "system_tests"))]
 pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 
@@ -261,7 +261,7 @@ pub fn last_user_fault() -> Option<(UserFault, u64)> {
 /// # BUGS
 ///
 /// The walk runs after the fault, so a concurrent map or unmap on another hart misclassifies it.
-/// See notes/riscv-port/traps.md.
+/// See nifeos/record:notes/riscv-port/traps.md.
 fn classify(frame: &TrapFrame, code: u64) -> UserFault {
     let access = match code {
         CAUSE_INSTRUCTION_PAGE_FAULT => UserFaultAccess::Fetch,
@@ -290,7 +290,7 @@ pub(crate) fn enable_external() {
 /// select the mode, and trap.s's `.balign 4` keeps them 0.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     unsafe extern "C" {
         fn trap_entry();
@@ -305,7 +305,7 @@ pub fn initialize() {
 fn advance_past_trapping_insn(frame: &mut TrapFrame) {
     // SAFETY: `sepc` is the address of the instruction that trapped, which is mapped and readable.
     let low = unsafe { core::ptr::read_volatile(frame.sepc as *const u16) };
-    // Wrapping, to keep the overflow check off the trap body (notes/overflow-checks.md): the one
+    // Wrapping, to keep the overflow check off the trap body (nifeos/record:notes/overflow-checks.md): the one
     // caller is the S-mode breakpoint arm, so `sepc` is in kernel `.text`, far below `2^64 - 4`.
     frame.sepc = frame
         .sepc
@@ -427,7 +427,7 @@ extern "C" fn riscv64_trap_body(frame: &mut TrapFrame) -> bool {
         }
         // An illegal instruction under `FS == Off` may be a first FP use. Open the unit and retry
         // without decoding: a genuinely illegal one traps again with `FS` on. Set the frame's FS,
-        // which trap.s writes back, to Dirty. See notes/riscv-port/traps.md.
+        // which trap.s writes back, to Dirty. See nifeos/record:notes/riscv-port/traps.md.
         CAUSE_ILLEGAL_INSTRUCTION
             if frame.sstatus & super::fp::SSTATUS_FS == 0 && crate::fp::enable_for_current() =>
         {
@@ -458,8 +458,8 @@ extern "C" fn riscv64_trap_body(frame: &mut TrapFrame) -> bool {
 /// Print what the hardware walked for a user page fault at `stval`: the live `satp` and leaf, and
 /// in `system_tests` builds whether the root is the thread's own.
 ///
-/// Cold and out of line for `script/fastpath-footprint`. See notes/riscv-port/traps.md and
-/// notes/riscv-tlb-shootdown.md, BUGS.
+/// Cold and out of line for `script/fastpath-footprint`. See nifeos/record:notes/riscv-port/traps.md and
+/// nifeos/record:notes/riscv-tlb-shootdown.md, BUGS.
 #[cold]
 #[inline(never)]
 fn report_translation(stval: u64) {
@@ -568,7 +568,7 @@ mod tests {
     /// Take a breakpoint and come back from it, which exercises the whole trap path.
     ///
     /// A count that rose also witnesses S-mode, which RISC-V gives no register to read, and the
-    /// 2-byte `c.ebreak` step. See notes/riscv-port/traps.md.
+    /// 2-byte `c.ebreak` step. See nifeos/record:notes/riscv-port/traps.md.
     #[test_case]
     fn breakpoint_is_caught_and_execution_resumes() {
         use core::sync::atomic::Ordering;

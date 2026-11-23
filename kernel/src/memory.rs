@@ -44,7 +44,7 @@ const MAXIMUM_REGIONS: usize = 16;
 /// from.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     #[cfg(target_arch = "x86_64")]
     crate::arch::discovery::initialize();
@@ -397,7 +397,7 @@ fn record_jh7110_watchdog(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 ///
 /// `ram` is all real, allocatable memory; `forbidden` is everything something else already owns,
 /// and **must include the kernel image**. Panics if no RAM run can hold the frame bitmap. See
-/// notes/physical-memory.md.
+/// nifeos/record:notes/physical-memory.md.
 ///
 /// # BUGS
 /// - The seam's type is still `device_tree_blob::Region`, a device-tree type on every machine.
@@ -418,7 +418,7 @@ pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
 
     // The bitmap's span is RAM's widened by whatever `forbidden` reaches past it (x86_64's PVH
     // initial ramdisk can end past e820's usable RAM), so every claimed frame is in range and
-    // reads as used. See notes/physical-memory.md.
+    // reads as used. See nifeos/record:notes/physical-memory.md.
     let top = ram
         .iter()
         .map(|r| r.end())
@@ -503,7 +503,7 @@ fn overlaps(a: u64, alen: u64, b: u64, blen: u64) -> bool {
 /// this says how close the middle came, and the first refusal says where it went over. It reports
 /// and does not gate. Kept under the allocator lock by [`alloc`] and [`alloc_contiguous`], so a
 /// plain load and store suffice; atomics only because a `static` must be `Sync`. See
-/// notes/physical-memory.md for the ledger at the low-water.
+/// nifeos/record:notes/physical-memory.md for the ledger at the low-water.
 static FREE_LOW_WATER: AtomicUsize = AtomicUsize::new(usize::MAX);
 /// How many allocations the allocator refused, and the largest request among them, in frames.
 static REFUSED: AtomicUsize = AtomicUsize::new(0);
@@ -628,7 +628,7 @@ pub fn stats() -> Option<Stats> {
 }
 
 /// Free frames right now. For tests that prove reclamation actually returns memory (the memory
-/// region flat-frame-count property, notes/memory-regions.md): a region reclaimed by object revocation should
+/// region flat-frame-count property, nifeos/record:notes/memory-regions.md): a region reclaimed by object revocation should
 /// bring this exactly back to where it stood before the region was created.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // the reclamation tests in sched.rs and user/tests.rs
 pub fn free_page_frames() -> usize {
@@ -659,7 +659,7 @@ pub fn frame_is_allocated(pa: u64) -> Option<bool> {
 /// a comfortable free total and still refuse a 128-page request because the free frames are in
 /// pieces, which is exactly what milestone 107 measured (137 free, no run of 128) and read as
 /// exhaustion. The frame ledger prints both, so the next person meets the distinction rather than
-/// deducing it. See notes/frames.md.
+/// deducing it. See nifeos/record:notes/frames.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // the frame ledger in testing.rs is the caller
 pub(crate) fn largest_free_run() -> usize {
     ALLOCATOR
@@ -685,7 +685,7 @@ pub fn image_bounds() -> (u64, u64) {
 /// **The scoped form of [`free_page_frames`]**, and the one to reach for when a test knows which
 /// frame it is asking about: a machine-wide free count moves whenever any other part of the kernel
 /// allocates or frees, so a test bracketing it is asserting that the rest of the system held still.
-/// `user/current_cpu_tests.rs` is the worked example (notes/load-sensitive-assertions.md).
+/// `user/current_cpu_tests.rs` is the worked example (nifeos/record:notes/load-sensitive-assertions.md).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // this file's bootstrap tests and user/current_cpu_tests.rs
 pub fn is_page_frame_used(frame: PageFrame) -> Option<bool> {
     ALLOCATOR.lock().as_ref()?.is_used(frame)
@@ -738,7 +738,7 @@ pub(crate) fn jh7110_clock_and_reset() -> Option<jh7110_clock_and_reset::WindowL
 ///
 /// The only caller is the rebooting soak, just before SBI SRST: on radon OpenSBI performs every
 /// reset as an I2C write to the AXP15060, and U-Boot hands over with that bus's clock gated and its
-/// reset asserted. See `design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md`.
+/// reset asserted. See `nifeos/record:design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md`.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) fn jh7110_pmic_bus() -> Option<(
     jh7110_clock_and_reset::WindowLocation,
@@ -841,7 +841,7 @@ pub(crate) fn pci_regions() -> Option<((u64, u64), (u64, u64))> {
 /// them from. `x86_64`'s counterpart of `initialize`'s `pci-host-ecam-generic` node parse: ACPI's
 /// MCFG names the ECAM window, and there is no `_CRS` reader for the BAR window (that needs an AML
 /// interpreter, which this kernel does not have), so `main.rs` supplies both from what it already
-/// knows and fills the same static every consumer already reads. See notes/x86-port/acpi-and-pci.md.
+/// knows and fills the same static every consumer already reads. See nifeos/record:notes/x86-port/acpi-and-pci.md.
 ///
 /// Two callers: `x86_64`'s boot tour, and on riscv64 the JH7110 root port's bring-up once the port
 /// forwards, since that controller's windows decode nothing before it. aarch64 fills the same
@@ -1010,7 +1010,7 @@ pub fn bitmap_region() -> (u64, u64) {
 /// It does not reserve the region: the caller is already building the `forbidden` slice it hands
 /// [`bring_up_page_frames`]. Dead on the device-tree architectures, which [`initialize`] serves; an
 /// `allow` says so rather than a `cfg` that would make a seam look like an x86 detail. See
-/// notes/physical-memory.md.
+/// nifeos/record:notes/physical-memory.md.
 ///
 /// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
 /// His words: "B for #1998." Refused `record_initrd` (the foreign spelling, which stops at the
@@ -1277,7 +1277,7 @@ pub(crate) fn print_summary() {
 }
 
 /// `__image_start` and `__image_end` are invented by the linker script, which is the only
-/// thing that knows where we ended up. See notes/linker-scripts.md.
+/// thing that knows where we ended up. See nifeos/record:notes/linker-scripts.md.
 ///
 /// **They are VIRTUAL addresses**, because the kernel is linked high. Everything in this
 /// module deals in *physical* frames, so we convert on the way in. Getting this backwards
@@ -1352,7 +1352,7 @@ mod tests {
     ///
     /// The image's end is not frame-aligned, so its last frame is only partly ours; rounding that
     /// end down would free it and let the tail of the kernel be overwritten. Checking the bitmap
-    /// covers every frame of the image and allocates nothing. See notes/physical-memory.md.
+    /// covers every frame of the image and allocates nothing. See nifeos/record:notes/physical-memory.md.
     #[test_case]
     fn every_frame_of_the_kernel_image_is_reserved() {
         use page_frames::{FRAME_BYTES, PageFrame};

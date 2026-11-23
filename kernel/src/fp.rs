@@ -4,7 +4,7 @@
 //! data while another runs. [`hand_over`] keeps that true at each context switch, eagerly: the
 //! first-use trap answers only whether a thread wants FP, never whose data is in the registers,
 //! because a trap is not a boundary (`LazyFP`, CVE-2018-3665). The policy half of the
-//! `arch::fp` modules. See design/roadmap/0447-vector-registers-are-a-thread-s-own.md.
+//! `arch::fp` modules. See nifeos/record:design/roadmap/0447-vector-registers-are-a-thread-s-own.md.
 
 //! # BUGS
 //!

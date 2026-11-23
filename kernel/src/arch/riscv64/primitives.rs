@@ -39,7 +39,7 @@ pub fn direct_memory_access_write_barrier() {
 /// through SBI RFENCE on the others.
 ///
 /// `fence.i` has no address range, so `va` and `len` are ignored. See
-/// notes/riscv-port/hal-leaks.md.
+/// nifeos/record:notes/riscv-port/hal-leaks.md.
 pub fn sync_icache(va: u64, len: usize) {
     let _ = (va, len);
     instructions::fence_i();

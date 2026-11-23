@@ -1,4 +1,4 @@
-/* nife kernel image layout, x86_64 (milestone 161, notes/x86-port.md).
+/* nife kernel image layout, x86_64 (milestone 161 (the x86_64 kernel port), nifeos/record:notes/x86-port.md).
  *
  * THE KERNEL IS LINKED HIGH AND LOADED LOW, the same shape as link-aarch64.ld and
  * link-riscv64.ld, for the same reason: the kernel lives in the high half of the address space, so
@@ -25,7 +25,7 @@
  * promises LLVM that every symbol is in the top 2 GiB of the address space so it may use the
  * sign-extended 32-bit relocations that make kernel code compact. 0xffffffff80000000 is that model's
  * base, exactly as it is for Linux. Moving it breaks every relocation in the image, silently, in a
- * way that looks like random corruption. See notes/x86-port/boot.md.
+ * way that looks like random corruption. See nifeos/record:notes/x86-port/boot.md.
  *
  * PHYS_START WAS 1 MiB AND IS NOW 32 MiB, and the reason is firmware rather than specification
  * (milestone 195). 1 MiB is the LOWEST address a multiboot image may be loaded at, because the
@@ -288,7 +288,7 @@ SECTIONS
      * flat-Image / objcopy step at all (PVH loads the ELF's PT_LOAD segments directly; see
      * helpers/qemu-runner-x86_64.sh's own header comment), so the CFI rides along into guest RAM.
      * That is harmless extra RAM in a VM with QEMU's usual hundreds of megabytes and is not why
-     * this section moved; see notes/cfi-unwind.md's BUGS section for the honest scope of what
+     * this section moved; see nifeos/record:notes/cfi-unwind.md's BUGS section for the honest scope of what
      * this milestone did and did not strip. */
     .eh_frame : { KEEP(*(.eh_frame)) KEEP(*(.eh_frame_hdr)) }
 

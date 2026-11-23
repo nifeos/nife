@@ -1,7 +1,7 @@
 //! Configuring an embryo: binding its address space and entry, its thread pointer, and its
 //! cycle-counter grant, everything fixed on a thread before `START` runs it, plus a thread changing
 //! its own thread pointer later. The register halves are `arch::thread_pointer` and the scope note
-//! is `notes/thread-pointer.md`.
+//! is `nifeos/record:notes/thread-pointer.md`.
 //!
 //! Name: provisional (milestone 812's lane, 2026-10-10 UTC).
 
@@ -206,7 +206,7 @@ pub fn current_thread_pointer() -> u64 {
 /// An embryo takes it at its first switch in. The caller takes it now, the field and the register
 /// (through `frame`, the frame it returns through) under one hold of `IPC_TABLES`, since on aarch64
 /// a switch between the two writes would save the old register over the new field. Any other
-/// started thread is refused with `WrongObject` (notes/thread-pointer.md).
+/// started thread is refused with `WrongObject` (nifeos/record:notes/thread-pointer.md).
 ///
 /// `BadPointer` for a value [`is_thread_pointer`] refuses, before anything changes.
 ///

@@ -1,6 +1,6 @@
 //! **The switch**: adopting the boot context as thread 0, the queue tokens a switch moves,
 //! `schedule` and the work `finish_switch` does on the far side, and the per-thread state
-//! installed on the core about to run a thread. See notes/scheduler/switch.md.
+//! installed on the core about to run a thread. See nifeos/record:notes/scheduler/switch.md.
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
@@ -10,12 +10,12 @@ use super::*;
 ///
 /// The boot thread has no stack of its own and no saved context; the first switch away from it
 /// writes one. Panics if a fresh table refuses an insert or the idle thread cannot be built. See
-/// notes/scheduler/switch.md.
+/// nifeos/record:notes/scheduler/switch.md.
 ///
 /// Context: takes `IPC_TABLES` twice. The idle thread is built in place under the second hold.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     // The FP unit is shut before any thread exists: a core that starts with it open never takes
     // the first-use trap that marks a thread `live`. Here, not in `arch::initialize`, because
@@ -91,7 +91,7 @@ pub fn initialize() {
 /// The queue discipline keeps it valid: a queued thread is `Ready` or `Blocked`, the reaper frees
 /// only `Finished` ones, and the table pins the TCB page. [`core::ptr::NonNull`] because it comes
 /// from a `&mut Thread`; that the pointee outlives its time on the queue stays the caller's rule.
-/// See notes/scheduler/switch.md.
+/// See nifeos/record:notes/scheduler/switch.md.
 ///
 /// Context: caller holds `IPC_TABLES`.
 pub(super) fn thread_control_block_ptr(
@@ -162,7 +162,7 @@ pub(super) fn hold_token_reading_order(token: Unqueued<Thread>) -> (ThreadId, bo
 /// Built only under `test`, `system_tests` or `cycle_counter_grant`. The read in `schedule` and
 /// this install are `#[cfg]`-gated rather than carried through the switch tuple, because the debug
 /// build the icount gate measures does not fold a constant `false` away. With the feature off
-/// the counter keeps the closed value boot wrote. See notes/scheduler/switch.md.
+/// the counter keeps the closed value boot wrote. See nifeos/record:notes/scheduler/switch.md.
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
 pub(super) fn install_cycle_counter_grant(granted: bool) {
     crate::arch::timer::set_cycle_counter_grant(granted);
@@ -174,7 +174,7 @@ pub(super) fn install_cycle_counter_grant(granted: bool) {
 ///
 /// `x86_64` only, `#[cfg]`-gated at the switch site rather than carried through the switch tuple,
 /// for `install_cycle_counter_grant`'s reason. See DECISIONS §152 (the port-range capability) and
-/// notes/scheduler/switch.md.
+/// nifeos/record:notes/scheduler/switch.md.
 ///
 /// Context: caller holds `IPC_TABLES` with interrupts masked.
 #[cfg(target_arch = "x86_64")]
@@ -186,7 +186,7 @@ pub(super) fn install_port_grant(grant: Option<(u16, u16)>) {
 ///
 /// May be called from normal context (a voluntary `yield_now`) or from the tail of the timer
 /// interrupt handler (a preemption); the two paths are identical from here down. Returns when some
-/// later switch comes back to this thread. See notes/scheduler/switch.md.
+/// later switch comes back to this thread. See nifeos/record:notes/scheduler/switch.md.
 ///
 /// Context: takes `IPC_TABLES`, never across the switch; masks interrupts across the decision
 /// and the switch. Must not run on an interrupt stack.
@@ -324,7 +324,7 @@ pub fn schedule() {
 ///
 /// The body of [`schedule`]'s check, out of line because it is a teardown no IPC reaches. A killed
 /// thread never reaches `depart`, so this is the one place its callers are freed before its
-/// capability table goes. See notes/scheduler/switch.md.
+/// capability table goes. See nifeos/record:notes/scheduler/switch.md.
 ///
 /// Context: caller holds `IPC_TABLES`; takes capability-table locks beneath it. `current` is
 /// killed, and running or parked.
@@ -393,7 +393,7 @@ pub(super) fn heal_self_pop(sched: &mut IpcTables, current: ThreadId) {
 /// The safe half of the two-part reaper, run on the incoming thread once the outgoing one is off
 /// its stack. Called from `schedule()` and from the thread entry points (`thread_entry`,
 /// `user_thread_entry`), the two ways a thread resumes, on the core that recorded
-/// `switched_from`. See DECISIONS §11 (per-CPU run queues) and notes/scheduler/switch.md.
+/// `switched_from`. See DECISIONS §11 (per-CPU run queues) and nifeos/record:notes/scheduler/switch.md.
 ///
 /// Context: called with interrupts masked; takes `IPC_TABLES`. The reap arm releases it while
 /// the stack and address space are freed, then takes it again.
@@ -420,7 +420,7 @@ pub(crate) fn finish_switch() {
     // makes legal is `thread_wake_handshake::Handshake::finish_switch`'s verdict: reap a Finished
     // predecessor, complete a wake that was deferred mid-switch-out, or simply clear `on_cpu` so
     // other cores may run it. The transition is the crate's (loom searches it; see
-    // notes/interleaving.md); the reap and the queue push are ours.
+    // nifeos/record:notes/interleaving.md); the reap and the queue push are ours.
     let verdict = t.handshake.finish_switch();
     match verdict {
         // Out of line and `#[cold]`: only a finished thread is reaped, which no IPC does, and
@@ -444,11 +444,11 @@ pub(crate) fn finish_switch() {
 /// Takes the stack and address space out and marks the thread
 /// [`being_reaped`](crate::thread::Thread::being_reaped) under the lock, frees them with no lock
 /// held, then removes the thread under the lock again, so everything it owned is gone before it
-/// leaves its region. See notes/scheduler/switch.md.
+/// leaves its region. See nifeos/record:notes/scheduler/switch.md.
 ///
 /// # BUGS
 /// - A corpse whose TCB is outside region R and whose root is inside it has a narrow window in
-///   which a `DESTROY(R)` frees the root's page under the drop; see notes/scheduler/switch.md.
+///   which a `DESTROY(R)` frees the root's page under the drop; see nifeos/record:notes/scheduler/switch.md.
 #[cold]
 #[inline(never)]
 pub(super) fn reap_switched_out(
@@ -472,7 +472,7 @@ pub(super) fn reap_switched_out(
 /// a fault: the flag is what stops the same instruction taking the same trap forever.
 ///
 /// Context: takes `IPC_TABLES` from a trap handler; the trap came from a running thread, and the
-/// kernel is built `softfloat`, so this core cannot already hold it. See notes/scheduler/switch.md.
+/// kernel is built `softfloat`, so this core cannot already hold it. See nifeos/record:notes/scheduler/switch.md.
 pub fn mark_current_fp_live() -> bool {
     let mut guard = IPC_TABLES.lock();
     let Some(sched) = guard.as_mut() else {

@@ -15,7 +15,7 @@ const TCG_VIRT_CNTFRQ_HERTZ: u64 = 62_500_000;
 /// The riscv64 twin: QEMU `virt`'s `/cpus/timebase-frequency`, against radon's 4 MHz.
 ///
 /// It says "not QEMU `virt`", not "has a 32 KB L1"; the runbook records which machine a number came
-/// from. See notes/benchmarks/kernel-bench-harness.md.
+/// from. See nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 #[cfg(target_arch = "riscv64")]
 const TCG_VIRT_CNTFRQ_HERTZ: u64 = 10_000_000;
 
@@ -23,7 +23,7 @@ const TCG_VIRT_CNTFRQ_HERTZ: u64 = 10_000_000;
 /// thread contends for one core's cache.
 ///
 /// Returns `false`, printing why `name` skipped, when either does not hold. A board card needs the
-/// `single_hart` feature for this. See notes/benchmarks/kernel-bench-harness.md.
+/// `single_hart` feature for this. See nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 pub(super) fn real_single_hart_or_skip(name: &str) -> bool {
     let cpus = crate::smp::online_count();
@@ -37,7 +37,7 @@ pub(super) fn real_single_hart_or_skip(name: &str) -> bool {
     if freq == TCG_VIRT_CNTFRQ_HERTZ {
         println!(
             "bench: {name} skipped (QEMU virt detected via counter frequency {freq} Hz; TCG \
-             models no cache, see design/roadmap/0134-the-measurements-that-decide.md)"
+             models no cache, see nifeos/record:design/roadmap/0134-the-measurements-that-decide.md)"
         );
         return false;
     }
@@ -48,7 +48,7 @@ pub(super) fn real_single_hart_or_skip(name: &str) -> bool {
 /// predicted for 16 to 32.
 ///
 /// Fixed so every run compares with the published ones; change it only if the knee moves. See
-/// notes/benchmarks/kernel-bench-harness.md.
+/// nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 pub(super) const SCALE_MAXIMUM_PAIRS: usize = 48;
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
@@ -59,7 +59,7 @@ pub(super) const SCALE_PAIRS: &[usize] = &[1, 2, 4, 8, 16, 32, SCALE_MAXIMUM_PAI
 /// Kernel stacks are `STACK_SLOT_SPAN` apart, so enough threads cycling through IPC stop fitting in
 /// L1d. Runs [`tp_best`] at each of [`SCALE_PAIRS`]; a flat line says the process-kernel penalty is
 /// invisible on this cache, and a knee gives Warton's effect its magnitude. See
-/// notes/benchmarks/kernel-bench-harness.md.
+/// nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 pub(super) fn ipc_thread_scaling() {
     if !real_single_hart_or_skip("ipc_thread_scaling") {

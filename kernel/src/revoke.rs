@@ -5,7 +5,7 @@
 //! unmaps a page from every space, whoever mapped it; `PageFrame::REVOKE` unmaps only what the
 //! revoked capability's derivation family mapped. The semantics are §13 (capability revocation and
 //! untyped reclamation) and §132 (what `PageFrame::REVOKE` owes an overlapping run); the design is
-//! notes/mapping-log.md.
+//! nifeos/record:notes/mapping-log.md.
 
 use crate::arch::mmu;
 use crate::sync::{InterruptSafeGuard, InterruptSafeMutualExclusionLock, rank};
@@ -18,7 +18,7 @@ use crate::sync::{InterruptSafeGuard, InterruptSafeMutualExclusionLock, rank};
 /// # BUGS
 ///
 /// Two capabilities sharing a base but not a length are one object here, so a revoke of the shorter
-/// unmaps the longer one's mappings of the pages they share. See notes/mapping-log.md.
+/// unmaps the longer one's mappings of the pages they share. See nifeos/record:notes/mapping-log.md.
 #[repr(C)]
 #[derive(Clone, Copy)]
 struct LogEntry {
@@ -35,7 +35,7 @@ struct LogEntry {
 ///
 /// A real object is a page address, page aligned and at least `0x4000_0000`, so 1 can never be one.
 /// Every reader of a record must ask [`LogEntry::is_table`]; a reader that forgot would treat a
-/// table as a mapped page. See notes/mapping-log.md.
+/// table as a mapped page. See nifeos/record:notes/mapping-log.md.
 ///
 /// Name: provisional.
 const TABLE: u64 = 1;
@@ -57,7 +57,7 @@ impl LogEntry {
 ///
 /// A benchmark input: [`MappingHold::record_mapping`] scans the head page for a tombstone before it
 /// appends, so recording a mapping costs time linear in this; `map_el0` is measured moving with it.
-/// notes/mapping-log.md has the measurements.
+/// nifeos/record:notes/mapping-log.md has the measurements.
 const LOG_ENTRIES: usize = 170;
 
 /// How many log pages `n` recorded mappings cost, for a caller sizing an address space's backing
@@ -68,7 +68,7 @@ pub fn log_pages_for(n: u64) -> u64 {
 }
 
 /// What authority a mapping was made under, which [`MappingHold::record_mapping`] requires (see
-/// design/decisions/0132-overlapping-page-frame-runs.md). An enum rather than a bare address so
+/// nifeos/record:design/decisions/0132-overlapping-page-frame-runs.md). An enum rather than a bare address so
 /// every call site states the case: most mapping sites map a page no capability names.
 ///
 /// Name: ratified 2026-08-27 (calef). Landed as `MappedUnder`; renamed to `PageMapSource` on
@@ -159,7 +159,7 @@ mod chain {
     impl LogPage {
         /// Every slot this page has ever written, tombstones included. A slice rather than an
         /// iterator chained across pages, because a `flat_map` over the chain is measurably slower
-        /// on `map_el0` and `spawn_el0` (notes/mapping-log.md).
+        /// on `map_el0` and `spawn_el0` (nifeos/record:notes/mapping-log.md).
         pub(super) fn used_mut(&mut self) -> &mut [LogEntry] {
             let used = (self.used as usize).min(LOG_ENTRIES);
             &mut self.entries[..used]
@@ -248,7 +248,7 @@ static SPACES: InterruptSafeMutualExclusionLock<Registry> =
     InterruptSafeMutualExclusionLock::new(rank::MAPPINGS, Registry::new());
 
 /// The registry array plus one past its highest live slot, so a walk costs the occupied prefix
-/// rather than [`MAXIMUM_SPACES`], which grows with `sched::MAXIMUM_THREADS` (notes/mapping-log.md
+/// rather than [`MAXIMUM_SPACES`], which grows with `sched::MAXIMUM_THREADS` (nifeos/record:notes/mapping-log.md
 /// has the measurement). `claim` is first-fit, so `top` stays near the live count, and every slot
 /// at or above `top` is `None`, which makes a bounded walk identical to a full one.
 struct Registry {
@@ -348,7 +348,7 @@ pub(crate) struct Recorded {
 /// (name provisional). A capability's frame is mapped and recorded under the hold its capability
 /// was read under ([`MappingHold::current_capability`]); a sweep deletes capabilities before it takes this
 /// registry, so it either precedes the read (`NoSuchSlot`) or its unmap pass finds the record. See
-/// notes/mapping-log.md.
+/// nifeos/record:notes/mapping-log.md.
 ///
 /// # BUGS
 ///
@@ -395,7 +395,7 @@ impl MappingHold {
     /// Returns `MapError::WritableAndExecutable` when the space already maps `phys` with flags that
     /// make the pair with `flags` (`Flags::makes_writable_executable_pair`), and
     /// `MapError::OutOfPageFrames` if the space is unknown or its budget is exhausted. Nothing is
-    /// filed on either refusal. See notes/mapping-log.md, "No frame is writable and executable in one
+    /// filed on either refusal. See nifeos/record:notes/mapping-log.md, "No frame is writable and executable in one
     /// space".
     ///
     /// Context: `SPACES` held; may take `MEMORY_REGION` to retype a log page.
@@ -551,10 +551,10 @@ impl MappingHold {
 
     /// Tombstone the record that `root` maps a page at `va`, for `AddressSpace::UNMAP`, and return
     /// the page it named; `None` if no record does. Keyed by address, because the caller may hold
-    /// no capability for the page (design/decisions/0162-giving-up-a-mapping.md). Required: a stale
+    /// no capability for the page (nifeos/record:design/decisions/0162-giving-up-a-mapping.md). Required: a stale
     /// record would let a revoke of the old frame unmap a new frame at `va`
     /// (`kernel::user::unmap_tests::an_unmapped_va_remapped_to_another_frame_survives_the_old_frames_revoke`).
-    /// A table record at `va` stays (`notes/unmap.md`'s `BUGS`).
+    /// A table record at `va` stays (`nifeos/record:notes/unmap.md`'s `BUGS`).
     ///
     /// Context: `SPACES` held.
     pub(crate) fn forget_mapping_at(&mut self, root: u64, va: u64) -> Option<u64> {
@@ -590,10 +590,10 @@ pub enum Listing {
 }
 
 /// One entry of what `root` has mapped, resuming from `cursor`, for `moho_abi::address_space::LIST`
-/// (design/decisions/0114-aspace-enumerate.md). Start at 0 and feed each returned cursor back. A
+/// (nifeos/record:design/decisions/0114-aspace-enumerate.md). Start at 0 and feed each returned cursor back. A
 /// cursor is a log page's address OR'd with an index, checked for membership in this space's chain
 /// before anything follows it. A slot reused between calls can show the wrong mapping
-/// (`crates/pmap`'s `BUGS`). See notes/mapping-log.md.
+/// (`crates/pmap`'s `BUGS`). See nifeos/record:notes/mapping-log.md.
 ///
 /// Context: takes `SPACES` across the lookup, the membership check and the walk, so the space
 /// cannot die between the check and the follow.
@@ -648,7 +648,7 @@ fn unmap_everywhere(phys: u64, spare: u64) {
 
 /// Unmap `phys` only from the mappings made under the capability whose run begins at `object` and
 /// its derivatives, leaving every other holder's mapping of the page alone: `PageFrame::REVOKE`'s
-/// unmap half (design/decisions/0132-overlapping-page-frame-runs.md).
+/// unmap half (nifeos/record:design/decisions/0132-overlapping-page-frame-runs.md).
 ///
 /// Context: takes `SPACES`; the unmaps and their TLB invalidation run under it.
 fn unmap_under_object(phys: u64, object: u64) {
@@ -695,7 +695,7 @@ pub fn revoke_page_frame(phys: u64) {
 
 /// Revoke a run of `count` frames, `PageFrame::REVOKE`'s body: delete every capability naming
 /// exactly `(phys, count)`, then unmap each page from the mappings made under that run
-/// (design/decisions/0132-overlapping-page-frame-runs.md).
+/// (nifeos/record:design/decisions/0132-overlapping-page-frame-runs.md).
 ///
 /// # BUGS
 ///
@@ -703,7 +703,7 @@ pub fn revoke_page_frame(phys: u64) {
 /// - A device keeps its DMA window: a revoke does not narrow `virtual_io::register` (§132's question
 ///   3).
 ///
-/// notes/mapping-log.md has both.
+/// nifeos/record:notes/mapping-log.md has both.
 ///
 /// Context: takes `IPC_TABLES` (each `CAPABILITY_TABLE` beneath it) for the capability pass and
 /// releases it, then `SPACES` once per page for the unmap pass.
@@ -718,7 +718,7 @@ pub(crate) fn revoke_page_frame_run(phys: u64, count: u64) {
 /// `phys` except the invoker's, then unmap `phys` from every space except the invoker's. Afterwards
 /// exactly one process can reach the device. Scoped by holder rather than by capability, so a
 /// second capability to the same MMIO page does not survive (milestone 23 (a capability-routed
-/// component OS with live replacement); notes/mapping-log.md).
+/// component OS with live replacement); nifeos/record:notes/mapping-log.md).
 ///
 /// Context: takes `IPC_TABLES` for the capability pass and releases it, then `SPACES`.
 pub fn revoke_device_from_others(phys: u64) {
@@ -749,7 +749,7 @@ pub fn revoke_port_range(base: u16, count: u16) {
 
 /// Revoke every page in `[base, base + size)` before `memory_region::destroy` returns them: delete
 /// every overlapping `PageFrame` capability, unmap every recorded page in range, and cut out each
-/// page table the region paid for ([`TABLE`]). See notes/mapping-log.md.
+/// page table the region paid for ([`TABLE`]). See nifeos/record:notes/mapping-log.md.
 ///
 /// # BUGS
 ///
@@ -830,7 +830,7 @@ mod tests {
     }
 
     /// A multi-page `REVOKE` unmaps every page of the run in every space and deletes the capability
-    /// that named it (design/decisions/0102-frame-names-a-run.md). Two spaces hold different pages
+    /// that named it (nifeos/record:design/decisions/0102-frame-names-a-run.md). Two spaces hold different pages
     /// of one three-page run, so a wrong loop bound in either direction fails.
     #[test_case]
     fn revoking_a_run_unmaps_every_page_of_it_everywhere() {
@@ -886,7 +886,7 @@ mod tests {
     }
 
     /// `REVOKE` takes back what was mapped under the capability invoked, and nothing else
-    /// (design/decisions/0132-overlapping-page-frame-runs.md, option C). A driver holds
+    /// (nifeos/record:design/decisions/0132-overlapping-page-frame-runs.md, option C). A driver holds
     /// `PageFrame(run[0], 4)` and a client `PageFrame(run[1], 3)`, the display wiring shrunk to
     /// four pages; both map the same physical page. The client's revoke must leave the driver's
     /// mapping and capability alone.

@@ -1,5 +1,5 @@
 //! A set grant: a caretaker that answers only for the names in a set, the set mapped read-only into
-//! it on a frame of its own. See notes/glob-grant.md.
+//! it on a frame of its own. See nifeos/record:notes/glob-grant.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -17,7 +17,7 @@ const CARETAKER_EXTRA_STACK: usize = 3;
 ///
 /// The directory and the set are written onto the caretaker's grant page, a frame of its own mapped
 /// read-only into the caretaker before it is spawned. No client can reach that frame, so it needs
-/// none of [`wait_for_caretaker`]'s ordering. See notes/fs-server/kernel-wiring.md.
+/// none of [`wait_for_caretaker`]'s ordering. See nifeos/record:notes/fs-server/kernel-wiring.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub struct SetGrant<'a> {
     /// The directory the caretaker descends into, one component under the image root. The set's

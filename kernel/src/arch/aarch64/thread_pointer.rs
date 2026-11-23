@@ -6,7 +6,7 @@
 //! `ThreadControlBlock::SET_THREAD_POINTER`); this file is the aarch64 register half.
 //!
 //! EL0 can write `TPIDR_EL0` itself, so the hand-over saves the outgoing value rather than
-//! assuming the kernel's copy is current. See notes/thread-pointer.md.
+//! assuming the kernel's copy is current. See nifeos/record:notes/thread-pointer.md.
 
 use super::exceptions::TrapFrame;
 use super::instructions;

@@ -8,7 +8,7 @@
 //! (`user::jh7110_clock_and_reset_service`); the kernel keeps this walk for what it brings up
 //! before that server exists: the PCI Express root port (milestone 163 (the JH7110's PCIe root
 //! complex)), and its own watchdog (milestone 593 (a wedged kernel resets itself)), which the
-//! soak's supervisor pets from the kernel. See notes/jh7110-clock-and-reset.md.
+//! soak's supervisor pets from the kernel. See nifeos/record:notes/jh7110-clock-and-reset.md.
 //!
 //! # SAFETY
 //!
@@ -25,7 +25,7 @@ use jh7110_clock_and_reset::{
 /// How many times [`bring_up`] reads the status word before giving up on a deassert.
 ///
 /// An iteration count, not a duration, because no calibrated delay exists this early (Linux polls
-/// with a 1000 µs timeout); recorded in `notes/jh7110-clock-and-reset.md`'s `BUGS`. A million reads
+/// with a 1000 µs timeout); recorded in `nifeos/record:notes/jh7110-clock-and-reset.md`'s `BUGS`. A million reads
 /// is far longer than the hardware needs and far shorter than a hung boot.
 const POLL_LIMIT: u32 = 1_000_000;
 

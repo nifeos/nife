@@ -3,7 +3,7 @@
 // CFI-EXEMPT: this file is a data structure (a 64-byte header the bootloader reads), not code,
 // even though `_start` below is technically entered by hardware. `.cfi_startproc`/`.type ...,
 // @function` would claim it is a function with a frame, which would be lying about what it is;
-// see notes/cfi-unwind.md. `script/lint`'s CFI check looks for this exact marker.
+// see nifeos/record:notes/cfi-unwind.md. `script/lint`'s CFI check looks for this exact marker.
 //
 // This 64-byte struct is the difference between QEMU treating us as an anonymous
 // blob and QEMU treating us as a kernel.
@@ -16,7 +16,7 @@
 // in memory, and hands us a pointer to it in x0. Which is what we wanted all along.
 //
 // The Pi wants a flat image too (`kernel8.img`), so this is on the road to the port
-// rather than a detour from it. See notes/portability.md and notes/boot-protocol.md.
+// rather than a detour from it. See nifeos/record:notes/portability.md and nifeos/record:notes/boot-protocol.md.
 //
 // Layout, from Linux's Documentation/arch/arm64/booting.rst:
 //

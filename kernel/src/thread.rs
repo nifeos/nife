@@ -1,6 +1,6 @@
 //! Kernel threads: a [`KernelStack`] with an unmapped guard page beneath it, and one saved stack
-//! pointer naming where the thread's registers are on that stack. See notes/threads.md and
-//! notes/thread-control-block.md.
+//! pointer naming where the thread's registers are on that stack. See nifeos/record:notes/threads.md and
+//! nifeos/record:notes/thread-control-block.md.
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
@@ -15,7 +15,7 @@ pub type ThreadId = u64;
 /// A kernel thread stack's size in pages: 24 KiB. The measured worst case at the suite's debug
 /// codegen (the deepest path, the residue of blocking there, and one preemption at that point) is
 /// about 15.5 KiB, which Linux's 16 KiB does not hold under load; six pages leave about 8 KiB above
-/// it. notes/threads.md has the arithmetic. The guard page turns an overflow into a fault, and the
+/// it. nifeos/record:notes/threads.md has the arithmetic. The guard page turns an overflow into a fault, and the
 /// high-water gate (`stack.rs`) alarms well before it.
 pub(crate) const STACK_PAGES: usize = 6;
 
@@ -46,7 +46,7 @@ pub(crate) fn stack_area_span() -> (u64, u64) {
 /// The `id` a constructor writes before the thread table has named the thread. Deliberately
 /// `u64::MAX` (= `cpu::NO_TID`), which the generational table can never mint, so a thread that
 /// somehow escaped naming resolves to nothing instead of to slot 0. Every insert path overwrites
-/// it via `Table::insert_with` (milestone 14 phase A; design/kernel-objects-from-untyped.md).
+/// it via `Table::insert_with` (milestone 14 (kernel objects from untyped) phase A; nifeos/record:design/kernel-objects-from-untyped.md).
 pub(crate) const UNNAMED: ThreadId = u64::MAX;
 
 /// Stack address ranges from threads that have exited, handed to the next thread so it lands in
@@ -96,7 +96,7 @@ impl FreeAddressSpace {
 /// arch-specific by nature: a context *is* a particular CPU's callee-saved register set. `thread.rs`
 /// treats a `Context` as opaque, it only stores one and hands it to `switch_to`, and builds a fresh
 /// one through the two `for_*_thread` constructors in `arch`. Re-exported here so the thread
-/// subsystem's callers (`sched`) keep naming them through `crate::thread`. See notes/riscv-port.md.
+/// subsystem's callers (`sched`) keep naming them through `crate::thread`. See nifeos/record:notes/riscv-port.md.
 pub use crate::arch::{Context, switch_to};
 
 /// A stack, with an unmapped page beneath it.
@@ -201,7 +201,7 @@ impl Drop for KernelStack {
 
             // `unmap_page` must invalidate the translation: this address goes to a different
             // thread's stack next, and a stale entry would expose the dead thread's saved registers
-            // (notes/page-tables.md).
+            // (nifeos/record:notes/page-tables.md).
             if mmu::unmap_page(va).is_ok() {
                 crate::kmem::recycle(phys); // home to the kernel budget, not the frame allocator
             }
@@ -213,7 +213,7 @@ impl Drop for KernelStack {
 }
 
 /// Where a thread is in its life: `thread_wake_handshake::RunState`, whose transitions live in
-/// `crates/wake_handshake` so loom can search them (notes/interleaving.md).
+/// `crates/wake_handshake` so loom can search them (nifeos/record:notes/interleaving.md).
 pub use thread_wake_handshake::RunState as State;
 
 /// **Which side of a rendezvous a blocked thread is waiting as.** The role half of the
@@ -243,7 +243,7 @@ pub enum WaitRole {
 /// exactly the moment the reaper drops the thread: a well-behaved child that exits frees its slot,
 /// and a child that blocks forever keeps holding it, which is correct: it is still consuming a
 /// thread, a stack, and an address space. This is what bounds kernel memory against a spawn flood
-/// or a leaked-thread accumulation without any per-tick bookkeeping. See notes/quotas.md.
+/// or a leaked-thread accumulation without any per-tick bookkeeping. See nifeos/record:notes/quotas.md.
 pub struct QuotaToken(&'static AtomicU32);
 
 impl QuotaToken {
@@ -294,7 +294,7 @@ pub struct Thread {
     /// `switch_in` to count migrations, which `trace::Event::PlaceRemote` cannot see because a
     /// rendezvous wake places its peer on the waker's core. Behind `soak_test`, because the write
     /// sits in `schedule()`'s switch and costs `ipc_fastpath` more footprint than
-    /// `script/fastpath-footprint` allows. See notes/thread-control-block.md.
+    /// `script/fastpath-footprint` allows. See nifeos/record:notes/thread-control-block.md.
     #[cfg(feature = "soak_test")]
     pub last_cpu: u8,
 
@@ -303,7 +303,7 @@ pub struct Thread {
     /// [`crate::sched::spawn_on`] and [`crate::sched::start_thread_control_block`], never on the
     /// IPC path, so unlike `last_cpu` it is unconditional. Placement, not location: a stolen or
     /// woken thread still reports where it was placed. A cpu id, not an index into a range
-    /// (`cpu_set`). See notes/thread-control-block.md.
+    /// (`cpu_set`). See nifeos/record:notes/thread-control-block.md.
     ///
     /// Name: provisional. calef names public items.
     pub placement: u8,
@@ -327,12 +327,12 @@ pub struct Thread {
     /// thread, which stays in the table, `Finished`, meanwhile. Region teardown reads it as "a core
     /// is still standing on this stack" and refuses `DESTROY` until the reaper is done, because an
     /// owner that sees `DESTROY` succeed may spend the memory at once
-    /// (notes/job-mix/null-system-call-under-load.md).
+    /// (nifeos/record:notes/job-mix/null-system-call-under-load.md).
     pub being_reaped: bool,
 
     /// The low half of memory, as far as this thread is concerned; `None` for a kernel thread. The
     /// context switch installs it on the way in, because the translation-table register is global
-    /// and threads are not (notes/userspace.md). A copy ([`crate::user::BoundSpace`]), not the
+    /// and threads are not (nifeos/record:notes/userspace.md). A copy ([`crate::user::BoundSpace`]), not the
     /// space: the address-space registry owns every space, and the switch must not take its lock.
     /// The reaper takes the space out of the registry by this name unless the region sweep took it
     /// first.
@@ -361,7 +361,7 @@ pub struct Thread {
     /// # BUGS
     ///
     /// - Latent: the teardown paths never clear this slot, safe only while every wake of a parked
-    ///   sender goes through `set_ipc_aborted` (notes/thread-control-block.md).
+    ///   sender goes through `set_ipc_aborted` (nifeos/record:notes/thread-control-block.md).
     ///
     /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
     /// `outgoing_capability` under the capability ruling of 2026-10-06 (UTC).
@@ -395,7 +395,7 @@ pub struct Thread {
     /// layer's common case is the one branch it already had.
     pub ipc_refused: bool,
 
-    /// **The intrusive queue link** (milestone 14 phases A.2/A.3; notes/intrusive-queues.md).
+    /// **The intrusive queue link** (milestone 14 phases A.2/A.3; nifeos/record:notes/intrusive-queues.md).
     /// When this thread is on a run queue, a migration inbox, or an endpoint wait queue, this
     /// points at the next thread in it; `None` otherwise. One link, so a thread can be on at most
     /// one queue, which is not a limitation but the scheduler's state machine made physical:
@@ -408,7 +408,7 @@ pub struct Thread {
     /// thread has one token, minted when the table inserts it, and it is always on a queue or here.
     /// A queue push takes it by value, so a thread reaches a queue only through the token its last
     /// transition left here. Here means on no queue: running, an embryo, awaiting a Reply, a
-    /// deferred wake, a corpse, or an idle thread off its CPU. See notes/thread-control-block.md.
+    /// deferred wake, a corpse, or an idle thread off its CPU. See nifeos/record:notes/thread-control-block.md.
     ///
     /// Name: provisional (milestone 139, round 10): calef names fields a reader meets.
     pub(crate) own_token: Option<intrusive_queue::Unqueued<Thread>>,
@@ -473,7 +473,7 @@ pub struct Thread {
     /// **Did this thread's TCB page come from `kmem`** (recycle it on death) or from a user
     /// process's own region (leave it; the region reclaims it at destroy)? True for every
     /// kernel-created thread; false for a user-retyped TCB (19c.3). The page-origin half of the
-    /// same owned-vs-borrowed question kernel stacks answered with "one owner" (notes/thread-control-block.md).
+    /// same owned-vs-borrowed question kernel stacks answered with "one owner" (nifeos/record:notes/thread-control-block.md).
     pub(crate) thread_control_block_kmem: bool,
 
     /// **Marked for forcible teardown** (DECISIONS §16 amendment): a region's owner called
@@ -489,7 +489,7 @@ pub struct Thread {
     /// The order is recorded here and carried out where the thread next meets the scheduler:
     /// `schedule` parks a running thread that carries it, and the pick parks a popped one rather
     /// than switching into it, so no path to a CPU runs a thread with this set. A thread parked
-    /// that way is `Blocked` on [`Wait::Resume`]. `notes/suspend-and-resume.md` has the cases.
+    /// that way is `Blocked` on [`Wait::Resume`]. `nifeos/record:notes/suspend-and-resume.md` has the cases.
     /// Name: provisional (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
     pub(crate) suspend_requested: bool,
     /// **An armed kill waits** (`sched::defer_kill`): this kernel thread is building a user address
@@ -766,7 +766,7 @@ impl Thread {
     /// `switch_to` away fills, `Running`. It becomes that core's idle thread and is never on a run
     /// queue (`smp.rs`, `sched::adopt_secondary_idle`). Written into `dst` rather than returned,
     /// because an unoptimized build copies a returned `Thread` through stack temporaries
-    /// (notes/threads.md).
+    /// (nifeos/record:notes/threads.md).
     ///
     /// # Safety
     ///
@@ -822,7 +822,7 @@ impl Thread {
     /// `f` is moved at its concrete type to the top of the new stack, above a faked `switch_to`
     /// frame, and a monomorphized [`call_closure::<F>`] is handed over to call it: no heap and no
     /// vtable. Writing through `dst` rather than returning avoids the copies that put
-    /// `sched::spawn_on`'s frames past the guard page in a debug build. See notes/threads.md.
+    /// `sched::spawn_on`'s frames past the guard page in a debug build. See nifeos/record:notes/threads.md.
     ///
     /// # Safety
     ///

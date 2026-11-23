@@ -4,7 +4,7 @@
 //! `msr`/`mrs` are architecture code; `arch::interrupt_controller` holds both halves and picks the
 //! GIC version. Each
 //! core finds its redistributor by walking the frames for its own affinity, every interrupt is
-//! Group 1, and writes wait on `RWP` where Linux waits. See notes/interrupts/controller-drivers.md.
+//! Group 1, and writes wait on `RWP` where Linux waits. See nifeos/record:notes/interrupts/controller-drivers.md.
 //!
 
 //! # BUGS
@@ -209,7 +209,7 @@ pub(crate) unsafe fn identification(gicd: u64) -> u32 {
 /// `redistributors_size` its mapped redistributor region, both device memory, both exclusively ours.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub unsafe fn initialize(distributor: u64, redistributors: u64, redistributors_size: u64) {
     DISTRIBUTOR.store(distributor, Ordering::Relaxed);
     REDISTRIBUTOR_REGION[0].store(redistributors, Ordering::Relaxed);

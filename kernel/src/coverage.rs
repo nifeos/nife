@@ -5,7 +5,7 @@
 //! `-C instrument-coverage`; this module hands the counters to `minicov`, the LLVM profiling
 //! runtime without a libc, which serializes them in the `.profraw` format. The sink is a file the
 //! host opens through ARM semihosting, so no allocator and no filesystem is involved. The host side
-//! (`llvm-profdata`, `llvm-cov`) is in `xtask/src/coverage.rs`. See notes/kernel-coverage.md.
+//! (`llvm-profdata`, `llvm-cov`) is in `xtask/src/coverage.rs`. See nifeos/record:notes/kernel-coverage.md.
 //!
 //! Name: provisional, minted 2026-10-27 (UTC) by the lane for milestone 781.
 

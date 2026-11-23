@@ -3,7 +3,7 @@
 //! `kernel_main` is the function `_start` calls on every architecture, and all three go through
 //! [`bring_up_machine`] and everything after it here: the test suite, the measurement boots, the
 //! ladder and the hand-over. The boot pointer it stashes ([`DTB`]) is here because all three boots
-//! reach it. See notes/boot-ladder.md.
+//! reach it. See nifeos/record:notes/boot-ladder.md.
 //!
 //! Name: provisional (milestone 876's lane, 2026-10-12 UTC).
 
@@ -13,7 +13,7 @@ use super::*;
 ///
 /// Stashed here so the tests can assert that the boot protocol actually delivered one,
 /// which is the whole point of shipping a flat arm64 Image instead of an ELF.
-/// See notes/boot-protocol.md.
+/// See nifeos/record:notes/boot-protocol.md.
 pub static DTB: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
 /// **The boot device tree, parsed**, or the parse error if this machine did not hand us one.
@@ -41,7 +41,7 @@ pub fn device_tree() -> Result<device_tree_blob::DeviceTreeBlob<'static>, device
 ///
 /// `extern "C"` matters: it tells Rust to follow the aarch64 calling convention
 /// (AAPCS64), because assembly is about to call this and the two need to agree on
-/// where arguments live. `boot_info_pointer` arrives in `x0`. See notes/registers.md.
+/// where arguments live. `boot_info_pointer` arrives in `x0`. See nifeos/record:notes/registers.md.
 ///
 /// `-> !` means this never returns, which is true: there is nowhere to return *to*.
 // The icount boot parks before the bench boot it implies, so `bench::run()` and everything after
@@ -71,7 +71,7 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
     // The console's register-block *shape* comes from the device tree, and it must be adopted
     // before the first println: on the JH7110 the DW-8250's registers are four bytes apart, so a
     // byte-strided LSR poll spins on garbage forever and the banner never appears
-    // (notes/visionfive2.md; console::configure_from_dtb). On QEMU the tree restates the defaults
+    // (nifeos/record:notes/visionfive2.md; console::configure_from_dtb). On QEMU the tree restates the defaults
     // and this is a no-op in effect.
     #[cfg(target_arch = "riscv64")]
     console::configure_from_dtb();
@@ -84,7 +84,7 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
 
     // The earliest line, `nife on <arch>`, which `serial_console`'s `Stage::Banner` matches on
     // every architecture. aarch64's claims only what is true here: the console is up and the MMU
-    // is not. See notes/boot-ladder.md.
+    // is not. See nifeos/record:notes/boot-ladder.md.
     #[cfg(target_arch = "aarch64")]
     {
         println!();
@@ -121,7 +121,7 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
 
         // Rung two of the ladder: the self-test reports and does not gate, because a machine you
         // cannot log into is a machine you cannot fix. This is the kernel's half; the hand-over
-        // runs the rest and prints the verdict. See notes/boot-ladder.md.
+        // runs the rest and prints the verdict. See nifeos/record:notes/boot-ladder.md.
         self_test::run();
 
         // The tour line (`Stage::CoreRuns`): only the hand-over may lie between this line and the
@@ -326,7 +326,7 @@ fn bring_up_machine(boot_info_pointer: usize) {
 
     // The SMMUv3, if present, after `mmu::initialize` mapped its block: default-deny, so every PCIe
     // stream aborts until `virtual_io::register` confines its device. The CPU's own ECAM and BAR reads
-    // are not DMA, so PCI enumeration below is unaffected. See notes/iommu.md.
+    // are not DMA, so PCI enumeration below is unaffected. See nifeos/record:notes/iommu.md.
     #[cfg(not(target_arch = "x86_64"))]
     if let Some((smmu_base, _)) = memory::smmu_region() {
         arch::iommu::initialize(smmu_base);
@@ -337,7 +337,7 @@ fn bring_up_machine(boot_info_pointer: usize) {
     arch::discovery::bring_up_iommus();
     // The JH7110's M.2 root port, which answers no configuration read until it is brought up,
     // here because every PCI walk from the IOMMU's on must see it. A no-op where the tree names no
-    // such port. See notes/jh7110-pci-express.md.
+    // such port. See nifeos/record:notes/jh7110-pci-express.md.
     #[cfg(target_arch = "riscv64")]
     pci::bring_up_jh7110_root_port();
     // The RISC-V IOMMU, a PCI function, here for the SMMUv3's reason: before any path confines a
@@ -350,7 +350,7 @@ fn bring_up_machine(boot_info_pointer: usize) {
     initialize_interrupts(boot_info_pointer);
 
     // After interrupts, so the boot core keeps ticking while it waits for the others. See
-    // notes/smp.md.
+    // nifeos/record:notes/smp.md.
     smp::bring_up_secondaries();
 
     // Every core's cycle counter, here because it is the first point every core has answered.
@@ -361,7 +361,7 @@ fn bring_up_machine(boot_info_pointer: usize) {
 ///
 /// This is the line the whole locking discipline was written for. From here, a timer interrupt
 /// can land between any two instructions in the kernel, and every `InterruptSafeMutualExclusionLock` starts
-/// actually masking something. See DECISIONS §9 and notes/locking.md.
+/// actually masking something. See DECISIONS §9 and nifeos/record:notes/locking.md.
 fn initialize_interrupts(_dtb: usize) {
     use crate::arch::{interrupt_controller, interrupts, timer};
 

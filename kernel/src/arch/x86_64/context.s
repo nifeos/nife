@@ -18,7 +18,7 @@
 # The last instruction returns to a DIFFERENT thread: `ret` pops the return address that thread
 # pushed when it was switched away from (or, for a thread that has never run, the trampoline address
 # context.rs put there).
-# CFI (see notes/cfi-unwind.md, and arch/aarch64/context.s's CFI note for the full argument, which
+# CFI (see nifeos/record:notes/cfi-unwind.md, and arch/aarch64/context.s's CFI note for the full argument, which
 # applies unchanged here). One continuous frame description, no special handling at the `mov rsp,
 # rsi` stack swap: the CFA formula is in terms of the CURRENT rsp, and `next_context` (rsi) is by
 # construction the exact rsp another thread's own earlier call to this function (or
@@ -27,7 +27,7 @@
 # convention, which stays true across the swap for the same reason the six GP-register offsets do.
 # In the pinned hot section, because every IPC that blocks runs it: milestone 796 (pin the
 # hot trap path's placement).
-# See notes/benchmarks/kernel-footprint-and-caches.md, "The hot section".
+# See nifeos/record:notes/benchmarks/kernel-footprint-and-caches.md, "The hot section".
 .section ".text.hot.switch_to", "ax"
 .global switch_to
 .type switch_to, @function

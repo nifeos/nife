@@ -1,5 +1,5 @@
 //! **The address-space registry**: every space a capability or a thread can name, and what holds
-//! it (§249 (a running address space stays nameable)). See notes/user-address-spaces.md.
+//! it (§249 (a running address space stays nameable)). See nifeos/record:notes/user-address-spaces.md.
 //!
 //! Name: provisional (milestone 812's lane, 2026-10-10 UTC).
 
@@ -12,7 +12,7 @@ use super::*;
 /// `const` assert keeps the two together. A full table is still possible, so every insert answers a
 /// refusal: [`user_address_space_create`] returns `None`, and [`register_bound_address_space`]
 /// panics. Its size in `.bss` is
-/// `registry_footprint`; see notes/user-address-spaces.md.
+/// `registry_footprint`; see nifeos/record:notes/user-address-spaces.md.
 const MAXIMUM_USER_SPACES: usize = crate::revoke::MAXIMUM_SPACES;
 const _: () = assert!(MAXIMUM_USER_SPACES >= crate::revoke::MAXIMUM_SPACES);
 
@@ -389,7 +389,7 @@ pub fn take_user_address_space(name: u64) -> Option<AddressSpace> {
 /// It takes an unbound space rooted in `[base, end)`, a bound space whose holder is gone, and a
 /// bound space rooted in the span whose thread is a corpse no core stands on. A bound space whose
 /// thread can still run is left alone (milestone 765 (a destroyed region cannot free the root a
-/// running thread walks)). See notes/user-address-spaces.md.
+/// running thread walks)). See nifeos/record:notes/user-address-spaces.md.
 ///
 /// Context: takes the registry lock and, under it, `IPC_TABLES` once per scan (61 then 60). Never
 /// drops an `AddressSpace` under either.

@@ -1,6 +1,6 @@
 //! The x86_64 interrupt controller (aarch64's GIC, RISC-V's PLIC): the per-CPU local APIC (EOI,
 //! timer, IPIs, the INIT and STARTUP that start a secondary) and the IO APIC, which routes device
-//! lines to vectors; also the 8259 mask, legacy routing, MSI. See notes/x86-port/traps.md.
+//! lines to vectors; also the 8259 mask, legacy routing, MSI. See nifeos/record:notes/x86-port/traps.md.
 //!
 //! # BUGS
 //! - One IO APIC: [`route_gsi`] refuses a GSI a second owns (proved, unit-tested, never booted).
@@ -252,7 +252,7 @@ pub(crate) fn arm_periodic_timer(count: u32) {
 /// the moment the countdown expires until the core accepts the interrupt, which with `IF` clear is
 /// not until interrupts are unmasked. See `timer::is_tick_pending`, the caller.
 ///
-/// Name: ratified 2026-09-24 (calef, the Rust predicate-naming rule in design/naming.md). Refused
+/// Name: ratified 2026-09-24 (calef, the Rust predicate-naming rule in nifeos/record:design/naming.md). Refused
 /// `timer_pending` (a bare participle reads as a getter, and Rust asks the question with `is_`).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn is_timer_pending() -> bool {
@@ -336,7 +336,7 @@ const MAXIMUM_REDIRECTION_ENTRIES: u32 = (MSI_VECTOR_BASE - GSI_VECTOR_BASE) as 
 
 /// The next MSI vector to hand out, as an offset from [`MSI_VECTOR_BASE`]. A bump counter, never
 /// returned: nothing in this tree releases a device, and a freed-vector list with no free path is
-/// machinery with no caller (`design/decisions/` §46's posture applied to code we would write
+/// machinery with no caller (`nifeos/record:design/decisions/` §46 (thin primitives, whole subsystems)'s posture applied to code we would write
 /// ourselves).
 static MSI_NEXT: AtomicU32 = AtomicU32::new(0);
 
@@ -353,7 +353,7 @@ const MSI_VECTORS: u32 = SPURIOUS_VECTOR as u32 - MSI_VECTOR_BASE as u32;
 /// only `requester_id` may raise ([`super::iommu::remap_message`]). Elsewhere it is the
 /// compatibility format: `0xfee0_0000 | (local APIC id << 12)`, physical destination, and the
 /// vector as data. Either way `Fixed` delivery and edge trigger, so `enable` and a driver's
-/// `Interrupt::ACKNOWLEDGE` have nothing to do. See notes/x86-port/traps.md.
+/// `Interrupt::ACKNOWLEDGE` have nothing to do. See nifeos/record:notes/x86-port/traps.md.
 ///
 /// Name: provisional (milestone 215).
 pub fn alloc_msi_vector(requester_id: u32) -> Option<(u32, pci_configuration_space::MsiTarget)> {
@@ -703,12 +703,12 @@ pub(crate) fn initialize_contexts(boot_info_pointer: usize) {
 ///
 /// The PIT's line proves an interrupt from outside the CPU arrives, and its interrupt 0 arrives as
 /// GSI 2,
-/// which tests the override table (notes/x86-port/traps.md). It is here because every build reaches
+/// which tests the override table (nifeos/record:notes/x86-port/traps.md). It is here because every build reaches
 /// it and the window it needs, the scheduler up and the tick not yet armed, exists only here.
 /// `cargo xtask uefi-boot` reads the `device interrupt` line it prints.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     let (io_apic, isa_interrupts) = super::discovery::with_acpi(|a| (a.io_apic, a.isa_interrupts));
     let Some((io_id, io_addr, gsi_base)) = io_apic.filter(|_| is_local_apic_ready()) else {
@@ -816,7 +816,7 @@ pub(crate) fn initialize_this_cpu() {
 /// arrives on,
 /// with polarity and trigger mode, and the entry is routed to [`gsi_vector`]'s vector on this core.
 /// Interrupt 0 becomes GSI 2. The ranges cannot collide, since local sources start at 0x20. See
-/// notes/x86-port/traps.md.
+/// nifeos/record:notes/x86-port/traps.md.
 pub fn enable(intid: u32) {
     if is_local_apic_source(intid) || is_msi_vector(intid as u64) {
         return;
@@ -944,7 +944,7 @@ pub fn send_ipi(dest_apic_id: u8, vector: u8) {
 /// `sched`'s interrupt-delivery tests use it. The interrupt takes the hardware's path (ICR, IRR,
 /// ISR, EOI), as aarch64's software-generated interrupt does; RISC-V can raise nothing and asserts
 /// its console UART's line instead. A device line here could fail for reasons unrelated to the
-/// kernel. See notes/x86-port/traps.md.
+/// kernel. See nifeos/record:notes/x86-port/traps.md.
 ///
 /// Name: provisional (milestone 161, roadmap item 4).
 pub fn raise_self_interrupt(vector: u8) {
@@ -1049,8 +1049,8 @@ pub(crate) fn print_summary() {
 /// Proofs about the vector space (milestone 304 (`cargo kani -p kernel` only ever compiled one
 /// architecture)), over numbers firmware chose: the MADT's GSI base, the version register's entry
 /// count, an override's GSI. Each picks an interrupt's vector, an index into the IDT, so a wrong
-/// one runs the page-fault handler. See notes/kernel-proofs.md and
-/// design/roadmap/0304-prover-one-architecture.md.
+/// one runs the page-fault handler. See nifeos/record:notes/kernel-proofs.md and
+/// nifeos/record:design/roadmap/0304-prover-one-architecture.md.
 #[cfg(kani)]
 mod proofs {
     use super::*;

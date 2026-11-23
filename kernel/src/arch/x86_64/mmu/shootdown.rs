@@ -71,7 +71,7 @@ static SHOOTDOWN_PENDING: AtomicUsize = AtomicUsize::new(0);
 ///
 /// It is an NMI, not an ordinary IPI: [`unmap_page`] calls this under `KERNEL_MMU`, so cores
 /// contending for that lock have interrupts masked and a maskable IPI would deadlock them. Nothing
-/// is sent before the local APIC is up or with one core online. See notes/x86-tlb-shootdown.md.
+/// is sent before the local APIC is up or with one core online. See nifeos/record:notes/x86-tlb-shootdown.md.
 ///
 /// Context: masks interrupts for the round and takes `SHOOTDOWN_LOCK`, a raw spin.
 ///

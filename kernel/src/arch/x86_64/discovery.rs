@@ -6,7 +6,7 @@
 //! `mmu::initialize` maps, finds the PCIe topology while the boot map still reaches every bus, and
 //! brings the frame allocator up. The walk is kept, because the tables are reachable only through
 //! the boot map `mmu::initialize` replaces. The parsing is `machine.rs`'s; see
-//! notes/x86-port/acpi-and-pci.md.
+//! nifeos/record:notes/x86-port/acpi-and-pci.md.
 //!
 //! Name: provisional (milestone 890's lane, 2026-10-19 UTC).
 

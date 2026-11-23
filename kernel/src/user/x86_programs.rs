@@ -2,7 +2,7 @@
 //!
 //! `x86_64` has no compiled user program yet, so each is a byte listing packed into the `&[u32]`
 //! words `sched`'s child builders take. They speak §124 (ratify the x86_64 system call ABI): `rax`
-//! the number, `rdi` to `r9` the arguments. See notes/x86-user-programs.md.
+//! the number, `rdi` to `r9` the arguments. See nifeos/record:notes/x86-user-programs.md.
 //!
 //! # BUGS
 //!
@@ -10,7 +10,7 @@
 //! - No program checks a system call's return value; the caller asserts on the kernel's side.
 
 /// Pack a byte listing into the little-endian words the child builders take
-/// (notes/x86-user-programs.md has why the type is `u32`).
+/// (nifeos/record:notes/x86-user-programs.md has why the type is `u32`).
 macro_rules! packer {
     ($name:ident, $bytes:literal, $words:literal) => {
         const fn $name(b: [u8; $bytes]) -> [u32; $words] {
@@ -136,7 +136,7 @@ pub const PORT_OUT_PC_OFFSET: u64 = 6;
 ///
 /// It SENDs nothing, so neither outcome can park it on a rendezvous: a permitted `out` exits
 /// (`EVENT_EXIT`), and a refused one faults at [`PORT_OUT_PC_OFFSET`] (`EVENT_FAULT`). A port claim
-/// whose escape is "the `out` was wrongly permitted" needs this shape; see notes/x86-user-programs.md.
+/// whose escape is "the `out` was wrongly permitted" needs this shape; see nifeos/record:notes/x86-user-programs.md.
 ///
 /// Name: provisional (lane/633-outsider-2, 2026-10-05 UTC). The verb-first spelling mirrors
 /// [`port_out_on_cpu_then_exit`]; an architect ratifies the port builders as a set.
@@ -171,7 +171,7 @@ packer!(pack_12, 48, 12);
 /// It reads its core from the current-CPU page once before the `out` and once after, and sends
 /// `[word, core after, core before]`; equal, they bracket the `out` on one core. The hand-off test
 /// needs the core because the port grant lives in a per-core TSS bitmap. A thread that migrates
-/// away and back between the two reads is not caught; see notes/x86-user-programs.md.
+/// away and back between the two reads is not caught; see nifeos/record:notes/x86-user-programs.md.
 ///
 /// Name: ratified 2026-10-03 (calef, reviewing the x86 port-out program builders: "The two port builders are ratified.").
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
@@ -379,7 +379,7 @@ pub const RECEIVE_THEN_PORT_OUT_PC_OFFSET: u64 = 25 + PORT_OUT_PC_OFFSET;
 /// The revocation fixture. The test revokes the port range while the child is parked and then wakes
 /// it, so the `out` takes a general protection fault at [`RECEIVE_THEN_PORT_OUT_PC_OFFSET`] and the
 /// revocation, not a race, is what faulted. It exits rather than reporting, so a revoke that did not
-/// take arrives as `EVENT_EXIT` instead of hanging; see notes/x86-user-programs.md.
+/// take arrives as `EVENT_EXIT` instead of hanging; see nifeos/record:notes/x86-user-programs.md.
 pub const fn receive_then_port_out(port: u16, val: u8) -> [u32; 10] {
     let p = port.to_le_bytes();
     let rcv = (moho_abi::rendezvous::RECEIVE as u32).to_le_bytes();

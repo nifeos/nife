@@ -5,7 +5,7 @@
 //! Every argument is a scalar in a register, so the kernel follows no user pointer. The ABI is
 //! `nifeos/moho_abi`, which the kernel and every user program share.
 //!
-//! See notes/system-call-boundary.md, and DECISIONS §10 (process model: capability-based,
+//! See nifeos/record:notes/system-call-boundary.md, and DECISIONS §10 (process model: capability-based,
 //! microkernel) for the choice this surface carries out.
 
 use moho_abi::Error;
@@ -46,7 +46,7 @@ use thread_control_block::thread_control_block_invoke;
 /// system call stays on the thread's own stack, not the interrupt stack, because it can block.
 ///
 /// `#[inline(never)]` keeps this a symbol `script/fastpath-footprint` can name and sum flat as
-/// `system_call_entry`; notes/system-call-boundary.md has what an inlining flip does to that sum.
+/// `system_call_entry`; nifeos/record:notes/system-call-boundary.md has what an inlining flip does to that sum.
 #[inline(never)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(
@@ -115,7 +115,7 @@ pub(crate) fn dispatch(frame: &mut TrapFrame) {
 /// rights checks, then the method. Returns the method's result word or its `moho_abi::Error`.
 ///
 /// Public so kernel tests drive this path, not a copy of it (`user/reap_tests.rs` does). See
-/// notes/system-call-boundary.md.
+/// nifeos/record:notes/system-call-boundary.md.
 pub fn invoke(
     frame: &mut TrapFrame,
     slot: u64,
@@ -259,7 +259,7 @@ pub fn invoke(
 /// Kani proofs over the kernel's own source: the run arithmetic both mapping paths guard with.
 ///
 /// A proof over this crate runs with global assembly skipped, `asm!` unverifiable and no panic
-/// handler; notes/kernel-proofs.md lists what that leaves these proofs unable to say.
+/// handler; nifeos/record:notes/kernel-proofs.md lists what that leaves these proofs unable to say.
 #[cfg(kani)]
 mod proofs;
 

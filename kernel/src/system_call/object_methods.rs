@@ -1,7 +1,7 @@
 //! **The methods of the smaller objects**: `Notification`, `Reboot`, `Timer`, `Process`, the
 //! interrupt and virtio capabilities, `PortRange`, the rendezvous badge and reap, and the two helpers
 //! [`invoke`] leaves its rare Reply and abort paths to. Each is out of line; see
-//! notes/system-call-boundary.md.
+//! nifeos/record:notes/system-call-boundary.md.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -260,7 +260,7 @@ pub(super) fn virtual_io_invoke(id: u64, method: u64, a0: u64, a1: u64) -> Resul
 /// method a port capability answers; enforcement is at the context switch (the TSS I/O bitmap).
 ///
 /// `#[cold]` as well as out of line, which keeps it out of the closure `script/fastpath-footprint`
-/// measures (notes/system-call-boundary.md).
+/// measures (nifeos/record:notes/system-call-boundary.md).
 #[cfg(target_arch = "x86_64")]
 #[cold]
 #[inline(never)]

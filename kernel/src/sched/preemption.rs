@@ -1,5 +1,5 @@
 //! Preemption: the tick that records a switch is wanted, the deferred half that takes it, and the
-//! counts that say preemption is real. See notes/threads.md ("Preemption is four lines").
+//! counts that say preemption is real. See nifeos/record:notes/threads.md ("Preemption is four lines").
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
@@ -100,7 +100,7 @@ pub(super) fn dump_tick_samples(c: usize) {
 ///
 /// `#[inline(never)]`: riscv64's timer interrupt and system calls share `riscv64_trap_body`, which
 /// `script/fastpath-footprint` counts flat, so inlined bytes here would be charged to every
-/// system call (notes/benchmarks/fastpath-footprint-gate.md).
+/// system call (nifeos/record:notes/benchmarks/fastpath-footprint-gate.md).
 ///
 /// Context: interrupt context, from the timer interrupt. Takes `IPC_TABLES` only when a timer is
 /// due.
@@ -119,7 +119,7 @@ pub fn on_tick() {
     let _ = canary::check();
 
     // Timer expiry (§147 (a timer a userspace service cannot hold)): only a due tick takes
-    // `IPC_TABLES`, so idle ticks on every core do not contend for it (notes/timed-wait.md priced
+    // `IPC_TABLES`, so idle ticks on every core do not contend for it (nifeos/record:notes/timed-wait.md priced
     // this check).
     if inter_process_communication::timer::is_due(
         EARLIEST_DEADLINE.load(Ordering::Relaxed),
@@ -173,7 +173,7 @@ pub(crate) fn count_preemption() {
 /// `#[inline(never)]` for [`on_tick`]'s reason: inlined into aarch64's `exception_dispatch` on
 /// 2026-10-20 (UTC), after milestone 890 (riscv64 and `x86_64` join the shared boot path), it took
 /// that symbol from 0x98 to 0x11c bytes and `system_call_entry` from 1,696 to 1,828 B, 7.8% over a 5%
-/// band (notes/benchmarks/fastpath-footprint-gate.md).
+/// band (nifeos/record:notes/benchmarks/fastpath-footprint-gate.md).
 #[inline(never)]
 pub fn preempt_if_needed() {
     if take_need_resched() && is_running() {

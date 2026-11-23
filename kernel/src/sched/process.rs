@@ -1,6 +1,6 @@
 //! The process object (§269 (how threads share a process) forks 1, 3 and 5): a page retyped from
 //! its creator's region, holding what its threads share, the capability table, the address space,
-//! the count of its members, and how it ended. `moho_abi::process` is the contract; `notes/processes.md`
+//! the count of its members, and how it ended. `moho_abi::process` is the contract; `nifeos/record:notes/processes.md`
 //! has the argument and the limits.
 //!
 //! Membership is counted, and the count keeps every pointer here sound: the page is reclaimed only

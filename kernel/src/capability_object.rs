@@ -3,7 +3,7 @@
 //! The table itself is `nifeos/capability_table`, the repository the kernel pins, which is pure logic and knows nothing about this file.
 //! This is the kernel's half: **the set of nouns.**
 //!
-//! DECISIONS §10, notes/capabilities.md, and notes/capability-objects.md for each object.
+//! DECISIONS §10, notes/capabilities.md, and nifeos/record:notes/capability-objects.md for each object.
 //!
 //! Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. The header above calls
 //! the file the set of nouns a capability points at.
@@ -11,14 +11,14 @@
 use core::num::NonZeroU64;
 
 /// Every kind of thing a process can be handed: the kernel's set of nouns. Each variant is a
-/// decision, and notes/capability-objects.md says why each is here.
+/// decision, and nifeos/record:notes/capability-objects.md says why each is here.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Object {
     /// An IPC endpoint, by generational name in the scheduler's registry, and the capability's
     /// badge. `WRITE` lets the holder `SEND` and `READ` lets it `RECEIVE`. The badge is a `u64` the
     /// kernel delivers to a server's `RECEIVE_CAPABILITY` so it can tell apart clients sharing one
     /// endpoint; `0` is unbadged, and `moho_abi::rendezvous::BADGE` sets one once (milestone 599 (a
-    /// frame per filesystem client channel)). See notes/capability-objects.md.
+    /// frame per filesystem client channel)). See nifeos/record:notes/capability-objects.md.
     Rendezvous(crate::sched::RendezvousId, u64),
 
     /// **A memory region** (milestone 11): a capability to a chunk of raw physical memory the
@@ -39,7 +39,7 @@ pub enum Object {
     /// microkernel). `PageFrame::MAP` maps the whole run, and `PageFrame::REVOKE` unmaps it and
     /// deletes every capability naming it (§102 (a Frame names a run of pages)). The count is
     /// `NonZeroU64` because a zero-page run would underflow every end address derived from it. See
-    /// notes/capability-objects.md and notes/frames.md.
+    /// nifeos/record:notes/capability-objects.md and nifeos/record:notes/frames.md.
     PageFrame(u64, NonZeroU64),
 
     /// A device's MMIO page, by physical address: the authority to map one device's registers with
@@ -102,7 +102,7 @@ pub enum Object {
     /// permission bitmap rather than the MMU. The holder may execute `in`/`out` on `[base, base +
     /// count)` from ring 3 and on no other port. The capability must carry `WRITE`, because the
     /// bitmap cannot grant `in` without `out` (`sched::thread_control_block_insert_from`). `x86_64`
-    /// only: the other architectures have no port space. See notes/capability-objects.md and
+    /// only: the other architectures have no port space. See nifeos/record:notes/capability-objects.md and
     /// `kernel/src/arch/x86_64/segments.rs`.
     #[cfg(target_arch = "x86_64")]
     PortRange(u16, u16),
@@ -128,7 +128,7 @@ pub type Capability = capability_table::Capability<Object>;
 
 // A slot is 32 bytes: `Object` is as wide as `PageFrame`, its widest variant, plus the rights.
 // §102's slot-count arithmetic assumed 24; these pin the real figure. When they fire, update them
-// and re-read §102. notes/capability-objects.md has the arithmetic.
+// and re-read §102. nifeos/record:notes/capability-objects.md has the arithmetic.
 const _: () = assert!(core::mem::size_of::<Object>() == 24);
 const _: () = assert!(core::mem::size_of::<Capability>() == 32);
 
@@ -138,7 +138,7 @@ const _: () = assert!(core::mem::size_of::<Capability>() == 32);
 ///
 /// 64 is calef's ruling of 2026-10-04 (UTC), milestone 754 (the capability table grows to 64
 /// slots). The fault slot is 63. Per-process sizing is
-/// `design/roadmap/0778-capability-tables-sized-per-process.md`. See notes/capability-objects.md.
+/// `nifeos/record:design/roadmap/0778-capability-tables-sized-per-process.md`. See nifeos/record:notes/capability-objects.md.
 pub const CAPABILITY_TABLE_SLOTS: usize = 64;
 
 // The free-slot word is a `u64`, so 64 is also the ceiling the type allows. `capability` asserts it
@@ -157,7 +157,7 @@ pub(crate) type CapabilityTable = capability_table::CapabilityTable<Object, CAPA
 /// [`CAPABILITY_TABLE_SLOTS`] (2026-11-11 UTC). A record, not a target: [`report_peak`] says on the
 /// console when a boot goes past it, and `script/swish-check` fails on that sentence. When it
 /// fires, measure and update this rather than raising the slot count.
-/// `notes/capability-peak-trace.md` itemizes the peak, and notes/capability-objects.md has the
+/// `nifeos/record:notes/capability-peak-trace.md` itemizes the peak, and nifeos/record:notes/capability-objects.md has the
 /// measurement.
 pub(crate) const CAPABILITY_TABLE_PEAK_MEASURED: usize = 39;
 
@@ -177,7 +177,7 @@ static PEAK_STABLE_PASSES: core::sync::atomic::AtomicUsize =
 
 /// How many idle passes the mark must stay still before [`report_peak`] believes the climb is over.
 /// A coalescing window, not a margin on the measurement: too few prints a line at each IPC pause in
-/// the progenitor's climb, and no value can make the peak wrong. See notes/capability-objects.md.
+/// the progenitor's climb, and no value can make the peak wrong. See nifeos/record:notes/capability-objects.md.
 const PEAK_STABLE_PASSES_NEEDED: usize = 16;
 
 /// Say the boot's capability-slot high-water mark once it has stopped moving. Called from the
@@ -237,7 +237,7 @@ pub use capability_table::{Error, Rights};
 // The rights vocabulary is written twice, in two crates that cannot see each other: `moho_abi::rights`
 // is what userspace names a right with, `capability_table::Rights` what the kernel means by one. These
 // make a right added to one and not the other a compile error rather than a delegation that drops a
-// bit at `from_bits`. See notes/capability-objects.md.
+// bit at `from_bits`. See nifeos/record:notes/capability-objects.md.
 const _: () = assert!(Rights::READ.bits() as u64 == moho_abi::rights::READ);
 const _: () = assert!(Rights::WRITE.bits() as u64 == moho_abi::rights::WRITE);
 const _: () = assert!(Rights::GRANT.bits() as u64 == moho_abi::rights::GRANT);
@@ -346,7 +346,7 @@ pub fn interrupt_capability_rights(intid: u32, rights: Rights) -> Capability {
 /// child is handed. The holder may retype, `SPLIT`, `MAP` and `DESTROY` but not delegate, since
 /// `SEND_CAPABILITY` and `CAPABILITY_INSERT` gate on `GRANT`. A retype mints its budget's rights (milestone 824
 /// (a retype mints no right its budget lacks)), so a leaf can use what it carves and lend none of
-/// it. See notes/capability-objects.md.
+/// it. See nifeos/record:notes/capability-objects.md.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `memory_region_capability` under the capability ruling of 2026-10-06 (UTC).
@@ -400,7 +400,7 @@ pub fn memory_region_capability_rights(region: u64, rights: Rights) -> Capabilit
 /// The delegable root untyped the kernel hands the progenitor at boot, with [`Rights::ALL`]. Every
 /// right on every object comes from here, since a retype mints its budget's rights, and rights only
 /// narrow below it (a `SPLIT` child inherits, `CAPABILITY_INSERT` narrows). `ENUMERATE` lets
-/// `MemoryRegion::USAGE` answer what the region was spent on. See notes/capability-objects.md.
+/// `MemoryRegion::USAGE` answer what the region was spent on. See nifeos/record:notes/capability-objects.md.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `memory_region_root_capability` under the capability ruling of 2026-10-06 (UTC).
@@ -540,7 +540,7 @@ pub fn device_frame_capability(phys: u64, rights: Rights) -> Capability {
 /// A capability naming one physical page at `phys`, a run of 1. `READ` maps it read-only, `WRITE`
 /// read/write, and `GRANT` passes it on; a fresh retype gets all three and delegation narrows them.
 /// The kernel mints one directly for a page a program should hold: a DMA region, a shared buffer,
-/// the clock page. [`page_frame_run_capability`] is for any other count. See notes/frames.md.
+/// the clock page. [`page_frame_run_capability`] is for any other count. See nifeos/record:notes/frames.md.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `page_frame_capability` under the capability ruling of 2026-10-06 (UTC).

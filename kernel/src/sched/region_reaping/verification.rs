@@ -1,7 +1,7 @@
 //! Kani proofs of the supervision decisions in `region_reaping`: a reap is authorized by the
 //! supervision relationship alone, a refusal about a stranger discloses nothing, and the survey and
 //! the reap are scoped by one predicate. Each holds for every pair of rendezvous names and every
-//! liveness. notes/kernel-proofs.md says what a proof over the kernel crate can and cannot say.
+//! liveness. nifeos/record:notes/kernel-proofs.md says what a proof over the kernel crate can and cannot say.
 
 use super::*;
 

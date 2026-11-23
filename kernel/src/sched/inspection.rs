@@ -1,6 +1,6 @@
 //! Reading the scheduler's state from outside it: the soak counters, the accessors other kernel
 //! modules call, the hooks `system_tests` drives, and `dump_threads`
-//! (notes/scheduler/thread-dump.md).
+//! (nifeos/record:notes/scheduler/thread-dump.md).
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).
@@ -414,7 +414,7 @@ pub(crate) fn scan_live_thread_stacks() {
 
 /// Print every thread's scheduler state, every rendezvous and notification with a waiter, and every
 /// online core, for diagnosing a hang. Used by the test watchdog and after a budget-expired panic.
-/// What each field can claim is in notes/scheduler/thread-dump.md.
+/// What each field can claim is in nifeos/record:notes/scheduler/thread-dump.md.
 ///
 /// Each kind of line is printed by its own function, so this frame holds no formatting arguments
 /// and the console's print chain sits on one small frame. The panic handler can call this at the
@@ -483,7 +483,7 @@ fn dump_cores() {
 /// [`dump_threads`]'s first line.
 fn dump_header() {
     // `pc` is a racing read for a thread on its core (printed `pc*`); the per-core lines are
-    // relaxed reads. See notes/scheduler/thread-dump.md.
+    // relaxed reads. See nifeos/record:notes/scheduler/thread-dump.md.
     crate::println!(
         "--- thread dump (hang diagnostic; pc* = on-cpu, racy; tour stage {}) ---",
         BOOT_STAGE.load(Ordering::Relaxed),

@@ -2,8 +2,8 @@
 //! per-core CPU interface (GICC).
 //!
 //! Lower priority values are more urgent, and `GICC_PMR` delivers only a priority strictly less
-//! than itself. See notes/interrupts.md, "The GIC: the multiplexer in front of the CPU", and
-//! notes/interrupts/controller-drivers.md.
+//! than itself. See nifeos/record:notes/interrupts.md, "The GIC: the multiplexer in front of the CPU", and
+//! nifeos/record:notes/interrupts/controller-drivers.md.
 //!
 
 //! GICv2 only: a GICv3 is `gicv3.rs` plus `arch/aarch64/gic_cpu_interface.rs`, and
@@ -128,7 +128,7 @@ pub(crate) unsafe fn identification(gicc: u64) -> u32 {
 /// The two addresses must name a real GICv2, mapped and exclusively ours.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub unsafe fn initialize(gicd: u64, gicc: u64) {
     let gic = Gic { gicd, gicc };
 
@@ -188,7 +188,7 @@ pub fn enable(intid: u32, target_cpu: usize) {
 /// How a userspace driver's interrupt is masked the moment it fires, so a level-triggered line
 /// cannot storm before the driver services it; its `Interrupt` capability's `ACKNOWLEDGE` re-enables it.
 /// See
-/// notes/interrupts.md.
+/// nifeos/record:notes/interrupts.md.
 pub(crate) fn disable(intid: u32) {
     let guard = GIC.lock();
     let gic = guard.as_ref().expect("gic::disable before gic::initialize");

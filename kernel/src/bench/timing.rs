@@ -39,7 +39,7 @@ pub(super) fn measure(name: &str, iters: u64, f: impl FnOnce()) {
 ///
 /// [`open`](Self::open) waits for this core's next tick and [`close`](Self::close) panics if
 /// another arrived since. Ticks are counted per core, so a `--real --smp` run, whose thread may
-/// change cores, prints a probe line instead. See notes/benchmarks/kernel-bench-harness.md.
+/// change cores, prints a probe line instead. See nifeos/record:notes/benchmarks/kernel-bench-harness.md.
 ///
 /// Name: provisional (milestone 939, 2026-10-22 UTC).
 #[must_use = "a window that is never closed checks nothing"]

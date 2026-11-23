@@ -5,7 +5,7 @@
 //! with a given process exit status. That is how `cargo test` learns whether the
 //! kernel's tests passed (DECISIONS §7).
 //!
-//! Requires QEMU's `-semihosting` flag. See notes/semihosting.md.
+//! Requires QEMU's `-semihosting` flag. See nifeos/record:notes/semihosting.md.
 
 // Every item here is reachable only from the test harness and the test-mode panic handler, so the
 // allows are `not(test)`: the test build still holds this file to the dead-code gate.

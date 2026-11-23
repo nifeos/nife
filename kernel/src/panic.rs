@@ -20,7 +20,7 @@ use crate::{arch, println};
 // definition here is a hard compile error rather than a choice. The shipping kernel is unaffected:
 // `cargo kani` is the only thing that ever sets this cfg. What it costs a reader is that a proof
 // cannot observe this handler's behaviour, so nothing proved about the kernel says anything about
-// what happens after a panic. See notes/kernel-proofs.md.
+// what happens after a panic. See nifeos/record:notes/kernel-proofs.md.
 #[cfg(not(kani))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {

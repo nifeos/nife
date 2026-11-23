@@ -3,14 +3,14 @@
 //!
 //! This kernel uses `FS` as a plain enable, Off against everything else, though it has four states.
 //! `sstatus` travels in the trap frame, so the first-use handler sets the frame's copy too. See
-//! notes/riscv-port/traps.md.
+//! nifeos/record:notes/riscv-port/traps.md.
 
 //! # BUGS
 //!
 //! - A hart with no D extension cannot run FP code; the first-use trap becomes a fault. Untested.
 //! - F without D is not handled: the save would write 64-bit registers a part has as 32-bit.
 //!
-//! Details in notes/riscv-port/traps.md, BUGS.
+//! Details in nifeos/record:notes/riscv-port/traps.md, BUGS.
 
 use super::instructions;
 
@@ -91,7 +91,7 @@ const SSTATUS_XTHEADVECTOR_VS: u64 = 0b11 << 23;
 /// The call site says why.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     disable();
     instructions::clear_sstatus(SSTATUS_VS);

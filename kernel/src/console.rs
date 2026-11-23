@@ -2,7 +2,7 @@
 //!
 //! One `InterruptSafeMutualExclusionLock` holds the console UART and, where the machine has one, the screen, so a
 //! `print!` from an interrupt handler cannot splice into another writer's line. See
-//! notes/kernel-console.md.
+//! nifeos/record:notes/kernel-console.md.
 
 use core::fmt::Write;
 
@@ -10,7 +10,7 @@ use core::fmt::Write;
 // trait: there are exactly two, they are chosen here and nowhere else, and a trait would be an
 // abstraction ahead of a third requirement (AGENTS.md, rules 2/3). aarch64's `virt` has a PL011;
 // RISC-V's has an NS16550. Both expose `new`/`initialize`/`impl Write`, so the console code below
-// names neither. See notes/riscv-port.md.
+// names neither. See nifeos/record:notes/riscv-port.md.
 #[cfg(target_arch = "riscv64")]
 use crate::drivers::ns16550::Ns16550 as ConsoleUart;
 #[cfg(target_arch = "aarch64")]
@@ -66,7 +66,7 @@ pub(crate) const UART_NODE: &[u8] = b"";
 /// `pa | KERNEL_VA_BASE`, which aarch64's boot.s maps before any Rust runs.
 ///
 /// Hardcoded on purpose, and not unfinished: the console must come up before the device tree parser
-/// it exists to debug, so a new board needs a new constant here (notes/kernel-console.md).
+/// it exists to debug, so a new board needs a new constant here (nifeos/record:notes/kernel-console.md).
 #[cfg(not(target_arch = "x86_64"))]
 const UART_BASE: usize = crate::arch::mmu::phys_to_virt(UART_PHYS) as usize;
 /// `x86_64`'s console base is a port number and needs no translation; see [`UART_PORT`].
@@ -167,7 +167,7 @@ static CONSOLE: InterruptSafeMutualExclusionLock<KernelConsole> =
     );
 
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     CONSOLE.lock().uart.initialize();
 }
@@ -344,7 +344,7 @@ static HOLD_AT_HANDOVER: core::sync::atomic::AtomicBool =
 /// Ask [`yield_screen`] to hold the screen for a host before it clears it, as §199 (the screen
 /// check asks instead of sampling) rules. A debugging affordance: the one caller is the
 /// boot-command-line reader, and the token it looks for is written by a gate. Called from the boot
-/// tour while the kernel is single-threaded. Only `x86_64` arms it; see notes/kernel-console.md,
+/// tour while the kernel is single-threaded. Only `x86_64` arms it; see nifeos/record:notes/kernel-console.md,
 /// "The screen hold".
 ///
 /// Name: provisional (`AGENTS.md`: calef names public items).
@@ -360,7 +360,7 @@ pub fn hold_screen_at_handover() {
 /// `HOLD_POLLS` (register reads, for a machine whose timer is not ticking). Runs outside the
 /// console lock, an `InterruptSafeMutualExclusionLock`, which it takes per poll: holding it for seconds would
 /// hold
-/// interrupts off, and the `println!` here would deadlock on it. See notes/kernel-console.md, "The
+/// interrupts off, and the `println!` here would deadlock on it. See nifeos/record:notes/kernel-console.md, "The
 /// screen hold".
 fn hold_screen_for_host() {
     /// Ten seconds, in scheduler ticks at whatever `TICK_HERTZ` the build has.
@@ -406,7 +406,7 @@ fn hold_screen_for_host() {
 /// # BUGS
 ///
 /// - Another core's terminal flush can still paint over the panic text, since a panic halts only
-///   its own core. The UART copy is unaffected (notes/kernel-console.md).
+///   its own core. The UART copy is unaffected (nifeos/record:notes/kernel-console.md).
 pub(crate) fn reclaim_screen_for_panic() {
     let mut guard = CONSOLE.lock();
     let kernel = &mut *guard;
@@ -433,7 +433,7 @@ pub(crate) fn reclaim_screen_for_panic() {
 ///
 /// Must run immediately after [`initialize`], before the first `println!`: on the JH7110 a byte
 /// read of LSR at the unshifted offset lands in the IER word and the transmit poll spins forever.
-/// See notes/kernel-console.md and notes/visionfive2.md.
+/// See nifeos/record:notes/kernel-console.md and nifeos/record:notes/visionfive2.md.
 #[cfg(target_arch = "riscv64")]
 pub(crate) fn configure_from_dtb() {
     use crate::drivers::ns16550::Shape;
@@ -501,7 +501,7 @@ pub fn is_byte_waiting() -> bool {
 /// `Ns16550::discard_waiting_bytes` for why U-Boot's leftovers are the thing being cleared.
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md; `discard_waiting_bytes` drops the bytes
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md; `discard_waiting_bytes` drops the bytes
 /// `is_byte_waiting` would have reported.
 #[cfg(any(feature = "reboot_soak_test", soak_watchdog))]
 pub fn discard_waiting_bytes() {
@@ -513,7 +513,7 @@ pub fn discard_waiting_bytes() {
 ///
 /// RISC-V has no SGI, and its IPI arrives as a software interrupt that skips the PLIC path. The
 /// 16550's transmit-empty enable interrupts at once on a polled console, with no other consumer
-/// to disturb. See notes/interrupts.md, "Testing it on RISC-V, which has no SGI".
+/// to disturb. See nifeos/record:notes/interrupts.md, "Testing it on RISC-V, which has no SGI".
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "riscv64"))]
 pub(crate) fn raise_uart_interrupt() {
     CONSOLE.lock().uart.enable_transmit_interrupt();
@@ -653,7 +653,7 @@ static BYTES_WRITTEN: core::sync::atomic::AtomicU64 = core::sync::atomic::Atomic
 /// No reader; the counter is still kept true on every print, for the reason `sched::canary` is.
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md; `bytes_written` counts what the kernel wrote to the
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md; `bytes_written` counts what the kernel wrote to the
 /// console, and the static is `BYTES_WRITTEN` with it.
 #[allow(dead_code)]
 pub fn bytes_written() -> u64 {

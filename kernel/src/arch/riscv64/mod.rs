@@ -1,7 +1,7 @@
 //! The RISC-V (rv64) architecture layer: an implementation of the `arch/` contract, which the rest
 //! of the kernel calls through `crate::arch` by the same names as on aarch64 and x86_64.
 //!
-//! See notes/riscv-port.md and its appendices in notes/riscv-port/.
+//! See nifeos/record:notes/riscv-port.md and its appendices in nifeos/record:notes/riscv-port/.
 
 use core::arch::global_asm;
 

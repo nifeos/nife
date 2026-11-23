@@ -3,7 +3,7 @@
 //! With `--features soak_test`, [`run`] replaces the boot tour's halt: it spawns user-mode workers
 //! (`fixtures/src/soaker.rs`), prints a beat every [`BEAT_SECONDS`], and fails the run on a
 //! refusal, a wrong reply or a stall. [`signal_waiters`] makes it cross cores, §138 (how a
-//! saturated workload is made to hand threads across cores). See notes/soak.md.
+//! saturated workload is made to hand threads across cores). See nifeos/record:notes/soak.md.
 
 //! # BUGS
 //! - A green soak is never proof the concurrency is correct.
@@ -15,12 +15,12 @@
 //! - The escape polls one LSR bit nothing can prove is wired.
 
 // aarch64 has no watchdog to arm yet; a build that quietly never armed would look like a board
-// that never wedged. See notes/soak/supervisor.md.
+// that never wedged. See nifeos/record:notes/soak/supervisor.md.
 #[cfg(all(feature = "watchdog_soak_test", target_arch = "aarch64"))]
 compile_error!(
     "--features watchdog_soak_test arms the Intel TCO on x86_64 (kernel/src/arch/x86_64/tco.rs) \
      and the JH7110 watchdog on riscv64 (kernel/src/drivers/jh7110_watchdog.rs); aarch64 has none \
-     yet. argon's Tegra WDT is a later step of design/roadmap/0593-a-wedged-kernel-resets-itself.md."
+     yet. argon's Tegra WDT is a later step of nifeos/record:design/roadmap/0593-a-wedged-kernel-resets-itself.md."
 );
 
 // Every x86_64 and riscv64 soak arms the watchdog unless it opts out (calef, 2026-09-26 UTC).
@@ -55,7 +55,7 @@ use crate::user::{self, Mapping, Spawn};
 use crate::{arch, memory, println, sched, smp};
 
 /// How often the supervisor speaks: three beats to `serial_console`'s default quiet window. See
-/// notes/soak/supervisor.md.
+/// nifeos/record:notes/soak/supervisor.md.
 const BEAT_SECONDS: u64 = 5;
 
 /// The line that tells the watcher a soak has begun.
@@ -193,12 +193,12 @@ fn print_start_banner(groups: usize, callers: usize, workers: usize, cpus: usize
     );
     println!(
         "soak-test: a clean run is a number to compare against, NOT evidence that the concurrency is \
-         correct (design/roadmap/0219-a-workload-that-does-not-stop.md)"
+         correct (nifeos/record:design/roadmap/0219-a-workload-that-does-not-stop.md)"
     );
     println!(
         "soak-test: the threads that cross cores are the tick waiters, NOT the rendezvous pairs; a \
          rising crossings count is the wake protocol sustained across cores under load, not the \
-         IPC workload migrating (design/roadmap/0221-a-soak-that-crosses-cores.md)"
+         IPC workload migrating (nifeos/record:design/roadmap/0221-a-soak-that-crosses-cores.md)"
     );
     println!(
         "soak-test: rounds counts IPC round trips and wakes counts tick-route wakes; they are separate \
@@ -228,14 +228,14 @@ fn print_spawn_census(groups: usize, placed: &[u8]) {
     println!(
         "{CENSUS_MARKER} tick waiters are excluded from drifted= because their movement is the \
          point rather than a surprise, and it is already crossings= \
-         (design/roadmap/0221-a-soak-that-crosses-cores.md)"
+         (nifeos/record:design/roadmap/0221-a-soak-that-crosses-cores.md)"
     );
 }
 
 /// The prefix every census line carries.
 ///
 /// Not `soak-test:`, which `crates/serial_console`'s recognizer reads. See
-/// notes/soak/placement-census.md.
+/// nifeos/record:notes/soak/placement-census.md.
 ///
 /// Name: provisional (milestone 240 (the soak reports what happened and not where)): calef names
 /// what a reader meets. Respelled from `soak-census:` by milestone 297 (`soak` becomes
@@ -271,7 +271,7 @@ fn role_letter(role: u64) -> char {
 ///
 /// `what` heads the block, `cpus[i]` is where worker `i` is (`u8::MAX` for not yet known), and
 /// `groups` is printed beside any shortfall. Each token is `<letter><group>`. It draws no
-/// conclusion from the placement. See notes/soak/placement-census.md.
+/// conclusion from the placement. See nifeos/record:notes/soak/placement-census.md.
 fn print_census(what: &str, groups: usize, cpus: &[u8]) {
     println!(
         "{CENSUS_MARKER} {what}: R=responder, C=caller, G=grinder, W=tick waiter, and the number \
@@ -322,7 +322,7 @@ const CALLERS_PER_GROUP: usize = 3;
 const GRINDERS_PER_GROUP: usize = 1;
 
 /// How many tick waiters share a group: one per core, since [`topology_groups`] builds a group per
-/// core. See notes/soak/supervisor.md.
+/// core. See nifeos/record:notes/soak/supervisor.md.
 const WAITERS_PER_GROUP: usize = 1;
 
 /// How many worker threads one group has.
@@ -335,7 +335,7 @@ const MEMBERS_PER_GROUP: usize = 1 + CALLERS_PER_GROUP + GRINDERS_PER_GROUP + WA
 ///
 /// They need only be `sched::interrupt_route` slots nothing else in a soak boot claims, and
 /// [`bind_tick_routes`] refuses to start a soak whose routes would steal one. Why no architecture
-/// delivers them is in notes/soak/tick-route.md.
+/// delivers them is in nifeos/record:notes/soak/tick-route.md.
 ///
 /// Name: provisional (milestone 221 (the soak never crosses cores)): calef names public items.
 const TICK_INTID_TOP: u32 = 255;
@@ -361,7 +361,7 @@ const REBOOT_ROUTE: &str =
 /// How long one boot soaks before it draws the placement lottery again.
 ///
 /// Long enough for the placement to converge, short enough for fifty draws in an evening. See
-/// notes/soak/supervisor.md.
+/// nifeos/record:notes/soak/supervisor.md.
 #[cfg(feature = "reboot_soak_test")]
 const REBOOT_AFTER_SECONDS: u64 = 120;
 
@@ -374,7 +374,7 @@ const REBOOT_GRACE_SECONDS: u64 = 5;
 /// Called once, from [`run`], after the workers exist and before the first census. The drain drops
 /// a byte U-Boot's countdown left, which would fire the escape on the first boot. A kernel that
 /// will reboot its machine says so, with the escape, on the only channel it has. See
-/// notes/soak/rebooting-soak.md.
+/// nifeos/record:notes/soak/rebooting-soak.md.
 #[cfg(feature = "reboot_soak_test")]
 fn arm_reboot() {
     crate::console::discard_waiting_bytes();
@@ -399,7 +399,7 @@ fn arm_reboot() {
 ///
 /// Returns only if somebody typed or every reset route was refused; the caller disarms on both.
 /// Called after the beat's verdict, never before, so a failed run never resets over its evidence.
-/// See notes/soak/supervisor.md.
+/// See nifeos/record:notes/soak/supervisor.md.
 #[cfg(feature = "reboot_soak_test")]
 fn draw_again(elapsed: u64) {
     println!(
@@ -440,7 +440,7 @@ fn draw_again(elapsed: u64) {
 const WATCHDOG_MARKER: &str = "soak-test-watchdog:";
 
 /// Seconds from the last pet to the reset: twelve beats, counted by both watchdogs as two halves.
-/// See notes/soak/supervisor.md.
+/// See nifeos/record:notes/soak/supervisor.md.
 #[cfg(soak_watchdog)]
 const WATCHDOG_RESET_AFTER_SECONDS: u64 = 60;
 
@@ -536,7 +536,7 @@ fn print_watchdog_escape() {
 ///
 /// Returns the armed driver, or `None` with the reason on the console. Refuses a tree that does not
 /// name the watchdog and its clocks, and a counter whose measured rate disagrees with
-/// `CORE_CLOCK_HERTZ`. See notes/soak/supervisor.md.
+/// `CORE_CLOCK_HERTZ`. See nifeos/record:notes/soak/supervisor.md.
 #[cfg(all(soak_watchdog, target_arch = "riscv64"))]
 fn arm_watchdog() -> Option<Watchdog> {
     use jh7110_watchdog::CORE_CLOCK_HERTZ;
@@ -710,7 +710,7 @@ const fn tick_intid(g: usize) -> u32 {
 /// The rendezvous [`signal_waiters`] signals, one per group, each plus one; zero means empty.
 ///
 /// Plain atomics, because the reader is an interrupt handler on every core. Written once each, by
-/// the boot thread. See notes/soak/supervisor.md.
+/// the boot thread. See nifeos/record:notes/soak/supervisor.md.
 static TICK_ROUTES: [AtomicU64; MAXIMUM_GROUPS] = [const { AtomicU64::new(0) }; MAXIMUM_GROUPS];
 
 /// How many of [`TICK_ROUTES`] are armed. Zero until [`arm_tick_hook`], which keeps the hook inert
@@ -723,7 +723,7 @@ static TICK_CURSOR: AtomicUsize = AtomicUsize::new(0);
 /// Signal one tick route, round-robin across the groups, through `sched::interrupt_notify`.
 ///
 /// Inert until [`arm_tick_hook`] runs, after every worker exists. One route per group, because a
-/// shared rendezvous starves all but one waiter. See notes/soak/tick-route.md.
+/// shared rendezvous starves all but one waiter. See nifeos/record:notes/soak/tick-route.md.
 ///
 /// Context: called from `sched::on_tick`, in interrupt context, on every core. Takes `IPC_TABLES`
 /// through `interrupt_notify`, an `InterruptSafeMutualExclusionLock` (§9 (locking: `IrqSafeMutex`, plus a
@@ -748,7 +748,7 @@ pub fn signal_waiters() {
 ///
 /// Returns `false`, binding nothing, if there are none, too many, or any interrupt number is
 /// already routed. Called before the first waiter is spawned, so none meets `WrongObject` at
-/// `Interrupt::WAIT`; [`arm_tick_hook`] starts the signaling later. See notes/soak/tick-route.md.
+/// `Interrupt::WAIT`; [`arm_tick_hook`] starts the signaling later. See nifeos/record:notes/soak/tick-route.md.
 fn bind_tick_routes(endpoints: &[sched::RendezvousId]) -> bool {
     if endpoints.is_empty() || endpoints.len() > MAXIMUM_GROUPS {
         return false;
@@ -799,7 +799,7 @@ fn read_counter(shared: u64, offset: u64) -> u64 {
 ///
 /// `tids` and `placed` are each worker's thread and spawn core, against which every beat reports
 /// drift. Pets the watchdog and asks the reboot questions after each verdict. See
-/// notes/soak/supervisor.md.
+/// nifeos/record:notes/soak/supervisor.md.
 fn watch(
     shared: u64,
     workers: usize,
@@ -941,7 +941,7 @@ fn sample_workers(
 ///
 /// Measured against the last census, not spawn, so a nonzero count means a newer census follows.
 /// Tick waiters, whose movement is `crossings=`, and threads not yet run are not counted. See
-/// notes/soak/supervisor.md.
+/// nifeos/record:notes/soak/supervisor.md.
 fn count_drift(
     tids: &[u64; MAXIMUM_WORKERS],
     workers: usize,
@@ -966,7 +966,7 @@ fn verdict_of(refused: u64, mismatches: u64, stalled: usize, beat: u64) -> Optio
         Some(
             "the wake gate refused a wake: a waker made a parked receiver Ready with nothing \
               delivered (sched::wake_load_aware, the boot-8 gate). This is the defect \
-              design/fatal-risks/README.md risk 5 is about.",
+              nifeos/record:design/fatal-risks/README.md risk 5 is about.",
         )
     } else if mismatches != 0 {
         Some(

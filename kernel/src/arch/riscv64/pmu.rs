@@ -2,10 +2,10 @@
 //!
 //! The counters are configured from M-mode only, so S-mode asks SBI PMU (EID `0x504D55`) for one
 //! counter matching CPU cycles, started for the life of the boot on the boot hart, then reads its
-//! CSR directly. This is cycles, not the fixed-rate `time` tick (notes/pmu.md). Nothing here has
+//! CSR directly. This is cycles, not the fixed-rate `time` tick (nifeos/record:notes/pmu.md). Nothing here has
 //! run on silicon.
 //!
-//! See notes/riscv-cycle-counters.md.
+//! See nifeos/record:notes/riscv-cycle-counters.md.
 
 //! # BUGS
 //!
@@ -14,7 +14,7 @@
 //! - A firmware counter is refused, since reading one costs an `ecall` per read.
 //! - `counter_stop` is never called on the happy path; only [`stop`]'s test calls it.
 //!
-//! Details in notes/riscv-cycle-counters.md, BUGS.
+//! Details in nifeos/record:notes/riscv-cycle-counters.md, BUGS.
 
 use core::arch::asm;
 use core::sync::atomic::{AtomicU8, AtomicU32, AtomicU64, Ordering};
@@ -82,10 +82,10 @@ static CYCLE_BITS: AtomicU32 = AtomicU32::new(0);
 ///
 /// Called once from `kernel_main`, after [`super::isa::initialize`] probed the SBI extensions.
 /// Without SBI PMU, [`cycles`] answers `None`. A refused counter is stopped. See
-/// notes/riscv-cycle-counters.md.
+/// nifeos/record:notes/riscv-cycle-counters.md.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     OUTCOME.store(CycleCounter::Unknown as u8, Ordering::Relaxed);
     CYCLE_CSR.store(NO_CSR, Ordering::Relaxed);
@@ -389,7 +389,7 @@ mod tests {
     /// on a plausible CSR, or `Stuck` on `rva23s64`.
     ///
     /// The counter is firmware's choice, so no CSR number is pinned. See
-    /// notes/riscv-cycle-counters.md.
+    /// nifeos/record:notes/riscv-cycle-counters.md.
     #[test_case]
     fn qemu_reaches_one_of_the_two_answers_it_has_ever_given() {
         assert!(
@@ -441,7 +441,7 @@ mod tests {
     /// outcome.
     ///
     /// It does not assert the counter comes back: on `rva23s64` it goes `Running` to `Stuck`
-    /// (notes/riscv-cycle-counters.md, BUGS).
+    /// (nifeos/record:notes/riscv-cycle-counters.md, BUGS).
     #[test_case]
     fn stopping_the_counter_is_accepted() {
         if outcome() != CycleCounter::Running {

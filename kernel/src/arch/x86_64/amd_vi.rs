@@ -5,7 +5,7 @@
 //!
 //! Default deny: `initialize` fills every device table entry with [`blocked_dte`] before enabling
 //! the unit, and the same entry is the quarantine of §163 (where a confined device's IOMMU fault is
-//! delivered). See notes/amd-vi.md, which holds the design, QEMU's differences and the detail
+//! delivered). See nifeos/record:notes/amd-vi.md, which holds the design, QEMU's differences and the detail
 //! of each BUGS entry.
 
 //! # BUGS
@@ -330,7 +330,7 @@ impl Unit {
     /// Point device table entry `id` at `dte` and, once the unit reads commands, make it forget
     /// both the entry and every translation it cached under the entry's previous domain (section
     /// 2.4.2: `INVALIDATE_DEVTAB_ENTRY` alone leaves the translation cache). The caller syncs. See
-    /// notes/amd-vi.md.
+    /// nifeos/record:notes/amd-vi.md.
     fn set_entry(&mut self, id: u32, dte: [u64; 4]) {
         if id >= self.entries {
             return;
@@ -400,7 +400,7 @@ impl core::fmt::Display for ExclusionFound {
 /// its entry says (section 3.3.1, MMIO 0020h and 0028h), and nothing clears it at reset. Both
 /// registers are zeroed, `ExEn` and `Allow` with them. A range an IVMD names is mapped into its
 /// devices' domains instead, as Linux does. QEMU 11.1.1 never consults these registers, so under
-/// QEMU this is proved to write them and nothing more. See notes/amd-vi.md.
+/// QEMU this is proved to write them and nothing more. See nifeos/record:notes/amd-vi.md.
 fn clear_exclusion_range(unit_base: u64) -> ExclusionFound {
     let found = ExclusionFound {
         base: r64(unit_base, EXCLUSION_BASE),
@@ -508,7 +508,7 @@ fn enable(u: &mut Unit) {
     u.enabled = true;
 
     // Every entry, by name: the specification's way to make the unit reload one, and the only
-    // way QEMU's model turns a device's translation on at all (notes/amd-vi.md's BUGS).
+    // way QEMU's model turns a device's translation on at all (nifeos/record:notes/amd-vi.md's BUGS).
     for id in 0..u.entries {
         u.invalidate_entry(id);
     }
@@ -534,7 +534,7 @@ fn enable(u: &mut Unit) {
 /// One `amd-vi` line per unit.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/acronyms-and-abbreviations.md.
+/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(ivrs: &IvrsUnits) {
     record_ivrs(ivrs);
     {
@@ -1080,7 +1080,7 @@ mod tests {
     /// firmware would (provisional milestone 767 (AMD-Vi hardening before the first AMD boot)).
     /// QEMU 11.1.1 drops every write to the base register, so under QEMU this proves the limit half
     /// and that the boot left both zero; the base half and the effect on DMA need silicon. The
-    /// range is the last 4 KiB of the 52-bit space, which no machine backs. See notes/amd-vi.md.
+    /// range is the last 4 KiB of the 52-bit space, which no machine backs. See nifeos/record:notes/amd-vi.md.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.x86_64.amd_vi.tests.a_firmware_exclusion_range_is_cleared.patch`
     #[test_case]

@@ -21,7 +21,7 @@
 # `FpState` is (see fp.rs). `fxsave64` rather than `fxsave`: the 64-bit form records the full
 # 64-bit instruction and data pointers instead of the 32-bit ones, which is the only difference and
 # is the truthful one on this architecture.
-# CFI: see notes/cfi-unwind.md. Ordinary leaf functions, `call`ed and `ret`urning; rsp never
+# CFI: see nifeos/record:notes/cfi-unwind.md. Ordinary leaf functions, `call`ed and `ret`urning; rsp never
 # moves, so the default frame (CFA = rsp + 8, return address at CFA - 8) is already correct.
 .global fp_save
 .type fp_save, @function

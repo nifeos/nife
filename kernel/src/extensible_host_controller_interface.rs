@@ -2,7 +2,7 @@
 //! the kernel only finds it (`pci::find_xhci_device`), takes it from the firmware
 //! ([`take_from_firmware`]), draws the register window that withholds the MSI-X pages, and
 //! allocates and confines its DMA, refusing to start the driver without IOMMU confinement. It never
-//! resets the controller, writes a ring or reads a descriptor. See notes/usb.md, "Who does what"
+//! resets the controller, writes a ring or reads a descriptor. See nifeos/record:notes/usb.md, "Who does what"
 //! and "The confinement, in one sentence".
 //!
 

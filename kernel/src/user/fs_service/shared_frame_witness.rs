@@ -1,5 +1,5 @@
 //! The shared-frame witness: two live clients on one file service, each on its own window, and the
-//! negative control that puts them on one. See notes/a-frame-per-filesystem-client-channel.md.
+//! negative control that puts them on one. See nifeos/record:notes/a-frame-per-filesystem-client-channel.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -7,7 +7,7 @@
 use super::*;
 
 /// Wire two live clients on one file service for the shared-frame witness
-/// (`notes/shared-page-audit.md`, finding 1): a victim and an attacker in `victim_role` and
+/// (`nifeos/record:notes/shared-page-audit.md`, finding 1): a victim and an attacker in `victim_role` and
 /// `attacker_role`, each on its own claimed window and a badged endpoint naming it.
 ///
 /// Both read one slot layout: FILE at 0, REPORT at 1, SYNC at 2, which sequences them so the test

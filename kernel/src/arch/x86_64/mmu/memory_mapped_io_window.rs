@@ -20,7 +20,7 @@ use super::*;
 /// covers them; the 32-bit MMIO hole above is a gap the map does not describe, so the chain stops
 /// at its floor and the device windows stay out, for [`map_everything`]'s step 5 to map
 /// device-typed. No 4 GiB constant: the hole's floor moves with how much memory firmware stole.
-/// See notes/x86-port/kernel-page-tables.md.
+/// See nifeos/record:notes/x86-port/kernel-page-tables.md.
 pub(super) fn firmware_fill_ceiling(mut spans: impl FnMut(&mut dyn FnMut(u64, u64))) -> u64 {
     let mut ceiling = LOW_MEGABYTE;
     loop {
@@ -145,7 +145,7 @@ impl core::fmt::Display for MemoryMappedIoWindowError {
 /// 256).
 ///
 /// [`firmware_mmio_hole`] and the host bridge's `TOLUD` must agree, or this returns
-/// [`MemoryMappedIoWindowError::Disagreement`]. See notes/x86-port/kernel-page-tables.md.
+/// [`MemoryMappedIoWindowError::Disagreement`]. See nifeos/record:notes/x86-port/kernel-page-tables.md.
 ///
 /// Name: ratified 2026-09-05 (calef). Refused `bar_window`, which the lane shipped on the grounds
 /// that it was the vocabulary the retired `PCI_BAR_PHYS` used for the thing in its own first line;

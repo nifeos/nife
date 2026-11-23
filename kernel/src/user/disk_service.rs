@@ -7,7 +7,7 @@
 //! The kernel never reads a partition table.
 //!
 //! Every page is a `PageFrame` capability the program maps itself, out of a budget it also holds;
-//! only the stack is wired at spawn. See notes/block-devices.md.
+//! only the stack is wired at spawn. See nifeos/record:notes/block-devices.md.
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
@@ -211,7 +211,7 @@ pub fn start(blk_image: &'static [u8], surveyor_image: &'static [u8]) -> Option<
 /// held `READ`, and no disk, so the claim is about the page alone.
 ///
 /// It asks for a writable mapping (refused before a page table is written), maps the page
-/// read-only instead, announces the address, and writes (a fault). See notes/block-devices.md.
+/// read-only instead, announces the address, and writes (a fault). See nifeos/record:notes/block-devices.md.
 pub fn start_probe(surveyor_image: &'static [u8]) -> RendezvousId {
     let (roster_phys, _) = roster_page();
     let report = crate::sched::create_rendezvous();
@@ -263,7 +263,7 @@ pub struct HolderWiring {
 /// `PageFrame::REVOKE`, which reaches it because the mapping is recorded.
 ///
 /// It gets no disk and no shared block page, as [`start_probe`] does not. See
-/// notes/block-devices.md.
+/// nifeos/record:notes/block-devices.md.
 pub fn start_holder(surveyor_image: &'static [u8]) -> HolderWiring {
     let (roster_phys, _) = roster_page();
     let report = crate::sched::create_rendezvous();
@@ -347,7 +347,7 @@ const MAKER_SLOT_BLK_PAGE: u64 = 4;
 ///
 /// A full file-server workload peaks at 34 pages (`fs_service::fs_stack_used`), so 48 is 40%
 /// headroom. It is not the server's 96 because a boot runs five of these and never frees their
-/// stacks. See notes/block-devices.md, "The kernel's wiring".
+/// stacks. See nifeos/record:notes/block-devices.md, "The kernel's wiring".
 const MAKER_STACK_PAGES: u64 = 48;
 
 /// The untyped budget every `mkfs` process draws its heap from, the same for the runs meant to be
@@ -518,7 +518,7 @@ pub fn start_maker(
             };
         }
         // Every slot placed with `grant_at`, so a withheld capability leaves a hole rather than
-        // renumbering the slots above it (notes/abi.md, section 4).
+        // renumbering the slots above it (nifeos/record:notes/abi.md, section 4).
         crate::sched::grant_at(MAKER_SLOT_BUDGET, memory_region_capability(budget))
             .expect("mkfs slot 0 was occupied");
         if with_disk {

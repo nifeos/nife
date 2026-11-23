@@ -3,7 +3,7 @@
 //! The architecture keeps a pointer to this core's [`PerCpu`] in a register
 //! ([`crate::arch::set_percpu`]). Most fields are touched only by the owning core, with interrupts
 //! masked. Other cores lock the inbox, use the steal request, and read `current`, `runq_len` and
-//! `inbox_len`; `rng_next`'s BUGS is the one unmasked writer. See notes/per-cpu.md and DECISIONS
+//! `inbox_len`; `rng_next`'s BUGS is the one unmasked writer. See nifeos/record:notes/per-cpu.md and DECISIONS
 //! §11 (per-CPU run queues).
 
 use core::cell::UnsafeCell;
@@ -22,7 +22,7 @@ pub const NO_TID: ThreadId = u64::MAX;
 ///
 /// A bound on hart ids, not core counts, since each core is seated at the slot its id names. One
 /// name for `current_cpu_contract::CPU_ID_BOUND`, which userspace shares. Each seat costs a block
-/// and a 68 KiB secondary stack slot whether or not a core fills it. See notes/per-cpu.md.
+/// and a 68 KiB secondary stack slot whether or not a core fills it. See nifeos/record:notes/per-cpu.md.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_CPUS: usize = current_cpu_contract::CPU_ID_BOUND;
@@ -31,7 +31,7 @@ pub const MAXIMUM_CPUS: usize = current_cpu_contract::CPU_ID_BOUND;
 ///
 /// Each block starts on its own [`FALSE_SHARING_SPAN`] on every architecture, and its size stays a
 /// power of two; the assertions below [`PERCPU`] and [`FALSE_SHARING_SPAN`] hold both. 256 on
-/// `x86_64`, where the struct is 160 bytes. See notes/per-cpu.md.
+/// `x86_64`, where the struct is 160 bytes. See nifeos/record:notes/per-cpu.md.
 #[cfg_attr(target_arch = "x86_64", repr(align(256)))]
 #[cfg_attr(not(target_arch = "x86_64"), repr(align(128)))]
 pub struct PerCpu {
@@ -64,7 +64,7 @@ pub struct PerCpu {
 
     /// This core's run queue: the threads ready to run here, in round-robin order.
     ///
-    /// Intrusive (notes/intrusive-queues.md): a push neither allocates nor fails, and entries are
+    /// Intrusive (nifeos/record:notes/intrusive-queues.md): a push neither allocates nor fails, and entries are
     /// TCB pointers kept alive because a queued thread is `Ready` and only `Finished` threads are
     /// reaped. No lock: only this core touches it, with interrupts masked, which is what makes the
     /// `UnsafeCell` sound. Access it through [`with_runq`](Self::with_runq).
@@ -91,7 +91,7 @@ pub struct PerCpu {
     /// the requester's inbox at its next scheduler entry. One request at a time per victim.
     ///
     /// The one lock-free cross-core protocol in the scheduler. The field is `work_steal_slot`'s
-    /// type, which loom checks on the host (notes/interleaving.md).
+    /// type, which loom checks on the host (nifeos/record:notes/interleaving.md).
     pub steal_request: work_steal_slot::Slot,
 
     /// How many context switches this core has made since boot: `vmstat`'s `cs` column.
@@ -253,8 +253,8 @@ impl PerCpu {
 ///
 /// A count, not a depth like `inbox_len`, so a push and drain between two reads still show. It
 /// exists for `smp::tests::work_can_be_placed_on_every_cpu`, which asserts delivery to the named
-/// core because stealing may move the thread before it runs (notes/load-sensitive-assertions.md).
-/// An array beside `PerCpu`, because a drain is on no hot path (notes/per-cpu.md).
+/// core because stealing may move the thread before it runs (nifeos/record:notes/load-sensitive-assertions.md).
+/// An array beside `PerCpu`, because a drain is on no hot path (nifeos/record:notes/per-cpu.md).
 static ADOPTED: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
 /// The per-CPU blocks, one per core, static so a core's block exists before any allocator.
@@ -264,7 +264,7 @@ static PERCPU: [PerCpu; MAXIMUM_CPUS] = [const { PerCpu::new() }; MAXIMUM_CPUS];
 ///
 /// One field more once cost riscv64's `ipc_send_receive` 150 bytes and failed
 /// `script/fastpath-footprint`. Per-core state the fastpath does not need goes in its own array.
-/// See notes/per-cpu.md.
+/// See nifeos/record:notes/per-cpu.md.
 const _: () = assert!(
     core::mem::size_of::<PerCpu>().is_power_of_two(),
     "PerCpu's size must be a power of two so PERCPU[id] indexes with a shift; see the note above \
@@ -276,7 +276,7 @@ const _: () = assert!(
 ///
 /// 128 on every architecture: Apple's line, and a pair of lines on 64-byte parts that prefetch in
 /// pairs. Measured as about 1.7 ns per trap on an Apple M3 when blocks shared lines
-/// (notes/per-cpu.md).
+/// (nifeos/record:notes/per-cpu.md).
 const FALSE_SHARING_SPAN: usize = 128;
 
 /// No two cores' `PerCpu` blocks share a [`FALSE_SHARING_SPAN`]: an alignment of at least the span
@@ -310,7 +310,7 @@ pub(crate) fn initialize_this_cpu(id: usize) {
 ///
 /// From preemptible code it may name a core the caller has since left: fine for a hint, wrong for
 /// the running thread's name, which `arch::read_current_thread` reads in one step
-/// (notes/scheduler.md, "The costs migration made real").
+/// (nifeos/record:notes/scheduler.md, "The costs migration made real").
 pub fn current() -> &'static PerCpu {
     // SAFETY: `initialize_this_cpu` set TPIDR_EL1 to the address of an element of the `'static`
     // `PERCPU` array, and nothing else ever writes TPIDR_EL1. The one window where this would be
@@ -350,7 +350,7 @@ mod tests {
     /// block and no other.
     ///
     /// It does not assert which core it runs on: tests are not pinned, and §28's stealing may move
-    /// the test thread (notes/scheduler/test-flakes.md). `boot_cpu_id()` is read rather than
+    /// the test thread (nifeos/record:notes/scheduler/test-flakes.md). `boot_cpu_id()` is read rather than
     /// assumed 0, since on RISC-V QEMU picks the boot hart.
     #[test_case]
     fn percpu_is_self_consistent_on_whatever_cpu_we_run() {

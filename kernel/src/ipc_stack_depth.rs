@@ -6,7 +6,7 @@
 //! [`after_system_call`] scans and repaints at the end of each system call ([`el0_shapes`]). Each series
 //! reports its median, which is the per-IPC figure, beside the interrupt-contaminated maximum.
 //! Built only under `any(test, feature = "ipc_stack_depth")`. See
-//! notes/stack-high-water/per-ipc-depth.md.
+//! nifeos/record:notes/stack-high-water/per-ipc-depth.md.
 //!
 //! Name: provisional (milestone 134 (the register of measures)'s lane, 2026-09-19): module, feature
 //! and the `ipc-stack-depth:` line prefix alike. Names are an architect's.
@@ -266,7 +266,7 @@ pub(crate) fn kernel_thread_shapes() -> usize {
     null.sort_unstable();
     let (null_median, null_maximum) = (u64::from(null[SAMPLES / 2]), u64::from(null[SAMPLES - 1]));
     // `<=`, not `==`: whether the median reads exactly the floor depends on when the first trap
-    // frame overwrites the ceiling word (notes/stack-high-water/per-ipc-depth.md). Too small a
+    // frame overwrites the ceiling word (nifeos/record:notes/stack-high-water/per-ipc-depth.md). Too small a
     // margin reads deeper than the floor, which this still catches.
     let null_clean = null_median <= null_floor;
     println!(
@@ -428,7 +428,7 @@ pub(crate) fn after_system_call(nr: u64, method: u64) {
 /// # BUGS
 ///
 /// A third copy of a number two binaries agree on, which AGENTS.md rule 7 says should be a crate
-/// (notes/stack-high-water.md's BUGS).
+/// (nifeos/record:notes/stack-high-water.md's BUGS).
 #[cfg(initial_ramdisk)]
 const EL_IPC_SERVER: u64 = 3;
 #[cfg(initial_ramdisk)]
@@ -691,7 +691,7 @@ mod tests {
     /// Every IPC series is a measurement: one `ipc-stack-depth:` line per role and operation.
     ///
     /// Asserts enough samples and a median below the paint ceiling, not the numbers themselves.
-    /// notes/stack-high-water/per-ipc-depth.md carries the readings.
+    /// nifeos/record:notes/stack-high-water/per-ipc-depth.md carries the readings.
     #[test_case]
     fn one_ipc_reaches_a_measured_depth_into_its_kernel_stack() {
         let bad = super::kernel_thread_shapes();

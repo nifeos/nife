@@ -5,7 +5,7 @@
 //! clocks, the controller and the card as found, runs the read-only probe and a timed read (and,
 //! only in a `NIFE_STORAGE_BENCH_WRITE=scratch` build, the scratch write test on the microSD slot),
 //! repeats them through the IDMAC and the EL0 block server, prints a `storage-bench:` verdict and
-//! halts. See notes/bench-boots.md and notes/designware-mobile-storage.md.
+//! halts. See nifeos/record:notes/bench-boots.md and nifeos/record:notes/designware-mobile-storage.md.
 
 //! # BUGS
 //! - The booted system has no block device on radon yet; this boot picks its own window.
@@ -424,7 +424,7 @@ enum El0 {
 /// The same card through the EL0 block server, called the way the FS server calls one.
 ///
 /// A read-only build serves the first partition and checks block 0, `EROFS` and `EINVAL`; a
-/// `write` build serves the scratch range and round-trips one block. See notes/bench-boots.md.
+/// `write` build serves the scratch range and round-trips one block. See nifeos/record:notes/bench-boots.md.
 fn through_el0(slot: &Slot, r: &ReadOnlyProbeReport, write: bool) -> El0 {
     use file_system_contract::block;
 

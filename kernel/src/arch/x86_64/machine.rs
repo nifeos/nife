@@ -319,7 +319,7 @@ impl Default for Acpi {
 /// (identity) and PML4[273] (the direct map `phys_to_virt` names) point at. The ACPI walk runs
 /// before `mmu::initialize`, so this bound, not the fine map's, applies. Firmware puts its tables
 /// near the top of RAM, which the suite's `-m 256M` does not exercise; see
-/// notes/x86-port/acpi-and-pci.md.
+/// nifeos/record:notes/x86-port/acpi-and-pci.md.
 const BOOT_DIRECT_MAP_LIMIT: u64 = 0x1_0000_0000;
 
 /// **The region the ACPI walk may read**: the boot map's low [`BOOT_DIRECT_MAP_LIMIT`] bytes
@@ -549,7 +549,7 @@ fn pciexbar_length_bits(bus_count: u32) -> Option<u32> {
 /// not firmware, so this port asks. It reads before it writes: the same base with another length
 /// widens the chipset's decode over whatever sits above, and a locked register drops the write.
 /// Both boot paths arrive with the decode on, so the write is unexercised
-/// (notes/x86-port/acpi-and-pci.md). The legacy configuration ports are the only way in: nothing
+/// (nifeos/record:notes/x86-port/acpi-and-pci.md). The legacy configuration ports are the only way in: nothing
 /// can read the ECAM window to turn it on.
 pub(crate) fn enable_pcie_ecam(base: u64, bus_count: u32) -> EcamDecode {
     // SAFETY: 0xcf8/0xcfc are the legacy PCI configuration ports, present on every PC-compatible
@@ -601,7 +601,7 @@ pub(crate) fn print_acpi_summary(found: &Acpi) {
     match found.ecam {
         // The parenthetical names q35: `PCI_ECAM_PHYS` is q35's default, a second witness and not
         // the source of truth. `base` is the MCFG's answer and is what gets mapped, and firmware
-        // places the window, so a different number is no defect (notes/x86-port/acpi-and-pci.md).
+        // places the window, so a different number is no defect (nifeos/record:notes/x86-port/acpi-and-pci.md).
         Some((base, lo, hi)) => crate::println!(
             "                pcie ecam {base:#x}, buses {lo}..={hi} (q35's default is {:#x})",
             super::mmu::PCI_ECAM_PHYS,

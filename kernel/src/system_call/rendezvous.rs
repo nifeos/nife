@@ -5,7 +5,7 @@
 //! can land in another codegen unit, where a plain function is not inlined, and the round trip
 //! would pay a call while its bytes left the `system_call_entry` `script/fastpath-footprint` counts.
 //! `BADGE` and `REAP` are rare and live out of line in `object_methods`. See
-//! notes/system-call-boundary.md.
+//! nifeos/record:notes/system-call-boundary.md.
 //!
 //! Name: provisional (lane maintainer/long-function-paydown-invoke, 2026-10-12 UTC), for the
 //! module, the file and each function in it. calef names things; expect these to change.
@@ -28,7 +28,7 @@ pub(super) fn rendezvous_send(
     // The badge rides in word 3: a writer's identity is its capability's badge, never its claim.
     sched::ipc_send_badged(ep, words, badge);
     // An abort is a revoked endpoint (`Gone`, not `NoSuchSlot`: a pipe writer acts on the
-    // difference, notes/sink-protocol.md) or an interrupt's endpoint refusing the deposit
+    // difference, nifeos/record:notes/sink-protocol.md) or an interrupt's endpoint refusing the deposit
     // (`NotPermitted`, DECISIONS §101 (notification objects), the interrupt-endpoint amendment).
     // Asked only on abort.
     if sched::take_ipc_aborted() {
@@ -153,7 +153,7 @@ pub(super) fn rendezvous_call(
 /// Scoped by the relationship `REAP` uses, so a supervisor sees exactly the children whose deaths
 /// arrive here. A holder without `ENUMERATE` is refused, never shown an empty domain. The
 /// selector, the placement record's authority argument and what a placement leaks are in
-/// notes/system-call-boundary.md.
+/// nifeos/record:notes/system-call-boundary.md.
 #[inline(always)]
 pub(super) fn rendezvous_survey(
     frame: &mut TrapFrame,
