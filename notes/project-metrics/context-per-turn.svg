@@ -22,43 +22,42 @@
 <text class="mut" x="56" y="127.5" font-size="10" text-anchor="end">300</text>
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
 <text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">400</text>
-<path class="seg s0" d="M71.7,324.0 V89.4 Q71.7,85.4 75.7,85.4 H97.4 Q101.4,85.4 101.4,89.4 V324.0 Z"><title>2026W35, thousand tokens of context per turn: 358.8</title></path>
-<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W35</text>
-<text class="fg val" x="86.5" y="80.4" font-size="10" text-anchor="middle">358.8</text>
-<path class="seg s0" d="M116.7,324.0 V156.1 Q116.7,152.1 120.7,152.1 H142.5 Q146.5,152.1 146.5,156.1 V324.0 Z"><title>2026W36, thousand tokens of context per turn: 258.5</title></path>
-<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W36</text>
-<text class="fg val" x="131.6" y="147.1" font-size="10" text-anchor="middle">258.5</text>
-<path class="seg s0" d="M161.8,324.0 V139.2 Q161.8,135.2 165.8,135.2 H187.6 Q191.6,135.2 191.6,139.2 V324.0 Z"><title>2026W37, thousand tokens of context per turn: 283.9</title></path>
-<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W37</text>
-<text class="fg val" x="176.7" y="130.2" font-size="10" text-anchor="middle">283.9</text>
-<path class="seg s0" d="M206.9,324.0 V117.3 Q206.9,113.3 210.9,113.3 H232.6 Q236.6,113.3 236.6,117.3 V324.0 Z"><title>2026W38, thousand tokens of context per turn: 316.8</title></path>
-<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W38</text>
-<text class="fg val" x="221.8" y="108.3" font-size="10" text-anchor="middle">316.8</text>
-<path class="seg s0" d="M252.0,324.0 V172.0 Q252.0,168.0 256.0,168.0 H277.7 Q281.7,168.0 281.7,172.0 V324.0 Z"><title>2026W39, thousand tokens of context per turn: 234.6</title></path>
-<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W39</text>
-<text class="fg val" x="266.8" y="163.0" font-size="10" text-anchor="middle">234.6</text>
-<path class="seg s0" d="M297.0,324.0 V215.3 Q297.0,211.3 301.0,211.3 H322.8 Q326.8,211.3 326.8,215.3 V324.0 Z"><title>2026W40, thousand tokens of context per turn: 169.5</title></path>
-<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W40</text>
-<text class="fg val" x="311.9" y="206.3" font-size="10" text-anchor="middle">169.5</text>
-<path class="seg s0" d="M342.1,324.0 V205.8 Q342.1,201.8 346.1,201.8 H367.9 Q371.9,201.8 371.9,205.8 V324.0 Z"><title>2026W41, thousand tokens of context per turn: 183.7</title></path>
-<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W41</text>
-<text class="fg val" x="357.0" y="196.8" font-size="10" text-anchor="middle">183.7</text>
-<path class="seg s0" d="M387.2,324.0 V184.4 Q387.2,180.4 391.2,180.4 H413.0 Q417.0,180.4 417.0,184.4 V324.0 Z"><title>2026W42, thousand tokens of context per turn: 215.9</title></path>
-<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<text class="fg val" x="402.1" y="175.4" font-size="10" text-anchor="middle">215.9</text>
-<path class="seg s0" d="M432.3,324.0 V192.6 Q432.3,188.6 436.3,188.6 H458.0 Q462.0,188.6 462.0,192.6 V324.0 Z"><title>2026W43, thousand tokens of context per turn: 203.7</title></path>
-<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="447.2" y="183.6" font-size="10" text-anchor="middle">203.7</text>
-<path class="seg s0" d="M477.4,324.0 V218.7 Q477.4,214.7 481.4,214.7 H503.1 Q507.1,214.7 507.1,218.7 V324.0 Z"><title>2026W44, thousand tokens of context per turn: 164.3</title></path>
-<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="492.2" y="209.7" font-size="10" text-anchor="middle">164.3</text>
-<path class="seg s0" d="M522.4,324.0 V241.6 Q522.4,237.6 526.4,237.6 H548.2 Q552.2,237.6 552.2,241.6 V324.0 Z"><title>2026W45, thousand tokens of context per turn: 129.9</title></path>
-<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W45</text>
-<text class="fg val" x="537.3" y="232.6" font-size="10" text-anchor="middle">129.9</text>
-<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W46</text>
-<text class="mut" x="582.4" y="308.0" font-size="9" text-anchor="middle">not<tspan x="582.4" dy="10">measured</tspan><title>2026W46: not measured</title></text>
-<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W47</text>
-<text class="mut" x="627.5" y="308.0" font-size="9" text-anchor="middle">not<tspan x="627.5" dy="10">measured</tspan><title>2026W47: not measured</title></text>
+<path class="seg s0" d="M71.7,324.0 V156.1 Q71.7,152.1 75.7,152.1 H97.4 Q101.4,152.1 101.4,156.1 V324.0 Z"><title>2026W36, thousand tokens of context per turn: 258.5</title></path>
+<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="86.5" y="147.1" font-size="10" text-anchor="middle">258.5</text>
+<path class="seg s0" d="M116.7,324.0 V139.2 Q116.7,135.2 120.7,135.2 H142.5 Q146.5,135.2 146.5,139.2 V324.0 Z"><title>2026W37, thousand tokens of context per turn: 283.9</title></path>
+<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<text class="fg val" x="131.6" y="130.2" font-size="10" text-anchor="middle">283.9</text>
+<path class="seg s0" d="M161.8,324.0 V117.3 Q161.8,113.3 165.8,113.3 H187.6 Q191.6,113.3 191.6,117.3 V324.0 Z"><title>2026W38, thousand tokens of context per turn: 316.8</title></path>
+<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="fg val" x="176.7" y="108.3" font-size="10" text-anchor="middle">316.8</text>
+<path class="seg s0" d="M206.9,324.0 V172.0 Q206.9,168.0 210.9,168.0 H232.6 Q236.6,168.0 236.6,172.0 V324.0 Z"><title>2026W39, thousand tokens of context per turn: 234.6</title></path>
+<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<text class="fg val" x="221.8" y="163.0" font-size="10" text-anchor="middle">234.6</text>
+<path class="seg s0" d="M252.0,324.0 V215.3 Q252.0,211.3 256.0,211.3 H277.7 Q281.7,211.3 281.7,215.3 V324.0 Z"><title>2026W40, thousand tokens of context per turn: 169.5</title></path>
+<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<text class="fg val" x="266.8" y="206.3" font-size="10" text-anchor="middle">169.5</text>
+<path class="seg s0" d="M297.0,324.0 V205.8 Q297.0,201.8 301.0,201.8 H322.8 Q326.8,201.8 326.8,205.8 V324.0 Z"><title>2026W41, thousand tokens of context per turn: 183.7</title></path>
+<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<text class="fg val" x="311.9" y="196.8" font-size="10" text-anchor="middle">183.7</text>
+<path class="seg s0" d="M342.1,324.0 V184.4 Q342.1,180.4 346.1,180.4 H367.9 Q371.9,180.4 371.9,184.4 V324.0 Z"><title>2026W42, thousand tokens of context per turn: 215.9</title></path>
+<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<text class="fg val" x="357.0" y="175.4" font-size="10" text-anchor="middle">215.9</text>
+<path class="seg s0" d="M387.2,324.0 V192.6 Q387.2,188.6 391.2,188.6 H413.0 Q417.0,188.6 417.0,192.6 V324.0 Z"><title>2026W43, thousand tokens of context per turn: 203.7</title></path>
+<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<text class="fg val" x="402.1" y="183.6" font-size="10" text-anchor="middle">203.7</text>
+<path class="seg s0" d="M432.3,324.0 V218.7 Q432.3,214.7 436.3,214.7 H458.0 Q462.0,214.7 462.0,218.7 V324.0 Z"><title>2026W44, thousand tokens of context per turn: 164.3</title></path>
+<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W44</text>
+<text class="fg val" x="447.2" y="209.7" font-size="10" text-anchor="middle">164.3</text>
+<path class="seg s0" d="M477.4,324.0 V241.6 Q477.4,237.6 481.4,237.6 H503.1 Q507.1,237.6 507.1,241.6 V324.0 Z"><title>2026W45, thousand tokens of context per turn: 129.9</title></path>
+<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<text class="fg val" x="492.2" y="232.6" font-size="10" text-anchor="middle">129.9</text>
+<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W46</text>
+<text class="mut" x="537.3" y="308.0" font-size="9" text-anchor="middle">not<tspan x="537.3" dy="10">measured</tspan><title>2026W46: not measured</title></text>
+<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W47</text>
+<text class="mut" x="582.4" y="308.0" font-size="9" text-anchor="middle">not<tspan x="582.4" dy="10">measured</tspan><title>2026W47: not measured</title></text>
+<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W48</text>
+<text class="mut" x="627.5" y="308.0" font-size="9" text-anchor="middle">not<tspan x="627.5" dy="10">measured</tspan><title>2026W48: not measured</title></text>
 <rect class="s0" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">thousand tokens of</tspan><tspan x="689" dy="13">context per turn</tspan></text>
 </svg>
