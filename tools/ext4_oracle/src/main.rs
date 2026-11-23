@@ -211,11 +211,21 @@ fn entry_line(fs: &mut Fs, path: &[u8], number: InodeNumber, info: &InodeInfo) -
         info.gid,
         info.links,
         info.size,
-        info.atime,
-        info.ctime,
-        info.mtime,
-        info.btime,
+        time_of(info.atime),
+        time_of(info.ctime),
+        time_of(info.mtime),
+        info.btime.map_or(String::from("-"), time_of),
     )
+}
+
+/// A time as `debugfs_manifest.py` prints it: signed seconds since 1970, with a nine-digit
+/// nanosecond part when it is not zero.
+fn time_of(time: Ext4Timestamp) -> String {
+    if time.nsec == 0 {
+        time.sec.to_string()
+    } else {
+        format!("{}.{:09}", time.sec, time.nsec)
+    }
 }
 
 /// A file's length and FNV-1a-64, a symbolic link's target in hex, or `-` for anything else.

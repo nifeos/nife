@@ -1,13 +1,8 @@
 //! A 1 KiB-block filesystem on a device with 4,096-byte logical sectors cannot be addressed, so the
-//! mount must refuse it. It does, but the error that reaches the caller is a bare `Io` with no
-//! context, the same error a failed read gives: `mount_with_services` maps every error from
-//! `read_superblock` to `Ext4Error::io()`, discarding the `BadSuperblock` and its
-//! `device:filesystem_geometry` operation that `validate_filesystem_geometry` returned.
-//!
-//! The first test pins that behavior as `rsext4` 0.9.2 has it, so the block's BUGS entry and this
-//! file move together: a release that reports the refusal properly fails it, and the fix is to
-//! invert the assertion and drop the entry. The draft upstream report carries the inverted form.
-//! See design/roadmap/0190-ext4-read-write.md.
+//! mount must refuse it, and the error that reaches the caller must say why: the `BadSuperblock`
+//! with its `device:filesystem_geometry` operation that `validate_filesystem_geometry` returns, not
+//! a bare `Io`, which is the error a failed read gives. nifeos/rsext4 carries that fix (item 7 of
+//! the upstream drafts). See design/roadmap/0190-ext4-read-write.md.
 
 use rsext4::error::Ext4Result;
 use rsext4::*;
@@ -72,10 +67,16 @@ fn mount_error(sector: u32) -> Ext4Error {
 }
 
 #[test]
-fn block_size_below_the_sector_size_is_reported_as_a_bare_io_error() {
+fn block_size_below_the_sector_size_is_reported_as_the_geometry_refusal() {
     let error = mount_error(4096);
-    assert_eq!(error.kind(), Ext4ErrorKind::Io, "{error:?}");
-    assert!(error.context().is_none(), "{error:?}");
+    assert_eq!(error.kind(), Ext4ErrorKind::BadSuperblock, "{error:?}");
+    assert_eq!(
+        error.context(),
+        Some(rsext4::error::ErrorContext::Operation {
+            op: "device:filesystem_geometry"
+        }),
+        "{error:?}"
+    );
 }
 
 #[test]
