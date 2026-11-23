@@ -14,7 +14,7 @@
    50649 calef        0   0  424G  313M S   3.4  1.9  1:54.82 opencode
    56167 calef       40   0  415G 26240 S   1.0  0.2  0:00.09 /System/Library/Fr
     5869 calef       24   0  415G  8752 S   0.6  0.1 51:23.69 /Applications/Xcod
-   33567 calef       24   0  424G  726M S   0.5  4.4  1h01:38 /Users/calef/.open
+   33567 calef       24   0  424G  726M S   0.5  4.4  1h01:38 /home/reader/.open
    27689 calef       17   0  418G  286M S   0.2  1.7  4:05.37 /Applications/Fire
    41081 calef       24   0  415G  5344 S   0.2  0.0  0:20.30 ssh anvil
      669 calef       17   0  415G 49120 S   0.2  0.3 37:37.81 /System/Library/Co

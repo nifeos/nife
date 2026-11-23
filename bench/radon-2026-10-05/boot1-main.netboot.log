@@ -1,4 +1,4 @@
-board-netboot: serving /Users/calef/projects/nife-worktrees/radon-2026-10-05/target/board-main on udp/69
+board-netboot: serving ~/projects/nife-worktrees/radon-2026-10-05/target/board-main on udp/69
             boot.cmd  (1523 bytes)
             boot.scr.uimg  (1595 bytes)
             nife-initrd.img  (12094976 bytes)

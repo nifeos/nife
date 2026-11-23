@@ -1,4 +1,4 @@
-board-netboot: serving /Users/calef/projects/nifeos/nife-worktrees/134-radon-e3-evening/target/board-stackdepth on udp/69
+board-netboot: serving ~/projects/nifeos/nife-worktrees/134-radon-e3-evening/target/board-stackdepth on udp/69
             boot.cmd  (1541 bytes)
             boot.scr.uimg  (1613 bytes)
             nife-initial-ramdisk.img  (16650240 bytes)

@@ -21,7 +21,7 @@ The kernel row for riscv64, from an aarch64 or x86_64 machine, macOS or Linux:
 
 ```console
 $ script/verify-riscv64
-==> patched Kani 0.67.0 already built at /Users/calef/.cache/nife-kani-riscv64/kani-0.67.0 (cache hit)
+==> patched Kani 0.67.0 already built at ~/.cache/nife-kani-riscv64/kani-0.67.0 (cache hit)
 ==> kani: kernel (...)
 Complete - 7 successfully verified harnesses, 0 failures, 7 total.
 ==> the kernel proved for riscv64gc-unknown-linux-gnu

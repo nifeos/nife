@@ -1,4 +1,4 @@
-board-netboot: serving /Users/calef/projects/nifeos/nife-worktrees/225-radon-soak-draw/target/board on udp/69
+board-netboot: serving ~/projects/nifeos/nife-worktrees/225-radon-soak-draw/target/board on udp/69
             boot.cmd  (382 bytes)
             boot.scr.uimg  (454 bytes)
             nife-initial-ramdisk.img  (16650240 bytes)

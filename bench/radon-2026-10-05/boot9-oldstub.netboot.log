@@ -1,4 +1,4 @@
-board-netboot: serving /Users/calef/projects/nife-worktrees/radon-bisect-oldstub/target/board-oldstub on udp/69
+board-netboot: serving ~/projects/nife-worktrees/radon-bisect-oldstub/target/board-oldstub on udp/69
 board-netboot: 192.168.8.200 <- nife-vf2.img (3177792 bytes, blksize 1468)
 board-netboot: nife-vf2.img done, 3177792 bytes in 0.46s (6817 KiB/s)
 board-netboot: 192.168.8.200 <- nife-initrd.img (12116992 bytes, blksize 1468)
