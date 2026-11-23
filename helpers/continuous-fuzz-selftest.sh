@@ -5,7 +5,9 @@
 # calls, so no download happens and no toolchain is needed. It proves three things: the supervisor
 # installs the pinned toolchain exactly once before it looks at KVM or starts a slot; a failed
 # install stops it with its own message; and a failed install writes no window row. Without the
-# step, the failing-install case below reaches the KVM refusal instead and the check fails.
+# step, the failing-install case below reaches the KVM refusal instead and the check fails. The
+# cases after it hold a window's verdict, a slot's seed file, and the disk bounds (the free-space
+# floor and the build directory's clears) against stub `df` and `du`.
 
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -174,5 +176,101 @@ want "failed write file" "$(cat "$seeds/state/next-0")" "12345"
 [ ! -e "$seeds/state/next-0.tmp" ] || fail "failed write: the temporary file was left behind"
 NIFE_FUZZ_HOME="$seeds" "$sup" --write-seed 0 12346 || fail "write: exit non-zero"
 want "write file" "$(cat "$seeds/state/next-0")" "12346"
+
+# The disk bounds. A stub `df` reports the free space in $STUB_FREE_KIB and a stub `du` the size of a
+# build directory in $STUB_SIZE_KIB, both in 1024-byte blocks, so no test fills a disk.
+disk="$work/disk"
+mkdir -p "$disk/home/.cargo/bin" "$disk/fuzz/work/0"
+cp "$work/home/.cargo/bin/rustup" "$work/home/.cargo/bin/qemu-system-x86_64" "$disk/home/.cargo/bin/"
+cat > "$disk/home/.cargo/bin/df" <<'STUB'
+#!/bin/sh
+echo "Filesystem 1024-blocks Used Available Capacity Mounted on"
+echo "/dev/stub 100000000 1 $(cat "$STUB_FREE_KIB") 1% /"
+STUB
+cat > "$disk/home/.cargo/bin/du" <<'STUB'
+#!/bin/sh
+printf '%s\t%s\n' "$(cat "$STUB_SIZE_KIB")" "$2"
+STUB
+# A stub `python3` stands in for both looks and records that one ran.
+cat > "$disk/home/.cargo/bin/python3" <<'STUB'
+#!/bin/sh
+echo "$*" >> "$STUB_LOOKS"
+echo "stub look"
+exit 1
+STUB
+chmod +x "$disk/home/.cargo/bin/df" "$disk/home/.cargo/bin/du" "$disk/home/.cargo/bin/python3"
+kib() { echo $(($1 * 1000000000 / 1024)); }  # GIGABYTES, as the supervisor counts them
+# With `disk_exec=exec` (in a subshell started with `&`), the supervisor replaces that subshell, so
+# `$!` is the supervisor's own pid and `kill` reaches it rather than orphaning it.
+disk_exec=""
+disk_env() {
+    $disk_exec env HOME="$disk/home" NIFE_FUZZ_HOME="$disk/fuzz" STUB_CALLS=/dev/null STUB_LOOKS="$disk/looks" \
+        STUB_FREE_KIB="$disk/free" STUB_SIZE_KIB="$disk/size" NIFE_RUSTUP_ATTEMPTS=1 NIFE_RUSTUP_BACKOFF=0 "$@"
+}
+
+# The floor: 20 GB by default, and the variable moves it.
+kib 20 > "$disk/free"
+disk_env "$sup" --has-room >/dev/null || fail "floor: 20 GB free counts as below the default floor"
+echo $(($(kib 20) - 1)) > "$disk/free"
+disk_env "$sup" --has-room >/dev/null && fail "floor: just under 20 GB free counts as room"
+disk_env NIFE_FUZZ_FREE_FLOOR_GIGABYTES=19 "$sup" --has-room >/dev/null || fail "floor: the variable does not lower it"
+disk_env NIFE_FUZZ_FREE_FLOOR_GIGABYTES=20GB "$sup" --has-room >/dev/null 2>&1 && fail "floor: a floor that is not a number was taken"
+
+# Below the floor a window refuses to start and writes no row, before it looks at the seed file.
+once_low=$(HOME="$work/home" NIFE_FUZZ_HOME="$seeds" NIFE_FUZZ_KVM_DEVICE=/dev/null STUB_CALLS=/dev/null \
+    NIFE_RUSTUP_ATTEMPTS=1 NIFE_RUSTUP_BACKOFF=0 NIFE_FUZZ_FREE_FLOOR_GIGABYTES=1000000000 \
+    "$sup" --once kernel-thread 0 2>&1) && fail "floor: a window started below it ($once_low)"
+printf '%s' "$once_low" | grep -q 'below the 1000000000 GB floor' || fail "floor: no refusal ($once_low)"
+[ ! -e "$seeds/state/windows.tsv" ] || fail "floor: a window row was written"
+
+# The supervisor below the floor, with no slots so no guest can start: it writes one line however
+# many times it checks, runs neither look, and writes one more line when the space comes back.
+echo 0 > "$disk/free"
+: > "$disk/looks"
+(disk_exec='exec'; disk_env NIFE_FUZZ_GUESTS=0 NIFE_FUZZ_KVM_DEVICE=/dev/null NIFE_FUZZ_FOLLOW_EVERY=1 \
+    NIFE_FUZZ_REPLAY_EVERY=1 "$sup" > "$disk/journal" 2>&1) &
+supervisor=$!
+sleep 3
+[ ! -s "$disk/looks" ] || { kill "$supervisor"; fail "floor: a look ran below it: $(cat "$disk/looks")"; }
+kib 100 > "$disk/free"
+sleep 2
+kill "$supervisor" 2>/dev/null || true
+wait "$supervisor" 2>/dev/null || true
+want "floor: lines while low" "$(grep -c 'below the 20 GB floor' "$disk/journal")" 1
+want "floor: lines once back" "$(grep -c 'back above the 20 GB floor' "$disk/journal")" 1
+[ -s "$disk/looks" ] || fail "floor: no look ran once the space came back ($(cat "$disk/journal"))"
+
+# The build directory. A slot's first bound records its pin and keeps nothing it has not built
+# against that pin; the same pin keeps `target/`; a newer pin clears it; a size past the cap clears it.
+slot0="$disk/fuzz/work/0"
+pin() { printf '[toolchain]\nchannel = "%s"\n' "$1" > "$slot0/rust-toolchain.toml"; }
+bound() { disk_env "$sup" --bound-target 0 2>&1; }
+echo 1 > "$disk/size"
+pin nightly-2026-01-01
+mkdir -p "$slot0/target" && : > "$slot0/target/artifact"
+bound >/dev/null
+[ ! -e "$slot0/target" ] || fail "toolchain: a target/ of an unknown toolchain was kept"
+want "toolchain mark" "$(cat "$disk/fuzz/state/toolchain-0")" nightly-2026-01-01
+mkdir -p "$slot0/target" && : > "$slot0/target/artifact"
+said=$(bound)
+[ -e "$slot0/target/artifact" ] || fail "toolchain: the same pin cleared target/ ($said)"
+[ -z "$said" ] || fail "toolchain: the same pin said '$said'"
+pin nightly-2026-01-02
+said=$(bound)
+[ ! -e "$slot0/target" ] || fail "toolchain: a newer pin kept target/"
+printf '%s' "$said" | grep -q 'slot 0: cleared target/ before its next build: its toolchain is now nightly-2026-01-02' \
+    || fail "toolchain: no line for the clear ($said)"
+want "toolchain mark after a move" "$(cat "$disk/fuzz/state/toolchain-0")" nightly-2026-01-02
+mkdir -p "$slot0/target" && : > "$slot0/target/artifact"
+kib 10 > "$disk/size"
+bound >/dev/null
+[ -e "$slot0/target/artifact" ] || fail "cap: a target/ at the 10 GB cap was cleared"
+echo $(($(kib 10) + 1)) > "$disk/size"
+said=$(bound)
+[ ! -e "$slot0/target" ] || fail "cap: a target/ past the 10 GB cap was kept"
+printf '%s' "$said" | grep -q 'past the 10 GB cap' || fail "cap: no line for the clear ($said)"
+mkdir -p "$slot0/target" && : > "$slot0/target/artifact"
+disk_env NIFE_FUZZ_TARGET_CAP_GIGABYTES=11 "$sup" --bound-target 0 >/dev/null 2>&1
+[ -e "$slot0/target/artifact" ] || fail "cap: the variable does not raise it"
 
 echo "continuous-fuzz-selftest: ok"

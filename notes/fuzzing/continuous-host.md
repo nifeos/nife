@@ -19,7 +19,7 @@ directory. A window builds the x86_64 archive and the system test image once, ba
 range in at build time, then starts one QEMU process through the PVH runner with `-accel kvm` and sweeps
 in that guest. It does not call `cargo xtask test`, which clears `NIFE_ACCEL` and boots the
 OVMF legs under TCG. The driver stops itself after 60 seconds of guest time, so each window costs a
-rebuild, a boot and one minute of seeds. The BUGS list below records that limit.
+rebuild, a boot and one minute of seeds.
 
 Before each window the supervisor checks that KVM is usable: the device exists, the user may open it,
 and QEMU can start a machine on it. If not, it names the problem on standard error and does not run
@@ -35,6 +35,12 @@ and collide. If the install fails, the supervisor stops
 with a message that names it, starts no slot and writes no row to `windows.tsv`.
 `helpers/continuous-fuzz-selftest.sh`, run by `script/lint`, holds this against a stub `rustup`.
 Decided by the maintainer 2026-11-01 (UTC), provisional; reversing costs one pull request.
+
+Below `NIFE_FUZZ_FREE_FLOOR_GIGABYTES` (default 20) free under `$NIFE_FUZZ_HOME`, no window
+starts and main is not followed, and the journal says so when the space drops and when it returns.
+Each slot's `target/` is cleared before its first build with a newer pinned nightly, and whenever it
+passes `NIFE_FUZZ_TARGET_CAP_GIGABYTES` (default 10), since cargo removes no old artifacts. The
+maintainer chose both, provisionally.
 
 `helpers/systemd/nife-fuzz.service` starts the supervisor at boot and restarts it on failure. The
 supervisor exits non-zero after five windows in a row fail without a finding. A broken build reaches
@@ -130,7 +136,7 @@ A budget expiry outranks the other classes. The drivers begin the message of eve
 `budget-expired:` (`BUDGET_EXPIRED_MARKER` in `kernel/src/testing.rs`, which the supervisor's selftest
 checks). The supervisor files the window as `held-budget-expired` whether or not the message
 also carries a `replay:` line. That line, when there is one, still sets where the slot resumes and is
-what the filer replays. A budget expiry is held, logged and replayed like any other class. The class only keeps a host that
+what the filer replays. The class only keeps a host that
 stalled apart from a model that disagreed. A real bug can also look like a budget expiry (a region
 that never reclaims, an actor that never wakes). A replay that fails again at a quiet host is a finding.
 
@@ -171,9 +177,6 @@ A second run on the same UTC day reads the day's release first. If it holds exac
 set of assets, or a view that fails with anything but `release not found`, makes the run refuse with
 exit 1. It never deletes, replaces or adds an asset, so a disagreement between runs stays visible and
 a person decides. Assets match by name, since each run writes a newer report.
-
-The publish path refuses unless the host's environment holds `NIFE_FUZZ_PUBLISH=1`. `--dry-run` prints the tag
-and the asset list and runs nothing else.
 
 The credential is a one-hour installation token of the `nife-fuzz` GitHub App, which a mint helper
 on the host makes from the App's private key, readable by root alone. The helper is `fuzz-token` in
@@ -233,9 +236,9 @@ the follower once, by hand, in step P1 of that page; from then on it follows mai
   move held rows' seeds under the held directory.
 - Each move to a newer main idles every slot until the slowest current window ends, and the first
   window after it rebuilds. Nobody has measured what that costs at main's rate of merges.
-- Nothing frees the host's disk. The toolchain step installs each pinned nightly and removes
-  none, each slot's `target/` keeps the artifacts of every compiler it used, and the held
-  directory only grows. No check warns before the disk fills.
+- The free-space floor stops the windows and frees nothing. The supervisor bounds the slots'
+  `target/` directories, and a daily job the maintainers keep on the host prunes old nightlies,
+  but the held directory grows by about 30 MB a day.
 - An unfinished run of any required check name keeps the current commit, even the skipped duplicate
   that a push to main starts after the merge queue's run. The next look, 5 minutes later, moves.
 - A person who sets `url.<base>.insteadOf` for GitHub in the fuzz account's git configuration to a
