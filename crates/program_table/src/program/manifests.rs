@@ -395,7 +395,7 @@ const fn date_manifest() -> Manifest {
         interruptible: false,
         // **The one program in this table that declares a clock**, and the reason the field
         // exists. Nothing on the command line designates it, so the progenitor reads this to decide
-        // which children get the read-only mapping (milestone 51's wiring, `nifeos/record:notes/date.md`).
+        // which children get the read-only mapping (the wiring of milestone 51 (wall-clock time), `nifeos/record:notes/date.md`).
         clock: true,
         domain: false,
         configuration: false,

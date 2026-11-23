@@ -1,6 +1,6 @@
 //! The ASID allocator: **which number tags this address space's TLB entries.**
 //!
-//! Milestone 15 (`nifeos/record:design/roadmap/0015-asids.md`). The hardware tags every TLB entry from a
+//! Milestone 15 (tagged address spaces), `nifeos/record:design/roadmap/0015-asids.md`. The hardware tags every TLB entry from a
 //! non-global mapping with the ASID in `TTBR0_EL1` (or `satp`), so a context switch flushes
 //! nothing. Each address space keeps one ASID for life and allocation is a bitmap scan.
 //! The kernel's `MAXIMUM_SPACES` is 1,056, above the 255 numbers handed out, so a full bitmap is
