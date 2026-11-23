@@ -1,5 +1,5 @@
 //! **The `x86_64` architecture layer.** The third implementation of the `arch/` contract (milestone
-//! 161, nifeos/record:notes/x86-port.md), and the one milestone 20 said would be the real test of it: the first
+//! 161 (the x86_64 kernel port), nifeos/record:notes/x86-port.md), and the one milestone 20 (a portable HAL) said would be the real test of it: the first
 //! two architectures are both RISC machines with a device tree, weak memory and a similar MMU, and
 //! this one is none of those things.
 //!

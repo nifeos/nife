@@ -24,7 +24,7 @@
 .section ".text.boot", "ax"
 .global _start
 _start:
-    # The RISC-V Linux Image header (milestone 16a, nifeos/record:notes/visionfive2.md). U-Boot's `booti` refuses
+    # The RISC-V Linux Image header (milestone 16a (real hardware), nifeos/record:notes/visionfive2.md). U-Boot's `booti` refuses
     # a payload without it, and QEMU never reads it (`-kernel` takes the ELF), so these 64 bytes are
     # what makes one kernel binary loadable by both. Layout per Linux's
     # Documentation/arch/riscv/boot-image-header.rst (header version 0.2); U-Boot checks exactly one

@@ -1,4 +1,4 @@
-/* nife kernel image layout, x86_64 (milestone 161, nifeos/record:notes/x86-port.md).
+/* nife kernel image layout, x86_64 (milestone 161 (the x86_64 kernel port), nifeos/record:notes/x86-port.md).
  *
  * THE KERNEL IS LINKED HIGH AND LOADED LOW, the same shape as link-aarch64.ld and
  * link-riscv64.ld, for the same reason: the kernel lives in the high half of the address space, so

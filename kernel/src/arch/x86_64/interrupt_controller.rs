@@ -336,7 +336,7 @@ const MAXIMUM_REDIRECTION_ENTRIES: u32 = (MSI_VECTOR_BASE - GSI_VECTOR_BASE) as 
 
 /// The next MSI vector to hand out, as an offset from [`MSI_VECTOR_BASE`]. A bump counter, never
 /// returned: nothing in this tree releases a device, and a freed-vector list with no free path is
-/// machinery with no caller (`nifeos/record:design/decisions/` §46's posture applied to code we would write
+/// machinery with no caller (`nifeos/record:design/decisions/` §46 (thin primitives, whole subsystems)'s posture applied to code we would write
 /// ourselves).
 static MSI_NEXT: AtomicU32 = AtomicU32::new(0);
 

@@ -46,7 +46,7 @@ pub(crate) fn stack_area_span() -> (u64, u64) {
 /// The `id` a constructor writes before the thread table has named the thread. Deliberately
 /// `u64::MAX` (= `cpu::NO_TID`), which the generational table can never mint, so a thread that
 /// somehow escaped naming resolves to nothing instead of to slot 0. Every insert path overwrites
-/// it via `Table::insert_with` (milestone 14 phase A; nifeos/record:design/kernel-objects-from-untyped.md).
+/// it via `Table::insert_with` (milestone 14 (kernel objects from untyped) phase A; nifeos/record:design/kernel-objects-from-untyped.md).
 pub(crate) const UNNAMED: ThreadId = u64::MAX;
 
 /// Stack address ranges from threads that have exited, handed to the next thread so it lands in

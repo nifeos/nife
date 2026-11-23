@@ -205,7 +205,7 @@ fn print_preamble(cpus: usize, hertz: u64, placed: &[u8; ECHO_SERVERS + MAXIMUM_
     print_census(placed);
     println!(
         "{CENSUS} placement decides throughput on real silicon by up to fifteenfold \
-         (nifeos/record:notes/soak.md, milestone 240), so a jobs-per-minute figure from ONE boot is a draw and \
+         (nifeos/record:notes/soak.md, milestone 240 (the soak reports what happened and not where)), so a jobs-per-minute figure from ONE boot is a draw and \
          not a result; nifeos/record:notes/job-mix.md's procedure asks for repeated boots"
     );
 }

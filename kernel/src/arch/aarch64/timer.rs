@@ -64,7 +64,7 @@ pub fn initialize() {
          nonsense"
     );
 
-    // EL0 may read `CNTVCT_EL0` and `CNTFRQ_EL0`, a deliberate exception to §10 (nifeos/record:notes/abi.md);
+    // EL0 may read `CNTVCT_EL0` and `CNTFRQ_EL0`, a deliberate exception to §10 (process model: capability-based, microkernel), nifeos/record:notes/abi.md;
     // the physical counter and the timer registers stay trapped. EL0VCTEN is bit 1 (Arm DDI 0487,
     // CNTKCTL_EL1).
     const EL0VCTEN: u64 = 1 << 1;
