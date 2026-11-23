@@ -269,6 +269,8 @@ it. That ruling is not the adoption ruling above, which stays open.
 - **Outstanding.** Our side: the oracle on aarch64 and riscv64 hosts, the kernel as a
   second read oracle, a volume over 1 GiB, the write-reordering and power-cut sweeps,
   hostile-image fuzzing, and `ext4_server` itself.
+- **Outstanding.** Upstream review of items 2a and 2b, filed as `rcore-os/tgoskits#2827` and
+  `rcore-os/tgoskits#2829`. nifeos/rsext4 carries both fixes until an upstream release does.
 - **Outstanding.** The adoption ruling under §46 (thin primitives or whole subsystems), which no lane can give.
 
 ## Index row
