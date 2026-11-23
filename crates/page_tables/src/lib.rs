@@ -13,6 +13,9 @@
 //! What this crate does not do, each a defensible non-goal for the kernel that uses it: it cannot
 //! change the flags of a live mapping (unmap, then map), has no `unmap_block`, no range walk, and
 //! no reclamation of an emptied intermediate table (a space's tables are freed wholesale).
+//! Prior art for splitting a block and for retiring a table only after the TLB has forgotten it:
+//! tgoskits `memory/page-table-generic` (Apache-2.0) and its tests `huge_split.rs`,
+//! `retirement.rs` and `bugfixes.rs`.
 //! `PageTable::entries` is public, so a caller can bypass the format. The Sv39 device bit
 //! (`SW_DEVICE`) is software bookkeeping in a bit the hardware ignores; a machine with Svpbmt
 //! would want bits 62:61, and no format here sets them. `Sv39Mae`'s memory-type values come from
