@@ -482,7 +482,13 @@ jobs:
           mapfile -t missed < <(find shards -name missed.txt -exec dirname {} \; | sort)
           python3 helpers/mutation_shape_sites.py check --census "$CENSUS" --run "$GITHUB_RUN_ID" \
             --sha "$GITHUB_SHA" --out notes/project-metrics/mutation-shape-sites.csv "${missed[@]}"
-          if git diff --quiet -- notes/project-metrics && [ -z "$(git ls-files --others --exclude-standard notes/project-metrics)" ]; then
+          # The survivor classification reads the newest survivor list, which the copy above made
+          # this census's, so it is regenerated here and rides in the same commit. script/lint's
+          # "the survivor classification is current" runs the same script's `check` with the same
+          # default census, and fails a census pull request that lacks the regeneration.
+          python3 helpers/mutation_real_holes.py write
+          recorded=(notes/project-metrics notes/mutation-testing/survivor-classification.md)
+          if git diff --quiet -- "${recorded[@]}" && [ -z "$(git ls-files --others --exclude-standard "${recorded[@]}")" ]; then
             echo "Nothing to record."
             exit 0
           fi
@@ -490,15 +496,16 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$branch"
-          git add notes/project-metrics
+          git add "${recorded[@]}"
           git commit -m "mutation census: record $CENSUS (run $GITHUB_RUN_ID)
 
           Per-crate rows for mutation-census.csv and the survivor list the next census is diffed
-          against, from the scheduled workflow's own artifacts, which expire in about 90 days."
+          against, from the scheduled workflow's own artifacts, which expire in about 90 days. The
+          shape sites and the survivor classification are regenerated from this census."
           git push --force origin "$branch"
           body="**Lane:** $branch, opened by a scheduled workflow; $PR_AUTHOR is the author GitHub shows.
 
-          Records the $CENSUS mutation census ([run $GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)): one row per crate in \`mutation-census.csv\`, the survivor list \`mutation-survivors/$CENSUS.csv.gz\` and the regenerated \`mutation-shape-sites.csv\`. Append-only; nothing from a past census changes."
+          Records the $CENSUS mutation census ([run $GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)): one row per crate in \`mutation-census.csv\`, the survivor list \`mutation-survivors/$CENSUS.csv.gz\`, and the regenerated \`mutation-shape-sites.csv\`, \`mutation-survivor-classes.csv\` and \`survivor-classification.md\`, which describe the newest census only. Append-only; no row from a past census changes."
           # No App token: push only, and leave the pull request to a person (calef's ruling on
           # #2442, 2026-10-20 UTC). `github.token` may not open one, and the repository setting
           # that would let it stays off. The summary carries the compare link, title and body.
