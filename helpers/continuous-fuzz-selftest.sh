@@ -206,7 +206,7 @@ disk_env() {
 }
 
 # The floor: 20 GB by default, and the variable moves it.
-echo $(kib 20) > "$disk/free"
+kib 20 > "$disk/free"
 disk_env "$sup" --has-room >/dev/null || fail "floor: 20 GB free counts as below the default floor"
 echo $(($(kib 20) - 1)) > "$disk/free"
 disk_env "$sup" --has-room >/dev/null && fail "floor: just under 20 GB free counts as room"
@@ -229,7 +229,7 @@ disk_env NIFE_FUZZ_GUESTS=0 NIFE_FUZZ_KVM_DEVICE=/dev/null NIFE_FUZZ_FOLLOW_EVER
 supervisor=$!
 sleep 3
 [ ! -s "$disk/looks" ] || { kill "$supervisor"; fail "floor: a look ran below it: $(cat "$disk/looks")"; }
-echo $(kib 100) > "$disk/free"
+kib 100 > "$disk/free"
 sleep 2
 kill "$supervisor" 2>/dev/null || true
 wait "$supervisor" 2>/dev/null || true
@@ -259,7 +259,7 @@ printf '%s' "$said" | grep -q 'slot 0: cleared target/ before its next build: it
     || fail "toolchain: no line for the clear ($said)"
 want "toolchain mark after a move" "$(cat "$disk/fuzz/state/toolchain-0")" nightly-2026-01-02
 mkdir -p "$slot0/target" && : > "$slot0/target/artifact"
-echo $(kib 10) > "$disk/size"
+kib 10 > "$disk/size"
 bound >/dev/null
 [ -e "$slot0/target/artifact" ] || fail "cap: a target/ at the 10 GB cap was cleared"
 echo $(($(kib 10) + 1)) > "$disk/size"
