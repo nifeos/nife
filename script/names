@@ -157,6 +157,7 @@ import name_census                                                          # no
 import name_rules                                                           # noqa: E402
 import name_crossings                                                       # noqa: E402
 import name_ruled                                                           # noqa: E402
+import record_root                                                          # noqa: E402
 
 # What carries a block, and which status it holds, is `helpers/name_census.py`'s, shared with
 # `script/metrics`, which counts the same names out of each week's `git ls-tree`. What stays HERE is
@@ -226,7 +227,7 @@ refusals = [(bad, r) for r in records for bad in r["refused"]]
 # `--unratified` prints it in its own section, and the check below fails one left past the limit.
 ruled_owed = name_ruled.owed(provisional)
 try:
-    _rulings = open(os.path.join(root, name_rules.RULES_DOC)).read()
+    _rulings = open(record_root.path(name_rules.RULES_DOC, top=root)).read()
 except OSError:
     _rulings = ""
 problems.extend(name_ruled.overdue(records, name_ruled.today_utc(), _rulings))

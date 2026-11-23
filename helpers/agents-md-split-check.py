@@ -33,6 +33,10 @@ import re
 import subprocess
 import sys
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import record_root  # noqa: E402
+
 DEFAULT_BASE = 'cde620b1ddd55b47561f7e35c66ef6f7cb538ed6'
 
 # Sentences of the old AGENTS.md cut on purpose, normalized the way `norm` does (a prefix of the
@@ -80,7 +84,7 @@ def main():
     texts = {f: norm(open(os.path.join(root, f)).read()) for f in new_files}
     union = ' '.join(texts.values())
     tenets = {p: norm(open(p).read())
-              for p in sorted(glob.glob(os.path.join(root, 'design/tenets/*.md')))}
+              for p in sorted(glob.glob(os.path.join(record_root.path('design', 'tenets', top=root), '*.md')))}
 
     old_sentences = sentences(old)
     missing, condensed, dup = [], [], []

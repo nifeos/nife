@@ -4299,6 +4299,11 @@ python3 helpers/packages.py --check
 # lists, and this keeps the two passes able to express the new sort.
 python3 helpers/record_paths.py --selftest >/dev/null
 python3 helpers/record_paths.py --check
+# Step 6, the record pin: helpers/record_root.py answers where the record is for every reader that
+# stays in nife (the step's plan, section 1). Its fixtures, then that today the answer is this work
+# tree, so every switched reader reads what it read before.
+python3 helpers/record_root.py --selftest >/dev/null
+python3 helpers/record_root.py --check
 
 # The region claim protocol has ONE decision path (milestone 136).
 #

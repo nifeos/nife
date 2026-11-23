@@ -104,6 +104,9 @@ import service_model  # noqa: E402  (vendored; no Unix service model in a name o
 import spelled_out  # noqa: E402  (vendored; the spelled-out check)
 import unit_symbols as template_units  # noqa: E402  (vendored; the unit-symbol check)
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+import record_root  # noqa: E402  (where the record is, so NAMING is read there)
+
 WORDS = rust_names.load_words(os.path.join(TEMPLATE_HELPERS, 'naming_words.toml'))
 SPELLED_OUT = WORDS['spelled_out']
 UNITS = WORDS['units']
@@ -813,7 +816,7 @@ def words_main(argv):
     if argv and argv[0] != '--check':
         print(__doc__.split('\n\n')[2], file=sys.stderr)
         return 2
-    bad = prose_problems(read(NAMING) or '', WORDS)
+    bad = prose_problems(read(record_root.path(NAMING)) or '', WORDS)
     if bad:
         print(f'words: {NAMING} and the template word list '
               f'(vendor/crate-workflows/helpers/naming_words.toml) disagree:', file=sys.stderr)

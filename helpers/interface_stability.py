@@ -46,6 +46,7 @@ from datetime import date, datetime, timezone
 
 import crate_release
 import packages
+import record_root
 
 CSV = pathlib.Path('notes/project-metrics/interface-stability.csv')
 # The second view calef's maintainer asked for: the same counts per crate, one row per crate per
@@ -881,7 +882,7 @@ def package_cells(summary):
 def release_track_crates():
     names = []
     for number in crate_release.MILESTONES:
-        found = sorted(pathlib.Path('design/roadmap').glob('%04d-*.md' % number))
+        found = sorted(pathlib.Path(record_root.path('design', 'roadmap')).glob('%04d-*.md' % number))
         name = crate_release.crate_of(found[0].read_text()) if found else None
         if name:
             names.append(name)
