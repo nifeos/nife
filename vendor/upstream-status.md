@@ -19,7 +19,31 @@ the pins in this directory were taken deliberately. What to do about a gap is in
 
 Pinned at upstream git commit `56437ded32a6`; no registry carries it.
 
-**Upstream git: current.** No commits on the tracked branch since the pinned sha.
+**Upstream git: 16 non-merge commits** since the pinned sha (plus 11 merge commits, dropped), head `abad4c385e0d`.
+
+Full comparison: https://github.com/nifeos/crate-workflows/compare/56437ded32a66bf13b369b2095c8c7af2d840b05...main
+
+- 2026-11-21 `f4e01069ffb` Close template gaps the crate-move lanes found
+- 2026-11-21 `62c6d6ca561` Fold the entries shipped in v9 under its heading
+- 2026-11-21 `9b543ffb409` register_names: exempt an opcode named like a size through .github/opcode-names
+- 2026-11-22 `c17531948bf` Take a pre-release tag as the semver baseline
+- 2026-11-22 `632150ab0b8` Keep the README and CHANGELOG under the prose cap
+- 2026-11-22 `e31e2f84faa` Replay a loom model's falsification patch in proofs / loom
+- 2026-11-22 `578e347f5cd` Document the loom falsification replay
+- 2026-11-22 `f309b7790cb` Skip standing-approved fuzz dependencies in the dependency rule
+- 2026-11-22 `5118616fd7c` Leave the CHANGELOG entry out to stay under its word cap
+- 2026-11-22 `ee44ce22b40` Keep the loom-broken selftest name the ruleset requires
+- 2026-11-23 `8dc4f74a577` Let a caller exempt paths from the naming checks
+- 2026-11-23 `0ec1e07d231` Keep the @ before the SHA when scaffold_fill fills @PINS@
+- 2026-11-23 `22764326932` Fold the entries shipped in v10 under its heading
+- 2026-11-23 `a671783e80e` Tighten older changelog entries to fit the prose cap
+- 2026-11-23 `7619ff04ea7` Give check / standalone a fork mode for crates kept as upstream's
+- 2026-11-23 `7c3b0637f3c` Let a fork list upstream code's length and acronym findings, one entry each
+
+**Upstream has edited files our `include` list names**, so a bump changes what we run there:
+
+- `helpers/prose_acronyms.py`
+- `helpers/register_names.py`
 
 ## redoxfs
 
