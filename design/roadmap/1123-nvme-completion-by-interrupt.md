@@ -141,7 +141,7 @@ calls `ACKNOWLEDGE`.
 
 ## Follow-on
 
-- **Outstanding.** More than one command in flight per queue, which interrupts make worth having
+- **Proposed.** More than one command in flight per queue, which interrupts make worth having
   and this milestone does not build.
 - **Milestone 1068.** Remapping on AMD-Vi, riscv64 and aarch64, without which an MSI on those
   machines is unconfined.
