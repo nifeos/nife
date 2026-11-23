@@ -1,6 +1,6 @@
 # Capabilities: the appendices to notes/capabilities.md
 
-[`notes/capabilities.md`](../capabilities.md) carries what a capability is, why the kernel has no
+`nifeos/nife:notes/capabilities.md` carries what a capability is, why the kernel has no
 `open()`, the confused deputy, the cost argument and a summary of what milestones 7d and 7e built.
 Both are parts of milestone 7 (user mode: EL0, capabilities, the ELF loader, and IPC). These files carry the full record of those two milestones, which its prose budget has no room for.
 

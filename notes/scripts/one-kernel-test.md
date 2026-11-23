@@ -1,6 +1,6 @@
 # Running one kernel test: how the filter works
 
-*An appendix to [`notes/scripts.md`](../scripts.md), the front door to `script/`. It holds how
+*An appendix to `nifeos/nife:notes/scripts.md`, the front door to `script/`. It holds how
 `script/test --test` reaches the kernel and what it switches off. A reader who only needs to run a
 command should not have to open it. The directory `notes/scripts/` and this file's stem are
 provisional names; naming is calef's.*
@@ -49,7 +49,7 @@ written are suppressed rather than allowed to fail for an unrelated reason:
 `--repeat N` runs the filtered tests N times in one boot, for a failure seen once in many boots
 (milestone 321 (a corpse that did not park, on four real cores)). It needs `--test`, and reaches
 the kernel as `NIFE_TEST_REPEAT` (provisional), the filter's compile-time channel.
-[`kernel/src/testing.rs`](../../kernel/src/testing.rs)'s `TEST_REPEAT` holds the semantics.
+`nifeos/nife:kernel/src/testing.rs`'s `TEST_REPEAT` holds the semantics.
 
 ```
 $ NIFE_SMP=4 script/test --arch x86_64 --test a_dead_child_is_still_in_the_domain_until_it_is_reaped --repeat 200

@@ -1,6 +1,6 @@
 # Globbing, and the property that the expansion you see is the grant
 
-Milestone 47's globbing lane. Built 2026-07-31. [glob.md](glob.md) is the matcher, a total function
+Milestone 47's globbing lane. Built 2026-07-31. `nifeos/nife:notes/glob.md` is the matcher, a total function
 on two byte strings with no filesystem in it; this note is the layer that turns a match into an
 authority, and the demonstration that hangs on it.
 
@@ -241,7 +241,7 @@ Known limitations, next to the feature rather than only in a tracker.
 - Only the first pattern on a line is expanded. No manifest declares two name slots, so a second
   operand of any kind is already an unplaceable token and a refusal; the day one does, this needs a
   second expansion rather than a loop over the same one.
-- No `**`, no qualifiers, permanently and by decision respectively. [glob.md](glob.md) carries both
+- No `**`, no qualifiers, permanently and by decision respectively. `nifeos/nife:notes/glob.md` carries both
   arguments: `**` is a traversal feature (descending means holding a capability), and a qualifier
   needs type, mtime and size per candidate, which turns one enumeration into N `FSTAT`s and needs a
   read right beyond enumerate. Neither is a scheduling excuse; both are authority questions.
@@ -288,7 +288,7 @@ cargo test -p fs_proto       # the set encoding, and both fixtures pinned agains
 
 ## See also
 
-- [glob.md](glob.md): the matcher, and the four scope decisions this lane inherits.
+- `nifeos/nife:notes/glob.md`: the matcher, and the four scope decisions this lane inherits.
 - [dir-capability.md](dir-capability.md): the rights ladder, `fs_subtree_caretaker`, and why the
   endpoint is the boundary.
 - [rm.md](rm.md): `rm` as a program, and why `-r` widens the grant.

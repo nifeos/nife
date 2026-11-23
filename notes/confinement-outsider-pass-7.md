@@ -19,7 +19,7 @@ all three ISAs; 31 are graded `read`. It does not count toward criterion (c).**
 
 calef ruled on #2010 (2026-10-12 UTC), option (b): the pass does not count toward criterion (c),
 because only 3 of 34 rows were booted. The count stays at 0. The next pass's brief sets a floor of
-booted rows, and [`briefs/confinement-outsider-pass.md`](../briefs/confinement-outsider-pass.md)
+booted rows, and `nifeos/nife:briefs/confinement-outsider-pass.md`
 now holds that brief. Its floor, ruled by calef on #2010 the same day ("27 seems right"), is
 every row a boot can reach: 27 of 34, since rows 12 to 18 are host proofs no confined component
 drives. Rows 1 to 3 count when the next reviewer accepts or strengthens this pass's tests in

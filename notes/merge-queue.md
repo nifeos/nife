@@ -152,7 +152,7 @@ What to do once it speaks is [notes/main-is-red.md](main-is-red.md), added 2026-
 calef asked whether the response existed and it did not: this watcher reported a red trunk and
 `helpers/merge-drain.sh` carried on arming pull requests into it every five minutes. The response is
 `helpers/queue-hold.sh` (hold the queue, land one fix alone, release) with the judgment in
-[briefs/main-is-red.md](../briefs/main-is-red.md). It stays a person's to run, for the reason this
+`nifeos/nife:briefs/main-is-red.md`. It stays a person's to run, for the reason this
 note gives throughout: a queue reports, it does not resolve.
 
 This watcher reads CI's *conclusion*, and a skipped required check posts `success` (its `BUGS`).

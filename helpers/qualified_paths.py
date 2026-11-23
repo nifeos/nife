@@ -4,7 +4,8 @@ A record cites a path in another repository as `nifeos/<repo>:<path>`, the form 
 design record moves to `nifeos/record` and is published as a website) adds beside §201 (one
 roadmap until a citation has to cross)'s `nifeos/<repo>@<sha>`. The path means that file at the
 commit basalt builds, so the record keeps no second list of commits. `script/roadmap --check`
-calls `problems()` on every roadmap block and fails a citation that names no file.
+calls `problems()` on every tracked Markdown file under `design/` and `notes/` and fails a
+citation that names no file.
 
 Which commit a repository resolves at:
 
@@ -33,7 +34,6 @@ is the record. "Qualified" is milestone 1018's own word for the `nifeos/<repo>:<
 
 BUGS
 
-- Only roadmap blocks are read. A note or a decision that writes the form is not checked yet.
 - A `Cargo.lock` names a git dependency by URL. A dependency taken from crates.io, or by a path
   into a vendored copy, gives no revision, and such a repository reads as unpinned.
 """

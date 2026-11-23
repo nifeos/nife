@@ -1,6 +1,6 @@
 # The manifest declarations, the input slot and the wire
 
-*An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds
+*An appendix to `nifeos/nife:notes/pipes.md`, which is the page to read. This file holds
 `OutputDeclaration` and `InputDeclaration`, how milestone 50's lane decided the input slot's shape,
 the spawn request's bits and delegation order, and why a builtin can lead a pipeline. The lane that
 split the file moved it here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose

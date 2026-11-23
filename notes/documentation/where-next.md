@@ -2,7 +2,7 @@
 
 *Name: provisional. For the parent's "Where this goes next" and "Prior art".*
 
-An appendix to [`notes/documentation.md`](../documentation.md), which keeps a summary of each under
+An appendix to `nifeos/nife:notes/documentation.md`, which keeps a summary of each under
 the cap of §212 (a prose budget).
 
 ## Where this goes next

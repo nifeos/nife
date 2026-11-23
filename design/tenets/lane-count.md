@@ -1,9 +1,9 @@
 # What bounds lane count: the collision surface, the memory, and the disk
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the rules for launching lanes and pruning
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the rules for launching lanes and pruning
 their worktrees. This file carries the measurement that overturned the old queue-depth rule, and the
 three ceilings with the days each one was learned. The commands for a merge and its cleanup are in
-[`briefs/merge-and-cleanup.md`](../../briefs/merge-and-cleanup.md); the queue machinery is in
+`nifeos/nife:briefs/merge-and-cleanup.md`; the queue machinery is in
 [`notes/merge-queue.md`](../../notes/merge-queue.md). Moved here 2026-09-23 (UTC) on calef's
 authorization, unchanged in substance.*
 

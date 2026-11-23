@@ -1,6 +1,6 @@
 # One wait point, and what it decides about a line
 
-*An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds the
+*An appendix to `nifeos/nife:notes/pipes.md`, which is the page to read. This file holds the
 draining lane of 2026-08-04: the two bugs, the rendezvous limit, the barrier declaration and the
 ways out. The lane that split the file moved it here verbatim from the main page on 2026-09-25
 (UTC), under [§212 (a prose
@@ -20,8 +20,8 @@ The records this file cites by number:
 
 ## One wait point, and what it decides about a line
 
-*Written 2026-08-04, by the lane milestone 40 handed this to. Everything [the main
-page](../pipes.md) describes was built and proved with one program that reads a stream, and `wc`
+*Written 2026-08-04, by the lane milestone 40 handed this to. Everything the main
+page (`nifeos/nife:notes/pipes.md`) describes was built and proved with one program that reads a stream, and `wc`
 turns out to be the one shape of reader that hides the constraint. The second reader found it in an
 afternoon.*
 
@@ -196,7 +196,7 @@ A pull-based source, which is the exact answer to the constraint. The reason the
 wait points is that it holds two channels to one child. Make it one: hand the stage a single
 endpoint on which it `CALL`s for input and `SEND`s output, and the shell's loop is one `RECEIVE_CAPABILITY`
 that either replies with bytes or writes bytes out. One wait point, arbitrary interleaving, no
-deadlock ever. What it costs is everything [this note](../pipes.md) calls a finding: "a source is
+deadlock ever. What it costs is everything this note (`nifeos/nife:notes/pipes.md`) calls a finding: "a source is
 the sink contract received rather than sent" stops being true, `<` and the right-hand side of `|`
 stop being one convention. The read end and the write end stop being separate capabilities, so the
 program on the right of a `|` could write back up its own input. [The wire

@@ -18,7 +18,7 @@ x86_64 host, and the same change goes upstream. The research behind it is milest
 CBMC is host-independent and already knows riscv64, so what Kani lacks is a riscv64 *target*, not a
 riscv64 *host*. Four places in Kani hard-code the host triple; the patch unpins them.
 
-- What is carried: [`patches/kani-0.67.0-riscv64-target.patch`](../../patches/kani-0.67.0-riscv64-target.patch),
+- What is carried: `nifeos/nife:patches/kani-0.67.0-riscv64-target.patch`,
   in `git format-patch` form, pinned to Kani 0.67.0, the release the tree's records and local runs
   use. It stays the minimal tested shape (about fifty lines over four files), selected by an
   environment variable, `KANI_TARGET` (provisional; Kani's name to give upstream, not ours).

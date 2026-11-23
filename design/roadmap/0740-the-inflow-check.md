@@ -7,7 +7,7 @@ built: 2026-10-04
 
 *(Number provisional until the merge queue lands it.)* This is calef's ruling of 2026-10-04 UTC on fatal
 risk 3: "Yes, build the inflow check." The spec is the recommendation in
-[`notes/mutation-testing/inflow-2026-10-03.md`](../../notes/mutation-testing/inflow-2026-10-03.md).
+`nifeos/nife:notes/mutation-testing/inflow-2026-10-03.md`.
 Fatal risk 3's green condition is that the survivors each merged pull request adds on its own lines
 are triaged, and until this nothing could tell whether that held. Verdicts and colors stay calef's.
 

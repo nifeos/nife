@@ -9,7 +9,7 @@ ones.*
 The weekly chart of unexplained drift on `main` (`notes/project-metrics/unexplained-drift.svg`,
 from `helpers/baseline_drift.py`) read riscv64 at 0.4% in 2026W39, then 2.6, 6.9, 6.0, 3.7, 4.3
 and 4.3 in 2026W45. Each figure is the largest drift on one row, since the 2026-08-04 anchor, that
-no line in [`bench/attributions.tsv`](../../bench/attributions.tsv) accounts for. Which merges
+no line in `nifeos/nife:bench/attributions.tsv` accounts for. Which merges
 raised it, what does each cost, and was it meant? aarch64 and x86_64 also read above zero, so the
 first test was whether one cause moves all three.
 

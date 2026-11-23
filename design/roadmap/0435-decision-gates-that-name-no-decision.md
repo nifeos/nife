@@ -75,7 +75,7 @@ the whole block, and then finds only a paragraph addressed to one person.
    that it carried `NONE` for two days and why that was the failure the vocabulary exists to prevent.
 3. Or write the decision up, `**Status: PROPOSED.**`, with what is being decided, the options,
    a recommendation and its reason, and what is blocked until it is answered. The seven questions in
-   [the decisions skill](../../notes/skills/decisions/SKILL.md) are the standard.
+   the decisions skill (`nifeos/nife:notes/skills/decisions/SKILL.md`) are the standard.
 4. Or cite the decision that exists, in the gate paragraph, where a reader meets the gate.
 5. Cite the new section from the block's gate paragraph either way, so the two records agree.
 

@@ -178,7 +178,7 @@ See [dma.md](dma.md).
 
 ## nifefs
 
-The filesystem is [`crates/nifefs`](../crates/nifefs/src/lib.rs): read-only, flat, fixed
+The filesystem is `crates/nifefs` (`nifeos/nife:crates/nifefs/src/lib.rs`): read-only, flat, fixed
 everything, host-tested, with one definition of the format shared by the disk-building tool and the
 reader. Block 0 is a superblock (magic, a small directory of name → start-block/length); files
 follow, block-aligned. The driver reads block 0, walks the directory to find `motd`, and reads its
@@ -190,7 +190,7 @@ that walks the directory without holding the whole image. It has one block buffe
 `nifefs::ENTRIES_IN_FIRST_BLOCK` entries and no more. It used to restate the offsets by hand and
 was the one place that had to be found by hand when the entry layout widened on 2026-08-01. It now
 depends on `nifefs` for them, which is CLAUDE.md's rule 7 (what two binaries must agree on is a
-crate). See [nifefs.md](nifefs.md).
+crate). See `nifeos/nife:notes/nifefs.md`.
 
 ## The block driver roles
 

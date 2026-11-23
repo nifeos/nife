@@ -1,6 +1,6 @@
 # Measure first, then decide
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the rule in one sentence. This file
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the rule in one sentence. This file
 carries the ruling in calef's words, why it earns a heading of its own, the case that produced it,
 the counterweight, how it sits beside its neighbors, and the saying's missing author. Written
 2026-09-24 (UTC) as its own tenet on calef's ruling (#1182), and folded into the rule-and-appendix

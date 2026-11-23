@@ -5,7 +5,7 @@ The bottom of the memory hierarchy. Page tables (milestone 4), the kernel heap, 
 nothing underneath it to ask.
 
 The allocator itself is the `page_frames` crate, and its
-[README](../crates/page_frames/README.md) states the bitmap, the all-used start and the rounding for
+`nifeos/nife:crates/page_frames/README.md` states the bitmap, the all-used start and the rounding for
 a reader of the crate alone. This note keeps the kernel's side: where the RAM comes from, where the
 bitmap goes, and the order the boot declares regions in.
 

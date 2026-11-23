@@ -183,7 +183,7 @@ catch-up implementation satisfies every property except the one that bounds it. 
 sampling, because the interesting inputs are the ones nobody thinks to type.
 
 Before editing `next_after`, read
-[periodic-deadline-proofs.md](periodic-deadline-proofs.md). It records why the function snaps
+`nifeos/nife:notes/periodic-deadline-proofs.md`. It records why the function snaps
 `now` back onto the beat rather than counting periods (the snapping form proves in about a second,
 the counting form did not finish in ten minutes). It also records the one gap: phase preservation
 is host-tested up to `u64::MAX / 4` rather than machine-checked, because a second 64-bit modulo is

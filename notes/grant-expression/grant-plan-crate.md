@@ -34,7 +34,7 @@ is the word layout of the shell-to-progenitor spawn protocol. It is a userspace 
 
 ## The operators (`line.rs`)
 
-[`notes/pipes.md`](../pipes.md) has the grammar and the three rules that are not Unix's. Three
+`nifeos/nife:notes/pipes.md` has the grammar and the three rules that are not Unix's. Three
 details of the splitter are recorded here.
 
 - The `2` of `2>` is the familiar spelling, not a file descriptor. It counts only at a word

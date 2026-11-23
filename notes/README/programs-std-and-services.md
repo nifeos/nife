@@ -6,7 +6,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 
 - [The services the kernel wires](../kernel-wired-services.md): the grant shape of each confined service `kernel/src/user.rs` wires, and why that shape is the isolation.
 - [Rust `std` on the native ABI](../std.md): std's platform layer implemented on the capability ABI.
-- [The user-mode runtime](../../crates/user_mode_runtime/docs/design.md): the system call trap, exit and `require`, time, and the windows every `no_std` program links.
+- The user-mode runtime (`nifeos/nife:crates/user_mode_runtime/docs/design.md`): the system call trap, exit and `require`, time, and the windows every `no_std` program links.
 - [Somebody else's crate on nife](../crates-io-on-nife.md): fifty crates.io crates built against nife's `std`.
 - [`ripgrep` on nife](../ripgrep-on-nife.md): unmodified ripgrep builds and runs, and what stops it.
 - [What a directory walk costs](../walk-pricing.md): a walk split per component, per entry and per KiB, on nife and a host.
@@ -19,14 +19,14 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [A C library for nife: relibc, measured](../c-library.md): relibc against nife's constraints, and why the library is seeded from it and then owned.
 - [The program manifest](../program-manifest.md): a program's declared endowment, checked at spawn.
 - [A shell at EL0](../shell.md): an interactive shell, console input and spawned workers.
-- [The line discipline as a userspace component](../line-discipline.md): the tty line editor as a userspace process.
+- The line discipline as a userspace component (`nifeos/nife:notes/line-discipline.md`): the tty line editor as a userspace process.
 - [The terminal contract](../terminal-contract.md): the IPC protocol a terminal presents to programs.
 - [The sink protocol](../sink-protocol.md): one register-only protocol for writing bytes anywhere.
-- [Pipes and redirection](../pipes.md): `>`, `<` and `|` as one capability substitution.
+- Pipes and redirection (`nifeos/nife:notes/pipes.md`): `>`, `<` and `|` as one capability substitution.
 - [The tail-stage output fork](../tail-output-narrowing.md): where a tail stage's output goes, decided.
 - [`swish` the language](../swish-language.md): quoting, sequencing, and refusal as its own exit status.
 - [The command line as a grant expression](../grant-expression.md): naming a resource at the prompt grants it.
-- [The glob matcher](../glob.md): a pure byte glob matcher with a bounded cost.
+- The glob matcher (`nifeos/nife:notes/glob.md`): a pure byte glob matcher with a bounded cost.
 - [Globbing, and the expansion you see is the grant](../glob-grant.md).
 - [What glob deliberately does not match](../glob-scope.md): `**` and qualifiers refused on authority grounds, and the `/`-is-a-byte cost. Name provisional.
 - [A set grant at the prompt](../a-set-grant-at-the-prompt.md): PROPOSED.
@@ -34,7 +34,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The shell edits its own line](../shell-line-editing.md): raw mode, Tab completion, and `^C` at the prompt.
 - [A shell holding two trees](../two-trees.md): one tree with a second mounted in it, one resolver, and a handle sent on its own tree's endpoint.
 - [The inert-configuration page](../env-config.md): validated read-only `TZ`, `LANG` and `TERM` for programs.
-- [The documentation crate](../documentation.md): streaming markdown renderer, manual viewer and search index.
+- The documentation crate (`nifeos/nife:notes/documentation.md`): streaming markdown renderer, manual viewer and search index.
 - [The component manifest](../component-manifest.md): what a supervisor must route before a component serves.
 - [The manifest note](../capability-manifest-note.md): what a program's manifest note cannot spell, and the verb table.
 - [The INTERFACES note, explained](../interfaces-note.md): what a program declares about the formats it links, and what the progenitor checks.
@@ -52,7 +52,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The machine statistics page](../machine-statistics.md): the granted page `free`, `vmstat` and `top` read, and why it is not a snapshot. Name provisional.
 - [`date`](../date.md): prints the wall clock and cannot set it.
 - [`time`](../time-command.md): times a command on the shell's clock.
-- [The periodic_deadline proofs](../periodic-deadline-proofs.md): why `next_after` snaps onto the beat, and which law the host tests check instead of Kani.
+- The periodic_deadline proofs (`nifeos/nife:notes/periodic-deadline-proofs.md`): why `next_after` snaps onto the beat, and which law the host tests check instead of Kani.
 - [The calendar crate](../calendar.md): Unix seconds to civil dates and back, and formats.
 - [Entropy](../entropy.md): where randomness comes from, and who may reach it.
 - [Credentials](../credentials.md): checking a secret the service can never read back.

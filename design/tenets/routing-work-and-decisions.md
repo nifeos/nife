@@ -1,6 +1,6 @@
 # Routing identified work, and routing a decision to an architect
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the rules: a finding leaves the lane as a
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the rules: a finding leaves the lane as a
 proposed milestone or as a `BUGS` entry, an open decision lives in `design/decisions/`, and work
 held for an architect carries the `needs-architect` label and a `## What I need from you` comment.
 This file carries why each of those exists and what failed without it. The watcher machinery is in

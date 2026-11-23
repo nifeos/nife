@@ -2,7 +2,7 @@
 
 <!-- history: exception. Reason: this page exists to decode the old names and framing a reader meets in older records and git log, so the renames are its subject (2026-10-13 UTC). -->
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which keeps the operational fact that `CLAUDE.md` is a
+*Appendix to `nifeos/nife:AGENTS.md`, which keeps the operational fact that `CLAUDE.md` is a
 symlink to it. This file carries the three pieces of history a reader needs exactly once, on the day
 they open a record that uses a name or a framing the project has left behind. Moved here 2026-09-24
 (UTC) on calef's ruling, unchanged in substance.*
@@ -20,7 +20,7 @@ then finds them rather than everyone sharing a first name. That rule is in `AGEN
 the case that prompted it.
 
 Since 2026-09-25, "the architect" also names a role, listed in
-[`ARCHITECTS.md`](../../ARCHITECTS.md), that more than one person can hold
+`nifeos/nife:ARCHITECTS.md`, that more than one person can hold
 ([§217 (every architect holds the whole role)](../decisions/0217-every-architect-holds-the-whole-role.md)).
 A record from before that date
 means calef, since he was the only one; a reader meeting "an architect" or "the architect" in a

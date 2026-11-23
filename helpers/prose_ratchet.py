@@ -1143,6 +1143,11 @@ def at(rev, path):
 # --- the checks --------------------------------------------------------------------------------
 
 LINK_TARGET = re.compile(r'\]\(([^)#\s]+)')
+# A record file names a file that stays in nife as `nifeos/nife:<path>` (milestone 1018 (the
+# design record moves to `nifeos/record` and is published as a website), step 6), not as a link,
+# since the link breaks when the record moves. The path is from this repository's root, so it
+# reaches the appendix as surely as a link does.
+NIFE_QUALIFIED = re.compile(r'`nifeos/nife:([^`\s<>#]+)(?:#[^`\s]*)?`')
 
 
 def links_from(path):
@@ -1158,6 +1163,10 @@ def links_from(path):
         target = os.path.normpath(os.path.join(here, t))
         out.add(target)
         out.add(target + '/README.md')  # a link to a directory is a link to its README
+    for t in NIFE_QUALIFIED.findall(text):
+        target = os.path.normpath(t)
+        out.add(target)
+        out.add(target + '/README.md')
     return out
 
 
@@ -1592,6 +1601,12 @@ def selftest():
                      "C = re.compile(r'\\*\\*Fine')\n")
         if len(opaque_readers(tmp)) != 2:
             failed.append('helpers/x.py: the opaque-reader guard missed a concatenated or `[*]{2}` pattern')
+        note = os.path.join(tmp, 'n.md')
+        with open(note, 'w') as fh:
+            fh.write('See `nifeos/nife:notes/x/y.md#a` and `nifeos/record:notes/x/z.md`.\n')
+        got = links_from(note)
+        if 'notes/x/y.md' not in got or 'notes/x/z.md' in got:
+            failed.append('links_from reads `nifeos/nife:<path>` as a link and no other repository')
     grant = '<!-- prose-budget: exception. 1,234 words against a 3,000-word cap. 2026-09-24. Reason: x -->'
     if granted_words(grant) != 1234 or granted_words('`' + grant + '`') is not None:
         failed.append('the marker\'s granted word count')

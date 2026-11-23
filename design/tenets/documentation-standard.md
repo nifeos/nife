@@ -1,6 +1,6 @@
 # The documentation standard is FreeBSD's
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the rules: task-oriented, in-tree, real
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the rules: task-oriented, in-tree, real
 `EXAMPLES`, an honest `BUGS` section beside the feature. This file carries why that standard was
 chosen and what each of its four parts buys. Moved here 2026-09-23 (UTC) on calef's authorization,
 unchanged in substance.*

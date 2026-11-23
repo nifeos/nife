@@ -1,6 +1,6 @@
 # The interactive boot: its processes, its filesystem and its stack
 
-*An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds the five
+*An appendix to `nifeos/nife:notes/pipes.md`, which is the page to read. This file holds the five
 processes an interactive boot runs, how the filesystem reaches the shell, and the four stack
 overflows. The lane that split the file moved it here verbatim from the main page on 2026-09-25
 (UTC), under [§212 (a prose

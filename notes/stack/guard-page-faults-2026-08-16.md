@@ -1,6 +1,6 @@
 # The guard-page faults of 2026-08-16, which were not overflows
 
-*An appendix to [`notes/stack.md`](../stack.md), which explains the stack and is the page to read.
+*An appendix to `nifeos/nife:notes/stack.md`, which explains the stack and is the page to read.
 This file holds the account of the 2026-08-16 guard-page faults, which were not overflows. It moved
 here on 2026-09-25 (UTC) under §212 (a prose budget). The move then edited it only to meet §213
 (writing standards), splitting long sentences and dropping bold, with the meaning unchanged. The

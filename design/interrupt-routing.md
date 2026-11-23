@@ -18,7 +18,7 @@ expect the foreground computation to stop and the prompt to come back. In Unix t
 discipline turns `^C` into `SIGINT` and sends it to the foreground process group, named by
 PID. That is ambient authority in two layers: the tty may signal any process in its group, and a
 process is reachable by a global identifier it did not hand anyone. nife rejects both
-(DECISIONS §10, [ipc-naming.md](../notes/ipc-naming.md)): there are no PIDs to signal and no
+(DECISIONS §10 (process model: capability-based, microkernel), `nifeos/nife:notes/ipc-naming.md`): there are no PIDs to signal and no
 global namespace to reach a process through. So the question is sharp: when the user presses
 `^C`, whose right is it to interrupt which process, and what capability carries that right?
 

@@ -101,5 +101,5 @@ submodules, which are ordinary Rust.
 
 `nifefs` caps a program's archive name at `NAME_LEN = 32` bytes, which clears the longest settled
 name by seven. Crates live outside the archive and have no cap. Do not let the limit pick a name,
-and do not spend a format change on bytes nothing needs; [nifefs.md](../../notes/nifefs.md) has
+and do not spend a format change on bytes nothing needs; `nifeos/nife:notes/nifefs.md` has
 the cost per block.

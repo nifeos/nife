@@ -1,6 +1,6 @@
 # The lint job, and renaming a required check
 
-An appendix to [`../scripts.md`](../scripts.md), holding the rename of a required check. Name:
+An appendix to `../scripts.md` (`nifeos/nife:notes/scripts.md`), holding the rename of a required check. Name:
 provisional; calef names files.
 
 The lint job is named `lint` (calef, 2026-10-08 UTC: "Go ahead with lint"). It runs every check in

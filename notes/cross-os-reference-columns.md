@@ -69,7 +69,7 @@ install on this bench has proven any yet.
 - Ubuntu 24.04 LTS riscv64: the fallback for a VisionFive 2 image when Debian's is rough; the row
   records the kernel version regardless.
 - Fedora 44 on xenon: the fio baseline already taken
-  ([linux-fio.log](../bench/xenon-2026-10-04/linux-fio.log), transcribed by hand from photographs);
+  (`nifeos/nife:bench/xenon-2026-10-04/linux-fio.log`, transcribed by hand from photographs);
   one Debian run of the same job file settles whether the distribution moves the number and
   upgrades the provenance to serial-captured logs.
 - FreeBSD 15.1-RELEASE, amd64 first-class. The [RuyiSDK support

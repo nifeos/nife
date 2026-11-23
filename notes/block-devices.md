@@ -291,7 +291,7 @@ read.
 
 ## See also
 
-- [The GUID Partition Table](globally-unique-identifier-partition-table.md) for the format, the fixtures and the proofs.
+- The GUID Partition Table (`nifeos/nife:notes/globally-unique-identifier-partition-table.md`) for the format, the fixtures and the proofs.
 - [The RedoxFS filesystem server](fs-server.md) for the block server and the blk protocol.
 - [Reading the backup from a MacBook or a Linux host](host-recovery.md) for the other half of "the
   board is dead, can I get my data".

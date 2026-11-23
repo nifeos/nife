@@ -86,8 +86,8 @@ values equal the mapping's.
 
 The library is relibc's OS-neutral code seeded into `vendor/relibc/` (29,419 lines, every file
 stamped with its provenance) and nife's own platform layer in `c_library/` (1,613 lines), which
-implements relibc's `Pal` on nife's Rust `std`. [`c_library/README.md`](../../c_library/README.md)
-is the guide, with its `BUGS`; [`vendor/README.md`](../../vendor/README.md) says what was taken and
+implements relibc's `Pal` on nife's Rust `std`. `nifeos/nife:c_library/README.md`
+is the guide, with its `BUGS`; `nifeos/nife:vendor/README.md` says what was taken and
 left.
 
 ioping found what `speedtest1` could not. SQLite formats numbers with its own `printf`, so a C

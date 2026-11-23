@@ -7,7 +7,7 @@ ratified_by: calef
 
 # 217. Every architect holds the whole role
 
-calef, 2026-09-25 (UTC), in the conversation that asked for [`ARCHITECTS.md`](../../ARCHITECTS.md):
+calef, 2026-09-25 (UTC), in the conversation that asked for `nifeos/nife:ARCHITECTS.md`:
 
 > "A second architect will have all of the authority of the first one. Same with the third, fourth,
 > fifth, etc. Which means disagreements should make for interesting conversations."
@@ -15,7 +15,7 @@ calef, 2026-09-25 (UTC), in the conversation that asked for [`ARCHITECTS.md`](..
 ## The ruling
 
 Every architect listed in `ARCHITECTS.md` holds the full authority of the role that
-[`AGENTS.md`](../../AGENTS.md) describes. Any one of them may rule on anything the role covers:
+`nifeos/nife:AGENTS.md` describes. Any one of them may rule on anything the role covers:
 a design fork, a name, the system call surface, a dependency, a `PROPOSED` decision. No domain split, no
 quorum and no senior architect. Adding an architect grants the whole role, and there is no partial
 form of it.

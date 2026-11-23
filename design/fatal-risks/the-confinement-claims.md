@@ -321,7 +321,7 @@ orientation and the first reviewer's independence slip, none on a shipped path.
 
 It does not count toward criterion (c). calef ruled on #2010 (2026-10-12 UTC), option (b): with
 only 3 of 34 rows booted the count stays 0. The next pass's brief,
-[`briefs/confinement-outsider-pass.md`](../../briefs/confinement-outsider-pass.md), sets a floor of
+`nifeos/nife:briefs/confinement-outsider-pass.md`, sets a floor of
 booted rows: every row a boot can reach, 27 of 34, ruled by calef on #2010 ("27 seems right"). The verdict is unchanged, and moving the
 color stays calef's.
 

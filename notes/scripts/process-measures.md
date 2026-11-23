@@ -1,6 +1,6 @@
 # How the project measures its own process
 
-*An appendix to [`notes/scripts.md`](../scripts.md), the front door to `script/`. It holds the full
+*An appendix to `nifeos/nife:notes/scripts.md`, the front door to `script/`. It holds the full
 table rows for the commands that measure how the project itself is working. A reader who only needs
 to run a command should not have to open it. The directory `notes/scripts/` and this file's stem are
 provisional names; naming is calef's.*

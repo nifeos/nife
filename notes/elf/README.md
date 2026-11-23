@@ -9,7 +9,7 @@ budget has no room for.
   and the punchline that UEFI boots PE, with a correction dated 2026-10-11.
 - [`loaded-image-check.md`](loaded-image-check.md): what a program's check of its own loaded image
   catches, and why it traps.
-- [`parser.md`](parser.md): the design of `crates/static_elf`, what it refuses, which machine a file may
+- `nifeos/nife:notes/elf/parser.md`: the design of `crates/static_elf`, what it refuses, which machine a file may
   be for, the fuzz seeds, and how a note is found.
 
 *Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, which split the

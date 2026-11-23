@@ -5,7 +5,7 @@
 `kernel/src/capability_object.rs` is the kernel's half of the capability model: the set of nouns a process can
 be handed, the capability table's size, and the checks that keep the kernel's rights vocabulary and
 the ABI's in step. The table itself is `crates/capability_table`, which is pure logic. The model is §10
-(process model: capability-based, microkernel), and [capabilities](capabilities.md) is the
+(process model: capability-based, microkernel), and `nifeos/nife:notes/capabilities.md` is the
 introduction. This note carries the design the file's doc comments link to.
 
 ## The nouns
@@ -40,7 +40,7 @@ Each variant of `Object` is a decision. What follows is why each is there.
   known device and hands it to the progenitor, which delegates it to the driver it builds.
 - `Reply`: a one-shot reply channel to a blocked caller, minted at a `CALL` rendezvous and named by
   the caller's thread id. It is nameable no other way, so "one reply, to this caller, exactly once"
-  is a kernel guarantee rather than a server convention. See [IPC naming](ipc-naming.md).
+  is a kernel guarantee rather than a server convention. See IPC naming (`nifeos/nife:notes/ipc-naming.md`).
 - `AddressSpace`, `ThreadControlBlock`, `Notification`, `Timer` and `Process` are objects a process
   builds from its own region, each by generational name, so a capability that outlives its object
   resolves to nothing rather than to a stranger.

@@ -22,13 +22,13 @@ costs under `BUGS`. It points users who need growth to `slotmap` and `thunderdom
 
 - `nifeos/generational_table`: `Table<T, N>` and `EntryName<T>` with its `to_bits`, `from_bits` and
   `NEVER_MINTED`, every name ratified, about 820 lines with tests and
-  harnesses, no dependencies and `#![forbid(unsafe_code)]`. Its mechanism is in [Generational names](../../notes/generational-names.md).
+  harnesses, no dependencies and `#![forbid(unsafe_code)]`. Its mechanism is in Generational names (`nifeos/nife:notes/generational-names.md`).
 - Five Kani harnesses, each with a falsification patch under that repository's
   `falsifications/`. They prove five things. A removed name never resolves
   again. A dead name stays dead whatever operations follow. A name the table never minted resolves
   to nothing. Live names are distinct and resolve to their own entry. A bounded walk yields every
   live entry.
-- The release record, [generational_table and the existing crates](../../notes/generational-table-and-existing-crates.md),
+- The release record, generational_table and the existing crates (`nifeos/nife:notes/generational-table-and-existing-crates.md`),
   answers whether a published crate already covers an allocation-free, fixed-capacity generational
   table. None does: `slotmap` needs an allocator and lets two `u64` names reach one entry, `coca` is
   dormant and `unsafe`-heavy, and `triple_arena`'s stack backing has no `const` constructor, one

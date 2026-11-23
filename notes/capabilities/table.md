@@ -1,6 +1,6 @@
 # The capability table crate: `crates/capability_table`
 
-An appendix to [`notes/capabilities.md`](../capabilities.md), which says what a capability is and
+An appendix to `nifeos/nife:notes/capabilities.md`, which says what a capability is and
 why the kernel has no `open()`. This page carries the design of the crate that holds the table, the
 rights and the two pure decisions the kernel makes about supervision. The rulings it implements are
 §10 (process model: capability-based, microkernel), §12 (Call/Reply IPC: a one-shot reply

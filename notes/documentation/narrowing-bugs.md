@@ -3,7 +3,7 @@
 *Name: ratified 2026-10-18 (calef, "Approve all"). Refused `narrowing-limitations`. For two of the
 parent's `BUGS` entries.*
 
-An appendix to [`notes/documentation.md`](../documentation.md)'s BUGS, which keeps one line for each
+An appendix to `nifeos/nife:notes/documentation.md`'s BUGS, which keeps one line for each
 under the cap of §212 (a prose budget).
 
 - The caretaker-hop display race is a known, accepted interim, not a bug this decision missed. A

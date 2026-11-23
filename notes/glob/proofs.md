@@ -2,7 +2,7 @@
 
 *Name: provisional.*
 
-An appendix to [`notes/glob.md`](../glob.md), whose table lists the six Kani harnesses. This records
+An appendix to `nifeos/nife:notes/glob.md`, whose table lists the six Kani harnesses. This records
 why the domain is three bytes, what had to change to reach it, what it costs, the defect Kani found
 in a harness, and the host-test enumeration that carries the length-independent claims.
 

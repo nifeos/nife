@@ -11,14 +11,14 @@ to ask which crates moved between two of those days.
 
 The data is in the tree, versioned with the code it describes:
 
-- [`notes/project-metrics/mutation-census.csv`](project-metrics/mutation-census.csv), one row per
+- `nifeos/nife:notes/project-metrics/mutation-census.csv`, one row per
   crate per census: `census,run,crate,tested,caught,missed,timeout,unviable,real_holes`. `real_holes`
   counts the crate's survivors that no algebraic argument answers, in helpers/mutation_real_holes.py's
   sense. `--add` computes it from the census's own shard output against the triage file of the
   recording day. A blank cell means the census predates the column; the live count for the newest
   census lives in
-  [`notes/mutation-testing/survivor-classification.md`](mutation-testing/survivor-classification.md).
-- [`notes/project-metrics/mutation-census-renames.csv`](project-metrics/mutation-census-renames.csv),
+  `nifeos/nife:notes/mutation-testing/survivor-classification.md`.
+- `nifeos/nife:notes/project-metrics/mutation-census-renames.csv`,
   the crate renames a comparison has to resolve before it can join two censuses.
 
 `script/mutation-census` writes both and reads them back. Its header carries the usage, the worked

@@ -13,7 +13,7 @@ boundary and the limits. These files carry the evidence its prose budget has no 
 - [`missing-primitive.md`](missing-primitive.md): what a wait-any or a shared address space would
   change.
 - [`window-tearing.md`](window-tearing.md): why a window can tear, and why reads stay bounded.
-- [`arithmetic.md`](arithmetic.md): why the scene is fixed and shaped as it is, the two clips, and
+- `nifeos/nife:notes/compositor/arithmetic.md`: why the scene is fixed and shaped as it is, the two clips, and
   the composite.
 - [`kernel-wiring.md`](kernel-wiring.md): what `kernel/src/user/compositor_service.rs` hands the
   compositor and each client, and why the test wiring is shaped that way.

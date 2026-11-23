@@ -10,7 +10,7 @@ retention window. **There turn out to be two such windows, one per log endpoint,
 expire in step** (see "Two clocks" below). `design/roadmap/0531-no-gate-records-when-it-fires.md` (a
 research lane's proposal, an architect's to rule on, unedited by this record) mined that answer for
 the `clippy` job on 2026-09-21. It found the window closing around 2026-10-21. This page and
-[`notes/project-metrics/ci-log-baseline.csv`](project-metrics/ci-log-baseline.csv) absorb that
+`nifeos/nife:notes/project-metrics/ci-log-baseline.csv` absorb that
 mining into a committed, re-derivable record. They extend it to every other CI job whose log names a
 sub-check the same way, before more of it is gone.
 
@@ -22,7 +22,7 @@ which gates are worth keeping; see the caveat below.
 
 ## The record, and its provenance
 
-[`notes/project-metrics/ci-log-baseline.csv`](project-metrics/ci-log-baseline.csv), one row per
+`nifeos/nife:notes/project-metrics/ci-log-baseline.csv`, one row per
 failed CI job GitHub still names. It covers the five job types this script knows wrap more than one
 distinguishable check: `run_id,job_id,date,workflow,job_name,attributed_check,branch`.
 

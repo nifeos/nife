@@ -1,6 +1,6 @@
 # How authority moves, narrows, and ends
 
-The companion to [ipc-naming.md](ipc-naming.md). That note is about *naming* (IPC names an
+The companion to `nifeos/nife:notes/ipc-naming.md`. That note is about *naming* (IPC names an
 endpoint, never the peer). This one is about the *lifecycle* of the capabilities themselves: how
 authority is copied, how it narrows, and, at the end, how it is revoked.
 

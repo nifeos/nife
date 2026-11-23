@@ -8,9 +8,9 @@ its `CHANGES.md` lists. Measured on a Linux host with e2fsprogs 1.47.2, against 
 
 ## How it compares
 
-[`tools/ext4_oracle/corpus/make-corpus.sh`](../../../tools/ext4_oracle/corpus/make-corpus.sh)
+`nifeos/nife:tools/ext4_oracle/corpus/make-corpus.sh`
 builds each image with `mke2fs -d` from the tree
-[`populate.py`](../../../tools/ext4_oracle/corpus/populate.py) writes. It then sets three files'
+`nifeos/nife:tools/ext4_oracle/corpus/populate.py` writes. It then sets three files'
 times with `debugfs`, indexes the large directory with `e2fsck -fyD`, and requires `e2fsck -fn` to
 exit 0.
 Two runs give byte-identical images, since the script fixes the UUID, the hash seed and every
@@ -26,13 +26,13 @@ line. The fields:
 - every extended attribute's name, length and FNV-1a-64;
 - the leaf extents: logical block, length, physical block, and whether each is unwritten.
 
-[`tools/ext4_oracle/debugfs_manifest.py`](../../../tools/ext4_oracle/debugfs_manifest.py)
+`nifeos/nife:tools/ext4_oracle/debugfs_manifest.py`
 prints the `debugfs` side. The `rsext4` side mounts read-only with journal replay off, walks
 `read_directory` from the root, and reads each file, link, attribute list and extent map through
-the crate's public API; it is [`tools/ext4_oracle/src/main.rs`](../../../tools/ext4_oracle/src/main.rs).
-[`tools/ext4_oracle/compare.py`](../../../tools/ext4_oracle/compare.py) builds the corpus, runs both
+the crate's public API; it is `nifeos/nife:tools/ext4_oracle/src/main.rs`.
+`nifeos/nife:tools/ext4_oracle/compare.py` builds the corpus, runs both
 sides on each image at both sector sizes, and holds the outcomes to
-[`tools/ext4_oracle/expected.txt`](../../../tools/ext4_oracle/expected.txt). The CI job
+`nifeos/nife:tools/ext4_oracle/expected.txt`. The CI job
 `ext4-read-oracle` runs it in every merge group, and on a pull request that touches the oracle.
 
 The tree holds 3,060 entries: 3,031 regular files, 23 directories, 5 symbolic links and a FIFO.
@@ -119,7 +119,7 @@ gives, with no context. Two other call sites do the same: `device_has_error_stat
 The fork removes the mapping, and the same mount reports
 `BadSuperblock, Operation { op: "device:filesystem_geometry" }`. The crate's own
 `tests/linux_image_repro.rs` opens its images with 4,096-byte sectors, which is how the 2026-11-14
-measurement met it. [`tools/ext4_oracle/tests/sector_size_refusal.rs`](../../../tools/ext4_oracle/tests/sector_size_refusal.rs)
+measurement met it. `nifeos/nife:tools/ext4_oracle/tests/sector_size_refusal.rs`
 requires that report.
 
 ## What this does not measure

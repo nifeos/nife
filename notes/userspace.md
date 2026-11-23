@@ -50,7 +50,7 @@ Look at what the hardware does, unaided, the instant that executes:
 
 - switches to EL1
 - switches `sp` to **`SP_EL1`**: the kernel's stack, which userspace could not have corrupted,
-  because it is a *different register* userspace has no access to (see [stack.md](stack.md))
+  because it is a *different register* userspace has no access to (see `nifeos/nife:notes/stack.md`)
 - saves the return address in `ELR_EL1` and the processor state in `SPSR_EL1`
 - jumps to `VBAR_EL1` + a fixed offset, an address *the kernel* chose
 
@@ -193,7 +193,7 @@ convention, no return value. The kernel counts it.
 
 That restraint is the point. §8 (process model / system call ABI) said "if we find ourselves hacking in a system call without having
 had that conversation, the plan has failed." We had the conversation, and the answer was
-[capabilities](capabilities.md). The system call surface gets designed at 7d, in one piece, against
+`nifeos/nife:notes/capabilities.md`. The system call surface gets designed at 7d, in one piece, against
 a capability table.
 
 ---

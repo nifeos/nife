@@ -104,7 +104,7 @@ That is not an analogy. It is the literal mechanism behind three things:
   but the interrupted code had something important in `x0`. So the handler saves every
   register, works, restores every register, returns. The interrupted code never knows time
   passed. (Milestones 2 and 5.)
-- "A thread is a stack plus a set of register values" ([stack.md](stack.md)) was not a
+- "A thread is a stack plus a set of register values" (`nifeos/nife:notes/stack.md`) was not a
   slogan. It is the complete and literal definition.
 
 Everything in this operating system, from here to milestone 10, is some variation on

@@ -78,7 +78,7 @@ Our `VECTOR_ENTRY` macro comes to 24 instructions. Comfortable, but not by much.
 ## The trap frame
 
 `SAVE_CONTEXT` pushes 272 bytes onto the kernel stack: `x0`–`x30`, plus `ELR_EL1`, plus
-`SPSR_EL1`, plus 8 bytes of padding to keep `sp` 16-byte aligned ([stack.md](stack.md)).
+`SPSR_EL1`, plus 8 bytes of padding to keep `sp` 16-byte aligned (`nifeos/nife:notes/stack.md`).
 
 This is the [registers.md](registers.md) punchline made real. The register file is the CPU's
 state. Save it, and you have frozen exactly what the machine was doing. Restore it, and

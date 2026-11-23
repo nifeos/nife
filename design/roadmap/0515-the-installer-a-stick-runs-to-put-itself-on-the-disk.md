@@ -192,7 +192,7 @@ PC once rung 1 has one.
 
 - **Done.** Met 2026-10-04 (UTC). Exit criterion 2, xenon: calef installed nife onto xenon's internal
   NVMe from a USB stick and booted it from the disk. Transcript (credentials redacted):
-  [`bench/xenon-2026-10-04/install-and-disk-boot.log`](../../bench/xenon-2026-10-04/install-and-disk-boot.log).
+  `nifeos/nife:bench/xenon-2026-10-04/install-and-disk-boot.log`.
   Boot 1 (stick) offered `TARGET: the NVMe disk attached to this machine, 256060514304 bytes`,
   the size risk 6's bench boots read that night, then `> INSTALL`, `installed. nife data at LBA
   2048, EFI system at LBA 499068928.`, `filesystem created.`, `DONE. Remove the installation
@@ -208,7 +208,7 @@ PC once rung 1 has one.
   - **Read-back passed.** About 22:25 UTC the same day, xenon booted from its NVMe with no stick
     and reached `$`. Typed over serial (no USB keyboard yet): `ls` printed `made-on-target` and
     `operator/`; `wc made-on-target` printed `1 10 57`, the expected value. Transcript:
-    [`bench/xenon-2026-10-04/readback.log`](../../bench/xenon-2026-10-04/readback.log).
+    `nifeos/nife:bench/xenon-2026-10-04/readback.log`.
   - **Photographs: owed.** calef's, not committed.
   Milestone stays PARTIAL on criterion 3.
 - **Outstanding.** Exit criterion 3, a fleet machine that is not xenon, from milestone 243 (a machine with no serial port has no way to say anything)'s fleet.

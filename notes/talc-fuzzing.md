@@ -43,7 +43,7 @@ fixed has to come from this tree.
 `crates/memory_region_heap/fuzz/` is an unpublished fuzz workspace with one target. It drives talc
 the way a nife program's heap does and checks the heap after every step.
 
-Its [README](../crates/memory_region_heap/fuzz/README.md) holds the input format, every invariant
+Its `nifeos/nife:crates/memory_region_heap/fuzz/README.md` holds the input format, every invariant
 it checks and its BUGS. It drives a copy of the crate's policy rather than `MemoryRegionHeap`,
 because it reads talc's counters and heap end, which the crate keeps private.
 

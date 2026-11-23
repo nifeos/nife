@@ -6,7 +6,7 @@ An appendix to [notes/verification.md](../verification.md). It holds what provin
 taught about the cost of a proof.
 
 Six harnesses are in `src/lib.rs` of the repository `nifeos/byte_glob`, the pattern matcher of milestone 47 (navigation and
-naming). See [glob.md](../glob.md) for the crate itself, which carries the harness table. The target
+naming). See `nifeos/nife:notes/glob.md` for the crate itself, which carries the harness table. The target
 is a loop over two byte strings where the pattern is untrusted. So the property that matters is the
 one BMC is best at: totality, meaning no panic and no hang on any input.
 

@@ -8,7 +8,7 @@ built: 2026-08-03
 Built, both ISAs. The gap found while answering milestone 59's question was that
 nothing in the tree read the ISA: no `riscv,isa`, no `riscv,isa-extensions`, no `mmu-type`, and
 on aarch64 only the one `ID_AA64MMFR0_EL1.PARange` field `TCR_EL1.IPS` needs. One `Isa` record per
-architecture now, in [`crates/machine_discovery`](../../crates/machine_discovery) with the kernel halves in
+architecture now, in `crates/machine_discovery` (in nifeos/nife) with the kernel halves in
 `kernel/src/arch/*/isa.rs`, populated once at boot and printed at boot. See
 [notes/isa-discovery.md](../../notes/isa-discovery.md). The rest of this entry is the brief it was
 built to; what it found is at the bottom.

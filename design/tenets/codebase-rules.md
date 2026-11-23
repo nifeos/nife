@@ -1,6 +1,6 @@
 # The rules that hold the codebase together, and what each one buys
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the seven rules themselves. This file
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the seven rules themselves. This file
 carries the reason behind each: the Raspberry Pi port that becomes a directory rather than a diff,
 and the driver that knows only a base address. Also what §46 (thin primitives or whole subsystems)
 means by write it or vendor it, and why a `#[path]` module shared by two binaries is checked by

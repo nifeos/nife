@@ -13,6 +13,6 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Extended attributes](../xattr.md): named byte strings on files, kept above RedoxFS.
 - [UFS2's Rust crates on nife's targets, 2026-10-31](../ufs2-builds-2026-10-31.md): what stops `ufs-core` and `rufs` on the three targets, with and without `std`, and what the patches cost; the measurement milestone 981 (UFS2, read and write) made before §34 refused it. Name provisional.
 - [Reading the backup from a MacBook or a Linux host](../host-recovery.md).
-- [The GUID Partition Table](../globally-unique-identifier-partition-table.md): reading, writing and validating GPT, host-tested and proved.
-- [nifefs](../nifefs.md): the boot archive format and its 32-byte names.
+- The GUID Partition Table (`nifeos/nife:notes/globally-unique-identifier-partition-table.md`): reading, writing and validating GPT, host-tested and proved.
+- `nifeos/nife:notes/nifefs.md`: the boot archive format and its 32-byte names.
 - [The filesystem test fixture](../filesystem-fixture.md): why each witness file, verdict word and benchmark shape is the one it is.

@@ -46,7 +46,7 @@ are in [job-mix/warton-aim7.md](job-mix/warton-aim7.md).
 
 ## What the workload is, and what it is not
 
-`crates/job_mix` and [job-mix/instrument.md](job-mix/instrument.md) are canonical, and this page
+`crates/job_mix` and job-mix/instrument.md (`nifeos/nife:notes/job-mix/instrument.md`) are canonical, and this page
 does not repeat them. The short version:
 
 AIM7 (read on 2026-09-04 from the benchmark's own README at

@@ -61,8 +61,7 @@ Two findings change the order of work, and a third holds already.
   writes those rows to the record's own baselines, and the removal pull request drops them from
   nife's.
 - A qualified path resolves at the nife commit basalt pins, `edcbb2209` of 2026-11-23. Every one
-  of the 253 cut link targets outside the skills and briefs exists there, so the rewrite needs no
-  pin bump first.
+  of the 319 rewritten link targets exists there, so the rewrite needs no pin bump first.
 
 No code includes a record file with `include_str!`.
 
@@ -147,7 +146,7 @@ in nife and every lane works as today.
 2. nife: re-sort in `homes.toml` the seven bundled notes, `notes/project-metrics.md`,
    `notes/skills/` and `briefs/` to stay, and add `helpers/record_paths.py`, which writes `keep` and `drop` from `homes.toml` and checks
    that they cover the record exactly.
-3. nife: rewrite the 270 cut links (section 4), and extend the qualified-path check from
+3. nife: rewrite 319 of the 351 cut links (section 4), and extend the qualified-path check from
    roadmap blocks to all record Markdown.
 4. nife: add the record pin. `helpers/record_root.py` answers where the record is: the work
    tree while the record lives here, and later a fetched tree at the commit basalt's `[record]`
@@ -174,7 +173,8 @@ in nife and every lane works as today.
     `packages/moved.toml` with the anchor. It drops the record lint sections and the record rows
     of the baselines, removes `record-site.yml`, `site/` and `script/site`, lifts the freeze, and
     leaves a README pointer. The 28 links from 11 skill and brief files into the record become
-    URLs into `nifeos/record` in the same pull request.
+    URLs into `nifeos/record` in the same pull request, and the 32 chart embeds section 4 leaves
+    take whatever form it settles.
 11. basalt: rewrite the links in its `AGENTS.md` and `README.md` that point into nife's
     `design/`; its links into `notes/skills/` stay.
 
@@ -189,23 +189,31 @@ record's `AGENTS.md`.
 
 ## 4. The cut links
 
-`helpers/record_links.py --list` reports 253 links, from 121 record files, whose target stays: 123
-into tool data, 30 into crate notes, 21 into root documents, 19 into `bench/`, 14 into
-`system-tests/`, and 46 into crates, tools and other code. Keeping the skills and briefs in nife
-adds 17 more, from 16 record files: 12 into `briefs/` and 5 into `notes/skills/`. That makes 270
-links from 132 files.
+`helpers/record_links.py --list` names 351 links, from 191 record files, whose target stays. 123
+go into tool data, 82 into the seven notes the image installs and 42 into notes about one crate
+alone. 33 go into crates, tools and other code, 20 into root documents, 20 into `bench/`, 14 into
+`system-tests/`, 12 into `briefs/` and 5 into `notes/skills/`.
 
 The rewrite is mechanical. For each listed link, a one-time script replaces the Markdown link
 with its text followed by ``(`nifeos/nife:<path>`)``, where `<path>` is the target resolved against the linking
-file. A link to a directory becomes plain text naming it, since the qualified form names files. A
+file. When the text only repeats the target's path, file name or stem, the qualified path alone
+replaces the link (provisional), which keeps a note under its word cap. A link to a directory
+becomes plain text naming it, since the qualified form names files. A
 target that has already left nife takes its crate's repository, `nifeos/<crate>:<path>`, which
 resolves through basalt's pinned `Cargo.lock`. Anchors after `#` drop, because the form has none.
 
+32 of the 351 are image embeds, not links: 31 in `notes/project-metrics.md` and one in
+`notes/register-of-measures/which-model-wrote-it.md`, each drawing a chart from
+`notes/project-metrics/`. `script/metrics` writes its week notes under each chart by matching that
+embed, and text in its place would drop the chart and its notes. The embeds keep their form until
+the removal pull request settles where the charts are served from (provisional). The rewrite
+covers the other 319.
+
 Three checks hold it:
 
-- `record_links.py --list` prints nothing.
-- `script/roadmap --check`, with the qualified-path check widened to every record Markdown file,
-  resolves each new path at basalt's pin.
+- `record_links.py --list` prints only the 32 image embeds.
+- `script/roadmap --check`, with the qualified-path check widened to every tracked Markdown file
+  under `design/` and `notes/`, resolves each new path at basalt's pin.
 - The rewrite script runs again on the result and changes nothing.
 
 179 links from 56 staying files into the record (`README.md` 29, `notes/scripts.md` 28,

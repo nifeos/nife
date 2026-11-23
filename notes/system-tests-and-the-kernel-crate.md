@@ -153,7 +153,7 @@ otherwise turn a shippable kernel into one that runs tests instead of booting.
 
 calef's ruling carries two rules beyond the move. A new service test is a userspace program unless
 it has to observe kernel internals, and a test that does says which internals and why; this is
-written where `script/test` is documented, in [scripts.md](scripts.md). And existing tests that
+written where `script/test` is documented, in `nifeos/nife:notes/scripts.md`. And existing tests that
 touch no kernel internals migrate to userspace over time.
 
 That backlog is small, measured over the 66 files on 2026-09-27 (UTC):

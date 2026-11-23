@@ -45,7 +45,7 @@ in code:
   before anything else leans on it.
   This completes the §15 (the native ABI) / 19d.2c direction ("userspace init is the boot path") for the
   interactive system on both architectures; the reasoning and the deadlock-freedom argument are in
-  [notes/line-discipline.md](../../notes/line-discipline.md).
+  `nifeos/nife:notes/line-discipline.md`.
 
 - `^C` (interrupting the foreground process) is deferred as a design fork. The terminal
   detects the interrupt and the contract carries `FLAG_INTERRUPTED`, but *routing* the interrupt to
@@ -57,4 +57,4 @@ in code:
 The engine was built, not ported, against the §14 (the project's direction) default for userspace.
 The reason: `noline` blocks on a cursor-position report a piped line never answers and is a per-read
 readline rather than an always-on discipline, and `embedded-cli` is the application's altitude. The
-full accounting is in [notes/line-discipline.md](../../notes/line-discipline.md).
+full accounting is in `nifeos/nife:notes/line-discipline.md`.

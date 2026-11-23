@@ -1,6 +1,6 @@
 # Tenets: the appendices to AGENTS.md
 
-[`AGENTS.md`](../../AGENTS.md) carries the rules. These files carry the reasons: the measurements,
+`nifeos/nife:AGENTS.md` carries the rules. These files carry the reasons: the measurements,
 the anecdotes, the failures that produced a rule and the dates they were learned. Every one of them
 is linked from the rule it explains, and a reader who only needs to act never has to open one.
 

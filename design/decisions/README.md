@@ -73,7 +73,7 @@ ratified_by: calef
 | `status` | `PROPOSED`, `DECIDED`, `AMENDED`, `SUPERSEDED` | always |
 | `raised` | `YYYY-MM-DD`, UTC | always |
 | `decided` | `YYYY-MM-DD`, UTC | `status` is `DECIDED` or `AMENDED` |
-| `ratified_by` | a GitHub username listed in [`ARCHITECTS.md`](../../ARCHITECTS.md) | `status` is `DECIDED` or `AMENDED` |
+| `ratified_by` | a GitHub username listed in `nifeos/nife:ARCHITECTS.md` | `status` is `DECIDED` or `AMENDED` |
 | `superseded_by` | a section number | `status` is `SUPERSEDED` |
 
 The schema was ratified 2026-09-23 (calef); a lane does not extend it. Keys are snake_case,
@@ -98,7 +98,7 @@ them. There is no gap between the commit and when it was raised."* The split com
 2026-08-04, dates nothing here. The block for milestone 582 (a decision's status becomes a field,
 and the index becomes generated) has the counts and the three decisions whose prose says otherwise.
 
-`ratified_by` names an architect listed in [`ARCHITECTS.md`](../../ARCHITECTS.md).
+`ratified_by` names an architect listed in `nifeos/nife:ARCHITECTS.md`.
 
 | Status | Means |
 |---|---|

@@ -16,9 +16,9 @@ A terminal sits between two driver endpoints and an application:
 Nobody in that picture can name anyone else. The input driver holds "a rendezvous I send wire
 bytes to." The application holds "a rendezvous that prints text and reads lines." The console
 server holds "a rendezvous requests arrive on." Rendezvous-only naming
-([ipc-naming.md](ipc-naming.md)) is the whole point: rewire the rendezvouses and no client can tell
+(`nifeos/nife:notes/ipc-naming.md`) is the whole point: rewire the rendezvouses and no client can tell
 the terminal changed, which is milestone 23 (a capability-routed component OS with live replacement)'s hot-swap claim in component form. See
-[line-discipline.md](line-discipline.md) for the component that implements this today and why it
+`nifeos/nife:notes/line-discipline.md` for the component that implements this today and why it
 was built rather than ported.
 
 ## The two halves of the contract
@@ -28,7 +28,7 @@ A contract has a wire half and an IPC half, and they are independent.
 - The wire half is what the terminal echoes to the screen and what escape sequences it
   understands from the keyboard. A client never sees this. It is the agreement between the
   terminal and the *human* at the far end of the serial line, and it is documented in
-  [line-discipline.md](line-discipline.md) with the engine that produces it.
+  `nifeos/nife:notes/line-discipline.md` with the engine that produces it.
 - The IPC half is the protocol on the endpoints: the opcodes, the flags, the shared pages.
   This is what a client and the drivers must speak, and it is the substance of this note. The
   framing constants live in `terminal_contract` so the server, its clients, and the kernel-side

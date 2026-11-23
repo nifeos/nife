@@ -22,7 +22,7 @@ in the harness inflates x86_64.
 ### The unit: one instruction is one nanosecond; one tick is not one instruction
 
 Under `-icount shift=0` QEMU advances virtual time exactly one nanosecond per retired guest
-instruction and by nothing else ([`xtask/src/icount.rs`](../../xtask/src/icount.rs), and
+instruction and by nothing else (`nifeos/nife:xtask/src/icount.rs`, and
 [the x86 instruments appendix](x86-instruments.md) for the x86_64 leg's byte-identical boots). Each
 leg's counter reads that clock **at the counter's own frequency**:
 

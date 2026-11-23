@@ -93,7 +93,7 @@ made at spawn ([compositor/wayland.md](compositor/wayland.md)).
 The caller is blocked in `CALL` for the whole of composition, which is what makes reading a client's
 pixels safe with no lock and no double buffering: the client that rang cannot be writing while the
 compositor reads. That is flow control by rendezvous rather than by trust, and it is the same
-argument [line-discipline.md](line-discipline.md) makes for the terminal. A client that rings on
+argument `nifeos/nife:notes/line-discipline.md` makes for the terminal. A client that rings on
 *another* client's behalf gains nothing, since it is still only its own control page it can write.
 
 A client's rectangle is untrusted input, so it is clipped, not believed. Rung one *refuses* an

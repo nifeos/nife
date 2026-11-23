@@ -99,7 +99,7 @@ double free in the frame allocator's caller was a protocol bug, and a protocol t
 
 Destroying a region returns its whole backing, and the name goes with it: the slot's generation is
 bumped, so every `MemoryRegion` capability minted for it stops resolving, and the slot is reused by
-the next `create` or `split` ([generational-names.md](generational-names.md)).
+the next `create` or `split` (`nifeos/nife:notes/generational-names.md`).
 
 Returning retyped pages is safe because `destroy` first revokes every mapped page in the region
 (`revoke.rs`, §13 (capability revocation and untyped reclamation)): each is unmapped from every

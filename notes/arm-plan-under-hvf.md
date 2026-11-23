@@ -5,7 +5,7 @@
 *Name provisional (`arm-plan-under-hvf`), per the rule that a lane ships a provisional name and says
 so. Measured 2026-10-21 (UTC) on patagonia, QEMU 11.1.2, `accel=hvf`, an Apple M-series core. The
 logs, probe sources and seL4 build recipe are in
-[bench/patagonia-hvf-2026-10-21/](../bench/patagonia-hvf-2026-10-21/README.md).*
+bench/patagonia-hvf-2026-10-21/ (`nifeos/nife:bench/patagonia-hvf-2026-10-21/README.md`).*
 
 Before any ARM board arrives, three questions decide what this Mac can carry: a seL4 comparison on
 identical silicon, development against modern CPU features, and SMMU work.
@@ -135,7 +135,7 @@ Absent:
 - All of ISAR2 is 0: no WFxT, MOPS, CLRBHB or QARMA3.
 - No 64 KiB granule, AMU, MPAM, Secure EL2, FGT, ECV or HCX.
 - PFR0.EL2 reads 0 even when the guest is at EL2. PFR0.GIC reads 0 even though the GICv3 system
-  registers work ([machine_discovery's gic.rs](../crates/machine_discovery/src/gic.rs) has that
+  registers work (machine_discovery's gic.rs (`nifeos/nife:crates/machine_discovery/src/gic.rs`) has that
   quirk).
 
 The ITS is an either-or. QEMU's default under HVF is Apple's hardware vGIC: a GICv3 with no LPIs

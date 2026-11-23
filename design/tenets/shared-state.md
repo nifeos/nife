@@ -1,11 +1,11 @@
 # Shared state: what a lane may not claim, and what a branch may not hold
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the rules: anything global to the tree is
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the rules: anything global to the tree is
 the integrator's at merge, a lane that gates takes the `nife-dev` link and says so, and a finding
 lands in `notes/` rather than living on a branch. This file carries the collisions of 2026-07-30 and
 the reason `fix/redoxfs-write-loop` survived a prune. The toolchain mechanism is in
 [`notes/std.md`](../../notes/std.md) and the relink command is in
-[`briefs/merge-and-cleanup.md`](../../briefs/merge-and-cleanup.md). Moved here 2026-09-23 (UTC) on
+`nifeos/nife:briefs/merge-and-cleanup.md`. Moved here 2026-09-23 (UTC) on
 calef's authorization, unchanged in substance.*
 
 **Anything global to the tree is assigned by the integrator at merge, never claimed by a lane.**

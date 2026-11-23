@@ -16,7 +16,7 @@ sits under a `SAFETY` comment that `clippy::undocumented_unsafe_blocks` requires
 census in [unsafe-obligations.md](unsafe-obligations.md) counts them.
 
 The locations, file and line, live in
-[`kernel-dependency-unsafe/sites.tsv`](kernel-dependency-unsafe/sites.tsv), one row per site, which `helpers/kernel_dependency_unsafe.py` writes from the exact source
+`kernel-dependency-unsafe/sites.tsv` (`nifeos/nife:notes/kernel-dependency-unsafe/sites.tsv`), one row per site, which `helpers/kernel_dependency_unsafe.py` writes from the exact source
 `Cargo.lock` pins. `script/lint` regenerates it and fails when the two differ, so a bump that moves a
 site, or a new crate in the kernel's graph, fails until the table is rewritten and this note is
 reread. The prose below says what the table cannot: which sites the kernel reaches, what checks

@@ -44,7 +44,7 @@ What a stranger may find surprising:
 
 - A name is an `EntryName<T>`, a newtype over the `u64`, so the compiler tells it from any other
   number and a name of one entry type does not resolve in a table of another. Every growable
-  candidate in [the release record](../generational-table-and-existing-crates.md) uses a newtype
+  candidate in the release record (`nifeos/nife:notes/generational-table-and-existing-crates.md`) uses a newtype
   (`slotmap`'s `KeyData`, `thunderdome`'s `Index`). `EntryName<T>` has `to_bits`, `from_bits`
   and `NEVER_MINTED` (the name no table mints), and the kernel converts at its system-call
   boundary with them. Each kernel table has an entry type of its own, so a name of one table does

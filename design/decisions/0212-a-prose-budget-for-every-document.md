@@ -142,7 +142,7 @@ at it:
 | [`design/fatal-risks/README.md`](../fatal-risks/README.md) | 17,742 | 120 |
 | [`design/roadmap/0047-navigation-and-naming.md`](../roadmap/0047-navigation-and-naming.md) | 17,315 | 6 |
 | [`notes/x86-port.md`](../../notes/x86-port.md) | 14,938 | 67 |
-| [`notes/pipes.md`](../../notes/pipes.md) | 14,372 | 119 |
+| `nifeos/nife:notes/pipes.md` | 14,372 | 119 |
 | [`design/roadmap/0139-drive-down-unsafe.md`](../roadmap/0139-drive-down-unsafe.md) | 13,775 | 1 |
 
 Documents over 6,000 words are cited from a median of 40 other files; documents at or under 1,500

@@ -16,7 +16,7 @@ A plain spinlock in a kernel that takes interrupts is a hang waiting for a sched
 
 This is not a race. It is not "sometimes, under load." It is a *deterministic* hang the
 moment the timing lines up, and it will look exactly like the mystery in
-[stack.md](stack.md) that cost us two hours.
+`nifeos/nife:notes/stack.md` that cost us two hours.
 
 And note what it does not need: a second core. A single-core design would not protect against it at
 all. One core, one lock, one interrupt, dead machine. More cores add races; they do not remove this

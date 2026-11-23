@@ -79,7 +79,7 @@ since 2026-07-12, plus $271.81 of hardware on 2026-08-15.
 that week's own token mix priced at vendor list rates. A reader who wants the shadow figure multiplies
 it by `lane_tokens` and knows exactly what they have multiplied. **Quoting one of these two numbers
 while implying the other is dishonest, so neither appears without its label.** Both rates and
-purchases live in [`notes/project-metrics/ledger.md`](../project-metrics/ledger.md), which is appended
+purchases live in `nifeos/nife:notes/project-metrics/ledger.md`, which is appended
 to by hand and never regenerated.
 
 The blended rate moves with the mix, not only with prices. It runs from $0.30 to $0.78 per million

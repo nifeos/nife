@@ -15,7 +15,7 @@ Promoted 2026-10-03 (UTC); the number is provisional until the integrator confir
 
 Newest census: mutation run 37108924347 (2026-10-03), 85 crates, 14,853 mutants, 1,004 missed, 92.7% killed. Its missed list is the work list; the 2026-09-21 table below is the order.
 
-Seventh and last batch (`milestone/637-survivor-triage-7`) done 2026-10-07 (UTC). Final tally of the 1,004 (killed by a new test, recorded equivalent, recorded gap, remaining): 621, 359, 24, 0. The last 201 sat in 39 crates; 114 already had rows from milestone 326's inflow lanes, and the other 87 are in [part five](../../notes/mutation-testing/census-2026-10-03-triage-part-5.md). The accounting is in [census-2026-10-03-triage](../../notes/mutation-testing/census-2026-10-03-triage.md).
+Seventh and last batch (`milestone/637-survivor-triage-7`) done 2026-10-07 (UTC). Final tally of the 1,004 (killed by a new test, recorded equivalent, recorded gap, remaining): 621, 359, 24, 0. The last 201 sat in 39 crates; 114 already had rows from milestone 326's inflow lanes, and the other 87 are in part five (`nifeos/nife:notes/mutation-testing/census-2026-10-03-triage-part-5.md`). The accounting is in `nifeos/nife:notes/mutation-testing/census-2026-10-03-triage.md`.
 
 Raised by the lane that condensed `notes/mutation-testing.md`
 (#1209), while recording the 2026-09-21 census, whose run no one had captured.

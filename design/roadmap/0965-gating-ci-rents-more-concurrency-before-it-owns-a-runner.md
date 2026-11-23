@@ -75,7 +75,7 @@ are the sharper reading. At 03:36:13, 60 jobs were in progress, 20 on `ubuntu-24
   cancelled by a later push. Thirty pull requests needed 46 merge-group runs.
 
 The owned host doing the lane work was not the limit:
-[`briefs/run-a-milestone-wide.md`](../../briefs/run-a-milestone-wide.md) records its CPUs about
+`nifeos/nife:briefs/run-a-milestone-wide.md` records its CPUs about
 85% idle, because "CI runs off the host".
 
 §214 set the condition for this question: "Reconsider a self-hosted runner only if 60 concurrent
@@ -225,7 +225,7 @@ slots, matching Enterprise 440. A larger slot would speed `verify`, whose `VERIF
 16 GB bound, but would change what the job measures.
 
 Power is unmeasured; at a few hundred watts around the clock (an assumption) it costs the same
-order as the seat, and [the ledger](../../notes/project-metrics/ledger.md) would record it.
+order as the seat, and the ledger (`nifeos/nife:notes/project-metrics/ledger.md`) would record it.
 The larger cost is maintenance: runner releases to take before old ones stop receiving jobs
 (recalled), an image to rebuild, and somebody who answers when it stops.
 

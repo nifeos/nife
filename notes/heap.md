@@ -7,7 +7,7 @@
 
 ## Why the stack isn't enough
 
-The stack works because function lifetimes nest ([stack.md](stack.md)). If `foo` calls
+The stack works because function lifetimes nest (`nifeos/nife:notes/stack.md`). If `foo` calls
 `bar`, `bar` finishes first. Always. That strict LIFO ordering is what lets the stack be a
 single moving pointer, with `sub sp, sp, #32` as its entire allocation algorithm.
 

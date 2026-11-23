@@ -2,7 +2,7 @@
 
 *Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
-*An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds what
+*An appendix to `nifeos/nife:notes/pipes.md`, which is the page to read. This file holds what
 DECISIONS §67 built: its five moving parts, the transcripts, the bugs building it found, the default
 destination and the ordering rule. The lane that split the file moved it here verbatim from the main
 page on 2026-09-25 (UTC), under [§212 (a prose
@@ -237,7 +237,7 @@ Diagnostics first is the only order in which nobody waits on somebody who is wai
 keeps it unconditionally: it closes its second stream before its first either way. A program with
 running commentary (a `rm -rv` that hit one unremovable name halfway through a thousand) could not,
 and would be fine at the default destination and wrong under a `2>`. That asymmetry is the honest
-cost and it is in [this note's BUGS](../pipes.md#bugs).
+cost and it is in this note's BUGS (`nifeos/nife:notes/pipes.md`).
 
 ### What it deliberately does not do
 

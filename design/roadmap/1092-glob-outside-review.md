@@ -12,7 +12,7 @@ needs_person: yes
 Raised by a read-only outside review of the crate then at `crates/glob` (now `crates/byte_glob`), read the way a
 maintainer meeting it for the first time would. The review changed nothing and opened nothing; every
 item below is work for a lane. No review package exists for this crate yet, so the baseline the review
-took as settled is the crate's own record: [notes/glob.md](../../notes/glob.md),
+took as settled is the crate's own record: `nifeos/nife:notes/glob.md`,
 [notes/glob-scope.md](../../notes/glob-scope.md), [notes/glob/proofs.md](../../notes/glob/proofs.md)
 and [notes/verification/glob-proofs.md](../../notes/verification/glob-proofs.md). The four scope
 decisions those record are `**` out, qualifiers out, POSIX classes out and a leading dot special by

@@ -19,7 +19,7 @@ tests hold the line. See [boot-protocol.md](boot-protocol.md).
 
 **`bl` does not push a return address onto the stack.** That's x86. On aarch64 the return
 address goes into register `x30`, and the stack is where it gets *parked* when a function
-needs `x30` for a call of its own. See [stack.md](stack.md).
+needs `x30` for a call of its own. See `nifeos/nife:notes/stack.md`.
 
 `into_iter()` on a big array is a kernel footgun. Milestone 3 (hand out physical memory, and
 detect a smashed stack) hung the machine for
@@ -28,7 +28,7 @@ value, twice, onto a 64 KiB stack; `sp` walked through `.bss` and `.data` into `
 the kernel executed its own overwritten code. Two of the three diagnoses along the way were
 wrong. The write-up of *how it was actually found* (semihosting exit codes as bisection
 markers, because `println!` runs through the `.text` you just corrupted) is the most useful
-thing in [stack.md](stack.md).
+thing in `nifeos/nife:notes/stack.md`.
 
 ## Corrections of error
 
