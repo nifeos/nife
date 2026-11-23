@@ -77,8 +77,9 @@ yields it, and drops one in a file that an open pull request carrying `architect
    section) by more than bookkeeping. A frontmatter-only edit (a status flip, a date) is
    provenance, not the decision's substance, and does not fire. Nor, since calef's ruling of
    2026-10-11 (UTC), does a bookkeeping edit: the body reads the same once link targets, backticked
-   repository paths, wrapping and whitespace are normalized away (`rule_decisions` has the exact
-   terms). A changed word, number, quotation, heading, list item or table cell fires, and so does
+   repository paths, wrapping and whitespace are normalized away, and a relative link rewritten as
+   the qualified path `nifeos/<repository>:<the same target>` reads as the link (`rule_decisions`
+   has the exact terms). A changed word, number, quotation, heading, list item or table cell fires, and so does
    a link added or removed rather than retargeted.
 6. **system-call-error**: a changed code line in `kernel/src/system_call.rs` (or a future
    `kernel/src/system_call/`) that names an `Error::` variant: a method returns an error it did not, or
@@ -230,6 +231,11 @@ by design: #2416's handoff crosses a live swap and #2512's page is read by publi
   top-level directory added later and not listed makes its paths fire, the safe direction. A link
   whose text is a lone backticked path reads as that path, so turning `` `notes/a.md` `` into a link
   to `notes/a/b.md` is quiet (#1953); linking plain words still fires.
+- **decisions reads a qualified path only at its resolved target.** A link rewritten to
+  `nifeos/<repository>:P` is quiet when P is the link's own target resolved against the file. A
+  target that has left for a crate's repository takes that repository's path, which differs, so it
+  fires; so does a block that both qualifies one link and retargets another. Both are the safe
+  direction.
 - **Renames pair by one-line value text.** `pub const A: u64 = 1;` against `pub const B: u64 = 1;`
   pairs; a `const` whose initializer spans lines, or whose type differs, never does (it fires). A
   pair of unrelated constants that swap to each other's spelling at equal values would pass; that is
@@ -261,6 +267,7 @@ by design: #2416's handoff crosses a live swap and #2512's page is read by publi
   prose and never counts, so a sentence that says "offset" fires nothing (#3640). Residual and unmeasured: the table-row form is the one
   this tree's layouts use (#1402); revisit if a layout change slips by.
 """
+import posixpath
 import re
 import subprocess
 import sys
@@ -994,6 +1001,18 @@ def rule_spawnproto(fd, out, ctx):
 #       item, a table row, a quote or fence line), each block's lines joined and its runs of
 #       whitespace collapsed, so a reflow pairs off and a block boundary still counts.
 #
+# A block that differs under those three gets one more reading, (d), since a link retargeted into
+# the record's qualified-path form (milestone 1018 (the design record moves to `nifeos/record`
+# and is published as a website), step 6) is the same bookkeeping in another spelling: a Markdown link `[text](relative/target#anchor)` whose target, resolved against the
+# file, is a repository path P reads the same as `` `nifeos/<repository>:P` `` when its text is
+# P, P's file name or P's stem (backticks around the text allowed), and as
+# ``text (`nifeos/<repository>:P`)`` otherwise. Both sides of the block are read this way, then
+# normalized by (a) to (c), and the pair is quiet when they then agree. The path must be the
+# resolved target exactly; an anchor drops, and so does a name of P written just before the
+# parenthesis. Every other word on either side is compared as written. A block that also
+# retargets an ordinary link fires under (d), since (d) keeps every link's target: the safe
+# direction. So does a target that left for a crate's own repository, whose path differs (BUGS).
+#
 # The comparison is over the whole file (the diff is one hunk holding it), not line by line. Any
 # other difference fires: a word, a number, a quotation, a heading, a list item, a table cell. A
 # CLAUDE.md edit fires as before; the ruling covered decision files only.
@@ -1041,6 +1060,53 @@ def normalize_bookkeeping(text):
     return ' '.join(text.split())
 
 
+# (d)'s two spellings of a qualified path, and a relative Markdown link it may replace.
+QUALIFIED_PATH = r'`nifeos/[\w.\-]+:([\w.\-/]+)(?:#[\w.\-]*)?`'
+QUALIFIED_PAREN_RE = re.compile(r'(?:(\S+)\s+)?\(' + QUALIFIED_PATH + r'\)')
+QUALIFIED_RE = re.compile(QUALIFIED_PATH)
+RELATIVE_LINK_RE = re.compile(r'(?<!!)\[([^\[\]]*)\]\(([\w.\-/]+)(?:#[\w.\-]*)?\)')
+
+
+def _qualified_token(path):
+    return f'\x00qualified:{path}\x00'
+
+
+def _names_of(path):
+    name = posixpath.basename(path)
+    return {path, name, posixpath.splitext(name)[0]}
+
+
+def _resolve_link(target, file_path):
+    """A relative link target -> the repository path it names, or None."""
+    if '://' in target or target.startswith('/'):
+        return None
+    resolved = posixpath.normpath(posixpath.join(posixpath.dirname(file_path), target))
+    if resolved.startswith('../') or resolved == '..' or not is_repo_path(resolved):
+        return None
+    return resolved
+
+
+def qualify_links(text, file_path):
+    """One block's joined text with (d) above read into one spelling."""
+    def paren(m):
+        before, path = m.group(1), m.group(2)
+        if before is None or before.strip('`') in _names_of(path):
+            return _qualified_token(path)
+        return f'{before} {_qualified_token(path)}'
+
+    def link(m):
+        words, path = m.group(1), _resolve_link(m.group(2), file_path)
+        if path is None:
+            return m.group(0)
+        if words.strip().strip('`') in _names_of(path):
+            return _qualified_token(path)
+        return f'{words} {_qualified_token(path)}'
+
+    text = QUALIFIED_PAREN_RE.sub(paren, text)
+    text = QUALIFIED_RE.sub(lambda m: _qualified_token(m.group(1)), text)
+    return RELATIVE_LINK_RE.sub(link, text)
+
+
 def decision_body(lines):
     """A decision file's lines past its frontmatter (the first `---`-delimited block)."""
     body, dash_count, in_frontmatter = [], 0, False
@@ -1054,8 +1120,9 @@ def decision_body(lines):
     return body
 
 
-def bookkeeping_blocks(lines):
-    """Body lines -> normalized blocks: split at blank lines and at each block-starting line."""
+def raw_blocks(lines):
+    """Body lines -> each block's lines joined: split at blank lines and at each block-starting
+    line."""
     blocks, cur = [], []
     for line in lines:
         if not line.strip() or (cur and BLOCK_START_RE.match(line)):
@@ -1066,7 +1133,19 @@ def bookkeeping_blocks(lines):
         cur.append(line)
     if cur:
         blocks.append(cur)
-    return [normalize_bookkeeping(' '.join(b)) for b in blocks]
+    return [' '.join(b) for b in blocks]
+
+
+def bookkeeping_equal(base_lines_, head_lines_, file_path):
+    """Whether two decision bodies differ by bookkeeping alone, (a) to (d) above."""
+    base, head = raw_blocks(base_lines_), raw_blocks(head_lines_)
+    if len(base) != len(head):
+        return False
+    return all(
+        normalize_bookkeeping(b) == normalize_bookkeeping(h)
+        or normalize_bookkeeping(qualify_links(b, file_path))
+        == normalize_bookkeeping(qualify_links(h, file_path))
+        for b, h in zip(base, head))
 
 
 def rule_decisions(fd, out, _ctx=None):
@@ -1084,7 +1163,7 @@ def rule_decisions(fd, out, _ctx=None):
         return
     base_body = decision_body(base_lines(fd))
     head_body = decision_body(head_lines(fd))
-    if bookkeeping_blocks(base_body) == bookkeeping_blocks(head_body):
+    if bookkeeping_equal(base_body, head_body, path):
         return  # frontmatter only, or bookkeeping (calef, 2026-10-11 UTC)
     dash_count = 0
     in_frontmatter = False
@@ -2170,6 +2249,82 @@ diff --git a/design/decisions/0088-needs-architect-as-a-check.md b/design/decisi
  ---
 -The log is read from `/dev/kmsg`.
 +The log is read from `/dev/kmesg`.
+""", 'decisions'),
+
+    ("decisions: a link whose text is its path, made a qualified path, stays quiet (#4049)", """\
+diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0021-terminal-in-userspace.md
+--- a/design/decisions/0021-terminal-in-userspace.md
++++ b/design/decisions/0021-terminal-in-userspace.md
+@@ -1,4 +1,4 @@
+ ---
+ status: DECIDED
+ ---
+-The full accounting is in [`notes/line-discipline.md`](../../notes/line-discipline.md#costs).
++The full accounting is in `nifeos/nife:notes/line-discipline.md`.
+""", None),
+
+    ("decisions: a link whose text is its stem, made a qualified path, stays quiet", """\
+diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0021-terminal-in-userspace.md
+--- a/design/decisions/0021-terminal-in-userspace.md
++++ b/design/decisions/0021-terminal-in-userspace.md
+@@ -1,4 +1,4 @@
+ ---
+ status: DECIDED
+ ---
+-The full accounting is in [line-discipline](../../notes/line-discipline.md).
++The full accounting is in `nifeos/nife:notes/line-discipline.md`.
+""", None),
+
+    ("decisions: a link's words kept beside its qualified path, rewrapped, stays quiet (#4049)", """\
+diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0021-terminal-in-userspace.md
+--- a/design/decisions/0021-terminal-in-userspace.md
++++ b/design/decisions/0021-terminal-in-userspace.md
+@@ -1,5 +1,5 @@
+ ---
+ status: DECIDED
+ ---
+-Every module name ships marked `Name: provisional`, as the [naming
+-authority](../../notes/skills/naming-authority/SKILL.md) has a lane do.
++Every module name ships marked `Name: provisional`, as the naming
++authority (`nifeos/nife:notes/skills/naming-authority/SKILL.md`) has a lane do.
+""", None),
+
+    ("decisions: a qualified path that is not the link's resolved target fires", """\
+diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0021-terminal-in-userspace.md
+--- a/design/decisions/0021-terminal-in-userspace.md
++++ b/design/decisions/0021-terminal-in-userspace.md
+@@ -1,4 +1,4 @@
+ ---
+ status: DECIDED
+ ---
+-The full accounting is in [`notes/line-discipline.md`](../../notes/line-discipline.md).
++The full accounting is in `nifeos/nife:design/notes/line-discipline.md`.
+""", 'decisions'),
+
+    ("decisions: a qualified path whose sentence also changed a word fires", """\
+diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0021-terminal-in-userspace.md
+--- a/design/decisions/0021-terminal-in-userspace.md
++++ b/design/decisions/0021-terminal-in-userspace.md
+@@ -1,5 +1,5 @@
+ ---
+ status: DECIDED
+ ---
+-Every module name ships marked `Name: provisional`, as the [naming
+-authority](../../notes/skills/naming-authority/SKILL.md) has a lane do.
++Every module name ships marked `Name: ratified`, as the naming
++authority (`nifeos/nife:notes/skills/naming-authority/SKILL.md`) has a lane do.
+""", 'decisions'),
+
+    ("decisions: link words dropped for a bare qualified path fire", """\
+diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0021-terminal-in-userspace.md
+--- a/design/decisions/0021-terminal-in-userspace.md
++++ b/design/decisions/0021-terminal-in-userspace.md
+@@ -1,4 +1,4 @@
+ ---
+ status: DECIDED
+ ---
+-As the [naming authority](../../notes/skills/naming-authority/SKILL.md) has a lane do.
++As the `nifeos/nife:notes/skills/naming-authority/SKILL.md` has a lane do.
 """, 'decisions'),
 
     ("decisions: a CLAUDE.md link retarget still fires (the ruling covered decisions only)", """\
