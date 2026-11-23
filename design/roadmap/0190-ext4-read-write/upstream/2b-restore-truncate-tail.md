@@ -15,8 +15,8 @@ the pull request.
 - The change: [`2b-restore-truncate-tail.patch`](2b-restore-truncate-tail.patch), one commit,
   `git format-patch` output against that base. It applies to the base alone, but
   [item 2a](2a-free-empty-extent-index.md) adds its test at the same place in
-  `fs/rsext4/tests/file_operations.rs`. So 2b is filed after 2a, and rebased on 2a once 2a lands;
-  its bodies say so.
+  `fs/rsext4/tests/file_operations.rs`. So the filer sends 2b after 2a and rebases it on 2a once
+  2a lands; its bodies say so.
 - Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar and
   the filer sets: Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`.
 

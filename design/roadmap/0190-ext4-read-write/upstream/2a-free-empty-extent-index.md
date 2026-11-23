@@ -13,8 +13,8 @@ with no linked Issue; its number then replaces `#<to be filled>` in the pull req
 - The change: [`2a-free-empty-extent-index.patch`](2a-free-empty-extent-index.patch), one commit,
   `git format-patch` output against that base. It applies to the base alone. The
   companion [item 2b](2b-restore-truncate-tail.md) adds its test at the same place in
-  `fs/rsext4/tests/file_operations.rs`, so 2b is filed after this one and rebased on it once this
-  one lands.
+  `fs/rsext4/tests/file_operations.rs`, so the filer sends 2b after this one and rebases it on this
+  one once this one lands.
 - Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar and
   the filer sets: Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`.
 
