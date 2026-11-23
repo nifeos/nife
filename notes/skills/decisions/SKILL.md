@@ -2,16 +2,16 @@
 name: decisions
 description: >-
   How nife decides, recommends, and takes a question to an architect. Load before choosing between
-  options, making a recommendation, or deciding how much care a choice deserves; and when something
-  may be an architect's call (a design fork, a wire format, a name, the system call surface, a new
-  dependency, a design/decisions/ section, a published number), when holding work for an architect,
-  adding the needs-architect label, writing a "## What I need from you" comment or a PROPOSED
-  decision file. Holds: move fast on what can be undone and be methodical on what cannot (the test
-  is who else has already acted on it); elegance and performance beat implementation convenience
-  (would I still choose this if both options were the same amount of work? if not, say the
-  recommendation is about effort); how a ruling is asked (plain background first, recommendation
-  first, one decision at a time); the seven questions a fork must answer before it reaches an
-  architect; and why requesting a review from calef silently does nothing.
+  options, recommending one, or deciding how much care a choice deserves; and when something may
+  be an architect's call (a design fork, a wire format, a name, the system call surface, a new
+  dependency, a design/decisions/ section, a published number), when holding work for an
+  architect, adding the needs-architect label, writing a "## What I need from you" comment or a
+  PROPOSED decision file. Holds: move fast on what can be undone and be methodical on what cannot
+  (the test is who else has acted on it; delay costs; bet once risk is weighed); elegance and
+  performance beat implementation convenience (would I still choose it if both cost the same work?
+  if not, say the recommendation is about effort); how a ruling is asked (plain background first,
+  recommendation first, one decision at a time); the seven questions a fork answers before
+  reaching an architect; and why requesting a review from calef silently does nothing.
 ---
 
 # Deciding, and taking a decision to an architect
@@ -29,6 +29,11 @@ Most decisions here are reversible and should be made quickly, by whoever is hol
 Code, notes, roadmap wording, which milestone a lane takes, how a script is structured. Deliberating
 them costs more than getting them wrong, and deliberating them *with an architect* costs an
 architect's attention, which is the scarcest thing in this project.
+
+Speed matters in itself: delay has a cost even on a reversible decision, so waiting is never free
+and never the safe default. Calculated risk is expected: once the risk has been weighed, act under
+the uncertainty that remains, because on a reversible decision a reasonable bet made now beats
+extensive study.
 
 A few decisions are expensive, and the expense is almost never the code. Be methodical on these:
 

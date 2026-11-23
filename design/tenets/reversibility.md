@@ -2,8 +2,7 @@
 
 *Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the rule, the irreversible list and the
 test. This file carries why each category is on that list, the two failures of record, and what
-agents changed about the calculus. Moved here 2026-09-23 (UTC) on calef's authorization, unchanged
-in substance.*
+agents changed about the calculus. Moved here 2026-09-23 (UTC) on calef's authorization.*
 
 calef, 2026-08-05. The ladder in `AGENTS.md` says how hard to make a thing hold. This says how much
 care to spend deciding it, and the two are not the same question: a cheap decision still deserves a
@@ -15,6 +14,17 @@ Getting these wrong costs an hour. Deliberating them costs more than that, and d
 *with an architect* costs their attention, which is the scarcest thing in this project.
 `helpers/merge-drain.sh` was rewritten three times in one evening, each version wrong in a way the
 next one fixed, and that was cheaper than designing it correctly up front would have been.
+
+Speed is worth something in itself, and not only because a reversible decision can be undone
+later. While a decision waits, the work behind it waits too: a lane idles, a fix sits unmerged, and
+the next question cannot be asked until this one is answered. So waiting is never free, and it is
+not the safe default; holding a reversible decision needs a reason as much as making it does. The
+same holds for uncertainty. Acting before every question is settled is expected here, once the risk
+has been weighed: say what could go wrong, how likely it is and what it would cost, and check that
+it can be undone. On a reversible decision a reasonable bet made now beats extensive study, because
+the bet teaches what the study would only have guessed at, and a wrong bet costs one more revision.
+The weighing is what separates a calculated risk from a careless one, and it is also what sends a
+decision on the list below to the methodical side.
 
 A few decisions are expensive, and the expense is almost never the code. It is the consequences
 that cannot be recalled:
