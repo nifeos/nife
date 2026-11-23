@@ -174,7 +174,7 @@ script/lint section 101: the prose ratchet	both	runs in each repository on its o
 script/lint section 102: the removed-files index	both	splits: the record half runs in the record; the code half reads the record at the pin (file existence for citations)
 script/lint section 104: the module-block ratchet	both	splits: the record half runs in the record; the code half reads the record at the pin (file existence for citations)
 script/lint section 109: American spelling and metric units	both	runs in each repository on its own files
-script/lint section 110: §298	both	runs in each repository on its own files
+script/lint section 110: §298 (a document states what is in force now)	both	runs in each repository on its own files
 script/lint section 116: no line-number citations	both	runs in each repository on its own files
 script/lint section 117: the outsider-pass floor checker and launcher selftests	record	record lint driver only
 script/lint section 118: exception markers the ratchets honor	both	runs in each repository on its own files

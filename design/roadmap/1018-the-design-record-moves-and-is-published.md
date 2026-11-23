@@ -216,6 +216,8 @@ Each step lands alone. Steps 1 to 5 land in this repository.
 6. Once steps 2 and 4 have landed, create `nifeos/record`, public. Then extract by path into it,
    and remove the paths from this repository in one pull request. That pull request writes
    `packages/moved.toml` with the anchor, and leaves a pointer in the README.
+   [The step 6 plan](1018-the-design-record-moves-and-is-published/step-6-plan.md) orders the pull
+   requests and records a dry run of the extraction.
 7. Turn on `nifeos/record`'s CI: the record checks, limited to the record's directories, with the
    record halves of the `both` sections and the tooling that runs them.
 8. Once step 7 runs the record's CI in `nifeos/record`, create `nifeos/nifeos.org`. Build there,

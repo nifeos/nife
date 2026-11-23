@@ -20,7 +20,7 @@ carries its own.
 
 ## 1. What reads a moving path
 
-146 tracked files outside the record name a moving path in code, not only in a comment: 74 under
+146 tracked files outside the record name a moving path in code, not only in a comment. By place: 74 under
 `helpers/`, 31 under `script/`, 17 under `xtask/`, 8 workflows, 4 issue and pull request templates,
 6 under `site/`, 2 under `tools/`, 2 under `.cargo/`, `Cargo.toml` and `deny.toml`. 70 of them
 name a record file only in a message, such as a help line or an error that cites a note; those
@@ -51,7 +51,7 @@ Three findings change the order of work.
 - `xtask/src/manual.rs` bundles `notes/documentation.md`, `pipes.md`, `line-discipline.md`,
   `ipc-naming.md`, `stack.md`, `capabilities.md` and `glob.md` into the image, and
   `xtask/src/disk.rs` calls it. The image build breaks the day those notes leave. They are the
-  documentation of the programs that ship them, which §315 keeps with the code, so a
+  documentation of the programs that ship them, which §315 (a crate's documentation leaves with it) keeps with the code, so a
   `homes.toml` pull request re-sorts them before the cut.
 - Baselines that stay with code hold rows for record files: 2,318 of 2,329 lines of
   `design/passive-baseline.tsv`, 297 of 9,711 of `design/module-block-baseline.txt`, 13 of 349 of
@@ -69,10 +69,10 @@ No code includes a record file with `include_str!`.
 
 The tool is `git filter-repo` 2.47.0, sha256
 `60f7b584d1a8295b329e365af3046489a06d62ab22dd882ce54d53dee656d81f`, installed in a virtual
-environment. Two path files come from `packages/homes.toml` through a helper the first nife pull
-request adds: `keep` lists the 12 prefixes whose home is the record plus the eight tool files and
-`DECISIONS.md`, which held the decisions before they were split into files; `drop` lists the 36
-prefixes under the record's directories whose home is elsewhere. The sequence, from a clone of
+environment. Two path files come from `packages/homes.toml`, through the helper that pull request 2 adds.
+`keep` lists the 12 prefixes whose home is the record, the eight tool files and `DECISIONS.md`,
+which held the decisions before the split into one file each. `drop` lists the 36 prefixes under
+the record's directories whose home is elsewhere. The sequence, from a clone of
 `nifeos/nife` and the full hash of the anchor commit:
 
 ```sh
@@ -124,52 +124,54 @@ One rename crosses between the record's directories, `notes/naming.md` to `desig
 
 The extraction is reproducible. Run twice at the anchor, it gives the same head commit,
 `5ca2b7efa`. Run at a commit 20 first-parent steps earlier, its head is an ancestor of that one.
-So a later run extends an earlier one, and the record's history can be checked by anyone holding
-nife, the path files and the tool version. The path files are fixed at the first push, since a
-change to them changes every hash.
+So a later run extends an earlier one, and anyone holding nife, the path files and the tool
+version can check the record's history. The first push fixes the path files, since a change to
+them changes every hash.
 
 ## 3. The pull requests, in order
 
 Each lands alone with green checks. Until the removal pull request, every record file still lives
 in nife and every lane works as today.
 
-1. **basalt**: bump the nife pin to a commit that holds every cut link target. This waits on the
+1. basalt: bump the nife pin to a commit that holds every cut link target. This waits on the
    question already open about basalt's pin.
-2. **nife**: re-sort in `homes.toml` the seven bundled notes and `notes/project-metrics.md`, and
+2. nife: re-sort in `homes.toml` the seven bundled notes and `notes/project-metrics.md`, and
    add `helpers/record_paths.py`, which writes `keep` and `drop` from `homes.toml` and checks
    that they cover the record exactly.
-3. **nife**: rewrite the 253 cut links (section 4), and extend the qualified-path check from
+3. nife: rewrite the 253 cut links (section 4), and extend the qualified-path check from
    roadmap blocks to all record Markdown.
-4. **nife**: add the record pin. `helpers/record_root.py` answers where the record is: the work
+4. nife: add the record pin. `helpers/record_root.py` answers where the record is: the work
    tree while the record lives here, and later a fetched tree at the commit basalt's `[record]`
    table names. Every reader in section 1 that stays switches to it. A no-op today.
-5. **nife**, several pull requests: rewrite code mentions of record paths to
+5. nife, several pull requests: rewrite code mentions of record paths to
    `nifeos/record:<path>`, 4,468 exact mentions and 307 directory mentions in 1,267 files. Logs,
    patches and `vendor/` keep their text, since each records what it was. One pull request per
    top-level directory keeps each reviewable.
-6. **nife**: vendor `notes/skills/` and `briefs/` under `vendor/record/` from the current tree,
-   point the 14 symlinks and the three brief readers at the copy, and add the lint section that
+6. nife: vendor `notes/skills/` and `briefs/` under `vendor/record/` from the current tree.
+   Point the 14 symlinks and the three brief readers at the copy, and add the lint section that
    checks the copy against the record at its pin (open question 1).
-7. **nife**: freeze. A lint section refuses any change to a moving path, except in the removal
+7. nife: freeze. A lint section refuses any change to a moving path, except in the removal
    pull request. Lanes with record edits keep their drafts and land them in the record afterward.
-8. **nifeos/record**: create it, public, and push `main` from the extraction at the frozen tip.
+8. nifeos/record: create it, public, and push `main` from the extraction at the frozen tip.
    Set the ruleset for `main` before the first push, so nothing lands unchecked.
-9. **nifeos/record**: its own `AGENTS.md`, the skill symlinks, `script/claim` (open question 4),
-   a lint driver that runs the 9 record sections and the record halves of the 36, the record rows
-   of the baselines, and a CI workflow that runs them on pull requests and the merge queue. This
-   is the minimum of step 7.
-10. **basalt**: add a `[record]` table to `pins.toml`, pinned at the record's `main`, and a bump
+9. nifeos/record: its own `AGENTS.md`, the skill symlinks and `script/claim` (open question 4).
+   A lint driver runs the 9 record sections and the record halves of the 36, against the record
+   rows of the baselines, and a CI workflow runs it on pull requests and the merge queue. This is
+   the minimum of step 7.
+10. basalt: add a `[record]` table to `pins.toml`, pinned at the record's `main`, and a bump
     workflow on each record merge. `gate.yml` builds only `[nife]`, so the record pin builds
     nothing.
-11. **nife**: the removal pull request. It checks that the record's tree at basalt's pin equals
-    nife's moving paths at its own base, then removes them, writes `packages/moved.toml` with
-    the anchor, drops the record lint sections and the record rows of the baselines, removes
-    `record-site.yml`, `site/` and `script/site`, lifts the freeze, and leaves a README pointer.
-12. **basalt**: rewrite the links in its `AGENTS.md` and `README.md` that point into nife's
+11. nife: the removal pull request. It first checks that the record's tree at basalt's pin equals
+    nife's moving paths at its own base. Then it removes those paths and writes
+    `packages/moved.toml` with the anchor. It drops the record lint sections and the record rows
+    of the baselines, removes `record-site.yml`, `site/` and `script/site`, lifts the freeze, and
+    leaves a README pointer.
+12. basalt: rewrite the links in its `AGENTS.md` and `README.md` that point into nife's
     `notes/skills/` and `design/`.
 
-Between 8 and 11, the record exists and nife is frozen, so no record edit can land in either
-place and be lost. The window is the time pull requests 9 to 11 take, expected under a day. A
+Between 8 and 11, the record exists and the freeze holds nife, so no record edit can land in
+either place and vanish. The window lasts as long as pull requests 9 to 11 take, which should be
+under a day. A
 record edit that lands in nife after the push and before the freeze would break the equality check
 in 11, so the freeze lands first.
 
@@ -184,8 +186,8 @@ record bump, through the same check that compares it.
 into tool data, 30 into crate notes, 21 into root documents, 19 into `bench/`, 14 into
 `system-tests/`, and 46 into crates, tools and other code.
 
-The rewrite is mechanical. For each listed link, a one-time script replaces `[text](relative)`
-with ``text (`nifeos/nife:<path>`)``, where `<path>` is the target resolved against the linking
+The rewrite is mechanical. For each listed link, a one-time script replaces the Markdown link
+with its text followed by ``(`nifeos/nife:<path>`)``, where `<path>` is the target resolved against the linking
 file. A link to a directory becomes plain text naming it, since the qualified form names files. A
 target that has already left nife takes its crate's repository, `nifeos/<crate>:<path>`, which
 resolves through basalt's pinned `Cargo.lock`. Anchors after `#` drop, because the form has none.
@@ -203,22 +205,22 @@ They are links readers follow, so a URL fits better than a qualified path.
 
 ## 5. Risks, and what cannot be undone
 
-- **A public push is permanent.** Once `nifeos/record` holds history, clones, forks and caches keep
+- A public push is permanent. Once `nifeos/record` holds history, clones, forks and caches keep
   it. Everything extracted is already public in `nifeos/nife`'s history, so the push exposes no new
   text. A scan of every blob and commit message of the extracted history for unit-specific and
   private content ran before this plan, and its results went to the maintainers off-tree.
-- **Commit identities are fixed at the first push.** The path files, the prune choice and any
-  address mapping all change every hash. Once a commit is cited, changing them breaks the
-  citation, so open questions 2 and 3 are settled before the push.
-- **The repository name.** It is ruled, and a rename leaves GitHub redirects but breaks pins and
+- Commit identities. The first push fixes them. The path files, the prune choice and any address
+  mapping all change every hash, and once a record cites a commit, changing them breaks the
+  citation. Open questions 2 and 3 therefore need an answer before the push.
+- The repository name. A ruling settles it, and a rename leaves GitHub redirects but breaks pins and
   qualified paths that spell it.
-- **A lost edit.** A record change landing in nife between the push and the freeze would vanish at
+- A lost edit. A record change landing in nife between the push and the freeze would vanish at
   removal. The equality check in pull request 11 refuses that case.
-- **Lanes in flight.** A draft holding a record edit conflicts with the removal. The freeze notice
+- Lanes in flight. A draft holding a record edit conflicts with the removal. The freeze notice
   tells such lanes to move the edit to the record.
-- **The image build.** It breaks if the seven bundled notes leave before their re-sort, which is
+- The image build. It breaks if the seven bundled notes leave before their re-sort, which is
   why pull request 2 comes first.
-- **The removal itself** can be reverted in nife, and the record's history stays valid. Reverting
+- The removal itself. A revert in nife undoes it, and the record's history stays valid. Reverting
   after the record has moved on makes two diverging copies, so a revert also archives the record.
 
 ## 6. Open questions for the architect
