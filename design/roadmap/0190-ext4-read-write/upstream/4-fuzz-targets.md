@@ -178,19 +178,19 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
 
 ## Notes for the reviewer (not filed)
 
-- **Design choices upstream might refuse.** It is the first fuzz crate in tgoskits, and it brings
+- Design choices upstream might refuse. It is the first fuzz crate in tgoskits, and it brings
   a new dependency, `libfuzzer-sys`, in a crate outside the workspace and outside CI. Upstream may
   want it elsewhere (a top-level `fuzz/`), inside xtask, or not at all. The standing approval of
   `libfuzzer-sys` covers our own crate repositories' fuzz crates; this one is upstream's call, and
   nife takes on no dependency from it.
-- **The group-descriptor alignment defect is item 5's.** `BlockGroupDescTable::get_desc` casts
+- The group-descriptor alignment defect is item 5's. `BlockGroupDescTable::get_desc` casts
   table bytes to a reference without checking alignment. Item 5's evidence shows a debug build
   aborting at `table.rs:36:23` with `misaligned pointer dereference`, so this draft leaves the
   defect to item 5 and files after it. The `group_descriptor_table` target calls
   `let _ = view.get_desc(..)`, which compiles whether `get_desc` returns a reference or item 5's
   value. The target never tripped the abort, because the slice it passes starts 1024 bytes into
   libFuzzer's buffer and is always aligned.
-- **No run found a crash,** so no crash report draft accompanies this one. Ten minutes per target is
+- No run found a crash, so no crash report draft accompanies this one. Ten minutes per target is
   short, especially for the whole-image targets (33,066 to 273,613 runs); nife's fuzz rotation
   over the hostile-image corpus, in milestone 190's own list, is where longer runs belong.
 
