@@ -41,7 +41,7 @@
 #
 #   milestones built     BUILT rows from `script/roadmap --index`, generated from the blocks
 #   components           crates/*/ plus [[bin]] targets in components/Cargo.toml and fixtures/Cargo.toml
-#   ABI constants        the `pub const NAME: u64` surface of crates/abi (see BUGS)
+#   ABI constants        the `pub const NAME: u64` surface of moho_abi at its pinned revision (see BUGS)
 #   external packages    distinct registry packages across every committed Cargo.lock but vendor's
 #
 # ABI constants are milestone 92's system call event trigger made countable: a new method arrives as a new
@@ -60,7 +60,7 @@
 # - **The ABI-constant count is a superset of "a new system call method".** It counts the rights bits,
 #   the object types and the sentinels alongside the methods, so a new error sentinel fires the
 #   trigger too. That is the tolerable direction for an audit signal, and separating them would mean
-#   teaching this script the shape of every module in crates/abi, which is a copy of a fact that
+#   teaching this script the shape of every module in moho_abi, which is a copy of a fact that
 #   already lives there.
 # - **A change that lands as neither a milestone nor a component moves no number here.** A
 #   substantial rewrite inside an existing crate is invisible to every count; only the calendar
@@ -300,12 +300,35 @@ def current():
     # where the crate holds 95; the event trigger that fires on any ABI change was quietly going
     # blind whenever a constant landed outside lib.rs. Found by milestone 427 (the documentation
     # sweep the worklist already ranks) from its own baseline row's 76 -> 6 drop.
+    #
+    # The crate lives in its own repository, nifeos/moho_abi, pinned by git revision. The revision
+    # is read from the workspace lockfile and fetched at depth one, which needs git and the network
+    # but no toolchain, so the weekly job stays a checkout and a script. A lockfile with no pin, or a
+    # fetch that fails, stops the run: a count of zero would read as "no ABI change", which is the
+    # one direction this signal must not err in.
     abi = 0
-    for dirpath, _, names in os.walk(os.path.join(root, "crates", "abi", "src")):
-        for name in names:
-            if name.endswith(".rs"):
-                with open(os.path.join(dirpath, name), errors="replace") as f:
-                    abi += len(re.findall(r"^\s*pub const [A-Z_0-9]+: u64 = ", f.read(), re.M))
+    with open(os.path.join(root, "Cargo.lock"), errors="replace") as f:
+        pin = re.search(r'^name = "moho_abi"\n(?:[^\[\n].*\n)*?source = "git\+(https://[^?#"]+)'
+                        r'\?rev=[0-9a-f]+#([0-9a-f]{40})"', f.read(), re.M)
+    if pin is None:
+        print("audits: Cargo.lock pins no moho_abi revision, so the ABI constants cannot be "
+              "counted", file=sys.stderr)
+        sys.exit(1)
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="audits-moho-abi.") as checkout:
+        for argv in (["git", "init", "-q", checkout],
+                     ["git", "-C", checkout, "fetch", "-q", "--depth", "1", pin.group(1), pin.group(2)],
+                     ["git", "-C", checkout, "checkout", "-q", "FETCH_HEAD"]):
+            run = subprocess.run(argv, capture_output=True, text=True)
+            if run.returncode != 0:
+                print(f"audits: could not fetch moho_abi at {pin.group(2)}, so the ABI constants "
+                      f"cannot be counted:\n  {run.stderr.strip()[:200]}", file=sys.stderr)
+                sys.exit(1)
+        for dirpath, _, names in os.walk(os.path.join(checkout, "src")):
+            for name in names:
+                if name.endswith(".rs"):
+                    with open(os.path.join(dirpath, name), errors="replace") as f:
+                        abi += len(re.findall(r"^\s*pub const [A-Z_0-9]+: u64 = ", f.read(), re.M))
 
     # Discovered, not listed. A hard-coded set of lockfile paths is a copy of a fact about the
     # workspace layout, and script/drift's header records what that costs when it drifts. vendor/ is

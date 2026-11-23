@@ -94,7 +94,7 @@ path parks forever only on the hung-channel test.
 
 **The survey `PROCESS` record.** It needs `ENUMERATE`, an unknown record is refused before the walk,
 and the label counts only threads whose fault endpoint is the caller's domain. It returns no
-process id and no address, so the "ordinal, not identity" claim in `crates/abi` holds.
+process id and no address, so the "ordinal, not identity" claim in `crates/moho_abi` holds.
 
 **The rest.** `periodic_deadline::next_after` saturates its adds, subtracts only when `now` is not
 before the previous deadline, answers `NEVER` for a zero period, and has Kani proofs. The

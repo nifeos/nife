@@ -90,7 +90,7 @@ Why each other option loses:
    before anything is written to the pty (the analogue to B). Neither was re-read for this note.
 4. Is the premise true: yes, checked. `Vt::scroll_up`/`scroll_down` have no callers outside
    `crates/video_terminal` (`grep -rn scroll_up components kernel` is empty), and the line
-   discipline's CSI dispatch (`crates/line_editor/src/lib.rs`, `csi_final`) has no arm for `5~` or
+   discipline's CSI dispatch (`line_editor`'s `csi_final`) has no arm for `5~` or
    `6~`.
 5. Cost of A, estimated rather than measured. It needs one opcode constant in `line_editor::proto`
    and two arms in the discipline's CSI dispatch. It also needs a way to report a scroll request out

@@ -1,14 +1,14 @@
 //! **Thin safe wrappers over the four `VirtualIo` capability methods**, and the barrier that orders
 //! a virtqueue against the device.
 //!
-//! Each wrapper's only obligation is `invoke`'s own; `abi::virtual_io` states what the kernel checks
+//! Each wrapper's only obligation is `invoke`'s own; `moho_abi::virtual_io` states what the kernel checks
 //! (`WRITE_REGISTER` refuses the queue-address and notify registers; `SETUP_QUEUE` and `NOTIFY` are
 //! bounds-checked against the DMA region and its high-water mark). A module rather than crate-root
 //! items, because only a program that owns a `VirtualIo` capability needs them.
 
 /// `READ_REGISTER` at `offset` on the `VirtualIo` capability in `virtual_io_slot`. Reads are DMA-safe, so any
 /// aligned register in the device's own slot. Returns the register value, or a negative
-/// `abi::Error`.
+/// `moho_abi::Error`.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with [`write_register`], [`setup_queue`] and [`notify`]. His words: "Yes". Refused
@@ -20,7 +20,7 @@ pub fn read_register(virtual_io_slot: u64, offset: u64) -> i64 {
     unsafe {
         super::invoke(
             virtual_io_slot,
-            abi::virtual_io::READ_REGISTER,
+            moho_abi::virtual_io::READ_REGISTER,
             offset,
             0,
             0,
@@ -29,7 +29,7 @@ pub fn read_register(virtual_io_slot: u64, offset: u64) -> i64 {
 }
 
 /// `WRITE_REGISTER` `value` at `offset` on the `VirtualIo` capability in `virtual_io_slot`. `0` on success; a
-/// negative `abi::Error` (`NotPermitted` for a queue-address or notify register, which only
+/// negative `moho_abi::Error` (`NotPermitted` for a queue-address or notify register, which only
 /// [`setup_queue`]/[`notify`] may touch).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
@@ -41,7 +41,7 @@ pub fn write_register(virtual_io_slot: u64, offset: u64, value: u64) -> i64 {
     unsafe {
         super::invoke(
             virtual_io_slot,
-            abi::virtual_io::WRITE_REGISTER,
+            moho_abi::virtual_io::WRITE_REGISTER,
             offset,
             value,
             0,
@@ -52,7 +52,7 @@ pub fn write_register(virtual_io_slot: u64, offset: u64, value: u64) -> i64 {
 /// `SETUP_QUEUE` virtqueue `queue` (0-indexed; a virtio-net device uses 0 = receive, 1 = transmit)
 /// with `descriptors` descriptors, on the `VirtualIo` capability in `virtual_io_slot`. The kernel programs the
 /// ring addresses to the fixed offsets of that queue's ring block in the driver's own DMA region;
-/// the driver never chooses them. `0` on success; a negative `abi::Error` (`BadQueue`/`WrongObject`
+/// the driver never chooses them. `0` on success; a negative `moho_abi::Error` (`BadQueue`/`WrongObject`
 /// if `queue` is out of range or the block does not fit the region).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
@@ -64,7 +64,7 @@ pub fn setup_queue(virtual_io_slot: u64, descriptors: u64, queue: u64) -> i64 {
     unsafe {
         super::invoke(
             virtual_io_slot,
-            abi::virtual_io::SETUP_QUEUE,
+            moho_abi::virtual_io::SETUP_QUEUE,
             descriptors,
             queue,
             0,
@@ -73,7 +73,7 @@ pub fn setup_queue(virtual_io_slot: u64, descriptors: u64, queue: u64) -> i64 {
 }
 
 /// `NOTIFY` the device that virtqueue `queue` has new descriptors, on the `VirtualIo` capability in
-/// `virtual_io_slot`. `0` on success; a negative `abi::Error` (`DeviceRefused` if a newly-published
+/// `virtual_io_slot`. `0` on success; a negative `moho_abi::Error` (`DeviceRefused` if a newly-published
 /// descriptor points outside the driver's DMA region, in which case the device is not told to go).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
@@ -82,7 +82,7 @@ pub fn setup_queue(virtual_io_slot: u64, descriptors: u64, queue: u64) -> i64 {
 pub fn notify(virtual_io_slot: u64, queue: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates every published descriptor on `queue` against the
     // driver's own high-water mark before it lets the device see them.
-    unsafe { super::invoke(virtual_io_slot, abi::virtual_io::NOTIFY, queue, 0, 0) }
+    unsafe { super::invoke(virtual_io_slot, moho_abi::virtual_io::NOTIFY, queue, 0, 0) }
 }
 
 /// **Order this driver's ring writes before a doorbell store to device memory**: what a driver

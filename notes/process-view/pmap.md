@@ -52,7 +52,7 @@ from 24 on 2026-09-27; when this was written there was one.
 
 ### The program and the kernel method already exist
 
-`abi::address_space::LIST` is built, gated by `ENUMERATE`, and proven in `kernel::user::pmap_tests`.
+`moho_abi::address_space::LIST` is built, gated by `ENUMERATE`, and proven in `kernel::user::pmap_tests`.
 `crates/pmap` and `components/src/pmap.rs` are built and ratified. What is missing is a live source
 of authority for the program to be handed. Both files record that gap in their `BUGS`. `pmap <tid>`
 also needs an operand, which section 5 files under milestone 47 (navigation and naming).
@@ -153,7 +153,7 @@ checks `survey_includes` for the named tid and walks `Thread::space` directly. `
 
 The parts:
 
-- One method number on `abi::rendezvous` (7), a system call arm the size of `SURVEY`'s (about 35 lines),
+- One method number on `moho_abi::rendezvous` (7), a system call arm the size of `SURVEY`'s (about 35 lines),
   and a scheduler function. `survey_supervised` is 39 lines today.
 - No retention, no registry change, no slots. The registry premise stops mattering.
 - A `grant_plan` variant for `pmap` with `domain: true`, and milestone 47's operand.
@@ -166,7 +166,7 @@ three argument registers do not fit it.
 What it costs that is not code: `ENUMERATE` on a supervision endpoint stops meaning "name the
 members" and starts meaning "name them and read their layouts". `ps`, `pgrep` and `top` hold that
 bit today and would gain the power. That is §114's audit shape again. The alternative is a fifth
-rights bit, and `Rights::ALL` is `0b1111`, so that is an ABI change to `abi::rights`. It also makes
+rights bit, and `Rights::ALL` is `0b1111`, so that is an ABI change to `moho_abi::rights`. It also makes
 the domain, not the space, the unit of consent. A viewer sees every member's map or none.
 
 ### C. A scalar instead of a map

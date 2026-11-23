@@ -32,7 +32,7 @@ pub struct DirGrant {
     /// hand-written attacker needs none; a shell does (see [`spawn_fs_client`]).
     pub stack_pages: usize,
     /// Whether the program gets a verdict endpoint at slot 2, which `rm` sends its exit status and
-    /// count on after its report ends (`file_system_contract::rm`). Only `rm` asks; every other
+    /// count on after its report ends (`grant_plan::rm_report`). Only `rm` asks; every other
     /// client leaves slot 2 empty.
     pub verdict: bool,
 }

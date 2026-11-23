@@ -184,8 +184,16 @@ fn serve(mut host: HostController<Page>, card: Card, h: Handoff) -> ! {
         let Some(reply_capability) = req.delivered.into_reply() else {
             continue;
         };
-        // Clamped, as every block server here clamps: the packing could spell more.
-        let count = block::request_block_count(w0).min(block::TRANSFER_BLOCKS);
+        // Refused, as every block server here refuses: the packing can spell more blocks than the
+        // shared region holds, and a clamped transfer would return fewer than asked without saying so.
+        let Some(count) = block::request_block_count(w0) else {
+            reply(
+                reply_capability,
+                file_system_contract::error::word(EINVAL) as u64,
+                0,
+            );
+            continue;
+        };
         let r0 = match file_system_contract::operation(w0) {
             block::READ => transfer_blocks(&mut host, &card, &h, block, count, false),
             block::WRITE => transfer_blocks(&mut host, &card, &h, block, count, true),

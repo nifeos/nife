@@ -50,7 +50,7 @@ pub fn thread_control_block_insert_capability(
     tid: ThreadId,
     capability: crate::capability_object::Capability,
     target: Option<u64>,
-) -> Result<u64, abi::Error> {
+) -> Result<u64, moho_abi::Error> {
     thread_control_block_insert_from(tid, target, |_, _| Ok(capability))
 }
 
@@ -61,12 +61,12 @@ pub(crate) fn thread_control_block_delegate_capability(
     tid: ThreadId,
     delegation: Delegation,
     target: Option<u64>,
-) -> Result<u64, abi::Error> {
+) -> Result<u64, moho_abi::Error> {
     thread_control_block_insert_from(tid, target, |sched, current| {
         let capabilities = sched
             .threads
             .capabilities(current)
-            .ok_or(abi::Error::NoSuchSlot)?;
+            .ok_or(moho_abi::Error::NoSuchSlot)?;
         delegation.derive(&capabilities.lock())
     })
 }
@@ -80,23 +80,23 @@ pub(super) fn thread_control_block_insert_from(
     source: impl FnOnce(
         &IpcTables,
         ThreadId,
-    ) -> Result<crate::capability_object::Capability, abi::Error>,
-) -> Result<u64, abi::Error> {
+    ) -> Result<crate::capability_object::Capability, moho_abi::Error>,
+) -> Result<u64, moho_abi::Error> {
     let mut guard = IPC_TABLES.lock();
-    let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
+    let sched = guard.as_mut().ok_or(moho_abi::Error::NoSuchSlot)?;
     let capability = source(sched, current_thread_id())?;
     let (t, capabilities) = sched
         .threads
         .get_mut_with_capabilities(tid)
-        .ok_or(abi::Error::NoSuchSlot)?;
+        .ok_or(moho_abi::Error::NoSuchSlot)?;
     if t.handshake.state != State::Embryo {
-        return Err(abi::Error::WrongObject);
+        return Err(moho_abi::Error::WrongObject);
     }
     let landed = match target {
         None => capabilities.lock().insert(capability),
         Some(slot) => capabilities.lock().insert_at(slot, capability),
     }
-    .map_err(|_| abi::Error::OutOfMemory)?;
+    .map_err(|_| moho_abi::Error::OutOfMemory)?;
     // Cached for the context switch, which reads one field, not the table; `sched::grant` is the
     // other place a port capability enters a thread. Only the last of several ranges is kept (no consumer holds two), and one delegated
     // later by `SEND_CAPABILITY` is not cached. A `PortRange` without `WRITE` grants nothing: the TSS
@@ -136,32 +136,32 @@ pub fn supervise_current_thread(ep: RendezvousId, label: u64) {
 /// is not an embryo, and with `NotPermitted` one with no bound address space or no entry, since a
 /// half-built thread must never run; `Gone` for a member of an ended process. On success the
 /// thread gets its kernel stack and entry context and is placed by the power of two choices.
-pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), abi::Error> {
+pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), moho_abi::Error> {
     // Built before `IPC_TABLES` is taken: it maps pages and allocates frames, which other cores'
     // IPC would wait behind (notes/job-mix/null-system-call-under-load.md). Declared before the guard,
     // so a refusal releases the lock first; a missing stack is still reported after the checks.
     let stack = crate::thread::KernelStack::new();
     let mut guard = IPC_TABLES.lock();
-    let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
+    let sched = guard.as_mut().ok_or(moho_abi::Error::NoSuchSlot)?;
     // A member of a process that has ended may not start: `Gone`.
     if sched
         .threads
         .get(tid)
         .is_some_and(|t| process::refuses_start(sched, t))
     {
-        return Err(abi::Error::Gone);
+        return Err(moho_abi::Error::Gone);
     }
     let (t, capabilities) = sched
         .threads
         .get_mut_with_capabilities(tid)
-        .ok_or(abi::Error::NoSuchSlot)?;
+        .ok_or(moho_abi::Error::NoSuchSlot)?;
 
     if t.handshake.state != State::Embryo {
-        return Err(abi::Error::WrongObject); // already started (or not a TCB)
+        return Err(moho_abi::Error::WrongObject); // already started (or not a TCB)
     }
     // Whole, or refuse: without a space or an entry it would drop to user mode with no code.
     if t.space.is_none() || t.entry.0 == 0 {
-        return Err(abi::Error::NotPermitted); // configure it first
+        return Err(moho_abi::Error::NotPermitted); // configure it first
     }
 
     // The spawn-slot convention (§26 (the fault endpoint)): a `Rendezvous` capability in the
@@ -169,25 +169,25 @@ pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), a
     // so the child cannot forge fault messages, and its badge, the child's label (§148 (a
     // supervisor restarts by asking)), reaches only the supervisor.
     let mut table = capabilities.lock();
-    if let Ok(fault_capability) = table.get(abi::fault::FAULT_RENDEZVOUS_SLOT)
+    if let Ok(fault_capability) = table.get(moho_abi::fault::FAULT_RENDEZVOUS_SLOT)
         && let crate::capability_object::Object::Rendezvous(ep, label) = fault_capability.object
     {
         t.fault_ep = Some(ep);
         t.fault_label = label;
-        let _ = table.delete(abi::fault::FAULT_RENDEZVOUS_SLOT);
+        let _ = table.delete(moho_abi::fault::FAULT_RENDEZVOUS_SLOT);
     }
     drop(table);
 
     t.start_args = args; // the child's x0, x1, x2 (19d/19e)
     let Some(stack) = stack else {
-        return Err(abi::Error::OutOfMemory); // no kernel stack to be had
+        return Err(moho_abi::Error::OutOfMemory); // no kernel stack to be had
     };
     t.arm_for_start(stack);
     t.handshake.state = State::Ready;
     // Placement, decided once under the lock (§28 (SMP placement)): asking `target != cpu::id()`
     // again after the guard drops can disagree once this thread is stolen (see `place_on`).
     let target = pick_spawn_target();
-    // Recorded for `abi::survey::record::PLACEMENT`, before `take_token` re-borrows `sched`.
+    // Recorded for `moho_abi::survey::record::PLACEMENT`, before `take_token` re-borrows `sched`.
     t.placement = target as u8;
     let member_of = t.process;
     let remote = place_on(target, take_token(sched, tid));

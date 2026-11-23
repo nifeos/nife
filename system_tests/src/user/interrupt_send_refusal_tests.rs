@@ -5,7 +5,7 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::Rights;
@@ -49,7 +49,7 @@ fn a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it() {
     let driver = sched::spawn(|| {
         let slot = sched::grant(crate::capability_object::interrupt_capability(QUIET_INTID))
             .expect("grant the interrupt");
-        let (answer, frame) = call(slot, abi::interrupt::WAIT, 0, 0, 0);
+        let (answer, frame) = call(slot, moho_abi::interrupt::WAIT, 0, 0, 0);
         WOKE_WITH[1].store(frame.arg(1), Ordering::SeqCst);
         WOKE_WITH[2].store(frame.arg(4), Ordering::SeqCst);
         WOKE_WITH[0].store(answer.map_or(u64::MAX - 1, |v| v as u64), Ordering::SeqCst);
@@ -69,14 +69,14 @@ fn a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it() {
     .expect("grant the ep");
 
     assert_eq!(
-        call(forger, abi::rendezvous::SEND, 1, 0, 0).0,
+        call(forger, moho_abi::rendezvous::SEND, 1, 0, 0).0,
         Err(Error::NotPermitted),
         "SEND to an interrupt's endpoint was not refused"
     );
     assert_eq!(
         call(
             forger,
-            abi::rendezvous::SEND_CAPABILITY,
+            moho_abi::rendezvous::SEND_CAPABILITY,
             forger,
             Rights::ALL.bits() as u64,
             1
@@ -87,7 +87,7 @@ fn a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it() {
     );
     // Would block for ever if it were parked rather than refused: no reply is coming.
     assert_eq!(
-        call(forger, abi::rendezvous::CALL, 1, 0, 0).0,
+        call(forger, moho_abi::rendezvous::CALL, 1, 0, 0).0,
         Err(Error::NotPermitted),
         "CALL to an interrupt's endpoint was not refused"
     );

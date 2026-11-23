@@ -50,7 +50,7 @@ struct Manifest {
 }
 ```
 
-**The struct in `crates/grant_contract/src/manifest.rs` is the authority, not this page.** This list said
+**The struct in `src/manifest.rs` of `nifeos/grant_contract` is the authority, not this page.** This list said
 five fields against the code's ten from some point before 2026-08-14, when milestone 117's first
 stranger run found it and reported that following the note produces a struct that does not compile.
 It then carried `reports` and `interruptible` twice, and was missing `domain`, `config` and
@@ -169,12 +169,12 @@ The rights are the narrowest that work:
   capability the stack hands back when it is opened (§255 (each socket is its own capability)). The
   stack the progenitor builds holds `socket_contract::NO_LISTEN_GRANT`, so a declaring program can
   connect out and cannot listen.
-- The process domain arrives with `READ`, which is what `abi::rendezvous::SURVEY` takes. The job
-  budget's view is narrowed to `ENUMERATE`: `abi::memory_region::USAGE` can ask what was spent, and
+- The process domain arrives with `READ`, which is what `moho_abi::rendezvous::SURVEY` takes. The job
+  budget's view is narrowed to `ENUMERATE`: `moho_abi::memory_region::USAGE` can ask what was spent, and
   the holder cannot spend, split or destroy it.
 
 An undeclared authority is an empty slot, and that difference is the feature. A program without the
-declaration finds the slot empty and the kernel refuses its call with `abi::Error::NoSuchSlot`. `ps`
+declaration finds the slot empty and the kernel refuses its call with `moho_abi::Error::NoSuchSlot`. `ps`
 prints that refusal apart from an empty domain. `entropy_contract::delivered` reads it as `None`
 rather than as a short reply, which `disk_partitioner` turns into `R_NO_ENTROPY` instead of writing
 a GPT full of counter-derived ids. §225 (`free` sees the machine and your share) grants the machine page
@@ -215,8 +215,8 @@ installed.
 These authorities land at fixed slots rather than the next free one. A child's ordinary grants fill
 from zero upward, and how many there are depends on the wiring: `date` gets a clock from the
 progenitor and none from the guest test harness. A low number would move under the program, and it
-would probe the wrong slot. `abi::thread_control_block::CAPABILITY_INSERT`'s explicit target places them,
-as it places the fault rendezvous at `abi::fault::FAULT_RENDEZVOUS_SLOT`, the table's last slot.
+would probe the wrong slot. `moho_abi::thread_control_block::CAPABILITY_INSERT`'s explicit target places them,
+as it places the fault rendezvous at `moho_abi::fault::FAULT_RENDEZVOUS_SLOT`, the table's last slot.
 
 The slots run as one block from 7 (`DOMAIN_SLOT`) through 18 (`INDEX_SOURCES_SLOT`). They also clear
 the shell's own table, which the progenitor fills with up to seven positional capabilities, slots 0

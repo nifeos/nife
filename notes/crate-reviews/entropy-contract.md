@@ -205,7 +205,7 @@ Each is a two-way door, decided 2026-11-11 (UTC). Reversing any costs one pull r
 4. `#![forbid(unsafe_code)]`, so the README's "no `unsafe`" holds in the compiler.
 5. The shipped text describes no consumer: the crate header, `READY`, `BRING_UP_FAILED`, `readiness`,
    `VERSION` and the test docs no longer speak of "the kernel-side tests", "three programs", "the
-   three backends", `abi::Error`, `NoSuchSlot`, `random16` or a dated bench defect.
+   three backends", `moho_abi::Error`, `NoSuchSlot`, `random16` or a dated bench defect.
 
 ## Recommendation
 

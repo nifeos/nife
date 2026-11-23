@@ -32,7 +32,7 @@ notes/std.md's `BUGS` and in `script/stranger-test`'s.
 ### `script/apropos` did not fire
 
 That is this run's cleanest negative result. It landed 2026-08-18 because three runs could not reach
-`notes/net.md`, `notes/capabilities.md`, any `design/decisions/` file, or `crates/abi/src/lib.rs`.
+`notes/net.md`, `notes/capabilities.md`, any `design/decisions/` file, or `crates/moho_abi/src/lib.rs`.
 Run 5 never ran it, still reached no `design/decisions/` file, and still never opened
 `notes/net.md`. It had the name in front of it three times: in `ls script/`, in the guest builtin in
 `crates/swish/src/lib.rs`, and in `SWISH_CHECK_SCRIPT`'s transcript. The only page that says what it

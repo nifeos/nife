@@ -676,13 +676,10 @@ fn the_std_fs_write_sequence_twice_does_not_loop() {
 fn create_into_a_populated_root_and_look_it_up() {
     // The same names and contents the shipped image carries, so the root's shape matches.
     let mut srv = server_with(&[
+        (file_system_fixture::MOTD_NAME, file_system_fixture::MOTD),
         (
-            "motd",
-            b"redoxfs served this file to an unprivileged client through a capability handle\n",
-        ),
-        (
-            "scratch",
-            b"(placeholder overwritten by the redoxfs_server write test)",
+            file_system_fixture::SCRATCH_NAME,
+            file_system_fixture::SCRATCH_PLACEHOLDER,
         ),
     ]);
 
@@ -717,13 +714,10 @@ fn create_through_the_block_chunking_does_not_loop() {
     // The root the shipped image has when std::fs::write adds a third name to it.
     fs.tx(|transaction| {
         for (name, body) in [
+            (file_system_fixture::MOTD_NAME, file_system_fixture::MOTD),
             (
-                "motd",
-                &b"redoxfs served this file to an unprivileged client through a capability handle\n"[..],
-            ),
-            (
-                "scratch",
-                &b"(placeholder overwritten by the redoxfs_server write test)"[..],
+                file_system_fixture::SCRATCH_NAME,
+                file_system_fixture::SCRATCH_PLACEHOLDER,
             ),
         ] {
             let ptr = transaction

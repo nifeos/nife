@@ -12,7 +12,7 @@
 //!
 //! Name: provisional, minted 2026-10-31 (UTC) by lane/mem-budget-reclaim, for the module and the file.
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{memory_region_capability, memory_region_lending_capability};
@@ -66,7 +66,7 @@ fn a_memory_grant_the_job_split_is_refused_to_the_shell_for_good() {
 
     // The job's view of its grant, as the progenitor endows it.
     let job = sched::grant(memory_region_capability(mem)).expect("grant the job its --mem");
-    let sub_slot = call(job, abi::memory_region::SPLIT, SUB_PAGES)
+    let sub_slot = call(job, moho_abi::memory_region::SPLIT, SUB_PAGES)
         .expect("a SPEND_ONLY grant refused SPLIT, which asks for WRITE alone")
         as u64;
     let crate::capability_object::Object::MemoryRegion(sub) = sched::current_capability(sub_slot)
@@ -79,18 +79,22 @@ fn a_memory_grant_the_job_split_is_refused_to_the_shell_for_good() {
     let _ = sched::delete_current_capability(sub_slot);
     let _ = sched::delete_current_capability(job);
 
-    // The shell's copy carries every right (`delegate(slot, abi::rights::ALL)` keeps one).
+    // The shell's copy carries every right (`delegate(slot, moho_abi::rights::ALL)` keeps one).
     let shell_slot = sched::grant(memory_region_lending_capability(mem)).expect("the shell's copy");
     // What the shell can see: the refusal is one `NotPermitted`, and `USAGE`'s `CHILDREN` record is
     // how it tells a sub-region from a resident (`swish::reclaim_budget_within`).
     assert_eq!(
-        call(shell_slot, abi::memory_region::USAGE, abi::usage::CHILDREN),
+        call(
+            shell_slot,
+            moho_abi::memory_region::USAGE,
+            moho_abi::usage::CHILDREN
+        ),
         Ok(SUB_PAGES as i64),
         "the shell's copy cannot see the sub-region the job left",
     );
     for attempt in 0..64 {
         assert_eq!(
-            call(shell_slot, abi::memory_region::DESTROY, 0),
+            call(shell_slot, moho_abi::memory_region::DESTROY, 0),
             Err(Error::NotPermitted),
             "attempt {attempt}: a grant with a live sub-region was destroyed",
         );
@@ -142,7 +146,7 @@ fn a_memory_grant_holding_a_running_process_is_refused_once_then_reclaimed() {
 
     let shell_slot = sched::grant(memory_region_lending_capability(mem)).expect("the shell's copy");
     assert_eq!(
-        call(shell_slot, abi::memory_region::DESTROY, 0),
+        call(shell_slot, moho_abi::memory_region::DESTROY, 0),
         Err(Error::NotPermitted),
         "the first DESTROY reclaimed a region a running thread occupies",
     );
@@ -163,7 +167,7 @@ fn a_memory_grant_holding_a_running_process_is_refused_once_then_reclaimed() {
     let deadline = crate::arch::timer::now() + crate::arch::timer::frequency();
     let mut reclaimed = false;
     while crate::arch::timer::now() < deadline {
-        if call(shell_slot, abi::memory_region::DESTROY, 0) == Ok(0) {
+        if call(shell_slot, moho_abi::memory_region::DESTROY, 0) == Ok(0) {
             reclaimed = true;
             break;
         }

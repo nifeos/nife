@@ -12,7 +12,7 @@ pub fn yield_now() {
 
 /// The current thread exited cleanly (`SYSTEM_CALL_EXIT`). Never returns.
 pub fn exit() -> ! {
-    depart(abi::fault::EVENT_EXIT, 0, 0, true)
+    depart(moho_abi::fault::EVENT_EXIT, 0, 0, true)
 }
 
 /// `SYSTEM_CALL_EXIT_THREAD`: end the calling thread, and its process only if no other
@@ -20,14 +20,14 @@ pub fn exit() -> ! {
 /// `address_wait::clear_and_wake`. Never returns.
 pub fn exit_thread(word: u64) -> ! {
     address_wait::clear_and_wake(word);
-    depart(abi::fault::EVENT_EXIT, 0, 0, false)
+    depart(moho_abi::fault::EVENT_EXIT, 0, 0, false)
 }
 
 /// The current thread faulted (a bad access, an illegal instruction) and is being killed. Never
 /// returns. `pc` is the faulting instruction and `addr` the faulting address (0 if the fault class
 /// carries none). Called on the faulting thread's own kernel stack, as `exit` is.
 pub fn fault(pc: u64, addr: u64) -> ! {
-    depart(abi::fault::EVENT_FAULT, pc, addr, true)
+    depart(moho_abi::fault::EVENT_FAULT, pc, addr, true)
 }
 
 /// A thread's last act: report its death, then leave the CPU forever (§26).

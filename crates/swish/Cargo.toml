@@ -22,8 +22,8 @@ workspace = true
 # The parser and the planner, the manifests, and the program table. Everything this crate renders is
 # one of `grant_plan`'s values (`Refusal`, `Endowment`, `Line`), which is why the split lands here:
 # `grant_plan` decides what a line means and this decides what the user is told about it.
-grant_contract = { version = "0.1.0", path = "../grant_contract" }
-grant_plan = { version = "0.1.0", path = "../grant_plan" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
+grant_plan = { version = "0.1.0", git = "https://github.com/nifeos/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
 program_table = { version = "0.1.0", path = "../program_table" }
 
 # The slot a `std` program finds each authority in (milestone 595 (provisional)), so `caps` names
@@ -45,7 +45,7 @@ installed_programs = { version = "0.1.0", path = "../installed_programs" }
 # dependency so a command line can be checked without linking the filesystem contract; the shell
 # links it either way, because `Say::Failed` carries an errno that only `file_system_contract` can put a sentence
 # to, and inventing a friendlier word for it here is exactly what must not happen.
-file_system_contract = { version = "0.1.0", path = "../file_system_contract" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 
 # `has_magic`, and only that. Whether an arbitrary word is a pattern at all is asked before anything
 # treats it as a path, so `echo a:b` prints text instead of being refused as a name. Expansion itself

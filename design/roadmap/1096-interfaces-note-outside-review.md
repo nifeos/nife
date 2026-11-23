@@ -1,6 +1,7 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-11-11
+built: 2026-11-22
 milestone_dependencies: 956, 1017
 decision_dependencies: none
 machine_requirements: none
@@ -45,13 +46,15 @@ milestone reaches delivery.
   for the public ones: `INTERFACE_RECORD_BYTES`, `descriptor_bytes` and `note_bytes`, with no alias
   of the old spellings.
 - Item 10 (P1), `Declared` names a state: Done, [#3823](https://github.com/nifeos/nife/pull/3823). The type is `DeclaredInterface`.
-- Item 11 (P2), no fuzz target: Open. The opt-in is a per-repository choice, off by default, and
-  `nifeos/interfaces_note` has no `fuzz/` directory.
+- Item 11 (P2), no fuzz target: Done,
+  [nifeos/interfaces_note#2](https://github.com/nifeos/interfaces_note/pull/2). A decoder target
+  encodes each accepted list back and compares, and the weekly run is opted in (decision 6).
 - Item 12 (P2), the proof runs one direction: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 13 (P2), a test name the abbreviation report flags: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 14 (P2), `iter` yields by value: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 15 (P2), the triaged timeouts travel nowhere: Open. `.github/mutants-exempts` in
-  `nifeos/interfaces_note` carries no rows yet.
+- Item 15 (P2), the triaged timeouts travel nowhere: Done,
+  [nifeos/interfaces_note#3](https://github.com/nifeos/interfaces_note/pull/3). The three rows are
+  in `.github/mutants-exempts`, since the template's gate fails an unexempted timeout.
 - Decision 1, the owner string: Done, [#3575](https://github.com/nifeos/nife/pull/3575).
 - Decision 2, ratifying the twenty public names: Done, [#3823](https://github.com/nifeos/nife/pull/3823) for the four renames and [#3835](https://github.com/nifeos/nife/pull/3835)
   for the ratified names, ruled 2026-11-19 (UTC).
@@ -59,6 +62,8 @@ milestone reaches delivery.
 - Decision 4, review clearance and the repository: Done, [#3835](https://github.com/nifeos/nife/pull/3835). The architect cleared
   [notes/crate-reviews/interfaces-note.md](../../notes/crate-reviews/interfaces-note.md) and
   approved `nifeos/interfaces_note`, with `publish = false`, no tag and no publish.
+- Decision 6, the fuzz crate's dependency hold: Done,
+  [nifeos/interfaces_note#2](https://github.com/nifeos/interfaces_note/pull/2), ruled 2026-11-22 (UTC).
 
 ## Open decisions
 
@@ -183,6 +188,9 @@ The rules in force, with their background and prior art, are in
   package and gives the go to create `nifeos/interfaces_note`, with `publish = false`, no tag and no
   publish. The twenty public names keep decision 2's spelling. The move lane runs the
   stranger test, the template's workflows and the first weekly mutation run in the new repository.
+- Decision 6, the fuzz crate's dependency hold: 2026-11-22 (UTC), option A. The labeler's hold on
+  the `fuzz/` crate's dependencies is a false positive under the standing approvals for
+  `libfuzzer-sys` in an unpublished fuzz crate and for the organization's own crates.
 
 ## Prior art
 
@@ -190,9 +198,7 @@ The comparison with nearby work is in [the appendix](1096-interfaces-note-outsid
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open under "Finding status", each checked against the
-  sources on main of `nifeos/interfaces_note`.
-- **Outstanding.** The stranger test and the first weekly mutation run in `nifeos/interfaces_note`,
+- **Recorded.** The stranger test and the first weekly mutation run in `nifeos/interfaces_note`,
   whose `docs/stranger-test.md` reads `Last run: none`.
 
 ## Done when
@@ -205,7 +211,6 @@ The checks are in [the appendix](1096-interfaces-note-outside-review/done-when.m
   `.githooks/commit-msg`, `docs/stranger-test.md` and `.github/pull_request_template.md`, which
   the dry run counts among its findings. The template's `main` has removed them; the move waits for
   the release that carries the fix or notes the five lines as the template's.
-- Item 15 rests on an unverified reading of the template's mutation verdict.
 - The review did not replay the two falsification patches under Kani; the dry run applied them with
   `patch --dry-run -F0` only. `script/verify` replays them in the tree.
 - A whole-system refusal (a program with a wrong ABI entry sent through the image path) comes
@@ -213,9 +218,7 @@ The checks are in [the appendix](1096-interfaces-note-outside-review/done-when.m
 
 ## Index row
 
-An outside review of `interfaces_note` before its move. Ten findings are done. The owner string
-keeps its bytes behind a marker, and calef ratified the crate name. The architect ratified the twenty public
-names with four renames, and this lane built the renames. The move's own work remains:
-the manifest, README, citations, prose, fuzz opt-in and mutation exemptions. The review package
-exists, and the architect cleared it on 2026-11-20 (UTC): the repository may be created with
-`publish = false`, no tag and no publish.
+An outside review of `interfaces_note` before its move. Every finding and decision is done: the
+crate stands alone in `nifeos/interfaces_note` with `publish = false`, no tag and no publish, a
+decoder fuzz target and its triaged mutation exemptions. The stranger test and the first weekly
+mutation run in the new repository remain.

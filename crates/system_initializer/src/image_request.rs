@@ -447,7 +447,7 @@ impl SpawnEndpoint {
     pub(super) fn receive_capability(&mut self) -> (u64, u64, u64) {
         loop {
             if self.abandoned {
-                return (0, abi::rendezvous::NO_CAPABILITY, 0);
+                return (0, moho_abi::rendezvous::NO_CAPABILITY, 0);
             }
             let Message {
                 w0,
@@ -457,14 +457,14 @@ impl SpawnEndpoint {
                 ..
             } = receive_capability_message(self.ep).into_message();
             if badge == spawn_protocol::UNDERTAKER_BADGE {
-                if slot != abi::rendezvous::NO_CAPABILITY {
+                if slot != moho_abi::rendezvous::NO_CAPABILITY {
                     capability_delete(slot);
                 }
                 self.reaped(w0);
                 continue;
             }
             if badge != self.serving {
-                if slot != abi::rendezvous::NO_CAPABILITY {
+                if slot != moho_abi::rendezvous::NO_CAPABILITY {
                     capability_delete(slot);
                 }
                 self.stash((w0, w1, 0, badge));
@@ -739,7 +739,7 @@ fn with_live_table<R>(
 
 /// **Whether this kernel serves the system call ABI the bytes were built against** (milestone 956 (the
 /// linked interfaces carry checkable versions)). Bytes whose `INTERFACES` note declares an ABI
-/// version other than [`abi::ABI_VERSION`] are refused, and so is a note that does not decode, as a
+/// version other than [`moho_abi::ABI_VERSION`] are refused, and so is a note that does not decode, as a
 /// manifest is. The ABI never dual-serves, so the comparison is equality. Bytes with no note
 /// declare nothing and pass. The refusal's two numbers (`Refusal`) stop here: the spawn reply
 /// carries a status and no text, so the person sees the refusal and not the versions.
@@ -747,7 +747,7 @@ fn serves_declared_abi(elf: &static_elf::Elf<'_>) -> bool {
     match elf.note(capability_manifest_note::OWNER, interfaces_note::INTERFACES) {
         Ok(None) => true,
         Ok(Some(d)) => interfaces_note::decode_interfaces(d).is_ok_and(|list| {
-            list.check_served(abi::INTERFACE_ID, abi::ABI_VERSION)
+            list.check_served(moho_abi::INTERFACE_ID, moho_abi::ABI_VERSION)
                 .is_ok()
         }),
         Err(_) => false,
@@ -841,7 +841,7 @@ mod tests {
     /// The note a program built against `version` of the ABI carries.
     fn declaring(version: u32) -> Vec<u8> {
         let list = [DeclaredInterface {
-            id: abi::INTERFACE_ID,
+            id: moho_abi::INTERFACE_ID,
             version,
         }];
         InterfacesNote::<{ note_bytes(1) }>::of::<{ descriptor_bytes(1) }>(&list)
@@ -855,25 +855,25 @@ mod tests {
 
     #[test]
     fn bytes_built_against_the_served_abi_run() {
-        assert!(judged(&image(&declaring(abi::ABI_VERSION))));
+        assert!(judged(&image(&declaring(moho_abi::ABI_VERSION))));
     }
 
     #[test]
     fn bytes_built_against_another_abi_are_refused() {
-        assert!(!judged(&image(&declaring(abi::ABI_VERSION + 1))));
-        assert!(!judged(&image(&declaring(abi::ABI_VERSION - 1))));
+        assert!(!judged(&image(&declaring(moho_abi::ABI_VERSION + 1))));
+        assert!(!judged(&image(&declaring(moho_abi::ABI_VERSION - 1))));
     }
 
     #[test]
     fn bytes_with_no_interfaces_note_run() {
-        let mut other = declaring(abi::ABI_VERSION);
+        let mut other = declaring(moho_abi::ABI_VERSION);
         other[8..12].copy_from_slice(&capability_manifest_note::VERBS.to_le_bytes());
         assert!(judged(&image(&other)));
     }
 
     #[test]
     fn an_interfaces_note_that_does_not_decode_is_refused() {
-        let mut note = declaring(abi::ABI_VERSION);
+        let mut note = declaring(moho_abi::ABI_VERSION);
         let count = note.len() - 16;
         note[count..count + 4].copy_from_slice(&7u32.to_le_bytes());
         assert!(!judged(&image(&note)));

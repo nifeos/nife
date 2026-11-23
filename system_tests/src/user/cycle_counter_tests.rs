@@ -94,7 +94,7 @@ fn a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults() {
 
     let (moved, meaning) = (message[1], message[2]);
     assert_eq!(
-        abi::cycle_counter::CycleMeaning::from_word(meaning),
+        moho_abi::cycle_counter::CycleMeaning::from_word(meaning),
         Some(expected_cycle_meaning()),
         "the granted thread's reading said it counts {meaning:#x}, which is not what this \
          architecture's counter counts",
@@ -116,8 +116,8 @@ fn a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults() {
 /// On aarch64 the promise rests on the filter: the meaning is only true while `arch::pmu` writes
 /// zero to `PMCCFILTR_EL0` (its own test reads the register back), so that is asserted at compile
 /// time here, and a change of policy fails the build until the meaning changes with it.
-fn expected_cycle_meaning() -> abi::cycle_counter::CycleMeaning {
-    use abi::cycle_counter::CycleMeaning;
+fn expected_cycle_meaning() -> moho_abi::cycle_counter::CycleMeaning {
+    use moho_abi::cycle_counter::CycleMeaning;
     #[cfg(target_arch = "aarch64")]
     {
         const _: () = assert!(

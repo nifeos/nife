@@ -39,65 +39,54 @@ One line per finding, in the review's order: items 1 to 5 in
 [the blocks-the-move appendix](1091-filesystem-fixture-outside-review/blocks-the-move.md), items 6
 to 12 in [the before-the-tag appendix](1091-filesystem-fixture-outside-review/before-the-tag.md),
 items 13 to 18 in [the later-items appendix](1091-filesystem-fixture-outside-review/later-items.md),
-then the decisions and the release step.
+then the three decisions.
 
-- Item 1 (P0), the template's cargo-deny refuses a nifeos git dependency: Done, in the template:
-  [crate-workflows#66](https://github.com/nifeos/crate-workflows/pull/66) allows git sources on the
-  organization, and [crate-workflows#64](https://github.com/nifeos/crate-workflows/pull/64) supports
-  a repository of several crates.
-- Item 2 (P0), the order and pairing are stale: Done. The crate's README and root `BUGS` say the
-  crate depends on `file_system_contract` by path inside one workspace. Milestone 1017's step 2 row
-  still gives the removed dev-dependency as the reason for the pairing, and its owner corrects it.
-- Item 3 (P0), acronyms and British spelling: Done. [#3566](https://github.com/nifeos/nife/pull/3566) read the doc comments in full, and the `MOTD` literal now says
-  "an unprivileged client" where it said `EL0`, in the crate and in the test that compares it.
-- Item 4 (P0), names the gates refuse: Done (Decision 2, maintainer, provisional, 2026-11-14 UTC).
-  The lane applied the three tables across the nine manifests as provisional names, with no alias
-  of an old spelling. `spelled_out`, `register_names` and the other five gates report 0 refused names.
-  The kept command names that are not integer constants (`RM_*`, `RG_*`, `GLOB*`, `MOTD*`) carry
-  `#[doc(alias)]`; the integer ones (`RMDIR_*`, `PWD_*`, `UNLINK*`) cannot, because the template
-  never allows an alias on an integer constant.
-- Item 5 (P0), no review package and 244 unratified names: Open.
-  [The fixture's package](../../notes/crate-reviews/filesystem-fixture.md) and
-  [the contract's](../../notes/crate-reviews/filesystem-contract.md) form the one package. It asks
-  for the crate name and the identity values now, and for the item names after item 4.
-- Item 6 (P1), the crate describes this tree: Done. No shipped text names nife. The data literals
-  are `"walk entry body\n"`, the partition names `boot`, `root` and `data`, and a `MADE_BODY` that
-  says "created on the target"; the tests that compare them read the same constants.
+- Item 1 (P0), the template's cargo-deny refuses a nifeos git dependency: Done,
+  [nifeos/crate-workflows#66](https://github.com/nifeos/crate-workflows/pull/66) allows git sources
+  on the organization and
+  [nifeos/crate-workflows#64](https://github.com/nifeos/crate-workflows/pull/64) supports a
+  repository of several crates.
+- Item 2 (P0), the order and pairing are stale: Done, [#3909](https://github.com/nifeos/nife/pull/3909).
+  The README and the crate root say the dependency on `file_system_contract` is a path inside one
+  workspace.
+- Item 3 (P0), acronyms and British spelling: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 4 (P0), names the gates refuse: Done, [#3910](https://github.com/nifeos/nife/pull/3910) applied
+  Decision 2's three tables as provisional names, and the naming gates report none refused.
+- Item 5 (P0), no review package and unratified names: Done, [#4009](https://github.com/nifeos/nife/pull/4009).
+  The architect ratified the crate name, `INTERFACE_ID` 16 at `VERSION` 1 and the item names as
+  built, ruled 2026-11-22 UTC.
+- Item 6 (P1), the crate describes this tree: Done, [#4000](https://github.com/nifeos/nife/pull/4000).
+  The externalization lint counts no consumer name, and the crate has no waiver.
 - Item 7 (P1), history residue: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 8 (P1), the `durability` module is unused: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566) deleted the module.
+- Item 8 (P1), the `durability` module is unused: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 9 (P1), the shared-frame witness doc states the refuted outcome: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 10 (P1), 14 equivalent mutants: Done, [#3566](https://github.com/nifeos/nife/pull/3566). The
-  sites now read `1` and `0xFF`.
-- Item 11 (P1), caller workflows, manifest and stranger run: Open. The manifest has no
-  `repository` field and its `publish` comment cites this tree's allowlist; the caller workflows
-  (three targets, `allow-unpublished`), accepted words and the stranger run come with the move.
-- Item 12 (P1), the README's claims mislead: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 10 (P1), 14 equivalent mutants: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 11 (P1), caller workflows, manifest and stranger run: Done in part,
+  [#4000](https://github.com/nifeos/nife/pull/4000) and [#4020](https://github.com/nifeos/nife/pull/4020). The manifest and the caller
+  workflows (three targets, `allow-unpublished`) are in place; the stranger run comes before a tag.
+- Item 12 (P1), the README's claims mislead: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 13 (P2), `rg_match_path` unbounded: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 14 (P2), `wide_name` wraps: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 15 (P2), the throughput widths mix `usize` and `u64`: Open. `throughput::UNIT` is still a
-  `usize`; one width changes the casts in the kernel bench and the client with it.
-- Item 16 (P2), hand-copied distinct-bits lists: Open. Public `ALL` arrays per witness module, new
-  provisional names, with one test over them.
-- Item 17 (P2), the doc comments are a note: Open. A rewrite of about 11,000 words, the reasons
-  moving to the new repository's `docs/`.
-- Item 18 (P2), outsiders get nothing to run: Open. An outsider-runnable harness is outside this
-  milestone's scope and has no owner; this line is its record.
-- Decision 1, the repository: Ruled (2026-11-14 UTC): one workspace repository shared with
-  `file_system_contract`. Not built: the crate text (item 2), and the move at milestone 1017's
-  step 2, after items 1 to 5.
-- Decision 2, the names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: item 4 is the
-  work.
-- Decision 3, the review package and clearance: Ruled (maintainer, provisional for the package step,
-  2026-11-19 UTC). The package is written (item 5); the
-  clearance stays open until the architect gives it.
+- Item 15 (P2), the throughput widths mix `usize` and `u64`: Done,
+  [#4000](https://github.com/nifeos/nife/pull/4000).
+- Item 16 (P2), hand-copied distinct-bits lists: Done, [#4000](https://github.com/nifeos/nife/pull/4000).
+  Each witness module has a public `ALL`, and a test holds each to the bits its module declares.
+- Item 17 (P2), the doc comments are a note: Open.
+- Item 18 (P2), outsiders get nothing to run: Waiting on milestone 1017's move. A harness a third
+  party can run belongs to the shared repository once both crates are there; the README and the
+  crate root's `BUGS` record the gap.
+- Decision 1, the repository: Done, [#4020](https://github.com/nifeos/nife/pull/4020). One workspace repository shared with
+  `file_system_contract`, ruled 2026-11-14 (UTC); nife depends on both crates at commit
+  7577a7d0df339107f75747c3681f5990f116cf61.
+- Decision 2, the names: Done, [#3910](https://github.com/nifeos/nife/pull/3910).
+- Decision 3, the review package and clearance: Done, [#4009](https://github.com/nifeos/nife/pull/4009). Ruled 2026-11-22
+  UTC: `file_system_fixture` is cleared as the second crate of the shared repository
+  `nifeos/file_system_contract`, `publish = false`.
 
 ## Open decisions
 
-None. The review package carries the name ratification and the clearance of the review, which stay
-the architect's.
+None.
 
 ## Goal
 

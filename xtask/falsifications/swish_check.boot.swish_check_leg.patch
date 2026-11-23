@@ -40,11 +40,11 @@ diff --git a/crates/system_initializer/src/boot_sequence.rs b/crates/system_init
 +    if devices.screen.held {
 +        let t = &devices.screen;
 +        let lent = [t.gpu[0], t.gpu[1], t.gpu[2], t.gpu[3], t.kbd[0], t.kbd[1], t.kbd[2]];
-+        let (w, r, rw) = (abi::rights::WRITE, abi::rights::READ, abi::rights::READ | abi::rights::WRITE);
++        let (w, r, rw) = (moho_abi::rights::WRITE, moho_abi::rights::READ, moho_abi::rights::READ | moho_abi::rights::WRITE);
 +        let rights = [w, r, rw, rw, w, r, rw];
 +        for (i, cap) in lent.iter().enumerate() {
 +            if t.keyboard || i < 4 {
-+                let g = rights[i] | abi::rights::GRANT;
++                let g = rights[i] | moho_abi::rights::GRANT;
 +                must_ok(place_at(shell.tcb, *cap, g, spawn_protocol::SHELL_GPU_SLOT + i as u64));
 +            }
 +        }

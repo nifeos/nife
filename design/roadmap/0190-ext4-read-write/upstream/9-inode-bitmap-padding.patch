@@ -1,0 +1,86 @@
+From 993ef99b1c14be0639cfa36896a58d2d4d883cf0 Mon Sep 17 00:00:00 2001
+From: Chris Alef <476570+calef@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 22:31:01 +0000
+Subject: [PATCH] fix(rsext4): set the inode bitmap padding when initializing
+ an uninit group
+
+When a group still carries EXT4_BG_INODE_UNINIT, its on-disk inode
+bitmap is not initialized: the ext4 format documentation (2.2.4 Lazy
+Block Group Initialization) says only that the bitmap can be
+calculated. alloc_inodes calculates it in memory as all zeroes.
+
+The format documentation does not say what the bits past the group's
+last inode hold. e2fsck (e2fsprogs 1.47.2) requires every one of them
+set, and reports "Padding at end of inode bitmap is not set" with exit
+status 4 otherwise. Whenever inodes per group is smaller than the bits
+in one block, which mke2fs gives at 1 KiB blocks, the first inode
+allocated in such a group leaves a bitmap e2fsck rejects.
+
+The synthesized bitmap now has its padding set, the same way the Linux
+kernel sets it in ext4_mark_bitmap_end. e2fsprogs computes and verifies
+the inode bitmap checksum over the first inodes_per_group / 8 bytes
+only, as rsext4's ext4_inode_bitmap_csum32 does, so the padding leaves
+the checksum unchanged.
+
+The existing uninit-allocation test now also requires every bit past
+the group's last inode to be set; it fails without the fix.
+---
+ fs/rsext4/src/ext4/alloc.rs | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/fs/rsext4/src/ext4/alloc.rs b/fs/rsext4/src/ext4/alloc.rs
+index 48aaa2df2..bac1676ce 100644
+--- a/fs/rsext4/src/ext4/alloc.rs
++++ b/fs/rsext4/src/ext4/alloc.rs
+@@ -164,6 +164,7 @@ impl Ext4FileSystem {
+             ));
+         }
+ 
++        let inodes_per_group = self.superblock.s_inodes_per_group;
+         for (group_idx, bitmap_block, inode_uninit, desc) in group_meta {
+             let cache_key = CacheKey::new_inode(group_idx);
+             let mut inodes: Vec<InodeNumber> = Vec::with_capacity(count as usize);
+@@ -187,8 +188,11 @@ impl Ext4FileSystem {
+                     let mut candidate = data.to_vec();
+                     // When EXT4_BG_INODE_UNINIT is set the on-disk bitmap is
+                     // stale. Linux synthesizes an all-free bitmap in memory.
++                    // The padding bits past the group's last inode are set,
++                    // because e2fsck rejects a bitmap whose padding is clear.
+                     if inode_uninit {
+                         candidate.fill(0);
++                        mark_inode_bitmap_padding(&mut candidate, inodes_per_group);
+                     }
+                     for _ in 0..count {
+                         match self.inode_allocator.alloc_inode_in_group(
+@@ -490,6 +494,17 @@ impl Ext4FileSystem {
+     }
+ }
+ 
++/// Sets the bits past the group's last inode, up to the end of the bitmap
++/// block. e2fsck checks that they are set; the Linux kernel sets them the
++/// same way in `ext4_mark_bitmap_end`.
++fn mark_inode_bitmap_padding(bitmap: &mut [u8], inodes_per_group: u32) {
++    let first = inodes_per_group as usize;
++    let end = bitmap.len() * 8;
++    for bit in first.min(end)..end {
++        bitmap[bit / 8] |= 1 << (bit % 8);
++    }
++}
++
+ #[cfg(test)]
+ mod tests {
+     use core::cell::Cell;
+@@ -739,6 +754,10 @@ mod tests {
+             .get(&CacheKey::new_inode(BGIndex::new(0)))
+             .unwrap();
+         assert_eq!(bitmap.data[0], 0b0000_0001);
++        // Bits past the group's last inode are padding, and e2fsck requires
++        // them set ("Padding at end of inode bitmap is not set").
++        assert_eq!(bitmap.data.len(), BLOCK_SIZE);
++        assert!(bitmap.data[1..].iter().all(|byte| *byte == 0xff));
+     }
+ 
+     #[test]
+-- 
+2.53.0
+

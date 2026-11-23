@@ -114,7 +114,7 @@ image. It is milestone 117 (the stranger test)'s finding: the pages a newcomer c
 ones nothing a person would type led to. It runs the same `documentation::index::build` and
 `search`, so a layout defect shows in both places. A result names a path in this repository rather
 than a store location. Crate and program module headers are pages, which is what makes
-`crates/abi/src/lib.rs` findable. There is no cache: a run is about a second over five megabytes,
+`crates/moho_abi/src/lib.rs` findable. There is no cache: a run is about a second over five megabytes,
 and a stale cache is worse. An example run and the three deliberate choices are in
 [documentation/repository-search.md](documentation/repository-search.md).
 

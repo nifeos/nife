@@ -48,8 +48,8 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     };
     // READ on an interrupt is WAIT and ACKNOWLEDGE.
     let grants = [
-        (REPORT, abi::rights::WRITE),
-        (TEST_INTERRUPT, abi::rights::READ),
+        (REPORT, moho_abi::rights::WRITE),
+        (TEST_INTERRUPT, moho_abi::rights::READ),
     ];
     let endowment = ChildEndowment {
         capabilities: &grants,

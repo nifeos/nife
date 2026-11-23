@@ -100,7 +100,7 @@ of those 404, crate by crate, re-measuring the same way after every batch: 235 i
 `#![warn(missing_docs)]` beside each crate's `#![no_std]`. Under `script/lint`'s `-D warnings` that is
 a hard gate, so those crates cannot regress:
 
-`abi`, `address_space_identifier`, `bitmap_font`, `block_roster_contract`, `c_seam`, `calendar`, `memory_corruption_canary_gate`, `capability`,
+`moho_abi`, `address_space_identifier`, `bitmap_font`, `block_roster_contract`, `c_seam`, `calendar`, `memory_corruption_canary_gate`, `capability`,
 `clock_contract`, `capability_plan`, `coremark`, `cpu_set`, `cred`, `credential_contract`,
 `dma_validator`, `device_tree_blob`. `static_elf`, `entropy_contract`, `page_frames`,
 `file_system_contract`, `graphics_contract`, `byte_glob`, `inter_process_communication`,

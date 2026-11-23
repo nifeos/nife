@@ -30,7 +30,7 @@ const REPORT: u64 = 3;
 user_mode_runtime::program_entry!(start);
 
 fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
-    let n = retype_into_kernel_object(MEMORY_REGION, abi::object_type::NOTIFICATION);
+    let n = retype_into_kernel_object(MEMORY_REGION, moho_abi::object_type::NOTIFICATION);
     require(n >= 0);
     let n = n as u64;
 
@@ -49,20 +49,20 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Bind to ourselves, once. A second bind of the same pair is refused: a notification binds one
     // thread and a thread binds one notification.
     require(notification_bind(n, MYSELF) == 0);
-    require(notification_bind(n, MYSELF) == abi::Error::NotPermitted as i64);
+    require(notification_bind(n, MYSELF) == moho_abi::Error::NotPermitted as i64);
     // The wrong kind of capability in the thread slot is `WrongObject`, not a silent success.
-    require(notification_bind(n, ENDPOINT) == abi::Error::WrongObject as i64);
+    require(notification_bind(n, ENDPOINT) == moho_abi::Error::WrongObject as i64);
 
     // A signal counted while we are not receiving ends our next receive at once.
     require(notification_signal(n, 0b1000) == 0);
     require(receive_message(ENDPOINT) == Received::Notification(0b1000));
 
     // Hand the kernel test a signal-only view of the notification, then block receiving twice.
-    require(send_capability(REPORT, n, abi::rights::WRITE, 0) == 0);
+    require(send_capability(REPORT, n, moho_abi::rights::WRITE, 0) == 0);
     for _ in 0..2 {
         match receive_message(ENDPOINT) {
             Received::Notification(word) => {
-                send(REPORT, abi::notification::BOUND, word, 1);
+                send(REPORT, moho_abi::notification::BOUND, word, 1);
             }
             Received::Message(Message { w0, w1, .. }) => {
                 send(REPORT, w0, w1, 0);

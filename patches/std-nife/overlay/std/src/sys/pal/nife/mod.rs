@@ -10,7 +10,7 @@
 
 #![allow(unsafe_op_in_unsafe_fn)]
 
-pub(crate) mod abi;
+pub(crate) mod moho_abi;
 // The net_stack socket-contract wire format (opcodes, frame offsets), generated verbatim from
 // `crates/socket_contract` by `cargo xtask std-src` so the numbers cannot drift from the server.
 // The net PAL (`sys/net`) is a client of it.
@@ -46,7 +46,7 @@ pub(crate) mod sinkproto;
 #[allow(dead_code)]
 pub(crate) mod envproto;
 // The argument page (milestone 205 (how a foreign program is told what to do), DECISIONS §170):
-// the byte argv's layout, generated verbatim from `crates/program_argument_contract/src/lib.rs` by the same
+// the byte argv's layout, generated verbatim from `src/lib.rs` of the pinned `nifeos/program_argument_contract` by the same
 // xtask step. `sys/args` is a *reader*; `PageBuilder` belongs to whoever assembles a page (the
 // shell), hence the allow.
 #[allow(dead_code)]

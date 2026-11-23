@@ -32,7 +32,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use abi::rights;
+use moho_abi::rights;
 use socket_contract::*;
 use socket_fixture::{ECHO_PEER_ADDRESS, ECHO_PEER_PORT};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};

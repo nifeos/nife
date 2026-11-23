@@ -24,7 +24,7 @@ named here only so the decision is not read as gating it.
 ## The ruling, 2026-10-05 UTC
 
 calef ruled in one word: **"B1"**. On an IOMMU fault, the kernel faults the driver process. Its
-supervisor receives the existing death message, `EVENT_FAULT` (`crates/abi/src/lib.rs:984`). The
+supervisor receives the existing death message, `EVENT_FAULT` (`crates/moho_abi/src/lib.rs:984`). The
 message's `addr` is set to the faulting DMA address, and the driver's label is in argument
 register 5 (§148 (a supervisor restarts by asking, and resolves by asking the kernel), as amended
 2026-10-04; #1659). That label is milestone 105 (the two forks named and left)'s. There is no new

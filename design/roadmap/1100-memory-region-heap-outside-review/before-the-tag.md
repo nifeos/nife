@@ -46,7 +46,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    collides with another mapping therefore loses one page per failed allocation, with no way to see
    why, and a program with a misaligned `base` fails every allocation with no diagnosis.
    Evidence: `src/lib.rs` lines 166 to 178. `kernel/src/system_call/memory_region.rs` lines 71 to 110.
-   `crates/abi/src/lib.rs` line 327.
+   `crates/moho_abi/src/lib.rs` line 327.
    Change: keep the kernel's last error in `Inner` and stop growing for good on anything but
    `OutOfMemory` (one page lost, not one per allocation). Expose it through one accessor the README
    names, so a stranger's first failed boot has a number to read. `initialize` checks
@@ -82,7 +82,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
 
 9. The documentation does not survive a reader who has not read nife. DONE (the crate docs gloss "untyped", state the minimum cap, pin 1,575 bytes in `the_first_heap_fits_in_one_page`, and name the spinlock; the README's host example compiles as a doctest).
    Finding: the crate says "untyped" (lines 1, 42, 94 and the module docs) and "memory region" (the
-   crate name, the slot's name, the `abi` module) for one thing, and defines neither. The only
+   crate name, the slot's name, the `moho_abi` module) for one thing, and defines neither. The only
    example carries `ignore` and never compiles. Nothing states the minimum useful cap. talc's first
    heap needs `min_first_heap_size::<DefaultBinning>()`, 1,575 bytes on a 64-bit target by hand from
    `BIN_COUNT = 191` (unverified by a test), plus the first chunk. `commit_all` under that cap maps

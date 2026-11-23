@@ -41,7 +41,7 @@ moves no fatal-risk verdict.
 ## What the tree has, read on 2026-10-06 (UTC)
 
 - Notification objects: a word a sender ORs bits into and a waiter collects, bindable so a thread
-  waiting on an endpoint also wakes for it (§101 (notification objects), `abi::notification`).
+  waiting on an endpoint also wakes for it (§101 (notification objects), `moho_abi::notification`).
 - Milestone 851's broker counts committed memory per account, refuses a commit past the account's
   ceiling
   or the per-identity cap or when the pool is empty, and gives the owner a revoke.

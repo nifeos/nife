@@ -1,7 +1,7 @@
 //! **`ps`: what a process listing is when there is no `/proc`** (notes/process-view.md). The
 //! program's logic, lifted out to run on the host; `components/src/ps.rs` is the system call and the
 //! two output streams. The listing is a capability, not ambient `/proc`: this crate is handed a
-//! function that reads one entry of a domain, backed by `abi::rendezvous::SURVEY` on an endowed
+//! function that reads one entry of a domain, backed by `moho_abi::rendezvous::SURVEY` on an endowed
 //! supervision endpoint, so it cannot widen the domain or learn that another exists. Rows, an
 //! empty domain and a refusal stay three distinct answers. [`collect`] takes the whole domain
 //! into the caller's buffer before anything is written, then the caller emits
@@ -42,9 +42,9 @@ pub const MAXIMUM_ROWS: usize = 1024;
 /// Two fields, because two facts is what a supervision domain honestly knows about its members.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Row {
-    /// The kernel-stamped thread id, the same name `abi::rendezvous::REAP` accepts.
+    /// The kernel-stamped thread id, the same name `moho_abi::rendezvous::REAP` accepts.
     pub tid: u64,
-    /// One of `abi::survey`'s state codes.
+    /// One of `moho_abi::survey`'s state codes.
     pub state: u64,
     /// **Scheduled on-CPU time in milliseconds**, or `None` when nobody asked for it.
     ///
@@ -53,7 +53,7 @@ pub struct Row {
     /// on a CPU at a tick, a different fact from "not asked". It also stays `None` for a thread
     /// that died between the two walks.
     pub cpu_milliseconds: Option<u64>,
-    /// **Which process of the domain the thread belongs to**, as `abi::survey::record::PROCESS`
+    /// **Which process of the domain the thread belongs to**, as `moho_abi::survey::record::PROCESS`
     /// labeled it in one walk (§313), or `None` when nobody asked or the thread died between
     /// walks.
     ///
@@ -90,7 +90,7 @@ pub struct Survey<'a> {
     /// ([`Survey::rank_by_cpu_time`]). The borrow is still the caller's buffer; nothing here
     /// allocates.
     rows: &'a mut [Row],
-    /// The negated `abi::Error` that ended the walk, if one did. `Some` here means **the listing is
+    /// The negated `moho_abi::Error` that ended the walk, if one did. `Some` here means **the listing is
     /// not the domain**: it is however far the walk got, which is why the caller prints the reason
     /// rather than the partial table.
     refused: Option<i64>,
@@ -106,8 +106,8 @@ pub struct Survey<'a> {
 
 /// **Walk a domain to its end and keep what it says.**
 ///
-/// `read(cursor)` is one `abi::rendezvous::SURVEY`: it answers `(next_cursor, tid, state)`, where a
-/// negative first word is a refusal and `abi::survey::DONE` means the walk is over. Start at 0,
+/// `read(cursor)` is one `moho_abi::rendezvous::SURVEY`: it answers `(next_cursor, tid, state)`, where a
+/// negative first word is a refusal and `moho_abi::survey::DONE` means the walk is over. Start at 0,
 /// feed each `next_cursor` back; this function is that loop. A closure rather than a system call, so
 /// every case is reachable from a host test. The walk stops at the first refusal and reports it
 /// rather than skipping the entry.
@@ -121,8 +121,8 @@ pub struct Survey<'a> {
 ///
 /// // A domain of one running thread: cursor 0 yields it, cursor 1 says done.
 /// let mut reader = |cursor: u64| match cursor {
-///     0 => (1, 7, abi::survey::RUNNING),
-///     _ => (abi::survey::DONE as i64, 0, 0),
+///     0 => (1, 7, moho_abi::survey::RUNNING),
+///     _ => (moho_abi::survey::DONE as i64, 0, 0),
 /// };
 /// let mut rows = [Row::default(); MAXIMUM_ROWS];
 /// let survey = collect(&mut rows, &mut reader);
@@ -149,7 +149,7 @@ pub fn collect<'a>(
             break;
         }
         let next = next as u64;
-        if next == abi::survey::DONE {
+        if next == moho_abi::survey::DONE {
             break;
         }
         // A cursor that did not advance would spin here forever. The kernel is inside the trusted
@@ -188,7 +188,7 @@ impl Survey<'_> {
     }
 
     /// **Fill in [`Row::cpu_milliseconds`] from a second walk of the same domain** (milestone 282 (a thread's CPU time, and the `top` it makes possible),
-    /// `abi::survey::record::CPU_TIME`).
+    /// `moho_abi::survey::record::CPU_TIME`).
     ///
     /// `read(cursor)` is one `SURVEY` asking for the CPU-time record, bound by the caller, as
     /// [`collect`]'s closure is for the state record. Two walks joined on the tid, rather than one
@@ -204,7 +204,7 @@ impl Survey<'_> {
     }
 
     /// **Fill in [`Row::process`] from a walk of the same domain** (milestone 942 (`ps` and `top`
-    /// show which process each thread belongs to), `abi::survey::record::PROCESS`).
+    /// show which process each thread belongs to), `moho_abi::survey::record::PROCESS`).
     ///
     /// `read(cursor)` is one `SURVEY` asking for the process record. It joins on the tid exactly as
     /// [`join_cpu_time`](Self::join_cpu_time) does, and a thread that died between the walks keeps
@@ -233,7 +233,7 @@ impl Survey<'_> {
                 return;
             }
             let next = next as u64;
-            if next == abi::survey::DONE {
+            if next == moho_abi::survey::DONE {
                 return;
             }
             // The same non-advancing-cursor guard `collect` carries, and for the same reason: this
@@ -435,7 +435,7 @@ impl Survey<'_> {
     }
 }
 
-/// What an `abi::survey` state code is called in the listing.
+/// What a `moho_abi::survey` state code is called in the listing.
 ///
 /// Lowercase, because these are states rather than headings and the tree's other programs do not
 /// shout. An unknown code prints as `?` rather than panicking: this program is reading a number
@@ -443,29 +443,29 @@ impl Survey<'_> {
 /// crash.
 pub const fn state_name(state: u64) -> &'static str {
     match state {
-        abi::survey::READY => "ready",
-        abi::survey::RUNNING => "running",
-        abi::survey::BLOCKED => "blocked",
-        abi::survey::DEAD => "dead",
+        moho_abi::survey::READY => "ready",
+        moho_abi::survey::RUNNING => "running",
+        moho_abi::survey::BLOCKED => "blocked",
+        moho_abi::survey::DEAD => "dead",
         _ => "?",
     }
 }
 
-/// What a negated `abi::Error` means to somebody who typed `ps`.
+/// What a negated `moho_abi::Error` means to somebody who typed `ps`.
 ///
 /// **Written as facts about authority, not as errno.** A refusal here must read like the capability
 /// model, which is the same standard `grant_plan::Refusal::message` holds itself to: the reader
 /// should learn what they do not hold, not which branch of a `match` they landed in.
 pub fn refusal(code: i64) -> &'static str {
-    match abi::Error::try_from(code).ok() {
-        Some(abi::Error::NoSuchSlot) => "this process holds no process-domain capability",
-        Some(abi::Error::NotPermitted) => {
+    match moho_abi::Error::try_from(code).ok() {
+        Some(moho_abi::Error::NoSuchSlot) => "this process holds no process-domain capability",
+        Some(moho_abi::Error::NotPermitted) => {
             "this endpoint may be sent to, but not looked at: no READ on the domain"
         }
-        Some(abi::Error::WrongObject) => {
+        Some(moho_abi::Error::WrongObject) => {
             "the capability granted here is not a supervision endpoint"
         }
-        Some(abi::Error::Gone) => "the domain this named has been destroyed",
+        Some(moho_abi::Error::Gone) => "the domain this named has been destroyed",
         _ => "the domain could not be read",
     }
 }
@@ -567,7 +567,7 @@ mod tests {
     fn domain(entries: &'static [(u64, u64)]) -> impl FnMut(u64) -> (i64, u64, u64) {
         move |cursor: u64| match entries.get(cursor as usize) {
             Some(&(tid, state)) => (cursor as i64 + 1, tid, state),
-            None => (abi::survey::DONE as i64, 0, 0),
+            None => (moho_abi::survey::DONE as i64, 0, 0),
         }
     }
 
@@ -583,9 +583,9 @@ mod tests {
         let s = collect(
             &mut rows,
             &mut domain(&[
-                (3, abi::survey::RUNNING),
-                (5, abi::survey::BLOCKED),
-                (9, abi::survey::DEAD),
+                (3, moho_abi::survey::RUNNING),
+                (5, moho_abi::survey::BLOCKED),
+                (9, moho_abi::survey::DEAD),
             ]),
         );
         assert!(!s.is_refused());
@@ -594,7 +594,7 @@ mod tests {
             s.rows()[2],
             Row {
                 tid: 9,
-                state: abi::survey::DEAD,
+                state: moho_abi::survey::DEAD,
                 cpu_milliseconds: None,
                 process: None,
             }
@@ -610,7 +610,7 @@ mod tests {
         let empty = collect(&mut rows_a, &mut domain(&[]));
         let mut rows_b = [Row::default(); MAXIMUM_ROWS];
         let refused = collect(&mut rows_b, &mut |_| {
-            (abi::Error::NotPermitted as i64, 0, 0)
+            (moho_abi::Error::NotPermitted as i64, 0, 0)
         });
 
         assert!(!empty.is_refused(), "an empty domain is not a refusal");
@@ -637,8 +637,8 @@ mod tests {
         let s = collect(&mut rows, &mut |cursor| {
             calls += 1;
             match cursor {
-                0 => (1, 3, abi::survey::RUNNING),
-                _ => (abi::Error::Gone as i64, 0, 0),
+                0 => (1, 3, moho_abi::survey::RUNNING),
+                _ => (moho_abi::Error::Gone as i64, 0, 0),
             }
         });
         assert!(s.is_refused());
@@ -661,7 +661,7 @@ mod tests {
     #[test]
     fn a_cursor_that_does_not_advance_ends_the_walk() {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
-        let s = collect(&mut rows, &mut |_| (1, 4, abi::survey::READY));
+        let s = collect(&mut rows, &mut |_| (1, 4, moho_abi::survey::READY));
         assert!(s.is_refused());
         assert!(shown(|o| s.write_diagnostics(o)).contains("did not advance"));
     }
@@ -675,7 +675,7 @@ mod tests {
     fn a_buffer_too_small_for_the_domain_says_so_and_prints_nothing() {
         let mut rows = [Row::default(); 2];
         let s = collect(&mut rows, &mut |cursor| {
-            (cursor as i64 + 1, cursor + 100, abi::survey::READY)
+            (cursor as i64 + 1, cursor + 100, moho_abi::survey::READY)
         });
         assert_eq!(s.rows().len(), 2);
         assert!(
@@ -698,9 +698,9 @@ mod tests {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let s = collect(&mut rows, &mut |cursor| {
             if (cursor as usize) < MAXIMUM_ROWS {
-                (cursor as i64 + 1, cursor + 100, abi::survey::READY)
+                (cursor as i64 + 1, cursor + 100, moho_abi::survey::READY)
             } else {
-                (abi::survey::DONE as i64, 0, 0)
+                (moho_abi::survey::DONE as i64, 0, 0)
             }
         });
         assert!(!s.is_refused());
@@ -712,7 +712,7 @@ mod tests {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let s = collect(
             &mut rows,
-            &mut domain(&[(3, abi::survey::RUNNING), (5, abi::survey::DEAD)]),
+            &mut domain(&[(3, moho_abi::survey::RUNNING), (5, moho_abi::survey::DEAD)]),
         );
         let out = shown(|o| s.write_report(o));
         let lines: Vec<&str> = out.lines().collect();
@@ -731,7 +731,7 @@ mod tests {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let s = collect(
             &mut rows,
-            &mut domain(&[((1u64 << 32) | 6, abi::survey::DEAD)]),
+            &mut domain(&[((1u64 << 32) | 6, moho_abi::survey::DEAD)]),
         );
         let out = shown(|o| s.write_report(o));
         assert!(out.contains("4294967302"), "{out}");
@@ -742,10 +742,10 @@ mod tests {
     /// `blocked` arm left every test green.
     #[test]
     fn every_state_has_its_name() {
-        assert_eq!(state_name(abi::survey::READY), "ready");
-        assert_eq!(state_name(abi::survey::RUNNING), "running");
-        assert_eq!(state_name(abi::survey::BLOCKED), "blocked");
-        assert_eq!(state_name(abi::survey::DEAD), "dead");
+        assert_eq!(state_name(moho_abi::survey::READY), "ready");
+        assert_eq!(state_name(moho_abi::survey::RUNNING), "running");
+        assert_eq!(state_name(moho_abi::survey::BLOCKED), "blocked");
+        assert_eq!(state_name(moho_abi::survey::DEAD), "dead");
         assert_eq!(state_name(u64::MAX), "?");
     }
 
@@ -753,11 +753,11 @@ mod tests {
     /// ones whose arms could be deleted into the generic "could not be read" line unnoticed.
     #[test]
     fn each_refusal_is_explained_in_its_own_words() {
-        let say = |e: abi::Error| refusal(e as i64);
-        assert!(say(abi::Error::NoSuchSlot).contains("holds no process-domain capability"));
-        assert!(say(abi::Error::WrongObject).contains("not a supervision endpoint"));
-        assert!(say(abi::Error::NotPermitted).contains("no READ"));
-        assert!(say(abi::Error::Gone).contains("destroyed"));
+        let say = |e: moho_abi::Error| refusal(e as i64);
+        assert!(say(moho_abi::Error::NoSuchSlot).contains("holds no process-domain capability"));
+        assert!(say(moho_abi::Error::WrongObject).contains("not a supervision endpoint"));
+        assert!(say(moho_abi::Error::NotPermitted).contains("no READ"));
+        assert!(say(moho_abi::Error::Gone).contains("destroyed"));
         assert!(refusal(0).contains("could not be read"));
     }
 
@@ -789,7 +789,7 @@ mod tests {
     fn times(entries: &'static [(u64, u64)]) -> impl FnMut(u64) -> (i64, u64, u64) {
         move |cursor: u64| match entries.get(cursor as usize) {
             Some(&(tid, milliseconds)) => (cursor as i64 + 1, tid, milliseconds),
-            None => (abi::survey::DONE as i64, 0, 0),
+            None => (moho_abi::survey::DONE as i64, 0, 0),
         }
     }
 
@@ -803,7 +803,10 @@ mod tests {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let mut s = collect(
             &mut rows,
-            &mut domain(&[(3, abi::survey::RUNNING), (5, abi::survey::BLOCKED)]),
+            &mut domain(&[
+                (3, moho_abi::survey::RUNNING),
+                (5, moho_abi::survey::BLOCKED),
+            ]),
         );
         s.join_cpu_time(&mut times(&[(5, 20), (3, 990)]));
 
@@ -822,7 +825,10 @@ mod tests {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let mut s = collect(
             &mut rows,
-            &mut domain(&[(3, abi::survey::RUNNING), (5, abi::survey::RUNNING)]),
+            &mut domain(&[
+                (3, moho_abi::survey::RUNNING),
+                (5, moho_abi::survey::RUNNING),
+            ]),
         );
         s.join_cpu_time(&mut times(&[(3, 40)]));
 
@@ -837,9 +843,9 @@ mod tests {
     #[test]
     fn a_refusal_in_the_second_walk_is_still_a_refusal() {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
-        let mut s = collect(&mut rows, &mut domain(&[(3, abi::survey::RUNNING)]));
+        let mut s = collect(&mut rows, &mut domain(&[(3, moho_abi::survey::RUNNING)]));
         assert!(!s.is_refused());
-        s.join_cpu_time(&mut |_| (abi::Error::Gone as i64, 0, 0));
+        s.join_cpu_time(&mut |_| (moho_abi::Error::Gone as i64, 0, 0));
         assert!(s.is_refused());
         assert_eq!(shown(|o| s.write_report(o)), "");
         assert!(shown(|o| s.write_diagnostics(o)).contains("destroyed"));
@@ -849,7 +855,7 @@ mod tests {
     #[test]
     fn a_second_walk_that_does_not_advance_ends() {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
-        let mut s = collect(&mut rows, &mut domain(&[(3, abi::survey::RUNNING)]));
+        let mut s = collect(&mut rows, &mut domain(&[(3, moho_abi::survey::RUNNING)]));
         s.join_cpu_time(&mut |_| (1, 3, 10));
         assert!(s.is_refused());
     }
@@ -862,10 +868,10 @@ mod tests {
         let mut s = collect(
             &mut rows,
             &mut domain(&[
-                (3, abi::survey::RUNNING),
-                (5, abi::survey::RUNNING),
-                (7, abi::survey::RUNNING),
-                (9, abi::survey::RUNNING),
+                (3, moho_abi::survey::RUNNING),
+                (5, moho_abi::survey::RUNNING),
+                (7, moho_abi::survey::RUNNING),
+                (9, moho_abi::survey::RUNNING),
             ]),
         );
         // 9 gets no figure at all; 3 and 7 tie at 100.
@@ -881,7 +887,7 @@ mod tests {
     #[test]
     fn the_time_column_appears_only_when_it_was_asked_for() {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
-        let mut s = collect(&mut rows, &mut domain(&[(3, abi::survey::RUNNING)]));
+        let mut s = collect(&mut rows, &mut domain(&[(3, moho_abi::survey::RUNNING)]));
         assert!(!shown(|o| s.write_report(o)).contains("TIME"));
         s.join_cpu_time(&mut times(&[(3, 250)]));
         let out = shown(|o| s.write_report(o));
@@ -904,10 +910,10 @@ mod tests {
     #[test]
     fn every_refusal_names_what_is_not_held() {
         for code in [
-            abi::Error::NoSuchSlot as i64,
-            abi::Error::NotPermitted as i64,
-            abi::Error::WrongObject as i64,
-            abi::Error::Gone as i64,
+            moho_abi::Error::NoSuchSlot as i64,
+            moho_abi::Error::NotPermitted as i64,
+            moho_abi::Error::WrongObject as i64,
+            moho_abi::Error::Gone as i64,
             -99,
         ] {
             let m = refusal(code);
@@ -931,10 +937,10 @@ mod tests {
         collect(
             rows,
             &mut domain(&[
-                (3, abi::survey::RUNNING),
-                (4, abi::survey::BLOCKED),
-                (5, abi::survey::BLOCKED),
-                (6, abi::survey::READY),
+                (3, moho_abi::survey::RUNNING),
+                (4, moho_abi::survey::BLOCKED),
+                (5, moho_abi::survey::BLOCKED),
+                (6, moho_abi::survey::READY),
             ]),
         )
     }
@@ -1002,7 +1008,7 @@ mod tests {
     fn a_refusal_in_the_process_walk_is_still_a_refusal() {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let mut s = four_threads(&mut rows);
-        s.join_process(&mut |_| (abi::Error::NotPermitted as i64, 0, 0));
+        s.join_process(&mut |_| (moho_abi::Error::NotPermitted as i64, 0, 0));
         assert!(s.is_refused());
     }
 
@@ -1076,7 +1082,7 @@ mod tests {
         s.join_process(&mut |cursor| match cursor {
             0 => (1, 3, 1),
             1 => (2, 4, last),
-            _ => (abi::survey::DONE as i64, 0, 0),
+            _ => (moho_abi::survey::DONE as i64, 0, 0),
         });
         s.join_cpu_time(&mut times(&[(3, 10), (4, 90)]));
         s.rank_by_process_cpu_time();

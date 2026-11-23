@@ -16,7 +16,7 @@
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Object, Rights, page_frame_run_capability, page_frame_run_len};
@@ -178,14 +178,14 @@ fn a_sweep_inside_a_page_frame_map_leaves_no_mapping() {
                     .expect("grant the tables");
             REPORT.tid.store(sched::current(), Ordering::SeqCst);
             delegation_pause::arm(sched::current());
-            let answer = call(frame_slot, abi::page_frame::MAP, VA, 1, tables_slot);
+            let answer = call(frame_slot, moho_abi::page_frame::MAP, VA, 1, tables_slot);
             REPORT.answer.store(encode(answer), Ordering::SeqCst);
             let root = crate::arch::mmu::current_user_root();
             REPORT.mapped.store(
                 crate::arch::mmu::translate_at(root, VA).is_some(),
                 Ordering::SeqCst,
             );
-            let after = call(frame_slot, abi::page_frame::MAP, VA, 1, tables_slot);
+            let after = call(frame_slot, moho_abi::page_frame::MAP, VA, 1, tables_slot);
             REPORT.after.store(encode(after), Ordering::SeqCst);
             REPORT.returned.store(true, Ordering::SeqCst);
             let _ = sched::delete_current_capability(frame_slot);
@@ -258,10 +258,10 @@ fn a_sweep_inside_a_map_into_leaves_no_mapping() {
             delegation_pause::arm(sched::current());
             let answer = call(
                 space_slot,
-                abi::address_space::MAP_INTO,
+                moho_abi::address_space::MAP_INTO,
                 VA,
                 frame_slot,
-                abi::address_space::MAP_READ_WRITE,
+                moho_abi::address_space::MAP_READ_WRITE,
             );
             REPORT.answer.store(encode(answer), Ordering::SeqCst);
             REPORT.mapped.store(
@@ -271,10 +271,10 @@ fn a_sweep_inside_a_map_into_leaves_no_mapping() {
             );
             let after = call(
                 space_slot,
-                abi::address_space::MAP_INTO,
+                moho_abi::address_space::MAP_INTO,
                 VA,
                 frame_slot,
-                abi::address_space::MAP_READ_WRITE,
+                moho_abi::address_space::MAP_READ_WRITE,
             );
             REPORT.after.store(encode(after), Ordering::SeqCst);
             REPORT.returned.store(true, Ordering::SeqCst);
@@ -336,7 +336,7 @@ fn a_destroy_inside_a_memory_region_map_leaves_no_mapping() {
         NEIGHBOUR.store(
             encode(call(
                 tables_slot,
-                abi::memory_region::MAP,
+                moho_abi::memory_region::MAP,
                 VA + page_frames::FRAME_BYTES,
                 0,
                 0,
@@ -344,14 +344,14 @@ fn a_destroy_inside_a_memory_region_map_leaves_no_mapping() {
             Ordering::SeqCst,
         );
         delegation_pause::arm(sched::current());
-        let answer = call(region_slot, abi::memory_region::MAP, VA, 0, 0);
+        let answer = call(region_slot, moho_abi::memory_region::MAP, VA, 0, 0);
         REPORT.answer.store(encode(answer), Ordering::SeqCst);
         let root = crate::arch::mmu::current_user_root();
         REPORT.mapped.store(
             crate::arch::mmu::translate_at(root, VA).is_some(),
             Ordering::SeqCst,
         );
-        let after = call(region_slot, abi::memory_region::MAP, VA, 0, 0);
+        let after = call(region_slot, moho_abi::memory_region::MAP, VA, 0, 0);
         REPORT.after.store(encode(after), Ordering::SeqCst);
         REPORT.returned.store(true, Ordering::SeqCst);
         let _ = sched::delete_current_capability(region_slot);

@@ -112,21 +112,21 @@ fn build_with_nothing() -> ! {
     // of "a program with no construction authority tries to build anyway".
     // SAFETY: `svc`/`ecall` traps to the kernel, which validates the named slot before acting;
     // there is nothing at these slots, which is the whole attack.
-    let retype = unsafe { user_mode_runtime::invoke(5, abi::memory_region::RETYPE, 0, 0, 0) };
+    let retype = unsafe { user_mode_runtime::invoke(5, moho_abi::memory_region::RETYPE, 0, 0, 0) };
     // SAFETY: as above.
-    let send = unsafe { user_mode_runtime::invoke(6, abi::rendezvous::SEND, 1, 0, 0) };
+    let send = unsafe { user_mode_runtime::invoke(6, moho_abi::rendezvous::SEND, 1, 0, 0) };
     // SAFETY: as above.
     let retype_obj = unsafe {
         user_mode_runtime::invoke(
             7,
-            abi::memory_region::RETYPE_OBJECT,
-            abi::object_type::RENDEZVOUS,
+            moho_abi::memory_region::RETYPE_OBJECT,
+            moho_abi::object_type::RENDEZVOUS,
             0,
             0,
         )
     };
     // Slot 0 is the report endpoint the caller did grant, so the answer leaves. The errnos are
-    // negative; the test compares them against `abi::Error` directly.
+    // negative; the test compares them against `moho_abi::Error` directly.
     let _ = user_mode_runtime::send(0, retype as u64, send as u64, retype_obj as u64);
     exit();
 }

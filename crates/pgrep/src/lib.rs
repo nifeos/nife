@@ -19,34 +19,34 @@
 
 #![cfg_attr(not(test), no_std)]
 
-/// **A state's bit in a [`Selector`] mask is one shifted left by its `abi::survey` code**, which is
-/// why there are four of them and why bit 0 is unused: `abi::survey::DONE` is zero and is the cursor
+/// **A state's bit in a [`Selector`] mask is one shifted left by its `moho_abi::survey` code**, which is
+/// why there are four of them and why bit 0 is unused: `moho_abi::survey::DONE` is zero and is the cursor
 /// sentinel rather than a state a thread can be in.
 ///
 /// Deriving the bit from the code rather than numbering the bits separately means a state added to
-/// `abi::survey` cannot be given a bit that already belongs to another one.
+/// `moho_abi::survey` cannot be given a bit that already belongs to another one.
 pub mod state {
     /// On a run queue, waiting for a CPU.
-    pub const READY: u64 = 1 << abi::survey::READY;
+    pub const READY: u64 = 1 << moho_abi::survey::READY;
     /// On a CPU right now.
-    pub const RUNNING: u64 = 1 << abi::survey::RUNNING;
+    pub const RUNNING: u64 = 1 << moho_abi::survey::RUNNING;
     /// Blocked in an IPC rendezvous that has not happened.
-    pub const BLOCKED: u64 = 1 << abi::survey::BLOCKED;
+    pub const BLOCKED: u64 = 1 << moho_abi::survey::BLOCKED;
     /// A corpse, waiting for its supervisor to collect it (DECISIONS §26).
-    pub const DEAD: u64 = 1 << abi::survey::DEAD;
+    pub const DEAD: u64 = 1 << moho_abi::survey::DEAD;
 
-    /// Every state a supervised thread can be found in. Four, not six: `abi::survey`'s own
+    /// Every state a supervised thread can be found in. Four, not six: `moho_abi::survey`'s own
     /// documentation says why `Embryo` and `Finished` cannot appear in a domain.
     pub const EVERY: u64 = READY | RUNNING | BLOCKED | DEAD;
 }
 
-/// The `abi::survey` codes a selector can name, in the order a listing reports them and a sentence
+/// The `moho_abi::survey` codes a selector can name, in the order a listing reports them and a sentence
 /// says them.
 const STATES: [u64; 4] = [
-    abi::survey::READY,
-    abi::survey::RUNNING,
-    abi::survey::BLOCKED,
-    abi::survey::DEAD,
+    moho_abi::survey::READY,
+    moho_abi::survey::RUNNING,
+    moho_abi::survey::BLOCKED,
+    moho_abi::survey::DEAD,
 ];
 
 /// **Which members of a domain are wanted.** A mask over [`state`]'s bits, and nothing else: a
@@ -112,7 +112,7 @@ impl Selector {
         self.0
     }
 
-    /// **Does this selector name a thread in `state`?** False for any code outside `abi::survey`'s
+    /// **Does this selector name a thread in `state`?** False for any code outside `moho_abi::survey`'s
     /// four, including a state code from a kernel newer than this program: an unknown state is not
     /// silently swept into a match, because `pgrep dead` returning a live thread is the failure this
     /// program has available.
@@ -179,9 +179,9 @@ pub struct Selection<'a> {
 ///
 /// // A domain of one blocked thread and one corpse.
 /// let mut reader = |cursor: u64| match cursor {
-///     0 => (1, 7, abi::survey::BLOCKED),
-///     1 => (2, 9, abi::survey::DEAD),
-///     _ => (abi::survey::DONE as i64, 0, 0),
+///     0 => (1, 7, moho_abi::survey::BLOCKED),
+///     1 => (2, 9, moho_abi::survey::DEAD),
+///     _ => (moho_abi::survey::DONE as i64, 0, 0),
 /// };
 /// let mut rows = [Row::default(); MAXIMUM_ROWS];
 /// let survey = ps::collect(&mut rows, &mut reader);
@@ -312,7 +312,7 @@ mod tests {
     fn domain(entries: &'static [(u64, u64)]) -> impl FnMut(u64) -> (i64, u64, u64) {
         move |cursor: u64| match entries.get(cursor as usize) {
             Some(&(tid, state)) => (cursor as i64 + 1, tid, state),
-            None => (abi::survey::DONE as i64, 0, 0),
+            None => (moho_abi::survey::DONE as i64, 0, 0),
         }
     }
 
@@ -329,20 +329,20 @@ mod tests {
         assert_eq!(Selector::from_pattern(b"dead").mask(), state::DEAD);
         assert_eq!(
             Selector::from_pattern(b"ready").mask(),
-            1 << abi::survey::READY
+            1 << moho_abi::survey::READY
         );
         assert_eq!(Selector::from_pattern(b"*").mask(), state::EVERY);
         assert_eq!(Selector::from_pattern(b"nothing like it").mask(), 0);
         let all = Selector::of(u64::MAX);
-        assert!(all.selects(abi::survey::DEAD));
+        assert!(all.selects(moho_abi::survey::DEAD));
         assert!(!all.selects(64), "bit 64 does not exist in a u64 mask");
         assert!(!all.selects(u64::MAX));
     }
 
     const MIXED: &[(u64, u64)] = &[
-        (3, abi::survey::RUNNING),
-        (5, abi::survey::BLOCKED),
-        (9, abi::survey::DEAD),
+        (3, moho_abi::survey::RUNNING),
+        (5, moho_abi::survey::BLOCKED),
+        (9, moho_abi::survey::DEAD),
     ];
 
     #[test]
@@ -431,7 +431,7 @@ mod tests {
 
         let mut rows_c = [Row::default(); MAXIMUM_ROWS];
         let denied = ps::collect(&mut rows_c, &mut |_| {
-            (abi::Error::NotPermitted as i64, 0, 0)
+            (moho_abi::Error::NotPermitted as i64, 0, 0)
         });
         let refused = select(&denied, Selector::EVERY);
 
@@ -479,7 +479,7 @@ mod tests {
                 &mut rows,
                 &mut |cursor| match entries.get(cursor as usize) {
                     Some(&(tid, state)) => (cursor as i64 + 1, tid, state),
-                    None => (abi::survey::DONE as i64, 0, 0),
+                    None => (moho_abi::survey::DONE as i64, 0, 0),
                 },
             );
             let found = select(&survey, Selector::from_pattern(b"nonesuch"));
@@ -494,7 +494,9 @@ mod tests {
     #[test]
     fn a_refused_walk_is_reported_ahead_of_a_bad_selector() {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
-        let denied = ps::collect(&mut rows, &mut |_| (abi::Error::NoSuchSlot as i64, 0, 0));
+        let denied = ps::collect(&mut rows, &mut |_| {
+            (moho_abi::Error::NoSuchSlot as i64, 0, 0)
+        });
         let found = select(&denied, Selector::from_pattern(b"nonesuch"));
         let diag = shown(|o| found.write_diagnostics(o));
         assert!(diag.contains("no process-domain capability"), "{diag}");
@@ -508,7 +510,7 @@ mod tests {
     fn a_truncated_listing_prints_nothing_and_says_why() {
         let mut rows = [Row::default(); 2];
         let survey = ps::collect(&mut rows, &mut |cursor| {
-            (cursor as i64 + 1, cursor + 100, abi::survey::READY)
+            (cursor as i64 + 1, cursor + 100, moho_abi::survey::READY)
         });
         let found = select(&survey, Selector::EVERY);
         assert!(shown(|o| found.write_diagnostics(o)).contains("more in it"));
@@ -532,15 +534,15 @@ mod tests {
     }
 
     /// A tid is a generational name and can be ten digits; it goes out whole and with no padding,
-    /// because it is the name `abi::rendezvous::REAP` accepts and the next program in a pipeline
+    /// because it is the name `moho_abi::rendezvous::REAP` accepts and the next program in a pipeline
     /// should not have to strip spaces off it.
     #[test]
     fn a_wide_thread_id_is_printed_whole_and_unpadded() {
         let big = (1u64 << 32) | 6;
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let survey = ps::collect(&mut rows, &mut |cursor| match cursor {
-            0 => (1, big, abi::survey::DEAD),
-            _ => (abi::survey::DONE as i64, 0, 0),
+            0 => (1, big, moho_abi::survey::DEAD),
+            _ => (moho_abi::survey::DONE as i64, 0, 0),
         });
         let found = select(&survey, Selector::EVERY);
         assert_eq!(shown(|o| found.write_report(o)), "4294967302\n");

@@ -1,7 +1,7 @@
 # Documentation audit, 2026-11-03: names the window moved
 
 **Kind:** documentation. **Lens:** names the window moved, read from the prose that still uses
-them: the four capability names `crates/abi` spelled out, the four crates that left the tree or
+them: the four capability names `crates/moho_abi` spelled out, the four crates that left the tree or
 took a new name (`jh7110_entropy`, `supervision_protocol`, `intrusive_fifo`,
 `usb_keyboard_report`) and the removed `rmle`, each followed to every current document, script and
 comment that names it. **Findings:** fixed 4, minted 0, accepted 1.

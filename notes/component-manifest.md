@@ -15,10 +15,10 @@ milestone was built. The capability half was four arrays inside `swapper`:
 
 ```rust
 let instance_caps = [
-    (w.svc, abi::rights::READ),   // hot_swap_contract::SVC:  we may answer here
-    (REPORT, abi::rights::WRITE), // hot_swap_contract::RPT
-    (w.note, abi::rights::WRITE), // hot_swap_contract::NOTE
-    (w.poke, abi::rights::READ),  // hot_swap_contract::POKE
+    (w.svc, moho_abi::rights::READ),   // hot_swap_contract::SVC:  we may answer here
+    (REPORT, moho_abi::rights::WRITE), // hot_swap_contract::RPT
+    (w.note, moho_abi::rights::WRITE), // hot_swap_contract::NOTE
+    (w.poke, moho_abi::rights::READ),  // hot_swap_contract::POKE
 ];
 ```
 
@@ -179,8 +179,8 @@ cannot provide for it. The test asserts the refusal is the *typed* one (a role w
 that it arrives ahead of every build step and every instance that started. That is what makes a
 manifest a request the supervisor may refuse rather than an instruction it carries out half way.
 
-A greppable claim. `components/src/swapper.rs` contains no `abi::rights::*` and no
-`abi::address_space::MAP_R*`. There is nothing left in the operator to type wrong.
+A greppable claim. `components/src/swapper.rs` contains no `moho_abi::rights::*` and no
+`moho_abi::address_space::MAP_R*`. There is nothing left in the operator to type wrong.
 
 Plus thirteen host tests and three Kani harnesses on the pure logic, which is where
 `capability_plan` lives for exactly that reason. The three proofs are the ones a case-by-case test
@@ -240,7 +240,7 @@ in `components/src/swapper.rs` `plan_queued`, routes `service` to the broker's `
 Hand a device over on the far side of a revoke. `capability_plan` sorts device mappings last, so
 both halves are slices of one plan: build the child from `plan.maps_without_devices()` with
 `Retention::Nothing` (§142 (what a spawner retains over a child)), and after `DeviceFrame::REVOKE` map
-each of `plan.devices()` with `abi::address_space::MAP_INTO`. `components/src/swapper.rs`
+each of `plan.devices()` with `moho_abi::address_space::MAP_INTO`. `components/src/swapper.rs`
 `build_without_devices` is the build half.
 
 ## BUGS

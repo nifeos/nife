@@ -218,7 +218,7 @@ fn start_supervised(program: Program, e: Endowment, foreground: bool) -> Option<
         SUSPENDS_SEEN.store(suspend_count(), core::sync::atomic::Ordering::Relaxed);
     }
     send(SPAWN, w0, w1, w2);
-    delegate(job_ut, abi::rights::ALL);
+    delegate(job_ut, moho_abi::rights::ALL);
     send_capability(job_fr);
 
     // The progenitor acks once the child is running: that is the shell's go-ahead to start watching.
@@ -448,12 +448,13 @@ pub(super) fn release_budget(slot: u64, program: Program) {
     let verdict = swish::reclaim_budget_within(
         RECLAIM_PATIENCE_NANOSECONDS,
         || destroy_memory_region(slot),
-        || user_mode_runtime::memory_region_usage(slot, abi::usage::CHILDREN),
+        || user_mode_runtime::memory_region_usage(slot, moho_abi::usage::CHILDREN),
         monotonic_nanoseconds,
         yield_now,
     );
     if verdict == swish::BudgetReturn::LeftChildren {
-        let pages = user_mode_runtime::memory_region_usage(slot, abi::usage::SIZE).max(0) as u64;
+        let pages =
+            user_mode_runtime::memory_region_usage(slot, moho_abi::usage::SIZE_PAGES).max(0) as u64;
         failed();
         swish::write_budget_left(program.name().as_bytes(), pages, &mut print);
     }

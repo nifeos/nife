@@ -3,10 +3,6 @@
 version = 4
 
 [[package]]
-name = "abi"
-version = "0.1.0"
-
-[[package]]
 name = "address_space_layout"
 version = "0.1.0"
 source = "git+https://github.com/nifeos/address_space_layout?rev=02d497b62915c1fb133ef1de6e76598fa51e67fe#02d497b62915c1fb133ef1de6e76598fa51e67fe"
@@ -423,6 +419,7 @@ checksum = "64cd1e32ddd350061ae6edb1b082d7c54915b5c672c389143b9a63403a109f24"
 [[package]]
 name = "file_system_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
 
 [[package]]
 name = "find-msvc-tools"
@@ -480,6 +477,7 @@ dependencies = [
 [[package]]
 name = "grant_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/grant_contract?rev=d4e9ca29d51bc71d678aadaa00411eba953202b3#d4e9ca29d51bc71d678aadaa00411eba953202b3"
 dependencies = [
  "program_argument_contract",
 ]
@@ -487,6 +485,7 @@ dependencies = [
 [[package]]
 name = "grant_plan"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/grant_plan?rev=a5d87c426ec0aeebeb51a13d3ffb116caebd73c9#a5d87c426ec0aeebeb51a13d3ffb116caebd73c9"
 dependencies = [
  "byte_glob",
  "grant_contract",
@@ -567,7 +566,6 @@ dependencies = [
 name = "jig"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "approval_file",
  "capability_manifest_note",
@@ -577,6 +575,7 @@ dependencies = [
  "http_response",
  "installed_programs",
  "measured_boot",
+ "moho_abi",
  "package_archive",
  "package_index",
  "pinned_tls_client",
@@ -639,6 +638,11 @@ name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
+
+[[package]]
+name = "moho_abi"
+version = "0.1.0"
+source = "git+https://github.com/nifeos/moho_abi?rev=c8d556ec5ca7e567df529368c7dd24943423ab74#c8d556ec5ca7e567df529368c7dd24943423ab74"
 
 [[package]]
 name = "nu-ansi-term"
@@ -809,6 +813,7 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
 
 [[package]]
 name = "program_table"
@@ -1198,12 +1203,12 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_layout",
  "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",
+ "moho_abi",
  "socket_contract",
 ]
 

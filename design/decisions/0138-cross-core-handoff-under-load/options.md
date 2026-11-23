@@ -8,7 +8,7 @@ holds the detail of options A and B, all of option C, and how option D was read,
 
 What the surface grows by, exactly. In the manifest form: one field on the spawn contract, plus
 its validation, plus whatever names the authority. In the invocation form it would be one method on
-the thread control block capability (`crates/abi`'s `thread_control_block` module) and one arm in
+the thread control block capability (`crates/moho_abi`'s `thread_control_block` module) and one arm in
 `kernel/src/system_call.rs`. Either way the thing that is irreversible is not the code. It is that every
 future program is written against it and every future scheduler must honor it.
 

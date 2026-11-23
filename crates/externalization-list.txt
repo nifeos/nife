@@ -1,24 +1,15 @@
 # The crates that are to leave this repository for repositories of their own, one name per line.
 # Source: the order of extraction in design/roadmap/1017-the-contract-crates-leave-in-this-order.md
 # (the 22 contract crates of its measurements appendix, `interfaces_note` of step 3, and
-# `subtree_scope` and `memory_region_heap` of step 9), and `line_editor`, which decision 1 of
-# milestone 1098 (`line_editor`: what an outside maintainer would fix before it leaves) leaves with
-# no nife dependency. `helpers/lint_externalized_crates.py` reads this file: a crate named here may
+# `subtree_scope` and `memory_region_heap` of step 9). `helpers/lint_externalized_crates.py` reads this file: a crate named here may
 # not mention nife, a nife program or a nife package. A crate that has already left is removed from
 # this file by the pull request that moves it.
-abi
 capability_manifest_note
 current_cpu_contract
 domain_name_resolution_contract
-file_system_contract
-file_system_fixture
 globally_unique_identifier_partition_table
-grant_contract
-grant_plan
 machine_statistics_contract
-program_argument_contract
 socket_contract
 user_mode_runtime
 subtree_scope
 memory_region_heap
-line_editor

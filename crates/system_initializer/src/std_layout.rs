@@ -109,9 +109,9 @@ impl StdLayout {
         // from its heap, and a page carries its budget's rights (milestone 824 (a retype mints no
         // right its budget lacks)).
         let heap = if installer.is_some() {
-            abi::rights::ALL
+            moho_abi::rights::ALL
         } else {
-            abi::rights::SPEND_ONLY
+            moho_abi::rights::SPEND_ONLY
         };
         let mut l = StdLayout {
             capabilities: [(region, heap), out],
@@ -120,8 +120,8 @@ impl StdLayout {
             maps: [(0, 0, 0); 6],
             maps_n: 0,
         };
-        use abi::address_space::MAP_READ_WRITE;
-        use abi::rights::{BIND, READ, WRITE};
+        use moho_abi::address_space::MAP_READ_WRITE;
+        use moho_abi::rights::{BIND, READ, WRITE};
         // Each grant at its slot, and a page grant mapped where `std` reads it too.
         if let Some((ep, page)) = dir {
             l.place(rt::FS_DIR_SLOT, ep, WRITE);
@@ -136,7 +136,7 @@ impl StdLayout {
         if let Some(stack) = network {
             l.place(rt::STACK_SLOT, stack, WRITE);
             // Socket pages lent from here carry this budget's rights, so `GRANT` is on it.
-            l.place(rt::NET_MEMORY_REGION_SLOT, region, abi::rights::ALL);
+            l.place(rt::NET_MEMORY_REGION_SLOT, region, moho_abi::rights::ALL);
         }
         if let Some((endpoint, reply)) = installer {
             l.place(grant_contract::INSTALLER_SLOT, endpoint, WRITE);
@@ -188,8 +188,8 @@ impl StdLayout {
     /// A read-only page, if the child is given it: its capability at `slot`, mapped at `va`.
     fn page(&mut self, page: Option<u64>, slot: u64, va: u64) {
         if let Some(page) = page {
-            self.place(slot, page, abi::rights::READ);
-            self.map(va, page, abi::address_space::MAP_READ_ONLY);
+            self.place(slot, page, moho_abi::rights::READ);
+            self.map(va, page, moho_abi::address_space::MAP_READ_ONLY);
         }
     }
 

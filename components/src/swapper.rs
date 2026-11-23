@@ -67,10 +67,10 @@ fn start(role: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     };
 
     let w = Wiring {
-        svc: obj(abi::object_type::RENDEZVOUS, 5),
-        faultep: obj(abi::object_type::RENDEZVOUS, 6),
-        note: obj(abi::object_type::RENDEZVOUS, 7),
-        poke: obj(abi::object_type::RENDEZVOUS, 8),
+        svc: obj(moho_abi::object_type::RENDEZVOUS, 5),
+        faultep: obj(moho_abi::object_type::RENDEZVOUS, 6),
+        note: obj(moho_abi::object_type::RENDEZVOUS, 7),
+        poke: obj(moho_abi::object_type::RENDEZVOUS, 8),
         log_page_frame: page_frame(9),
     };
     if !map_page_frame(w.log_page_frame, hot_swap_contract::LOG_VA, true, ROOT_UT) {
@@ -457,7 +457,7 @@ fn handoff(fs: &nifefs::Fs, w: &Wiring) -> ! {
         s if s >= 0 => s as u64,
         _ => bail(90),
     };
-    let replacement_control = obj(abi::object_type::RENDEZVOUS, 91);
+    let replacement_control = obj(moho_abi::object_type::RENDEZVOUS, 91);
 
     let (incumbent, replacement, client) = plan_handoff(w, declared, state, replacement_control);
 
@@ -607,7 +607,7 @@ fn attempt_refused(w: &Wiring, refuser: Unstarted, v2: &static_elf::Elf, corpses
     // The refuser's exit is the only death possible here: the incumbent is quiesced and alive, and
     // the client is parked on the service endpoint's sender queue with nobody receiving.
     let (event, _) = collect_corpse(w.faultep, corpses);
-    if event == abi::fault::EVENT_FAULT {
+    if event == moho_abi::fault::EVENT_FAULT {
         bail(101)
     }
     send(
@@ -762,7 +762,7 @@ fn queued(fs: &nifefs::Fs, w: &Wiring, warn: Warn) -> ! {
 
     // `svc` is the *back* endpoint here: what the broker forwards to and what a backend receives
     // on. `front` is what the producer holds, and it is the stable name on this channel.
-    let front = obj(abi::object_type::RENDEZVOUS, 41);
+    let front = obj(moho_abi::object_type::RENDEZVOUS, 41);
     let base = hot_swap_contract::BROKER_LOG_BASE;
 
     let QueuedPlans {
@@ -891,7 +891,7 @@ fn plan_queued(w: &Wiring, front: u64) -> QueuedPlans {
     if !map_page_frame(warning, hot_swap_contract::BROKER_WARN_VA, true, ROOT_UT) {
         bail(54)
     }
-    let signal = obj(abi::object_type::NOTIFICATION, 55);
+    let signal = obj(moho_abi::object_type::NOTIFICATION, 55);
     let to_broker = Provisions {
         held: &[
             ("requests", front),
@@ -1162,7 +1162,7 @@ fn end_region(region: u64, stage: u64) {
 /// record (milestone 126 (the `procps` package)). The budget arrives with every right, so it holds
 /// `ENUMERATE`.
 fn live_children_pages(stage: u64) -> u64 {
-    let r = user_mode_runtime::memory_region_usage(ROOT_UT, abi::usage::CHILDREN);
+    let r = user_mode_runtime::memory_region_usage(ROOT_UT, moho_abi::usage::CHILDREN);
     if r < 0 {
         bail(stage)
     }
@@ -1170,7 +1170,7 @@ fn live_children_pages(stage: u64) -> u64 {
 }
 
 /// **Walk the supervision domain and count what state its members are in** (milestone 126's
-/// `abi::rendezvous::SURVEY`). Returns `(members, states)`, the second packed by
+/// `moho_abi::rendezvous::SURVEY`). Returns `(members, states)`, the second packed by
 /// `hot_swap_contract::survey_counts`.
 ///
 /// A refusal is reported as `(u64::MAX, error)` rather than as an empty domain, for the reason
@@ -1180,14 +1180,14 @@ fn live_children_pages(stage: u64) -> u64 {
 fn survey_domain(faultep: u64) -> (u64, u64) {
     let mut counts = [0u64; 5];
     let mut members = 0u64;
-    let mut cursor = abi::survey::DONE;
+    let mut cursor = moho_abi::survey::DONE;
     loop {
         let (next, _tid, state) = user_mode_runtime::survey(faultep, cursor);
         if next < 0 {
             return (u64::MAX, (-next) as u64);
         }
         let next = next as u64;
-        if next == abi::survey::DONE {
+        if next == moho_abi::survey::DONE {
             break;
         }
         // A cursor that did not advance would spin here forever. The kernel does not do this; the
@@ -1204,10 +1204,10 @@ fn survey_domain(faultep: u64) -> (u64, u64) {
     (
         members,
         hot_swap_contract::survey_counts(
-            counts[abi::survey::READY as usize],
-            counts[abi::survey::RUNNING as usize],
-            counts[abi::survey::BLOCKED as usize],
-            counts[abi::survey::DEAD as usize],
+            counts[moho_abi::survey::READY as usize],
+            counts[moho_abi::survey::RUNNING as usize],
+            counts[moho_abi::survey::BLOCKED as usize],
+            counts[moho_abi::survey::DEAD as usize],
         ),
     )
 }
@@ -1222,17 +1222,17 @@ fn survey_domain(faultep: u64) -> (u64, u64) {
 fn ask_the_domain_to_be_collected(faultep: u64) -> (u64, u64) {
     // The raw system call return is the negative discriminant (`StillAlive = -9`), which `invoke`
     // hands back unchanged; a reporter that negates it (`swap_boundary_witness`) is the other case.
-    let still_alive = abi::Error::StillAlive as i64;
+    let still_alive = moho_abi::Error::StillAlive as i64;
     let mut asked = 0u64;
     let mut refused = 0u64;
-    let mut cursor = abi::survey::DONE;
+    let mut cursor = moho_abi::survey::DONE;
     loop {
         let (next, tid, _state) = user_mode_runtime::survey(faultep, cursor);
         if next < 0 {
             break;
         }
         let next = next as u64;
-        if next == abi::survey::DONE || next <= cursor {
+        if next == moho_abi::survey::DONE || next <= cursor {
             break;
         }
         asked += 1;
@@ -1378,7 +1378,7 @@ fn reap_to(faultep: u64, collected: &mut u64, target: u64) {
 fn wait_for_fault(faultep: u64, collected: &mut u64, expect_addr: u64) -> bool {
     loop {
         let (event, addr) = collect_corpse(faultep, collected);
-        if event == abi::fault::EVENT_FAULT {
+        if event == moho_abi::fault::EVENT_FAULT {
             send(REPORT, hot_swap_contract::RPT_SITE, addr, expect_addr);
             send(
                 REPORT,

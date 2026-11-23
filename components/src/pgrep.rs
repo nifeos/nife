@@ -1,7 +1,7 @@
 //! **`pgrep`: name the members of a domain that match, and do nothing to them** (milestone 126,
 //! notes/process-view.md).
 //!
-//! Walk one supervision domain with `abi::rendezvous::SURVEY`, filter it, then say what matched on
+//! Walk one supervision domain with `moho_abi::rendezvous::SURVEY`, filter it, then say what matched on
 //! one stream and what went wrong on the other. The walk is `crates/ps` and the filter is
 //! `crates/pgrep`, both host-tested; what lives here is the system call and the two sinks. There is no
 //! `pkill`: a domain names its members and does not act on them (calef, 2026-08-17), and no method
@@ -59,8 +59,8 @@ static HAS_DIAG: AtomicBool = AtomicBool::new(false);
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
 interfaces_note::carry_interfaces!(&[
     interfaces_note::DeclaredInterface {
-        id: abi::INTERFACE_ID,
-        version: abi::ABI_VERSION
+        id: moho_abi::INTERFACE_ID,
+        version: moho_abi::ABI_VERSION
     },
     interfaces_note::DeclaredInterface {
         id: address_space_layout::INTERFACE_ID,

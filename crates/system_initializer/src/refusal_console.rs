@@ -25,7 +25,7 @@ const POLLS_PER_BYTE: u32 = 1 << 20;
 const REFUSAL_UART_VIRTUAL_ADDRESS: u64 = address_space_layout::pair_page(0x0f70_0000);
 
 /// **Write `parts`, in order, to the UART.** `uart_shape` is the register shape the kernel passed
-/// at start (`abi::uart`), which riscv64's NS16550 needs. Returns once every byte is written or
+/// at start (`moho_abi::uart`), which riscv64's NS16550 needs. Returns once every byte is written or
 /// given up; never fails.
 pub(super) fn say(g: &BootEndowment, uart_shape: u64, parts: &[&str]) {
     let Some(uart) = Uart::open(g, uart_shape) else {
@@ -41,7 +41,7 @@ pub(super) fn say(g: &BootEndowment, uart_shape: u64, parts: &[&str]) {
 /// The granted UART, ready to transmit.
 struct Uart {
     #[cfg(target_arch = "riscv64")]
-    shape: abi::uart::RegisterShape,
+    shape: moho_abi::uart::RegisterShape,
 }
 
 #[cfg(target_arch = "aarch64")]
@@ -57,7 +57,7 @@ impl Uart {
             g.own_space,
             REFUSAL_UART_VIRTUAL_ADDRESS,
             g.uart_dev,
-            abi::address_space::MAP_READ_WRITE,
+            moho_abi::address_space::MAP_READ_WRITE,
         ) == 0)
             .then_some(Uart {})
     }
@@ -98,10 +98,10 @@ impl Uart {
             g.own_space,
             REFUSAL_UART_VIRTUAL_ADDRESS,
             g.uart_dev,
-            abi::address_space::MAP_READ_WRITE,
+            moho_abi::address_space::MAP_READ_WRITE,
         ) == 0)
             .then_some(Uart {
-                shape: abi::uart::RegisterShape::from_word(uart_shape),
+                shape: moho_abi::uart::RegisterShape::from_word(uart_shape),
             })
     }
 

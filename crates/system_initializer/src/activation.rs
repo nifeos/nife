@@ -126,37 +126,53 @@ pub(super) fn serve_installer(
         let _ = spawn.approval_id_for(answer.holder().as_bytes());
     }
     if !spawn.abandoned {
-        let (r0, r1, r2) =
-            spawn_protocol::activation_reply(answer.status, answer.live, answer.member);
-        send(reply, r0, r1, r2);
-        // A name taken by another package, and a delegated request the approval does not allow,
-        // are refused with the package's name, which `jig` reads after the reply (milestone 919
-        // (a package carries several programs); milestone 911). The owner's own `--approved`
-        // install is refused with the ask that exceeded the entry as the third message
-        // (`refused_ask_words`), which the reply's word 2 counts.
-        if answer.status == spawn_protocol::ActivationStatus::NameTaken
-            || answer.status == spawn_protocol::ActivationStatus::NotApproved
-        {
-            for (a, b, c) in spawn_protocol::holder_words(answer.holder()) {
-                send(reply, a, b, c);
-            }
-            if answer.member == 3 {
-                let [a, b, c] = answer.ask;
+        send_reply(reply, verb, &answer, &text);
+    }
+}
+
+/// **The answer to one installer request, sent to the holder's reply endpoint `reply`**: the
+/// status reply, then what a refusal or an `Approve` carries after it. `verb` is the request's
+/// decoded verb, `answer` what [`serve_installer`] decided, and `text` the page an `Approve`'s
+/// stored records were read into. Sends only; nothing is read or written.
+fn send_reply(reply: u64, verb: Option<Option<Activation>>, answer: &Answer, text: &[u8]) {
+    let (r0, r1, r2) = spawn_protocol::activation_reply(answer.status, answer.live, answer.member);
+    send(reply, r0, r1, r2);
+    // A name taken by another package, and a delegated request the approval does not allow,
+    // are refused with the package's name, which `jig` reads after the reply (milestone 919
+    // (a package carries several programs); milestone 911). The owner's own `--approved`
+    // install is refused with the ask that exceeded the entry as the third message
+    // (`refused_ask_words`), which the reply's word 2 counts.
+    if answer.status == spawn_protocol::ActivationStatus::NameTaken
+        || answer.status == spawn_protocol::ActivationStatus::NotApproved
+    {
+        for (a, b, c) in spawn_protocol::holder_words(answer.holder()) {
+            send(reply, a, b, c);
+        }
+        // The ask's name follows its message, three bytes of it a word, so it travels whole
+        // at any length (milestone 1122 (every name travels on a page)).
+        if answer.member == 3 {
+            let ask = &answer.ask;
+            let (a, b, c) =
+                spawn_protocol::refused_ask_words(ask.kind, ask.rights, ask.length_bytes);
+            send(reply, a, b, c);
+            let name = ask.name();
+            for m in 0..spawn_protocol::stored_messages(name.len() as u64) as usize {
+                let (a, b, c) = spawn_protocol::stored_words(name, m * 24);
                 send(reply, a, b, c);
             }
         }
-        // **An `Approve`'s reply carries the records it replaced** (milestone 911), so the
-        // console's re-approval shows what changed against the store it now holds. The length
-        // is the reply's word 2; the bytes are three words a message, tail padded.
-        if verb == Some(Some(Activation::Approve))
-            && answer.status == spawn_protocol::ActivationStatus::Done
-            && answer.member > 0
-        {
-            let records = &text[..answer.member as usize];
-            for m in 0..spawn_protocol::stored_messages(answer.member) as usize {
-                let (a, b, c) = spawn_protocol::stored_words(records, m * 24);
-                send(reply, a, b, c);
-            }
+    }
+    // **An `Approve`'s reply carries the records it replaced** (milestone 911), so the
+    // console's re-approval shows what changed against the store it now holds. The length
+    // is the reply's word 2; the bytes are three words a message, tail padded.
+    if verb == Some(Some(Activation::Approve))
+        && answer.status == spawn_protocol::ActivationStatus::Done
+        && answer.member > 0
+    {
+        let records = &text[..answer.member as usize];
+        for m in 0..spawn_protocol::stored_messages(answer.member) as usize {
+            let (a, b, c) = spawn_protocol::stored_words(records, m * 24);
+            send(reply, a, b, c);
         }
     }
 }
@@ -164,8 +180,9 @@ pub(super) fn serve_installer(
 /// **The request's own trailing messages, taken and dropped**: what a refusal owes the endpoint
 /// before it answers, so no frame, name or answered-by trailer is left for the next request on it
 /// to read as its own. The frames are taken, never staged; nothing is copied and nothing is
-/// written. An install's or a removal's trailer is one message for the console's answer, three
-/// for an approval's.
+/// written. A name is its own frame (milestone 1122 (every name travels on a page)), taken and
+/// deleted unread. An install's or a removal's trailer is one message for the console's answer,
+/// three and the approval's name for an approval's.
 fn drain(spawn: &mut SpawnEndpoint, verb: Option<Option<Activation>>, w0: u64) {
     match verb {
         Some(Some(Activation::Install | Activation::Vouch)) => {
@@ -173,26 +190,65 @@ fn drain(spawn: &mut SpawnEndpoint, verb: Option<Option<Activation>>, w0: u64) {
             drain_trailer(spawn);
         }
         Some(Some(Activation::Remove)) => {
-            let _ = spawn.receive();
+            drop_name(spawn);
             drain_trailer(spawn);
         }
         Some(Some(Activation::Approve)) => {
             take_frames(spawn, w0, 0);
         }
         Some(Some(Activation::Revoke)) => {
-            let _ = spawn.receive();
+            drop_name(spawn);
         }
         _ => {}
     }
 }
 
-/// The answered-by trailer, read and dropped: one message, or three when the kind word says an
-/// approval sent it. An `Approve`'s records are their own payload; it sends none.
+/// The answered-by trailer, read and dropped: one message, or three and the approval's name
+/// when the kind word says an approval sent it. An `Approve`'s records are their own payload; it
+/// sends none.
 fn drain_trailer(spawn: &mut SpawnEndpoint) {
     let (kind, _, _) = spawn.receive();
     if kind == spawn_protocol::ANSWERED_APPROVAL {
         let _ = spawn.receive();
         let _ = spawn.receive();
+        drop_name(spawn);
+    }
+}
+
+/// A name's frame taken off the endpoint and deleted unread, for a request refused before its
+/// name matters ([`drain`]).
+fn drop_name(spawn: &mut SpawnEndpoint) {
+    if let Some(frame) = opt_capability(spawn.receive_capability().1) {
+        capability_delete(frame);
+    }
+}
+
+/// **Take a name's frame off the endpoint and copy the name into `out`** (milestone 1122 (every
+/// name travels on a page)): one `READ` frame laid out by `file_system_contract::grant::write_page`,
+/// as a caretaker's granted name is. Returns the name's length. A plain message in the frame's
+/// place, a frame that will not map, a page that does not parse, or a name longer than `out` all
+/// read as the empty name, which nothing holds, so the verb refuses it as a name it does not know.
+/// The capability goes at once, as an argv's does (`receive_args`): the mapping outlives it.
+fn receive_name(spawn: &mut SpawnEndpoint, own_ut: u64, out: &mut [u8]) -> usize {
+    let Some(frame) = opt_capability(spawn.receive_capability().1) else {
+        return 0;
+    };
+    let theirs = process_builder::map_scratch(frame, false, own_ut).ok();
+    capability_delete(frame);
+    let Some(theirs) = theirs else {
+        return 0;
+    };
+    // SAFETY: `theirs` is mapped read-only, one page, by `map_scratch` just above; the slice ends
+    // before this function returns.
+    let page = unsafe {
+        core::slice::from_raw_parts(theirs as *const u8, spawn_protocol::IMAGE_PAGE as usize)
+    };
+    match file_system_contract::grant::page_name(page) {
+        Some(name) if name.len() <= out.len() => {
+            out[..name.len()].copy_from_slice(name);
+            name.len()
+        }
+        _ => 0,
     }
 }
 
@@ -232,7 +288,7 @@ fn approval_document<'a>(
         installed_programs::approval::STORE,
         directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
     );
-    let mut name_buf = [0u8; 16];
+    let mut name_buf = [0u8; installed_programs::approval::NAME_MAXIMUM];
     let answer = if store >= 0 {
         let file = files.named(
             fs_operation::OPEN,
@@ -257,8 +313,13 @@ fn approval_document<'a>(
     answer
 }
 
-/// The store file's name for an approval, one component.
-fn name_of<'o>(name: &[u8], out: &'o mut [u8; 16]) -> &'o str {
+/// The store file's name for an approval, one component, as long as an approval's name may be
+/// (`installed_programs::approval::NAME_MAXIMUM`), so a name that no longer has to fit two words
+/// (milestone 1122 (every name travels on a page)) is never cut short.
+fn name_of<'o>(
+    name: &[u8],
+    out: &'o mut [u8; installed_programs::approval::NAME_MAXIMUM],
+) -> &'o str {
     let len = name.len().min(out.len());
     out[..len].copy_from_slice(&name[..len]);
     core::str::from_utf8(&out[..len]).unwrap_or("")
@@ -273,9 +334,43 @@ pub(super) struct Answer {
     pub(super) member: u64,
     holder: [u8; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES],
     holder_len: usize,
-    /// **The ask an undelegated `--approved` install's check refused** (milestone 911), as
-    /// [`spawn_protocol::refused_ask_words`] spelled it, all zero when the refusal names no ask.
-    ask: [u64; 3],
+    /// **The ask an undelegated `--approved` install's check refused** (milestone 911), kind zero
+    /// when the refusal names no ask.
+    ask: Ask,
+}
+
+/// **The longest name an [`Ask`] carries**: a zone's, the longest of the two names an ask may
+/// hold, so a directory's fits too (milestone 1122 (every name travels on a page)).
+const ASK_NAME_BYTES: usize = capability_manifest_note::MAXIMUM_ZONE_BYTES;
+const _: () = assert!(ASK_NAME_BYTES >= file_system_contract::grant::MAXIMUM_NAME_BYTES);
+
+/// **The ask an owner's `--approved` install's check refused** (milestone 911): its kind
+/// (`spawn_protocol::ASK_NETWORK` and its neighbors, zero for none), a directory's rights, and a
+/// zone's or a directory's name, which the reply carries whole after the ask's message
+/// (milestone 1122).
+///
+/// Name: provisional.
+#[derive(Clone, Copy)]
+struct Ask {
+    kind: u64,
+    rights: u64,
+    name: [u8; ASK_NAME_BYTES],
+    length_bytes: usize,
+}
+
+impl Ask {
+    /// No ask: what a refusal that names none carries.
+    const NONE: Ask = Ask {
+        kind: 0,
+        rights: 0,
+        name: [0; ASK_NAME_BYTES],
+        length_bytes: 0,
+    };
+
+    /// The ask's name, as [`refused_with_ask`] copied it.
+    fn name(&self) -> &[u8] {
+        &self.name[..self.length_bytes]
+    }
 }
 
 impl Answer {
@@ -307,7 +402,7 @@ impl Answer {
             member,
             holder: [0; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES],
             holder_len: 0,
-            ask: [0; 3],
+            ask: Ask::NONE,
         };
         if let Some(holder) = refused.holder {
             let len = holder.len().min(spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES);
@@ -326,7 +421,7 @@ impl From<(spawn_protocol::ActivationStatus, u32)> for Answer {
             member: 0,
             holder: [0; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES],
             holder_len: 0,
-            ask: [0; 3],
+            ask: Ask::NONE,
         }
     }
 }
@@ -347,7 +442,7 @@ pub(super) fn package_manager_parts(
     delegated: Option<u64>,
 ) -> (Option<(u64, u64)>, Option<u64>) {
     let endpoints = if installer {
-        let reply = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok();
+        let reply = retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS).ok();
         // **The delegated endpoint is the same object, badged for one job and one approval**
         // (milestone 911 (scripted installs grant only what the owner's approval file allows)),
         // never a second one; §270's amendment records the semantics.
@@ -452,16 +547,16 @@ pub(super) fn activate(
         }
         _ => None,
     };
-    let mut named = [0u8; file_system_contract::grant::MAXIMUM_WORDS_NAME_BYTES];
+    let mut named = [0u8; file_system_contract::grant::MAXIMUM_NAME_BYTES];
     // A vouch's name follows its frames, which `take_frames` has just taken; a revoke's names
     // the approval to drop (milestone 911 (scripted installs grant only what the owner's
-    // approval file allows)).
+    // approval file allows)). Each is its own frame (milestone 1122 (every name travels on a
+    // page)).
     let named_len = if matches!(
         verb,
         Some(Activation::Remove | Activation::Vouch | Activation::Revoke)
     ) {
-        let (lo, hi, len) = spawn.receive();
-        file_system_contract::grant::unpack_name(lo, hi, len as usize, &mut named)
+        receive_name(spawn, a.own_ut, &mut named)
     } else {
         0
     };
@@ -469,35 +564,35 @@ pub(super) fn activate(
     // (milestone 911): how the answer was given, the record's own line beside it. A delegated
     // request's badge overrides it with the approval the check ran against, in
     // [`EditContext::answered_of`].
-    let mut answered_words = [0u8; 16];
-    let answered = if matches!(verb, Some(Activation::Install | Activation::Remove))
-        && !spawn.abandoned
-    {
-        let (kind, lo, hi) = spawn.receive();
-        let more = if kind == spawn_protocol::ANSWERED_APPROVAL {
-            [spawn.receive(), spawn.receive()]
+    // An approval's name follows its digest on its own frame (milestone 1122), copied into
+    // `answered_name`, which outlives the Answered: the line's text is the record's `answered`
+    // line's own.
+    let mut answered_name = [0u8; installed_programs::approval::NAME_MAXIMUM];
+    let answered =
+        if matches!(verb, Some(Activation::Install | Activation::Remove)) && !spawn.abandoned {
+            let (kind, lo, hi) = spawn.receive();
+            let more = if kind == spawn_protocol::ANSWERED_APPROVAL {
+                [spawn.receive(), spawn.receive()]
+            } else {
+                [(0, 0, 0); 2]
+            };
+            let length = if kind == spawn_protocol::ANSWERED_APPROVAL {
+                receive_name(spawn, a.own_ut, &mut answered_name)
+            } else {
+                0
+            };
+            spawn_protocol::answered_from_trailer((kind, lo, hi), &more)
+                .map(|a| match a {
+                    spawn_protocol::Answered::Console => installed_programs::Answered::Console,
+                    spawn_protocol::Answered::Approval { digest } => {
+                        let name = core::str::from_utf8(&answered_name[..length]).unwrap_or("");
+                        installed_programs::Answered::Approval(name, digest)
+                    }
+                })
+                .unwrap_or(installed_programs::Answered::Console)
         } else {
-            [(0, 0, 0); 2]
+            installed_programs::Answered::Console
         };
-        spawn_protocol::answered_from_trailer((kind, lo, hi), &more, &mut answered_words)
-            .map(|a| match a {
-                spawn_protocol::Answered::Console => installed_programs::Answered::Console,
-                spawn_protocol::Answered::Approval {
-                    name,
-                    length_bytes,
-                    digest,
-                } => {
-                    // The name is copied into `answered_words`, which outlives the Answered:
-                    // the line's text is the record's `answered` line's own.
-                    answered_words[..length_bytes].copy_from_slice(&name[..length_bytes]);
-                    let name = core::str::from_utf8(&answered_words[..length_bytes]).unwrap_or("");
-                    installed_programs::Answered::Approval(name, digest)
-                }
-            })
-            .unwrap_or(installed_programs::Answered::Console)
-    } else {
-        installed_programs::Answered::Console
-    };
     let staging = frames
         .and_then(|f| stage_frames(spawn, &f, w0, a.own_ut, a.images_ut, true).map(|st| (st, w0)));
     let named = &named[..named_len];
@@ -567,7 +662,7 @@ fn edit(
 ) -> Answer {
     use spawn_protocol::Activation;
     let refused = core::cell::Cell::new(([0u8; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES], 0usize));
-    let ask = core::cell::Cell::new([0u64; 3]);
+    let ask = core::cell::Cell::new(Ask::NONE);
     let cx = EditContext {
         files,
         act,
@@ -603,7 +698,7 @@ fn edit(
         answer.holder[..len].copy_from_slice(&bytes[..len]);
         answer.holder_len = len;
         answer.ask = cx.ask.get();
-        answer.member = if answer.ask == [0u64; 3] { 2 } else { 3 };
+        answer.member = if answer.ask.kind == 0 { 2 } else { 3 };
     }
     answer
 }
@@ -624,9 +719,8 @@ struct EditContext<'a> {
     /// follower: the caller's cell, read after the verb returns.
     refused: &'a core::cell::Cell<([u8; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES], usize)>,
     /// **Where the owner's `--approved` check's refused ask is named** (milestone 911), for the
-    /// reply's third follower, as [`spawn_protocol::refused_ask_words`] spells it; all zero when the
-    /// refusal names no ask.
-    ask: &'a core::cell::Cell<[u64; 3]>,
+    /// reply's third follower and the name after it; [`Ask::NONE`] when the refusal names no ask.
+    ask: &'a core::cell::Cell<Ask>,
 }
 
 impl EditContext<'_> {
@@ -1040,7 +1134,7 @@ fn store_approval(
     // the store (a std holder's namespace root is the directory it was granted).
     let mut replaced = 0usize;
     if let Some(buf) = store {
-        let mut name_buf = [0u8; 16];
+        let mut name_buf = [0u8; installed_programs::approval::NAME_MAXIMUM];
         let file = files.named(
             fs_operation::OPEN,
             act2 as u64,
@@ -1054,7 +1148,7 @@ fn store_approval(
             files.close(file);
         }
     }
-    let mut name_buf = [0u8; 16];
+    let mut name_buf = [0u8; installed_programs::approval::NAME_MAXIMUM];
     let file = files.open_or_create(
         act2 as u64,
         name_of(document.name().as_bytes(), &mut name_buf),
@@ -1111,7 +1205,7 @@ fn drop_approval(cx: &EditContext, named: &[u8]) -> Answer {
     if act2 < 0 {
         return Answer::from((S::Done, live));
     }
-    let mut name_buf = [0u8; 16];
+    let mut name_buf = [0u8; installed_programs::approval::NAME_MAXIMUM];
     let gone = files.named(
         fs_operation::UNLINK,
         act2 as u64,
@@ -1130,7 +1224,7 @@ fn drop_approval(cx: &EditContext, named: &[u8]) -> Answer {
             directory::rights::ENUMERATE | directory::rights::READ | directory::rights::DESCEND,
         );
         if act3 >= 0 {
-            let mut name_buf = [0u8; 16];
+            let mut name_buf = [0u8; installed_programs::approval::NAME_MAXIMUM];
             let file = files.named(
                 fs_operation::OPEN,
                 act3 as u64,
@@ -1189,8 +1283,14 @@ fn refused_with_ask(
             name,
         ),
     };
-    let (a, b, c) = spawn_protocol::refused_ask_words(kind, rights, name);
-    cx.ask.set([a, b, c]);
+    let mut ask = Ask {
+        kind,
+        rights,
+        length_bytes: name.len().min(ASK_NAME_BYTES),
+        ..Ask::NONE
+    };
+    ask.name[..ask.length_bytes].copy_from_slice(&name.as_bytes()[..ask.length_bytes]);
+    cx.ask.set(ask);
     refused
 }
 

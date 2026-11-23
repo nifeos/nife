@@ -50,11 +50,13 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
         refuse()
     };
 
-    let Ok(request) = retype_into_kernel_object_from(MEMORY_REGION, abi::object_type::RENDEZVOUS)
+    let Ok(request) =
+        retype_into_kernel_object_from(MEMORY_REGION, moho_abi::object_type::RENDEZVOUS)
     else {
         refuse()
     };
-    let Ok(reply) = retype_into_kernel_object_from(MEMORY_REGION, abi::object_type::RENDEZVOUS)
+    let Ok(reply) =
+        retype_into_kernel_object_from(MEMORY_REGION, moho_abi::object_type::RENDEZVOUS)
     else {
         refuse()
     };
@@ -67,13 +69,16 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     }
 
     // The server receives on slot 0 and acknowledges on slot 1.
-    let grants = [(request, abi::rights::READ), (reply, abi::rights::WRITE)];
+    let grants = [
+        (request, moho_abi::rights::READ),
+        (reply, moho_abi::rights::WRITE),
+    ];
     let maps = [
-        (SHARED_VA, shared, abi::address_space::MAP_READ_ONLY),
+        (SHARED_VA, shared, moho_abi::address_space::MAP_READ_ONLY),
         (
             CHILD_UART_VA,
             UART_DEVICE,
-            abi::address_space::MAP_READ_ONLY,
+            moho_abi::address_space::MAP_READ_ONLY,
         ),
     ];
     let endowment = ChildEndowment {

@@ -19,7 +19,7 @@ diff --git a/kernel/src/sched/process.rs b/kernel/src/sched/process.rs
 -            sched,
 -            pid,
 -            crate::cpu::NO_TID,
--            [abi::fault::EVENT_EXIT, 0, 0],
+-            [moho_abi::fault::EVENT_EXIT, 0, 0],
 -        );
 +        let Some(_pid) = live else { break };
 +        break;

@@ -6,7 +6,7 @@
 //! handler over [`trap`]. Opt-in modules ([`mapped_window`], [`initial_ramdisk`], [`virtual_io`]) hold
 //! what only some programs need. A system call runs only in a user-mode process under the kernel,
 //! so the examples that make one are `no_run`; the pure logic has host tests. The signatures and
-//! `abi` constants are identical on all three application binary interfaces (ABIs). The design
+//! `moho_abi` constants are identical on all three application binary interfaces (ABIs). The design
 //! behind them is in `docs/design.md`, and time on each architecture in `docs/time.md`.
 //!
 //! Name: ratified 2026-09-13 (calef), replacing `user_rt`: `rt` is an abbreviation
@@ -46,10 +46,10 @@ mod objects;
 mod process;
 mod system_call;
 
-pub use abi::cycle_counter::CycleMeaning;
 pub use clock::*;
 pub use devices::*;
 pub use inter_process_communication::*;
+pub use moho_abi::cycle_counter::CycleMeaning;
 pub use objects::*;
 pub use process::*;
 pub use system_call::*;

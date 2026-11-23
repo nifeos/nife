@@ -101,7 +101,7 @@ fn hear(exit: u64) -> Heard {
         w0, w1, w2, label, ..
     } = receive_message(exit).into_message();
     if label != 0 {
-        Heard::Died(label, w0 == abi::fault::EVENT_FAULT)
+        Heard::Died(label, w0 == moho_abi::fault::EVENT_FAULT)
     } else {
         Heard::Message(w0, w1, w2)
     }
@@ -140,7 +140,7 @@ pub(super) fn await_death(label: u64) -> bool {
 /// deaths that arrived there, parked or already heard: a corpse stays in the domain until its
 /// region is destroyed (`rendezvous::SURVEY`, notes/process-view.md).
 fn dead_threads(exit: u64) -> usize {
-    let mut cursor = abi::survey::DONE;
+    let mut cursor = moho_abi::survey::DONE;
     let mut dead = 0;
     // Bounded by the thread table's size in practice; the bound only keeps a misbehaving walk finite.
     for _ in 0..4096 {
@@ -148,7 +148,7 @@ fn dead_threads(exit: u64) -> usize {
         if next <= 0 {
             break;
         }
-        if state == abi::survey::DEAD {
+        if state == moho_abi::survey::DEAD {
             dead += 1;
         }
         cursor = next as u64;

@@ -8,7 +8,7 @@
 //! nor in `crate::machine_statistics`, is under `arch/`, so all three architectures run it
 //! (DECISIONS §19 (architectural parity is a tenet)).
 
-use abi::{Error, usage};
+use moho_abi::{Error, usage};
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::Rights;
@@ -38,20 +38,35 @@ fn a_view_of_a_region_learns_what_it_spent_and_can_spend_nothing() {
     let region = crate::memory_region::create(8).expect("an 8-page region");
     let view = hold(region, Rights::ENUMERATE);
 
-    assert_eq!(call(view, abi::memory_region::USAGE, usage::SIZE), 8);
-    assert_eq!(call(view, abi::memory_region::USAGE, usage::COMMITTED), 0);
+    assert_eq!(
+        call(view, moho_abi::memory_region::USAGE, usage::SIZE_PAGES),
+        8
+    );
+    assert_eq!(
+        call(view, moho_abi::memory_region::USAGE, usage::COMMITTED),
+        0
+    );
 
     crate::memory_region::retype_page(region).expect("one plain page");
     crate::memory_region::retype_object_page(region, crate::memory_region::ObjectKind::Rendezvous)
         .expect("one object page");
-    assert_eq!(call(view, abi::memory_region::USAGE, usage::COMMITTED), 2);
-    assert_eq!(call(view, abi::memory_region::USAGE, usage::FRAMES), 1);
-    assert_eq!(call(view, abi::memory_region::USAGE, usage::RENDEZVOUS), 1);
-    assert_eq!(call(view, abi::memory_region::USAGE, usage::THREADS), 0);
+    assert_eq!(
+        call(view, moho_abi::memory_region::USAGE, usage::COMMITTED),
+        2
+    );
+    assert_eq!(call(view, moho_abi::memory_region::USAGE, usage::FRAMES), 1);
+    assert_eq!(
+        call(view, moho_abi::memory_region::USAGE, usage::RENDEZVOUS),
+        1
+    );
+    assert_eq!(
+        call(view, moho_abi::memory_region::USAGE, usage::THREADS),
+        0
+    );
 
     // Named through a `use` so `script/lint`'s RETYPE check, which reads call sites that pass a
     // count, does not read this list of refused methods as one: every one is called with 0.
-    use abi::memory_region::{DESTROY, RETYPE, SPLIT};
+    use moho_abi::memory_region::{DESTROY, RETYPE, SPLIT};
     for method in [RETYPE, SPLIT, DESTROY] {
         assert_eq!(
             call(view, method, 0),
@@ -72,20 +87,20 @@ fn a_budget_without_enumerate_is_refused_and_an_unknown_record_is_refused_first(
     let region = crate::memory_region::create(4).expect("a 4-page region");
     let spend = hold(region, Rights::WRITE);
     assert_eq!(
-        call(spend, abi::memory_region::USAGE, usage::SIZE),
+        call(spend, moho_abi::memory_region::USAGE, usage::SIZE_PAGES),
         Error::NotPermitted as i64
     );
     let view = hold(region, Rights::ENUMERATE);
     assert!(!usage::is_known(usage::CHILDREN + 1));
     assert_eq!(
-        call(view, abi::memory_region::USAGE, usage::CHILDREN + 1),
+        call(view, moho_abi::memory_region::USAGE, usage::CHILDREN + 1),
         Error::BadMethod as i64
     );
 
     // A reclaimed region's view is stale, and says `Gone` rather than answering zero.
     crate::memory_region::destroy(region);
     assert_eq!(
-        call(view, abi::memory_region::USAGE, usage::SIZE),
+        call(view, moho_abi::memory_region::USAGE, usage::SIZE_PAGES),
         Error::Gone as i64
     );
     let _ = sched::delete_current_capability(spend);

@@ -4,7 +4,7 @@
 
 *Written 2026-10-10 (UTC) by milestone 812 (`std::thread::spawn` runs real threads in one address
 space)'s lane. The ruling is §269 (how threads share a process) fork 2; the wire contract is
-`abi::address_space::WAIT` and `WAKE`, and the flags are `abi::address_wait`.*
+`moho_abi::address_space::WAIT` and `WAKE`, and the flags are `moho_abi::address_wait`.*
 
 ## What it is for
 
@@ -18,7 +18,7 @@ is contended. An address wait (Linux calls it a fast user-space mutex, "futex") 
 | | `WAIT(va, flags, expected)` | `WAKE(va, flags, count)` |
 |---|---|---|
 | returns | `0` woken, `1` the word differed | how many were woken |
-| `flags` | `PRIVATE` with `SIZE_U32`, nothing else (futex2's bit layout) | same |
+| `flags` | `PRIVATE` with `WIDTH_32_BITS`, nothing else (futex2's bit layout) | same |
 | the capability | the caller's own space, with `READ` | same |
 | `va` | 4-aligned, user half, mapped readable | 4-aligned, user half; need not be mapped |
 

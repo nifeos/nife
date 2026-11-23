@@ -63,8 +63,8 @@ What a budget carries is now what everything made from it carries, so three shap
 | Budget | Rights | Who holds it |
 |---|---|---|
 | The root (`cap::memory_region_root_capability`) | every right | the progenitor, which hands `BIND` and `GRANT` on |
-| A lending budget (`abi::rights::ALL`, `cap::memory_region_lending_capability`) | every right | a builder, a shell, a program that lends a page it retyped: a networked program's socket pages, `jig`'s staged package |
-| Spend-only (`abi::rights::SPEND_ONLY`, `cap::memory_region_capability`) | every right but `GRANT` | a leaf |
+| A lending budget (`moho_abi::rights::ALL`, `cap::memory_region_lending_capability`) | every right | a builder, a shell, a program that lends a page it retyped: a networked program's socket pages, `jig`'s staged package |
+| Spend-only (`moho_abi::rights::SPEND_ONLY`, `cap::memory_region_capability`) | every right but `GRANT` | a leaf |
 
 The spend-only budget was `WRITE` alone until 824. It gained `READ`, `ENUMERATE` and `BIND` so a
 leaf can still wait on its own notification and join its own process. On a region those rights
@@ -258,7 +258,7 @@ Limits that remain:
 - **`Error::OutOfMemory` collapses three causes into one code.** `SPLIT` returns it when the
   caller's own budget is exhausted, when the caller's capability table is full, or when
   `MAXIMUM_REGIONS` is exhausted; `RETYPE_OBJECT` collapses a different pair the same way (each
-  method's doc comment in `crates/abi`). The first two are facts about the caller; the third is a
+  method's doc comment in `nifeos/moho_abi`). The first two are facts about the caller; the third is a
   fact about every other live region on the machine, which the caller did not cause and cannot fix.
   DECISIONS §119 (splitting `OutOfMemory`'s three causes is declined for want of a customer)
   declines it and records non-binding guidance for whoever has a customer: cause-specific `Error`

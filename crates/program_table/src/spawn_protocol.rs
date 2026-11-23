@@ -99,9 +99,11 @@ const IMAGE_BIT: u64 = 1 << 39;
 /// progenitor answers with one message on the result endpoint, [`activation_reply`]'s two words.
 ///
 /// What follows depends on the verb: an install's or a vouch's frames as [`IMAGE_BIT`]'s, with word
-/// 0 the file's length; for a vouch, then the name as one data message; for a remove, that name
-/// message alone; for a rollback, nothing, with names packed by
-/// `file_system_contract::grant::pack_name`. notes/grant-expression/spawn-protocol.md says why.
+/// 0 the file's length; for a vouch, then the name as one `READ` frame; for a remove or a revoke,
+/// that name frame alone; for a rollback, nothing. A name's frame is laid out by
+/// `file_system_contract::grant::write_page`, the page a caretaker's own name travels on, so it
+/// carries any name up to `grant::MAXIMUM_NAME_BYTES` (milestone 1122 (every name travels on a
+/// page)). notes/grant-expression/spawn-protocol.md says why.
 ///
 /// Name: provisional (2026-09-26).
 const ACTIVATION_BIT: u64 = 1 << 40;
@@ -207,7 +209,7 @@ pub const SHELL_GPU_SLOT: u64 = 22;
 
 // The seven graphical slots are one contiguous block fenced by two named ones, and these two
 // assertions are the fence: above the shell's configuration page, below the run-unvouched slot
-// (and so below the kernel's fault slot, which each binary asserts against `abi` itself, for the
+// (and so below the kernel's fault slot, which each binary asserts against `moho_abi` itself, for the
 // reason `RUN_UNVOUCHED_SLOT`'s own doc gives). A slot outside the fence would be one a runtime
 // allocation could land in, and a probe there would be sound only in a table that is almost full.
 const _: () = assert!(SHELL_GPU_SLOT > MACHINE_PAGE_SLOT);
@@ -280,8 +282,8 @@ const NAMESET_BIT: u64 = 1 << 43;
 /// progenitor places it in, `WRITE` only, in the boot shell and in `login`, and the slot `login`
 /// delegates it from.
 ///
-/// The highest slot below the kernel's reserved fault slot (`abi::fault::FAULT_RENDEZVOUS_SLOT`, 63);
-/// `program_table` does not depend on `abi`, so each binary that reads this asserts the relation. A
+/// The highest slot below the kernel's reserved fault slot (`moho_abi::fault::FAULT_RENDEZVOUS_SLOT`, 63);
+/// `program_table` does not depend on `moho_abi`, so each binary that reads this asserts the relation. A
 /// named slot, as [`crate::NETWORK_SLOT`] is: the holder probes it at `_start`, before it has
 /// allocated anything, which is the only time a probe is sound.
 ///
@@ -536,68 +538,42 @@ pub const fn answered_console() -> (u64, u64, u64) {
     (ANSWERED_CONSOLE, 0, 0)
 }
 
-/// The approval's three trailer messages: the kind, the approval's name packed as a removal's
-/// name is (`file_system_contract::grant::pack_name`, sixteen bytes at most), then the file's
-/// digest the records bind to, thirty-two raw bytes over two messages. The name is the approval
-/// file's own `approval` key; a longer name is refused at compile time, before this is built.
+/// The approval's three trailer messages: the kind, then the file's digest the records bind to,
+/// thirty-two raw bytes over two messages. The approval's name, the file's own `approval` key,
+/// follows them as one `READ` frame laid out as a removal's name is
+/// (`file_system_contract::grant::write_page`), which the sender writes, since this crate does
+/// not link the contract.
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 #[must_use]
-pub fn answered_approval(name: &str, digest: &[u8; 32]) -> [(u64, u64, u64); 3] {
-    let (lo, hi) = pack_name(name.as_bytes());
+pub fn answered_approval(digest: &[u8; 32]) -> [(u64, u64, u64); 3] {
     let word = |at: usize| {
         let mut w = [0u8; 8];
         w.copy_from_slice(&digest[at..at + 8]);
         u64::from_le_bytes(w)
     };
     [
-        (ANSWERED_APPROVAL, lo, hi),
+        (ANSWERED_APPROVAL, 0, 0),
         (word(0), word(8), word(16)),
         (word(24), 0, 0),
     ]
 }
 
-/// The name packed the way a removal's name is: sixteen bytes, little-endian words, zero-padded
-/// (`file_system_contract::grant::pack_name`'s rule, spelled here because this crate does not link
-/// the contract; the test pins the two).
-fn pack_name(name: &[u8]) -> (u64, u64) {
-    let mut bytes = [0u8; 16];
-    let len = name.len().min(16);
-    bytes[..len].copy_from_slice(&name[..len]);
-    (
-        u64::from_le_bytes(bytes[..8].try_into().unwrap_or([0; 8])),
-        u64::from_le_bytes(bytes[8..].try_into().unwrap_or([0; 8])),
-    )
-}
-
-/// [`pack_name`] read back: the length the words carry, or 0 for words that spell nothing.
-fn unpack_name(lo: u64, hi: u64, out: &mut [u8; 16]) -> usize {
-    let words = [lo.to_le_bytes(), hi.to_le_bytes()];
-    let mut packed = [0u8; 16];
-    packed[..8].copy_from_slice(&words[0]);
-    packed[8..].copy_from_slice(&words[1]);
-    let len = packed
-        .iter()
-        .rposition(|&b| b != 0)
-        .map_or(0, |at| at + 1)
-        .min(16);
-    out[..len].copy_from_slice(&packed[..len]);
-    len
-}
-
 /// [`answered_approval`] and [`answered_console`] read back: how the answer was given, or
-/// `None` for words that spell neither kind. `out` holds the unpacked name.
+/// `None` for words that spell neither kind. Neither kind word carries anything beside it, so
+/// one that does spells nothing. An approval's name is its own frame, read after these.
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub fn answered_from_trailer(
     (kind, lo, hi): (u64, u64, u64),
     more: &[(u64, u64, u64)],
-    out: &mut [u8; 16],
 ) -> Option<Answered> {
+    if lo != 0 || hi != 0 {
+        return None;
+    }
     match kind {
-        ANSWERED_CONSOLE if lo == 0 && hi == 0 => Some(Answered::Console),
+        ANSWERED_CONSOLE => Some(Answered::Console),
         ANSWERED_APPROVAL if more.len() >= 2 => {
-            let len = unpack_name(lo, hi, out);
             let mut digest = [0u8; 32];
             for (i, (a, b, c)) in more[..2].iter().enumerate() {
                 for (at, w) in [a, b, c].into_iter().enumerate() {
@@ -608,11 +584,7 @@ pub fn answered_from_trailer(
                     }
                 }
             }
-            Some(Answered::Approval {
-                name: *out,
-                length_bytes: len,
-                digest,
-            })
+            Some(Answered::Approval { digest })
         }
         _ => None,
     }
@@ -626,12 +598,8 @@ pub fn answered_from_trailer(
 pub enum Answered {
     /// The owner's console.
     Console,
-    /// The approval named, bound to the file's digest.
+    /// An approval, bound to the file's digest. Its name is the frame that follows the trailer.
     Approval {
-        /// The name, as `out` was given room for it.
-        name: [u8; 16],
-        /// The name's length, at most sixteen bytes.
-        length_bytes: usize,
         /// The file's digest the records bind to.
         digest: [u8; 32],
     },
@@ -655,8 +623,8 @@ pub fn holder_from_words(
 
 /// The ask kinds a [`ActivationStatus::NotApproved`] refusal's third message carries, for an
 /// undelegated badge's `--approved` install (milestone 911): the grant the entry did not cover,
-/// which the owner's console may read. A zone's or a directory's name rides words 1 and 2
-/// (`pack_name`); the others ride the kind alone. The kinds are this crate's own numbers; the
+/// which the owner's console may read. A zone's or a directory's name follows the message
+/// ([`refused_ask_words`]); the others ride the kind alone. The kinds are this crate's own numbers; the
 /// check that mints them maps `installed_programs::Granted` onto them, and the gate's zone row
 /// is what catches a swapped pair.
 ///
@@ -670,45 +638,43 @@ pub const ASK_SERVICE: u64 = 2;
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub const ASK_INSTALLER: u64 = 3;
-/// The zone ask's kind ([`ASK_NETWORK`]); the zone's name rides words 1 and 2.
+/// The zone ask's kind ([`ASK_NETWORK`]); the zone's name follows ([`refused_ask_words`]).
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub const ASK_ZONE: u64 = 4;
-/// The directory ask's kind ([`ASK_NETWORK`]); the directory's name rides words 1 and 2, and the
-/// rights do not travel: the caller spells them from the ask it already holds.
+/// The directory ask's kind ([`ASK_NETWORK`]); the directory's name follows
+/// ([`refused_ask_words`]) and its rights ride the kind word.
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub const ASK_DIRECTORY: u64 = 5;
 
 /// **The message that names the ask a `--approved` install's check refused** (milestone 911):
 /// the kind ([`ASK_NETWORK`] and its neighbors) with a directory's rights above it (`1` reads,
-/// `3` reads and writes, the bit spelling `installed_programs::DirectoryRights` keeps), and,
-/// for a zone or a directory, the name packed as a removal's name is.
+/// `3` reads and writes, the bit spelling `installed_programs::DirectoryRights` keeps), and the
+/// length in bytes of a zone's or a directory's name. The name follows in
+/// [`stored_messages`]`(name_bytes)` messages laid out as [`stored_words`] lays the stored
+/// records, so it travels whole at any length (milestone 1122 (every name travels on a page)).
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 #[must_use]
-pub fn refused_ask_words(kind: u64, rights: u64, name: &str) -> (u64, u64, u64) {
-    let (lo, hi) = pack_name(name.as_bytes());
-    (kind | (rights << 8), lo, hi)
+pub const fn refused_ask_words(kind: u64, rights: u64, name_bytes: usize) -> (u64, u64, u64) {
+    (kind | (rights << 8), name_bytes as u64, 0)
 }
 
-/// [`refused_ask_words`] read back: the kind, the directory rights, and the name in `out`, or
-/// `None` for a word that carries no kind this side knows. The name's length is the packed
-/// form's, cut at sixteen bytes.
+/// [`refused_ask_words`] read back: the kind, the directory rights, and the length of the name
+/// that follows, or `None` for a word that carries no kind this side knows, or a third word
+/// that is not zero.
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 #[must_use]
 pub fn refused_ask_from_words(
-    (word, lo, hi): (u64, u64, u64),
-    out: &mut [u8; 16],
-) -> Option<(u64, u64, &str)> {
+    (word, name_bytes, rest): (u64, u64, u64),
+) -> Option<(u64, u64, u64)> {
     let kind = word & 0xff;
-    if !matches!(kind, ASK_NETWORK..=ASK_DIRECTORY) {
+    if !matches!(kind, ASK_NETWORK..=ASK_DIRECTORY) || rest != 0 {
         return None;
     }
-    let len = unpack_name(lo, hi, out);
-    let name = core::str::from_utf8(&out[..len]).unwrap_or("");
-    Some((kind, word >> 8, name))
+    Some((kind, word >> 8, name_bytes))
 }
 
 /// **How many messages carry `len` bytes of stored records** ([`Activation::Approve`]'s reply):
@@ -1278,55 +1244,37 @@ mod tests {
         );
     }
 
-    /// **The answered trailer round-trips**, console and approval alike, and the packing is the
-    /// removal name's rule (`file_system_contract::grant::pack_name`), which this crate spells
-    /// because it does not link the contract. A kind word this reader does not know spells
-    /// nothing.
+    /// **The answered trailer round-trips**, console and approval alike. A kind word this reader
+    /// does not know spells nothing, and neither does a kind word with anything beside it: the
+    /// approval's name is its own frame, never these words.
     #[test]
     fn an_answered_trailer_round_trips() {
-        use file_system_contract::grant;
-        let (lo, hi) = grant::pack_name(b"lab-runner").unwrap();
-        assert_eq!(
-            pack_name(b"lab-runner"),
-            (lo, hi),
-            "the packing is the removal name's"
-        );
         assert_eq!(answered_console(), (ANSWERED_CONSOLE, 0, 0));
-        let mut out = [0u8; 16];
         assert_eq!(
-            answered_from_trailer(answered_console(), &[], &mut out),
+            answered_from_trailer(answered_console(), &[]),
             Some(Answered::Console)
         );
         let digest = [0x5au8; 32];
-        let trailer = answered_approval("lab-runner", &digest);
-        assert_eq!(trailer[0].0, ANSWERED_APPROVAL);
+        let trailer = answered_approval(&digest);
+        assert_eq!(trailer[0], (ANSWERED_APPROVAL, 0, 0));
         assert_eq!(trailer.len(), 3);
-        match answered_from_trailer(trailer[0], &trailer[1..], &mut out) {
-            Some(Answered::Approval {
-                name,
-                length_bytes,
-                digest: got,
-            }) => {
-                assert_eq!(&name[..length_bytes], b"lab-runner");
-                assert_eq!(got, digest);
-            }
-            other => panic!("{other:?}"),
+        assert_eq!(
+            answered_from_trailer(trailer[0], &trailer[1..]),
+            Some(Answered::Approval { digest })
+        );
+        assert_eq!(answered_from_trailer((9, 0, 0), &[]), None);
+        for beside in [(0, 1), (1, 0)] {
+            assert_eq!(
+                answered_from_trailer((ANSWERED_CONSOLE, beside.0, beside.1), &[]),
+                None
+            );
+            assert_eq!(
+                answered_from_trailer((ANSWERED_APPROVAL, beside.0, beside.1), &trailer[1..]),
+                None
+            );
         }
-        assert_eq!(answered_from_trailer((9, 0, 0), &[], &mut out), None);
-        // The console's kind word carries no name: a follow word under it is no console answer,
-        // and an approval's kind word with fewer than two followers spells nothing.
-        assert_eq!(
-            answered_from_trailer((ANSWERED_CONSOLE, 0, 1), &[], &mut out),
-            None
-        );
-        assert_eq!(
-            answered_from_trailer((ANSWERED_CONSOLE, 1, 0), &[], &mut out),
-            None
-        );
-        assert_eq!(
-            answered_from_trailer(answered_approval("lab-runner", &digest)[0], &[], &mut out),
-            None
-        );
+        // An approval's kind word with fewer than two followers spells nothing.
+        assert_eq!(answered_from_trailer(trailer[0], &[]), None);
     }
 
     /// A holder's name survives the two messages whole, at the full width and empty.
@@ -1345,35 +1293,44 @@ mod tests {
         );
     }
 
-    /// **The refused ask travels as one message, name and kind** (milestone 911), and a kind
-    /// this side does not know spells nothing: the reply's third follower is the owner's to
+    /// **The refused ask travels as one message and its name after it** (milestone 911), and a
+    /// kind this side does not know spells nothing: the reply's third follower is the owner's to
     /// read, and a future kind must not decode as one of these five. A directory's rights ride
-    /// above the kind, and a kind's own bits are the low byte, so a wider kind word is still
-    /// read as its kind.
+    /// above the kind, and a kind's own bits are the low byte, so a wider kind word is still read
+    /// as its kind. The name comes back whole at 252 bytes (milestone 1122), in the messages
+    /// [`stored_words`] lays out.
     #[test]
     fn a_refused_ask_round_trips() {
+        let long = "z".repeat(252);
         for (kind, rights, name) in [
             (ASK_NETWORK, 0, ""),
             (ASK_SERVICE, 0, ""),
             (ASK_INSTALLER, 0, ""),
             (ASK_ZONE, 0, "example.net"),
+            (ASK_ZONE, 0, long.as_str()),
             (ASK_DIRECTORY, 1, "monit/state"),
             (ASK_DIRECTORY, 3, "monit/state"),
         ] {
-            let mut out = [0u8; 16];
-            assert_eq!(
-                refused_ask_from_words(refused_ask_words(kind, rights, name), &mut out),
-                Some((kind, rights, name))
-            );
+            let word = refused_ask_words(kind, rights, name.len());
+            let Some((got_kind, got_rights, len)) = refused_ask_from_words(word) else {
+                panic!("{kind} did not read back");
+            };
+            assert_eq!((got_kind, got_rights), (kind, rights));
+            let mut whole = [0u8; 252];
+            let out = &mut whole[..len as usize];
+            for m in 0..stored_messages(len) as usize {
+                put_stored_words(out, m * 24, stored_words(name.as_bytes(), m * 24));
+            }
+            assert_eq!(out, name.as_bytes());
         }
-        let mut out = [0u8; 16];
-        assert_eq!(refused_ask_from_words((0, 0, 0), &mut out), None);
-        assert_eq!(refused_ask_from_words((6, 0, 0), &mut out), None);
+        assert_eq!(refused_ask_from_words((0, 0, 0)), None);
+        assert_eq!(refused_ask_from_words((6, 0, 0)), None);
+        assert_eq!(refused_ask_from_words((ASK_ZONE, 3, 1)), None);
         // A kind word wider than the kind is the rights riding above it, and the kind is its
         // low byte alone.
         assert_eq!(
-            refused_ask_from_words((ASK_ZONE | (1 << 8), 0, 0), &mut out),
-            Some((ASK_ZONE, 1, ""))
+            refused_ask_from_words((ASK_ZONE | (1 << 8), 0, 0)),
+            Some((ASK_ZONE, 1, 0))
         );
     }
 

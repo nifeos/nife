@@ -51,8 +51,8 @@ const SHARE_SLOT: u64 = grant_contract::SHARE_SLOT;
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
 interfaces_note::carry_interfaces!(&[
     interfaces_note::DeclaredInterface {
-        id: abi::INTERFACE_ID,
-        version: abi::ABI_VERSION
+        id: moho_abi::INTERFACE_ID,
+        version: moho_abi::ABI_VERSION
     },
     interfaces_note::DeclaredInterface {
         id: address_space_layout::INTERFACE_ID,
@@ -134,12 +134,12 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 /// Every figure the table needs, or the first refusal.
 fn read() -> Result<Spending, i64> {
     Ok(Spending {
-        pages: usage(abi::usage::SIZE)?,
-        committed: usage(abi::usage::COMMITTED)?,
-        frames: usage(abi::usage::FRAMES)?,
-        threads: usage(abi::usage::THREADS)?,
-        address_spaces: usage(abi::usage::ADDRESS_SPACES)?,
-        rendezvous: usage(abi::usage::RENDEZVOUS)?,
+        pages: usage(moho_abi::usage::SIZE_PAGES)?,
+        committed: usage(moho_abi::usage::COMMITTED)?,
+        frames: usage(moho_abi::usage::FRAMES)?,
+        threads: usage(moho_abi::usage::THREADS)?,
+        address_spaces: usage(moho_abi::usage::ADDRESS_SPACES)?,
+        rendezvous: usage(moho_abi::usage::RENDEZVOUS)?,
     })
 }
 

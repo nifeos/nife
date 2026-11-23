@@ -20,7 +20,7 @@ pub fn configure_thread_control_block(
     entry: u64,
     user_sp: u64,
     aspace_name: u64,
-) -> Result<(), abi::Error> {
+) -> Result<(), moho_abi::Error> {
     configure_thread_control_block_with_thread_pointer(tid, entry, user_sp, aspace_name, 0)
         .map(|_| ())
 }
@@ -31,17 +31,20 @@ pub fn configure_thread_control_block(
 ///
 /// Refuses a non-embryo with `WrongObject`, which keeps the grant a field of the spawn manifest
 /// rather than something a running program can ask for. One-way. No system call method reaches it yet
-/// (`abi::thread_control_block` says why none is minted). `#[inline(never)]` keeps it out of the
+/// (`moho_abi::thread_control_block` says why none is minted). `#[inline(never)]` keeps it out of the
 /// bytes `script/fastpath-footprint` bounds.
 #[inline(never)]
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
-pub fn grant_cycle_counter(tid: ThreadId) -> Result<(), abi::Error> {
+pub fn grant_cycle_counter(tid: ThreadId) -> Result<(), moho_abi::Error> {
     let mut guard = IPC_TABLES.lock();
-    let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
-    let t = sched.threads.get_mut(tid).ok_or(abi::Error::NoSuchSlot)?;
+    let sched = guard.as_mut().ok_or(moho_abi::Error::NoSuchSlot)?;
+    let t = sched
+        .threads
+        .get_mut(tid)
+        .ok_or(moho_abi::Error::NoSuchSlot)?;
     if t.handshake.state != State::Embryo {
-        return Err(abi::Error::WrongObject);
+        return Err(moho_abi::Error::WrongObject);
     }
     t.cycle_counter_grant = true;
     Ok(())
@@ -89,16 +92,16 @@ pub fn configure_thread_control_block_with_thread_pointer(
     user_sp: u64,
     aspace_name: u64,
     thread_pointer: u64,
-) -> Result<u64, abi::Error> {
+) -> Result<u64, moho_abi::Error> {
     if !is_thread_pointer(thread_pointer) {
-        return Err(abi::Error::BadPointer);
+        return Err(moho_abi::Error::BadPointer);
     }
     {
         let guard = IPC_TABLES.lock();
-        let sched = guard.as_ref().ok_or(abi::Error::NoSuchSlot)?;
-        let t = sched.threads.get(tid).ok_or(abi::Error::NoSuchSlot)?;
+        let sched = guard.as_ref().ok_or(moho_abi::Error::NoSuchSlot)?;
+        let t = sched.threads.get(tid).ok_or(moho_abi::Error::NoSuchSlot)?;
         if t.handshake.state != State::Embryo {
-            return Err(abi::Error::WrongObject); // only an unstarted TCB may be configured
+            return Err(moho_abi::Error::WrongObject); // only an unstarted TCB may be configured
         }
     }
 
@@ -111,10 +114,13 @@ pub fn configure_thread_control_block_with_thread_pointer(
             page = current_cpu_contract::PAGE_VIRTUAL_ADDRESS;
         }
         let mut guard = IPC_TABLES.lock();
-        let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
-        let t = sched.threads.get_mut(tid).ok_or(abi::Error::NoSuchSlot)?;
+        let sched = guard.as_mut().ok_or(moho_abi::Error::NoSuchSlot)?;
+        let t = sched
+            .threads
+            .get_mut(tid)
+            .ok_or(moho_abi::Error::NoSuchSlot)?;
         if t.handshake.state != State::Embryo {
-            return Err(abi::Error::WrongObject);
+            return Err(moho_abi::Error::WrongObject);
         }
         t.space = Some(bound);
         t.entry = (entry, user_sp);
@@ -139,23 +145,26 @@ pub fn configure_thread_control_block_joining(
     user_sp: u64,
     pid: super::ProcessId,
     thread_pointer: u64,
-) -> Result<u64, abi::Error> {
+) -> Result<u64, moho_abi::Error> {
     if !is_thread_pointer(thread_pointer) {
-        return Err(abi::Error::BadPointer);
+        return Err(moho_abi::Error::BadPointer);
     }
     // The thread page first, because the registry's lock ranks above `IPC_TABLES`.
-    let space = super::process::space_name_of(pid).ok_or(abi::Error::Gone)?;
+    let space = super::process::space_name_of(pid).ok_or(moho_abi::Error::Gone)?;
     let (slot, page, kernel_va) =
-        crate::user::take_thread_page(space).ok_or(abi::Error::OutOfMemory)?;
+        crate::user::take_thread_page(space).ok_or(moho_abi::Error::OutOfMemory)?;
     let joined = (|| {
         let mut guard = IPC_TABLES.lock();
-        let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
-        let t = sched.threads.get(tid).ok_or(abi::Error::NoSuchSlot)?;
+        let sched = guard.as_mut().ok_or(moho_abi::Error::NoSuchSlot)?;
+        let t = sched.threads.get(tid).ok_or(moho_abi::Error::NoSuchSlot)?;
         if t.handshake.state != State::Embryo || t.space.is_some() {
-            return Err(abi::Error::WrongObject); // only an unconfigured embryo joins
+            return Err(moho_abi::Error::WrongObject); // only an unconfigured embryo joins
         }
         let bound = super::process::join(sched, tid, pid)?;
-        let t = sched.threads.get_mut(tid).ok_or(abi::Error::NoSuchSlot)?;
+        let t = sched
+            .threads
+            .get_mut(tid)
+            .ok_or(moho_abi::Error::NoSuchSlot)?;
         t.space = Some(bound.with_current_cpu_page(kernel_va));
         t.thread_page = Some((space, slot));
         t.entry = (entry, user_sp);
@@ -206,21 +215,24 @@ pub fn set_thread_pointer(
     tid: ThreadId,
     value: u64,
     frame: &mut crate::arch::exceptions::TrapFrame,
-) -> Result<(), abi::Error> {
+) -> Result<(), moho_abi::Error> {
     if !is_thread_pointer(value) {
-        return Err(abi::Error::BadPointer);
+        return Err(moho_abi::Error::BadPointer);
     }
     let mut guard = IPC_TABLES.lock();
-    let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
+    let sched = guard.as_mut().ok_or(moho_abi::Error::NoSuchSlot)?;
     let caller = current_thread_id();
-    let t = sched.threads.get_mut(tid).ok_or(abi::Error::NoSuchSlot)?;
+    let t = sched
+        .threads
+        .get_mut(tid)
+        .ok_or(moho_abi::Error::NoSuchSlot)?;
     if t.handshake.state == State::Embryo {
         t.thread_pointer = value;
     } else if tid == caller {
         t.thread_pointer = value;
         crate::arch::thread_pointer::set_live(frame, value);
     } else {
-        return Err(abi::Error::WrongObject);
+        return Err(moho_abi::Error::WrongObject);
     }
     Ok(())
 }

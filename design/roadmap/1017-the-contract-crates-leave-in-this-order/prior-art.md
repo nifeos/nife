@@ -84,7 +84,7 @@ a driver author is to get the driver into the main tree, where a change to an in
 Lesson for nife. Linux answers churn by keeping every consumer of an internal interface in one tree,
 so a break is one commit. That is the monorepo answer the 2026-11-01 direction turns down for
 contract crates, and it names the price nife accepts: a break becomes two landings. Linux draws the
-stable line at the boundary a separate program sees. Of the 22, `abi` and the kernel's shared pages
+stable line at the boundary a separate program sees. Of the 22, `moho_abi` and the kernel's shared pages
 (`block_roster_contract`, `current_cpu_contract`, `machine_statistics_contract`) are that boundary; the rest
 are agreements between programs. So the argument for keeping a crate in nife is strongest for
 code internal to the kernel, and no crate of the 22 is that.

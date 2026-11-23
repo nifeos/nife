@@ -228,7 +228,7 @@ pub fn user_address_space_map(
 /// The root table of a space the registry names, bound or not.
 ///
 /// Built for tests (so a walker can ask what a space really maps) and now also
-/// `abi::address_space::LIST`'s way in (milestone 126 (the `procps` package)'s `pmap`, DECISIONS §114 (`pmap` gets its listing)): the system call handler
+/// `moho_abi::address_space::LIST`'s way in (milestone 126 (the `procps` package)'s `pmap`, DECISIONS §114 (`pmap` gets its listing)): the system call handler
 /// resolves the capability's `name` to a root here before consulting `revoke::list_mapping` and
 /// `arch::mmu::translate_at`. `None` once the space is gone: its thread was reaped or its region
 /// destroyed (§249). A `LIST` against a capability that outlived its space reads as "nothing to
@@ -265,14 +265,14 @@ pub fn with_user_address_space<R>(name: u64, f: impl FnOnce(Option<&mut AddressS
 /// is one critical section across both tables.
 pub(crate) fn bind_user_address_space(
     name: u64,
-    bind: impl FnOnce(BoundSpace) -> Result<Holder, abi::Error>,
-) -> Result<(), abi::Error> {
+    bind: impl FnOnce(BoundSpace) -> Result<Holder, moho_abi::Error>,
+) -> Result<(), moho_abi::Error> {
     let mut spaces = USER_SPACES.lock();
     let entry = spaces
         .get_mut(space_entry(name))
-        .ok_or(abi::Error::NoSuchSlot)?;
+        .ok_or(moho_abi::Error::NoSuchSlot)?;
     if entry.bound.is_some() {
-        return Err(abi::Error::WrongObject);
+        return Err(moho_abi::Error::WrongObject);
     }
     entry.space.attach_current_cpu_page();
     let holder = bind(BoundSpace::of(name, &entry.space))?;

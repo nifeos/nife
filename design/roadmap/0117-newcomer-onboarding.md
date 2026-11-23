@@ -199,7 +199,7 @@ tells them what *this* system does with one.
   whose call that is.
 - **Recorded.** Removal still has no page, and the argument-plus-input fork stays undecided. Both
   are in `notes/adding-a-program.md`'s `BUGS`; the fork is also in the planner's own comment and a
-  passing host test in `crates/grant_plan`. Whether such a program is wanted at all is an
+  passing host test in the `grant_plan` crate (nifeos/grant_plan). Whether such a program is wanted at all is an
   architect's.
 - **Recorded.** Two diagnostics are built and still unexercised in anger. The host-load sampler in
   `xtask/src/main.rs` runs on both kernel legs, and `notes/load-sensitive-assertions.md` carries its

@@ -21,7 +21,7 @@
 
 use crate::alloc::Layout;
 use crate::ptr::NonNull;
-use crate::sys::pal::nife::{abi, rt};
+use crate::sys::pal::nife::{moho_abi, rt};
 use crate::sys::thread_local::key::nife as tls;
 
 // Generated whole from the crate; its counters and bound are the host tests', hence the allow.

@@ -253,7 +253,7 @@ fn take_grants(placement: Placement) -> Option<(Handoff, MappedWindow, MappedWin
             data_plane_slots::OWN_SPACE,
             va,
             slot,
-            abi::address_space::MAP_READ_WRITE,
+            moho_abi::address_space::MAP_READ_WRITE,
         ) != 0
         {
             return None;
@@ -344,11 +344,14 @@ fn serve(mut plane: Plane) -> ! {
             // tell a Reply from a delegation)).
             continue;
         };
-        // **Clamp**, the defence the virtio block server states at the same line: every caller
-        // today sends at most `TRANSFER_BLOCKS` because the field cannot encode more, and a
-        // request is never trusted to stay inside the region it shares just because the packing
-        // allows a larger number to be spelled.
-        let count = block::request_block_count(w0).min(TRANSFER_BLOCKS);
+        // **Refuse** a count past the shared region, as the virtio block server does at the same
+        // line: a request is never trusted to stay inside the region it shares just because the
+        // packing allows a larger number to be spelled, and a clamped transfer would move fewer
+        // blocks than asked without saying so.
+        let Some(count) = block::request_block_count(w0) else {
+            reply(reply_to, file_system_contract::error::word(22) as u64, 0); // EINVAL
+            continue;
+        };
         let Some(window) = client_window(req.badge) else {
             reply(reply_to, file_system_contract::error::word(22) as u64, 0); // EINVAL
             continue;

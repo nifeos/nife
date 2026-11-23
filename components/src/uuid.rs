@@ -65,7 +65,7 @@ const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
 
 /// Slot 9: the entropy service, `WRITE`. Its *presence* is what the draw finds out about, and it
 /// finds out by asking rather than by probing: a `CALL` on an empty slot answers
-/// `abi::Error::NoSuchSlot`, which `entropy_contract::delivered_bytes` separates from every real count.
+/// `moho_abi::Error::NoSuchSlot`, which `entropy_contract::delivered_bytes` separates from every real count.
 const ENTROPY_SLOT: u64 = grant_contract::ENTROPY_SLOT;
 
 // **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
@@ -73,8 +73,8 @@ const ENTROPY_SLOT: u64 = grant_contract::ENTROPY_SLOT;
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
 interfaces_note::carry_interfaces!(&[
     interfaces_note::DeclaredInterface {
-        id: abi::INTERFACE_ID,
-        version: abi::ABI_VERSION
+        id: moho_abi::INTERFACE_ID,
+        version: moho_abi::ABI_VERSION
     },
     interfaces_note::DeclaredInterface {
         id: address_space_layout::INTERFACE_ID,

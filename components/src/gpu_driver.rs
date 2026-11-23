@@ -65,7 +65,7 @@ const DMA_PAGE_FRAMES: u64 = 1 + gfx::SURFACE_PAGE_FRAMES as u64;
 
 /// Where this driver puts its DMA region. Its choice, not the kernel's: it holds the frames and maps
 /// them (milestone 108). The physical base, which descriptors need, is read out of the region
-/// itself (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`; see
+/// itself (`moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`; see
 /// `_start`).
 ///
 /// **2 MiB-aligned** (milestone 142 (a text display good enough that people use it instead of a
@@ -489,14 +489,14 @@ fn start(role: u64, _arg1: u64, arg2: u64) -> ! {
     // Where the region is, read out of the region (milestone 600 (provisional)): descriptors speak
     // physical addresses, and the progenitor that builds this driver holds the run as a capability
     // and knows none, so whoever built this process wrote the base into the tail of the first page
-    // (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, past
+    // (`moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, past
     // `RESPONSE_OFFSET_BYTES`'s 408 bytes).
     // SAFETY: the whole run was just mapped read/write at `DMA_VA`, and the offset is inside its
     // first page.
     let direct_memory_access_phys = unsafe {
         core::ptr::read_volatile(
             (DMA_VA
-                + abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET)
+                + moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET)
                 as *const u64,
         )
     };

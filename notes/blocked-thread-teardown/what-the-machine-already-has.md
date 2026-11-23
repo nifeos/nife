@@ -35,7 +35,7 @@ wake(sched, tid);              // Blocked -> Ready, onto a run queue
 
 Those two lines are what `reap_region_objects` runs against every waiter it drains from a doomed
 endpoint. The system call layer then reads the flag through `take_ipc_aborted` and hands userspace
-`abi::Error::Gone`. The abort path is complete; it is only ever entered from an endpoint's wait
+`moho_abi::Error::Gone`. The abort path is complete; it is only ever entered from an endpoint's wait
 queue, which is the whole of `Error::Gone`'s reach.
 
 ## The one primitive that is missing is twelve lines

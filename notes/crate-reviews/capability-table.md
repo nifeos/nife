@@ -28,7 +28,7 @@ with their four harnesses.
 | item | value |
 |---|---|
 | crate | `capability_table`, ratified 2026-08-01 as `capability` and renamed on the architect's ruling of 2026-11-16 (milestone 1081 D1) |
-| identity values | none: no `INTERFACE_ID`, `VERSION` or magic word. The crate is a library the kernel links, not a wire contract; `abi::rights` pins the five right bits and `kernel/src/capability_object.rs` asserts them equal |
+| identity values | none: no `INTERFACE_ID`, `VERSION` or magic word. The crate is a library the kernel links, not a wire contract; `moho_abi::rights` pins the five right bits and `kernel/src/capability_object.rs` asserts them equal |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, 1.85 |
 | license | `MIT OR Apache-2.0`, with both texts. The crate adapts nothing from outside |
@@ -128,7 +128,7 @@ architect's to ratify, as built.
 | `MAXIMUM_SLOTS`, module `tests` | ratified | |
 | `Capability::delegate`, `Error::GrantRequired`, `Error::SlotOccupied`, `CapabilityTable::capacity`, `CapabilityTable::iter` | ratified 2026-11-19 UTC (D2) | |
 | `Capability` | for the architect to ratify | spelled out from `Cap` under the capability ruling of 2026-10-06 UTC; the block still reads provisional |
-| `Rights`, `NONE`, `READ`, `WRITE`, `GRANT`, `ENUMERATE`, `BIND`, `ALL`, `bits`, `from_bits`, `union`, `intersect`, `allows`, `is_subset_of` | for the architect to ratify | no block; the five bit positions are the system call wire format, so the right names are the vocabulary `abi::rights` also uses; `ALL` is built from the five and is no longer a literal |
+| `Rights`, `NONE`, `READ`, `WRITE`, `GRANT`, `ENUMERATE`, `BIND`, `ALL`, `bits`, `from_bits`, `union`, `intersect`, `allows`, `is_subset_of` | for the architect to ratify | no block; the five bit positions are the system call wire format, so the right names are the vocabulary `moho_abi::rights` also uses; `ALL` is built from the five and is no longer a literal |
 | `Capability::mint_child` | for the architect to ratify | the inheriting mint: same rights, new object. the narrowing, GRANT-checked path already uses `derive` and `delegate`, so `mint_child` is not a synonym |
 | `Error::NoSuchSlot`, `CannotWiden`, `NoFreeSlot` | for the architect to ratify | no block |
 | `CapabilityTable::new`, `used`, `peak`, `is_empty`, `get`, `insert`, `insert_at`, `delete` | for the architect to ratify | the standard-library words (D2 excludes `len`); `used` counts occupied slots and `peak` is the highest `used` ever seen |
