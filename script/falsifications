@@ -298,6 +298,9 @@
 #   They carry `attested` records with a by-hand replay line instead (the fuzz targets' patches say
 #   how to replay them in their headers). Found by `lane/fuzz-service-handlers` and #1606 on
 #   2026-10-04 (UTC); sweeping them means a second `cargo metadata` per extra workspace root.
+#   The one exception is a separate workspace `script/verify` proves, which
+#   `helpers/rust_source.py`'s PROVED_WORKSPACES lists: its packages are read and counted, so the
+#   harness count agrees with `script/lint`'s, and its records are still `attested`.
 #
 # Name: ratified 2026-08-30 (calef, DECISIONS §134). The `script/` family splits in a way nobody had
 # written down until that section: what DOES something is a verb (`verify`, `test`, `fuzz`, `bench`)
@@ -494,11 +497,13 @@ def packages():
     """Every workspace package, longest-prefix-first so ownership of a path is unambiguous."""
     meta = metadata(no_deps=True)
     ws = meta["workspace_root"]
+    # With the separate workspaces `script/verify` proves by `--manifest-path`
+    # (helpers/rust_source.py's PROVED_WORKSPACES), so `--count` counts what the text-only count and
+    # `script/lint` count. Their records are `attested`, for the reason the header gives.
+    sys.path.insert(0, os.path.join(root, "helpers"))
+    from rust_source import proved_packages
     out = []
-    for p in meta["packages"]:
-        rel = os.path.relpath(os.path.dirname(p["manifest_path"]), ws)
-        if rel == "." or rel.startswith(".."):
-            continue
+    for p, rel in proved_packages(ws, meta):
         targets = []
         for t in p["targets"]:
             src = os.path.relpath(t["src_path"], ws)
