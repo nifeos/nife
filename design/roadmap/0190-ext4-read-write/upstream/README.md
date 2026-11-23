@@ -11,7 +11,7 @@ reviewed its text and given a separate go.
 - [`2a-free-empty-extent-index.md`](2a-free-empty-extent-index.md): upstream item 2's first
   defect, a depth-2 truncate that fails with `extent:empty_index`.
 - [`2b-restore-truncate-tail.md`](2b-restore-truncate-tail.md): item 2's second defect, a failed
-  truncate that leaves the file's tail zeroed.
+  truncate that leaves the file's tail zeroed; it files after 2a and is rebased on it.
 - [`5a-crc32c-safety-arguments.md`](5a-crc32c-safety-arguments.md): upstream item 5, first half,
   a safety argument at each CRC32C `unsafe` use.
 - [`5b-group-descriptor-decode.md`](5b-group-descriptor-decode.md): upstream item 5, second half,

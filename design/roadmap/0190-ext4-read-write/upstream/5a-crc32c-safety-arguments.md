@@ -13,6 +13,8 @@ the architect reviews this exact text and gives a separate go.
   `git format-patch` output. It applies with `git am` on the base commit.
 - Upstream's contributing guide (section 4.3) processes no pull request without a linked issue, so
   the issue below goes first, and the pull request body names its number.
+- Issue settings, which the guide (section 3.7) requires in the sidebar and the filer sets:
+  Assignees `calef`, labels `task` and `q4`, Type `Task`, Milestone `2026Q4`.
 
 ## Issue to file first
 
@@ -27,7 +29,7 @@ docs(rsext4): state the safety argument at each CRC32C unsafe use
 ```markdown
 ## 当前问题
 
-`fs/rsext4` 的 CRC32C 路径中有九处 `unsafe`。x86_64 的两处 `asm!` 已说明它们依赖的 CPU 特性，其余几处没有安全性论证：
+`fs/rsext4` 的 CRC32C 路径中有九处 `unsafe`。x86_64 的两处 `asm!` 已说明它们依赖的 CPU 特性，两处 `unsafe fn` 声明（x86_64 和 aarch64 的 `crc32c_hardware`）已有 `# Safety` 文档，其余五处没有安全性论证：
 
 - aarch64 的 `mrs` 读取 `ID_AA64ISAR0_EL1`，没有说明为什么在 EL0 读取 EL1 的 ID 寄存器是有效的。
 - aarch64 的硬件循环整个函数体是一个 `unsafe` 块，每次指针读取的对齐和边界论证无法放在读取旁边。
@@ -41,9 +43,12 @@ docs(rsext4): state the safety argument at each CRC32C unsafe use
 
 - 每处 `crc32c_hardware` 调用写明所需的 CPU 特性（ARMv8 CRC32 扩展或 SSE4.2）以及检测它的寄存器（`ID_AA64ISAR0_EL1[19:16]` 或 CPUID leaf 1 ECX bit 20）。
 - aarch64 的 `mrs` 说明：内核为用户态模拟 ID 寄存器（Linux 设置 `HWCAP_CPUID` 时如此）；不模拟的主机会把它作为非法指令陷入。
-- aarch64 的硬件循环改为每个指针操作一个最小的 `unsafe` 块，每块写明对齐和边界的论证。
+- aarch64 的硬件循环改为每个循环和每个尾部步骤一个 `unsafe` 块，每块写明对齐和边界的论证。
+- 每条 `// SAFETY:` 注释写在它说明的 `unsafe` 块内，与 `x86_64.rs` 的写法一致。
 
-不包含：x86_64 的两处 `asm!`（已有说明），以及组描述符表的两处转换（另开 Issue）。没有兼容性影响。
+不包含：x86_64 的两处 `asm!`（已有说明）、两处 `unsafe fn` 声明（已有 `# Safety` 文档），以及组描述符表的两处转换（另开 Issue）。没有兼容性影响。
+
+负责人：@calef。期望季度：2026Q4。
 
 ## 测试验证
 
@@ -58,7 +63,7 @@ docs(rsext4): state the safety argument at each CRC32C unsafe use
 ```markdown
 ## Current problem
 
-The CRC32C paths of `fs/rsext4` hold nine `unsafe` uses. The two x86_64 `asm!` blocks already state the CPU feature they rely on; the others state no safety argument:
+The CRC32C paths of `fs/rsext4` hold nine `unsafe` uses. The two x86_64 `asm!` blocks already state the CPU feature they rely on, and the two `unsafe fn` declarations (the x86_64 and aarch64 `crc32c_hardware`) already carry `# Safety` docs; the other five state no safety argument:
 
 - The aarch64 `mrs` reads `ID_AA64ISAR0_EL1` and does not say why reading an EL1 ID register at EL0 is valid.
 - The aarch64 hardware loop is one `unsafe` block over the whole function body, so the alignment and bounds argument of each pointer read cannot sit beside that read.
@@ -72,9 +77,12 @@ Add safety comments and make the `unsafe` blocks smaller; the instructions execu
 
 - Each `crc32c_hardware` call names the CPU feature it needs (the ARMv8 CRC32 extension or SSE4.2) and the register it was detected from (`ID_AA64ISAR0_EL1[19:16]` or CPUID leaf 1 ECX bit 20).
 - The aarch64 `mrs` says that the kernel emulates the ID registers for user space (Linux does when it sets `HWCAP_CPUID`), and that a host that does not delivers the trap as an illegal instruction.
-- The aarch64 hardware loop gets one minimal `unsafe` block per pointer operation, each stating its alignment and bounds argument.
+- The aarch64 hardware loop gets one `unsafe` block per loop and per tail step, each stating its alignment and bounds argument.
+- Each `// SAFETY:` comment sits inside the `unsafe` block it covers, as in `x86_64.rs`.
 
-Not included: the two x86_64 `asm!` blocks (already stated), and the two casts in the group descriptor table (a separate issue). No compatibility impact.
+Not included: the two x86_64 `asm!` blocks (already stated), the two `unsafe fn` declarations (already documented under `# Safety`), and the two casts in the group descriptor table (a separate issue). No compatibility impact.
+
+Owner: @calef. Target quarter: 2026Q4.
 
 ## Test and verification
 
@@ -97,7 +105,7 @@ docs(rsext4): state the safety argument at each CRC32C unsafe use
 
 关联 Issue：#<to be filled>
 
-CRC32C 路径中，aarch64 的 `mrs` 读取、aarch64 的硬件循环（整个函数体是一个 `unsafe` 块）、以及 `crc32c_append` 和测试中对 `crc32c_hardware` 的三处调用没有说明它们的安全性依据。x86_64 的两处 `asm!` 已有说明，本 PR 不修改它们。
+CRC32C 路径中，aarch64 的 `mrs` 读取、aarch64 的硬件循环（整个函数体是一个 `unsafe` 块）、以及 `crc32c_append` 和测试中对 `crc32c_hardware` 的三处调用没有说明它们的安全性依据。x86_64 的两处 `asm!` 已有说明，两处 `unsafe fn` 声明已有 `# Safety` 文档，本 PR 不修改它们。
 
 ## 修改方案
 
@@ -105,7 +113,8 @@ CRC32C 路径中，aarch64 的 `mrs` 读取、aarch64 的硬件循环（整个�
 
 - `crc32c_append` 和测试中的每一处 `unsafe { crc32c_hardware(..) }` 都写明所需的 CPU 特性（ARMv8 CRC32 扩展或 SSE4.2）以及检测它的寄存器（`ID_AA64ISAR0_EL1[19:16]` 或 CPUID leaf 1 ECX bit 20）。
 - aarch64 的 `mrs` 说明为什么在 EL0 读取 EL1 的 ID 寄存器是有效的：内核为用户态模拟 ID 寄存器（Linux 设置 `HWCAP_CPUID` 时如此）；不模拟的主机会把它作为非法指令陷入。
-- aarch64 的硬件循环从一个覆盖整个函数体的 `unsafe` 块拆成每个指针操作一个最小的 `unsafe` 块，每块写明对齐和边界的论证。拆分的理由：仓库规则要求最小的 `unsafe` 块且每块有证明注释，一个覆盖整个函数的块无法把每次读取的论证放在读取旁边。
+- aarch64 的硬件循环从一个覆盖整个函数体的 `unsafe` 块拆成每个循环和每个尾部步骤一个 `unsafe` 块，每块写明对齐和边界的论证。拆分的理由：仓库规则要求最小的 `unsafe` 块且每块有证明注释，一个覆盖整个函数的块无法把每次读取的论证放在读取旁边。
+- 每条 `// SAFETY:` 注释写在它说明的 `unsafe` 块内，与 `x86_64.rs` 中两处 `asm!` 的写法一致。
 
 兼容性：没有公共接口或行为变化。
 
@@ -127,7 +136,7 @@ CRC32C 路径中，aarch64 的 `mrs` 读取、aarch64 的硬件循环（整个�
 
 Linked issue: #<to be filled>
 
-On the CRC32C paths, the aarch64 `mrs` read, the aarch64 hardware loop (its whole body is one `unsafe` block), and the three calls to `crc32c_hardware` in `crc32c_append` and in a test state no safety argument. The two x86_64 `asm!` blocks already do, and this PR leaves them alone.
+On the CRC32C paths, the aarch64 `mrs` read, the aarch64 hardware loop (its whole body is one `unsafe` block), and the three calls to `crc32c_hardware` in `crc32c_append` and in a test state no safety argument. The two x86_64 `asm!` blocks already do, the two `unsafe fn` declarations already carry `# Safety` docs, and this PR leaves them alone.
 
 ## Change
 
@@ -135,7 +144,8 @@ This PR adds safety comments and makes the `unsafe` blocks smaller; the instruct
 
 - Each `unsafe { crc32c_hardware(..) }` in `crc32c_append` and in the test names the CPU feature it needs (the ARMv8 CRC32 extension or SSE4.2) and the register it was detected from (`ID_AA64ISAR0_EL1[19:16]` or CPUID leaf 1 ECX bit 20).
 - The aarch64 `mrs` says why reading an EL1 ID register at EL0 is valid: the kernel emulates the ID registers for user space (Linux does when it sets `HWCAP_CPUID`), and a host that does not delivers the trap as an illegal instruction.
-- The aarch64 hardware loop goes from one `unsafe` block over the whole body to one minimal `unsafe` block per pointer operation, each stating its alignment and bounds argument. Why split it: the repository's rules ask for minimal `unsafe` blocks, each with a proof comment, and one block over the whole function cannot keep each read's argument beside that read.
+- The aarch64 hardware loop goes from one `unsafe` block over the whole body to one `unsafe` block per loop and per tail step, each stating its alignment and bounds argument. Why split it: the repository's rules ask for minimal `unsafe` blocks, each with a proof comment, and one block over the whole function cannot keep each read's argument beside that read.
+- Each `// SAFETY:` comment sits inside the `unsafe` block it covers, as the two x86_64 `asm!` blocks in `x86_64.rs` do.
 
 Compatibility: no change to the public API or to behavior.
 

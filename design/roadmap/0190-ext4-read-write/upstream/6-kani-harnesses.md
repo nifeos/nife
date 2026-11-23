@@ -10,6 +10,8 @@ reviews this exact text and gives a separate go.
 - The harnesses: [tools/ext4_oracle/tests/parser_proofs.rs](../../../../tools/ext4_oracle/tests/parser_proofs.rs),
   in nife, against the crate's public API. There is no patch beside this file, because the
   submission is an issue, not a pull request.
+- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar and
+  the filer sets: Assignees `calef`, labels `task` and `q4`, Type `Task`, Milestone `2026Q4`.
 
 ## Why an issue and not a pull request
 
@@ -92,6 +94,8 @@ test(rsext4): Kani harnesses for the on-disk parsers, would you take them?
 
 不包含：本 Issue 本身不修改代码；任何 PR 都等你们答复之后再提交。兼容性：证明在 `#[cfg(kani)]` 下，普通构建、测试和公共接口都不受影响。
 
+负责人：@calef。期望季度：2026Q4。
+
 ## 测试验证
 
 在 0.9.2 上全部通过，每条都标明输入大小（写“以内”的覆盖其中每一个长度）：
@@ -125,6 +129,8 @@ If you would, we would send a PR: the proofs under `#[cfg(kani)]`, so ordinary b
 If not, we will keep running them in our repository against each release, and report anything they find separately.
 
 Not included: this issue changes no code, and any PR waits for your answer. Compatibility: the proofs sit under `#[cfg(kani)]`, so ordinary builds, tests and the public API are unaffected.
+
+Owner: @calef. Target quarter: 2026Q4.
 
 ## Test and verification
 

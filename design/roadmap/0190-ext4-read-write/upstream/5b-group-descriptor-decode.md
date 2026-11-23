@@ -13,6 +13,8 @@ separate go.
   `git format-patch` output. It applies with `git am` on the base commit, with or without 5a.
 - Upstream's contributing guide (section 4.3) processes no pull request without a linked issue, so
   the issue below goes first, and the pull request body names its number.
+- Issue settings, which the guide (section 3.7) requires in the sidebar and the filer sets:
+  Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`.
 
 ## What upstream may refuse
 
@@ -60,6 +62,8 @@ fix(rsext4): BlockGroupDescTable casts unaligned table bytes to &Ext4GroupDesc
 
 不包含：CRC32C 路径的安全性注释（另开 Issue）。
 
+负责人：@calef。期望季度：2026Q4。
+
 ## 测试验证
 
 新增两个测试，把 32 字节和 64 字节描述符的表放在故意不对齐的缓冲区中，读取每条记录、更新一条记录，并检查相邻记录的字节没有改变。验收条件：修复前这两个测试失败（debug 构建中止，release 构建下 32 字节测试读到错误的值），修复后通过；`cargo test -p rsext4 --lib` 和 `cargo xtask clippy --package rsext4` 全部通过。
@@ -85,6 +89,8 @@ Both views decode the record's own `desc_size` bytes with `Ext4GroupDesc::decode
 Compatibility: this is a breaking change. `get_desc` returns `Option<Ext4GroupDesc>` by value, `BlockGroupDescIter` yields `Ext4GroupDesc`, and on `BlockGroupDescTableMut`, `get_desc_mut` becomes `get_desc` and `set_desc`. `Ext4GroupDesc` is 64 bytes, and a 32-byte record cannot soundly lend a 64-byte reference, so the only way to keep a reference-returning signature is to refuse 32-byte tables, which would drop the layout that the ext4 format documentation (3.2 Block Group Descriptors) gives a filesystem without the `64bit` feature. If a deprecation release is wanted first, the old names can stay under `#[deprecated]`.
 
 Not included: the safety comments on the CRC32C paths (a separate issue).
+
+Owner: @calef. Target quarter: 2026Q4.
 
 ## Test and verification
 
