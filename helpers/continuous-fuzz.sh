@@ -144,8 +144,8 @@ drain="$state/follow-drain"
 # off). Every look is one public API request.
 replay_every="${NIFE_FUZZ_REPLAY_EVERY:-900}"
 # Below this much free space (decimal gigabytes) on the filesystem holding `$home`, no window starts
-# and main is not followed. Measured on the host on 2026-11-23 (UTC): one window's build writes well
-# under 1 GB, and a newer pinned nightly takes about 2.3 GB to install.
+# and main is not followed. Measured on the host on 2026-11-23 (UTC): a slot's `target/` grows by
+# under 0.5 GB for a commit that changes code, and a newer pinned nightly takes about 2.3 GB.
 free_floor="${NIFE_FUZZ_FREE_FLOOR_GIGABYTES:-20}"
 # A slot's `target/` past this size (decimal gigabytes) is cleared before its next window. After its
 # first build with a toolchain a slot's `target/` holds about 1.5 GB, and it grew by about 4.4 GB in
@@ -254,9 +254,9 @@ has_room() {
 
 # Clear the build directory of checkout $1 when its artifacts can no longer be used or have piled up,
 # before the next build there. $2 is the slot number, or `replay`, and names `state/toolchain-$2`.
-# A clear prints one line on stderr. Two causes: the toolchain that checkout's `rust-toolchain.toml` pins is not the
-# one its `target/` was built with (a newer nightly rebuilds everything, and nothing ever removes the
-# old compiler's artifacts), or `target/` has grown past `target_cap`. Cargo gives a crate new
+# A clear prints one line on stderr. Two causes: the toolchain the checkout's `rust-toolchain.toml`
+# pins is not the one its `target/` was built with (a newer nightly rebuilds everything, and nothing
+# ever removes the old compiler's artifacts), or `target/` has grown past `target_cap`. Cargo gives a crate new
 # artifacts whenever a commit changes its inputs and removes none, so under one toolchain a slot's
 # `target/` grows with every commit it follows. A checkout with no `target/` yet only records its pin.
 bound_target() {
