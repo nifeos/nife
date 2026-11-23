@@ -69,9 +69,12 @@ run produced one shard of eight, which is a sample and is deliberately not a row
 cannot tell an absent mutant from a killed one, so a per-crate row taken from one reads as a crate
 that got worse.
 
-The backfill worked on luck, and the next one will not. GitHub keeps a workflow artifact for 90
-days. Every shard of all three green runs was still there on 2026-09-20; the same backfill attempted
-in December would have recovered nothing. Capture the census the day it goes green:
+Capture is the workflow's job. When a scheduled run records a complete census, the `record` job
+in `mutation.yml` commits its rows on the `mutation/census` branch and opens or updates the census
+pull request itself. Without the automation App it pushes the branch, and its run summary carries
+the link to open the pull request by hand. `--add-run` is the recovery path. The next run replaces
+that branch, so a census whose pull request has not merged by then loses its rows (BUGS, below).
+`--add-run` rebuilds them from the run's own artifacts, which GitHub keeps for about 90 days:
 
 ```console
 $ script/mutation-census --add-run 35421192143
