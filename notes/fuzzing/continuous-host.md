@@ -37,6 +37,20 @@ with a message that names it, starts no slot and writes no row to `windows.tsv`.
 `helpers/continuous-fuzz-selftest.sh`, run by `script/lint`, holds this against a stub `rustup`.
 Decided by the maintainer 2026-11-01 (UTC), provisional; reversing costs one pull request.
 
+The supervisor bounds its own disk use. Before each window, and before each look at main or for a
+red shard, it checks the free space on the filesystem holding `$NIFE_FUZZ_HOME`. Below
+`NIFE_FUZZ_FREE_FLOOR_GIGABYTES` (default 20) no window starts and main is not followed. The
+journal gets one line when the space drops below the floor and one when it rises again, and the
+slots wait in between. A full disk therefore stops the fuzzing instead of writing failed windows
+and cut-off rows. Each slot's `target/` is cleared before its first build with a newer pinned
+nightly, and before any window once it passes `NIFE_FUZZ_TARGET_CAP_GIGABYTES` (default 10). The
+cap exists because cargo gives a crate new artifacts whenever a commit changes its inputs and
+removes none: on the host, a slot's `target/` held about 1.5 GB after its first build with one
+nightly and grew by about 4.4 GB in the next 13 hours under that same nightly as main moved. At
+that rate each slot clears about once a day and pays one cold build for it. The selftest holds both
+bounds against a stub `df` and `du`. Decided by the maintainer 2026-11-23 (UTC), provisional, with
+both names; reversing costs one pull request.
+
 `helpers/systemd/nife-fuzz.service` starts the supervisor at boot and restarts it on failure. The
 supervisor exits non-zero after five windows in a row fail without a finding. A broken build reaches
 systemd that way instead of looping silently.
@@ -235,9 +249,11 @@ unit's user. It prints the tag and the assets and publishes nothing.
   move held rows' seeds under the held directory.
 - Each move to a newer main idles every slot until the slowest current window ends, and the first
   window after it rebuilds. Nobody has measured what that costs at main's rate of merges.
-- Nothing frees the host's disk. The toolchain step installs each pinned nightly and removes
-  none, each slot's `target/` keeps the artifacts of every compiler it used, and the held
-  directory only grows. No check warns before the disk fills.
+- The supervisor bounds each slot's `target/` and stops below a free-space floor, but two stores
+  sit outside it. The toolchain step installs each pinned nightly and removes none; a daily job the
+  maintainers keep on the host, outside this repository, uninstalls the dated nightlies no pin
+  names. The held directory only grows, by at most about 30 MB a day. The floor stops the windows
+  but frees nothing, so a disk that falls below it stays stopped until a person frees space.
 - An unfinished run of any required check name keeps the current commit, even the skipped duplicate
   that a push to main starts after the merge queue's run. The next look, 5 minutes later, moves.
 - A person who sets `url.<base>.insteadOf` for GitHub in the fuzz account's git configuration to a

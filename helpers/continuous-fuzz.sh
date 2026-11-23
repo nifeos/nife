@@ -52,6 +52,15 @@
 # A window that fails to build, or fails without any of those signs, is infrastructure: it backs off,
 # and after five in a row the supervisor exits non-zero so systemd restarts it.
 #
+# **The disk is bounded.** Before each window, and before each look at main or for a red shard,
+# the supervisor checks the free space on the filesystem holding `$NIFE_FUZZ_HOME`. Below
+# `NIFE_FUZZ_FREE_FLOOR_GIGABYTES` (default 20) no window starts and main is not followed; the
+# supervisor writes one line when the space drops below the floor and one when it is back, and the
+# slots wait without logging. Each slot's `target/` is cleared before its first build with a newer
+# pinned toolchain, and before a window whenever it has grown past `NIFE_FUZZ_TARGET_CAP_GIGABYTES`
+# (default 10), since cargo keeps the artifacts of every commit a slot built and removes none
+# (`bound_target`). See notes/fuzzing/continuous-host.md.
+#
 # **One CI shard (`--ci SHARD`).** A pull request's merge-queue entry runs four shards, two per
 # driver (even shards `kernel-thread`, odd shards `confined`), each one window on the checkout it
 # stands in. The first seed derives from the commit and the shard alone (`ci_first_seed`), below the
@@ -86,6 +95,7 @@
 #                           replay line), held-crash (a panic), held-hang (the bound), held-budget-expired
 #                           (a wait ran out its tick budget, with or without a replay line).
 #   state/held/             held logs (private)
+#   state/toolchain-<slot>  the pinned toolchain the slot's `target/` was built with (`bound_target`)
 #   logs/<slot>/            the last logs of clean windows (the newest 20)
 #   work/replay/, logs/replay/   the replay's worktree, and its log while it runs (mode 700)
 #   state/replay-queue, state/replay-seen.tsv   red shards to replay, and runs decided
@@ -98,6 +108,9 @@
 # (UTC) by lane milestone/1038-the-fuzz-host-replays-a-red-ci-shard. No architect has ruled on them.
 # `--write-seed`, `write_seed`, `read_seed`, `park` and the status word `refused`: provisional, minted
 # 2026-11-23 (UTC) by lane maintainer/fuzz-supervisor-empty-seed. No architect has ruled on them.
+# `NIFE_FUZZ_FREE_FLOOR_GIGABYTES`, `NIFE_FUZZ_TARGET_CAP_GIGABYTES`, `--has-room`, `--bound-target`,
+# `has_room`, `bound_target` and `state/toolchain-<slot>`: provisional, minted 2026-11-23 (UTC) by lane
+# fuzz-host-disk-bound. No architect has ruled on them.
 
 set -eu
 
@@ -130,6 +143,22 @@ drain="$state/follow-drain"
 # How often, at most, the supervisor looks for a red CI fuzz shard to replay (seconds; 0 turns it
 # off). Every look is one public API request.
 replay_every="${NIFE_FUZZ_REPLAY_EVERY:-900}"
+# Below this much free space (decimal gigabytes) on the filesystem holding `$home`, no window starts
+# and main is not followed. Measured on the host on 2026-11-23 (UTC): one window's build writes well
+# under 1 GB, and a newer pinned nightly takes about 2.3 GB to install.
+free_floor="${NIFE_FUZZ_FREE_FLOOR_GIGABYTES:-20}"
+# A slot's `target/` past this size (decimal gigabytes) is cleared before its next window. After its
+# first build with a toolchain a slot's `target/` holds about 1.5 GB, and it grew by about 4.4 GB in
+# 13 hours under that one toolchain as main moved, so at that rate a slot clears about once a day.
+target_cap="${NIFE_FUZZ_TARGET_CAP_GIGABYTES:-10}"
+for limit in "$free_floor" "$target_cap"; do
+    case "$limit" in
+        '' | *[!0-9]*)
+            echo "continuous-fuzz: NIFE_FUZZ_FREE_FLOOR_GIGABYTES and NIFE_FUZZ_TARGET_CAP_GIGABYTES take a whole number of gigabytes" >&2
+            exit 2
+            ;;
+    esac
+done
 
 # Put the pinned QEMU and rustup's cargo on PATH, as script/bootstrap's own callers do.
 PATH="$HOME/.cargo/bin:$PATH"
@@ -209,6 +238,52 @@ sync_slots() {
         fi
         slot=$((slot + 1))
     done
+}
+
+# Return 0 when the filesystem holding `$home` has at least `free_floor` gigabytes free. `df -P`
+# prints one line per filesystem in 1024-byte blocks, available space in the fourth field. A `df`
+# that prints no number counts as room: this guards a full disk, and a broken `df` must not stop
+# every slot for good.
+has_room() {
+    free_kib="$(df -Pk "$home" 2>/dev/null | awk 'NR == 2 { print $4 }')"
+    case "$free_kib" in
+        '' | *[!0-9]*) return 0 ;;
+    esac
+    [ "$free_kib" -ge $((free_floor * 1000000000 / 1024)) ]
+}
+
+# Clear the build directory of checkout $1 when its artifacts can no longer be used or have piled up,
+# before the next build there. $2 is the slot number, or `replay`, and names `state/toolchain-$2`.
+# A clear prints one line on stderr. Two causes: the toolchain that checkout's `rust-toolchain.toml` pins is not the
+# one its `target/` was built with (a newer nightly rebuilds everything, and nothing ever removes the
+# old compiler's artifacts), or `target/` has grown past `target_cap`. Cargo gives a crate new
+# artifacts whenever a commit changes its inputs and removes none, so under one toolchain a slot's
+# `target/` grows with every commit it follows. A checkout with no `target/` yet only records its pin.
+bound_target() {
+    dir="$1"
+    mark="$state/toolchain-$2"
+    pin="$(sed -n 's/^channel *= *"\(.*\)".*/\1/p' "$dir/rust-toolchain.toml" 2>/dev/null | head -1)"
+    why=""
+    if [ -d "$dir/target" ]; then
+        if [ -n "$pin" ] && [ "$(cat "$mark" 2>/dev/null)" != "$pin" ]; then
+            why="its toolchain is now $pin"
+        else
+            size_kib="$(du -sk "$dir/target" 2>/dev/null | cut -f1)"
+            case "$size_kib" in
+                '' | *[!0-9]*) ;;
+                *) [ "$size_kib" -le $((target_cap * 1000000000 / 1024)) ] \
+                    || why="it holds $((size_kib * 1024 / 1000000000)) GB, past the $target_cap GB cap" ;;
+            esac
+        fi
+    fi
+    if [ -n "$why" ]; then
+        rm -rf "$dir/target"
+        echo "continuous-fuzz: $(case "$2" in replay) echo replay ;; *) echo "slot $2" ;; esac): cleared target/ before its next build: $why" >&2
+    fi
+    if [ -n "$pin" ] && [ "$(cat "$mark" 2>/dev/null)" != "$pin" ]; then
+        { printf '%s\n' "$pin" > "$mark.tmp" && mv -f "$mark.tmp" "$mark"; } 2>/dev/null || rm -f "$mark.tmp"
+    fi
+    return 0
 }
 
 prepare_slot() {
@@ -389,6 +464,12 @@ worker() {
     while :; do
         # A move to a newer main is waiting for this slot; the supervisor takes it from here.
         [ ! -e "$drain" ] || exit 0
+        [ ! -d "$home/work/$slot" ] || bound_target "$home/work/$slot" "$slot"
+        # Below the floor the slot waits; the supervisor's loop writes the one line that says so.
+        while ! has_room; do
+            [ ! -e "$drain" ] || exit 0
+            sleep 60
+        done
         status="$(window "$driver" "$slot")"
         echo "continuous-fuzz: slot $slot $driver: ${status:-no status}"
         [ "$status" != refused ] || park "$slot"
@@ -513,6 +594,7 @@ replay() {
         kernel-thread:[0-9]*|confined:[0-9]*) ;;
         *) echo "continuous-fuzz: replay: infrastructure failure, the commit names no range for its shard"; return 0 ;;
     esac
+    bound_target "$dir" replay
     # The guest's output stays in a directory only this account can read until it is classified.
     private="$home/logs/replay"
     mkdir -p "$private"
@@ -553,6 +635,8 @@ replay() {
 run_replays() {
     queue="$state/replay-queue"
     while [ -s "$queue" ]; do
+        # The queue keeps its lines; the next start replays them.
+        has_room || { echo "continuous-fuzz: no replay while free space is below the $free_floor GB floor; the queue keeps its shards" >&2; return 0; }
         # shellcheck disable=SC2046  # four words, split on purpose
         set -- $(head -1 "$queue")
         sed 1d "$queue" > "$queue.tmp"
@@ -586,6 +670,20 @@ if [ "${1:-}" = --write-seed ]; then
     exit
 fi
 
+if [ "${1:-}" = --has-room ]; then
+    # Whether a window may start for free space; the selftest runs it against a stub `df`.
+    if has_room; then echo "continuous-fuzz: room"; else echo "continuous-fuzz: below the $free_floor GB floor"; exit 1; fi
+    exit 0
+fi
+
+if [ "${1:-}" = --bound-target ]; then
+    # Bound one slot's build directory as the worker does before a window. Starts no build.
+    [ $# -eq 2 ] || { echo "usage: $0 --bound-target SLOT" >&2; exit 2; }
+    mkdir -p "$state"
+    bound_target "$home/work/$2" "$2"
+    exit 0
+fi
+
 if [ "${1:-}" = --ci-range ]; then
     [ $# -eq 2 ] || { echo "usage: $0 --ci-range SHARD" >&2; exit 2; }
     ci_shard_valid "$2" || exit 2
@@ -612,6 +710,8 @@ if [ "${1:-}" = --once ]; then
     refuse_without_kvm || exit 1
     [ $# -eq 3 ] || { echo "usage: $0 --once DRIVER SLOT" >&2; exit 2; }
     mkdir -p "$state"
+    [ ! -d "$home/work/$3" ] || bound_target "$home/work/$3" "$3"
+    has_room || { echo "continuous-fuzz: refusing to start a window: free space under $home is below the $free_floor GB floor (NIFE_FUZZ_FREE_FLOOR_GIGABYTES)" >&2; exit 1; }
     verdict="$(window "$2" "$3")"
     echo "$verdict"
     [ "$verdict" != refused ] || exit 1
@@ -651,6 +751,7 @@ last_look=0
 last_replay_look=0
 last_said=""
 last_replay_said=""
+low=0
 alive=1
 while [ "$alive" -eq 1 ]; do
     sleep "$tick"
@@ -658,6 +759,16 @@ while [ "$alive" -eq 1 ]; do
         kill -0 "$p" 2>/dev/null || alive=0
     done
     [ "$alive" -eq 1 ] || continue
+    # Below the floor the slots wait before their next window, and neither look runs: a move or a
+    # replay would start a build, and a newer pin would install a toolchain.
+    if has_room; then
+        [ "$low" -eq 0 ] || echo "continuous-fuzz: free space under $home is back above the $free_floor GB floor; windows resume"
+        low=0
+    else
+        [ "$low" -eq 1 ] || echo "continuous-fuzz: free space under $home is below the $free_floor GB floor (NIFE_FUZZ_FREE_FLOOR_GIGABYTES); no window starts and main is not followed until it rises" >&2
+        low=1
+        continue
+    fi
     if [ "$replay_every" -gt 0 ] && [ $(($(date +%s) - last_replay_look)) -ge "$replay_every" ]; then
         last_replay_look="$(date +%s)"
         if said="$(python3 -I "$root/helpers/fuzz-red-shards.py" look 2>&1)"; then
