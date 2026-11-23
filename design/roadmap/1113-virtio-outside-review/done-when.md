@@ -20,3 +20,5 @@ An appendix to [the milestone](../1113-virtio-outside-review.md).
 - The architect ratifies or renames the names in item 9, and `script/names` reports no public   item
   without a block.
 - The two kernel comments that cite `user/src/virtio.rs` cite the file that exists.
+- Every virtio register offset, feature bit and configuration field nife defines has a host test
+  against a recording transport, and each disagreement with `virtio-drivers` is a finding (item 17).
