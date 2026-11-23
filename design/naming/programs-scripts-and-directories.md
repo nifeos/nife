@@ -71,7 +71,7 @@ A script that does one action takes a verb: `claim`, `bench`, `fmt`, `record-rul
 `vendor-verify`, `toolchain-bump`. A standing tool or role takes a noun: `board-boot-watcher`,
 `merge-queue-rebaser`, `project-metrics`. A gate ends in `-check`.
 
-Every `script/` entry needs a row in [scripts.md](../../notes/scripts.md). `script/lint` fails
+Every `script/` entry needs a row in `nifeos/nife:notes/scripts.md`. `script/lint` fails
 without one, and fails the other way if `README.md` names a script that does not exist.
 
 ## Directories

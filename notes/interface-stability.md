@@ -4,8 +4,8 @@
 2026-09-27 (UTC): "What I want are good metrics for capturing the stability of our interface."
 calef, 2026-10-16 (UTC): the headline is the boundary a program outside the tree is written
 against, not every public item in the tree. The numbers are on [the metrics
-page](project-metrics.md#interface-stability), per crate and per package in [the
-appendix](project-metrics/interface-stability.md), and produced by
+page](project-metrics.md#interface-stability), per crate and per package in the
+appendix (`nifeos/nife:notes/project-metrics/interface-stability.md`), and produced by
 `helpers/interface_stability.py`. The note's name, the program's, the three CSVs' and every
 column's are provisional.*
 

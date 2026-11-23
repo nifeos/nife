@@ -1,6 +1,6 @@
 # Git in a shared worktree: why the commit rules read as opposites
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the rules: one purpose per commit, commit
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the rules: one purpose per commit, commit
 early and push, never rewrite a pushed commit, never `git stash` in a worktree. This file carries why
 each rule exists and the failure that produced it, all of them from days when a lane lost work, took
 another lane's, or stopped.*

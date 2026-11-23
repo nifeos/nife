@@ -9,7 +9,7 @@ Chinese body below.
 - Base commit: `0353572d1e2cca79e25a2805deeff4521449a5c1`, the head of `dev` at filing. Its only
   change under `fs/rsext4` since `6e80b940d` is in `src/ext4/alloc.rs`, which no harness reads.
 - The harnesses:
-  [tools/ext4_oracle/tests/parser_proofs.rs](../../../../tools/ext4_oracle/tests/parser_proofs.rs),
+  `nifeos/nife:tools/ext4_oracle/tests/parser_proofs.rs`,
   in nife, against the crate's public API. There is no patch beside this file, because the
   submission is an issue, not a pull request.
 - Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar:

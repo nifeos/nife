@@ -1,6 +1,6 @@
 # The three roles, and the one rule that keeps work moving
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the roles and their duties as rules. This
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the roles and their duties as rules. This
 file carries the night that named them, why each role has the authority it has, and the failures
 each clause was written against. What a maintainer session costs is in
 [`notes/what-a-session-carries.md`](../../notes/what-a-session-carries.md). Moved here 2026-09-23

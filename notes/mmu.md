@@ -130,7 +130,7 @@ would and reports a permission fault into `PAR_EL1`, so `user_can_read` never re
 permission model. `PAR_EL1` is one shared register, so interrupts are masked from the `at` to the
 `mrs`. No system call in today's ABI dereferences a user pointer, so only the system tests call it, and
 they assert the silicon refuses a kernel address and allows the process's own text
-([capabilities.md](capabilities.md) has the confused deputy this answers).
+(`nifeos/nife:notes/capabilities.md` has the confused deputy this answers).
 
 EL1 may read an EL0 page here because this kernel never sets `PSTATE.PAN`; RISC-V forbids it unless
 `sstatus.SUM` is set, which is why `permit_kernel_access_to_user_pages` exists as a no-op on aarch64.

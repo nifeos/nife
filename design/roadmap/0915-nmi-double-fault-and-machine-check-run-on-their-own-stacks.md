@@ -41,7 +41,7 @@ stack they interrupted.
   user-fault path, the deferred `schedule()` or the per-CPU interrupt stack.
 
 aarch64 and riscv64 have no equivalent to build: neither takes an asynchronous exception on a stack
-the kernel did not choose. [notes/stack.md](../../notes/stack.md), "Where an asynchronous
+the kernel did not choose. `nifeos/nife:notes/stack.md`, "Where an asynchronous
 exception lands, per architecture", has the reasoning for each.
 
 ## How it is proven

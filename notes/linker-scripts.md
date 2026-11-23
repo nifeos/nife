@@ -62,7 +62,7 @@ There is no OS to allocate one. At boot, `sp` points at garbage. The script carv
 **Before that instruction runs, you cannot call any Rust function.** On aarch64 the `bl`
 itself is fine (the return address goes in register `x30`, not on the stack), but the callee's
 prologue immediately stores registers and locals to `[sp, ...]`. With a garbage `sp` that writes to
-a random address in memory. See [the stack note](stack.md).
+a random address in memory. See the stack note (`nifeos/nife:notes/stack.md`).
 
 ### 3. Tell the code where `.bss` is, so we can zero it
 

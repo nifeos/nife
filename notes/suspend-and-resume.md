@@ -6,7 +6,7 @@
 rules what `ThreadControlBlock::SUSPEND` and `RESUME` are: two methods on the TCB capability,
 gated on `WRITE`, telling nobody, with `RESUME` continuing at the saved PC. This note records how
 the kernel carries that out and the choices the ruling left to the builder. The code is
-[`kernel/src/sched/suspension.rs`](../kernel/src/sched/suspension.rs); the contract a caller reads
+`nifeos/nife:kernel/src/sched/suspension.rs`; the contract a caller reads
 is on the constants in [`src/thread_control_block.rs` of `nifeos/moho_abi`](https://github.com/nifeos/moho_abi/blob/main/src/thread_control_block.rs).
 
 ## What a suspended thread is

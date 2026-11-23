@@ -121,7 +121,7 @@ park:
     b       park                 ; if something wakes it, sleep again
 ```
 
-See [the stack note](stack.md) for why `sp` must be set before that `bl`, and
+See the stack note (`nifeos/nife:notes/stack.md`) for why `sp` must be set before that `bl`, and
 [aarch64](aarch64.md) for the `b`/`bl`/`ret` family.
 
 ## Condition suffixes

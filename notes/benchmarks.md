@@ -298,7 +298,7 @@ section" resolves here.
   found riscv64 `ctx_switch` 10.78% up across saves that never fired. Milestone 415 (sub-tripwire
   drift accumulates across baseline saves) charts it weekly, as drift on `main` that
   `bench/attributions.tsv` does not explain:
-  [the drift report](project-metrics/baseline-drift.md).
+  `nifeos/nife:notes/project-metrics/baseline-drift.md`.
 - The x86_64 two-core counters are deterministic but not a function of the code, and are not gated.
   Proposed in `design/roadmap/proposals/two-core-bench-is-a-different-instrument.md`.
 - riscv64's `rfence_self` has oscillated between 5991 and 6476 across saves, and the cause (a hart

@@ -120,7 +120,7 @@ where `call` pushes the return address to the stack and `ret` pops it.
 
 `x30` holds exactly one return address. If `foo` calls anything, that second `bl`
 overwrites `x30` and `foo` has forgotten how to get home. Which is exactly why the
-prologue in [the stack note](stack.md) exists:
+prologue in the stack note (`nifeos/nife:notes/stack.md`) exists:
 
 ```asm
 stp  x29, x30, [sp, #-32]!   ; stash x30 before it gets clobbered

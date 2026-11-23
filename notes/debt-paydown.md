@@ -7,7 +7,7 @@ include all work to make the tree comply with our standards").
 
 Name: ratified 2026-10-10 (calef, ruling Q1 on #1894), as both the label and the `script/claim`
 flag. Minted the same day by lane `maintainer/debt-paydown-label`. A label name is a name, so it was
-his to ratify ([naming authority](skills/naming-authority/SKILL.md)). The companion flag
+his to ratify (naming authority (`nifeos/nife:notes/skills/naming-authority/SKILL.md`)). The companion flag
 `--new-work` is still provisional.
 
 ## The definition

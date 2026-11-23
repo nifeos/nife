@@ -88,7 +88,7 @@ the null-system-call note's own caveat. The size of the win is radon's to say.
 ## What radon said
 
 2026-10-05 (UTC), by a run sheet written before any boot
-([`bench/radon-2026-10-05/`](../../bench/radon-2026-10-05/README.md), read in full in
+(`bench/radon-2026-10-05/` (`nifeos/nife:bench/radon-2026-10-05/README.md`), read in full in
 [the appendix](../../notes/job-mix/radon-2026-10-05.md)). Built from `c8b5fd09e`, which also
 carries milestone 766 (each core's PerCpu on its own cache line). At four tasks:
 

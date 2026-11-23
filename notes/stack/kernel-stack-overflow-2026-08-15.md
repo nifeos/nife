@@ -2,7 +2,7 @@
 
 *Name: ratified 2026-10-18 (calef, "Approve all"). Refused `overflow-2026-08-15`.*
 
-*An appendix to [`notes/stack.md`](../stack.md), which explains the stack and is the page to read.
+*An appendix to `nifeos/nife:notes/stack.md`, which explains the stack and is the page to read.
 This file holds the account of the 2026-08-15 overflow and why growing the stack fixed that shape.
 It moved here on 2026-09-25 (UTC) under §212 (a prose budget). The move then edited it only to meet
 §213 (writing standards), splitting long sentences and dropping bold, with the meaning unchanged.

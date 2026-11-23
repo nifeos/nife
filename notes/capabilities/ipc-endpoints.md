@@ -2,7 +2,7 @@
 
 *Name: provisional.*
 
-An appendix to [`notes/capabilities.md`](../capabilities.md). It is the record of milestone 7e, which added endpoints.
+An appendix to `nifeos/nife:notes/capabilities.md`. It is the record of milestone 7e, which added endpoints.
 
 7d gave a process one thing it could do to a capability: invoke a `Console` and have the kernel
 act. 7e adds the capability that lets a process talk to another process, which is the whole

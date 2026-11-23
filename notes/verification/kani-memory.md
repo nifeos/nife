@@ -15,7 +15,7 @@ its two solvers used about 4 GiB each, and every other proof on the machine wait
 in a transient systemd scope and reads the scope's `memory.peak`. That counts everything the run
 did: the compile, every solver and the page cache the build wrote. So a row's peak is the largest
 single harness plus the compile, and it errs high. The script writes the row to
-[`helpers/kani-peaks.tsv`](../../helpers/kani-peaks.tsv) with the crate directory's git tree and
+`nifeos/nife:helpers/kani-peaks.tsv` with the crate directory's git tree and
 the Kani version, and `python3 helpers/kani_peaks.py show` prints the table as the checkout sees it.
 
 Measured on 2026-11-05 (UTC), Kani 0.68.0, on an x86_64 Linux host, heaviest first:

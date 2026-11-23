@@ -16,7 +16,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The first repository split: which preconditions hold, which cut goes first, and what basalt must be](../the-first-split.md).
 - [The gate and the programs basalt delivers](../gate-builds-delivered-programs-from-tree.md): building them from the candidate tree, or repinning, measured.
 - [Installing nife onto a disk from a boot stick](../installing.md).
-- [The FAT32 writer](../file-allocation-table.md): the volume's shape, VFAT long names, and who reads it back.
+- The FAT32 writer (`nifeos/nife:notes/file-allocation-table.md`): the volume's shape, VFAT long names, and who reads it back.
 - [The sealed pair](../sealed-pair.md): checking on the host that a kernel vouches for the archive beside it.
 - [xenon bench evening](../xenon-bench-2026-10-18.md): the I219, the network boot, a fresh install, 801's fetch, then ioping and the soak.
 - [Turning Secure Boot off, before booting the nife stick on a PC](../turning-secure-boot-off.md): the install page's first instruction.

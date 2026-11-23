@@ -52,7 +52,7 @@ fifteen threads with the main one. Every sender's 100 messages reach every recei
 every thread is joined, and the process ends with every thread reaped. Each test has an attested
 falsification. SQLite's `speedtest1` and ioping still pass on the threaded library.
 
-The library ([`c_library/README.md`](../../c_library/README.md) is the guide, with its `BUGS`):
+The library (`nifeos/nife:c_library/README.md` is the guide, with its `BUGS`):
 
 - relibc's `pthread.h` (attributes, mutexes, condition variables, read-write locks, barriers, spin
   locks, keys, `pthread_once`) and its `sync` module are seeded. So are `sched.h`, `semaphore.h`,

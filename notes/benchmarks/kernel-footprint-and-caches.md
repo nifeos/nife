@@ -215,7 +215,7 @@ broken on purpose before landing and both failed.
 
 **What radon shows.** The milestone's sweep, repeated on 2026-10-20 with the pin, read the one-task
 `null_system_call` at 121 ticks in all four shifted images, where the unpinned 2026-10-05 sweep read 110
-to 118 ([`bench/radon-2026-10-20/`](../../bench/radon-2026-10-20/README.md)). The number no longer
+to 118 (`bench/radon-2026-10-20/` (`nifeos/nife:bench/radon-2026-10-20/README.md`)). The number no longer
 moves with kernel text. What it has not shown is why it moved: the leading reading was hot code
 evicting itself, which a contiguous block under one way cannot do, but nothing counted misses.
 

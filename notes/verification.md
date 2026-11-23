@@ -110,7 +110,7 @@ table and the reasoning.
 | `capability` | 8 | derivation and the inheriting mint never widen rights; a deleted capability stays deleted, and deleting touches only its slot | [core](verification/core-harnesses.md) |
 | `memory_regions` | 2 | untyped carving stays within budget; a child region never frees to the allocator (no double-free) | [core](verification/core-harnesses.md) |
 | `page_tables` (walk) | 8 | table indices in bounds; distinct pages take distinct paths; the halves are disjoint; descriptors keep address and permissions apart | [core](verification/core-harnesses.md) |
-| `page_tables` (blocks) | 8 | a 2 MiB or 1 GiB leaf is aligned, inside the span and the largest that fits; block encodings on three formats | [blocks](verification/paging-blocks.md) |
+| `page_tables` (blocks) | 8 | a 2 MiB or 1 GiB leaf is aligned, inside the span and the largest that fits; block encodings on three formats | blocks (`nifeos/nife:notes/verification/paging-blocks.md`) |
 | `page_tables::domain` | 6 | an IOMMU domain maps exactly the granted pages, in both directions | [IOMMU](verification/iommu-domain.md) |
 | `page_frames` | 5 | two allocations are distinct; frames are aligned and in range | [core](verification/core-harnesses.md) |
 | `device_tree_blob` | 4 | the big-endian leaf readers are total | [core](verification/core-harnesses.md) |
@@ -156,7 +156,7 @@ The cost of a proof is the shape of the code, not the size of the claim:
 - Two loops became one in `byte_glob`, and an unwind bound derived from a measurement replaced one from
   algebra ([`verification/glob-proofs.md`](verification/glob-proofs.md)).
 - A loop over leaf sizes ran past ten minutes; two `if`s and a mask prove in 0.05 s
-  ([`verification/paging-blocks.md`](verification/paging-blocks.md)).
+  (`verification/paging-blocks.md` (`nifeos/nife:notes/verification/paging-blocks.md`)).
 
 When BMC stalls, look at what the harness *touches* rather than at what it is trying to prove.
 

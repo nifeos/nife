@@ -172,7 +172,7 @@ Four boots on radon, 19:01 to 19:10 UTC, calef cycling plug 2 for each, from ima
 `0xffffffc080206270`, set 137, in all four. Every boot was netbooted (`payload came from net`) and
 ended `job-mix: done`. Logs, hashes and two departures from the procedure above (the console
 capture tool, and a server address typed at U-Boot) are in
-[`bench/radon-2026-10-20/`](../../bench/radon-2026-10-20/README.md).
+`bench/radon-2026-10-20/` (`nifeos/nife:bench/radon-2026-10-20/README.md`).
 
 | Boot | Shift | 1 task `per_job` | 1 task ticks over 336 jobs | 4 tasks `per_job` |
 |---|---|---|---|---|

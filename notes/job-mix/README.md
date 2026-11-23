@@ -26,7 +26,7 @@ the parent's Results row points to it.
 - [`hvf-cross-check-2026-09-19.md`](hvf-cross-check-2026-09-19.md): the HVF cross-check that did
   not run.
 - [`supervisor.md`](supervisor.md): the kernel supervisor's shape, its pool and its own BUGS.
-- [`instrument.md`](instrument.md): the job table and the reasons behind `crates/job_mix`'s
+- `nifeos/nife:notes/job-mix/instrument.md`: the job table and the reasons behind `crates/job_mix`'s
   constants, which its doc comments link.
 - [`limitations.md`](limitations.md): the parent's BUGS list in full.
 

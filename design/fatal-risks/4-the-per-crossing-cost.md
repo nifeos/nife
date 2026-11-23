@@ -18,7 +18,7 @@ cores' per-core blocks, rather than an architectural cost. Both are fixed and th
 Amortization is a property of a workload. The single-crossing numbers are four wins and a tie against
 Linux on the same core, every caveat beside its number
 ([`notes/benchmarks.md`](../../notes/benchmarks.md)), over committed floors
-([`bench/baseline-aarch64.txt`](../../bench/baseline-aarch64.txt)).
+(`nifeos/nife:bench/baseline-aarch64.txt`).
 
 **The decisive experiment:** milestone 168 (a multi-tasking workload benchmark), run by
 [`notes/job-mix.md`](../../notes/job-mix.md)'s procedure, whose step 7 wrote down what each outcome

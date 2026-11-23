@@ -6,7 +6,7 @@ recorded in the [directory's README](README.md).*
 Run by calef on xenon on 2026-10-04, evening (bench clock 23:12 to 23:45, zone not recorded), from
 a Fedora 44 Workstation Live USB with fio-3.40. The disk (Micron 2450, 256060514304 bytes) and the
 window match nife's. Every run used `--offset=1M --size=64M --bs=4k --iodepth=1 --direct=1`, one
-pass each. Photographs, scripts and logs are in [`bench/xenon-2026-10-04/`](../../bench/xenon-2026-10-04/).
+pass each. Photographs, scripts and logs are in `bench/xenon-2026-10-04/` (in nifeos/nife).
 
 | Run | Engine | Order | Polling | Read | Write |
 |---|---|---|---|---|---|

@@ -2,7 +2,7 @@
 
 *Name: provisional.*
 
-An appendix to [`notes/documentation.md`](../documentation.md), which states the conclusion.
+An appendix to `nifeos/nife:notes/documentation.md`, which states the conclusion.
 
 `documentation::index::normalize` folds a query by dropping every byte that is not a letter or a digit, so
 a reader who types `line_editor` looks up `lineeditor`. `documentation::index::tokens` split the *text* on

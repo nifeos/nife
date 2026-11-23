@@ -13,21 +13,21 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The scheduler's diagnostic instruments](../scheduler-instruments.md): the per-core event rings and the corruption canary, what each costs and why the canary is kept unarmed. Name provisional.
 - [Bringing up the other cores](../smp.md): the core roster seated by hardware id, secondary start and stacks, and how the SMP tests wait.
 - [The thread control block](../thread-control-block.md): the Thread Control Block, and where it lives.
-- [Generational names](../generational-names.md): thread ids that fail safely after slot reuse.
-- [generational_table and the existing crates](../generational-table-and-existing-crates.md): whether `slotmap` and its relatives already cover the fixed-capacity table, and the release question. Name provisional.
+- Generational names (`nifeos/nife:notes/generational-names.md`): thread ids that fail safely after slot reuse.
+- generational_table and the existing crates (`nifeos/nife:notes/generational-table-and-existing-crates.md`): whether `slotmap` and its relatives already cover the fixed-capacity table, and the release question. Name provisional.
 - [Intrusive queues](../intrusive-queues.md): run queues whose link lives inside the thread.
 - [The per-CPU block](../per-cpu.md): each core's private state, and what holds its size and alignment. Name provisional.
 - [Locking](../locking.md): spinlocks with interrupts, and the orderings that avoid deadlock.
 - [Deadlock](../deadlock.md): the four Coffman conditions and how to break one.
 - [Memory ordering, and the fences with no partner](../memory-ordering.md): every fence and ordered atomic, adjudicated.
 - [The IPC_TABLES lock inventory](../ipc-tables-lock-inventory.md): what the one remaining IPC lock protects, by heat.
-- [Capabilities, and why the kernel has no `open()`](../capabilities.md): capabilities, the confused deputy, first system calls and IPC.
+- Capabilities, and why the kernel has no `open()` (`nifeos/nife:notes/capabilities.md`): capabilities, the confused deputy, first system calls and IPC.
 - [What a capability can name](../capability-objects.md): each kernel object a capability names and why it is there, the table's size and peak, and the rights checks.
-- [Who does IPC name?](../ipc-naming.md): IPC names a rendezvous, never the peer.
+- Who does IPC name? (`nifeos/nife:notes/ipc-naming.md`): IPC names a rendezvous, never the peer.
 - [Processes: what threads share, and how they end together](../processes.md): the process object, `BIND`, and a process ending as one. Name provisional.
 - [Address wait and wake](../address-wait.md): parking a thread on a word of its own space, and why the check and the park are one step. Name provisional.
 - [The thread pointer, and the one asymmetry below its ABI](../thread-pointer.md): each thread's own `TPIDR_EL0`, `tp` or `FS` base, set by the kernel.
-- [The IPC decision core](../inter-process-communication.md): the rendezvous, notification, timer and address wait state machines the kernel wraps, and how their proofs are shaped. Name provisional.
+- The IPC decision core (`nifeos/nife:notes/inter-process-communication.md`): the rendezvous, notification, timer and address wait state machines the kernel wraps, and how their proofs are shaped. Name provisional.
 - [Notification objects](../notification-objects.md): a doorbell bound to a thread, and why the receive tag lives in `w4`.
 - [How authority moves, narrows, and ends](../capability-lifecycle.md): how capabilities are copied, narrowed and revoked.
 - [Delegating a capability](../delegation.md): passing a narrowed capability between processes over IPC.

@@ -1,6 +1,6 @@
 # Buffering: measured, and the answer is to build nothing
 
-*An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds the
+*An appendix to `nifeos/nife:notes/pipes.md`, which is the page to read. This file holds the
 2026-08-03 throughput measurement against a Unix pipe, what it says, and its caveats. The lane that
 split the file moved it here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
 budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The directory

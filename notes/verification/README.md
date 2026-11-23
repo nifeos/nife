@@ -10,7 +10,7 @@ and the reasoning behind it, at a length the main page's prose budget cannot hol
 - [`direct-memory-access-validator.md`](direct-memory-access-validator.md): the DMA-confinement validator, its bounds and
   `kani::cover!`.
 - [`iommu-domain.md`](iommu-domain.md): the IOMMU domain, and what the DMA proof does not establish.
-- [`paging-blocks.md`](paging-blocks.md): 2 MiB and 1 GiB leaves.
+- `nifeos/nife:notes/verification/paging-blocks.md`: 2 MiB and 1 GiB leaves.
 - [`elf-parser-wall.md`](elf-parser-wall.md): where BMC hit a wall.
 - [`glob-proofs.md`](glob-proofs.md): the glob matcher.
 - [`ci-timings.md`](ci-timings.md): suite timings, sharding and `--affected-since`.

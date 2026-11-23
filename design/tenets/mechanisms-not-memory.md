@@ -1,6 +1,6 @@
 # Mechanisms, not memory: the ladder and why each rung exists
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the ladder itself as a rule. This file
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the ladder itself as a rule. This file
 carries the evening that produced it, the worked examples on each rung, and the three failures that
 showed what rung zero costs. Moved here 2026-09-23 (UTC) on calef's authorization, unchanged in
 substance.*

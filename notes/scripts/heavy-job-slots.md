@@ -1,6 +1,6 @@
 # Heavy jobs wait for a slot
 
-An appendix to [`../scripts.md`](../scripts.md). Name: provisional, minted 2026-10-19 (UTC) by
+An appendix to `../scripts.md` (`nifeos/nife:notes/scripts.md`). Name: provisional, minted 2026-10-19 (UTC) by
 lane/heavy-job-slots; calef names files.
 
 A script that builds the workspace or boots QEMU suites (`lint`, `test`, `mutation`, `ci-build` and

@@ -1,6 +1,6 @@
 # Move fast on what can be undone; be methodical on what cannot
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the rule, the irreversible list and the
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the rule, the irreversible list and the
 test. This file carries why each category is on that list, the two failures of record, and what
 agents changed about the calculus. Moved here 2026-09-23 (UTC) on calef's authorization.*
 

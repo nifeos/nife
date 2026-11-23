@@ -212,7 +212,7 @@ ablation that puts `IPC_TABLES` back around the lookup and changes nothing else.
 ## What radon said on 2026-10-05
 
 Nineteen boots, built from `c8b5fd09e` with 761 and 766 in it, by a
-[run sheet](../../bench/radon-2026-10-05/RUN-SHEET.md) written before any boot.
+run sheet (`nifeos/nife:bench/radon-2026-10-05/RUN-SHEET.md`) written before any boot.
 [The appendix](radon-2026-10-05.md) has every table.
 
 | `main`, three boots | 1 task | 4 tasks | growth 1 to 4 |

@@ -4,7 +4,7 @@ Gates, records and the merge queue: the machinery that keeps many lanes honest.
 
 Part of [the notes index](../README.md), which says how to add a line.
 
-- [The `script/` entry points](../scripts.md): the normalized front-door commands and what each does.
+- The `script/` entry points (`nifeos/nife:notes/scripts.md`): the normalized front-door commands and what each does.
 - [The test command](../xtask-test.md): what `cargo xtask test` runs and in what order, each flag's reason, and the x86_64 leg's extra machines. Name provisional.
 - [A swish-check leg](../swish-check-boot.md): what each boot of a `script/swish-check` leg proves, and the boot claims it reads. Name provisional.
 - [Every check in this repository](../check-inventory.md): audit of what runs, blocks, and asserts. Name provisional.

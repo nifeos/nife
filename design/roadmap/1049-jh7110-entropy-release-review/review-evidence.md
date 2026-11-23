@@ -49,8 +49,8 @@ The bench ran on radon (a VisionFive 2) on 2026-11-09 and 2026-11-10 (UTC) again
 `ee0bde8feb9f78a67da011c928f9a2a697f3bbc1`, with one payload built from
 nife `9a1c55963b`. It loaded over the network after a cold power-on; the person says the second followed
 an hour unpowered. The checker printed PASS both times. Tables, logs and SHA-256 sums are in
-[bench/radon-2026-11-09/](../../../bench/radon-2026-11-09/README-1049.md) and
-[bench/radon-2026-11-10/](../../../bench/radon-2026-11-10/README-1049.md).
+bench/radon-2026-11-09/ (`nifeos/nife:bench/radon-2026-11-09/README-1049.md`) and
+bench/radon-2026-11-10/ (`nifeos/nife:bench/radon-2026-11-10/README-1049.md`).
 
 - Passed, both runs: the polled reseed and generations, 256-bit output after `MODE_256_BIT_OUTPUT`, and
   1,048,576 driver-path generations with no timeout, wrong width or all-zero output.

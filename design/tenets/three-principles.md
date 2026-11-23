@@ -1,6 +1,6 @@
 # The three principles, and what makes each one hold
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the principles themselves as rules. This
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the principles themselves as rules. This
 file carries their evidence: the measurements, the failures that confirmed them, and calef's own
 wording. A reader who only needs to act can stay in `AGENTS.md`; this is where the argument is
 checked or challenged. Moved here 2026-09-23 (UTC) on calef's authorization, unchanged in

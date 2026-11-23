@@ -1,6 +1,6 @@
 # The file behind a `>` is this shell
 
-*An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds why the
+*An appendix to `nifeos/nife:notes/pipes.md`, which is the page to read. This file holds why the
 file end of a redirection cannot be a separate process, what that costs, and why it made `>>` one
 bit. The lane that split the file moved it here verbatim from the main page on 2026-09-25 (UTC),
 under [§212 (a prose budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The
@@ -97,5 +97,5 @@ Two rules fall out and neither needed code. `>>` inherits every rule `>` has, be
 operator: the tail of the pipeline only, one per stage, one name, and a name that is not a pattern.
 And there is no here-document: the grammar refuses `<<`, because it reads the second `<` as the
 operator it is and then finds no name after it. The message is about the missing name where the
-mistake was a missing feature, which is a wording gap and is in [this note's
-BUGS](../pipes.md#bugs).
+mistake was a missing feature, which is a wording gap and is in this note's
+BUGS (`nifeos/nife:notes/pipes.md`).

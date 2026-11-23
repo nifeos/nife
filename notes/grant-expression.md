@@ -17,7 +17,7 @@ the service that decodes a grant expression is written once. The manifest half i
 A Unix child inherits every one of your file descriptors and runs under your uid, so it may
 `open()` anything your uid allows. Authority comes from who you are, and it flows to a child
 whether or not the command mentioned it. `grep secret public.txt` hands grep the authority to read every file you own; it touching only
-`public.txt` is good manners. This is ambient authority ([capabilities.md](capabilities.md)), and it is what
+`public.txt` is good manners. This is ambient authority (`nifeos/nife:notes/capabilities.md`), and it is what
 makes the confused deputy constructible.
 
 The inversion: a nife command grants exactly what it names, and nothing else. There is no ambient pool to draw from, so the question "may I?"

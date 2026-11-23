@@ -1,6 +1,6 @@
 # The manual: the appendices to notes/documentation.md
 
-[`notes/documentation.md`](../documentation.md) carries what the manual renders, how it is
+`nifeos/nife:notes/documentation.md` carries what the manual renders, how it is
 installed, how search works, the examples, every live limitation and what comes next. These files
 carry the evidence its prose budget has no room for.
 

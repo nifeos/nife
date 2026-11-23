@@ -2,7 +2,7 @@
 
 *Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
-An appendix to [`notes/documentation.md`](../documentation.md), whose `BUGS` section states each
+An appendix to `nifeos/nife:notes/documentation.md`, whose `BUGS` section states each
 limit in a sentence. These are the full entries, with their reasons.
 
 ## Sixteen results

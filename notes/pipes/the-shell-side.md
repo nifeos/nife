@@ -1,6 +1,6 @@
 # How the shell runs a line with operators
 
-[`notes/pipes.md`](../pipes.md) is the page to read. This appendix holds the reasoning behind
+`nifeos/nife:notes/pipes.md` is the page to read. This appendix holds the reasoning behind
 `components/src/swish/pipeline.rs` and the slot and delegation rules in
 `components/src/swish/wiring.rs`, which their doc comments link here.
 

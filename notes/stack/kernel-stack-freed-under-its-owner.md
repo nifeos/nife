@@ -1,6 +1,6 @@
 # The answer: a kernel stack freed under its owner (2026-08-17)
 
-*An appendix to [`notes/stack.md`](../stack.md), which explains the stack and is the page to read.
+*An appendix to `nifeos/nife:notes/stack.md`, which explains the stack and is the page to read.
 This file holds the answer to the 2026-08-16 faults, a kernel stack freed under its owner (its BUGS
 are on the main page). The five appendices read in the order the main page's table lists them, so
 "above", "below" and "this file" in them mean that whole sequence. The directory `notes/stack/` and

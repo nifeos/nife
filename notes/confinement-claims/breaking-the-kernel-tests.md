@@ -94,7 +94,7 @@ let-open receive returns. Deleting the check turned it red on aarch64 (2026-10-0
 (a non-Anthropic model attacks the confinement claim) reshaped `chatty` on 2026-10-07 (UTC): the
 operator retires the last receiver, and a plant parks a marker. The first test now fails at its own
 assertion under
-[its record](../../system_tests/falsifications/user.live_swap_tests.a_client_of_the_stable_rendezvous_cannot_become_its_server.patch).
+its record (`nifeos/nife:system_tests/falsifications/user.live_swap_tests.a_client_of_the_stable_rendezvous_cannot_become_its_server.patch`).
 
 ## One row's falsification proves less than the row looks like it proves
 

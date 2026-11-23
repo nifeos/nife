@@ -50,7 +50,7 @@ Every survivor becomes exactly one of three things, and nothing stays untriaged:
 A kill counts only when the named test was seen to fail under the mutation. An equivalence claim
 counts only when a second run still reports the mutant, or when it is an algebraic identity.
 The baseline triage learned why: a verdict reached by reading is wrong about ten percent of the
-time; a verdict reached by running is not ([baseline-ledger](mutation-testing/baseline-ledger.md)).
+time; a verdict reached by running is not (`nifeos/nife:notes/mutation-testing/baseline-ledger.md`).
 
 ## How to read the numbers
 
@@ -63,7 +63,7 @@ a loop that never ends, such as `+=` becoming `-=` on a walker's cursor.
 The rate is over viable mutants: an unviable mutant does
 not compile, which says nothing about the tests. It is still a hole in the measurement. A function
 whose only mutant is unviable was never tested at all, and scores as though it passed
-([measured-boot](mutation-testing/measured-boot.md)).
+(`nifeos/nife:notes/mutation-testing/measured-boot.md`).
 
 "Survivors" means missed plus timeouts. That is what `script/mutation --report` lists as "the
 survivors themselves".
@@ -102,41 +102,41 @@ them:
 Here "survivors" is the missed count. Like-for-like, the 38 baseline crates were 94.7% on
 2026-09-19 against 92.4% in August. The corpus number sat at the baseline's level while crates
 were measured for the first time, and the worklist that reading opened is closed
-([census-2026-09-21-triage](mutation-testing/census-2026-09-21-triage.md), which also holds the
+(`nifeos/nife:notes/mutation-testing/census-2026-09-21-triage.md`, which also holds the
 `uefi_loader` unbuilt-files reading and the projection onto its counts).
 
 ## The baseline and its triage
 
 The August baseline was one local run on 2026-08-03, the census record's 2026-08-03 row
-([baseline-2026-08-03](mutation-testing/baseline-2026-08-03.md)). `.cargo/mutants-baseline.txt` is
+(`nifeos/nife:notes/mutation-testing/baseline-2026-08-03.md`). `.cargo/mutants-baseline.txt` is
 the fixed point reports diff against, and its second line names the census it holds.
 Every one of its 391 missed and 96 timeouts was triaged, crate by crate, and none was deferred
-([abi to ipc](mutation-testing/baseline-survivors-abi-to-ipc.md),
-[grant_plan to swish](mutation-testing/baseline-survivors-grant-plan-to-swish.md),
-[the ledger](mutation-testing/baseline-ledger.md)).
+(abi to ipc (`nifeos/nife:notes/mutation-testing/baseline-survivors-abi-to-ipc.md`),
+grant_plan to swish (`nifeos/nife:notes/mutation-testing/baseline-survivors-grant-plan-to-swish.md`),
+the ledger (`nifeos/nife:notes/mutation-testing/baseline-ledger.md`)).
 
 The weekly workflow then failed every scheduled run until 2026-09-14, and nobody noticed until
 milestone 238 (two scheduled checks have never once succeeded) looked. One shard of eight finished
 on 2026-09-03 and read as a fall from 92.4% to 85.3%. The first full census, on 2026-09-14, showed
-the fall was an artifact ([first-weekly-runs](mutation-testing/first-weekly-runs.md)).
+the fall was an artifact (`nifeos/nife:notes/mutation-testing/first-weekly-runs.md`).
 Three crates had been scored against suites that could not reach them, and a single mutant could
 exhaust a runner's memory:
 
 - `system_initializer` could not compile on the host at all; milestone 244 (the largest crate in
   the tree is proved by nothing a mutation can reach) excluded it.
 - `uefi_loader`'s binary half is a file no host build compiles
-  ([uefi-loader](mutation-testing/uefi-loader.md)).
+  (`nifeos/nife:notes/mutation-testing/uefi-loader.md`).
 - `documentation` had a third of its tests behind a default-off feature
-  ([documentation](mutation-testing/documentation.md)).
+  (`nifeos/nife:notes/mutation-testing/documentation.md`).
 - Milestone 277 (bound what one mutant may allocate) gave each mutant a memory limit, which is what
-  let a whole run finish ([a-memory-bound-per-mutant](mutation-testing/a-memory-bound-per-mutant.md)).
+  let a whole run finish (`nifeos/nife:notes/mutation-testing/a-memory-bound-per-mutant.md`).
 
 Milestone 326 (turn a mutation score upward) then triaged the 2026-09-14 census. Parts 1 and 2 took
 the crates that regressed from the baseline
-([capability to dtb](mutation-testing/regressions-2026-09-14-capability-to-device-tree-blob.md),
-[clock_contract, swish, file_system_contract](mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md),
-[machine_discovery](mutation-testing/machine-discovery.md)). Part 3 took the worst of the crates
-new since the baseline ([new-crate-backlog](mutation-testing/new-crate-backlog.md) and the four
+(capability to dtb (`nifeos/nife:notes/mutation-testing/regressions-2026-09-14-capability-to-device-tree-blob.md`),
+clock_contract, swish, file_system_contract (`nifeos/nife:notes/mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md`),
+machine_discovery (`nifeos/nife:notes/mutation-testing/machine-discovery.md`)). Part 3 took the worst of the crates
+new since the baseline (`nifeos/nife:notes/mutation-testing/new-crate-backlog.md` and the four
 appendices after it). Most survivors were missing tests, not bugs. Of the real wrong-accepts, `gpt`'s at the baseline is the one to read first: it accepted a table whose last
 usable block sat inside the backup array.
 
@@ -145,7 +145,7 @@ usable block sat inside the backup array.
 Every triaged survivor lands in one column: killed (a named test fails under it), equivalent,
 hang (a timeout confirmed to be a loop that never ends), excluded (with its reason in
 `.cargo/mutants.toml`), or recorded gap. The baseline's 487 survivors split 225 killed, 170
-equivalent, 95 hangs, and none deferred ([baseline-ledger](mutation-testing/baseline-ledger.md)).
+equivalent, 95 hangs, and none deferred (`nifeos/nife:notes/mutation-testing/baseline-ledger.md`).
 Milestone 326's crates each carry the same split at the head of their own section, in the
 appendices from 2026-09-19 on. A recorded gap is written beside the crate's accounting, with what
 would close it.
@@ -158,7 +158,7 @@ cargo-mutants names it without its line number (`helpers/mutation_inflow.py` has
 the disposition is `killed`, `equivalent` or `gap`, and the reason names the test or the argument.
 A row also carries a `kind`, a `verified` date and, for a gap, a `home`. The docstring of
 `helpers/mutation_survivor_rows.py` defines them, and `script/lint` holds them to a baseline.
-[Row expiry](mutation-testing/row-expiry-replay.md) has its own measurement.
+Row expiry (`nifeos/nife:notes/mutation-testing/row-expiry-replay.md`) has its own measurement.
 The 2026-10-03 backfill is partial and says what it covers
 ([the milestone](../design/roadmap/0740-the-inflow-check.md)).
 
@@ -171,7 +171,7 @@ These recur across the appendices.
 
 - An exhaustive sweep proves *rejection*, not *rejection for the right reason*. A mutant that
   weakens check B survives any input that also trips check A. `gpt`'s real bug hid this way
-  ([baseline-2026-08-03](mutation-testing/baseline-2026-08-03.md)).
+  (`nifeos/nife:notes/mutation-testing/baseline-2026-08-03.md`).
 - A fixture that never meets the boundary cannot tell `>` from `>=`. Test at the exact limit.
 - A wire format written as shifted constants needs one test pinning the exact values.
   `1 << 0` becoming `1 >> 0` is the one equivalent case.
@@ -184,7 +184,7 @@ These recur across the appendices.
 - A mutant that breaks a loop that waits produces a hang, not a wrong answer. Where the crate
   allows it, run the test body on a worker with a deadline, and the hang becomes a named assertion
   failure. Better still, delete the loop: a `for` over a slice has no increment to lose
-  ([new-crate-backlog](mutation-testing/new-crate-backlog.md)).
+  (`nifeos/nife:notes/mutation-testing/new-crate-backlog.md`).
 - A score can measure code no test build compiles. A missed mutant in "0s build + 0s test" is a
   file nothing rebuilt, not a gap in the tests.
 
@@ -256,31 +256,31 @@ architect's.
 
 | appendix | what it verifies | holds |
 |---|---|---|
-| [baseline-2026-08-03](mutation-testing/baseline-2026-08-03.md) | the fixed point, and how its counts were derived | the baseline; calibration against the exhaustive crates; recurring patterns; `gpt`'s bug |
-| [baseline-survivors-abi-to-ipc](mutation-testing/baseline-survivors-abi-to-ipc.md) | that every baseline survivor was triaged | the hand-triaged crates, first half |
-| [baseline-survivors-grant-plan-to-swish](mutation-testing/baseline-survivors-grant-plan-to-swish.md) | the same | the hand-triaged crates, second half |
-| [baseline-ledger](mutation-testing/baseline-ledger.md) | 487 survivors: 225 killed, 170 equivalent, 95 hangs, none deferred | the ledger; the alarming survivors |
-| [first-weekly-runs](mutation-testing/first-weekly-runs.md) | that the fall to 85.3% was an artifact | 2026-09-03 (the weekly report had never run); 2026-09-14 (the first census) |
-| [measured-boot](mutation-testing/measured-boot.md) | five equivalences, proved | 2026-09-03 (`measured_boot` re-run) |
-| [uefi-loader](mutation-testing/uefi-loader.md) | a file nothing compiles scores 0% | 2026-09-04 |
-| [a-memory-bound-per-mutant](mutation-testing/a-memory-bound-per-mutant.md) | why a whole run can finish | 2026-09-12 |
-| [documentation](mutation-testing/documentation.md) | the feature-gated third of a suite | 2026-09-13 |
-| [regressions-2026-09-14-capability-to-device-tree-blob](mutation-testing/regressions-2026-09-14-capability-to-device-tree-blob.md) | milestone 326 parts 1 and 2 | 2026-09-19: `capability`, `memory_regions`, `elf`, `timetable`, `dtb` |
-| [regressions-2026-09-14-clock-contract-swish-filesystem-contract](mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md) | the same | 2026-09-19: `clock_contract`, `swish`, `file_system_contract` |
-| [machine-discovery](mutation-testing/machine-discovery.md) | 77 survivors: 58 killed, 11 equivalent, 8 gaps | 2026-09-19 `### machine_discovery`; 2026-09-20 re-derivation |
-| [new-crate-backlog](mutation-testing/new-crate-backlog.md) | milestone 326 part 3, and a loop that waits | 2026-09-20: `work_steal_slot`, `memory_corruption_canary_gate`, `soak_page`, `schedule_store` |
-| [job-mix-and-jh7110-entropy](mutation-testing/job-mix-and-jh7110-entropy.md) | the same | 2026-09-20: `job_mix`, `jh7110_entropy` |
-| [serial-console](mutation-testing/serial-console.md) | the same | 2026-09-20: `board_console` |
-| [video-terminal](mutation-testing/video-terminal.md) | the same | 2026-09-20: `video_terminal` |
-| [jh7110-clock-and-reset-non-volatile-memory-express-screen-console](mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md) | the same, and what part 3 left | 2026-09-21: `jh7110_clock_and_reset`, `non_volatile_memory_express`, `screen_console` |
-| [census-2026-09-21-triage](mutation-testing/census-2026-09-21-triage.md) | the 2026-09-21 census's 771, classified; 164 killed | 2026-09-24: `portable_executable`, `stick_maker`, `uefi_loader`, `paging` |
-| [census-2026-10-03-triage](mutation-testing/census-2026-10-03-triage.md) | the 2026-10-03 census's 1,004, crate by crate (milestone 637 (triage the crates the 2026-09-21 mutation census measured for the first time)) | 2026-10-03: `component_plan` onward |
-| [census-2026-10-03-triage-part-2](mutation-testing/census-2026-10-03-triage-part-2.md) | the same, continued | 2026-10-03: `documentation`, `file_system_contract`, `timetable`, `video_terminal`, `machine_discovery` |
-| [census-2026-10-03-triage-part-3](mutation-testing/census-2026-10-03-triage-part-3.md) | the same, continued | 2026-10-03: `grant_plan` onward |
-| [census-2026-10-03-triage-part-4](mutation-testing/census-2026-10-03-triage-part-4.md) | the same, continued | 2026-10-03: `swish`, `line_editor`, `package_archive`, `pci`, `manifest_note` |
-| [census-2026-10-03-triage-part-5](mutation-testing/census-2026-10-03-triage-part-5.md) | the same, finished: the last 201 | 2026-10-07: 39 crates, from `abi` to `stick_maker` |
-| [inflow-2026-10-03](mutation-testing/inflow-2026-10-03.md) | survivors merged pull requests added on their own lines, and whether anything triages them | 2026-10-03: 600 since 09-21; no weekly report exists |
-| [inflow-2026-10-12-triage](mutation-testing/inflow-2026-10-12-triage.md) | both failed inflow jobs, triaged | 2026-10-12: 710 keys |
-| [census-2026-10-12-residue](mutation-testing/census-2026-10-12-residue.md) | the 2026-10-12 residue | 2026-10-14 |
-| [inflow-2026-10-14-triage](mutation-testing/inflow-2026-10-14-triage.md) | the 2026-10-14 inflow | 44 keys |
-| [survivor-classification](mutation-testing/survivor-classification.md) | every survivor of the newest census by mutation shape and triage reason, and the real holes per crate; generated by `helpers/mutation_real_holes.py`, which the weekly workflow reruns in each census pull request | the newest census |
+| `nifeos/nife:notes/mutation-testing/baseline-2026-08-03.md` | the fixed point, and how its counts were derived | the baseline; calibration against the exhaustive crates; recurring patterns; `gpt`'s bug |
+| `nifeos/nife:notes/mutation-testing/baseline-survivors-abi-to-ipc.md` | that every baseline survivor was triaged | the hand-triaged crates, first half |
+| `nifeos/nife:notes/mutation-testing/baseline-survivors-grant-plan-to-swish.md` | the same | the hand-triaged crates, second half |
+| `nifeos/nife:notes/mutation-testing/baseline-ledger.md` | 487 survivors: 225 killed, 170 equivalent, 95 hangs, none deferred | the ledger; the alarming survivors |
+| `nifeos/nife:notes/mutation-testing/first-weekly-runs.md` | that the fall to 85.3% was an artifact | 2026-09-03 (the weekly report had never run); 2026-09-14 (the first census) |
+| `nifeos/nife:notes/mutation-testing/measured-boot.md` | five equivalences, proved | 2026-09-03 (`measured_boot` re-run) |
+| `nifeos/nife:notes/mutation-testing/uefi-loader.md` | a file nothing compiles scores 0% | 2026-09-04 |
+| `nifeos/nife:notes/mutation-testing/a-memory-bound-per-mutant.md` | why a whole run can finish | 2026-09-12 |
+| `nifeos/nife:notes/mutation-testing/documentation.md` | the feature-gated third of a suite | 2026-09-13 |
+| `nifeos/nife:notes/mutation-testing/regressions-2026-09-14-capability-to-device-tree-blob.md` | milestone 326 parts 1 and 2 | 2026-09-19: `capability`, `memory_regions`, `elf`, `timetable`, `dtb` |
+| `nifeos/nife:notes/mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md` | the same | 2026-09-19: `clock_contract`, `swish`, `file_system_contract` |
+| `nifeos/nife:notes/mutation-testing/machine-discovery.md` | 77 survivors: 58 killed, 11 equivalent, 8 gaps | 2026-09-19 `### machine_discovery`; 2026-09-20 re-derivation |
+| `nifeos/nife:notes/mutation-testing/new-crate-backlog.md` | milestone 326 part 3, and a loop that waits | 2026-09-20: `work_steal_slot`, `memory_corruption_canary_gate`, `soak_page`, `schedule_store` |
+| `nifeos/nife:notes/mutation-testing/job-mix-and-jh7110-entropy.md` | the same | 2026-09-20: `job_mix`, `jh7110_entropy` |
+| `nifeos/nife:notes/mutation-testing/serial-console.md` | the same | 2026-09-20: `board_console` |
+| `nifeos/nife:notes/mutation-testing/video-terminal.md` | the same | 2026-09-20: `video_terminal` |
+| `nifeos/nife:notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md` | the same, and what part 3 left | 2026-09-21: `jh7110_clock_and_reset`, `non_volatile_memory_express`, `screen_console` |
+| `nifeos/nife:notes/mutation-testing/census-2026-09-21-triage.md` | the 2026-09-21 census's 771, classified; 164 killed | 2026-09-24: `portable_executable`, `stick_maker`, `uefi_loader`, `paging` |
+| `nifeos/nife:notes/mutation-testing/census-2026-10-03-triage.md` | the 2026-10-03 census's 1,004, crate by crate (milestone 637 (triage the crates the 2026-09-21 mutation census measured for the first time)) | 2026-10-03: `component_plan` onward |
+| `nifeos/nife:notes/mutation-testing/census-2026-10-03-triage-part-2.md` | the same, continued | 2026-10-03: `documentation`, `file_system_contract`, `timetable`, `video_terminal`, `machine_discovery` |
+| `nifeos/nife:notes/mutation-testing/census-2026-10-03-triage-part-3.md` | the same, continued | 2026-10-03: `grant_plan` onward |
+| `nifeos/nife:notes/mutation-testing/census-2026-10-03-triage-part-4.md` | the same, continued | 2026-10-03: `swish`, `line_editor`, `package_archive`, `pci`, `manifest_note` |
+| `nifeos/nife:notes/mutation-testing/census-2026-10-03-triage-part-5.md` | the same, finished: the last 201 | 2026-10-07: 39 crates, from `abi` to `stick_maker` |
+| `nifeos/nife:notes/mutation-testing/inflow-2026-10-03.md` | survivors merged pull requests added on their own lines, and whether anything triages them | 2026-10-03: 600 since 09-21; no weekly report exists |
+| `nifeos/nife:notes/mutation-testing/inflow-2026-10-12-triage.md` | both failed inflow jobs, triaged | 2026-10-12: 710 keys |
+| `nifeos/nife:notes/mutation-testing/census-2026-10-12-residue.md` | the 2026-10-12 residue | 2026-10-14 |
+| `nifeos/nife:notes/mutation-testing/inflow-2026-10-14-triage.md` | the 2026-10-14 inflow | 44 keys |
+| `nifeos/nife:notes/mutation-testing/survivor-classification.md` | every survivor of the newest census by mutation shape and triage reason, and the real holes per crate; generated by `helpers/mutation_real_holes.py`, which the weekly workflow reruns in each census pull request | the newest census |

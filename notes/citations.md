@@ -343,6 +343,6 @@ construction. The case is in [citations/another-medium.md](citations/another-med
 
 - [Naming things](../design/naming.md): why `§N` and `milestone N` are different numbers over the same
   integers.
-- [The `script/` entry points](scripts.md): where this sits among the gates.
+- The `script/` entry points (`nifeos/nife:notes/scripts.md`): where this sits among the gates.
 - `script/decisions` and `script/roadmap`: the two gates that check a citation resolves, and whose
   headers name this blind spot.

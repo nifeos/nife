@@ -6,7 +6,7 @@ An appendix to [notes/scheduler.md](../scheduler.md). It carries the design behi
 `kernel/src/sched/rendezvous.rs`, whose doc comments link here. It also says what the tests in
 `kernel/src/sched/rendezvous/tests.rs` are built against. The switch every blocking path ends in is
 in [switch.md](switch.md). Names and call/reply semantics are in
-[notes/ipc-naming.md](../ipc-naming.md) and DECISIONS §12 (call/reply IPC).
+`nifeos/nife:notes/ipc-naming.md` and DECISIONS §12 (call/reply IPC).
 
 ## Creating one
 

@@ -1,6 +1,6 @@
 # Stack: the appendices to notes/stack.md
 
-[`notes/stack.md`](../stack.md) is the page to read. It explains the stack, records the first stack
+`nifeos/nife:notes/stack.md` is the page to read. It explains the stack, records the first stack
 incident and carries the `BUGS`, so a reader can act without opening anything here. Its incident
 table is the index. These files hold each later stack incident in full, in date order.
 

@@ -8,7 +8,7 @@ directory `notes/project-metrics/` are **provisional**; naming is an architect's
 provisional name and says so.*
 
 One row per ISO week, computed by `script/metrics` from git history. The data is one CSV per
-measure in [`notes/project-metrics/`](project-metrics/), versioned with the code it describes.
+measure in `notes/project-metrics/` (in nifeos/nife), versioned with the code it describes.
 
 **This page is a deck** (calef, 2026-09-24). A chart is a heading, an image, and at most a line or
 two saying what it plots and what would otherwise be misread. Everything longer, the definitions,
@@ -230,9 +230,9 @@ because the floor did not exist yet. The provenance is in the register's
 
 ![Unexplained benchmark drift on main](project-metrics/unexplained-drift.svg)
 
-Drift since the anchors that no line in [bench/attributions.tsv](../bench/attributions.tsv)
+Drift since the anchors that no line in `nifeos/nife:bench/attributions.tsv`
 accounts for, read at each week's last merge. Above 5% is a lane (calef, 2026-10-22). Every row,
-save and reason: [the drift report](project-metrics/baseline-drift.md).
+save and reason: the drift report (`nifeos/nife:notes/project-metrics/baseline-drift.md`).
 
 <!-- baseline-drift: script/metrics writes this -->
 2026W48, `main` at `995720623`: nothing unexplained past 5%; the largest, aarch64 `ipc_rtt_el0` +2.32%, riscv64 `sink_throughput` -2.80%, x86_64 `call_reply` +1.93%.
@@ -244,7 +244,7 @@ save and reason: [the drift report](project-metrics/baseline-drift.md).
 
 The boundary a program outside the tree is written against, each week: system call surface moves
 and wire-format value changes. [definitions](interface-stability.md),
-[per crate and package](project-metrics/interface-stability.md).
+per crate and package (`nifeos/nife:notes/project-metrics/interface-stability.md`).
 
 <!-- interface-stability: script/metrics writes this -->
 interface, 2026W45 to 2026W48: 151 breaking changes (33 additions); 119 system call numbers changed, 0 format bumps; 49% co-change, 51% across packages.
@@ -306,7 +306,7 @@ rest.
 
 ## BUGS
 
-The series' known limitations are in [project-metrics/limitations.md](project-metrics/limitations.md).
+The series' known limitations are in project-metrics/limitations.md (`nifeos/nife:notes/project-metrics/limitations.md`).
 
 - The paragraph under "Interface stability" predates the 2026-10-28 policy (accommodate change
   rather than wait for a lull; the four-week-zero reading is a reported interpretation that gates

@@ -166,7 +166,7 @@ chain, and treat a PPID of 1 as yours.
 
 ### 4. Killing a harness does not kill its children
 
-The evidence for the rule in [qemu-hygiene](skills/qemu-hygiene/SKILL.md) that a session checks for
+The evidence for the rule in qemu-hygiene (`nifeos/nife:notes/skills/qemu-hygiene/SKILL.md`) that a session checks for
 leaked emulators afterwards.
 
 Checking `pgrep` is not sufficient after you kill a harness, and on 2026-08-02 it took four

@@ -287,7 +287,7 @@ capture (ids and statics).
 A `Thread` is large, and a debug build copies rather than elides at every move. Returned by value,
 it traveled through several frames, each a real copy through a stack temporary. `sched::spawn_on`'s
 instantiations measured 3,888 to 4,592 bytes. That is over the 4,096-byte guard page, where a frame
-can step past the guard in one move ([the stack](stack.md)). So every constructor
+can step past the guard in one move (the stack (`nifeos/nife:notes/stack.md`)). So every constructor
 writes through a pointer the caller already has, the TCB page `Threads::insert_at` claimed. The
 struct literal itself sits in `write_kernel_thread`, one non-generic, never-inlined frame, because an
 unoptimized build materializes the literal as temporaries worth about two `Thread`s, and inside the

@@ -159,7 +159,7 @@ fits with seven bytes to spare, so the rename below is unblocked. One thing in t
 was wrong and is worth reading before trusting them. The kernel-stack cost had already been retired,
 because `Fs` stopped holding a fixed entry array when the FS-server stack bug was fixed, so
 the raise was much cheaper than the trade described here. The measured numbers and the reasoning are
-in [notes/nifefs.md](../../notes/nifefs.md). The paragraphs are kept as written because the
+in `nifeos/nife:notes/nifefs.md`. The paragraphs are kept as written because the
 decision to do this first, rather than under pressure from a name, is the part that generalizes.
 
 `nifefs` caps archive names at 24 bytes, and three naming decisions have crowded it while a

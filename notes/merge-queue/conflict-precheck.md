@@ -43,7 +43,7 @@ or the reason is empty. `NIFE_SKIP_QUEUE_CHECK=1` skips the advisory run in `scr
 ## The launch check
 
 `script/queue-conflicts shared SCOPE...` takes one file per planned lane of a wide run
-([briefs/run-a-milestone-wide.md](../../briefs/run-a-milestone-wide.md)), one path per line, a
+(`nifeos/nife:briefs/run-a-milestone-wide.md`), one path per line, a
 trailing `/` for a directory. It lists every path in more than one scope and exits 1. The
 maintainer runs it before the first claim, with the generated records (a names note, a baseline) in
 the scope files like any other path.

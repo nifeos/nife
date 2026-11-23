@@ -2,7 +2,7 @@
 
 *Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
-*An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds the
+*An appendix to `nifeos/nife:notes/pipes.md`, which is the page to read. This file holds the
 analysis written while `2>` was undecided, which explains what the built thing is not. The lane that
 split the file moved it here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
 budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md).*
@@ -73,7 +73,7 @@ which is a convention" and is Unix's fd numbering with a capability underneath.
 
 The concrete blocker is smaller and more annoying: slot 1 already means two things. It is the input
 source or the `--mem` untyped, whichever the request carried, and that is unambiguous only because
-no manifest declares both ([this note's BUGS](../pipes.md#bugs) has carried the entry since the
+no manifest declares both (this note's BUGS (`nifeos/nife:notes/pipes.md`) has carried the entry since the
 milestone landed). A third stream makes an ordered slot convention untenable and forces a numbered
 one first.
 

@@ -1,6 +1,6 @@
 # Elegance and performance beat implementation convenience
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the rule and its one-question test. This
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the rule and its one-question test. This
 file carries calef's framing, the worked example of §92 (a caretaker is supervised by the client it
 serves), and why agents moved the balance. Moved here 2026-09-23 (UTC) on calef's authorization,
 unchanged in substance.*

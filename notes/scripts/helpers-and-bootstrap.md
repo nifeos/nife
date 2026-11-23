@@ -1,6 +1,6 @@
 # Two things that are deliberately the way they are
 
-*An appendix to [`notes/scripts.md`](../scripts.md), the front door to `script/`. It holds the
+*An appendix to `nifeos/nife:notes/scripts.md`, the front door to `script/`. It holds the
 reasons `script/` and `helpers/` are split the way they are, and why `bootstrap` installs and builds
 what it does. A reader who only needs to run a command should not have to open it. The directory
 `notes/scripts/` and this file's stem are provisional names; naming is calef's.*

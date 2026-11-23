@@ -104,7 +104,7 @@ excluded), and [`glyphs/retro-fonts.md`](glyphs/retro-fonts.md) (the rest of the
 
 `crates/video_terminal` keeps the grid: bytes in, a character grid out, plus the rectangle that changed. It holds
 no endpoint, makes no system call, and has never heard of a framebuffer, exactly as `line_editor` does for
-the serial terminal ([line-discipline.md](line-discipline.md)).
+the serial terminal (`nifeos/nife:notes/line-discipline.md`).
 
 What it implements is not a guess. The escape sequences a display terminal must understand are
 the ones the line discipline already emits (DECISIONS §21 (the terminal is a userspace component)).

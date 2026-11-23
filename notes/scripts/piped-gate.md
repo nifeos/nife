@@ -1,6 +1,6 @@
 # A piped gate reports the pipe's status, not the gate's
 
-An appendix to [`../scripts.md`](../scripts.md), which keeps the rule and the command. Name:
+An appendix to `../scripts.md` (`nifeos/nife:notes/scripts.md`), which keeps the rule and the command. Name:
 provisional; calef names files.
 
 `script/lint | tail -30; echo $?` prints `tail`'s exit code. So does `| grep`, `| head`, and

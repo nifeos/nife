@@ -15,7 +15,7 @@ what the next lanes change.
 
 The review took its accepted baseline from
 [the review package](../../notes/crate-reviews/generational-table.md) and
-[the release record](../../notes/generational-table-and-existing-crates.md), and raises none of the decisions those settle. Those are the crate name and the 19 ratified names. They are the typed `EntryName<T>` with `to_bits`, `from_bits` and `NEVER_MINTED`, and the saturating generation that retires a slot. They are the first-fit insert and the `[Option<T>; N]` storage. They are the dual license, the low expected demand the README states, and the ruling that the crate publishes.
+the release record (`nifeos/nife:notes/generational-table-and-existing-crates.md`), and raises none of the decisions those settle. Those are the crate name and the 19 ratified names. They are the typed `EntryName<T>` with `to_bits`, `from_bits` and `NEVER_MINTED`, and the saturating generation that retires a slot. They are the first-fit insert and the `[Option<T>; N]` storage. They are the dual license, the low expected demand the README states, and the ruling that the crate publishes.
 Milestone 1033 (`generational_table`: the
 fixed-capacity, proved slotmap, released on its own) owns the tag, the soak and the publication.
 This block owns the findings that should land inside that path.

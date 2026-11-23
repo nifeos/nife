@@ -1,6 +1,6 @@
 # Working with calef: presenting a fork, pushing back, correcting the record
 
-*Appendix to [`AGENTS.md`](../../AGENTS.md), which carries the rules: measure rather than argue,
+*Appendix to `nifeos/nife:AGENTS.md`, which carries the rules: measure rather than argue,
 push back with a technical reason, correct yourself loudly, explain on request, and bring a fork
 with its questions already answered. This file carries the seven questions with the worked example
 behind each, the two limits that keep them from becoming a tax, and the anecdotes that produced the

@@ -72,7 +72,7 @@ Both sides of every comparison resolve the same way, so chained renames compose.
 
 The lane doing the rename writes the row, at rename time, in the pull request that renames the
 function. Nothing can derive the row, so the pointer sits where the renamer already looks:
-[notes/skills/naming-authority/SKILL.md](../../notes/skills/naming-authority/SKILL.md) is what a
+`nifeos/nife:notes/skills/naming-authority/SKILL.md` is what a
 lane reads before any rename, and this work adds the rule there. Two checks hold it up. The
 `orphans` command that `script/lint` already runs fails a triage row whose crate names no package.
 It gains the function component: a row whose function the crate no longer defines fails, unless a

@@ -174,7 +174,7 @@ The observations come from `platform_controller_hub::sequence::BringUpObservatio
 is `e1000e: ` and the variant as Rust prints it. On xenon the one earlier run printed, during pass
 1, `cleared: true`, the PHY reached `Directly` with identifier `0x015400a0` (`I217_E_PHY_ID` in
 FreeBSD), and a configuration of 22 pairs
-([bench/xenon-2026-10-21/README-494.md](../../bench/xenon-2026-10-21/README-494.md)). A different
+(`nifeos/nife:bench/xenon-2026-10-21/README-494.md`). A different
 identifier, access path or pair count is a value to record, not a failure. A line such as
 `LocalAreaNetworkInitializationTimeout` or `MasterRequestsPending` is an observation FreeBSD also
 carries on from; record it.

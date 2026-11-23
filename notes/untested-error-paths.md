@@ -110,7 +110,7 @@ refuse a grant or an allocation. Line numbers are at base `1a145fcaa`.
 
 Twelve of the twenty are in `paging`. The 2026-08-03 mutation baseline found the same soft spot from
 the other side: every DMA-domain test granted exactly one page, so a page count could not be told
-from the constant 1 ([baseline survivors](mutation-testing/baseline-survivors-grant-plan-to-swish.md)).
+from the constant 1 (baseline survivors (`nifeos/nife:notes/mutation-testing/baseline-survivors-grant-plan-to-swish.md`)).
 
 Not reached does not mean reachable. Item 15 is proved dead, and `device_tree_blob`'s 102 are mostly
 bounds re-checked after a header check already passed. Telling the two apart is what a fault

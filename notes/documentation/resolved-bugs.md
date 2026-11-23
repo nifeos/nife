@@ -2,7 +2,7 @@
 
 *Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
-An appendix to [`notes/documentation.md`](../documentation.md), whose `BUGS` section now carries
+An appendix to `nifeos/nife:notes/documentation.md`, whose `BUGS` section now carries
 only what is still true. These entries are resolved and kept for their reasons.
 
 ## `mdr <page>` on its own was refused

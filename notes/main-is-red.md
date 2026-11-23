@@ -5,7 +5,7 @@ request is now measured against a base that is wrong, and the merge queue will h
 groups that cannot pass. Three scripts watched the queue before 2026-09-23 and all three reported;
 none responded. This note is the response, what it is made of, and what it got wrong first.
 
-The procedure itself is in [briefs/main-is-red.md](../briefs/main-is-red.md); the mechanics are in
+The procedure itself is in `nifeos/nife:briefs/main-is-red.md`; the mechanics are in
 `helpers/queue-hold.sh`'s header. Neither is repeated here. This is the why, and the evidence.
 
 ## The gap calef named

@@ -263,7 +263,7 @@ The `BUGS` in `xtask/src/rollback.rs` are one line each. Here is what stands beh
 - [The boot stick, and the program that makes it](boot-stick.md): rung 1, how the file gets onto a
   stick at all.
 - [Booting x86_64 from real firmware](x86-uefi-boot.md): the loader the chooser is half of.
-- [The GUID partition table](globally-unique-identifier-partition-table.md): the format the
+- The GUID partition table (`nifeos/nife:notes/globally-unique-identifier-partition-table.md`): the format the
   attribute bits live in, and what the fixtures pinned.
 - [The two loader-to-kernel tokens](boot-slots/the-command-line.md): why the slot and the boot
   medium travel as words on the kernel's command line.

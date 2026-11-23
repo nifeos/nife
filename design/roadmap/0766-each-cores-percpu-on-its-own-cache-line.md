@@ -94,7 +94,7 @@ and against today's lucky one nothing, within an interval of zero either way.
 ## What radon said
 
 2026-10-05 (UTC), five interleaved boots by a run sheet written before any boot
-([`bench/radon-2026-10-05/`](../../bench/radon-2026-10-05/README.md); the full reading is
+(`bench/radon-2026-10-05/` (`nifeos/nife:bench/radon-2026-10-05/README.md`); the full reading is
 [the appendix](../../notes/job-mix/radon-2026-10-05.md#milestone-766-the-alignment-is-material-on-radon)).
 `main` at `c8b5fd09e` against the same commit with this milestone undone and the blocks forced to
 24 mod 128, `null_system_call` `per_job` in 4 MHz ticks:

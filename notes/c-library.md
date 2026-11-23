@@ -152,7 +152,7 @@ hand (a §46 question).
 
 ## The platform layer's own constraints
 
-[`c_library/README.md`](../c_library/README.md) is the guide to the built crate. A few constraints
+`nifeos/nife:c_library/README.md` is the guide to the built crate. A few constraints
 its source relies on are recorded here rather than in its comments.
 
 - One client per protocol. Because the platform layer is built on `std`, a protocol change lands in

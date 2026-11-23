@@ -6,7 +6,7 @@ measurement. Nothing read `riscv,isa-extensions`, nothing read `mmu-type`, and o
 emulator, which is configured to be whatever you ask for. It stops being fine on a board.
 
 The shape is one record per architecture, populated once at boot, printed at boot, in
-[`crates/machine_discovery`](../crates/machine_discovery) with the kernel halves in
+`crates/machine_discovery` (in nifeos/nife) with the kernel halves in
 `kernel/src/arch/*/isa.rs`.
 
 ## What the boot says now

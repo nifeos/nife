@@ -1,6 +1,6 @@
 # The per-CPU interrupt stack (milestone 124, 2026-08-16)
 
-*An appendix to [`notes/stack.md`](../stack.md), which explains the stack and is the page to read.
+*An appendix to `nifeos/nife:notes/stack.md`, which explains the stack and is the page to read.
 This file holds milestone 124's per-CPU interrupt stack: what was built, the rule that holds it, and
 what it measured (its BUGS are on the main page). The five appendices read in the order the main
 page's table lists them, so "above", "below" and "this file" in them mean that whole sequence. The
