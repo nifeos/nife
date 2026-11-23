@@ -95,8 +95,8 @@ Each disagreement is a finding, numbered in this block in the order found, with 
 
 ## Follow-on
 
-- **Proposed.** An eMMC run on a board, which `docs/bench-emmc-bus-modes.md` in the crate
-  describes. No item here replaces it.
+- **Milestone 1050.** An eMMC run on a board, which its done-when list holds as the eMMC socket
+  item. No item here replaces it.
 
 ## BUGS
 

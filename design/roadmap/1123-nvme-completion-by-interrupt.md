@@ -141,8 +141,9 @@ calls `ACKNOWLEDGE`.
 
 ## Follow-on
 
-- **Proposed.** More than one command in flight per queue, which interrupts make worth having
-  and this milestone does not build.
+- **Recorded.** More than one command in flight per queue, which interrupts make worth having
+  and this milestone does not build. It stays a limitation in the BUGS of
+  `components/src/non_volatile_memory_express_data_plane.rs`.
 - **Milestone 1068.** Remapping on AMD-Vi, riscv64 and aarch64, without which an MSI on those
   machines is unconfined.
 
