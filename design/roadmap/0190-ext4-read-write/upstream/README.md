@@ -11,7 +11,7 @@ reviewed its text and given a separate go.
 - [`2a-free-empty-extent-index.md`](2a-free-empty-extent-index.md): upstream item 2's first
   defect, a depth-2 truncate that fails with `extent:empty_index`.
 - [`2b-restore-truncate-tail.md`](2b-restore-truncate-tail.md): item 2's second defect, a failed
-  truncate that leaves the file's tail zeroed; it files after 2a and is rebased on it.
+  truncate that leaves the file's tail zeroed; it files after 2a and moves onto it once 2a lands.
 
 *Name: provisional. For the drafts the parent's upstream round cites. calef names directories.*
 
