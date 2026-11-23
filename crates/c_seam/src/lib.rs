@@ -5,7 +5,7 @@
 //! reachable by host tests and Kani: the address-space layout below, the report protocol, and the
 //! constants also written in `fixtures/c/c_seam.c`. `WITNESS_RO` is the same frame, mapped
 //! read-only into the C; `WITNESS_FAR` is a different frame at an address the C has not mapped;
-//! both patterns are position-derived. See notes/c-seam/the-confinement-test.md.
+//! both patterns are position-derived. See `nifeos/record:notes/c-seam/the-confinement-test.md`.
 
 //! # The layout
 //!
@@ -150,7 +150,7 @@ pub const ATTEMPTS: u64 = 4;
 /// Asserted at compile time rather than in a test: every operand is a `const`, so a runtime check
 /// would only re-verify what the compiler already knows, and a build failure names the problem at
 /// the edit instead of at the next test run. Same idiom as `file_system_contract`'s verdict/byte-count
-/// assertion (notes/rm.md).
+/// assertion (`nifeos/record:notes/rm.md`).
 const _: () = assert!(ATTEMPT_OVERRUN == 0);
 const _: () = assert!(ATTEMPT_WILD < ATTEMPTS && ATTEMPT_HONEST < ATTEMPTS);
 const _: () = assert!(ATTEMPTS == 4);

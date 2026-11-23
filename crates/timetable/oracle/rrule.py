@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# The oracle for G5's next-occurrence arithmetic (milestone 129 (scheduled execution); notes/scheduled-execution/
+# The oracle for G5's next-occurrence arithmetic (milestone 129 (scheduled execution); `nifeos/record:notes/scheduled-execution/`
 # calendar-grammar-g5.md). Each rule below is written twice, independently: once as the G5 line
 # `crates/timetable` parses, and once as the dateutil rrule it must mean, built here by hand from the
 # note's RRULE table rather than from the parser. dateutil answers `after`, and the answers are

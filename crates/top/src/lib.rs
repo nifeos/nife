@@ -1,8 +1,8 @@
 //! **`top`: the same domain `ps` lists, ordered by what it is costing** (§150 (how does a thread's
-//! CPU time reach userspace?), notes/process-view.md). The program's logic, lifted out to run on
+//! CPU time reach userspace?), `nifeos/record:notes/process-view.md`). The program's logic, lifted out to run on
 //! the host; `components/src/top.rs` is the system calls and the output streams. It ranks by CPU time
 //! through `ps` ([`ps::Survey::rank_by_cpu_time`]) and adds the lines above the table,
-//! [`write_summary`] and [`write_machine_line`]. See notes/process-view/top.md.
+//! [`write_summary`] and [`write_machine_line`]. See `nifeos/record:notes/process-view/top.md`.
 
 //! # BUGS
 //!
@@ -42,7 +42,7 @@ pub const fn ranks_by_process(argument: u64) -> bool {
 ///
 /// `uptime_nanoseconds` is `user_mode_runtime::monotonic_nanoseconds()`, passed in so this stays a pure
 /// function a host test can assert on. A refused caller prints neither this nor the table. See
-/// notes/process-view/top.md, "The summary line".
+/// `nifeos/record:notes/process-view/top.md`, "The summary line".
 ///
 /// # Examples
 ///
@@ -92,7 +92,7 @@ pub fn write_summary(rows: &[ps::Row], uptime_nanoseconds: u64, out: &mut dyn Fn
 /// DECISIONS §225 (`free` sees the machine and your share)): the threads runnable at each core's
 /// last tick, on how many cores, and the share of ticks since boot not spent idle. `None` prints
 /// the sentence a withheld page earns rather than a machine of zeroes. See
-/// notes/process-view/top.md.
+/// `nifeos/record:notes/process-view/top.md`.
 pub fn write_machine_line(
     machine: Option<&machine_statistics_contract::Snapshot>,
     out: &mut dyn FnMut(&[u8]),

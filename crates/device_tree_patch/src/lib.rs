@@ -21,7 +21,7 @@
 //! - **Nothing is removed**: a stale `linux,initrd-*` pair the firmware left is replaced, and every
 //!   other property is copied as it was.
 //!
-//! See notes/boot-stick/device-tree-handover.md.
+//! See `nifeos/record:notes/boot-stick/device-tree-handover.md`.
 //!
 //! Name: provisional. The crate is named for what it does to a tree. Considered
 //! `device_tree_rewrite` (says the same, but "patch" is the word the loader's callers and notes

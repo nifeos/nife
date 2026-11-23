@@ -2,7 +2,7 @@
 
 /*
  * A hand-written device tree MODELED ON the StarFive JH7110 (the VisionFive 2's SoC), NOT a dump
- * from the board. Every load-bearing fact is sourced from notes/visionfive2.md, which cites the
+ * from the board. Every load-bearing fact is sourced from `nifeos/record:notes/visionfive2.md`, which cites the
  * mainline Linux jh7110.dtsi and U-Boot as of 2026-08-14:
  *
  *   cpu@0        the SiFive S7 monitor core: rv64imac, no MMU, status = "disabled", and its

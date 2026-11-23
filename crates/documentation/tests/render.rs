@@ -269,7 +269,7 @@ fn without_list_number(line: &str) -> String {
 ///
 /// Runs at 4,000 columns, so no table cell is truncated, and natively only: Miri would need the
 /// environment forwarded and isolation off, and adds nothing to a crate with no `unsafe`. See
-/// notes/documentation/corpus-test.md for both choices.
+/// `nifeos/record:notes/documentation/corpus-test.md` for both choices.
 #[test]
 #[cfg_attr(
     miri,
@@ -382,7 +382,7 @@ fn alignment_does_not_outlive_its_table() {
     assert!(out.ends_with("  pp | q\n  ---+--\n  r  | s\n"), "{out:?}");
 }
 
-/// `notes/scripts/build-test-and-gate.md` has one (`--arch aarch64\| riscv64`), and reading it as
+/// `nifeos/record:notes/scripts/build-test-and-gate.md` has one (`--arch aarch64\| riscv64`), and reading it as
 /// a separator would give that table a third column nobody wrote. The backslash is the escape and
 /// not the text, so it does not reach the output either.
 #[test]
@@ -424,7 +424,7 @@ fn a_table_wider_than_the_terminal_shrinks_its_widest_column() {
 
 /// Losing text is the one failure a documentation service cannot have, and a long table is one
 /// block: no row is lost and no blank line splits it.
-/// `notes/releasable-crates-2026-10-07/inventory.md` is about 100 rows, so this is real.
+/// `nifeos/record:notes/releasable-crates-2026-10-07/inventory.md` is about 100 rows, so this is real.
 #[test]
 fn a_long_table_keeps_every_row_in_one_block() {
     let mut src = String::from("| n | v |\n|---|---|\n");
@@ -761,7 +761,7 @@ fn an_indented_block_quote_indents_by_its_rule_and_not_by_its_spaces() {
     );
 }
 
-/// Reduced from `notes/rented-metal.md`, a twelve-column table: every column is its own.
+/// Reduced from `nifeos/record:notes/rented-metal.md`, a twelve-column table: every column is its own.
 #[test]
 fn a_table_of_twelve_columns_keeps_every_character() {
     let src = "| a | b | c | d | e | f | g | h | i | j | k | l |\n\

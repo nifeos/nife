@@ -8,7 +8,7 @@
 //! and a length in pages. A reader takes the kinds it knows and skips the rest, so a later spawner
 //! may add kinds and move windows without breaking an earlier program. [`VERSION`] changes only
 //! when the entry format itself changes. See
-//! design/roadmap/1069-a-process-reads-its-window-addresses-from-a-startup-page.md.
+//! `nifeos/record:design/roadmap/1069-a-process-reads-its-window-addresses-from-a-startup-page.md`.
 
 //! # BUGS
 //!
@@ -53,7 +53,7 @@ pub const INTERFACE_ID: u64 = 23;
 /// address a program needs before it can find any other window.
 ///
 /// Siting: a spawner places it for programs that did not choose the address, which is the runtime
-/// band's purpose (notes/address-space-map.md, "Where a new page goes"). `PROCESS_PAGES` would
+/// band's purpose (`nifeos/record:notes/address-space-map.md`, "Where a new page goes"). `PROCESS_PAGES` would
 /// share the stack's tables, but its sixteen pages are the per-thread current-CPU slots. One
 /// sixteen-MiB step above `std_runtime_contract::INDEX_SOURCES_PAGE`, following that crate's
 /// pattern, and clear of the builder scratch window below `0x1400_0000`.

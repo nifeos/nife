@@ -6,7 +6,7 @@
 //! edit. `the_art_file_and_this_table_agree` parses the `.art` back and fails if the two drift. One
 //! byte per row, top row first, and bit 0 is the leftmost pixel, the opposite of most bitmap fonts;
 //! bits 0 and 6 are the gutter, clear in every glyph. Rows 0 to 6 are the body with the baseline at
-//! row 6, and row 7 is the descender. See notes/glyphs.md and notes/glyphs/bitmap-font.md.
+//! row 6, and row 7 is the descender. See `nifeos/record:notes/glyphs.md` and notes/glyphs/bitmap-font.md.
 
 /// The rows of every glyph in the basic-latin block, indexed by byte. Bytes 0x00..0x20 and
 /// 0x7f are blank in this font: they are control codes, and a terminal never puts one in a cell.

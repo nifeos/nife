@@ -12,7 +12,7 @@
 //! # BUGS
 //!
 //! - The tree is staged on whatever filesystem `DIR` is on (tmpfs under the Linux script), and
-//!   every timed run after the first is warm; see notes/ripgrep-on-nife.md,
+//!   every timed run after the first is warm; see `nifeos/record:notes/ripgrep-on-nife.md`,
 //!   "The search against Linux".
 
 use std::process::Command;

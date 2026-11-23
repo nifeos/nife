@@ -42,7 +42,7 @@ pub(crate) const THE_ACCESS_BITS_SHARE_NO_BIT: () = {
 ///
 /// **W^X is a property of the constructors, not of the encoders.** No `leaf_entry` refuses a
 /// `Flags` with both `ACCESS_WRITE` and an exec bit; no `pub` constructor builds one and `from_access`
-/// is `pub(crate)`, and the tests and proofs iterate [`Flags::ALL`]. So `notes/confinement-claims.md` row 11 would not survive a new in-crate
+/// is `pub(crate)`, and the tests and proofs iterate [`Flags::ALL`]. So `nifeos/record:notes/confinement-claims.md` row 11 would not survive a new in-crate
 /// constructor that got it wrong; a refusal or `debug_assert!` in each encoder would hold it.
 ///
 /// # Examples
@@ -208,7 +208,7 @@ impl Flags {
     /// and any mapping the space already has of that frame (`MappingHold::record_mapping`). Every
     /// other difference passes: read-only beside read-write, read-only beside code, and two
     /// mappings with the same flags. Symmetric, and false for two read-only mappings. See
-    /// notes/mapping-log.md, "No frame is writable and executable in one space".
+    /// `nifeos/record:notes/mapping-log.md`, "No frame is writable and executable in one space".
     ///
     /// Name: provisional, minted 2026-10-31 (UTC) by lane
     /// milestone/969-no-frame-is-writable-and-executable-in-one-space.

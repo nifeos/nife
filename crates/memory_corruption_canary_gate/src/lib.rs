@@ -5,7 +5,7 @@
 //! [`CheckGuard`] or [`None`]; [`disarm`](Gate::disarm) quiesces, so once it returns no pass is
 //! running or can start. One guard of either kind at a time. No fairness: `arm` and `disarm` spin,
 //! bounded by the kernel's callers, outside interrupt context. See
-//! notes/interleaving/what-was-modeled.md, "the corruption canary's serialization".
+//! `nifeos/record:notes/interleaving/what-was-modeled.md`, "the corruption canary's serialization".
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `canary_gate`: a memory-corruption detector
 //! over arbitrary byte ranges, not a stack canary.
@@ -16,7 +16,7 @@
 // which records every access and lets the model checker replay the protocol under every
 // interleaving and every reordering the C11 model permits; under anything else it is the real one
 // and this crate is exactly what the kernel compiles. Nothing but `script/interleaving-check` sets
-// the cfg. See notes/interleaving.md.
+// the cfg. See `nifeos/record:notes/interleaving.md`.
 #[cfg(not(loom))]
 use core::sync::atomic::{AtomicU8, Ordering};
 
@@ -353,7 +353,7 @@ mod interleavings {
     //! Every interleaving of the arm/check/disarm protocol, and every reordering C11 permits
     //! within it.
     //!
-    //! Run with `script/interleaving-check`. See notes/interleaving.md for the method, what this
+    //! Run with `script/interleaving-check`. See `nifeos/record:notes/interleaving.md` for the method, what this
     //! model cannot reach, and what it cost. The shared `plan` cell below stands in for the
     //! kernel's watch table and shadow buffer: loom's `UnsafeCell` records every access, so any
     //! interleaving in which two owners touch it at once fails the run. That is precisely the
@@ -373,7 +373,7 @@ mod interleavings {
     /// afterwards. The flag is a *real* atomic, deliberately: it lives outside the model and
     /// accumulates across every execution loom runs, where a loom atomic would be reset by each.
     ///
-    /// See notes/verification.md's non-vacuity section for why this is not optional.
+    /// See `nifeos/record:notes/verification.md`'s non-vacuity section for why this is not optional.
     struct Reached(core::sync::atomic::AtomicBool);
 
     impl Reached {

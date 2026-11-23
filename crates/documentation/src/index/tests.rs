@@ -27,7 +27,7 @@ fn a_query_folds_the_way_the_text_did() {
 
 /// **The underscore case of the test above.** `normalize` drops every non-alphanumeric byte, so
 /// a reader typing `line_editor` looks up `lineeditor`, and the tokeniser must have written that
-/// term. See notes/documentation/underscore-terms.md.
+/// term. See `nifeos/record:notes/documentation/underscore-terms.md`.
 #[test]
 fn an_underscore_name_is_searchable_as_itself() {
     let mut key = [0u8; MAXIMUM_TERM_BYTES];
@@ -300,7 +300,7 @@ fn ranking_divides_by_page_length() {
 
 // ---- what the mutation sweep found nothing asserting -----------------------------------
 //
-// Each of these kills a mutant that survived the rest of the suite. See notes/mutation-testing.md.
+// Each of these kills a mutant that survived the rest of the suite. See `nifeos/record:notes/mutation-testing.md`.
 
 /// Both of the tokeniser's buffers are exactly `MAXIMUM_TERM_BYTES` and both are written by index, so
 /// the bound is the difference between a truncated term and a panic in a `no_std` reader.

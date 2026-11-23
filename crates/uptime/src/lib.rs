@@ -1,5 +1,5 @@
 //! **`uptime`: how long the machine has been counting** (milestone 126,
-//! design/roadmap/0126-who-else-is-running.md).
+//! `nifeos/record:design/roadmap/0126-who-else-is-running.md`).
 //!
 //! The program's whole logic, lifted out so it runs on the host; `components/src/uptime.rs` is the
 //! system call and nothing else. It reads `user_mode_runtime::monotonic_nanoseconds`, the ambient counter
@@ -13,7 +13,7 @@
 //! - No load average and no logged-in-user count: this kernel keeps no decaying load figure and no
 //!   login registry, and a placeholder zero would read as a real answer.
 //! - The counter's zero predates the kernel's init by an unmeasured amount: firmware or the VMM
-//!   starts it, and there is no kernel-boot epoch (Linux's `CLOCK_BOOTTIME`). See notes/clock.md.
+//!   starts it, and there is no kernel-boot epoch (Linux's `CLOCK_BOOTTIME`). See `nifeos/record:notes/clock.md`.
 //! - One-second resolution, `date`'s own limitation: the printed format has no sub-second field.
 //!
 //! Name: ratified 2026-09-13 (calef, working the unratified worklist), for this crate and the

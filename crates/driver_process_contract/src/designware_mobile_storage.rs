@@ -20,13 +20,13 @@ use startup_page_contract::WindowKind;
 /// page, where the server reads it.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
-/// driver crate's `REGISTER_VA`, renamed to spell out the address as design/naming.md asks.
+/// driver crate's `REGISTER_VA`, renamed to spell out the address as `nifeos/record:design/naming.md` asks.
 pub const REGISTER_VIRTUAL_ADDRESS: u64 = address_space_layout::pair_page(0x0060_0000);
 /// Where the spawner maps the transfer region the server shares with its client,
 /// [`block::TRANSFER_BLOCKS`] pages, and lists it on the startup page, where the server reads it.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
-/// driver crate's `TRANSFER_VA`, renamed to spell out the address as design/naming.md asks.
+/// driver crate's `TRANSFER_VA`, renamed to spell out the address as `nifeos/record:design/naming.md` asks.
 pub const TRANSFER_VIRTUAL_ADDRESS: u64 = address_space_layout::pair_page(0x0070_0000);
 
 /// [`REGISTER_VIRTUAL_ADDRESS`]'s entry on the startup page.

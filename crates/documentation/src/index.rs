@@ -235,7 +235,7 @@ pub fn normalize(word: &[u8], out: &mut [u8; MAXIMUM_TERM_BYTES]) -> usize {
 ///
 /// An underscore-joined name is also one term: `line_editor` yields `line`, `editor` and
 /// `lineeditor`, which is what [`normalize`] makes of the query. Only the underscore joins. See
-/// notes/documentation/underscore-terms.md.
+/// `nifeos/record:notes/documentation/underscore-terms.md`.
 ///
 /// BUGS: folding is ASCII only and every other byte splits, so a search for `filesystem` also
 /// finds every page that says `file_system_contract`.

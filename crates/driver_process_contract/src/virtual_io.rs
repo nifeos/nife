@@ -3,7 +3,7 @@
 //! window, and the three spawn words ([`HandOff`]). A driver granted mediated holds a `VirtualIo`
 //! capability instead and uses none of this. The virtio-pci layout itself is the specification's
 //! (virtio 1.2 section 4.1.4); this module holds only nife's process plan around it. See
-//! design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
+//! `nifeos/record:design/roadmap/1062-the-device-control-planes-leave-the-kernel.md`, "Step 7".
 //!
 //! # BUGS
 //!

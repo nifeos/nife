@@ -1,7 +1,7 @@
 //! **The preview, which is the visibility surface**: [`write_capabilities`] over a whole line,
 //! [`write_preview`] for one stage, `caps <path>` for an image
 //! ([`write_image_capabilities`]), and the row writer all three share. Why each row is printed:
-//! notes/shell/caps-preview.md.
+//! `nifeos/record:notes/shell/caps-preview.md`.
 //!
 //! Name: provisional (milestone 884, 2026-10-12 UTC), for calef's naming pass.
 
@@ -28,7 +28,7 @@ pub struct Vouched {
 /// `None`), `holds` whether this session holds the run-unvouched capability, `declared` the
 /// manifest its note carries, and `e` the line bound against it. The rows are what
 /// [`program_table::image_manifest`] would endow, beside what the note asks. See
-/// notes/shell/caps-preview.md, "`caps <path>`: what a file's bytes would be granted".
+/// `nifeos/record:notes/shell/caps-preview.md`, "`caps <path>`: what a file's bytes would be granted".
 ///
 /// # EXAMPLES
 ///
@@ -165,7 +165,7 @@ fn write_note_asks(declared: Option<grant_contract::Manifest>, out: &mut dyn FnM
 ///
 /// With an empty tail this is [`write_holdings`]. With a tail it is a whole line, operators
 /// included, because which slot holds what depends on where the stage is. Nothing here moves any
-/// authority. See notes/shell/caps-preview.md, "A whole line, not a stage at a time".
+/// authority. See `nifeos/record:notes/shell/caps-preview.md`, "A whole line, not a stage at a time".
 pub fn write_capabilities(
     tail: &[u8],
     budget_pages: u64,
@@ -359,7 +359,7 @@ fn write_result_and_memory_rows(
 }
 
 /// The rows for what the line designated: a file and its direction, or a directory, its names and
-/// whether `-r` grants the walk (notes/shell/caps-preview.md, "The rows, in the order they print").
+/// whether `-r` grants the walk (`nifeos/record:notes/shell/caps-preview.md`, "The rows, in the order they print").
 fn write_file_and_directory_rows(
     e: &Endowment,
     m: &grant_contract::Manifest,
@@ -426,7 +426,7 @@ fn write_file_and_directory_rows(
 
 /// The read-only pages the progenitor endows, which no token on the line designates: the clock,
 /// the inert configuration with its values (as §111 (inert configuration is a validated page)
-/// asks), and the argv, which is bytes and grants nothing (notes/shell/caps-preview.md).
+/// asks), and the argv, which is bytes and grants nothing (`nifeos/record:notes/shell/caps-preview.md`).
 fn write_page_rows(
     m: &grant_contract::Manifest,
     config: Option<ConfigurationPage>,
@@ -478,7 +478,7 @@ fn write_page_rows(
 }
 
 /// The service endpoints a program may call: entropy, the network, and its supervision domain,
-/// each with the right it holds and what that right cannot do (notes/shell/caps-preview.md).
+/// each with the right it holds and what that right cannot do (`nifeos/record:notes/shell/caps-preview.md`).
 fn write_service_rows(m: &grant_contract::Manifest, std: bool, out: &mut dyn FnMut(&[u8])) {
     if m.entropy {
         write_slot(
@@ -525,7 +525,7 @@ fn write_service_rows(m: &grant_contract::Manifest, std: bool, out: &mut dyn FnM
             b"                              collect them, and not learn anything about a process\n",
         );
         // Not "that it exists": `SURVEY`'s machine-wide cursor lets two members count the threads
-        // between them (notes/process-view.md's BUGS).
+        // between them (`nifeos/record:notes/process-view.md`'s BUGS).
         out(b"                              outside this domain but that it exists\n");
     }
 }
@@ -557,7 +557,7 @@ fn write_resolver_row(
 }
 
 /// The machine-level grants: the statistics page, the budget view, reboot, sync, the installer
-/// and the catalog (notes/shell/caps-preview.md). `m` is the manifest the progenitor endows from.
+/// and the catalog (`nifeos/record:notes/shell/caps-preview.md`). `m` is the manifest the progenitor endows from.
 fn write_machine_rows(m: &grant_contract::Manifest, out: &mut dyn FnMut(&[u8])) {
     // `m`, not `e.manifest`: a stage's manifest is narrowed by its verb before it is printed.
     if m.machine {
@@ -650,7 +650,7 @@ fn write_activation_rows(e: &Endowment, m: &grant_contract::Manifest, out: &mut 
 }
 
 /// Where the output, the second stream and the input go: each a capability `caps` can name
-/// (notes/shell/caps-preview.md).
+/// (`nifeos/record:notes/shell/caps-preview.md`).
 fn write_stream_rows(e: &Endowment, out: &mut dyn FnMut(&[u8])) {
     match e.sink {
         line::Sink::Report => {

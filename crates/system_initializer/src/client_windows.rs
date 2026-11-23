@@ -7,7 +7,7 @@ use super::*;
 
 // -------------------------------------------------------------------------------------------
 // The file service's client windows (milestone 599 (a frame per filesystem client channel),
-// calef's ruling of 2026-09-27, option 4 of notes/a-frame-per-filesystem-client-channel.md).
+// calef's ruling of 2026-09-27, option 4 of `nifeos/record:notes/a-frame-per-filesystem-client-channel.md`).
 // -------------------------------------------------------------------------------------------
 
 /// **One page of window `w` of the file service's pool**, as a capability in a fresh slot, or
@@ -52,7 +52,7 @@ pub(super) fn window_zero(fs: Fs) -> Option<Fs> {
 /// **The pool of windows directory-granted jobs get**: windows `1..login_contract::DURABLE_WINDOW`,
 /// each held by its job until its reap takes the grant back ([`unbind`]); `program_table::job_windows`
 /// refuses a still-bound window, so no binding outlives its job (confinement claim 24 in
-/// `notes/confinement-claims.md`). Window 0 is [`window_zero`]'s, the last `login`'s.
+/// `nifeos/record:notes/confinement-claims.md`). Window 0 is [`window_zero`]'s, the last `login`'s.
 ///
 /// # BUGS
 ///

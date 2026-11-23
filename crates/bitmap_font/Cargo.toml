@@ -5,7 +5,7 @@ edition = "2024"
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 license.workspace = true
 
-# The font half of milestone 29's remaining increment (notes/glyphs.md): an 8x8 monochrome bitmap
+# The font half of milestone 29's remaining increment (`nifeos/record:notes/glyphs.md`): an 8x8 monochrome bitmap
 # font and the pure function that turns a character cell into pixels. Glyph rasterisation is
 # arithmetic over a constant table, so it belongs in a crate whose tests run in milliseconds rather
 # than in an emulator; the terminal component, the kernel-side test, and the host-side scanout check

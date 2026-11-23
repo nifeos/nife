@@ -5,7 +5,7 @@
 //! table's default for that name ([`resolve`]); a name that is both the image's and installed is
 //! refused, naming both. `program@version` asks for one row, and a version set
 //! ([`crate::jig_versions`]) selects among the live versions, with a [`Notice`] when it cannot.
-//! The table is read on every line that needs it. See notes/shell/the-swish-crate.md, "What a bare
+//! The table is read on every line that needs it. See `nifeos/record:notes/shell/the-swish-crate.md`, "What a bare
 //! word runs".
 
 //! # EXAMPLES
@@ -23,7 +23,7 @@
 //!
 //! # BUGS
 //!
-//! - Only a plain line runs an installed program by its bare name (notes/packages.md's BUGS).
+//! - Only a plain line runs an installed program by its bare name (`nifeos/record:notes/packages.md`'s BUGS).
 //! - A table that cannot be read resolves nothing, so the collision check is then skipped.
 //! - **The both-names refusal is proven on the host only**; no boot gate reaches it.
 //!

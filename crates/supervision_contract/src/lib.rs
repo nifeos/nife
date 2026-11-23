@@ -5,7 +5,7 @@
 #![allow(clippy::new_without_default)]
 //! **The supervision tree: the shared half.** The protocol words `root_supervisor`, `spawner`,
 //! `sub_server_supervisor` and `first_attempt_crasher` speak. A [`ChildEndowment`] states a child's
-//! complete authority in both directions (§142). See notes/supervision.md.
+//! complete authority in both directions (§142). See `nifeos/record:notes/supervision.md`.
 //!
 //! The loader these words drive is `process_builder`, a separate crate, so this one carries no
 //! `user_mode_runtime` edge (DECISIONS §235 (the OS is built and updated from packages, and its source divides by purpose) P3: a contract never links the runtime). Its examples
@@ -83,7 +83,7 @@ pub const CHILD_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADD
 /// The stack a child gets when its builder does not say otherwise ([`ChildEndowment::new`]): four
 /// pages, enough for the supervision tree's programs. A child at the interactive prompt gets three
 /// times this (`system_initializer::CHILD_STACK_PAGES`), which is why it is a field each caller
-/// states. See notes/progenitor-and-loading.md and notes/pipes/the-boot.md.
+/// states. See `nifeos/record:notes/progenitor-and-loading.md` and `nifeos/record:notes/pipes/the-boot.md`.
 pub const CHILD_STACK_PAGES: u64 = 4;
 
 /// **Everything a child is born holding.** The same idea as the kernel's `Spawn`: read one of these
@@ -167,7 +167,7 @@ pub struct ChildEndowment<'a> {
 /// and it names the space while the child runs (§249).
 ///
 /// A sentinel rather than a field, and that is an exception: a typed field cost the progenitor's
-/// stack 352 bytes. See notes/progenitor-and-loading.md.
+/// stack 352 bytes. See `nifeos/record:notes/progenitor-and-loading.md`.
 pub const CHILDS_OWN_SPACE: u64 = u64::MAX;
 
 /// **[`ChildEndowment::placed`]'s marker for the child's own process** (milestone 812
@@ -206,7 +206,7 @@ impl<'a> ChildEndowment<'a> {
 }
 
 /// **What the spawner keeps over the child after `START`** (DECISIONS §142,
-/// design/decisions/0142-spawn-retention.md). A `ThreadControlBlock` kept after `START` authorizes
+/// `nifeos/record:design/decisions/0142-spawn-retention.md`). A `ThreadControlBlock` kept after `START` authorizes
 /// only `SUSPEND` and `RESUME` (DECISIONS §300 (the paused state, a TCB verb, silent)), so the
 /// variants that keep one carry a reason. The child's region is not declared here (§303).
 ///

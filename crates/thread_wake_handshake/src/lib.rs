@@ -7,7 +7,7 @@
 //! wake before switch-out ([`Handshake::wake_pending`]), the undelivered wake
 //! ([`Handshake::ipc_served`], [`Handshake::ipc_aborted`]), and a steal racing a switch-out
 //! ([`Handshake::switch_in`]'s tripwire). The queues and out-of-protocol writes of `state` stay
-//! kernel-side. See notes/scheduler/wake-handshake.md.
+//! kernel-side. See `nifeos/record:notes/scheduler/wake-handshake.md`.
 
 //! # BUGS
 //!
@@ -17,7 +17,7 @@
 //!   thread that blocks again without calling `take_aborted` parks with the gate half open. Every
 //!   current caller takes it; nothing enforces that.
 //! - Loom checks the protocol under the kernel's locking discipline, not the discipline itself
-//!   (notes/interleaving.md). Liveness is out of scope.
+//!   (`nifeos/record:notes/interleaving.md`). Liveness is out of scope.
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `wake_handshake`. Refused `block_wake` (two
 //! verbs), `wake_gate` (one rule of three), `sched_state` and `run_state` (too generic), `parking`
@@ -61,7 +61,7 @@ pub enum WakeVerdict {
     NotBlocked,
     /// The undelivered-wake gate fired: the thread waits on an endpoint and this wake delivered
     /// nothing. The thread stays parked and linked on its endpoint's wait queue, and the kernel
-    /// records `refuse:tid` on the event ring. See notes/scheduler/undelivered-wake-gate.md.
+    /// records `refuse:tid` on the event ring. See `nifeos/record:notes/scheduler/undelivered-wake-gate.md`.
     Refused,
     /// The thread is still standing on its CPU (its saved context is stale), so the wake was
     /// parked in [`Handshake::wake_pending`] instead of queueing a thread another core could
@@ -82,7 +82,7 @@ pub enum SwitchOutVerdict {
     Reap,
     /// A wake raced the switch-out and was parked ([`WakeVerdict::Deferred`]). The context is
     /// saved now, so the wake completed: the thread is `Ready` and the caller must queue it on
-    /// this core, without load-aware placement (notes/scheduler/wake-handshake.md).
+    /// this core, without load-aware placement (`nifeos/record:notes/scheduler/wake-handshake.md`).
     WakeCompleted,
     /// The ordinary case: the predecessor's context is saved and other cores may now run it.
     /// Nothing to do.
@@ -92,7 +92,7 @@ pub enum SwitchOutVerdict {
 /// One thread's block/wake handshake: its state, flags and transitions. `W` is the payload naming
 /// what the thread waits on; the handshake only asks whether one is present. Every method is
 /// called with `IPC_TABLES` held, so the struct has no interior mutability and no atomics. See
-/// notes/scheduler/wake-handshake.md.
+/// `nifeos/record:notes/scheduler/wake-handshake.md`.
 ///
 /// # Examples
 ///
@@ -217,7 +217,7 @@ impl<W> Handshake<W> {
 
     /// Record a delivery, in the same `IPC_TABLES` critical section that staged it (a mailbox
     /// written, a signal counted, a reply filled, a death message collected). It lets the next
-    /// [`try_wake`](Self::try_wake) through the gate. See notes/scheduler/wake-handshake.md.
+    /// [`try_wake`](Self::try_wake) through the gate. See `nifeos/record:notes/scheduler/wake-handshake.md`.
     pub fn serve(&mut self) {
         self.ipc_served = true;
     }
@@ -274,7 +274,7 @@ impl<W> Handshake<W> {
     /// on a CPU until a successor's [`finish_switch`](Self::finish_switch) says otherwise.
     ///
     /// The `debug_assert` on `on_cpu` is the steal-vs-switch-out tripwire; release builds proceed.
-    /// See notes/scheduler/wake-handshake.md.
+    /// See `nifeos/record:notes/scheduler/wake-handshake.md`.
     pub fn switch_in(&mut self) {
         debug_assert!(
             !self.on_cpu,
@@ -292,7 +292,7 @@ impl<W> Handshake<W> {
     /// The timer took this thread off its CPU with work left (`schedule()`'s requeue): back to
     /// `Ready`, and the caller pushes it on this core's run queue. `on_cpu` stays set until the
     /// successor's [`finish_switch`](Self::finish_switch), which is the one legal overlap of queue
-    /// and CPU (notes/scheduler/wake-handshake.md).
+    /// and CPU (`nifeos/record:notes/scheduler/wake-handshake.md`).
     pub fn preempt(&mut self) {
         debug_assert!(
             self.state == RunState::Running,
@@ -464,7 +464,7 @@ mod interleavings {
     //! context is a `loom::cell::UnsafeCell` written outside it, where `switch_to` writes the real
     //! one. Every harness runs to exhaustion, and each reconstruction of an old race is
     //! `#[should_panic]`. The model assumes the kernel's locking discipline rather than checking
-    //! it. See notes/scheduler/wake-handshake.md and notes/interleaving.md.
+    //! it. See `nifeos/record:notes/scheduler/wake-handshake.md` and `nifeos/record:notes/interleaving.md`.
 
     use loom::cell::UnsafeCell;
     use loom::sync::{Arc, Mutex};
@@ -474,7 +474,7 @@ mod interleavings {
 
     /// Non-vacuity, `work_steal_slot`'s pattern: a real (non-loom) atomic that accumulates across
     /// every execution of the search, asserted afterwards, so a bound that quietly empties the
-    /// interesting branch fails loudly. See notes/verification.md's non-vacuity section.
+    /// interesting branch fails loudly. See `nifeos/record:notes/verification.md`'s non-vacuity section.
     struct Reached(core::sync::atomic::AtomicBool);
 
     impl Reached {
@@ -525,7 +525,7 @@ mod interleavings {
 
     /// A waker races the receiver's switch-out, and the resumer always sees a saved context.
     ///
-    /// The wake-before-switch-out race (notes/intrusive-queues.md), as the kernel runs it: the
+    /// The wake-before-switch-out race (`nifeos/record:notes/intrusive-queues.md`), as the kernel runs it: the
     /// receiver parks under `IPC_TABLES`, releases, saves its context (the write outside the lock),
     /// and its successor's `finish_switch` clears `on_cpu`; a sender on another core delivers and
     /// wakes somewhere in between. Whichever side ends up queueing the thread, the switch-in that

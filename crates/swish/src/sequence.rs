@@ -2,7 +2,7 @@
 //! split of a typed line, above [`grant_plan::line::split`]: each segment is a whole command line,
 //! planned from scratch against what the shell holds. A `>` the shell backs (§55 (the file behind
 //! a `>` is the shell itself)) and a pipeline's region end with their segment; only a [`Status`]
-//! passes on. See notes/swish-language.md, "Sequencing splits outermost, and that is a decision".
+//! passes on. See `nifeos/record:notes/swish-language.md`, "Sequencing splits outermost, and that is a decision".
 
 //! # BUGS
 //!

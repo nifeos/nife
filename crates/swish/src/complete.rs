@@ -5,7 +5,7 @@
 //! In command position it offers builtins, image programs and installed bare names; anywhere else,
 //! entries of the directory the word's lead names, which costs `ENUMERATE` as `echo *` does.
 //! [`Matches`] holds no names: the program feeds it candidates, twice when it must list them. See
-//! notes/shell/the-swish-crate.md, "Completion".
+//! `nifeos/record:notes/shell/the-swish-crate.md`, "Completion".
 
 //! # EXAMPLES
 //!

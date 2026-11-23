@@ -1,4 +1,4 @@
-//! **The framebuffer contract** (notes/framebuffer-contract.md): one definition for the GPU driver
+//! **The framebuffer contract** (`nifeos/record:notes/framebuffer-contract.md`): one definition for the GPU driver
 //! (`components/src/gpu_driver.rs`, which owns the virtio-gpu device), the client that draws
 //! (`fixtures/src/painter.rs`, which owns no device), and the kernel-side test that checks the
 //! result. Control is by message and pixels by shared frame (§10 (process model:
@@ -17,10 +17,10 @@
 
 /// The surface's width in pixels: 80 columns of `glyph_atlas`'s 14-pixel cell. Not square, so a
 /// stride bug, a transposition or an x/y swap shows as a size or content mismatch. See
-/// notes/framebuffer-contract/surface-geometry.md.
+/// `nifeos/record:notes/framebuffer-contract/surface-geometry.md`.
 pub const WIDTH: u32 = 1120;
 /// The surface's height in pixels: 24 rows of `glyph_atlas`'s 26-pixel cell. Not equal to
-/// [`WIDTH`], for the reason given there. See notes/framebuffer-contract/surface-geometry.md.
+/// [`WIDTH`], for the reason given there. See `nifeos/record:notes/framebuffer-contract/surface-geometry.md`.
 pub const HEIGHT: u32 = 624;
 
 /// Bytes per pixel. One 32-bit word, in the format [`FORMAT`] names.
@@ -39,7 +39,7 @@ pub const SURFACE_BYTES: u32 = STRIDE * HEIGHT;
 /// kernel maps exactly this many contiguous frames into both the driver and the client, and it is
 /// what makes the framebuffer's memory story a *grant* rather than a special case: those frames sit
 /// inside the driver's registered DMA region, so the same validator and the same IOMMU domain that
-/// confine a disk's descriptors confine the GPU's pixel reads. See notes/framebuffer-contract.md,
+/// confine a disk's descriptors confine the GPU's pixel reads. See `nifeos/record:notes/framebuffer-contract.md`,
 /// "The memory story".
 pub const SURFACE_PAGE_FRAMES: u32 = SURFACE_BYTES.div_ceil(4096);
 
@@ -63,7 +63,7 @@ const _: () = assert!(
 // SURFACE_BYTES does not fill whole frames (see WIDTH) and need not: SURFACE_PAGE_FRAMES rounds
 // up, and every consumer bounds-checks against SURFACE_BYTES, so the last frame's tail is
 // unreachable. The run capability over the surface names those 2,048 bytes too: padding inside the
-// same DMA allocation, not a disclosure. See notes/frames.md's BUGS.
+// same DMA allocation, not a disclosure. See `nifeos/record:notes/frames.md`'s BUGS.
 
 /// The byte offset of pixel `(x, y)` from the start of the surface.
 pub const fn offset_of(x: u32, y: u32) -> usize {
@@ -78,7 +78,7 @@ pub const fn offset_of(x: u32, y: u32) -> usize {
 /// different coordinate-dependent function: red rises with `x` five times faster than with `y`,
 /// green with `y` and half as fast with `x`, and blue is `x xor 2y` times an odd number. No value
 /// repeats along a row or a column, so [`checksum`] catches a shifted, mirrored, transposed,
-/// truncated or stale buffer. See notes/framebuffer-contract.md, "What the test proves".
+/// truncated or stale buffer. See `nifeos/record:notes/framebuffer-contract.md`, "What the test proves".
 pub const fn pixel(x: u32, y: u32) -> u32 {
     let r = (x.wrapping_mul(5).wrapping_add(y)) & 0xff;
     let g = (y.wrapping_mul(3).wrapping_add(x >> 1)) & 0xff;
@@ -257,7 +257,7 @@ pub mod status {
     /// account of the surface from another address space. It is status, not part of the client
     /// contract. **The spawner cannot ignore it**: it is a blocking `SEND` from the serving loop,
     /// so until somebody receives it the driver serves no second flush. See
-    /// notes/framebuffer-contract.md's BUGS.
+    /// `nifeos/record:notes/framebuffer-contract.md`'s BUGS.
     pub const FLUSHED: u64 = 0xD15_0002;
 
     /// The client's verdict: `send(REPORT, PAINTED, digest, first_mismatch)`, where `digest` is
@@ -272,7 +272,7 @@ pub mod status {
     /// addresses travel in a *device-level command payload*, not in a virtqueue descriptor, so the
     /// transport's shadow-ring validator never sees them: it bounds the descriptor that carries the
     /// command, and the addresses inside that command are opaque to it. The IOMMU is what bounds
-    /// them, and this reports whether it did. See notes/framebuffer-contract.md.
+    /// them, and this reports whether it did. See `nifeos/record:notes/framebuffer-contract.md`.
     pub const BACKING: u64 = 0xD15_0004;
 }
 

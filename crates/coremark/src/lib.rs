@@ -6,7 +6,7 @@
 //! which requires the unmodified reference C; its value is that the identical source compiles for
 //! nife, macOS and Linux. [`run`] does `iters` iterations over a fixed, seeded dataset of a few
 //! kilobytes (CoreMark's small-memory profile, so it stays cache-resident and fits a small stack),
-//! and the score is `iters` over the wall-clock the caller measures. See notes/benchmarks.md.
+//! and the score is `iters` over the wall-clock the caller measures. See `nifeos/record:notes/benchmarks.md`.
 
 //! # Examples
 //!

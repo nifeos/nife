@@ -8,7 +8,7 @@
 ///
 /// Two files in `tests/fixtures/captured/` are QEMU runs from before `soak:` became `soak-test:`
 /// and `soak-census:` became `soak-test-census:`. They stay as the machine printed them (a capture
-/// is a record: `design/naming/rename-what-moves.md`, "a quotation never moves"), so the prefix is
+/// is a record: `nifeos/record:design/naming/rename-what-moves.md`, "a quotation never moves"), so the prefix is
 /// respelled here, at test time, on a copy, and nothing else is touched. The live parser reads
 /// only the current spelling: these are QEMU runs, and
 /// `captured/qemu-2026-09-14-riscv64-soak-test.log` is a real run in today's vocabulary.

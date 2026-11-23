@@ -233,7 +233,7 @@ mod verification {
 
             // **Non-vacuity, machine-checked.** Four stacked assumptions could in principle be jointly
             // unsatisfiable, in which case this harness would verify while proving nothing at all;
-            // notes/verification.md calls that the main failure mode ("it proves what you asserted, not
+            // `nifeos/record:notes/verification.md` calls that the main failure mode ("it proves what you asserted, not
             // what you meant"). `kani::cover!` fails when a state is *un*reachable, so this asserts the
             // harness really does reach a grant with pages in it.
             kani::cover!(pages > 0, "a non-empty grant satisfies the assumptions");
@@ -333,7 +333,7 @@ mod tests {
 
     /// The synthetic pool. **Holding one is the only way to allocate a frame**, and dropping it frees
     /// every frame allocated through it, which keeps Miri's leak check meaningful
-    /// (`notes/undefined-behavior.md`). `frame` and `frame_at` are methods so that a test cannot
+    /// (`nifeos/record:notes/undefined-behavior.md`). `frame` and `frame_at` are methods so that a test cannot
     /// allocate without a pool; that is the whole reason for the otherwise unused receiver.
     ///
     /// # BUGS

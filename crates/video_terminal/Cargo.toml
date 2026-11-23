@@ -5,7 +5,7 @@ edition = "2024"
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 license.workspace = true
 
-# The VT state engine (milestone 29, notes/glyphs.md): the character grid a display terminal keeps,
+# The VT state engine (milestone 29, `nifeos/record:notes/glyphs.md`): the character grid a display terminal keeps,
 # the ANSI parser that maintains it, the damage it reports, and the pure function from grid to
 # pixels. **Sans-IO**, exactly as `line_editor` is: bytes in, state out, no endpoints, no system calls, no
 # framebuffer. So the whole engine is host-tested in milliseconds and only the wiring needs QEMU.

@@ -457,7 +457,7 @@ impl PageFormat for AmdVi {
 // --- The AMD-Vi device table entry (AMD 48882 rev 2.62, section 2.2.2.1, Table 7). ---
 //
 // Here rather than in the kernel's driver so Kani can prove it on any host: the kernel's x86_64
-// proofs compile only on an x86_64 host (notes/kernel-proofs.md).
+// proofs compile only on an x86_64 host (`nifeos/record:notes/kernel-proofs.md`).
 
 /// `V`, bit 0: the entry's bits 127:1 are valid.
 const DTE_V: u64 = 1 << 0;
@@ -899,7 +899,7 @@ mod tests {
 }
 
 /// Machine-checked proofs of the `x86_64` format, mirroring the other two modules'. The shared
-/// `Mapper` walk inherits all three formats' guarantees. See notes/verification.md.
+/// `Mapper` walk inherits all three formats' guarantees. See `nifeos/record:notes/verification.md`.
 #[cfg(kani)]
 mod verification {
     use super::*;

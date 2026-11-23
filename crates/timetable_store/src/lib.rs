@@ -7,7 +7,7 @@
 //! re-derivation which identities have pending work) recorded; a directory listing would be
 //! enumeration, which §123 (boot-time re-derivation) refuses. The crate does no IO and depends on
 //! nothing: `components/src/login.rs` writes and reads the manifest. See
-//! notes/scheduled-execution/durable-store.md.
+//! `nifeos/record:notes/scheduled-execution/durable-store.md`.
 
 //! Name: ratified 2026-09-13 (calef), replacing `schedule_store`. A reader scanning `crates/` asks
 //! *"What kind of schedule? Is this the thread scheduler?"*, and `crates/timetable` already avoids
@@ -197,7 +197,7 @@ pub mod fixture {
     /// The commands name the suite's installed fixture program (provisional `scheduled_demo`),
     /// because a durable session's timetable resolves them among installed programs, and §229 (how
     /// a bare name at the prompt reaches an installed program) forbids a package from taking a name
-    /// the image carries. See notes/scheduled-execution/durable-store.md.
+    /// the image carries. See `nifeos/record:notes/scheduled-execution/durable-store.md`.
     pub const DEMO_SCHEDULE_DOC: &str = "at-boot scheduled_demo 3\nevery 30s scheduled_demo 7\n";
 }
 

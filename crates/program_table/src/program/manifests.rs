@@ -385,7 +385,7 @@ const fn date_manifest() -> Manifest {
         directory: DirectoryGrantDeclaration::Forbidden,
         short_options: NO_SHORT_OPTIONS,
         // Its framing is a sink-contract `BYTES` message ending in end-of-stream
-        // (notes/sink-protocol.md). The second stream (DECISIONS §67) carries "the time is
+        // (`nifeos/record:notes/sink-protocol.md`). The second stream (DECISIONS §67) carries "the time is
         // unknown", so `date > when.txt` on a clockless machine leaves the file without it.
         output: OutputDeclaration::BytesAndDiagnostics {
             slot: DIAGNOSTICS_SLOT,
@@ -395,7 +395,7 @@ const fn date_manifest() -> Manifest {
         interruptible: false,
         // **The one program in this table that declares a clock**, and the reason the field
         // exists. Nothing on the command line designates it, so the progenitor reads this to decide
-        // which children get the read-only mapping (milestone 51's wiring, notes/date.md).
+        // which children get the read-only mapping (milestone 51's wiring, `nifeos/record:notes/date.md`).
         clock: true,
         domain: false,
         configuration: false,

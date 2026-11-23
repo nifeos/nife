@@ -11,7 +11,7 @@
 //! # BUGS
 //!
 //! - The matched-tier Linux run stages on tmpfs, which matters for a cold walk; see
-//!   notes/walk-pricing.md, "What the instrument does not see".
+//!   `nifeos/record:notes/walk-pricing.md`, "What the instrument does not see".
 
 fn main() {
     let dir = std::env::args_os()

@@ -11,7 +11,7 @@
 //! 63:56 ([`OPERATION_SHIFT`]) and, for the two reads, the device's own clock or reset index in bits
 //! 7:0. Request word 1 carries [`SET_RATE`]'s most hertz. Reply word 0 is a [`Status`], reply word 1
 //! the operation's answer. The wire is §320 (the JH7110 clock and reset wire) in
-//! `design/decisions/`. See notes/jh7110-clock-and-reset.md.
+//! `nifeos/record:design/decisions/`. See `nifeos/record:notes/jh7110-clock-and-reset.md`.
 //!
 //! # BUGS
 //!

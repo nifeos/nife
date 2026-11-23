@@ -6,7 +6,7 @@
 //! implements over a simulated controller. Every register offset and bit is vendor U-Boot's
 //! `drivers/i2c/designware_i2c.{c,h}` at `starfive-tech/u-boot` `1539c1fb5a49`, and the sequence
 //! follows its `__dw_i2c_init`, `i2c_xfer_init`, `__dw_i2c_write`, `__dw_i2c_read` and
-//! `i2c_xfer_finish`. It takes no interrupt, lock or global. See notes/board-reboot.md.
+//! `i2c_xfer_finish`. It takes no interrupt, lock or global. See `nifeos/record:notes/board-reboot.md`.
 //!
 //! # BUGS
 //!

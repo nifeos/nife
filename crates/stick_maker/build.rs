@@ -6,7 +6,7 @@
 //! (`uefi_loader/build.rs` refuses a pair that does not match), so nothing here pairs anything.
 //!
 //! Unset, the program builds with no boot files and refuses to write a stick, so `cargo test` and
-//! `script/lint` work with no environment. See notes/boot-stick/the-program.md.
+//! `script/lint` work with no environment. See `nifeos/record:notes/boot-stick/the-program.md`.
 
 use std::path::{Path, PathBuf};
 use std::{env, fs};

@@ -4,7 +4,7 @@
 //! Everything from [`Stage::Banner`] up is the kernel's own ladder and is shared by every board:
 //! `boot_ladder` and `crates/job_mix` hold its markers, and a profile may not name one.
 //! Every marker is quoted from this tree and asserted against a capture in
-//! `tests/fixtures/captured/`; notes/board-console/markers.md gives each one's source.
+//! `tests/fixtures/captured/`; `nifeos/record:notes/board-console/markers.md` gives each one's source.
 //!
 
 //! # BUGS
@@ -12,7 +12,7 @@
 //! - The fields after the sweep's shared heads (`tasks=`, `ticks_median=`) are literals here
 //!   alone, so a kernel that renames one parses as nothing with every test green.
 //! - The sweep's quiet timer is a margin over one TCG measurement; see
-//!   notes/board-console/limitations.md for both.
+//!   `nifeos/record:notes/board-console/limitations.md` for both.
 
 use core::fmt;
 
@@ -173,7 +173,7 @@ impl Failure {
     /// Each line says what happened next, because the obvious reading is often wrong: a
     /// measured-boot refusal is the gate working rather than a crash, a failed self-test left the
     /// board up, and a refused sweep measured nothing. A firmware refusal's sentence is the
-    /// profile's; notes/board-console/markers.md has where each board's wording came from.
+    /// profile's; `nifeos/record:notes/board-console/markers.md` has where each board's wording came from.
     #[must_use]
     pub fn describe(&self) -> String {
         match self {
@@ -218,14 +218,14 @@ pub struct SoakBeat {
     /// Round trips per second over the last interval.
     pub rate: u64,
     /// Cumulative refused wakes. Expected to be zero, and a nonzero value is the defect
-    /// `design/fatal-risks/README.md`'s multicore entry exists for.
+    /// `nifeos/record:design/fatal-risks/README.md`'s multicore entry exists for.
     pub refused: u64,
     /// Cumulative wrong replies seen by callers. Expected to be zero.
     pub mismatches: u64,
     /// How many workers made no progress in the last interval. Expected to be zero.
     pub stalled: u64,
     /// **Cumulative times a thread ran on a different core than the one it last ran on.** The
-    /// honest cross-core handoff count; see `kernel/src/soak.rs` and `notes/soak.md` for the
+    /// honest cross-core handoff count; see `kernel/src/soak.rs` and `nifeos/record:notes/soak.md` for the
     /// measured reason a steady-state workload barely moves this at all.
     pub crossings: u64,
     /// Cumulative wakes and placements that named a remote core. Narrower than
@@ -249,8 +249,8 @@ pub struct SoakBeat {
 /// One per entry in [`job_mix::TASK_SWEEP`]: the [`job_mix::Spread`] of that entry's
 /// [`job_mix::REPEATS`] subruns and the jobs-per-minute figure the kernel computed from the
 /// median. It exists to be reported, so it keeps every field the line carries, spread and repeat
-/// count included, under the wire's own names. See notes/board-console/modules.md for why, and
-/// `notes/job-mix.md` for why one boot's figure is a draw rather than a result.
+/// count included, under the wire's own names. See `nifeos/record:notes/board-console/modules.md` for why, and
+/// `nifeos/record:notes/job-mix.md` for why one boot's figure is a draw rather than a result.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct SweepPoint {
     /// Tasks released for this point, an entry of [`job_mix::TASK_SWEEP`].
@@ -391,7 +391,7 @@ impl BootProgress {
     /// `false` on every live boot. It reads captured logs:
     /// `tests/fixtures/captured/vf2-2026-09-01-userspace.log` carries the line, evidence off real
     /// silicon that cannot be re-taken. Ask `reached() >= Stage::ShellBanner` of a board booted today.
-    /// Not a stage, so the ladder stays a ladder; notes/board-console/markers.md has why.
+    /// Not a stage, so the ladder stays a ladder; `nifeos/record:notes/board-console/markers.md` has why.
     #[must_use]
     pub fn userspace_ran(&self) -> bool {
         self.userspace_ran
@@ -409,7 +409,7 @@ impl BootProgress {
     /// The latest soak heartbeat, if this session saw one.
     ///
     /// The run's round-trip total, which a later run can be compared against. It is a progress
-    /// figure and nothing else: `design/roadmap/0219-a-workload-that-does-not-stop.md` says why a
+    /// figure and nothing else: `nifeos/record:design/roadmap/0219-a-workload-that-does-not-stop.md` says why a
     /// clean run is weak evidence.
     #[must_use]
     pub fn soak(&self) -> Option<&SoakBeat> {
@@ -470,7 +470,7 @@ impl BootProgress {
     ///
     /// U-Boot's `StarFive #` prompt has no newline after it. A tail may ratchet a stage, because a
     /// substring match is monotone, but it may not settle a word boundary (`U-Boot ` before `SPL`)
-    /// or capture a payload; notes/board-console/design.md has the two failures that showed it.
+    /// or capture a payload; `nifeos/record:notes/board-console/design.md` has the two failures that showed it.
     pub(crate) fn observe_partial(&mut self, tail: &str) {
         self.observe(tail, false);
     }

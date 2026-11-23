@@ -1,6 +1,6 @@
 //! The spawn service: `spawn_service`, the loop `boot` ends in, which serves the shell's `run`
 //! requests forever, with the caretaker, channel and file-service shapes it carries. Its design is
-//! notes/system-initializer.md, "The spawn service".
+//! `nifeos/record:notes/system-initializer.md`, "The spawn service".
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
 
@@ -161,7 +161,7 @@ pub(super) struct Fs {
 /// directs. A spawned program holds only what the shell endowed, so it reaches nothing its command
 /// line did not name. A normal job is built in a region of the job pool and supervised on `deaths`;
 /// an interruptible one is built from the shell's own job untyped and is not supervised here
-/// (§24 (interrupting the foreground process)). See notes/system-initializer.md, "The spawn
+/// (§24 (interrupting the foreground process)). See `nifeos/record:notes/system-initializer.md`, "The spawn
 /// service".
 ///
 /// `spawnable.progs` is indexed by [`Program::id`], so it is [`program_table::PROGRAM_COUNT`] long: a
@@ -331,7 +331,7 @@ struct Wants {
 impl Wants {
     /// Read each declaration from the program's own manifest, never from the request: a person
     /// designates none of these, so no bit on the wire carries them. See
-    /// notes/system-initializer/the-spawn-service.md, "What a manifest declares that no command line can".
+    /// `nifeos/record:notes/system-initializer/the-spawn-service.md`, "What a manifest declares that no command line can".
     fn of(manifest: Option<grant_contract::Manifest>) -> Wants {
         let wants_clock = manifest.is_some_and(|m| m.clock);
         let wants_domain = manifest.is_some_and(|m| m.domain);
@@ -611,7 +611,7 @@ impl Service<'_> {
     /// Carve an image request's child region and staging region from the image pool, and copy its
     /// frames into the staging region. The child's region is a `std` one when the argv bit is set,
     /// sized as the image (`program_table::image_region_pages`); see
-    /// notes/system-initializer/the-spawn-service.md, "Images". A `graphical_terminal` request is
+    /// `nifeos/record:notes/system-initializer/the-spawn-service.md`, "Images". A `graphical_terminal` request is
     /// never an image, so nothing is carved for one and its frames' views are only given up.
     fn carve_image(&mut self, req: &Request) -> (Option<u64>, Option<u64>) {
         let Channels {
@@ -663,7 +663,7 @@ impl Service<'_> {
     /// Answer a `graphical_terminal` request: refuse a malformed one or a boot with no display, and
     /// otherwise build the session from its own region of the job pool, with narrowed copies of the
     /// devices this process holds. A session that does not come up is a refused spawn, and its
-    /// builder reclaims the region. See notes/system-initializer/the-spawn-service.md.
+    /// builder reclaims the region. See `nifeos/record:notes/system-initializer/the-spawn-service.md`.
     ///
     /// A session is built from this process's own copies alone and takes no delegated capability,
     /// so a request that delegated one is malformed and refused. The honest shell sends none: the
@@ -724,7 +724,7 @@ impl Service<'_> {
     /// the one manifest and the word a refusal answers with. A vouched image is endowed from its
     /// own note, an unvouched one only for a caller that presented the run-unvouched capability and
     /// then with `program_table::UNVOUCHED_MANIFEST` (§219 D); a program with a verb table is narrowed
-    /// by the line's verb. See notes/system-initializer/the-spawn-service.md, "Images".
+    /// by the line's verb. See `nifeos/record:notes/system-initializer/the-spawn-service.md`, "Images".
     fn resolve(&mut self, req: &Request, staging: Option<u64>) -> Resolved {
         let Channels { own_ut, fs, .. } = self.c;
         let Request {
@@ -885,7 +885,7 @@ impl Service<'_> {
 
     /// Build, start and answer a normal job: its region, its grants, its endowment in the native or
     /// the `std` layout, then the tidy-up and the answer. A grant the job should hold and could not
-    /// be given refuses the spawn. See notes/system-initializer/the-spawn-service.md, "A normal job's
+    /// be given refuses the spawn. See `nifeos/record:notes/system-initializer/the-spawn-service.md`, "A normal job's
     /// region and grants".
     fn spawn_job(
         &mut self,
@@ -1135,7 +1135,7 @@ impl Service<'_> {
     /// image's catalog, each only when its manifest declares it; and say whether either failed.
     /// The installer is placed only for the owner's console, in the `std` layout (§270 (a package
     /// manager holds an installer endpoint, not the spawn endpoint)); see
-    /// notes/system-initializer/the-spawn-service.md.
+    /// `nifeos/record:notes/system-initializer/the-spawn-service.md`.
     fn package_parts(
         &mut self,
         req: &Request,
@@ -1214,7 +1214,7 @@ impl Service<'_> {
     /// Wire a normal job's directory grant and sync-only grant: take its label and window, bind a
     /// badge where the server enforces grants itself or build a caretaker otherwise, and say whether
     /// a declared grant failed. The window is held until the job's reap. See
-    /// notes/system-initializer/the-spawn-service.md, "A normal job's region and grants".
+    /// `nifeos/record:notes/system-initializer/the-spawn-service.md`, "A normal job's region and grants".
     fn wire_directory(
         &mut self,
         req: &Request,
@@ -1367,7 +1367,7 @@ impl Service<'_> {
     /// Choose a normal job's output and its rights: the delegated sink, the terminal's sink for a
     /// screen-narrowed tail (§106 (an unredirected tail stage's output goes to the screen)), or the
     /// shared result endpoint. The child cannot tell which it holds. See
-    /// notes/system-initializer/the-child-layouts.md.
+    /// `nifeos/record:notes/system-initializer/the-child-layouts.md`.
     fn output(&self, req: &Request, labeled: Option<u64>) -> (u64, u64) {
         let quiet = req.delegated.screen.is_some() || (req.wiring.held && req.wiring.screen);
         let default_screen = self.c.term_sink.filter(|_| quiet);
@@ -1388,7 +1388,7 @@ impl Service<'_> {
     /// Lay out a native child's endowment: its in-order slots, its named slots, and its mappings.
     /// Slot 0 is the output, or a directory grant's endpoint with the output at slot 1; then the
     /// clock, the configuration page, the source and the budget. See
-    /// notes/system-initializer/the-child-layouts.md, "The native layout".
+    /// `nifeos/record:notes/system-initializer/the-child-layouts.md`, "The native layout".
     fn native_endowment(
         &self,
         req: &Request,
@@ -1452,7 +1452,7 @@ impl Service<'_> {
     /// Place a native child's named slots: the second stream, the domain, entropy, the network,
     /// the machine and share views, reboot, the board's PMIC route and sync, each where its manifest says and with the
     /// narrowest right that serves it. The slots and why each right is the one given are in
-    /// notes/system-initializer/the-child-layouts.md, "The native layout".
+    /// `nifeos/record:notes/system-initializer/the-child-layouts.md`, "The native layout".
     fn named_slots(
         &self,
         req: &Request,
@@ -1680,7 +1680,7 @@ impl Service<'_> {
 
     /// Tidy up after a normal job and answer it: delete every capability that was only the means
     /// of building, built or not, give back a window or a region nothing came to hold, and send
-    /// what the shell is owed. See notes/system-initializer/the-spawn-service.md, "After the build".
+    /// what the shell is owed. See `nifeos/record:notes/system-initializer/the-spawn-service.md`, "After the build".
     fn finish_job(&mut self, req: &Request, ok: bool, failure: u64, left: JobLeftovers) {
         let result_ep = self.c.result_ep;
         let JobLeftovers {
@@ -1902,7 +1902,7 @@ fn start_job(built: Option<supervision_contract::Child>, req: &Request, std_layo
 /// Build a normal job's child in its region, in the `std` layout when it has one and the native
 /// layout otherwise, born supervised on `fault`. `None` when there is no program or region, or the
 /// build failed. A screen-narrowed child's `fault` is the shell's own endpoint (§106), which keeps
-/// it out of `deaths`'s domain; see notes/system-initializer.md's BUGS.
+/// it out of `deaths`'s domain; see `nifeos/record:notes/system-initializer.md`'s BUGS.
 fn build_job(
     own_ut: u64,
     (elf, region): (Option<&static_elf::Elf>, Option<u64>),

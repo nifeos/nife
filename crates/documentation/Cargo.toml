@@ -35,7 +35,7 @@ pulldown-cmark = { version = "0.13.4", default-features = false, optional = true
 # reader's tests are gated too, because every one of them needs `build` to make an index to read. So
 # a single-crate run compiled away half of this crate's suite and every survivor of it counted as a
 # gap: `cargo mutants` tests one package at a time, and that is what scored this crate 52% in the
-# first published mutation report. See notes/mutation-testing.md.
+# first published mutation report. See `nifeos/record:notes/mutation-testing.md`.
 builder = []
 
 # The renderer and its parser. Name provisional (milestone 784, item (f2), 2026-10-20 UTC).

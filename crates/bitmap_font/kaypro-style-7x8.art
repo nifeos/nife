@@ -1,6 +1,6 @@
 ; **The nife terminal font**: an original 7x8 drawing in the style of the Kaypro II's
 ; character generator. Ours, drawn from scratch; no ROM was traced and no third party's bits
-; are here. See notes/glyphs.md for why the ROM itself is excluded and why a style is not.
+; are here. See `nifeos/record:notes/glyphs.md` for why the ROM itself is excluded and why a style is not.
 ;
 ; The geometry is the Kaypro's: a 7-pixel cell of which the middle 5 columns carry ink and the
 ; outer two are gutter, which is what its video board did in hardware (it shifted out a zero,

@@ -2,7 +2,7 @@
 //!
 //! [`read`] takes a finished capture (a `script/board-console` log, or a `script/soak-test` one
 //! from QEMU, which the curve does not accept but which proves the reader) and returns one [`Boot`]
-//! per kernel banner, in the columns `notes/multicore-defect-curve.md` defines. A boot that never
+//! per kernel banner, in the columns `nifeos/record:notes/multicore-defect-curve.md` defines. A boot that never
 //! printed `soak-test: started` is kept, as a finding, but produces no row. The three columns no
 //! console line carries are the caller's, in a [`Meta`].
 
@@ -239,7 +239,7 @@ impl Boot {
         }
     }
 
-    /// **The exposure row**, in `notes/multicore-defect-curve.md`'s column order, ready to paste.
+    /// **The exposure row**, in `nifeos/record:notes/multicore-defect-curve.md`'s column order, ready to paste.
     #[must_use]
     pub fn row(&self, meta: &Meta) -> String {
         let unknown = || "?".to_string();
@@ -270,7 +270,7 @@ impl Boot {
         )
     }
 
-    /// The four figures `notes/soak.md` asks every run to record, all four, from the last beat.
+    /// The four figures `nifeos/record:notes/soak.md` asks every run to record, all four, from the last beat.
     #[must_use]
     pub fn figures(&self) -> String {
         let b = self.last.unwrap_or_default();

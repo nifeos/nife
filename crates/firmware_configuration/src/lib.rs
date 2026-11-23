@@ -5,7 +5,7 @@
 //! only one that can write). This crate is that conversation's wire format and nothing else, so the
 //! kernel driver is a `write_volatile` and a poll. **Every multi-byte field is big-endian**, even on
 //! little-endian machines, so every encoder takes native values and returns bytes, never a struct
-//! anybody could `transmute`. See notes/serial-less-output/ramfb.md.
+//! anybody could `transmute`. See `nifeos/record:notes/serial-less-output/ramfb.md`.
 
 //! # BUGS
 //!

@@ -1,17 +1,17 @@
 //! The DMA-confinement validator, as pure logic: [`validate_and_shadow`], lifted out of
-//! `kernel/src/virtual_io.rs` so Kani proves the code the kernel calls (notes/verification.md). A
+//! `kernel/src/virtual_io.rs` so Kani proves the code the kernel calls (`nifeos/record:notes/verification.md`). A
 //! userspace virtio driver programs the descriptors a device does DMA against, and the device has
 //! no MMU in front of it (or an IOMMU, and this is defense in depth), so something trusted checks
 //! every address the device will touch. Proved for every input: no descriptor the device can read
 //! out of the shadow ring references memory outside `[base, base + size)`, in either direction,
 //! with indirect descriptors refused, over any newly published batch. The device reads a
 //! kernel-private shadow copy, so a driver mutating a descriptor after validation changes only a
-//! copy nothing reads. See notes/dma.md.
+//! copy nothing reads. See `nifeos/record:notes/dma.md`.
 
 //! # BUGS
 //! - The shadow descriptor is published in two stores; a device can see the new `guest_physical_address` with the
-//!   old `len` (`notes/confinement-claims.md` row 17;
-//!   design/roadmap/0799-the-shadow-descriptor-is-published-in-two-stores.md).
+//!   old `len` (`nifeos/record:notes/confinement-claims.md` row 17;
+//!   `nifeos/record:design/roadmap/0799-the-shadow-descriptor-is-published-in-two-stores.md`).
 //!
 //! Name: ratified 2026-09-24 (calef, #1229), replacing `dma_validator`, under §154 (the acronym test
 //! is whether the phrase is spoken). Refused `dma_validator` (an unexpanded acronym),
@@ -34,7 +34,7 @@ pub const F_INDIRECT: u16 = 4;
 /// writes it (receive), the address must be in-region, so one check closes both hazards. Total: a
 /// length that overflows `physical_address`, or a region whose own `base + size` wraps `u64`, returns `false`
 /// (refuse) rather than panicking, and a wrapping region can only over-reject, the safe direction.
-/// See the `in_region_is_sound` proof and notes/dma/validator.md.
+/// See the `in_region_is_sound` proof and `nifeos/record:notes/dma/validator.md`.
 pub fn is_in_region(base: u64, size: u64, physical_address: u64, len: u64) -> bool {
     match (physical_address.checked_add(len), base.checked_add(size)) {
         (Some(end), Some(limit)) => physical_address >= base && end <= limit,
@@ -316,7 +316,7 @@ pub const fn queue_block(q: u16) -> u64 {
 
 // =============================================================================================
 // Machine-checked proofs (Kani). Behind `#[cfg(kani)]`, so an ordinary build/test never sees them;
-// only `cargo kani` (script/verify) sets that cfg. See notes/verification.md.
+// only `cargo kani` (script/verify) sets that cfg. See `nifeos/record:notes/verification.md`.
 // =============================================================================================
 #[cfg(kani)]
 mod verification;

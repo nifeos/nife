@@ -4,8 +4,8 @@
 //! caller-kept [`Cells`] a scroll redraws from, and has no colour changes, escapes, scrollback or
 //! reflow, so it cannot be put in a surprising state. Each font pixel is a square block at the
 //! largest integer scale that leaves [`MINIMUM_COLUMNS`] columns. Scrolling writes only the cells
-//! that changed, through a [`PixelSink`] that cannot read. See notes/serial-less-output.md and
-//! notes/serial-less-output/the-screen-console.md.
+//! that changed, through a [`PixelSink`] that cannot read. See `nifeos/record:notes/serial-less-output.md` and
+//! `nifeos/record:notes/serial-less-output/the-screen-console.md`.
 
 //! # BUGS
 //!
@@ -14,7 +14,7 @@
 //! - A width or height that is not a whole number of cells, or of the scale, leaves an unpainted
 //!   sliver at the right and bottom edges ([`Aperture`] covers whole surface pixels).
 //! - Only 32-bit pixels: [`machine_discovery::framebuffer::PixelOrder`] has UEFI's two orders.
-//! - On xenon the screen shows a grid, not text: notes/serial-less-output/the-xenon-grid.md.
+//! - On xenon the screen shows a grid, not text: `nifeos/record:notes/serial-less-output/the-xenon-grid.md`.
 //! - Nothing here is proved on real silicon, only on the host and under OVMF.
 //!
 //! Name: ratified 2026-09-13 (calef), half of a pair with `serial_console`: two consoles named for
@@ -45,7 +45,7 @@ pub const MINIMUM_COLUMNS: u32 = 120;
 /// caller). It holds the
 /// surface's size clipped to the screen's, placed top-left, the screen's stride and byte order, and
 /// **the scale every surface pixel is drawn at**: [`ScreenConsole::scale_for_cell`] of the screen's
-/// width, the kernel console's rule. See notes/serial-less-output/the-screen-console.md.
+/// width, the kernel console's rule. See `nifeos/record:notes/serial-less-output/the-screen-console.md`.
 ///
 /// Name: provisional (the shell on the firmware screen's lane). "Aperture" is the tree's word for
 /// the firmware's framebuffer as a device window (`kernel/src/arch/x86_64/machine.rs`).
@@ -249,7 +249,7 @@ impl Aperture {
     /// from an 8-aligned address, which only the driver holding the mapping knows. **The pair is
     /// byte-identical to two word stores only on a little-endian machine**, which all three targets
     /// are. Halving the store count is the point: see
-    /// notes/serial-less-output/the-screen-console.md.
+    /// `nifeos/record:notes/serial-less-output/the-screen-console.md`.
     #[allow(clippy::too_many_arguments)] // the argument list is the copy contract: a rectangle,
     // the base's misalignment, a read, and the two store widths the caller's hardware offers
     pub fn copy_wide(
@@ -349,7 +349,7 @@ impl Aperture {
 
 /// **The framebuffer, as something this crate can only write**, because reading an uncacheable or
 /// write-combining aperture back is orders of magnitude slower than a posted write: a painter that
-/// reads the screen does not compile. See notes/serial-less-output/the-screen-console.md.
+/// reads the screen does not compile. See `nifeos/record:notes/serial-less-output/the-screen-console.md`.
 ///
 /// ```compile_fail
 /// let mut bytes = [0u8; 8];

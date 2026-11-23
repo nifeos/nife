@@ -7,7 +7,7 @@
 //! for every program and cannot, so a `std` program's slots are **fixed by number**, and an empty
 //! slot is how std learns it was not given that authority: `std::fs` with slot 4 empty answers
 //! `Unsupported`. This crate is the numbers, so the PAL, the progenitor and the kernel test harness
-//! cannot disagree; what each slot means to std is `rt.rs`'s documentation. See notes/std.md.
+//! cannot disagree; what each slot means to std is `rt.rs`'s documentation. See `nifeos/record:notes/std.md`.
 
 //! ```text
 //!   slot 0  untyped     the heap's budget            always
