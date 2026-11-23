@@ -37,8 +37,9 @@ needs.
   It holds the developer role, the claim, the handoff, identified work and shared state.
 - Before you choose between options, recommend one, or hold work for an architect, read
   [notes/skills/decisions/SKILL.md](notes/skills/decisions/SKILL.md). It holds "move fast on what
-  can be undone", "elegance and performance beat implementation convenience", open decisions and
-  `needs-architect`, and how a fork reaches an architect.
+  can be undone" (delay costs; weigh the risk, then bet), "elegance and performance beat
+  implementation convenience", open decisions and `needs-architect`, and how a fork reaches an
+  architect.
 - Before you mint or change the name of a crate, program, module or public function, read
   [notes/skills/naming-authority/SKILL.md](notes/skills/naming-authority/SKILL.md).
 - Before you commit or push in a worktree, read
