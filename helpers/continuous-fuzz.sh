@@ -79,7 +79,8 @@
 #
 # State, all under `$NIFE_FUZZ_HOME` (default `$HOME/fuzz`):
 #   work/<slot>/            the slot's worktree
-#   state/next-<slot>       the next first seed for the slot
+#   state/next-<slot>       the next first seed for the slot, replaced by rename (`write_seed`). A
+#                           slot whose file is empty or not a number stops and writes no row.
 #   state/windows.tsv       one row per window: utc, driver, slot, first, ran, ms, status, commit.
 #                           status is ok, infrastructure, or one of the held classes: held-finding (a
 #                           replay line), held-crash (a panic), held-hang (the bound), held-budget-expired
@@ -95,6 +96,8 @@
 # Name: provisional, minted 2026-11-01 (UTC) by lane/continuous-fuzzing-host. calef has not ruled on it.
 # `--replay`, the slot word `replay` and the status `replay-clean`: provisional, minted 2026-11-10
 # (UTC) by lane milestone/1038-the-fuzz-host-replays-a-red-ci-shard. No architect has ruled on them.
+# `--write-seed`, `write_seed`, `read_seed`, `park` and the status word `refused`: provisional, minted
+# 2026-11-23 (UTC) by lane maintainer/fuzz-supervisor-empty-seed. No architect has ruled on them.
 
 set -eu
 
@@ -215,7 +218,34 @@ prepare_slot() {
     if [ ! -d "$home/work/$slot" ]; then
         git -C "$root" worktree add --detach "$home/work/$slot" HEAD >/dev/null
     fi
-    [ -f "$state/next-$slot" ] || echo $((base + slot * stride)) > "$state/next-$slot"
+    [ -f "$state/next-$slot" ] || write_seed "$slot" $((base + slot * stride))
+}
+
+# Replace `state/next-$1` with the seed $2, or leave the old file whole. `echo > file` truncates
+# before it writes, so a write that fails (an I/O error, a full disk) leaves the file empty, and an
+# empty file read as a seed is 0: every slot then sweeps from seed 1, over ranges other slots have
+# already run. The seed goes to a temporary file in the same directory and replaces the old one by
+# rename, which a reader sees whole or not at all. Returns non-zero, with a message on stderr, when
+# the seed could not be recorded.
+write_seed() {
+    tmp="$state/next-$1.tmp"
+    if printf '%s\n' "$2" > "$tmp" && mv -f "$tmp" "$state/next-$1"; then
+        return 0
+    fi
+    rm -f "$tmp"
+    echo "continuous-fuzz: slot $1: could not record its next first seed; state/next-$1 keeps the seed it had" >&2
+    return 1
+}
+
+# Print the seed in `state/next-$1`, or return non-zero when the file is missing, empty or anything
+# but one decimal number. A window never starts from a seed it could not read, since the shell's
+# arithmetic would take an empty one as 0.
+read_seed() {
+    seed="$(cat "$state/next-$1" 2>/dev/null)" || return 1
+    case "$seed" in
+        '' | *[!0-9]*) return 1 ;;
+    esac
+    echo "$seed"
 }
 
 # Read a window's verdict from its log and exit status, and set `status`, `ran` and `next`. The
@@ -305,13 +335,19 @@ sweep() {
     )
 }
 
-# One window. Prints the status word on stdout; everything else goes to the log.
+# One window. Prints the status word on stdout; everything else goes to the log. The word `refused`
+# means the slot must stop: its seed file could not be read, or the seed after this window could not
+# be recorded. A refused window that never started writes no row.
 window() {
     driver="$1"
     slot="$2"
     refuse_without_kvm || { echo infrastructure; return 0; }
     prepare_slot "$slot"
-    first="$(cat "$state/next-$slot")"
+    first="$(read_seed "$slot")" || {
+        echo "continuous-fuzz: slot $slot: refusing to start a window: state/next-$slot is empty or not a seed; the slot stops rather than sweep from seed 1, and a person sets the file" >&2
+        echo refused
+        return 0
+    }
     log="$home/logs/$slot/$(date -u +%Y%m%dT%H%M%SZ)-$first.log"
     commit="$(git -C "$home/work/$slot" rev-parse --short HEAD)"
     start="$(date +%s)"
@@ -323,15 +359,27 @@ window() {
 
     classify "$log" "$rc" "$first"
 
+    recorded=1
+    write_seed "$slot" "$next" || recorded=0
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$driver" "$slot" "$first" "$ran" "$ms" "$status" "$commit" \
         >> "$state/windows.tsv"
-    echo "$next" > "$state/next-$slot"
     case "$status" in
         held-*) mv "$log" "$state/held/" ;;
         ok) ls -t "$home/logs/$slot"/*.log 2>/dev/null | tail -n +21 | xargs -r rm -f ;;
     esac
+    # The row stands, since the window ran; the slot stops, since its next window would repeat it.
+    [ "$recorded" -eq 1 ] || status=refused
     echo "$status"
+}
+
+# Stop a slot whose window was refused, loudly, and stay stopped until the supervisor drains for a
+# move or a replay. A worker that exited instead would end the supervisor, and the four slots with
+# it.
+park() {
+    echo "continuous-fuzz: slot $1 stopped: its seed file is unusable (see the line above); the other slots go on" >&2
+    while [ ! -e "$drain" ]; do sleep 10; done
+    exit 0
 }
 
 worker() {
@@ -342,8 +390,11 @@ worker() {
         # A move to a newer main is waiting for this slot; the supervisor takes it from here.
         [ ! -e "$drain" ] || exit 0
         status="$(window "$driver" "$slot")"
-        echo "continuous-fuzz: slot $slot $driver: $status"
-        if [ "$status" = infrastructure ]; then
+        echo "continuous-fuzz: slot $slot $driver: ${status:-no status}"
+        [ "$status" != refused ] || park "$slot"
+        # A window that printed no status word died before its verdict; count it as infrastructure,
+        # or the slot would loop at full speed with no back-off.
+        if [ "$status" = infrastructure ] || [ -z "$status" ]; then
             failures=$((failures + 1))
             [ "$failures" -lt 5 ] || { echo "continuous-fuzz: slot $slot: 5 failed windows in a row" >&2; exit 1; }
             sleep 60
@@ -527,6 +578,14 @@ if [ "${1:-}" = --classify ]; then
     exit 0
 fi
 
+if [ "${1:-}" = --write-seed ]; then
+    # Record a slot's next first seed as a window does; the selftest runs it with a failing write.
+    [ $# -eq 3 ] || { echo "usage: $0 --write-seed SLOT SEED" >&2; exit 2; }
+    mkdir -p "$state"
+    write_seed "$2" "$3"
+    exit
+fi
+
 if [ "${1:-}" = --ci-range ]; then
     [ $# -eq 2 ] || { echo "usage: $0 --ci-range SHARD" >&2; exit 2; }
     ci_shard_valid "$2" || exit 2
@@ -553,7 +612,9 @@ if [ "${1:-}" = --once ]; then
     refuse_without_kvm || exit 1
     [ $# -eq 3 ] || { echo "usage: $0 --once DRIVER SLOT" >&2; exit 2; }
     mkdir -p "$state"
-    window "$2" "$3"
+    verdict="$(window "$2" "$3")"
+    echo "$verdict"
+    [ "$verdict" != refused ] || exit 1
     exit 0
 fi
 
