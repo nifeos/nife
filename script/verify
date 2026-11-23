@@ -510,6 +510,7 @@ jh7110_pci_express	1	the PCI Express outbound window encoder round-trips its siz
 direct_memory_access_validator	122	the DMA-confinement validator, no descriptor escapes the grant
 network_time_protocol	19	the 1900-epoch era pivot, and no hostile packet moves the clock
 globally_unique_identifier_partition_table	176	the partition table's CRC-32, its round trips, and partitions that overlap
+ext4_oracle	330	the rsext4 parsers read only inside their slices, its directory walk ends inside the block, and its software CRC32C matches the bitwise definition
 master_boot_record	7	the MBR parse reads each entry from its own bytes, and the scratch range never touches a partition or sector 0
 subtree_scope	238	a subtree grant reaches only its own root and what it minted, never goes up, never follows a link, never crosses a mount
 current_cpu_contract	2	the current-CPU page: a reader answers only what the page holds, and a built page reads back its words
@@ -727,6 +728,10 @@ for c in $crates; do
         domain_name_resolution_contract) extra="-Z stubbing" ;;
         # Two of the `parse` totality harnesses stub a function (`#[kani::stub]`).
         globally_unique_identifier_partition_table) extra="-Z stubbing" ;;
+        # A workspace of its own, so `rsext4` stays out of every shipping lockfile (the host-only
+        # ruling in its Cargo.toml); helpers/rust_source.py's PROVED_WORKSPACES lists it for the
+        # harness counts. Its harnesses sit in an integration test, and the CRC32C one stubs CPUID.
+        ext4_oracle) extra="--manifest-path tools/ext4_oracle/Cargo.toml --tests -Z stubbing" ;;
         # `components` is many `[[bin]]` targets and one package, so a bare `cargo kani -p components`
         # compiles all of them. Kani refuses every `#![no_std]` crate root that does not mention it
         # ("Failed to detect Kani functions"), so that run fails on the first binary carrying no

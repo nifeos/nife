@@ -2482,13 +2482,10 @@ def _harness_hits():
         ['cargo', 'metadata', '--format-version', '1', '--locked', '--no-deps'],
         capture_output=True, text=True, check=True,
     ).stdout)
-    ws = meta['workspace_root']
-    prefixes = {}
-    for pkg in meta['packages']:
-        rel = os.path.relpath(os.path.dirname(pkg['manifest_path']), ws)
-        if rel == '.' or rel.startswith('..'):
-            continue
-        prefixes[pkg['name']] = rel + '/'
+    # The separate workspaces `script/verify` also proves (rust_source.PROVED_WORKSPACES) count here
+    # too, because the text-only derivation below cannot tell a workspace boundary and counts them.
+    prefixes = {pkg['name']: rel + '/'
+                for pkg, rel in rust_source.proved_packages(meta['workspace_root'], meta)}
     hits = {}
     for f in subprocess.run(['git', 'grep', '-lE', r'#\[kani::proof', '--', '*.rs'],
                             capture_output=True, text=True).stdout.split():
@@ -4707,12 +4704,14 @@ meta = json.loads(subprocess.run(
     capture_output=True, text=True, check=True,
 ).stdout)
 root = meta["workspace_root"]
+# Each separate workspace `script/verify` proves by `--manifest-path` adds its packages, so a
+# harness there has an owner and needs a row like any other (helpers/rust_source.py).
+sys.path.insert(0, "helpers")
+sys.dont_write_bytecode = True
+from rust_source import proved_packages
 prefixes = {}
-for p in meta["packages"]:
-    rel = os.path.relpath(os.path.dirname(p["manifest_path"]), root)
-    if rel.startswith(".."):
-        continue
-    prefixes[p["name"]] = "" if rel == "." else rel + "/"
+for p, rel in proved_packages(root, meta):
+    prefixes[p["name"]] = rel + "/"
 
 # Files that hold `#[kani::proof]` and belong to no workspace package. Both of these are deliberate
 # and neither is provable: the shim is source rustc compiles by hand for `script/lint`'s own
