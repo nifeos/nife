@@ -3,22 +3,26 @@
 Appendix to [milestone 190](../../0190-ext4-read-write.md), upstream item 2, first of its two
 submissions (bug 2's `extent:empty_index` failure). Name provisional.
 
-This is a draft. Nobody has filed anything here. The architect reviews the exact text below, and
-filing it is a separate step. The Issue goes first, since upstream does not process a pull request
-with no linked Issue; its number then replaces `#<to be filled>` in the pull request body.
+Both submissions are upstream, each with the title and Chinese body below: the Issue as
+[rcore-os/tgoskits#2826](https://github.com/rcore-os/tgoskits/issues/2826) and the pull request as
+[rcore-os/tgoskits#2827](https://github.com/rcore-os/tgoskits/pull/2827), whose one commit is the
+patch beside this file.
 
 - Repository and branch: `rcore-os/tgoskits`, `dev`.
-- Base commit: `6e80b940d46167a59a795e158bb17a7eb28333af` ("feat(ivc): add fragmented Message V1
-  full-duplex transport (#2068)"). No commit after it on `dev` touches `fs/rsext4`.
+- Base commit: `0353572d1e2cca79e25a2805deeff4521449a5c1` ("fix(x86_vlapic): stop the APIC timer
+  without yielding in the vCPU entry window (#2819)"), the head of `dev` at filing. The patch beside
+  this file dates from the earlier base `6e80b940d` and applies to this one unchanged.
 - The change: [`2a-free-empty-extent-index.patch`](2a-free-empty-extent-index.patch), one commit,
-  `git format-patch` output against that base. It applies to the base alone. The
-  companion [item 2b](2b-restore-truncate-tail.md) adds its test at the same place in
-  `fs/rsext4/tests/file_operations.rs`, so the filer sends 2b after this one and rebases it on this
-  one once this one lands.
-- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar and
-  the filer sets: Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`.
+  `git format-patch` output. It applies to the base alone. The companion [item
+  2b](2b-restore-truncate-tail.md) adds its test at the same place in
+  `fs/rsext4/tests/file_operations.rs`, so 2b went upstream after this one and rebases on it once
+  this one lands.
+- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar:
+  Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`. GitHub dropped these at
+  creation, because the filing account has no triage permission on the repository; the guide asks a
+  maintainer to fill them in.
 
-## Issue to file first
+## Issue (filed)
 
 ### Title
 
@@ -116,7 +120,7 @@ passes. `cargo xtask clippy --package rsext4`, `cargo fmt` and the rsext4 tests 
 `cargo xtask test --since <base>` pass.
 ```
 
-## Pull request
+## Pull request (filed)
 
 ### Title
 
@@ -129,7 +133,7 @@ fix(rsext4): free an emptied extent index node instead of writing it back
 ```markdown
 ## 当前问题
 
-关联 Issue：#<to be filled>
+关联 Issue：#2826
 
 `truncate_inode` 缩小盘区树深度为 2 的文件时，如果新的文件末尾位于某个一级索引节点覆盖的第一个块之前，
 返回 `Corrupted { op: "extent:empty_index" }`。`remove_extent` 的第二阶段删除该索引节点下的全部叶子之后，
@@ -160,11 +164,10 @@ fix(rsext4): free an emptied extent index node instead of writing it back
   去掉本修复时失败，`shrinking a depth-2 tree must succeed: Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }`；
   加上修复后通过。
 - `cargo fmt`、`cargo xtask clippy --package rsext4` 通过。
-- `cargo xtask test --since 6e80b940d`：rsext4 只有 `tests/filesystem_growth.rs` 中的两个测试失败，ax-fs-ng 的
+- `cargo xtask test --since 0353572d1`：rsext4 只有 `tests/filesystem_growth.rs` 中的两个测试失败，ax-fs-ng 的
   `root_growth_preserves_other_partitions_and_ext4_contents` 失败，其余全部通过。这三个测试在基准提交上同样失败，
   原因是宿主的 `mke2fs` 默认启用 `orphan_file`，而扩容拒绝该特性（`fs/rsext4/src/ext4/grow/layout.rs` 的特性检查），
-  与本改动无关。同一次运行中 ax-block 的 6 个 `block::cache` 测试失败（`independent global sync cannot borrow
-  maintenance`）；ax-block 不依赖 rsext4，在同一分支上重跑三次均为 188 个全部通过。
+  与本改动无关。
 
 未验证：没有运行 QEMU 或板卡测试，改动只影响宿主测试可以覆盖的 rsext4 行为，不涉及启动路径。
 ```
@@ -215,19 +218,24 @@ Environment: an x86_64 Linux host, the nightly `rust-toolchain.toml` names, e2fs
   without this fix it fails with `shrinking a depth-2 tree must succeed: Ext4Error { kind:
   Corrupted, context: Some(Operation { op: "extent:empty_index" }) }`; with it, it passes.
 - `cargo fmt` and `cargo xtask clippy --package rsext4` pass.
-- `cargo xtask test --since 6e80b940d`: in rsext4 only two tests in `tests/filesystem_growth.rs`
+- `cargo xtask test --since 0353572d1`: in rsext4 only two tests in `tests/filesystem_growth.rs`
   fail, plus ax-fs-ng's `root_growth_preserves_other_partitions_and_ext4_contents`; everything
   else passes. Those three fail the same way at the base commit, because the host's `mke2fs`
   enables `orphan_file` by default and growth refuses that feature (the feature check in
-  `fs/rsext4/src/ext4/grow/layout.rs`), so they are unrelated to this change. In the same run 6
-  of ax-block's `block::cache` tests failed (`independent global sync cannot borrow maintenance`);
-  ax-block does not depend on rsext4, and three reruns on the same branch passed all 188.
+  `fs/rsext4/src/ext4/grow/layout.rs`), so they are unrelated to this change.
 
 Not verified: no QEMU or board test ran; the change affects only rsext4 behavior host tests reach,
 and no boot path.
 ```
 
 ## Test evidence
+
+Before filing, every check the pull request cites ran again on `0353572d1`, the head of `dev` then,
+with the patch applied. Without the fix the new test failed with the same `extent:empty_index`
+error, and with it the test passed. `cargo xtask clippy --package rsext4` passed its 3 checks, and
+`cargo fmt --check` was clean. `cargo xtask test --since 0353572d1` failed only the three growth
+tests, and they fail the same way on unchanged `dev`. The runs below are the earlier ones, on
+`6e80b940d`.
 
 Run on the base commit above with the patch applied, on an x86_64 Linux host with e2fsprogs
 1.47.2. The test ran with the commit's source change reverted (red), then as committed (green),
@@ -250,15 +258,15 @@ On the commit as it now stands, `cargo test -p rsext4 --features host-test`, wit
 pointing at a copy of `/etc/mke2fs.conf` without `orphan_file`, passed all 656 tests.
 
 `cargo xtask test --since 6e80b940d`, run before the last edits to this commit, which changed only
-comments, selected 20 packages and exited 1. rsext4 passed 543 tests and
-failed 2, both in `tests/filesystem_growth.rs`; ax-fs-ng failed
-`root_growth_preserves_other_partitions_and_ext4_contents` in two feature profiles. ax-block failed 6 of its `block::cache` tests in that run (`independent global sync cannot
-borrow maintenance`); ax-block does not depend on rsext4, and it passed 188 of 188 in each of three
-reruns on the same branch. Every
-other selected package passed. The growth failures come from this host's `mke2fs.conf`, which
-enables `orphan_file`; `layout.rs`'s feature check refuses any compatible feature outside its
-list. At the base commit the same three tests fail the same way. With `MKE2FS_CONFIG` pointing at a copy of `/etc/mke2fs.conf` without `orphan_file`, they
-pass:
+comments, selected 20 packages and exited 1. rsext4 passed 543 tests and failed 2, both in
+`tests/filesystem_growth.rs`; ax-fs-ng failed
+`root_growth_preserves_other_partitions_and_ext4_contents` in two feature profiles. ax-block failed
+6 of its `block::cache` tests in that run (`independent global sync cannot borrow maintenance`);
+ax-block does not depend on rsext4, and it passed 188 of 188 in each of three reruns on the same
+branch. Every other selected package passed. The growth failures come from this host's
+`mke2fs.conf`, which enables `orphan_file`; `layout.rs`'s feature check refuses any compatible
+feature outside its list. At the base commit the same three tests fail the same way. With
+`MKE2FS_CONFIG` pointing at a copy of `/etc/mke2fs.conf` without `orphan_file`, they pass:
 
 ```
 == host mke2fs.conf
