@@ -123,7 +123,7 @@ five-word mailbox in the TCB, and bulk data goes through shared frames (`notes/l
 3 to 5; `notes/inter-process-communication.md`). nife does not switch directly. `ipc_send` fills the
 receiver's mailbox, wakes it onto the run queue and returns, and the sender keeps running
 (`kernel/src/sched/rendezvous.rs`; `notes/l4-lessons.md`, row 14). Every thread owns 6 pages of
-kernel stack plus a guard (`kernel/src/thread.rs`, `STACK_PAGES`). Milestone 188 built three
+kernel stack plus a guard (`kernel/src/thread.rs`, `STACK_PAGES`). Milestone 188 (the IPC fastpath) built three
 cheaper cuts and refused a hand-written fastpath (`design/roadmap/0188-ipc-fastpath.md`). §95 (a hand-written IPC fastpath, and whether it can stay proven) keeps
 the fastpath gated on a measurement (`design/decisions/0095-a-proven-ipc-fastpath.md`).
 
