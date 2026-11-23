@@ -63,7 +63,7 @@ run cost `$10.56`, 201 assistant turns and about 29 minutes.
 
 Two things leaked anyway, and neither is the tree. `nife-dev` is an account-wide `rustup` link. So
 the clone's first `script/test` compiled `std` out of whichever worktree had built the farm last,
-which was `/Users/calef/projects/nife/target/nife-farm`. The `-Zbuild-std` dep-info cached those
+which was the main checkout's `target/nife-farm`. The `-Zbuild-std` dep-info cached those
 absolute paths, and cargo then considered the unit fresh. `std-aborts` failed, naming two files and
 two line numbers inside another checkout on this machine.
 

@@ -5,7 +5,7 @@
 # host before: 2026-09-19T16:21:03Z  9:21  up 4 days, 18:05, 3 users, load averages: 5.19 4.67 3.62
 # other qemu before: 
 # top:  %CPU COMM
-# top:  58.5 /Users/calef/.rustup/toolchains/nightly-2026-09-17-aarch64-apple-darwin/bin/clippy-driver
+# top:  58.5 ~/.rustup/toolchains/nightly-2026-09-17-aarch64-apple-darwin/bin/clippy-driver
 # top:  51.6 /System/Library/PrivateFrameworks/XprotectFramework.framework/Versions/A/XPCServices/XprotectService.xpc/Contents/MacOS/XprotectService
 # top:   7.5 claude
 # top:   5.9 /usr/libexec/sysmond

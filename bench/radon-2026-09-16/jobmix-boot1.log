@@ -1,7 +1,7 @@
 warning: binary `audit_sink` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../audit_sink
-    |                                       ^^^^^^^^^^
+  1 | <checkout>/target/.../audit_sink
+    |                       ^^^^^^^^^^
     |
     = note: `cargo::non_kebab_case_bins` is set to `warn` by default
 help: to change the binary name to `audit-sink`, convert `bin.name`
@@ -12,8 +12,8 @@ help: to change the binary name to `audit-sink`, convert `bin.name`
     |
 warning: binary `block_driver` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../block_driver
-   |                                       ^^^^^^^^^^^^
+ 1 | <checkout>/target/.../block_driver
+   |                       ^^^^^^^^^^^^
    |
 help: to change the binary name to `block-driver`, convert `bin.name`
   --> components/Cargo.toml:89:8
@@ -23,8 +23,8 @@ help: to change the binary name to `block-driver`, convert `bin.name`
    |
 warning: binary `disk_partitioner` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../disk_partitioner
-    |                                       ^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../disk_partitioner
+    |                       ^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `disk-partitioner`, convert `bin.name`
    --> components/Cargo.toml:273:8
@@ -34,8 +34,8 @@ help: to change the binary name to `disk-partitioner`, convert `bin.name`
     |
 warning: binary `disk_surveyor` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../disk_surveyor
-    |                                       ^^^^^^^^^^^^^
+  1 | <checkout>/target/.../disk_surveyor
+    |                       ^^^^^^^^^^^^^
     |
 help: to change the binary name to `disk-surveyor`, convert `bin.name`
    --> components/Cargo.toml:262:8
@@ -45,8 +45,8 @@ help: to change the binary name to `disk-surveyor`, convert `bin.name`
     |
 warning: binary `display_terminal` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../display_terminal
-    |                                       ^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../display_terminal
+    |                       ^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `display-terminal`, convert `bin.name`
    --> components/Cargo.toml:189:8
@@ -56,8 +56,8 @@ help: to change the binary name to `display-terminal`, convert `bin.name`
     |
 warning: binary `fs_file_caretaker` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../fs_file_caretaker
-   |                                       ^^^^^^^^^^^^^^^^^
+ 1 | <checkout>/target/.../fs_file_caretaker
+   |                       ^^^^^^^^^^^^^^^^^
    |
 help: to change the binary name to `fs-file-caretaker`, convert `bin.name`
   --> components/Cargo.toml:99:8
@@ -67,8 +67,8 @@ help: to change the binary name to `fs-file-caretaker`, convert `bin.name`
    |
 warning: binary `fs_nameset_caretaker` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../fs_nameset_caretaker
-    |                                       ^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../fs_nameset_caretaker
+    |                       ^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `fs-nameset-caretaker`, convert `bin.name`
    --> components/Cargo.toml:120:8
@@ -78,8 +78,8 @@ help: to change the binary name to `fs-nameset-caretaker`, convert `bin.name`
     |
 warning: binary `fs_subtree_caretaker` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../fs_subtree_caretaker
-    |                                       ^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../fs_subtree_caretaker
+    |                       ^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `fs-subtree-caretaker`, convert `bin.name`
    --> components/Cargo.toml:110:8
@@ -89,8 +89,8 @@ help: to change the binary name to `fs-subtree-caretaker`, convert `bin.name`
     |
 warning: binary `gpu_driver` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../gpu_driver
-    |                                       ^^^^^^^^^^
+  1 | <checkout>/target/.../gpu_driver
+    |                       ^^^^^^^^^^
     |
 help: to change the binary name to `gpu-driver`, convert `bin.name`
    --> components/Cargo.toml:169:8
@@ -100,8 +100,8 @@ help: to change the binary name to `gpu-driver`, convert `bin.name`
     |
 warning: binary `identity_provisioner` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../identity_provisioner
-    |                                       ^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../identity_provisioner
+    |                       ^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `identity-provisioner`, convert `bin.name`
    --> components/Cargo.toml:350:8
@@ -111,8 +111,8 @@ help: to change the binary name to `identity-provisioner`, convert `bin.name`
     |
 warning: binary `jh7110_entropy` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../jh7110_entropy
-    |                                       ^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../jh7110_entropy
+    |                       ^^^^^^^^^^^^^^
     |
 help: to change the binary name to `jh7110-entropy`, convert `bin.name`
    --> components/Cargo.toml:311:8
@@ -122,8 +122,8 @@ help: to change the binary name to `jh7110-entropy`, convert `bin.name`
     |
 warning: binary `job_undertaker` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../job_undertaker
-    |                                       ^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../job_undertaker
+    |                       ^^^^^^^^^^^^^^
     |
 help: to change the binary name to `job-undertaker`, convert `bin.name`
    --> components/Cargo.toml:152:8
@@ -133,8 +133,8 @@ help: to change the binary name to `job-undertaker`, convert `bin.name`
     |
 warning: binary `keyboard_driver` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../keyboard_driver
-    |                                       ^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../keyboard_driver
+    |                       ^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `keyboard-driver`, convert `bin.name`
    --> components/Cargo.toml:282:8
@@ -144,8 +144,8 @@ help: to change the binary name to `keyboard-driver`, convert `bin.name`
     |
 warning: binary `least_authority_demo` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../least_authority_demo
-    |                                       ^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../least_authority_demo
+    |                       ^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `least-authority-demo`, convert `bin.name`
    --> components/Cargo.toml:466:8
@@ -155,8 +155,8 @@ help: to change the binary name to `least-authority-demo`, convert `bin.name`
     |
 warning: binary `line_editor` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../line_editor
-   |                                       ^^^^^^^^^^^
+ 1 | <checkout>/target/.../line_editor
+   |                       ^^^^^^^^^^^
    |
 help: to change the binary name to `line-editor`, convert `bin.name`
   --> components/Cargo.toml:39:8
@@ -166,8 +166,8 @@ help: to change the binary name to `line-editor`, convert `bin.name`
    |
 warning: binary `net_stack` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../net_stack
-    |                                       ^^^^^^^^^
+  1 | <checkout>/target/.../net_stack
+    |                       ^^^^^^^^^
     |
 help: to change the binary name to `net-stack`, convert `bin.name`
    --> components/Cargo.toml:160:8
@@ -177,8 +177,8 @@ help: to change the binary name to `net-stack`, convert `bin.name`
     |
 warning: binary `network_time_client` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../network_time_client
-    |                                       ^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../network_time_client
+    |                       ^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `network-time-client`, convert `bin.name`
    --> components/Cargo.toml:372:8
@@ -188,8 +188,8 @@ help: to change the binary name to `network-time-client`, convert `bin.name`
     |
 warning: binary `root_supervisor` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../root_supervisor
-    |                                       ^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../root_supervisor
+    |                       ^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `root-supervisor`, convert `bin.name`
    --> components/Cargo.toml:131:8
@@ -199,8 +199,8 @@ help: to change the binary name to `root-supervisor`, convert `bin.name`
     |
 warning: binary `serial_driver` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../serial_driver
-   |                                       ^^^^^^^^^^^^^
+ 1 | <checkout>/target/.../serial_driver
+   |                       ^^^^^^^^^^^^^
    |
 help: to change the binary name to `serial-driver`, convert `bin.name`
   --> components/Cargo.toml:69:8
@@ -210,8 +210,8 @@ help: to change the binary name to `serial-driver`, convert `bin.name`
    |
 warning: binary `session_reviver` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../session_reviver
-    |                                       ^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../session_reviver
+    |                       ^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `session-reviver`, convert `bin.name`
    --> components/Cargo.toml:361:8
@@ -221,8 +221,8 @@ help: to change the binary name to `session-reviver`, convert `bin.name`
     |
 warning: binary `sub_server_supervisor` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../sub_server_supervisor
-    |                                       ^^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../sub_server_supervisor
+    |                       ^^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `sub-server-supervisor`, convert `bin.name`
    --> components/Cargo.toml:143:8
@@ -232,8 +232,8 @@ help: to change the binary name to `sub-server-supervisor`, convert `bin.name`
     |
 warning: binary `terminal_sink_caretaker` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../terminal_sink_caretaker
-   |                                       ^^^^^^^^^^^^^^^^^^^^^^^
+ 1 | <checkout>/target/.../terminal_sink_caretaker
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^
    |
 help: to change the binary name to `terminal-sink-caretaker`, convert `bin.name`
   --> components/Cargo.toml:49:8
@@ -243,8 +243,8 @@ help: to change the binary name to `terminal-sink-caretaker`, convert `bin.name`
    |
 warning: binary `uefi_loader` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../uefi_loader
-   |                                       ^^^^^^^^^^^
+ 1 | <checkout>/target/.../uefi_loader
+   |                       ^^^^^^^^^^^
    |
    = note: `cargo::non_kebab_case_bins` is set to `warn` by default
 help: to change the binary name to `uefi-loader`, convert `bin.name`
@@ -255,8 +255,8 @@ help: to change the binary name to `uefi-loader`, convert `bin.name`
    |
 warning: binary `address_space_builder` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../address_space_builder
-    |                                       ^^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../address_space_builder
+    |                       ^^^^^^^^^^^^^^^^^^^^^
     |
     = note: `cargo::non_kebab_case_bins` is set to `warn` by default
 help: to change the binary name to `address-space-builder`, convert `bin.name`
@@ -267,8 +267,8 @@ help: to change the binary name to `address-space-builder`, convert `bin.name`
     |
 warning: binary `allocator_exerciser` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../allocator_exerciser
-   |                                       ^^^^^^^^^^^^^^^^^^^
+ 1 | <checkout>/target/.../allocator_exerciser
+   |                       ^^^^^^^^^^^^^^^^^^^
    |
 help: to change the binary name to `allocator-exerciser`, convert `bin.name`
   --> fixtures/Cargo.toml:91:8
@@ -278,8 +278,8 @@ help: to change the binary name to `allocator-exerciser`, convert `bin.name`
    |
 warning: binary `c_confiner` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../c_confiner
-    |                                       ^^^^^^^^^^
+  1 | <checkout>/target/.../c_confiner
+    |                       ^^^^^^^^^^
     |
 help: to change the binary name to `c-confiner`, convert `bin.name`
    --> fixtures/Cargo.toml:129:8
@@ -289,8 +289,8 @@ help: to change the binary name to `c-confiner`, convert `bin.name`
     |
 warning: binary `c_shim` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../c_shim
-    |                                       ^^^^^^
+  1 | <checkout>/target/.../c_shim
+    |                       ^^^^^^
     |
 help: to change the binary name to `c-shim`, convert `bin.name`
    --> fixtures/Cargo.toml:123:8
@@ -300,8 +300,8 @@ help: to change the binary name to `c-shim`, convert `bin.name`
     |
 warning: binary `c_swappable` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../c_swappable
-    |                                       ^^^^^^^^^^^
+  1 | <checkout>/target/.../c_swappable
+    |                       ^^^^^^^^^^^
     |
 help: to change the binary name to `c-swappable`, convert `bin.name`
    --> fixtures/Cargo.toml:159:8
@@ -311,8 +311,8 @@ help: to change the binary name to `c-swappable`, convert `bin.name`
     |
 warning: binary `call_client` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../call_client
-    |                                       ^^^^^^^^^^^
+  1 | <checkout>/target/.../call_client
+    |                       ^^^^^^^^^^^
     |
 help: to change the binary name to `call-client`, convert `bin.name`
    --> fixtures/Cargo.toml:309:8
@@ -322,8 +322,8 @@ help: to change the binary name to `call-client`, convert `bin.name`
     |
 warning: binary `call_server` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../call_server
-    |                                       ^^^^^^^^^^^
+  1 | <checkout>/target/.../call_server
+    |                       ^^^^^^^^^^^
     |
 help: to change the binary name to `call-server`, convert `bin.name`
    --> fixtures/Cargo.toml:302:8
@@ -333,8 +333,8 @@ help: to change the binary name to `call-server`, convert `bin.name`
     |
 warning: binary `console_test_client` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../console_test_client
-    |                                       ^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../console_test_client
+    |                       ^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `console-test-client`, convert `bin.name`
    --> fixtures/Cargo.toml:254:8
@@ -344,8 +344,8 @@ help: to change the binary name to `console-test-client`, convert `bin.name`
     |
 warning: binary `credentialer_test_client` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../credentialer_test_client
-    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../credentialer_test_client
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `credentialer-test-client`, convert `bin.name`
    --> fixtures/Cargo.toml:175:8
@@ -355,8 +355,8 @@ help: to change the binary name to `credentialer-test-client`, convert `bin.name
     |
 warning: binary `cycle_counter_reader` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../cycle_counter_reader
-    |                                       ^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../cycle_counter_reader
+    |                       ^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `cycle-counter-reader`, convert `bin.name`
    --> fixtures/Cargo.toml:349:8
@@ -366,8 +366,8 @@ help: to change the binary name to `cycle-counter-reader`, convert `bin.name`
     |
 warning: binary `delegation_granter` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../delegation_granter
-    |                                       ^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../delegation_granter
+    |                       ^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `delegation-granter`, convert `bin.name`
    --> fixtures/Cargo.toml:270:8
@@ -377,8 +377,8 @@ help: to change the binary name to `delegation-granter`, convert `bin.name`
     |
 warning: binary `delegation_receiver` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../delegation_receiver
-    |                                       ^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../delegation_receiver
+    |                       ^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `delegation-receiver`, convert `bin.name`
    --> fixtures/Cargo.toml:278:8
@@ -388,8 +388,8 @@ help: to change the binary name to `delegation-receiver`, convert `bin.name`
     |
 warning: binary `file_sink` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../file_sink
-    |                                       ^^^^^^^^^
+  1 | <checkout>/target/.../file_sink
+    |                       ^^^^^^^^^
     |
 help: to change the binary name to `file-sink`, convert `bin.name`
    --> fixtures/Cargo.toml:203:8
@@ -399,8 +399,8 @@ help: to change the binary name to `file-sink`, convert `bin.name`
     |
 warning: binary `file_source` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../file_source
-    |                                       ^^^^^^^^^^^
+  1 | <checkout>/target/.../file_source
+    |                       ^^^^^^^^^^^
     |
 help: to change the binary name to `file-source`, convert `bin.name`
    --> fixtures/Cargo.toml:209:8
@@ -410,8 +410,8 @@ help: to change the binary name to `file-source`, convert `bin.name`
     |
 warning: binary `frame_revoker` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../frame_revoker
-    |                                       ^^^^^^^^^^^^^
+  1 | <checkout>/target/.../frame_revoker
+    |                       ^^^^^^^^^^^^^
     |
 help: to change the binary name to `frame-revoker`, convert `bin.name`
    --> fixtures/Cargo.toml:317:8
@@ -421,8 +421,8 @@ help: to change the binary name to `frame-revoker`, convert `bin.name`
     |
 warning: binary `fs_test_client` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../fs_test_client
-   |                                       ^^^^^^^^^^^^^^
+ 1 | <checkout>/target/.../fs_test_client
+   |                       ^^^^^^^^^^^^^^
    |
 help: to change the binary name to `fs-test-client`, convert `bin.name`
   --> fixtures/Cargo.toml:99:8
@@ -432,8 +432,8 @@ help: to change the binary name to `fs-test-client`, convert `bin.name`
    |
 warning: binary `image_self_checker` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../image_self_checker
-    |                                       ^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../image_self_checker
+    |                       ^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `image-self-checker`, convert `bin.name`
    --> fixtures/Cargo.toml:246:8
@@ -443,8 +443,8 @@ help: to change the binary name to `image-self-checker`, convert `bin.name`
     |
 warning: binary `interrupt_heeder` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../interrupt_heeder
-   |                                       ^^^^^^^^^^^^^^^^
+ 1 | <checkout>/target/.../interrupt_heeder
+   |                       ^^^^^^^^^^^^^^^^
    |
 help: to change the binary name to `interrupt-heeder`, convert `bin.name`
   --> fixtures/Cargo.toml:40:8
@@ -454,8 +454,8 @@ help: to change the binary name to `interrupt-heeder`, convert `bin.name`
    |
 warning: binary `interrupt_ignorer` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../interrupt_ignorer
-   |                                       ^^^^^^^^^^^^^^^^^
+ 1 | <checkout>/target/.../interrupt_ignorer
+   |                       ^^^^^^^^^^^^^^^^^
    |
 help: to change the binary name to `interrupt-ignorer`, convert `bin.name`
   --> fixtures/Cargo.toml:66:8
@@ -465,8 +465,8 @@ help: to change the binary name to `interrupt-ignorer`, convert `bin.name`
    |
 warning: binary `job_mix_task` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../job_mix_task
-   |                                       ^^^^^^^^^^^^
+ 1 | <checkout>/target/.../job_mix_task
+   |                       ^^^^^^^^^^^^
    |
 help: to change the binary name to `job-mix-task`, convert `bin.name`
   --> fixtures/Cargo.toml:60:8
@@ -476,8 +476,8 @@ help: to change the binary name to `job-mix-task`, convert `bin.name`
    |
 warning: binary `login_test_client` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../login_test_client
-    |                                       ^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../login_test_client
+    |                       ^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `login-test-client`, convert `bin.name`
    --> fixtures/Cargo.toml:185:8
@@ -487,8 +487,8 @@ help: to change the binary name to `login-test-client`, convert `bin.name`
     |
 warning: binary `memory_grant_depleter` should have a kebab-case name
    |
- 1 | /Users/calef/projects/nife/target/.../memory_grant_depleter
-   |                                       ^^^^^^^^^^^^^^^^^^^^^
+ 1 | <checkout>/target/.../memory_grant_depleter
+   |                       ^^^^^^^^^^^^^^^^^^^^^
    |
 help: to change the binary name to `memory-grant-depleter`, convert `bin.name`
   --> fixtures/Cargo.toml:31:8
@@ -498,8 +498,8 @@ help: to change the binary name to `memory-grant-depleter`, convert `bin.name`
    |
 warning: binary `memory_region_depleter` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../memory_region_depleter
-    |                                       ^^^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../memory_region_depleter
+    |                       ^^^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `memory-region-depleter`, convert `bin.name`
    --> fixtures/Cargo.toml:262:8
@@ -509,8 +509,8 @@ help: to change the binary name to `memory-region-depleter`, convert `bin.name`
     |
 warning: binary `network_time_test_server` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../network_time_test_server
-    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../network_time_test_server
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `network-time-test-server`, convert `bin.name`
    --> fixtures/Cargo.toml:222:8
@@ -520,8 +520,8 @@ help: to change the binary name to `network-time-test-server`, convert `bin.name
     |
 warning: binary `os_primitives_benchmarker` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../os_primitives_benchmarker
-    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../os_primitives_benchmarker
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `os-primitives-benchmarker`, convert `bin.name`
    --> fixtures/Cargo.toml:107:8
@@ -531,8 +531,8 @@ help: to change the binary name to `os-primitives-benchmarker`, convert `bin.nam
     |
 warning: binary `page_frame_consumer` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../page_frame_consumer
-    |                                       ^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../page_frame_consumer
+    |                       ^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `page-frame-consumer`, convert `bin.name`
    --> fixtures/Cargo.toml:294:8
@@ -542,8 +542,8 @@ help: to change the binary name to `page-frame-consumer`, convert `bin.name`
     |
 warning: binary `page_frame_producer` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../page_frame_producer
-    |                                       ^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../page_frame_producer
+    |                       ^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `page-frame-producer`, convert `bin.name`
    --> fixtures/Cargo.toml:286:8
@@ -553,8 +553,8 @@ help: to change the binary name to `page-frame-producer`, convert `bin.name`
     |
 warning: binary `rendezvous_minter` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../rendezvous_minter
-    |                                       ^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../rendezvous_minter
+    |                       ^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `rendezvous-minter`, convert `bin.name`
    --> fixtures/Cargo.toml:325:8
@@ -564,8 +564,8 @@ help: to change the binary name to `rendezvous-minter`, convert `bin.name`
     |
 warning: binary `rendezvous_peer` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../rendezvous_peer
-    |                                       ^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../rendezvous_peer
+    |                       ^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `rendezvous-peer`, convert `bin.name`
    --> fixtures/Cargo.toml:333:8
@@ -575,8 +575,8 @@ help: to change the binary name to `rendezvous-peer`, convert `bin.name`
     |
 warning: binary `rust_swappable` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../rust_swappable
-    |                                       ^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../rust_swappable
+    |                       ^^^^^^^^^^^^^^
     |
 help: to change the binary name to `rust-swappable`, convert `bin.name`
    --> fixtures/Cargo.toml:153:8
@@ -586,8 +586,8 @@ help: to change the binary name to `rust-swappable`, convert `bin.name`
     |
 warning: binary `sink_transcript_writer` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../sink_transcript_writer
-    |                                       ^^^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../sink_transcript_writer
+    |                       ^^^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `sink-transcript-writer`, convert `bin.name`
    --> fixtures/Cargo.toml:197:8
@@ -597,8 +597,8 @@ help: to change the binary name to `sink-transcript-writer`, convert `bin.name`
     |
 warning: binary `unwritable_clock_witness` should have a kebab-case name
     |
-  1 | /Users/calef/projects/nife/target/.../unwritable_clock_witness
-    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^
+  1 | <checkout>/target/.../unwritable_clock_witness
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^
     |
 help: to change the binary name to `unwritable-clock-witness`, convert `bin.name`
    --> fixtures/Cargo.toml:233:8
