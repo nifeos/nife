@@ -1,13 +1,13 @@
 //! **`terminal_supervisor`: holds the terminal's components, and replaces them live** (milestone 23
 //! (a capability-routed component OS with live replacement); calef's ruling of 2026-09-27, option A
-//! of `design/roadmap/0661-a-terminal-supervisor-holds-the-line-editor.md`, and his rulings of
+//! of `nifeos/record:design/roadmap/0661-a-terminal-supervisor-holds-the-line-editor.md`, and his rulings of
 //! 2026-10-19 (UTC) on `display_terminal`). A component's spawner supervises its swaps (calef,
 //! 2026-10-19), so `system_initializer` builds this rather than `line_editor` and hands it a
 //! `line_editor`'s objects and a budget for two instances; in display mode, also
 //! `display_terminal`'s image, the display endpoint and the scanout. `SWAP`'s second word names the
 //! child, and the swap is DECISIONS §209 (state handoff is an opaque blob over a granted frame, and
-//! it is optional), in the steps [`Child::hop`] lists. See notes/interactive-stack-swap.md and
-//! notes/hung-component.md.
+//! it is optional), in the steps [`Child::hop`] lists. See nifeos/record:notes/interactive-stack-swap.md and
+//! nifeos/record:notes/hung-component.md.
 
 //! # BUGS
 //!
@@ -15,7 +15,7 @@
 //! the terminal to swap). A session's `display_terminal` is not supervised. A hung child's state is
 //! lost; a slow one is convicted as hung; one that faults is not restarted. A `display_terminal`
 //! that refuses its own blob on the move home serves from the reserve, answered `IN_RESERVE`.
-//! notes/interactive-stack-swap.md has each in full.
+//! nifeos/record:notes/interactive-stack-swap.md has each in full.
 //!
 //! Name: ratified 2026-10-06 (calef, "Ratify" it, in conversation). Minted
 //! provisionally 2026-09-27 by the lane for milestone 23.
@@ -283,7 +283,7 @@ impl<'a> Child<'a> {
             notify: obj(moho_abi::object_type::RENDEZVOUS),
             // Bays, one per instance, split once and reused: a region split straight from the
             // budget leaves a hole when the incumbent under it dies, and the second swap fails
-            // for want of budget (notes/hung-component/terminal-supervisor-bound.md).
+            // for want of budget (nifeos/record:notes/hung-component/terminal-supervisor-bound.md).
             places: [bay(bay_pages), second_bay],
             instances: [0, 0],
             budgets: [0, 0],
@@ -640,7 +640,7 @@ impl Supervisor<'_> {
     /// them signal. The stand-in is built before the clock starts, so the bound measures the
     /// incumbent and not a build. The bound, `QUIESCE_BOUND_MILLISECONDS` (250 ms), is wall time, about
     /// thirty times the slowest healthy answer measured, and fires at the first 10 ms tick at or
-    /// after it (notes/hung-component/terminal-supervisor-bound.md).
+    /// after it (nifeos/record:notes/hung-component/terminal-supervisor-bound.md).
     fn quiesce(&self, served: u64, faultep: u64) -> Quiesce {
         let Some(d) = &self.deadline else { fail() };
         let Ok(region) = process_builder::memory_region_split(d.bay, s::STAND_IN_PAGES) else {
@@ -717,7 +717,7 @@ struct Deadline<'a> {
     timer: u64,
     /// **Every stand-in is built in this one bay**, for the reason the children's bays exist: one
     /// split straight from the budget leaves a hole when it dies, under whatever the build retyped
-    /// (notes/hung-component/terminal-supervisor-bound.md).
+    /// (nifeos/record:notes/hung-component/terminal-supervisor-bound.md).
     bay: u64,
 }
 

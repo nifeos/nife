@@ -5,7 +5,7 @@
 //! budget (the console server, the input driver, the line discipline, the shell, the terminal's
 //! sink adapter and the job undertaker), then stays alive as the spawn service. All of that is
 //! `crates/system_initializer` (milestone 96 (one init)); this file is the boot entry, one program
-//! with one `GRANTS` table and no `cfg` on every architecture (notes/progenitor-and-loading.md,
+//! with one `GRANTS` table and no `cfg` on every architecture (nifeos/record:notes/progenitor-and-loading.md,
 //! "One program and one grant table on every architecture").
 //!
 //! Name: ratified 2026-09-08 (calef, milestone 266). `progenitor` replaces `init` as the archive

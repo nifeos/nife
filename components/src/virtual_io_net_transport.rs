@@ -6,14 +6,14 @@
 //! smoltcp's `phy::Device` over this NIC and the `e1000e` one. smoltcp does the TCP/IP. Everything
 //! the device DMAs stays inside the one page the spawn service maps, which the kernel's validator
 //! confines as it does the disk's; so the MTU is small (`MTU`), and full 1514-byte buffers cannot
-//! be posted: a recorded caveat, not a bug (notes/net.md, notes/net/the-driver-and-dhcp.md).
+//! be posted: a recorded caveat, not a bug (nifeos/record:notes/net.md, nifeos/record:notes/net/the-driver-and-dhcp.md).
 //!
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
 //! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
 //! `virtio-drivers` assumes a driver lays out its own virtqueues, and nife's confinement does not
 //! allow that: the kernel builds every ring itself, eight entries at fixed offsets, Kani-proved in
 //! `direct_memory_access_validator`, so no driver can aim device DMA. See
-//! design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
+//! nifeos/record:design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
 //!
 //! Name: ratified 2026-10-06 (calef, "Yes", in conversation), replacing `net_transport`, itself
 //! ratified 2026-08-01 (calef, milestone 63 (one spelling per thing)) replacing `vnet`. A network
@@ -27,7 +27,7 @@
 //!
 //! - The DMA-page layout below (`RECEIVE_DESC`..`TRANSMIT_USED`, stride 0x200) restates
 //!   `direct_memory_access_validator`'s ring offsets as literals, and nothing checks the copies
-//!   (notes/net/the-driver-and-dhcp.md has why the constants are not consumed).
+//!   (nifeos/record:notes/net/the-driver-and-dhcp.md has why the constants are not consumed).
 
 use alloc::vec;
 use alloc::vec::Vec;
@@ -245,11 +245,11 @@ impl VirtualIoNet {
         let id = r32(RECEIVE_USED + 4 + slot * 8) as usize; // descriptor head = buffer index
         let total = r32(RECEIVE_USED + 4 + slot * 8 + 4) as u64; // bytes written incl the virtio header
 
-        // `id` and `total` are device-written and untrusted (notes/shared-page-audit.md, finding
+        // `id` and `total` are device-written and untrusted (nifeos/record:notes/shared-page-audit.md, finding
         // 6): an unchecked `id` walks `receive_buf(id)` out of the DMA page, an unchecked `total`
         // reads past the buffer. Fail closed: drop a completion naming a buffer never posted,
         // without re-posting it (a bogus `id` does not say which), and truncate a length to the
-        // buffer. notes/net/the-driver-and-dhcp.md has the worked case.
+        // buffer. nifeos/record:notes/net/the-driver-and-dhcp.md has the worked case.
         if id >= RECEIVE_BUFS {
             self.receive_seen = self.receive_seen.wrapping_add(1);
             return None;

@@ -1,5 +1,5 @@
 //! **`printenv`**: print the inert-configuration page (milestone 47's environment-variable fork,
-//! DECISIONS §111, notes/env-config.md).
+//! DECISIONS §111 (inert configuration is a read-only page), nifeos/record:notes/env-config.md).
 //!
 //! Read a page, print what it carries. Its two capabilities can change nothing: `date`'s shape,
 //! [`grant_contract::Manifest::configuration`] in place of [`grant_contract::Manifest::clock`]. The page
@@ -194,14 +194,14 @@ fn line(bytes: &[u8]) {
 
 // Kani links `std`, which already defines `panic_impl`, and a second definition is a duplicate lang
 // item that does not compile. Milestone 193 took exactly this `cfg` on `kernel/src/panic.rs` for
-// exactly this reason. What it costs is item 3 of notes/user-proofs.md's stub list: nothing proved
+// exactly this reason. What it costs is item 3 of nifeos/record:notes/user-proofs.md's stub list: nothing proved
 // below says anything about what this program does after a panic.
 #[cfg(not(kani))]
 user_mode_runtime::panic_handler!();
 
 /// **What the prover can see of `printenv`, and what it cannot** (milestone 197).
 ///
-/// Read notes/user-proofs.md before adding a harness here; it enumerates the stub boundary, and the
+/// Read nifeos/record:notes/user-proofs.md before adding a harness here; it enumerates the stub boundary, and the
 /// hazard of proving a program like this one is that a stub reads as coverage. The short version:
 /// the boundary is **hard rather than soft**, because every capability this program holds is
 /// reached through `user_mode_runtime`, whose calls are `asm!`, and Kani refuses an unsupported construct
@@ -222,7 +222,7 @@ mod proofs {
     ///
     /// Nothing outside `buf` is written, for an unconstrained starting offset; given one in range,
     /// the offset stays in range, nothing below it moves, and nothing at or above the final offset
-    /// moves. The unwind bound is `bytes.len() == 4`; notes/user-proofs.md, "What is proved today",
+    /// moves. The unwind bound is `bytes.len() == 4`; nifeos/record:notes/user-proofs.md, "What is proved today",
     /// says why four bytes meet the boundary every way it can be met.
     ///
     /// Falsification: replayable `components/falsifications/proofs.push_never_writes_past_the_buffer_it_was_given.patch`
@@ -260,7 +260,7 @@ mod proofs {
     ///
     /// The `cover` alone cannot go red (Kani 0.67.0 passes an unsatisfiable one), so the assertion
     /// states the same boundary as a check: `push` takes exactly as many bytes as fit. See
-    /// notes/user-proofs/what-kani-could-not-do.md, "Two traps in printenv's harnesses".
+    /// nifeos/record:notes/user-proofs/what-kani-could-not-do.md, "Two traps in printenv's harnesses".
     /// Falsification: replayable `components/falsifications/proofs.the_buffer_can_be_filled_exactly.patch`
     #[kani::proof]
     fn the_buffer_can_be_filled_exactly() {

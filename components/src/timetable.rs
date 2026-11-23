@@ -6,7 +6,7 @@
 //! supervision and reaping endpoints, `a1` an archive of exactly the programs the plan builds, and
 //! `a2` the registration page of §222 (who holds a user's schedule). No directory, console, network
 //! or device, and no clock page unless granted. Store mode (milestone 152's Fork 8 D) holds
-//! `activation/` and `packages/` instead. See `notes/scheduled-execution/the-program.md`.
+//! `activation/` and `packages/` instead. See `nifeos/record:notes/scheduled-execution/the-program.md`.
 
 //! # BUGS
 //!
@@ -125,7 +125,7 @@ fn start(fires_wanted: u64, initial_ramdisk_len: u64, registration_page: u64) ->
     // names an installed program to the spawner), so §220 (signed builds, and trusting a key is
     // scoped) reaches it. Checked once: this program makes no `RECEIVE_CAPABILITY` after `_start`.
     // Every probe here runs before anything is allocated, because a region split later could land
-    // in the slot and read as held. See `notes/scheduled-execution/the-program.md`.
+    // in the slot and read as held. See `nifeos/record:notes/scheduled-execution/the-program.md`.
     let store = user_mode_runtime::is_granted(ACTIVATION);
     if user_mode_runtime::is_granted(spawn_protocol::RUN_UNVOUCHED_SLOT) {
         say(
@@ -373,7 +373,7 @@ impl Tally {
     /// Fire a row with a `--mem` grant alone, and collect it before returning.
     fn fire_exclusive(&mut self, elf: &static_elf::Elf, e: grant_plan::Endowment, clock: bool) {
         // Alone: the next death on `DEATHS` must be this instance's, or it cannot be paired
-        // with its grant (`notes/scheduled-execution/mem-entries.md`).
+        // with its grant (`nifeos/record:notes/scheduled-execution/mem-entries.md`).
         self.drain();
         let Some(mem_slot) = fire_with_grant(
             elf,
@@ -654,7 +654,7 @@ mod store {
 ///
 /// A [`Registry`] borrows its document, and the page cannot be it: the reply overwrites the page.
 /// The replacement is registered in one buffer while the registry in force borrows the other
-/// (§222's all-or-nothing sub-ruling). See `notes/scheduled-execution/the-program.md`.
+/// (§222's all-or-nothing sub-ruling). See `nifeos/record:notes/scheduled-execution/the-program.md`.
 static mut DOCUMENTS: [[u8; registration::BODY_MAXIMUM]; 2] = [[0; registration::BODY_MAXIMUM]; 2];
 
 /// **Answer a replacement, if the registrar has asked for one since the last answer.**
@@ -801,7 +801,7 @@ fn replace_if_asked(
 /// `READ` only and mapped read-only at `contract::CLOCK_VA`, as the progenitor endows `date`. Its
 /// supervision endpoint goes in the reserved fault slot, which `START` reads and clears. Nothing is
 /// kept: since §32 (a supervisor may collect a corpse without being able to build one) the region
-/// capability is not the reap. See `notes/scheduled-execution/the-program.md`.
+/// capability is not the reap. See `nifeos/record:notes/scheduled-execution/the-program.md`.
 fn fire(elf: &static_elf::Elf, arg: u64, report: bool, clock: bool) -> bool {
     let Ok(region) = process_builder::memory_region_split(BUDGET, INSTANCE_PAGES) else {
         return false;

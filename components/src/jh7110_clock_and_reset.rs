@@ -8,7 +8,7 @@
 //! `jh7110_clock_and_reset_contract` defines. No request word names a device, so a client can
 //! neither name nor reach another device's clocks or resets (§256 (a server that keeps windows for
 //! many clients scopes each by the caller's badge)). No operation turns a device off (§304 (who
-//! may turn a device off)). See notes/jh7110-clock-and-reset.md.
+//! may turn a device off)). See nifeos/record:notes/jh7110-clock-and-reset.md.
 //!
 //! # BUGS
 //!

@@ -3,7 +3,7 @@
 //!
 //! While an honest client holds a socket open, it tries every way it has of reaching that socket,
 //! and `system_tests/src/user/net_confinement_tests.rs` asserts each is refused and none of the
-//! honest traffic reaches its page. The five steps are in notes/net/the-test-clients.md.
+//! honest traffic reaches its page. The five steps are in nifeos/record:notes/net/the-test-clients.md.
 //!
 //! It rides in the `net_stack` binary: a hostile client in the shipped image that nothing starts,
 //! an exception to keeping test roles out of shipped images, marked so none extends it unmarked.
@@ -64,7 +64,7 @@ const WATCH_SECONDS: u64 = 5;
 // SAFETY: `run` maps this page writable at PAGE_FRAME_VA before any read or write below.
 static WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_FRAME_VA, PAGE_BYTES) };
 
-/// **The squat, against capabilities.** See notes/net/the-test-clients.md for the five steps.
+/// **The squat, against capabilities.** See nifeos/record:notes/net/the-test-clients.md for the five steps.
 pub fn run() -> ! {
     let frame = retype_into_page_frame(MEMORY_REGION);
     if frame < 0 || !map_page_frame(frame as u64, PAGE_FRAME_VA, true, MEMORY_REGION) {

@@ -29,7 +29,7 @@ pub(super) fn frame_taken() {
 /// interrupt alone, an exchange waiting on one of smoltcp's own timers (a retransmit whose ACK was
 /// dropped) deadlocks, because no frame is coming; without the deadline, a listener nobody connects
 /// to never lets `service_until`'s 15 s bound expire. A polled NIC sleeps at most
-/// `e1000e_transport::POLL_MILLISECONDS` instead. See notes/net/the-outbound-gates.md, "The wait ends at the
+/// `e1000e_transport::POLL_MILLISECONDS` instead. See nifeos/record:notes/net/the-outbound-gates.md, "The wait ends at the
 /// caller's deadline".
 pub(super) fn wait_for_nic(
     iface: &mut Interface,

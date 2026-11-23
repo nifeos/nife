@@ -1,5 +1,5 @@
 //! **The net server: smoltcp as a userspace TCP/IP stack over the confined NIC** (milestone 30,
-//! piece 3; notes/net.md).
+//! piece 3; nifeos/record:notes/net.md).
 //!
 //! The kernel confines the NIC's DMA and knows nothing about TCP, UDP or DHCP. `net_stack` brings
 //! the NIC up, runs DHCP to completion and reports the lease, then serves the socket contract
@@ -28,9 +28,9 @@
 
 //! # BUGS
 //!
-//! Each in full in notes/net/memory-and-reclamation.md, "The server's own limits".
+//! Each in full in nifeos/record:notes/net/memory-and-reclamation.md, "The server's own limits".
 //!
-//! - No host fuzz target reaches this dispatch; `notes/fuzzing-the-services.md` prices one.
+//! - No host fuzz target reaches this dispatch; `nifeos/record:notes/fuzzing-the-services.md` prices one.
 //! - One client can take every socket: nothing bounds how many of [`SOCKETS`] one client holds.
 //! - DHCP has no bound: a live link to a local area network with no DHCP server is a wait
 //!   with no end.
@@ -76,7 +76,7 @@ use tcp_close::close_tcp;
 #[path = "nic_wait.rs"]
 mod nic_wait;
 use nic_wait::wait_for_nic;
-// The socket-contract client rides in this same binary, dispatched by the entry role; notes/net.md,
+// The socket-contract client rides in this same binary, dispatched by the entry role; nifeos/record:notes/net.md,
 // "One binary, one archive entry", says why.
 #[path = "socket_test_client.rs"]
 mod socket_test_client;

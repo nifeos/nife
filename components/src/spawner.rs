@@ -6,7 +6,7 @@
 //! budget, so one corpse cannot pin another's memory, and the region capability is deleted once the
 //! child starts (§32). The supervisor's reap returns the pages LIFO (the return-of-pages of §16
 //! (object revocation)), so a restart loop is not a leak. It reads no fault message, holds no
-//! policy and answers requests in arrival order. See notes/trusted-init/supervision-tree.md.
+//! policy and answers requests in arrival order. See nifeos/record:notes/trusted-init/supervision-tree.md.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39), among the names recorded there as always
 //! right.
@@ -69,7 +69,7 @@ fn start(_a0: u64, image_len: u64, _a2: u64) -> ! {
 /// nothing but `attempt`, can neither learn it nor lie about it (DECISIONS §148 (resolves by asking
 /// the kernel) as amended 2026-10-04). We keep nothing afterwards: the TCB capability is not the
 /// thread, and the region capability is not the reap (§32 (a supervisor may collect a corpse
-/// without being able to build one)). See notes/trusted-init/supervision-tree.md.
+/// without being able to build one)). See nifeos/record:notes/trusted-init/supervision-tree.md.
 fn build(elf: &static_elf::Elf, attempt: u64, label: u64) -> bool {
     let labelled = badge(CHILDFAULT, label);
     if labelled < 0 {

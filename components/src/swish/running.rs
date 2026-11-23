@@ -3,7 +3,7 @@
 //! `outcome`.
 //!
 //! One of the modules §273 (the shell program becomes a directory of modules) lays out. The design
-//! is in `notes/swish-language/running.md`.
+//! is in `nifeos/record:notes/swish-language/running.md`.
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
@@ -93,7 +93,7 @@ pub(super) struct WordsGrant {
 ///
 /// # BUGS
 ///
-/// - A redirected job's drain can race the set's filter (`notes/a-set-grant-at-the-prompt.md`)
+/// - A redirected job's drain can race the set's filter (`nifeos/record:notes/a-set-grant-at-the-prompt.md`)
 ///   until milestone 599 (a frame per filesystem client channel).
 pub(super) fn words_grant(
     g: &GrantDir,
@@ -270,7 +270,7 @@ static IMAGE_TABLES: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU
 /// manifest note [`read_manifest_note`] finds (milestone 597 (a program carries its manifest in an
 /// ELF note)), or `program_table::NO_NOTE_MANIFEST`, and every refusal sends nothing. The staging
 /// region is destroyed once the answer is in, revoking the frames from both address spaces. See
-/// `notes/swish-language/running.md` and `spawn_protocol`'s BUGS.
+/// `nifeos/record:notes/swish-language/running.md` and `spawn_protocol`'s BUGS.
 pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
     let Some(PlannedImage {
         t,
@@ -584,7 +584,7 @@ static mut NOTE_SEGMENT: [u8; file_system_contract::PAGE_BYTES] =
 /// headers from the first page, each note segment searched whole, decoded by
 /// `capability_manifest_note::decode`. `Ok(None)` is no manifest note, and also a first page that
 /// is not an ELF header holding its program headers. A note that cannot be read, or a note segment
-/// over one page, is `Err`. See `notes/swish-language/running.md`, "The manifest note".
+/// over one page, is `Err`. See `nifeos/record:notes/swish-language/running.md`, "The manifest note".
 pub(super) fn read_manifest_note(
     dir: u64,
     handle: u64,
@@ -869,7 +869,7 @@ pub(super) struct DirWords {
 /// root travels as an empty directory name, which the caretaker narrows with `file_system::NARROW`
 /// (§173 (narrowing the root of the shell's namespace)). Refused with nothing spawned: a second
 /// tree, a directory deeper than one level, and a set of more than one name. See
-/// `notes/swish-language/running.md`, "The directory grant".
+/// `nifeos/record:notes/swish-language/running.md`, "The directory grant".
 pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, &[u8]), &'static [u8]> {
     // **A grant in a two-grant shell's second tree** (milestone 154). The progenitor builds the
     // caretaker by descending from the root of the one filesystem it holds, which is the first
@@ -1210,7 +1210,7 @@ fn plain_request(
             directory_grant: dir,
             // **Always false from this shell**: no manifest declares two directory operands, so
             // nothing here constructs a two-directory grant for a spawned program; see
-            // `spawn_protocol::SECOND_DIRECTORY_GRANT_BIT`'s own doc and notes/two-trees.md's BUGS.
+            // `spawn_protocol::SECOND_DIRECTORY_GRANT_BIT`'s own doc and nifeos/record:notes/two-trees.md's BUGS.
             second_directory_grant: false,
             // Always false (DECISIONS §106 (an unredirected tail stage's output goes to the
             // screen)): every `writes_while_reading` program also declares
@@ -1351,7 +1351,7 @@ pub(super) fn screen_rendezvous() -> Option<u64> {
 ///
 /// The completion signal is the child's death on `ep` (DECISIONS §26 (the fault endpoint)), and the
 /// reap retries with a yield, as `job_undertaker::collect` does. See
-/// `notes/swish-language/running.md`, "The screen-narrowed tail".
+/// `nifeos/record:notes/swish-language/running.md`, "The screen-narrowed tail".
 ///
 /// # BUGS
 ///
@@ -1383,7 +1383,7 @@ const SCREEN_REAP_ATTEMPTS: usize = 1024;
 /// Runs before the output is drained, the only order that cannot deadlock in `date | wc`, so a
 /// declaring program must say everything before it produces anything (notes/pipes.md's BUGS).
 /// `writers` is how many stages hold the rendezvous; each sends exactly one `OPERATION_END_OF_STREAM`, and
-/// the drain ends at that count. See `notes/swish-language/running.md`, "The second stream".
+/// the drain ends at that count. See `nifeos/record:notes/swish-language/running.md`, "The second stream".
 pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
     let Some(ep) = diag_rendezvous() else { return };
     let mut done = 0usize;
@@ -1412,7 +1412,7 @@ pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
 ///
 /// A bound on a bug, a program that never announces end of stream, and not a policy about length:
 /// larger than anything a working program says (a rendered manual page is tens of kilobytes) and
-/// smaller than forever. See `notes/swish-language/running.md`, "The output ceiling".
+/// smaller than forever. See `nifeos/record:notes/swish-language/running.md`, "The output ceiling".
 pub(super) const MAXIMUM_OUTPUT_CHUNKS: usize = 4096;
 
 /// **Take the answer to a held job's request, and then the job**: the progenitor's one answer, the
@@ -1493,7 +1493,7 @@ fn foreground_held(program: Program, e: &Endowment, label: u64) {
 fn outcome(program: Program, e: Endowment, answer: u64) {
     // **The only failure a spawned child reports back today**, which is why the sweep's stop rule
     // is honest about its reach: there is no exit status on this path, so a child that ran and did
-    // the wrong thing looks to a sweep exactly like one that succeeded. See notes/glob-grant.md.
+    // the wrong thing looks to a sweep exactly like one that succeeded. See nifeos/record:notes/glob-grant.md.
     if answer == spawn_protocol::SPAWN_FAILED {
         failed();
     }

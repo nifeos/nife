@@ -7,14 +7,14 @@
 //! untyped, frame, TCB or address space. `Rendezvous::REAP` is authorized by the supervision
 //! relationship (§32 (a supervisor may collect a corpse without being able to build one)), and the
 //! pages go back to the progenitor, so it can free a job's memory and never spend it. See
-//! notes/supervision.md.
+//! nifeos/record:notes/supervision.md.
 
 //! # BUGS
 //!
 //! - It can say one word: a refused reap of a dead thread traps, shown as "could not spawn".
 //! - A reaped message can park behind one request on the spawn endpoint, after its collect.
 //! - A fault report parks this loop when nobody reads the result endpoint, as after a faulting
-//!   non-tail stage of a screen-narrowed line (notes/supervision.md).
+//!   non-tail stage of a screen-narrowed line (nifeos/record:notes/supervision.md).
 //! - A refused reclaim is retried, since a job behind a directory grant shares its region with its
 //!   caretaker ([`MAXIMUM_ATTEMPTS`]).
 //! - It cannot reap a hung job (§32 refuses a live thread); `^C` twice covers what a person sees.
@@ -54,7 +54,7 @@ const SPAWN: u64 = 2;
 /// the grant (DECISIONS §92 (a caretaker is supervised by the client it serves)), so the first
 /// reclaim of that region is refused by construction: the sweep wakes the caretaker, arms the kill
 /// of §16 (object revocation), and the retry after its next preemption reclaims
-/// (notes/grant-expression/per-file-grants.md). The number is far past the one preemption that
+/// (nifeos/record:notes/grant-expression/per-file-grants.md). The number is far past the one preemption that
 /// needs, and running out is still [`fail`]: a corpse that never becomes collectable is a leak,
 /// and a leak here ends the prompt's memory a few commands later with nothing to point at.
 const MAXIMUM_ATTEMPTS: usize = 1024;

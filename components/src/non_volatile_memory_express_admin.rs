@@ -4,7 +4,7 @@
 //! controller to before this process existed. It then grants the data plane the doorbell page and
 //! the run's data-plane pages, reports to the kernel, and waits to retire the controller. All the
 //! arithmetic is `crates/non_volatile_memory_express`'s. A `#[path]` module of the one program, as
-//! `net_stack`'s transports are. See notes/non-volatile-memory-express.md.
+//! `net_stack`'s transports are. See nifeos/record:notes/non-volatile-memory-express.md.
 
 //! # Capability contract
 //!

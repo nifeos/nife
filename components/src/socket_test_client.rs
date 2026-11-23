@@ -3,9 +3,9 @@
 //! It mints a shared frame from its own budget, delegates it to the net server, and drives real
 //! exchanges through socket capabilities, against QEMU user-mode networking with no host setup.
 //! The entry role selects the exchange (the `TEST_*` constants), and each reports `OK` or a stage
-//! code rather than hanging. It is a module of the `net_stack` binary (notes/net.md, "One binary,
+//! code rather than hanging. It is a module of the `net_stack` binary (nifeos/record:notes/net.md, "One binary,
 //! one archive entry"). What each role proves, and why several share one spawn, is in
-//! notes/net/the-test-clients.md and notes/net/the-outbound-gates.md.
+//! nifeos/record:notes/net/the-test-clients.md and nifeos/record:notes/net/the-outbound-gates.md.
 //!
 
 //! # Capability contract (when entered as the client)
@@ -168,7 +168,7 @@ const TFTP_BODY: &[u8] = b"nife-tftp!";
 /// range the kernel test grants this spawn, so asking for it proves the grant *refuses* rather than
 /// that nothing happened to bind; `UDP_GRANTED_PORT` is inside it.
 ///
-/// 5354 rather than multicast DNS's 5353 (notes/net/the-test-clients.md). The numbers must match
+/// 5354 rather than multicast DNS's 5353 (nifeos/record:notes/net/the-test-clients.md). The numbers must match
 /// the kernel test's `NET_UDP_GRANT_*` and mean nothing else.
 const UDP_DENIED_PORT: u64 = 4444;
 const UDP_GRANTED_PORT: u64 = 5354;
@@ -254,7 +254,7 @@ fn socket_take() -> ! {
 fn done(code: u64) -> ! {
     send(REPORT, code, 0, 0);
     // A one-shot role exits rather than spins: unreaped spinners starve later tests on core 0,
-    // because nothing balances threads across cores (notes/net/the-test-clients.md).
+    // because nothing balances threads across cores (nifeos/record:notes/net/the-test-clients.md).
     exit();
 }
 
@@ -519,7 +519,7 @@ fn ask_the_host_resolver() -> u64 {
 /// **The gating UDP test: a round trip against slirp's own TFTP server**, which answers inside the
 /// emulator, so nothing about the host is tested. Send a read request (opcode 1, `octet` mode) for
 /// the fixture the runners planted, and require the first data packet back: opcode 3, block 1, and
-/// the fixture's bytes exactly. See notes/net/the-test-clients.md.
+/// the fixture's bytes exactly. See nifeos/record:notes/net/the-test-clients.md.
 fn udp_tftp() -> ! {
     attach_page_frame();
     if open(OPERATION_OPEN_UDP, SOCKET, 0) != REPLY_OK {
@@ -635,7 +635,7 @@ fn tcp_echo() -> ! {
 /// **Closing a socket and opening the next one is safe.** Open a TCP socket, connect to the echo
 /// peer, close it, then open another and connect again. The reopen must get a fresh ephemeral port,
 /// and it lands in the entry the first socket left with a new badge, so the entry's page is taken
-/// back and attached again. See notes/net/the-test-clients.md and notes/net/the-outbound-gates.md.
+/// back and attached again. See nifeos/record:notes/net/the-test-clients.md and nifeos/record:notes/net/the-outbound-gates.md.
 fn tcp_reopen() -> ! {
     attach_page_frame();
     SHARED_FRAME.set_destination(ECHO_IP, ECHO_PORT);
@@ -668,7 +668,7 @@ fn tcp_reopen() -> ! {
 /// check what arrived, answer it, and do it again on the same listener: only a second accept proves
 /// the re-arm. The TCP and UDP grant refusals ride in the same spawn, because a second net server
 /// does not fit the aarch64 boot. The frame goes to the connection only, after the listener is
-/// bound. See notes/net/the-test-clients.md.
+/// bound. See nifeos/record:notes/net/the-test-clients.md.
 fn tcp_accept_inbound() -> ! {
     // A port outside the grant is refused as a matter of AUTHORITY, which is a different answer from
     // "somebody has it" and calls for a different response from a client.
@@ -713,7 +713,7 @@ fn tcp_accept_inbound() -> ! {
 /// accept once on a NIC no host process can reach: the stack's wait must end by its own 15 s bound
 /// with `REPLY_ERROR`, or every retry built on that bound ([`ACCEPT_TRIES`], `std_exerciser`'s) retries
 /// nothing. `OK` when refused, `0xE0C0`/`0xE0C1` if the listen or the refusal went wrong; how long
-/// it took is the kernel test's to judge. See notes/net/the-test-clients.md.
+/// it took is the kernel test's to judge. See nifeos/record:notes/net/the-test-clients.md.
 ///
 /// Name: provisional, the riscv-cpu-net-flake lane, 2026-10-13 (UTC).
 fn tcp_accept_unheard() -> ! {
@@ -730,7 +730,7 @@ fn tcp_accept_unheard() -> ! {
 /// How many of `net_stack`'s 15 s bounded accept waits a round sits through before it calls the
 /// round lost: 75 s, inside the test's 90 s budget (`test_times::DEFAULT_BUDGET_SECONDS`). One wait
 /// can fall inside a gap in slirp's SYN backoff, 16 and then 32 s by the time this program listens;
-/// notes/net/the-test-clients.md has the measurement.
+/// nifeos/record:notes/net/the-test-clients.md has the measurement.
 ///
 /// Name: provisional, milestone 514's lane, 2026-10-12 (UTC). The same name `std_exerciser` uses.
 const ACCEPT_TRIES: usize = 5;
@@ -776,7 +776,7 @@ fn serve_one_inbound(base: u64) {
 /// mDNS)), inside the accept test's spawn (see [`tcp_accept_inbound`]). A port outside the grant is
 /// `PORT_CLAIM_DENIED`, the capability answer that no retry helps; a granted port binds, and asking for
 /// it again collides. The spawn word also carries the TCP listen grant, so this exercises the
-/// composed word. Nothing proves multicast (notes/net/the-test-clients.md).
+/// composed word. Nothing proves multicast (nifeos/record:notes/net/the-test-clients.md).
 fn udp_bind_half() {
     match open(OPERATION_BIND_UDP, LISTENER, UDP_DENIED_PORT) {
         PORT_CLAIM_DENIED => {}
@@ -816,11 +816,11 @@ use socket_fixture::{
 /// **Rung 3a's fetch and verify** (milestone 198 (a package manager)): `GET` a package over plain
 /// HTTP, hash it as it arrives, and accept it only if the digest is the one the image's catalogue
 /// names. The genuine package must be accepted and the copy with one byte flipped refused, in one
-/// spawn (notes/net/the-test-clients.md); the verdicts are the report's first two words. Plain HTTP
+/// spawn (nifeos/record:notes/net/the-test-clients.md); the verdicts are the report's first two words. Plain HTTP
 /// is enough because the catalogue is an archive entry above the measurement table, vouched for by
 /// the kernel's trust root, and its digest never crossed the network (DECISIONS §195 (a reviewed
 /// recipe vouches for a package)). The body is never held, so a package costs one page of frame and
-/// the hash state. It proves the bytes; installing them is `notes/packages.md`'s "Where this stops".
+/// the hash state. It proves the bytes; installing them is `nifeos/record:notes/packages.md`'s "Where this stops".
 ///
 /// `len` is the catalogue's length; the spawner maps it read-only at [`CATALOGUE_VA`].
 fn http_package(len: u64) -> ! {
@@ -918,7 +918,7 @@ fn exchange(stem: &str, tampered: bool, expected: &measured_boot::Digest) -> u64
 /// byte)`. After an `OK` it sends a second report, `(RECEIVE calls that carried bytes, counter
 /// ticks spent inside those calls, how many of them filled the frame)`, which the bench boot
 /// prints as its `receive` line: whether the server's turnaround per call or this loop sets the
-/// rate (notes/designware-ethernet/the-receive-rate.md).
+/// rate (nifeos/record:notes/designware-ethernet/the-receive-rate.md).
 ///
 /// "Ends" is the peer closing or `net_stack`'s 15-second receive bound, whichever comes first,
 /// and neither is counted: the clock stops at the last byte that arrived, so the tail of waiting

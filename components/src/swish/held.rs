@@ -138,7 +138,7 @@ pub(super) fn await_death(label: u64) -> bool {
 
 /// How many threads of this shell's held jobs are dead on the exit endpoint, which is the number of
 /// deaths that arrived there, parked or already heard: a corpse stays in the domain until its
-/// region is destroyed (`rendezvous::SURVEY`, notes/process-view.md).
+/// region is destroyed (`rendezvous::SURVEY`, nifeos/record:notes/process-view.md).
 fn dead_threads(exit: u64) -> usize {
     let mut cursor = moho_abi::survey::DONE;
     let mut dead = 0;

@@ -1,5 +1,5 @@
 //! The file caretaker: a directory capability attenuated to one file (milestone 31 phase 2,
-//! DECISIONS §27, notes/grant-expression.md).
+//! DECISIONS §27 (the filesystem service: a capability-shaped contract), nifeos/record:notes/grant-expression.md).
 //!
 //! It holds the FS service's directory capability ([`FS`]), opens the granted name once at startup,
 //! and serves the same [`file_system_contract::file_system`] protocol on [`CLIENT`] with a namespace of
@@ -8,7 +8,7 @@
 //! `start_granted` in `kernel/src/user/fs_service/file_grant.rs` wires its slots, maps the name on
 //! a read-only grant page at [`GRANT_VA`] and passes the direction in the `START` words
 //! ([`file_system_contract::grant`]). Why it is a
-//! process and not a check in the FS server is in notes/grant-expression/per-file-grants.md.
+//! process and not a check in the FS server is in nifeos/record:notes/grant-expression/per-file-grants.md.
 
 //! Name: ratified 2026-08-01 (calef, milestone 61), replacing `fwarden`. Refused `fwarden` and the
 //! `warden` family (a synonym invented for Mark Miller's caretaker, which DECISIONS §31 had cited
@@ -20,7 +20,7 @@
 //!
 //! - No host fuzz target reaches this caretaker's decode (proposal #1592 part a, rank 4): it is
 //!   inline in this EL0 binary with no library half, so a target needs it extracted first, the way
-//!   `redoxfs_server::Server::handle` was. See `notes/fuzzing-the-services.md`.
+//!   `redoxfs_server::Server::handle` was. See `nifeos/record:notes/fuzzing-the-services.md`.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks
@@ -100,7 +100,7 @@ fn reply(to: Reply, r0: i64) {
 /// answer is its row in [`file_system_contract::verb::file_grant::POLICY`], and a verb with no row
 /// fails to compile. A mutating verb ([`file_system_contract::verb::Verb::mutates`]) under a
 /// read-only grant is [`grant::EROFS`] by one rule, and `CREATE` is [`grant::ENOTDIR`] because a
-/// file capability is not a directory. See notes/grant-expression/per-file-grants.md.
+/// file capability is not a directory. See nifeos/record:notes/grant-expression/per-file-grants.md.
 fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
     use file_system_contract::verb::file_grant::Policy;
     use file_system_contract::verb::{self};

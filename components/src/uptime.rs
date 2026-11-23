@@ -1,11 +1,11 @@
 //! **`uptime`**: print how long the machine has been counting (milestone 126 (the `procps` package),
-//! design/roadmap/0126-who-else-is-running.md, notes/process-view.md).
+//! nifeos/record:design/roadmap/0126-who-else-is-running.md, nifeos/record:notes/process-view.md).
 //!
 //! The whole program is: read the ambient monotonic counter, hand the nanoseconds to
 //! [`uptime::format`], send the bytes. It holds one capability (the output sink) and cannot
 //! change anything: the counter is granted to every process unconditionally, so the manifest is
 //! `least_authority_demo`'s. That it needs no kernel-side accounting, which milestone 126 (the
-//! `procps` package) assumed, is in notes/process-view/the-machine-and-your-share.md.
+//! `procps` package) assumed, is in nifeos/record:notes/process-view/the-machine-and-your-share.md.
 
 //! # Capability contract
 //!

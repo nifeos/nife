@@ -1,6 +1,6 @@
 //! radon's SD/MMC block server: `file_system_contract::block` over the JH7110's `DesignWare` Mobile
 //! Storage Host Controller, from EL0 (milestone 53 (the board's own peripherals: network and
-//! storage on real silicon); notes/designware-mobile-storage.md). The driver is the crate of the
+//! storage on real silicon); nifeos/record:notes/designware-mobile-storage.md). The driver is the crate of the
 //! same name; this file is its register window and serve loop. It holds only what
 //! `kernel/src/user/designware_mobile_storage_service.rs` gives it: the controller's register page
 //! (the kernel ungates the shared clock generator, §86 (whether an NVMe driver can leave the

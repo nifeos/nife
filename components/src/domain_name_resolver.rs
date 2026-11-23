@@ -1,5 +1,5 @@
 //! **The name resolver** (§248 (the name resolver is its own confined program)): host names to
-//! IPv4 addresses for a client holding a grant to ask, and nobody else (notes/name-resolution.md).
+//! IPv4 addresses for a client holding a grant to ask, and nobody else (nifeos/record:notes/name-resolution.md).
 //!
 //! A client of `net_stack` and a server to its own clients: the contract is
 //! `crates/domain_name_resolution_contract`, and the `domain_name_system` crate's `Query::accept`

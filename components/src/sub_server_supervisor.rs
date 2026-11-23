@@ -6,7 +6,7 @@
 //! spawner, its children's death channel, a WRITE view of a report endpoint and no untyped, so a
 //! compromised supervisor is a restart loop, not a foothold. It reaps its own children (`reap`)
 //! and tells its two children apart by the label the kernel returns with each death (§148 (resolves
-//! by asking the kernel) as amended 2026-10-04). See notes/trusted-init/supervision-tree.md.
+//! by asking the kernel) as amended 2026-10-04). See nifeos/record:notes/trusted-init/supervision-tree.md.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `subsup`. Refused `subsup` and
 //! `sub_supervisor`, which is ambiguous in the way that matters: this supervises **a sub-server**,

@@ -7,7 +7,7 @@
 //! authenticates no caller and needs not to: holding the two capabilities is the authority. The
 //! subtree comes first, so a partial failure leaves an inert, empty subtree rather than a credential
 //! with no home, and `MKDIR`'s [`EEXIST`] means proceed. It never seals the store
-//! ([`credential_contract::provision::SEAL`]) and never deprovisions. See notes/login.md.
+//! ([`credential_contract::provision::SEAL`]) and never deprovisions. See nifeos/record:notes/login.md.
 
 //! Name: ratified 2026-09-13 (calef). `identity` is the word the capability model manipulates, where
 //! `user` is overloaded in this tree. Refused `useradd` (imports `user` and promises a typed

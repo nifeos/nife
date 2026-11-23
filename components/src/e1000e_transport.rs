@@ -1,5 +1,5 @@
 //! **The `e1000e` data plane inside `net_stack`** (milestone 494 (a driver for the network card a PC
-//! actually has); notes/e1000e.md).
+//! actually has); nifeos/record:notes/e1000e.md).
 //!
 //! The volatile shell around `nifeos/e1000e`'s [`DataPlane`]: two windows and a barrier. The ring
 //! logic, descriptor formats and judgement of every device-written word are the crate's,

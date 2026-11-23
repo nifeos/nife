@@ -25,14 +25,14 @@
 //! without one is pure and host-tested here: the accessors' window check, the descriptor chain,
 //! the completion wait's bound, the configuration read's generation bracket, the directory lookup,
 //! the DHCP frames and the Internet Protocol header checksum. The ring layout's proof is in
-//! `direct_memory_access_validator`. See notes/virtual-io.md ("The driver crate") and notes/dma.md.
+//! `direct_memory_access_validator`. See nifeos/record:notes/virtual-io.md ("The driver crate") and nifeos/record:notes/dma.md.
 //!
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
 //! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
 //! `virtio-drivers` assumes a driver lays out its own virtqueues, and nife's confinement does not
 //! allow that: the kernel builds every ring itself, eight entries at fixed offsets, Kani-proved in
 //! `direct_memory_access_validator`, so no driver can aim device DMA. See
-//! design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
+//! nifeos/record:design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
 //!
 //! Name: provisional. The module holds the one program's roles, so it takes the program's name
 //! (`block_driver`) and says what it holds. The name `virtio` stays reserved for a library cut later
@@ -130,7 +130,7 @@ const FEATURE_VERSION_1_HIGH_WORD: u32 = 1;
 /// (`VIRTIO_F_ACCESS_PLATFORM`) Feature bit 33, as a bit of the high 32-bit feature word. A device
 /// behind an IOMMU offers it and refuses to run unless it is negotiated; the driver acknowledges it
 /// only when offered, since acknowledging an unoffered feature fails negotiation. The DMA domain is
-/// an identity map, so it changes no address (notes/virtual-io.md). Name: provisional, minted
+/// an identity map, so it changes no address (nifeos/record:notes/virtual-io.md). Name: provisional, minted
 /// 2026-11-22 (UTC) by lane 1113-finish-review.
 #[doc(alias = "VIRTIO_F_ACCESS_PLATFORM")]
 const FEATURE_ACCESS_PLATFORM_HIGH_WORD: u32 = 1 << 1;
@@ -180,7 +180,7 @@ const BLOCK_REQUEST_FLUSH: u32 = 4;
 /// flush command". The durability claim rests on it, so the driver reads it from the device and
 /// never assumes it. The kernel's `sanitize_driver_features` must leave it alone;
 /// `feature_negotiation_leaves_the_blk_flush_bit_alone` in `kernel/src/virtual_io.rs` holds that. See
-/// notes/virtual-io.md ("Feature negotiation"). Name: provisional, minted 2026-11-22 (UTC) by lane
+/// nifeos/record:notes/virtual-io.md ("Feature negotiation"). Name: provisional, minted 2026-11-22 (UTC) by lane
 /// 1113-finish-review.
 #[doc(alias = "VIRTIO_BLK_F_FLUSH")]
 const FEATURE_BLOCK_FLUSH_LOW_WORD: u32 = 1 << 9;
@@ -357,7 +357,7 @@ fn initialize() {
 /// kernel is what strips it.
 ///
 /// `want_flush` asks for `VIRTIO_BLK_F_FLUSH` only if the device offered it. Returns whether that
-/// bit was negotiated. See notes/virtual-io.md ("Feature negotiation").
+/// bit was negotiated. See nifeos/record:notes/virtual-io.md ("Feature negotiation").
 fn initialize_with_features(driver_features_low: u32, want_flush: bool) -> bool {
     // The driver checks the magic and not `Version`: the kernel offers only modern (version 2)
     // devices on either bus, so a `Version` check here would test what the kernel already tested.
@@ -455,7 +455,7 @@ pub fn run(direct_memory_access_physical_address: u64) -> ! {
     send(REPORT, u64::from_le_bytes(head), 0, 0);
 
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
-    // (notes/virtual-io.md).
+    // (nifeos/record:notes/virtual-io.md).
     exit();
 }
 
@@ -516,14 +516,14 @@ pub fn run_write(direct_memory_access_physical_address: u64) -> ! {
     send(REPORT, u64::from_le_bytes(head), 0, 0);
 
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
-    // (notes/virtual-io.md).
+    // (nifeos/record:notes/virtual-io.md).
     exit();
 }
 
 /// **The abandoned write**, the kill-mid-write case: submit a write through the validated path,
 /// report 1, then die (`brk`/`ebreak`) without waiting for the completion, acknowledging the
 /// interrupt or touching the used ring. The test then runs the full writer against the same device,
-/// which must succeed. See notes/dma.md.
+/// which must succeed. See nifeos/record:notes/dma.md.
 ///
 /// Name: provisional.
 pub fn run_write_abandon(direct_memory_access_physical_address: u64) -> ! {
@@ -574,7 +574,7 @@ pub fn run_attack(_direct_memory_access_physical_address: u64) -> ! {
     send(REPORT, refused as u64, 0, 0); // 1 = refused (good), 0 = it went through (bad)
 
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
-    // (notes/virtual-io.md).
+    // (nifeos/record:notes/virtual-io.md).
     exit();
 }
 
@@ -617,7 +617,7 @@ pub fn run_attack_indirect(direct_memory_access_physical_address: u64) -> ! {
     send(REPORT, refused as u64, 0, 0); // 1 = refused (good), 0 = it went through (bad)
 
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
-    // (notes/virtual-io.md).
+    // (nifeos/record:notes/virtual-io.md).
     exit();
 }
 
@@ -725,7 +725,7 @@ fn chained(i: usize, chain_length: usize, flags: u16) -> (u16, u16) {
 /// block server. Measured through the confined block server, a block costs 39.0 microseconds at
 /// the margin, against 38.7 to 53.3 microseconds for a raw virtio read on Linux at the same tier.
 /// A 64 kibibyte sequential read runs at 189.9 mebibytes a second (Hypervisor.framework, `--smp`;
-/// notes/benchmarks.md, "Filesystem throughput"). A request already moves up to
+/// nifeos/record:notes/benchmarks.md, "Filesystem throughput"). A request already moves up to
 /// `block::TRANSFER_BLOCKS` blocks as one descriptor, so the driver pays the interrupt per request
 /// and not per block. Several requests in flight would need a free list of descriptor heads and a
 /// completion that matches used-ring elements to their requests, and nothing measured yet asks
@@ -821,8 +821,8 @@ const COMPLETION_WAKEUPS: u32 = 64;
 /// the loop can be tested without a device.
 ///
 /// The completion is the used ring advancing, not the wakeup: the line is shared, and a wakeup can
-/// be spurious, coalesced, or a dead driver's pending completion. See notes/virtual-io.md ("A
-/// completion is the used ring advancing") and notes/dma.md.
+/// be spurious, coalesced, or a dead driver's pending completion. See nifeos/record:notes/virtual-io.md ("A
+/// completion is the used ring advancing") and nifeos/record:notes/dma.md.
 fn used_ring_moved(
     bound: Option<u32>,
     used_before: u16,
@@ -922,7 +922,7 @@ fn write_block(direct_memory_access_physical_address: u64, sector: u64) {
 fn report_code(code: u64) -> ! {
     send(REPORT, 0xDEAD_0000_0000_0000 | code, 0, 0);
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
-    // (notes/virtual-io.md).
+    // (nifeos/record:notes/virtual-io.md).
     exit();
 }
 
@@ -932,7 +932,7 @@ fn report_code(code: u64) -> ! {
 //
 // Receive is queue 0 (the device writes a frame) and transmit is queue 1 (it reads one), both
 // through the one `VirtualIo` capability. `run_net` proves both with a DHCP exchange against slirp.
-// See notes/virtual-io.md ("The roles").
+// See nifeos/record:notes/virtual-io.md ("The roles").
 // =================================================================================================
 
 /// The two virtqueues, matching the kernel's contract (receive = 0, transmit = 1).
@@ -1328,7 +1328,7 @@ pub fn run_net(direct_memory_access_physical_address: u64) -> ! {
 // ---------------------------------------------------------------------------------------------
 // The block server (milestone 32 phase 2): init the device once, then answer the FS server's
 // read/write/size/flush requests forever. The FS server never touches the DMA region, and the
-// device confinement is unchanged. See notes/virtual-io.md ("The block server") and notes/fs-server.md.
+// device confinement is unchanged. See nifeos/record:notes/virtual-io.md ("The block server") and nifeos/record:notes/fs-server.md.
 // ---------------------------------------------------------------------------------------------
 
 /// The block server's request endpoint (slot 0): the FS server CALLs here; this role `RECEIVE_CAPABILITY`s the
@@ -1344,7 +1344,7 @@ const BLOCK_REQUEST_ENDPOINT: u64 = 0;
 /// The block server's DMA region is `1 + block::TRANSFER_BLOCKS` contiguous pages
 /// (`kernel/src/user/fs_service.rs`): page 0 holds the rings, request header and status, and pages
 /// `1..=block::TRANSFER_BLOCKS` are the data buffer, which is the region shared with the FS server.
-/// `BLOCK_SERVER_DATA_OFFSET_BYTES` is that page-1 offset. See notes/virtual-io.md ("The block server").
+/// `BLOCK_SERVER_DATA_OFFSET_BYTES` is that page-1 offset. See nifeos/record:notes/virtual-io.md ("The block server").
 const BLOCK_SERVER_DATA_OFFSET_BYTES: u64 = 0x1000;
 
 /// The block server's readiness endpoint (slot 3): SEND once after the device is up, so the test
@@ -1367,7 +1367,7 @@ const DEVICE_CONFIGURATION_REGISTER: u64 = 0x100;
 /// page, the control (opcode, block index, result) rides in the message, the §10 split.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane 1113-names-qemu-test. Renamed from
-/// `run_blk_server`, because `blk` is a failing abbreviation (design/naming.md).
+/// `run_blk_server`, because `blk` is a failing abbreviation (nifeos/record:design/naming.md).
 pub fn run_block_server(direct_memory_access_physical_address: u64) -> ! {
     // Whether VIRTIO_BLK_F_FLUSH was negotiated decides `block::FLUSH`: a device round trip, or a
     // loud refusal, never a yes that does nothing.
@@ -1456,7 +1456,7 @@ fn transfer_first_sector(block: u64, count: u64, capacity_sectors: u64) -> Optio
 /// ring, with [`complete`]. `true` if the device completed with `VIRTIO_BLK_S_OK`. It does not
 /// panic on another status: the long-lived block server's death would block every filesystem
 /// client, so the verdict goes back to the one that asked. A WAIT per read fits the test watchdog,
-/// since whole-block requests keep the mount's read count in the low hundreds. See notes/virtual-io.md
+/// since whole-block requests keep the mount's read count in the low hundreds. See nifeos/record:notes/virtual-io.md
 /// ("A completion is the used ring advancing").
 ///
 /// The wait has no bound, unlike a test role's. Giving up would leave the request on the ring with
@@ -1503,7 +1503,7 @@ fn block_write(direct_memory_access_physical_address: u64, sector: u64, count: u
 ///
 /// A status of 0 says the device finished its flush; it cannot prove the hardware beneath is
 /// honest. A bad status such as `VIRTIO_BLK_S_UNSUPP` (2) is `false`, as for a transfer. See
-/// notes/virtual-io.md ("The block server").
+/// nifeos/record:notes/virtual-io.md ("The block server").
 fn block_flush(direct_memory_access_physical_address: u64) -> bool {
     let used_before = submit_flush(direct_memory_access_physical_address);
     complete_block_server_request(used_before)
@@ -1599,7 +1599,7 @@ mod tests;
 /// **Proofs of the pure logic the driver runs on bytes a device or a disk image wrote**: the
 /// directory lookup over any bytes, the Internet Protocol header checksum over any header, and the
 /// two bounded waits. The DHCP frame is a constant and the write pattern takes no outside input, so
-/// host tests cover both (`tests.rs`). See notes/verification.md.
+/// host tests cover both (`tests.rs`). See nifeos/record:notes/verification.md.
 ///
 /// Name: provisional.
 #[cfg(kani)]
@@ -1739,7 +1739,7 @@ mod verification {
 /// mediated function (`kernel/src/virtual_io.rs`), so every driver role runs unchanged on either
 /// grant. The rings sit at the offsets the mediated grant uses, in the driver's own region, and
 /// the device reads them there. See
-/// design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
+/// nifeos/record:design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-transport, after the
 /// grant it serves.

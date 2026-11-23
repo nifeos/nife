@@ -1,9 +1,9 @@
-//! The capability shell, at EL0: designation is authorization (notes/grant-expression.md). Naming
+//! The capability shell, at EL0: designation is authorization (nifeos/record:notes/grant-expression.md). Naming
 //! a resource on the command line grants it, a program that names nothing gets only the report
 //! channel every spawn carries, and `caps <command>` previews exactly what a line would grant.
 //! `grant_plan` parses and checks the line on the host; this program turns a checked grant into
 //! delegated capabilities from only what it holds ([`holdings`]). It holds its clock `READ`
-//! without `GRANT`, so it can read one and cannot hand one on. See notes/shell/the-program.md.
+//! without `GRANT`, so it can read one and cannot hand one on. See nifeos/record:notes/shell/the-program.md.
 
 //! # Capability contract
 //!

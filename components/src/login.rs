@@ -2,7 +2,7 @@
 //! attribution), §109 (attribution is a channel property)). It authenticates an identity against
 //! the credential service and, on success, hands back capabilities instead of mutating an identity
 //! field: a fresh directory, a fresh budget, a logout ticket and, when free, the terminal. See
-//! notes/login.md, and notes/login/budgets-and-reclamation.md for its budgets.
+//! nifeos/record:notes/login.md, and nifeos/record:notes/login/budgets-and-reclamation.md for its budgets.
 
 //! # What it holds to
 //!
@@ -14,7 +14,7 @@
 //! - One session holds the terminal ([`TERM_EP`]): another login is refused `NO_TERMINAL` before
 //!   its secret is relayed; `LOGOUT` releases it and authenticates nothing.
 //!
-//! Name: ratified 2026-09-15 (calef, the `login` family; `design/naming/vocabulary.md`).
+//! Name: ratified 2026-09-15 (calef, the `login` family; `nifeos/record:design/naming/vocabulary.md`).
 
 //! # BUGS
 //! - One durable session at a time ([`DURABLE_SESSIONS`]); a second identity gets an ordinary one.
@@ -66,7 +66,7 @@ const CONSTRUCTION_UT: u64 = 5;
 const AUDIT: u64 = 6;
 /// **The interactive terminal** (milestone 49's terminal update), `WRITE | GRANT`: the endpoint
 /// `crates/system_initializer::boot` hands the shell. This process never reads a keystroke or
-/// writes a line; it hands a narrowed `WRITE` copy to whichever session holds it (notes/login.md,
+/// writes a line; it hands a narrowed `WRITE` copy to whichever session holds it (nifeos/record:notes/login.md,
 /// "The terminal: the design argument"), and `GRANT` is what lets [`delegate`] do that.
 const TERM_EP: u64 = 7;
 /// **The run-unvouched capability** (DECISIONS §219 gate D2), `WRITE | GRANT`, when the spawner
@@ -115,7 +115,7 @@ const CHANNEL_REGION_PAGES: u64 = 8;
 /// come home.** Four channels' worth, though only one is ever live at a time. A channel region
 /// carved here is always this budget's only live child, so always the LIFO top and always fully
 /// returned; nothing else may ever be split or retyped from it, or that stops holding. See
-/// notes/login/budgets-and-reclamation.md, "Why a channel has a budget of its own".
+/// nifeos/record:notes/login/budgets-and-reclamation.md, "Why a channel has a budget of its own".
 const CHANNEL_UT_PAGES: u64 = 32;
 
 /// Where a built caretaker and the file service's shared page meet. Must match
@@ -154,7 +154,7 @@ fn grant_page(own_ut: u64, region: u64, name: &[u8]) -> Option<u64> {
 /// child's), spent only by [`mint`]'s `build_child` calls. `supervision_contract::fill_and_map`'s
 /// scratch cursor wraps inside `SCRATCH_WINDOW`, so the most it can cost is `SCRATCH_TABLE_PAGES`
 /// (32); a whole aarch64 suite run measured one page, so 128 is margin, not a tight count. See
-/// notes/login/budgets-and-reclamation.md, "Four budgets, each with its own parent".
+/// nifeos/record:notes/login/budgets-and-reclamation.md, "Four budgets, each with its own parent".
 const OWN_UT_PAGES: u64 = 128;
 
 /// One caretaker's whole construction: its address space, TCB, and stack.
@@ -296,7 +296,7 @@ fn vouched_caretaker(
 ) -> (Option<static_elf::Elf<'static>>, &'static str) {
     // **Two blobs rather than the archive** (milestone 233 (`login` dies on every boot)): the
     // caretaker's ELF and the measurement table, their lengths in the first two argument registers
-    // (notes/login/budgets-and-reclamation.md, "Two blobs rather than the archive").
+    // (nifeos/record:notes/login/budgets-and-reclamation.md, "Two blobs rather than the archive").
     //
     // SAFETY: the spawner maps `caretaker_len` bytes read-only at `CARETAKER_ELF_VA`, for the
     // lifetime of this process, before `_start` runs (`login_contract::CARETAKER_ELF_VA`'s own
@@ -313,7 +313,7 @@ fn vouched_caretaker(
     // Read as `crates/system_initializer` reads it (milestone 104 (the measurement continues past
     // init)): bytes that are not UTF-8 are the empty table, which vouches for nothing. Checked
     // once: both blobs are read-only for the life of this process. It is a consistency check on the
-    // progenitor's hand-over, not an independent verification (notes/login.md, "Measured boot: the
+    // progenitor's hand-over, not an independent verification (nifeos/record:notes/login.md, "Measured boot: the
     // posture").
     //
     // SAFETY: as above, for `table_len` bytes at `PROGRAM_MEASUREMENTS_VA`.
@@ -375,7 +375,7 @@ struct FrontDoor<'e> {
     // fresh scratch VA per channel (see `CONNECT_VA_BASE`'s own doc on why a VA is never reused).
     connect_seq: u64,
     // **Whether [`TERM_EP`] is on loan to a session** (milestone 49's terminal update), `false` at
-    // start-up. notes/login.md, "The terminal: the design argument", has the design.
+    // start-up. nifeos/record:notes/login.md, "The terminal: the design argument", has the design.
     terminal_held: bool,
 }
 
@@ -478,7 +478,7 @@ impl FrontDoor<'_> {
         // Destroy the channel's region rather than only deleting our capabilities to its pieces:
         // its rendezvous live in the kernel's global registry until the region goes, and `DESTROY`
         // leaves our `MemoryRegion` and `Rendezvous` capabilities in the table, so `result` is
-        // deleted and the region discarded (notes/login/budgets-and-reclamation.md).
+        // deleted and the region discarded (nifeos/record:notes/login/budgets-and-reclamation.md).
         // `channel.request` and `channel.page` are gone already ([`authenticate`]).
         capability_delete(channel.result);
         discard(channel.region);
@@ -490,7 +490,7 @@ impl FrontDoor<'_> {
 /// counter, shared across every channel (not the connect sequence `CONNECT_VA_BASE` counts).
 /// [`authenticate`] drops `channel.request` and `channel.page` as soon as each stops being needed,
 /// so [`mint`]'s peak use of the capability table comes with the channel down to one slot
-/// (notes/login/budgets-and-reclamation.md, "The capability table, in order").
+/// (nifeos/record:notes/login/budgets-and-reclamation.md, "The capability table, in order").
 fn serve_login(
     channel: &Channel,
     own_ut: u64,
@@ -744,7 +744,7 @@ fn hand_over(
     // Every right (milestone 824 (a retype mints no right its budget lacks)): the session builds
     // from it, and what it builds carries the budget's rights.
     delegate(channel.result, budget, moho_abi::rights::ALL);
-    // The logout ticket: `WRITE` is the one right `MemoryRegion::DESTROY` needs (notes/login.md,
+    // The logout ticket: `WRITE` is the one right `MemoryRegion::DESTROY` needs (nifeos/record:notes/login.md,
     // "Reclaiming a session: the design argument"). Not `GRANT`: a client that could delegate its
     // logout ticket could hand another principal the means to end this one's session.
     delegate(channel.result, region, moho_abi::rights::WRITE);
@@ -1018,7 +1018,7 @@ impl Durable {
     /// before it exits (`timetable::registration::EXIT`). This is the liveness test reattachment
     /// needs, and it is why the page lives in [`Durable::keeper`] rather than in the region the
     /// `user_timetable_keeper` gives back: a `DESTROY` probe cannot tell a stale budget from a busy one,
-    /// because the kernel answers both `NotPermitted` (`notes/durable-delegation.md`, question 1).
+    /// because the kernel answers both `NotPermitted` (`nifeos/record:notes/durable-delegation.md`, question 1).
     fn exited(&self) -> bool {
         // SAFETY: `open_schedule` mapped this page at `self.va`, and it stays mapped until
         // `retire` reclaims the region it lives in. The timetable writes the word; a volatile read
@@ -1282,7 +1282,7 @@ struct Channel {
 /// so the whole channel goes away in one `DESTROY`. `connect_seq` picks a scratch VA this process
 /// has never mapped (`page_frame::MAP` refuses an already-mapped one). `None` on any failure, which
 /// the caller answers with [`login_contract::DENIED`]. Why the channel has its own region and its
-/// own budget is in notes/login/budgets-and-reclamation.md.
+/// own budget is in nifeos/record:notes/login/budgets-and-reclamation.md.
 fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
     let region = memory_region_split(channel_ut, CHANNEL_REGION_PAGES).ok()?;
     // Every abandoned step below gives back its capability slots as well as its memory
@@ -1332,7 +1332,7 @@ fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
 /// **Mint one principal's capability set**: a fresh `fs_subtree_caretaker` attenuated to
 /// `identity`'s own home subtree (DECISIONS §117 (a principal's subtree is named by its identity
 /// string), used directly) and the construction region itself, the caretaker's logout ticket
-/// (notes/login.md, "Reclaiming a session: the design argument"), both held with full rights for
+/// (nifeos/record:notes/login.md, "Reclaiming a session: the design argument"), both held with full rights for
 /// [`delegate`] to narrow. The identity, up to `login_contract::MAXIMUM_IDENTITY` bytes, travels
 /// whole on the caretaker's grant page. `None` on any failure, answered [`login_contract::DENIED`]:
 /// a spent budget, no provisioned subtree, or `care` being `None` because `_start`'s measurement
@@ -1418,13 +1418,13 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
     // handshake `crates/system_initializer::build_caretaker` performs. An identity with no
     // provisioned subtree is answered here with no special case: the caretaker's `OPENDIR` comes
     // back `ENOENT`, it reports [`file_system_contract::DESCENT_REFUSED`], and the caller folds that
-    // into `DENIED`, like a wrong password (notes/login.md says why that fold is meant).
+    // into `DENIED`, like a wrong password (nifeos/record:notes/login.md says why that fold is meant).
     let (verdict, _, _) = receive(ready);
     capability_delete(ready);
     if verdict != file_system_contract::READY {
         capability_delete(narrow_ep);
         // The caretaker's `OPENDIR` was refused, so it has already exited and nothing runs in
-        // `region`: case (a) or a plain corpse in notes/hung-component.md's taxonomy, never (c), so
+        // `region`: case (a) or a plain corpse in nifeos/record:notes/hung-component.md's taxonomy, never (c), so
         // `DESTROY` cannot be refused for good. [`discard`], so the region's slot goes too.
         discard(region);
         return None;
@@ -1439,7 +1439,7 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
 /// (`crates/system_initializer::reclaim`'s idiom): a `DESTROY` of a region holding a live thread is
 /// refused with §16's kill armed, and preemptions later the retry succeeds. The bound is
 /// [`RECLAIM_ATTEMPTS`], not `system_initializer`'s 64, for [`Durable::retire`]'s store caretakers;
-/// notes/login/budgets-and-reclamation.md, "The bounded retry", has the measurement.
+/// nifeos/record:notes/login/budgets-and-reclamation.md, "The bounded retry", has the measurement.
 fn reclaim(region: u64) {
     for _ in 0..RECLAIM_ATTEMPTS {
         if memory_region_destroy(region) {
