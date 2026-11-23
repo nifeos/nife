@@ -9,7 +9,7 @@
 //! witnesses, one module each, with shared requests in `channel` and the role numbers and `_start`
 //! in `role` (module names provisional). See nifeos/record:notes/fs-server/the-test-client.md.
 
-//! # Capability contract (nifeos/record:notes/fs-server.md, nifeos/record:notes/abi.md §4)
+//! # Capability contract (nifeos/record:notes/fs-server.md, nifeos/record:notes/abi.md section 4)
 //! - **slot 0**: the file-service endpoint, `WRITE` (this is the directory capability; the client
 //!   `CALL`s here).
 //! - **slot 1**: the report endpoint, `WRITE`.

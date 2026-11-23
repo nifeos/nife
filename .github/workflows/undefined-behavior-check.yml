@@ -1,4 +1,4 @@
-# Miri over the host crates, weekly (milestone 79, nifeos/record:notes/undefined-behavior.md).
+# Weekly: milestone 79 (Miri over the host crates), nifeos/record:notes/undefined-behavior.md.
 #
 # **Why weekly rather than per-PR.** Miri interprets the host tests instead of executing them, at
 # roughly a thousandth of native speed, so the sampled run is tens of minutes where the host tests

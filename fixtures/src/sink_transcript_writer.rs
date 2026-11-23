@@ -1,5 +1,5 @@
 //! **A program that does not know what it is writing to** (milestone 50, split out of the `sink`
-//! binary by milestone 292; nifeos/record:notes/sink-protocol.md).
+//! binary by milestone 292 (three programs wearing one name); nifeos/record:notes/sink-protocol.md).
 //!
 //! It writes [`byte_sink_fixture::TRANSCRIPT`] to whatever is in slot 0 and reports how
 //! the last `SEND` classified, by value: "gone" and "never had one" must be two numbers to test

@@ -7,7 +7,7 @@
 //! pays from this process's own budget. It only opens the image, never creates (creation is
 //! std-gated and host-side). See nifeos/record:notes/fs-server/caches-and-io.md.
 
-//! # Capability contract (nifeos/record:notes/fs-server.md, nifeos/record:notes/abi.md §4)
+//! # Capability contract (nifeos/record:notes/fs-server.md, nifeos/record:notes/abi.md section 4)
 //! - **slot 0**: an untyped budget, the heap's (RedoxFS is alloc-heavy; nothing runs without it).
 //! - **slot 1**: the block-service endpoint, `WRITE`. The FS server is the block server's client.
 //! - **slot 2**: the file-service endpoint, `READ`. Clients `CALL` here; this is the directory

@@ -1,4 +1,4 @@
-//! The credential service's clients (milestone 56, the credential half; nifeos/record:notes/credentials.md).
+//! The credential service's clients (milestone 56 (secrets, credentials), the credential half; nifeos/record:notes/credentials.md).
 //!
 //! One binary, three roles, because a program that shares the honest path is a fairer test of a
 //! boundary than a different program failing for its own reasons. Every role holds exactly the

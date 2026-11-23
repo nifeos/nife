@@ -58,7 +58,7 @@ pub(crate) fn riscv64_initial_ramdisk_path() -> String {
         .to_string()
 }
 
-/// The packages a program can live in (milestone 175's split). See nifeos/record:notes/adding-a-program.md for
+/// The packages a program can live in (milestone 175 (split `user/`)). See nifeos/record:notes/adding-a-program.md for
 /// which one a new program belongs in.
 const PROGRAM_PACKAGES: [&str; 2] = ["components", "fixtures"];
 

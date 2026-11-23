@@ -60,7 +60,7 @@ runner = "helpers/qemu-runner-x86_64.sh"
 # unconditionally) fails to codegen at every optimization level with
 # `rustc-LLVM ERROR: Do not know how to split the result of this operator!`, because this target is
 # `-mmx,-sse,+soft-float` and there is no 128-bit vector register to legalize an AES block into.
-# That is milestone 164's whole blocker; see nifeos/record:design/roadmap/0164-x86-64-fs-server-aes.md.
+# That is the whole blocker of milestone 164 (no SSE, no scalar fallback); see nifeos/record:design/roadmap/0164-x86-64-fs-server-aes.md.
 #
 # BUGS: a typo in the cfg name is silent. `--cfg` on the command line is not checked against
 # `--check-cfg` by `unexpected_cfgs` (measured: `--cfg aes_force_sotf` on a clean rebuild of
