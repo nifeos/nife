@@ -1,4 +1,4 @@
-From a7b07b1441234ded575da437de142db5fb7d153d Mon Sep 17 00:00:00 2001
+From 235449a969c9fb4389d8f5de233c0a2ff48cbaa7 Mon Sep 17 00:00:00 2001
 From: Chris Alef <476570+calef@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 22:31:07 +0000
 Subject: [PATCH] test(rsext4): add fuzz targets for the on-disk parsers, mount
@@ -19,7 +19,8 @@ e2fsck must replay.
 ---
  fs/rsext4/fuzz/.gitignore                     |   4 +
  fs/rsext4/fuzz/Cargo.toml                     |  66 +++++++
- fs/rsext4/fuzz/README.md                      |  35 ++++
+ fs/rsext4/fuzz/README.md                      |  37 ++++
+ fs/rsext4/fuzz/README_CN.md                   |  37 ++++
  .../fuzz/fuzz_targets/directory_block.rs      |  21 +++
  fs/rsext4/fuzz/fuzz_targets/extent_tree.rs    |  10 ++
  .../fuzz_targets/group_descriptor_table.rs    |  44 +++++
@@ -29,10 +30,11 @@ e2fsck must replay.
  fs/rsext4/fuzz/fuzz_targets/superblock.rs     |  24 +++
  fs/rsext4/fuzz/make-seeds.sh                  | 140 +++++++++++++++
  fs/rsext4/fuzz/src/lib.rs                     | 170 ++++++++++++++++++
- 12 files changed, 573 insertions(+)
+ 13 files changed, 612 insertions(+)
  create mode 100644 fs/rsext4/fuzz/.gitignore
  create mode 100644 fs/rsext4/fuzz/Cargo.toml
  create mode 100644 fs/rsext4/fuzz/README.md
+ create mode 100644 fs/rsext4/fuzz/README_CN.md
  create mode 100644 fs/rsext4/fuzz/fuzz_targets/directory_block.rs
  create mode 100644 fs/rsext4/fuzz/fuzz_targets/extent_tree.rs
  create mode 100644 fs/rsext4/fuzz/fuzz_targets/group_descriptor_table.rs
@@ -127,11 +129,56 @@ index 000000000..60b470265
 +bench = false
 diff --git a/fs/rsext4/fuzz/README.md b/fs/rsext4/fuzz/README.md
 new file mode 100644
-index 000000000..24cab141d
+index 000000000..29894e6e3
 --- /dev/null
 +++ b/fs/rsext4/fuzz/README.md
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,37 @@
++# rsext4 fuzzing
++
++English | [中文](README_CN.md)
++
++This directory holds the `cargo fuzz` targets of `rsext4`. They hand arbitrary bytes to the parsing and mount paths as disk contents and check that, on a malicious or damaged image, those paths only return errors: no panic, no out-of-bounds access and no endless loop.
++
++This directory has its own `[workspace]`, outside the repository workspace, and `cargo xtask` does not build it. It needs a nightly toolchain and `cargo-fuzz` (`cargo install cargo-fuzz`).
++
++## Targets
++
++| Target | Input | Paths covered |
++|---|---|---|
++| `superblock` | a 1024-byte superblock | decoding, checksum, block size, group count, geometry checks |
++| `group_descriptor_table` | a superblock followed by a group descriptor table | decoding each descriptor at the descriptor size and group count the superblock gives |
++| `extent_tree` | one extent tree node (the 60 bytes of `i_block` or a whole block) | `ExtentTree::parse_node` |
++| `directory_block` | one directory block | the linear entry walk, and the directory block and HTree checksum tails |
++| `htree_lookup` | a whole image | after a read-only mount, `lookup_child` of every name in every directory; indexed directories take the HTree lookup |
++| `mount_and_walk` | a whole image | a read-only mount, then a bounded walk of directories, metadata, extents, extended attributes and file contents |
++| `journal_replay` | a whole image | a read-write mount (replaying the journal when recovery is needed), a read of the root directory, then an unmount |
++
++The walks are bounded (at most 512 inodes, and at most 256 KiB read from each file), so no single input can hold up an iteration with a huge image or a directory cycle.
++
++## Seed corpus
++
++```sh
++sh make-seeds.sh            # writes ./corpus/<target>/
++```
++
++The script uses `mke2fs` (e2fsprogs 1.47 or later) and a fixed time to build a few small images: 1 KiB and 4 KiB blocks, with and without `metadata_csum`, a large directory indexed by `e2fsck -D`, and an image with one committed journal transaction that needs recovery. The seeds of each parser target are cut from these images.
++
++## Running
++
++```sh
++cargo fuzz run -O mount_and_walk corpus/mount_and_walk -- -max_total_time=600 -max_len=600000
++```
++
++The whole-image targets need `-max_len` at least the size of the seed image (the `journal_replay` seed is 3 MiB).
+diff --git a/fs/rsext4/fuzz/README_CN.md b/fs/rsext4/fuzz/README_CN.md
+new file mode 100644
+index 000000000..82532047c
+--- /dev/null
++++ b/fs/rsext4/fuzz/README_CN.md
+@@ -0,0 +1,37 @@
 +# rsext4 模糊测试
++
++[English](README.md) | 中文
 +
 +本目录是 `rsext4` 的 `cargo fuzz` 目标，用于把任意字节作为磁盘内容交给解析和挂载路径，检查它们在恶意或损坏的镜像上只返回错误，不崩溃、不越界、不无限循环。
 +
@@ -211,11 +258,11 @@ index 000000000..023073a5a
 +});
 diff --git a/fs/rsext4/fuzz/fuzz_targets/group_descriptor_table.rs b/fs/rsext4/fuzz/fuzz_targets/group_descriptor_table.rs
 new file mode 100644
-index 000000000..bf468ea3d
+index 000000000..b98499e49
 --- /dev/null
 +++ b/fs/rsext4/fuzz/fuzz_targets/group_descriptor_table.rs
 @@ -0,0 +1,44 @@
-+//! Decodes the group descriptors that follow a superblock. The input is a 1,024-byte superblock
++//! Decodes the group descriptors that follow a superblock. The input is a 1024-byte superblock
 +//! followed by the descriptor table; the superblock gives the descriptor size and group count, as
 +//! it does at mount.
 +#![no_main]
@@ -338,11 +385,11 @@ index 000000000..b5df06b8c
 +});
 diff --git a/fs/rsext4/fuzz/fuzz_targets/superblock.rs b/fs/rsext4/fuzz/fuzz_targets/superblock.rs
 new file mode 100644
-index 000000000..710184a48
+index 000000000..ad2c61bea
 --- /dev/null
 +++ b/fs/rsext4/fuzz/fuzz_targets/superblock.rs
 @@ -0,0 +1,24 @@
-+//! Decodes a 1,024-byte ext4 superblock and runs every check mount runs on it before it reads
++//! Decodes a 1024-byte ext4 superblock and runs every check mount runs on it before it reads
 +//! anything else.
 +#![no_main]
 +

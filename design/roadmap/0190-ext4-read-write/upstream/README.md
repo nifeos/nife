@@ -11,7 +11,7 @@ reviewed its text and given a separate go.
 - [`2a-free-empty-extent-index.md`](2a-free-empty-extent-index.md): upstream item 2's first
   defect, a depth-2 truncate that fails with `extent:empty_index`.
 - [`2b-restore-truncate-tail.md`](2b-restore-truncate-tail.md): item 2's second defect, a failed
-  truncate that leaves the file's tail zeroed.
+  truncate that leaves the file's tail zeroed; it files after 2a and moves onto it once 2a lands.
 - [`4-fuzz-targets.md`](4-fuzz-targets.md): upstream item 4, seven `cargo fuzz` targets over the
   parsers, mount and journal replay, with an `mke2fs` seed corpus; it files after item 5.
 - [`7-mount-refusal-reason.md`](7-mount-refusal-reason.md): upstream item 7, a refused mount

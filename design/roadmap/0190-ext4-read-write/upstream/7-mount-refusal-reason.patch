@@ -1,4 +1,4 @@
-From 4e39d389ee47c725961cddc3b01c235d29ef2910 Mon Sep 17 00:00:00 2001
+From 41261a9b66f02a9aebc7486dc23b7e8310f96752 Mon Sep 17 00:00:00 2001
 From: Chris Alef <476570+calef@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 22:31:07 +0000
 Subject: [PATCH] fix(rsext4): report why mount refused the superblock
@@ -96,7 +96,7 @@ index 46311baf6..7107b7b6b 100644
              .verify_superblock()
              .map_err(|error| error.with_operation("mount:superblock_checksum"))?;
 diff --git a/fs/rsext4/tests/error_handling.rs b/fs/rsext4/tests/error_handling.rs
-index 731ba9914..db2543ec0 100644
+index 731ba9914..c921f5b9c 100644
 --- a/fs/rsext4/tests/error_handling.rs
 +++ b/fs/rsext4/tests/error_handling.rs
 @@ -152,6 +152,39 @@ mod error_handling_tests {
@@ -118,7 +118,7 @@ index 731ba9914..db2543ec0 100644
 +        assert_eq!(error.kind(), Ext4ErrorKind::InvalidMagic, "{error:?}");
 +
 +        // A 1 KiB-block superblock (`s_log_block_size` is 0 in the zeroed
-+        // image) on a device of 4,096-byte sectors.
++        // image) on a device of 4096-byte sectors.
 +        device = ErrorMockDevice::new(1024 * 1024);
 +        device.data[magic_offset..magic_offset + 2]
 +            .copy_from_slice(&rsext4::EXT4_SUPER_MAGIC.to_le_bytes());

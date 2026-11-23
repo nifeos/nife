@@ -11,27 +11,33 @@ either; the architect reviews this text before anyone files it.
 - Issue title: `test(rsext4): fuzz the on-disk parsers, mount and journal replay`
 - Pull request title: `test(rsext4): add fuzz targets for the on-disk parsers, mount and journal replay`
 - Filing order: after item 5, the group-descriptor fix on its own pull request.
+- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar and
+  the filer sets: Assignees `calef`, labels `task` and `q4`, Type `Task`, Milestone `2026Q4`.
 
 ## Issue to file first (Chinese, as filed)
 
-### 当前问题
+```markdown
+## 当前问题
 
 `rsext4` 读取的每个字节都来自磁盘，而磁盘内容可能损坏，也可能被恶意构造（例如插入的 U 盘或下载的镜像）。crate 已有大量针对具体错误的单元测试和契约测试，但没有用任意输入检验解析和挂载路径的手段。仓库中目前没有任何 `cargo fuzz` 目标。期望结果：超级块、块组描述符、extent 树、目录块、HTree 索引和日志重放遇到不一致的字段时返回错误，而不是越界、溢出、死循环或耗尽内存。影响的组件：`fs/rsext4`。
 
-### 修改方案
+## 修改方案
 
 - 交付范围：在 `fs/rsext4/fuzz/` 新增一个 `cargo-fuzz` crate，覆盖上述解析器、只读挂载与遍历、HTree 查找和日志重放，并附一个用 `mke2fs` 生成种子语料的脚本。
 - 不包含：对 `rsext4` 源代码的任何修改，以及持续集成任务。fuzz 发现的问题各自另开 Issue。
 - 依赖和兼容性：fuzz crate 不加入仓库工作区，依赖 `libfuzzer-sys` 和夜间工具链；`rsext4` 本身的依赖和行为不变。
+- 负责人：@calef。期望季度：2026Q4。
 
-### 测试验证
+## 测试验证
 
 - 验收条件：每个目标都能用 `cargo fuzz build -O` 编译；在种子语料上各运行 600 秒，没有崩溃、超时或内存超限；种子确实到达预期路径（整镜像种子可以挂载，日志种子在读写挂载时被重放）。
 - 环境：x86_64 Linux，夜间 Rust 工具链，`cargo-fuzz`，e2fsprogs。
+```
 
 ## Issue to file first (English rendering, for review)
 
-### Current problem
+```markdown
+## Current problem
 
 Every byte `rsext4` reads comes from a disk, and a disk can arrive damaged or built to attack (a USB
 stick someone plugs in, an image someone downloads). The crate has many unit and contract tests for
@@ -41,7 +47,7 @@ descriptors, extent tree, directory blocks, hash-tree index or journal replay me
 not agree, they return an error, not index out of bounds, overflow, loop forever or run out of
 memory. The component affected is `fs/rsext4`.
 
-### Proposed change
+## Proposed change
 
 - Scope: a new `cargo-fuzz` crate in `fs/rsext4/fuzz/` covering those parsers, a read-only mount
   and walk, hash-tree lookup and journal replay, with a script that builds a seed corpus with
@@ -51,23 +57,26 @@ memory. The component affected is `fs/rsext4`.
 - Dependencies and compatibility: the fuzz crate stays out of the repository workspace and depends
   on `libfuzzer-sys` and the nightly toolchain; `rsext4`'s own dependencies and behavior do not
   change.
+- Owner: @calef. Target quarter: 2026Q4.
 
-### Testing and verification
+## Testing and verification
 
 - Acceptance: every target builds with `cargo fuzz build -O`; each runs 600 seconds on its seed
   corpus with no crash, timeout or out-of-memory; the seeds reach the intended paths (the
   whole-image seeds mount, and a read-write mount replays the journal seed).
 - Environment: x86_64 Linux, the nightly Rust toolchain, `cargo-fuzz`, e2fsprogs.
+```
 
 ## Pull request body (Chinese, as filed)
 
-### 当前问题
+```markdown
+## 当前问题
 
 关联 Issue：#<to be filled>
 
 `rsext4` 没有用任意输入检验磁盘解析和挂载路径的手段，仓库中也没有任何 `cargo fuzz` 目标（详见关联 Issue）。本 PR 交付该 Issue 的全部范围：七个 fuzz 目标和种子语料脚本，不修改 `rsext4` 本身。
 
-### 修改方案
+## 修改方案
 
 新增 `fs/rsext4/fuzz/`，一个 `cargo-fuzz` crate，有七个目标：
 
@@ -82,21 +91,23 @@ memory. The component affected is `fs/rsext4`.
 | `journal_replay` | 整个镜像 | 读写挂载（需要恢复时重放日志），读根目录后卸载 |
 
 - `src/lib.rs` 提供共用部分：以输入为内容的内存块设备（512 字节扇区，因此任何块大小都能挂载）、固定时钟，以及有上限的遍历（最多 512 个 inode，每个文件最多读 256 KiB）。整镜像目标用内存设备而不是文件，使每次迭代不触碰磁盘；512 字节扇区让 1 KiB 块的镜像也能挂载，否则大部分输入会在块大小一步被拒绝。遍历设上限，是因为损坏的镜像可以让目录成环或声称文件极大，没有上限时一次迭代可能超时，掩盖真正的问题；上限只限制 fuzz 目标的工作量，不改变 crate 的行为。
-- `make-seeds.sh` 用 `mke2fs` 和固定时间生成种子语料：1 KiB 和 4 KiB 块、有无 `metadata_csum`、一个由 `e2fsck -D` 建立索引的 150 项目录，以及一个带一条已提交日志事务的镜像。解析器目标的种子从这些镜像中截取，使变异从合法结构开始，而不是从随机字节开始。日志种子由脚本自己写入一条已提交事务（描述块、两个数据块、提交块）并标记文件系统需要恢复，因为 `debugfs` 的日志写入命令在这个版本上不留下已提交的事务。脚本用 `debugfs logdump` 确认事务存在，并用 `e2fsck` 重放一份副本、检查目标块确实被改写，任何一步不符都会失败，所以种子总是一个 Linux 工具认可的需要重放的镜像。
-- `README.md` 说明目标、语料和运行方法。
+- `make-seeds.sh` 用 `mke2fs` 和固定时间生成种子语料：1 KiB 和 4 KiB 块、有无 `metadata_csum`、一个由 `e2fsck -D` 建立索引的 150 项目录，以及一个带一条已提交日志事务的镜像。解析器目标的种子从这些镜像中截取，使变异从合法结构开始，而不是从随机字节开始。日志种子由脚本自己写入一条已提交事务（描述块、两个数据块、提交块）并标记文件系统需要恢复，因为 `debugfs` 的日志写入命令在这个版本上不留下已提交的事务。脚本用 `debugfs logdump` 确认事务存在，并用 `e2fsck` 重放一份副本、检查目标块确实被改写，任何一步不符都会失败，所以种子总是一个 `e2fsck` 认可需要重放的镜像。
+- `README.md`（英文）和 `README_CN.md`（中文）说明目标、语料和运行方法，两者在标题下互相链接，与 `fs/rsext4` 的 `README.md` 和 `README_CN.md` 相同。
 - 兼容性和受影响范围：目标只调用 crate 的公开接口，不修改 `rsext4`，因此不改变任何行为。fuzz crate 有自己的 `[workspace]`，不加入仓库工作区：`cargo fuzz` 需要夜间工具链和 sanitizer 编译选项，加入工作区会让 `cargo xtask` 的构建和检查都去编译 `libfuzzer-sys`。`libfuzzer-sys` 是 `cargo fuzz` 的标准依赖，只在这个不发布的 crate 中使用（`publish = false`）；`rsext4` 的依赖不变。按 `fs/rsext4/.gitignore` 的现有约定，不提交 `Cargo.lock`。
 
-### 测试验证
+## 测试验证
 
 - 每个目标在本地运行 600 秒（`cargo fuzz run -O <目标> corpus/<目标> -- -max_total_time=600 -timeout=10`，rustc nightly 2026-11-12，cargo-fuzz 0.13.2，x86_64 Linux，e2fsprogs 1.47.2），全部没有崩溃、超时或内存超限。运行次数见下文。
 - 用一个不提交的小程序确认种子覆盖预期路径：三个遍历镜像和索引目录镜像都能通过 fuzz crate 的设备挂载，遍历到的每个名字都能用 `lookup_child` 找到；日志镜像以读写方式挂载时，重放把事务中的两个块写回文件系统。
 - `cargo xtask clippy --package rsext4` 通过；fuzz crate 上 `cargo clippy --all-targets -- -D warnings` 通过；`cargo fmt --check` 无改动。
 - 未运行 `cargo xtask test`：本改动不修改任何被测软件包的源代码，fuzz crate 不在工作区中，`xtask` 不会构建它。
 - 未验证：持续集成中的运行。本 PR 不增加持续集成任务；如果维护者希望，我们可以之后另提一个 PR，在持续集成中至少检查 fuzz crate 能够编译。
+```
 
 ## Pull request body (English rendering, for review)
 
-### Current problem
+```markdown
+## Current problem
 
 Linked issue: #<to be filled>
 
@@ -105,13 +116,13 @@ repository has no `cargo fuzz` target (see the linked issue). This pull request 
 issue's whole scope: seven fuzz targets and the seed corpus script, with no change to `rsext4`
 itself.
 
-### Proposed change
+## Proposed change
 
 A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
 
 | Target | Input | Path covered |
 |---|---|---|
-| `superblock` | a 1,024-byte superblock | decoding, checksum, block size, group count, geometry checks |
+| `superblock` | a 1024-byte superblock | decoding, checksum, block size, group count, geometry checks |
 | `group_descriptor_table` | a superblock followed by the descriptor table | each descriptor decoded with the superblock's descriptor size and group count, and `BlockGroupDescTable` |
 | `extent_tree` | one extent-tree node | `ExtentTree::parse_node` |
 | `directory_block` | one directory block | `DirEntryIterator`, `classic_dir::list_entries`, the directory-block and hash-tree checksum tails |
@@ -137,7 +148,9 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
   `debugfs logdump`, replays a copy with `e2fsck` and checks that the target blocks really
   changed. It fails if any step does not match, so the seed is always an image `e2fsck` agrees
   needs replay.
-- `README.md` describes the targets, the corpus and how to run them.
+- `README.md` (English) and `README_CN.md` (Chinese) describe the targets, the corpus and how to
+  run them, and link to each other under the title, as `fs/rsext4`'s `README.md` and
+  `README_CN.md` do.
 - Compatibility and scope: the targets call only the crate's public interface and do not change
   `rsext4`, so no behavior changes. The fuzz crate has its own `[workspace]` and stays out of the
   repository workspace. `cargo fuzz` needs the nightly toolchain and sanitizer flags, and joining
@@ -146,7 +159,7 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
   (`publish = false`); `rsext4`'s own dependencies do not change. Following the existing rule in
   `fs/rsext4/.gitignore`, the change commits no `Cargo.lock`.
 
-### Testing and verification
+## Testing and verification
 
 - Each target ran locally for 600 seconds (`cargo fuzz run -O <target> corpus/<target> --
   -max_total_time=600 -timeout=10`; rustc nightly 2026-11-12, cargo-fuzz 0.13.2, x86_64 Linux,
@@ -161,6 +174,7 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
   crate is outside the workspace, so `xtask` does not build it.
 - Not verified: a run in CI. This pull request adds no CI job; if the maintainers want one, we can
   send a later pull request that at least checks in CI that the fuzz crate builds.
+```
 
 ## Notes for the reviewer (not filed)
 
@@ -174,7 +188,7 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
   aborting at `table.rs:36:23` with `misaligned pointer dereference`, so this draft leaves the
   defect to item 5 and files after it. The `group_descriptor_table` target calls
   `let _ = view.get_desc(..)`, which compiles whether `get_desc` returns a reference or item 5's
-  value. The target never tripped the abort, because the slice it passes starts 1,024 bytes into
+  value. The target never tripped the abort, because the slice it passes starts 1024 bytes into
   libFuzzer's buffer and is always aligned.
 - **No run found a crash,** so no crash report draft accompanies this one. Ten minutes per target is
   short, especially for the whole-image targets (33,066 to 273,613 runs); nife's fuzz rotation
