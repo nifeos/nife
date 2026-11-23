@@ -384,3 +384,5 @@ week,crate,breaking,additions,commits,commits_crossing
 2026W47,static_elf,17,28,25,9
 2026W47,std_runtime_contract,0,0,6,6
 2026W47,supervision_contract,0,0,3,3
+2026W48,file_system_contract,217,0,0,0
+2026W48,moho_abi,158,0,0,0
