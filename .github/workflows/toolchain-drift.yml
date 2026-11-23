@@ -1,7 +1,7 @@
 name: toolchain drift
 
 # Observed failing: 2026-10-02, run 37012847603: red because the std overlay no longer builds
-#   against the latest nightly (E0432 in std's own sources). See notes/observed-failing.md.
+#   against the latest nightly (E0432 in std's own sources). See nifeos/record:notes/observed-failing.md.
 
 # **Does the newest nightly still build us?** Asked daily, answered before it matters.
 #
@@ -89,7 +89,7 @@ jobs:
       # shape script/drift's header argues against: a command no developer runs has no witness. It
       # stays here because moving it into script/drift would make a developer's `script/drift` delete
       # their std farm and take the account-wide `nife-dev` toolchain link, which is a cost worth
-      # deciding rather than absorbing. See design/roadmap/0312-drift-bare-metal-list.md's BUGS.
+      # deciding rather than absorbing. See nifeos/record:design/roadmap/0312-drift-bare-metal-list.md's BUGS.
       - name: Build the std overlay (the fragile part)
         run: |
           rm -rf target/nife-farm

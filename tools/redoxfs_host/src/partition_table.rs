@@ -102,7 +102,7 @@ pub(crate) fn parse_table<'a>(
 /// `FileSystem::open` scans blocks 0..65536 for a header, so a partitioned device opens whatever
 /// filesystem lies in its first 256 MiB: perhaps a partition nobody named, never one further out,
 /// and with the allocator sized from the whole device. A warning rather than a refusal, because the
-/// bytes do come back. See notes/host-recovery/devices-and-partitions.md.
+/// bytes do come back. See nifeos/record:notes/host-recovery/devices-and-partitions.md.
 pub(crate) fn warn_if_partitioned(file: &File, path: &Path) {
     let Ok(head) = read_head(file, path) else {
         return;

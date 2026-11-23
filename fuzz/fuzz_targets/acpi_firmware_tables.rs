@@ -11,7 +11,7 @@
 //! header), so one corpus serves all five and a seed is a body with its selector in front.
 //! Properties beyond "no panic and no hang": every IVRS unity region (an IOMMU identity mapping)
 //! is page aligned, non-empty and does not wrap the address space; the recorded counts stay
-//! inside their arrays; every recorded device range is ordered. notes/fuzzing.md has the rest.
+//! inside their arrays; every recorded device range is ordered. nifeos/record:notes/fuzzing.md has the rest.
 
 #![no_main]
 

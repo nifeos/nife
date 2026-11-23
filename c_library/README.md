@@ -201,7 +201,7 @@ fio (milestone 833 (the same storage benchmark on nife and Linux)) added these o
 also reversible: `sys/resource.h` without its limits, `libgen.h`, `select` and `pselect` on the
 platform layer's `poll`, `O_SYNC` and `O_DSYNC` (a write is synced before it returns), and the
 honest refusals in `dlfcn.h`, `syslog.h`, `netdb.h` and `sys/shm.h`, so a program that only links
-them builds. `notes/fio-on-nife.md` has what fio needed and why. `fixtures/c/c_library_contract.c`
+them builds. `nifeos/record:notes/fio-on-nife.md` has what fio needed and why. `fixtures/c/c_library_contract.c`
 checks each, built by `helpers/build-c-library-contract.sh` and run by `c_thread_tests`.
 
 ## BUGS
@@ -287,5 +287,5 @@ checks each, built by `helpers/build-c-library-contract.sh` and run by `c_thread
 - **Nothing runs this in CI.** The two programs are fetched from their projects' servers, so the
   tests skip unless their `helpers/build-*.sh` ran. calef ruled on #1896 that foreign programs are
   tested in basalt's package build, not in nife
-  (`design/roadmap/0897-sqlite-is-packaged-in-basalt.md`). Milestone 869 (the C library's
+  (`nifeos/record:design/roadmap/0897-sqlite-is-packaged-in-basalt.md`). Milestone 869 (the C library's
   headers cannot drift, and its contract is tested in nife) gives the library its own tests in CI.

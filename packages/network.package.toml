@@ -2,7 +2,7 @@
 #
 # Milestone 611 (every program and crate belongs to a package). The package's name, kind, home
 # and membership are provisional, the lane's proposal for calef to ratify; the format is
-# helpers/packages.py's header, and notes/package-boundaries.md has the table and the reasons.
+# helpers/packages.py's header, and nifeos/record:notes/package-boundaries.md has the table and the reasons.
 
 name = "network"
 kind = "base"

@@ -12,7 +12,7 @@
 # A scale of 0 skips step 1, and a deadline of 0 skips step 2.
 #
 # It needs the project's QEMU on PATH and the toolchain script/bootstrap installs. Logs land in
-# target/host-reordering/. See notes/benchmarks/host-reordering-under-tcg.md.
+# target/host-reordering/. See nifeos/record:notes/benchmarks/host-reordering-under-tcg.md.
 set -u
 cd "$(dirname "$0")/../.." || exit 1
 # shellcheck source=helpers/qemu-path.sh

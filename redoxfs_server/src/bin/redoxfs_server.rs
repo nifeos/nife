@@ -5,9 +5,9 @@
 //! (milestone 138 step 4), wrapped in [`redoxfs_server::CachedDisk`] (step 2). [`serve`] answers
 //! requests through the one-shot Reply the kernel mints. The heap is untyped-backed, so RedoxFS
 //! pays from this process's own budget. It only opens the image, never creates (creation is
-//! std-gated and host-side). See notes/fs-server/caches-and-io.md.
+//! std-gated and host-side). See nifeos/record:notes/fs-server/caches-and-io.md.
 
-//! # Capability contract (notes/fs-server.md, notes/abi.md §4)
+//! # Capability contract (nifeos/record:notes/fs-server.md, nifeos/record:notes/abi.md section 4)
 //! - **slot 0**: an untyped budget, the heap's (RedoxFS is alloc-heavy; nothing runs without it).
 //! - **slot 1**: the block-service endpoint, `WRITE`. The FS server is the block server's client.
 //! - **slot 2**: the file-service endpoint, `READ`. Clients `CALL` here; this is the directory
@@ -27,7 +27,7 @@
 //!   filesystem client channel)): the shell, `login`, the identity provisioner and the progenitor's
 //!   own activation calls. They are kept apart by being blocked, not by mapping: the progenitor
 //!   calls only while the shell waits on it, and nothing connects to `login` in the shipped boot. A
-//!   job behind a directory grant gets a window of its own. See `notes/page-frame-slice.md`.
+//!   job behind a directory grant gets a window of its own. See `nifeos/record:notes/page-frame-slice.md`.
 
 #![no_std]
 #![no_main]
@@ -116,7 +116,7 @@ const VERIFY_WRITES: bool = false;
 
 /// The crash injector (milestone 37, DECISIONS §34 condition 1), armed by this process's START
 /// arguments and inert otherwise. The seam is [`IpcDisk`], and the `Spawn` literal arms it, so a
-/// boot that does not ask for a crash cannot get one. See notes/fs-server/crash-consistency.md.
+/// boot that does not ask for a crash cannot get one. See nifeos/record:notes/fs-server/crash-consistency.md.
 ///
 /// - `arg0` (`CRASH_AT_WRITE`): which file-service `WRITE` request to die inside, counted from 1.
 ///   Zero disables the injector, as on every boot but the crash test's.

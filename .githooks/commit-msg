@@ -17,7 +17,7 @@
 # With neither set the hook exits 0 untouched, so calef's own commits never see it.
 #
 # Not a security boundary. An agent that clears its environment, a harness not listed above, or
-# `git commit --no-verify` goes through unchecked; see BUGS in design/roadmap/0725-*.md.
+# `git commit --no-verify` goes through unchecked; see BUGS in nifeos/record:design/roadmap/0725-*.md.
 #
 # Installed by `script/setup` via core.hooksPath, beside pre-push. Self-test:
 # helpers/commit-msg-selftest.sh, run by script/lint.

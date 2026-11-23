@@ -2,7 +2,7 @@ name: architect label
 
 # Observed failing: 2026-10-04, run 37226530701: fired on #1617's `crates/moho_abi` change
 #   (abi-surface), applied `needs-architect` (github-actions[bot], 18:59:39Z) and commented. Green by
-#   design; the label is the arm that carries the claim. See notes/observed-failing.md.
+#   design; the label is the arm that carries the claim. See nifeos/record:notes/observed-failing.md.
 
 # **The general case of `coe-architect-label.yml`.** That workflow's own header quotes §88 (`needs-
 # architect` as a required check, rather than as a script's restraint): it built the enforcement
@@ -11,7 +11,7 @@ name: architect label
 # the label when the system call surface or the dependency graph moved... the second is the real
 # answer,"* then built one shape of it, a correction of error. This workflow is the rest of it: the
 # system call surface, the dependency graph, a format crate's wire layout, the spawn protocol, and
-# CLAUDE.md/`design/decisions/`. A bookkeeping edit to a decision (a link retargeted, a backticked
+# CLAUDE.md/`nifeos/record:design/decisions/`. A bookkeeping edit to a decision (a link retargeted, a backticked
 # path moved, a paragraph rewrapped) no longer fires: calef ruled on 2026-10-11 (UTC) that it does
 # not need him, and §88 (`needs-architect` as a required check)'s amendment records it.
 #
@@ -53,7 +53,7 @@ name: architect label
 # re-evaluated, regardless of what its diff still matches. The maintainer applies it with
 # `script/record-ruling`, which posts the ruling (what calef said) and swaps the labels in one step
 # (lane/architect-queue, 2026-10-06), the same discipline
-# `Blocked-by: #N` uses for a hold that releases itself (notes/merge-queue.md); this is a hold that
+# `Blocked-by: #N` uses for a hold that releases itself (nifeos/record:notes/merge-queue.md); this is a hold that
 # a decision releases rather than a commit. **Scope: it sticks until a person removes it.** A later
 # push with a decision the ruling did not cover is not re-flagged; the maintainer removes the label
 # when they see one (helpers/architect-ruled.sh has the record). The check reads the LIVE labels
@@ -217,7 +217,7 @@ jobs:
           fi
 
       # **Never fails the build, same as `coe-architect-label.yml`'s label step and for the same
-      # reason: this is a convenience that routes attention, not a gate**, and no `design/decisions/`
+      # reason: this is a convenience that routes attention, not a gate**, and no `nifeos/record:design/decisions/`
       # section or dependency addition should ever be blocked from existing because a label API call
       # failed. `--repo` is passed explicitly for the same reason that workflow's own header records
       # about the cost of leaving it out: this job never checks the repository out under a git

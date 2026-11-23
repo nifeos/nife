@@ -4,7 +4,7 @@
 //! TLS. `jig` (a confined `std` program) reads all of what was fetched; the progenitor then reads
 //! the copy of up to `COPY_MAXIMUM` (4095) bytes. Nothing in the crate has a Kani harness, so this
 //! is the only thing that runs `Index::parse`, `Location::parse` and `Location::check` on text
-//! nobody here wrote. The sixth outsider pass (notes/confinement-outsider-pass-6.md) booted an
+//! nobody here wrote. The sixth outsider pass (nifeos/record:notes/confinement-outsider-pass-6.md) booted an
 //! escape through `Location`, so the address check is the property that matters most here.
 //!
 //! # The input

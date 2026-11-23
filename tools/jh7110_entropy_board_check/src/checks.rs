@@ -2,7 +2,7 @@
 //!
 //! One boot runs them all, from the block's state as the board leaves reset to a capture of
 //! 40,960 generations. Each poll is bounded by one second of the `time` CSR, so a block that never
-//! answers ends a check with `timeouts` counted rather than a hang. notes/jh7110-entropy-board-check.md
+//! answers ends a check with `timeouts` counted rather than a hang. nifeos/record:notes/jh7110-entropy-board-check.md
 //! lists every record and the pass criterion `results.py` applies to it.
 //!
 //! Name: provisional.

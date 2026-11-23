@@ -1,6 +1,6 @@
 # Name: ratified 2026-10-22 (calef, #2562). The programs that exist to exercise or measure the
 # system rather than to be shipped: test clients, attackers that share the honest path, stand-in
-# servers, workloads and benchmarks. design/roadmap/0039-repository-structure.md's "Not everything
+# servers, workloads and benchmarks. nifeos/record:design/roadmap/0039-repository-structure.md's "Not everything
 # in `user/` is a service" called mixing them with the real components "much of why the directory
 # reads as shapeless"; this is that separation. `tests/` would be wrong, since Cargo owns that
 # directory name and these are `[[bin]]` targets rather than test harnesses.
@@ -207,7 +207,7 @@ bench = false
 # The interrupt_ignorer (DECISIONS §24): a runaway that ignores the interrupt; only the forcible
 # tier (the shell tearing its region down) ends it. The case the second ^C exists for.
 # The soaker, milestone 219 (the boot tour ends and the kernel halts): the workload that does not
-# stop, so that `design/fatal-risks/README.md`'s multicore entry has something to run its decisive
+# stop, so that `nifeos/record:design/fatal-risks/README.md`'s multicore entry has something to run its decisive
 # experiment against. Cross-core IPC round trips forever, publishing its progress in a page the
 # kernel reads.
 [[bin]]

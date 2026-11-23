@@ -4,7 +4,7 @@ Architecture: aarch64
 Line: installed/unvouched
 
 Milestone 673 (the confinement table lists the unvouched child), row 31 of
-notes/confinement-claims.md. `script/falsifications --sweep xtask` replays it since milestone 742
+nifeos/record:notes/confinement-claims.md. `script/falsifications --sweep xtask` replays it since milestone 742
 (provisional): it boots `script/swish-check --arch aarch64` with this patch applied and calls it
 red only when swish-check's FAILED report names the `Line:` above. By hand, the same thing is:
 
@@ -15,7 +15,7 @@ red only when swish-check's FAILED report names the `Line:` above. By hand, the 
 The defect is the progenitor endowing the process domain to a child whose bytes nobody vouched for
 (`wants_domain` true whatever the manifest says). The domain is the first of the three authorities
 the fixture `installed/unvouched` (`unreachable_network_witness`, stripped so no table vouches for
-it) probes with a real request, and the table in notes/packages/running-unvouched.md records the
+it) probes with a real request, and the table in nifeos/record:notes/packages/running-unvouched.md records the
 same defect for entropy and the network, each turned red by hand once (commit b555bfb3d). This
 record is the one of the three that can be replayed.
 

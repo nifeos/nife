@@ -4,7 +4,7 @@
 //! the kernel compiles in), then the kernel, then the loader embedding both, whose build
 //! (`uefi_loader/build.rs`) refuses a pair the kernel does not vouch for. `stick_maker` embeds only
 //! finished loaders, so nothing downstream can pair a kernel with the wrong archive. See
-//! notes/boot-stick.md.
+//! nifeos/record:notes/boot-stick.md.
 //!
 //! Names: `stick` and `stick-boot` are provisional (this lane, 2026-09-19), in the family of
 //! `uefi-image` and `uefi-boot`, naming what they make and what they check.
@@ -441,7 +441,7 @@ fn verdict_failed(transcript: &str) -> Option<String> {
 /// other path. Boots twice: the stick directory on QEMU's default GICv2 with a `GICv2m` frame, then
 /// the cloud boot disk ([`crate::cloud_image`]) a person imports into Oracle, so every run boots it,
 /// with `gic-version=3` (the only `virt` with an ITS under TCG), asserting the loader's GICv3 and
-/// ITS lines (MADT types 0x0E and 0x0F). See notes/boot-stick/device-tree-handover.md.
+/// ITS lines (MADT types 0x0E and 0x0F). See nifeos/record:notes/boot-stick/device-tree-handover.md.
 ///
 /// Name: provisional (milestone 578's lane, 2026-10-19 UTC), in the family of `stick-boot` and
 /// `uefi-boot`, naming the description it boots from.

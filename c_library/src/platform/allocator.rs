@@ -2,7 +2,7 @@
 //! files, clock and memory)).
 //!
 //! relibc's dlmalloc is not seeded: §31 (the foreign-language seam) rule 4 ties a C program's heap
-//! to `std`'s `GlobalAlloc` (`talc`, notes/std.md), so C and Rust share one heap and one budget.
+//! to `std`'s `GlobalAlloc` (`talc`, nifeos/record:notes/std.md), so C and Rust share one heap and one budget.
 //! C's `free` gets only a pointer and `std::alloc::dealloc` needs the layout back, so every block
 //! carries a 16-byte header just below the pointer handed out: the requested size, then the
 //! alignment. The header takes `ALIGN` bytes (at least 16) so the pointer keeps the block's

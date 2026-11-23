@@ -8,13 +8,13 @@ name: codeql
 #   actions is allowed per job per tool/category"), which is why the retry below is its own job.
 #   Post-toggle, run 37867349621's uploads were still rejected with the same message ten minutes
 #   after the change; a rerun of the failed jobs went green. A red upload soon after the toggle is
-#   propagation until a rerun says otherwise (notes/code-scanning.md, 2026-10-09 UTC).
+#   propagation until a rerun says otherwise (nifeos/record:notes/code-scanning.md, 2026-10-09 UTC).
 
 # CodeQL advanced setup, decided 2026-10-08 (UTC). Until this file, scanning ran through default
 # setup, which DECISIONS §36 (the repository is part of the TCB) chose while the Rust extractor
 # was moving fast, on stated revisit triggers. Two fired by 2026-10-07: five alerts landed in
 # `vendor/redoxfs`, which default setup cannot exclude from analysis, and six `Analyze (rust)`
-# uploads failed 17 seconds in with no retry available (notes/code-scanning.md, its BUGS).
+# uploads failed 17 seconds in with no retry available (nifeos/record:notes/code-scanning.md, its BUGS).
 # calef ordered option 1 of that note's open decision (advanced setup) on 2026-10-08; the note
 # carries the decided record. Reversible by deleting this file, which is what default setup was
 # kept for until the triggers fired.
@@ -22,9 +22,9 @@ name: codeql
 # **The upload waits on calef toggling default setup OFF.** GitHub rejects advanced-setup uploads
 # while default setup is enabled, and toggling it is an admin act in repository settings, outside
 # this tree (§36 records why settings are not committed). Until the toggle (ordered 2026-10-08,
-# at or just before merge; the day it happened is recorded in notes/code-scanning.md), both upload
+# at or just before merge; the day it happened is recorded in nifeos/record:notes/code-scanning.md), both upload
 # jobs below are red on every run, on purpose. The failure is not swallowed: CodeQL is not a
-# required check (notes/repo-hardening.md, its second section), so red here blocks no merge, and
+# required check (nifeos/record:notes/repo-hardening.md, its second section), so red here blocks no merge, and
 # the first push after the toggle goes green with no change to this file.
 #
 # The matrix mirrors what default setup analyzed, read from the API on 2026-10-09 (UTC):
@@ -40,7 +40,7 @@ name: codeql
 # category.
 
 # **`main` is scanned on every push; a pull request is not scanned.** These checks are not
-# required (notes/repo-hardening.md again, and ruleset 19596094's required list, read 2026-11-03
+# required (nifeos/record:notes/repo-hardening.md again, and ruleset 19596094's required list, read 2026-11-03
 # UTC), no required job depends on them, and the ruleset has no code-scanning rule, so a pull
 # request's scan gated nothing. It cost the hosted pool four analysis jobs and four uploads per
 # ready push, about 215 runner-minutes over the last 30 pull request runs on 2026-11-03 (UTC),

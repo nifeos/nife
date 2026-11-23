@@ -1,6 +1,6 @@
 //! The `getrandom` backend for nife. `getrandom` picks its source by `target_os` and ends in
 //! `compile_error!` with no `nife` arm, so most of crates.io failed to build here
-//! (notes/crates-io-on-nife.md). This is upstream's documented `custom` backend: one
+//! (nifeos/record:notes/crates-io-on-nife.md). This is upstream's documented `custom` backend: one
 //! `extern "Rust"` function per `getrandom` shape, each a `SystemRng` draw.
 //!
 //! ```text
@@ -16,7 +16,7 @@
 //! linked, so without that line the build stops at `undefined symbol: __getrandom_v03_custom`. The
 //! crate is its own workspace at the tree root, like `std_exerciser`, so it builds only for a
 //! `*-unknown-nife` target with build-std and its `--cfg` never reaches the workspace crates.
-//! notes/cryptography-provider/the-getrandom-gap.md has why it is a crate and not a patch.
+//! nifeos/record:notes/cryptography-provider/the-getrandom-gap.md has why it is a crate and not a patch.
 
 //! # BUGS
 //!
@@ -27,7 +27,7 @@
 //!   `Error` types are layout-identical, which neither crate promises.
 //! - A draw panics when the process holds no entropy capability, as `SystemRng` does; there is no
 //!   degraded mode, so a program using `rand` must be granted entropy.
-//! - Nothing in the tree's gate builds this crate; the probe harness in notes/crates-io-on-nife.md
+//! - Nothing in the tree's gate builds this crate; the probe harness in nifeos/record:notes/crates-io-on-nife.md
 //!   and its consumers exercise it.
 
 #![feature(random)]

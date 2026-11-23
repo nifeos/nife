@@ -8,7 +8,7 @@
 //! it SENDs a magic word and the committed byte count, so the test can also assert the heap grew
 //! and stayed inside its cap.
 
-//! # Capability contract (notes/abi.md §4)
+//! # Capability contract (nifeos/record:notes/abi.md §4)
 //! - slot 0: the untyped budget the heap draws from
 //! - slot 1: the report endpoint (WRITE)
 //!

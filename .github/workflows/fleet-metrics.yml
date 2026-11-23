@@ -5,7 +5,7 @@ name: fleet metrics
 #   untouched, which is the outcome the last step re-raises as red. A real run could not be staged:
 #   the workflow is new, a dispatch needs it on `main`, and its secrets are scoped to `main`. The
 #   same commands with a real token wrote rows byte-identical to metrics.yml's last run (12:25 UTC
-#   on 2026-10-11) for every day it had finished. See notes/observed-failing.md.
+#   on 2026-10-11) for every day it had finished. See nifeos/record:notes/observed-failing.md.
 
 # **The method-metric collectors, apart from the tree's own metrics** (milestone 889 (the tree's
 # gates stop depending on the fleet tooling), provisional; the workflow's name is provisional too).
@@ -68,7 +68,7 @@ jobs:
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
           # Exactly the set the App held before milestone 128 (the automation gets its own identity)
           # widened it for sessions, Administration among them. Named here so the widening reaches no
-          # workflow; notes/session-identity.md.
+          # workflow; nifeos/record:notes/session-identity.md.
           permission-contents: write
           permission-pull-requests: write
 
@@ -98,7 +98,7 @@ jobs:
         run: python3 helpers/merge_queue_share.py update
 
       # Moved from metrics.yml unchanged: which merged pull requests carry the `debt-paydown` label
-      # (notes/debt-paydown.md). The whole history is fetched and the file rewritten, because a label
+      # (nifeos/record:notes/debt-paydown.md). The whole history is fetched and the file rewritten, because a label
       # can be corrected on a pull request merged months ago; it is one paginated listing.
       - name: Fetch which merged pull requests pay down debt
         id: debtpaydown
@@ -156,7 +156,7 @@ jobs:
 
       # Where the instruments above go red (milestone 641 (a mechanism that reports clean says over
       # how many units, and zero is loud), provisional). Each swallows its own failure so the other
-      # is still recorded; this runs last and re-raises. See notes/denominators.md.
+      # is still recorded; this runs last and re-raises. See nifeos/record:notes/denominators.md.
       - name: Fail if an instrument did not take its reading
         if: steps.queue.outcome == 'failure' || steps.debtpaydown.outcome == 'failure'
         run: |

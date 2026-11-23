@@ -28,12 +28,12 @@ pub(in crate::swish_check) const RESOLVING_LINE: &str = "jig install uptime";
 /// installed program to the spawner) gate D2), so the removal shows in `caps` and the bytes still
 /// run. `greeting` (generation 2, and its 0.2.0 as generation 3) keeps running when `noteless` is
 /// removed, since a generation drops one program and not its neighbors. Why the numbers skip one
-/// (DECISIONS §221 (the boot prompt is the owner's console)) is in notes/swish-check-harness.md.
+/// (DECISIONS §221 (the boot prompt is the owner's console)) is in nifeos/record:notes/swish-check-harness.md.
 pub(in crate::swish_check) static SWISH_CHECK_AFTER_REBOOT: LazyLock<Vec<Line>> = LazyLock::new(
     || {
         [
     // **The shell holds no display device** (milestone 715 (provisional); row 32 of
-    // notes/confinement-claims.md). The spawn service keeps the gpu's four capabilities, which
+    // nifeos/record:notes/confinement-claims.md). The spawn service keeps the gpu's four capabilities, which
     // would otherwise sit from `spawn_protocol::SHELL_GPU_SLOT` (22), so " 21 62" asserts nothing sits
     // between the configuration page (21) and the run-unvouched slot (62). On x86_64 this boot has
     // no gpu and the line holds trivially; that leg's gap is milestone 632 (graphics on demand)'s.

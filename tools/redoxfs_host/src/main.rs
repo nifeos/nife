@@ -1,6 +1,6 @@
 //! `redoxfs_host`: make, inspect and **recover** RedoxFS images and disks on the host
 //! (milestones 32, 57, 110). The logic lives in the library (src/lib.rs), so the tests exercise
-//! exactly what this binary runs. vendor/README.md has its 0.9.1 pin, and notes/host-recovery.md
+//! exactly what this binary runs. vendor/README.md has its 0.9.1 pin, and nifeos/record:notes/host-recovery.md
 //! why that pin has to be kept with the backup.
 
 //! # SYNOPSIS
@@ -48,7 +48,7 @@ fn usage() -> ExitCode {
 /// the same answer.
 const NO_WRITE_TO_A_PARTITION: &str = "a partition selector is refused on mkfs, put and import: \
      those verbs open read-write, recovery never does, and opening a device read-write by accident \
-     is worse than the inconvenience (notes/host-recovery.md)";
+     is worse than the inconvenience (nifeos/record:notes/host-recovery.md)";
 
 fn main() -> ExitCode {
     let mut args: Vec<String> = std::env::args().skip(1).collect();
@@ -275,7 +275,7 @@ fn list(volume: Volume, path: &str) -> Result<(), String> {
 }
 
 /// What is attached, one line each. The type code is printed as hex and, when its four bytes are
-/// printable, also as the four-character code BFS-style clients write (notes/xattr.md), because
+/// printable, also as the four-character code BFS-style clients write (nifeos/record:notes/xattr.md), because
 /// `0x4353_5452` and `'CSTR'` are the same fact and only one of them is readable.
 fn attrs(volume: Volume, path: &str) -> Result<(), String> {
     redoxfs_host::attrs(volume, path).map(|attrs| {

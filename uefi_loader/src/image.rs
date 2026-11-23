@@ -7,7 +7,7 @@
 //! `static_elf::Segment::physical_address` (milestone 196 (a physical address on `elf::Segment`)),
 //! which validates as it reads: bounds, overlap, W^X, and the entry inside an executable segment.
 //! So a kernel that regressed to an `RWX` segment fails to boot on real firmware with a printed
-//! reason, a second mechanism behind `script/image-permissions`. See notes/x86-uefi-boot/loader-design.md.
+//! reason, a second mechanism behind `script/image-permissions`. See nifeos/record:notes/x86-uefi-boot/loader-design.md.
 
 //! # BUGS
 //!
@@ -394,7 +394,7 @@ mod tests {
     /// **Nothing called [`parse`] until this test, which is the hole the mutation run could not
     /// even report.** Its one mutant (`Ok(Default::default())`) is unviable because `static_elf::Elf` has
     /// no `Default`, so the tool scored the function as if it did not exist; see the note in
-    /// notes/mutation-testing.md for why deriving one here would be the wrong repair.
+    /// nifeos/record:notes/mutation-testing.md for why deriving one here would be the wrong repair.
     ///
     /// What this asserts is the thing an unviable mutant hides: an accepted image comes back
     /// *carrying its contents*, so a wrapper that returned an empty `Elf` would fail here rather

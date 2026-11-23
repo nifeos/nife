@@ -6,7 +6,7 @@
 //! rsa") because the hosts that serve the bytes are RSA: `objects.githubusercontent.com` is RSA
 //! 2048 and `ghcr.io` RSA 4096. RUSTSEC-2023-0071 is a Marvin timing side channel in PKCS#1 v1.5
 //! decryption, which nothing here does; `deny.toml`'s first `ignore` entry bounds that claim.
-//! Writing RSA verification here is refused (notes/cryptography-provider/pricing-the-glue-path.md).
+//! Writing RSA verification here is refused (nifeos/record:notes/cryptography-provider/pricing-the-glue-path.md).
 
 //! # The two bounds this file enforces itself
 //!

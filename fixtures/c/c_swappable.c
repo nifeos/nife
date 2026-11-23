@@ -5,7 +5,7 @@
    computing one
  * digest, in a language with no bounds checks and no borrow checker. It holds no capability and
  * makes no system call, because it has never seen one -- the Rust shell around it holds every
- * capability and does every `svc`/`ecall` (DECISIONS §31, notes/c-seam.md).
+ * capability and does every `svc`/`ecall` (DECISIONS §31, nifeos/record:notes/c-seam.md).
  *
  * It exists to make the milestone's claim as strong as it goes: the replacement server that a
  * running client did not notice was not a rebuild of the same program, it was a different

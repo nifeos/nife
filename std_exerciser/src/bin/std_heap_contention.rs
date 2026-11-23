@@ -3,10 +3,10 @@
 //! under four threads before replacing it").
 //!
 //! It times `ALLOCATIONS` allocations and frees on one thread, then split across four, and prints
-//! the counter ticks for `system_tests::user::std_threads_tests`; `notes/std/threads.md` records
+//! the counter ticks for `system_tests::user::std_threads_tests`; `nifeos/record:notes/std/threads.md` records
 //! them. Then [`ENDED`] threads in turn each end with a full cache (milestone 561 (a per-CPU
 //! allocator is what the current-CPU page was for)), which exhausts the one-mebibyte heap budget
-//! unless a thread's end returns its cache. See notes/std/the-proof.md.
+//! unless a thread's end returns its cache. See nifeos/record:notes/std/the-proof.md.
 
 use std::alloc::{Layout, alloc, dealloc};
 use std::time::Instant;

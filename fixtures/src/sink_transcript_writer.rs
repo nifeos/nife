@@ -1,5 +1,5 @@
 //! **A program that does not know what it is writing to** (milestone 50, split out of the `sink`
-//! binary by milestone 292; notes/sink-protocol.md).
+//! binary by milestone 292 (three programs wearing one name); nifeos/record:notes/sink-protocol.md).
 //!
 //! It writes [`byte_sink_fixture::TRANSCRIPT`] to whatever is in slot 0 and reports how
 //! the last `SEND` classified, by value: "gone" and "never had one" must be two numbers to test
@@ -37,9 +37,9 @@
 //! process forever at `exit`'s doorstep: drain the report or do not spawn it.
 //!
 //! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). Named for the contract it speaks
-//! (`byte_sink_contract`, which design/naming/vocabulary.md keeps) and the pinned transcript it
-//! writes; see design/roadmap/0292-the-sink-contract-ends-are-three-programs.md and
-//! notes/sink-protocol.md. Refused `writer` (generic). Refused `indifferent_writer` (names the
+//! (`byte_sink_contract`, which nifeos/record:design/naming/vocabulary.md keeps) and the pinned transcript it
+//! writes; see nifeos/record:design/roadmap/0292-the-sink-contract-ends-are-three-programs.md and
+//! nifeos/record:notes/sink-protocol.md. Refused `writer` (generic). Refused `indifferent_writer` (names the
 //! property being proved, not the program). Refused `sink_writer` (reads as the thing that writes a
 //! sink, and says nothing about what it writes).
 

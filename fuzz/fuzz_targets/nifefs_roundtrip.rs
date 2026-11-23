@@ -6,7 +6,7 @@
 //! writer accepts, the image parses, holds exactly that many files, and every name reads back
 //! byte-identical. Failing it is quiet data loss, the shape of the name-truncation bug found by
 //! hand on 2026-08-01. The input is a structured file set (`arbitrary`), because byte mutation would
-//! spend the budget on images the writer never writes. notes/fuzzing/targets.md has more.
+//! spend the budget on images the writer never writes. nifeos/record:notes/fuzzing/targets.md has more.
 
 #![no_main]
 

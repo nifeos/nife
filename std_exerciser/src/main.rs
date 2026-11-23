@@ -16,7 +16,7 @@
 //! network in slots 2 and 3 runs `net_demo`, which serves if its stack carries a listen grant; and
 //! neither runs `offline_demo`, where `fs` and `net` are honestly `Unsupported`. Slots 5 to 7 are
 //! granted on every run. The kernel suite checks each transcript byte for byte;
-//! notes/std/the-proof.md has what each branch proves.
+//! nifeos/record:notes/std/the-proof.md has what each branch proves.
 
 use std::collections::HashMap;
 use std::fs::{Dir, File};
@@ -162,7 +162,7 @@ fn offline_demo() {
     paths_answer_or_refuse_honestly();
 
     // `std::process::exit` is the only caller of `sys::exit::exit` in std, wired apart from a
-    // return from `main` (notes/std/std-aborts.md). The `exiting` line proves the call was
+    // return from `main` (nifeos/record:notes/std/std-aborts.md). The `exiting` line proves the call was
     // reached: without it, a dropped exit would still pass the fault count in
     // `a_whole_std_program_runs_on_the_native_abi`. `rt::cleanup` runs first, so stdout is
     // flushed and the sink's end-of-stream still goes out.
@@ -279,7 +279,7 @@ fn long_path_refused() {
 ///
 /// A name means "under the directory I hold", so a path that would leave it is refused before a
 /// byte reaches the server, as `InvalidFilename` and never `PermissionDenied`; an expressible name
-/// that is absent is `NotFound`. See notes/std/the-proof.md.
+/// that is absent is `NotFound`. See nifeos/record:notes/std/the-proof.md.
 fn fs_demo(mut motd: File) {
     println!("std fs on nife");
 
@@ -607,7 +607,7 @@ const TIMES_DIR: &str = "times-dir";
 /// forward (asserted before the set, since the engine only moves an mtime forward); a set time
 /// reads back in whole seconds, sub-second truncated; and a directory and its listing entry agree.
 /// Four refusals, each where a success would be a lie: an open handle, both ways; an access time;
-/// and the granted directory itself. See notes/std/the-proof.md.
+/// and the granted directory itself. See nifeos/record:notes/std/the-proof.md.
 fn file_times() {
     use std::fs::FileTimes;
 
@@ -1023,7 +1023,7 @@ fn net_demo(sock: UdpSocket) {
     println!("udp ok");
 
     // Held across the TCP exchange: `net_stack` derives a local port from the socket id, and a
-    // reused id's port can stall against slirp (notes/std/net.md, the reuse finding).
+    // reused id's port can stall against slirp (nifeos/record:notes/std/net.md, the reuse finding).
     assert!(
         tcp_echo_ok(),
         "the TCP echo round trip through std::net failed"
@@ -1038,7 +1038,7 @@ fn net_demo(sock: UdpSocket) {
 /// It prints `denied refused` (a port outside the grant is `PermissionDenied`), `in use refused`
 /// (the granted port twice is `AddrInUse`) and `served N` (`ROUNDS` connections on one listener;
 /// the second is the load-bearing one). The host half is `xtask`'s inbound prober, which fails the
-/// leg if its bytes never come back. See notes/std/the-proof.md.
+/// leg if its bytes never come back. See nifeos/record:notes/std/the-proof.md.
 fn inbound_demo(listener: &TcpListener) {
     println!("listen ok");
 
@@ -1119,7 +1119,7 @@ fn serve_one_inbound(listener: &TcpListener, round: usize) {
 /// Sends a read request (opcode 1, `octet`) for the fixture and requires the first data packet:
 /// opcode 3, block 1, the fixture's bytes; the fixture is one short block, so that packet is the
 /// whole file. The name and body must match what `helpers/qemu-runner-*.sh` writes into
-/// `target/tftp`. See notes/std/the-proof.md.
+/// `target/tftp`. See nifeos/record:notes/std/the-proof.md.
 fn udp_ok(sock: &UdpSocket) -> bool {
     const TFTP_SERVER: &str = "10.0.2.2:69";
     const TFTP_NAME: &[u8] = b"nife";

@@ -20,8 +20,8 @@ use crate::channel::{REPORT, get_page, open, read, write};
 /// It reports after the acknowledged write, because "payload A was acknowledged" is what makes
 /// losing it a failure rather than a permitted outcome. It never returns from the second write: a
 /// client of a dead server blocks forever, the open item DECISIONS §27 (the filesystem service) and
-/// notes/fs-server.md record. The kernel test waits on nothing after the first report. See
-/// notes/fs-server/the-test-client.md.
+/// nifeos/record:notes/fs-server.md record. The kernel test waits on nothing after the first report. See
+/// nifeos/record:notes/fs-server/the-test-client.md.
 pub(crate) fn crash_driver() -> ! {
     use fixture::crash;
     let h = open(crash::NAME);

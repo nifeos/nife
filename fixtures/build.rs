@@ -6,7 +6,7 @@
 //! that supplies `_start`'s ABI and the panic handler to `components` and `fixtures` alike, so one
 //! copy holds the image base for both; basalt's package build links `rg` with it unchanged. Both
 //! C-linked programs (`c_shim`, `c_swappable`) are fixtures, so the C is compiled here and
-//! `components/build.rs` is the short one. See [`compile_c_component`] and notes/c-seam.md.
+//! `components/build.rs` is the short one. See [`compile_c_component`] and nifeos/record:notes/c-seam.md.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -61,7 +61,7 @@ fn compile_c_component(manifest_dir: &Path) {
         // `disable_redzone = true`, and an object that disagrees breaks the ABI with every Rust
         // object it is linked beside. `-mno-sse` is the aarch64 arm's argument one ISA over: the
         // kernel does not enable the FP unit for ring 3, so an `xmm` register takes `#UD`
-        // (`CR4.OSFXSR` clear). `-mno-red-zone` matches the Rust half; notes/c-seam/the-toolchain.md
+        // (`CR4.OSFXSR` clear). `-mno-red-zone` matches the Rust half; nifeos/record:notes/c-seam/the-toolchain.md
         // has why it is off.
         "x86_64" => vec![
             "--target=x86_64-unknown-none-elf",
@@ -109,8 +109,8 @@ fn compile_one(manifest_dir: &Path, clang: &Path, flags: &[&str], source: &str, 
         // GOT indirection that a statically linked, fixed-address image has no use for.
         .arg("-fno-pic")
         // No stack protector: `__stack_chk_fail` and `__stack_chk_guard` are libc symbols, and
-        // tier two of the libc question (design/roadmap/0036-foreign-component.md records the three
-        // tiers; notes/c-seam.md applies them) is "a handful of symbols we chose", not "whatever
+        // tier two of the libc question (nifeos/record:design/roadmap/0036-foreign-component.md records the three
+        // tiers; nifeos/record:notes/c-seam.md applies them) is "a handful of symbols we chose", not "whatever
         // the compiler decided to reference". Turning the feature off is honest; shimming its
         // runtime would be pretending we have one.
         .arg("-fno-stack-protector")
@@ -146,7 +146,7 @@ fn compile_one(manifest_dir: &Path, clang: &Path, flags: &[&str], source: &str, 
 /// `llvm-objcopy`, and keeps the first candidate [`has_every_backend`] accepts. Apple's clang has
 /// the AArch64 and X86 backends only, so it is rejected: every backend must come from one compiler
 /// even when one ISA is built, which is DECISIONS §19 (architectural parity is a tenet) applied
-/// to the toolchain. See notes/c-seam/the-toolchain.md.
+/// to the toolchain. See nifeos/record:notes/c-seam/the-toolchain.md.
 fn resolve_clang() -> Option<PathBuf> {
     // The escape hatch **overrides** the search rather than joining it: "use this compiler" has to
     // mean that, or a typo in the path silently falls back to a different compiler and the build is

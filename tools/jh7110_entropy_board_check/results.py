@@ -20,7 +20,7 @@ or RECORDED for a row that answers a question rather than meeting a bar.
 The statistics are a measurement, never a proof: the FIPS 140-2 power-up battery over 20,000-bit
 blocks (as rngtest runs it), Shannon entropy per byte, a chi-square over byte values, the mean byte,
 the lag-1 serial correlation, and repeated 32-byte generations. See
-notes/jh7110-entropy-board-check.md.
+nifeos/record:notes/jh7110-entropy-board-check.md.
 
 Name: provisional.
 """

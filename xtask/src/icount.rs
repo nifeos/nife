@@ -18,7 +18,7 @@ use crate::{RISCV64_TARGET, RUNNER, TARGET};
 /// instructions, then prints `icount: done`; a `[PANIC]`, or output ending with neither, fails. It
 /// is off the test path: `-icount` is not measurably slower on compute (2026-08-17), but one clock
 /// for every vCPU forces `-smp 1`, and a clock-bound wait costs instructions. See
-/// notes/instruction-clock.md and design/roadmap/0078-load-sensitive-assertions.md.
+/// nifeos/record:notes/instruction-clock.md and nifeos/record:design/roadmap/0078-load-sensitive-assertions.md.
 pub(crate) fn icount() -> bool {
     let legs = match flag_value("--arch").as_deref() {
         None => ArchLegs::ALL,
@@ -100,7 +100,7 @@ fn icount_command(runner: &str, target: &str) -> Command {
     // One hart, for the reason the bench instrument pins it and the placement probe can never move
     // here: under `-icount` all vCPUs share ONE virtual clock, and an idle secondary parked in `wfi`
     // jumps that clock forward to the next event. A timer measurement on four harts would be
-    // measuring three other harts' idle jumps. See notes/benchmarks.md.
+    // measuring three other harts' idle jumps. See nifeos/record:notes/benchmarks.md.
     cmd.env("NIFE_SMP", "1");
     // No accelerator: HVF has no icount at all (it runs the physical core, which is the whole point
     // of it), so a stale `NIFE_ACCEL` from the caller's shell would silently produce wall-clock

@@ -14,7 +14,7 @@ not fuzz targets):
     mkdir -p /tmp/plant && cargo fuzz run -O compositor_session /tmp/plant -- -max_total_time=600
     git apply -R fuzz/falsifications/compositor_session.damage_is_not_clipped_to_the_surface.patch
 
-Measured 2026-10-04 (UTC) on an M-series Mac, from an empty corpus: see notes/fuzzing-the-services.md.
+Measured 2026-10-04 (UTC) on an M-series Mac, from an empty corpus: see nifeos/record:notes/fuzzing-the-services.md.
 
 diff --git a/crates/compositor/src/lib.rs b/crates/compositor/src/lib.rs
 index c1f9bd75b..771d8016d 100644

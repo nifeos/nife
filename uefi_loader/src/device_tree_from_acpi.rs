@@ -15,7 +15,7 @@
 //! `aarch64::Psci`, `interrupt_id::of_node`, `DeviceTreeBlob::memory_regions`), so the writer and
 //! the readers cannot drift apart without a host test failing in milliseconds.
 
-//! # BUGS (the full accounts are in notes/device-tree.md)
+//! # BUGS (the full accounts are in nifeos/record:notes/device-tree.md)
 //!
 //! - **No PCI**: a PCI node's `ranges` and `interrupt-map` live in AML (`_CRS`, `_PRT`), so no
 //!   `pci-host-ecam-generic` node is written and a bus that is there is invisible.

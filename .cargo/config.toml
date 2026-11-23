@@ -22,19 +22,19 @@ RUST_MIN_STACK = "16777216"
 # It is a script rather than a bare qemu invocation because QEMU only follows the
 # Linux arm64 boot protocol (and only hands us a device tree) for a flat `Image`, not
 # for an ELF. The script strips the ELF to a flat binary first. See
-# helpers/qemu-runner-aarch64.sh and notes/boot-protocol.md.
+# helpers/qemu-runner-aarch64.sh and nifeos/record:notes/boot-protocol.md.
 [target.aarch64-unknown-none-softfloat]
 runner = "helpers/qemu-runner-aarch64.sh"
 
 # RISC-V (milestone 20). Unlike aarch64, QEMU's virt machine boots a riscv ELF directly via
 # `-kernel` (OpenSBI in `-bios` hands off in S-mode), so the runner needs no flat-binary step.
-# See helpers/qemu-runner-riscv64.sh and notes/riscv-port.md.
+# See helpers/qemu-runner-riscv64.sh and nifeos/record:notes/riscv-port.md.
 [target.riscv64imac-unknown-none-elf]
 runner = "helpers/qemu-runner-riscv64.sh"
 
 # x86_64 (milestone 161). QEMU's `q35` boots the ELF directly through the PVH note in the image
 # (there is no OpenSBI to hand off and no arm64 Image header to strip), so the runner is the
-# simplest of the three. See helpers/qemu-runner-x86_64.sh and notes/x86-port.md.
+# simplest of the three. See helpers/qemu-runner-x86_64.sh and nifeos/record:notes/x86-port.md.
 [target.x86_64-unknown-none]
 runner = "helpers/qemu-runner-x86_64.sh"
 # `x86_64-unknown-none` defaults to a static-PIE, which a kernel cannot be: nothing relocates us,
@@ -60,7 +60,7 @@ runner = "helpers/qemu-runner-x86_64.sh"
 # unconditionally) fails to codegen at every optimization level with
 # `rustc-LLVM ERROR: Do not know how to split the result of this operator!`, because this target is
 # `-mmx,-sse,+soft-float` and there is no 128-bit vector register to legalize an AES block into.
-# That is milestone 164's whole blocker; see design/roadmap/0164-x86-64-fs-server-aes.md.
+# That is the whole blocker of milestone 164 (no SSE, no scalar fallback); see nifeos/record:design/roadmap/0164-x86-64-fs-server-aes.md.
 #
 # BUGS: a typo in the cfg name is silent. `--cfg` on the command line is not checked against
 # `--check-cfg` by `unexpected_cfgs` (measured: `--cfg aes_force_sotf` on a clean rebuild of

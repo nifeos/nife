@@ -7,11 +7,11 @@
 //! answer differs in origin: `cx_digest` in `fixtures/c/c_swappable.c`, linked into this binary
 //! alone. The C holds no capability and makes no system call; its whole interface is
 //! `(uint64_t) -> uint64_t`. A different implementation in another language is what makes "a client
-//! did not notice the swap" a claim about the contract. See notes/live-replacement.md.
+//! did not notice the swap" a claim about the contract. See nifeos/record:notes/live-replacement.md.
 
 //! Name: ratified 2026-08-01 (calef, milestone 61), replacing `cconx`. Refused `conx` and `cconx`:
 //! no expansion for `conx` is recorded anywhere, not in DECISIONS §41, not in
-//! notes/live-replacement.md, not in the commit that introduced it, and that absence is one of the
+//! nifeos/record:notes/live-replacement.md, not in the commit that introduced it, and that absence is one of the
 //! two cases that made naming a ratified act.
 
 #![no_std]

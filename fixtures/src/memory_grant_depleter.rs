@@ -7,7 +7,7 @@
 //! empty, the first `MAP` returns `NoSuchSlot`, and it reports zero: there is no ambient pool. The
 //! count is `N` minus the page-table pages, which come from the same untyped (the kernel allocates
 //! nothing on a process's behalf, DECISIONS §10 (process model: capability-based, microkernel)).
-//! See notes/grant-expression/memory-grant.md.
+//! See nifeos/record:notes/grant-expression/memory-grant.md.
 
 //! # What this program holds
 //!

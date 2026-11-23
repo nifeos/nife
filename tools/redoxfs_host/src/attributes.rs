@@ -25,7 +25,7 @@ pub struct Attr {
 /// **`ENOENT` is the only error read as absence.** Any other one is propagated, because a dropped
 /// read of the root's tree block answers `EIO`, and treating that as "there are no attributes" would
 /// quietly recover a backup without its metadata and report success. That is the same false negative
-/// the FS server's own `find_store` refuses to make (notes/fs-server.md).
+/// the FS server's own `find_store` refuses to make (nifeos/record:notes/fs-server.md).
 pub(crate) fn find_store<D: Disk>(
     transaction: &mut Transaction<D>,
 ) -> Result<Option<TreePtr<Node>>, String> {

@@ -2,7 +2,7 @@ name: architect ruled clears needs-architect
 
 # Observed failing: 2026-10-06, run 37406519156: on this lane's own PR #1740, carrying both labels,
 #   applying `architect-ruled` at 02:55:40Z left only `architect-ruled`. Green by design; the label
-#   removal is the arm that carries the claim. See notes/observed-failing.md.
+#   removal is the arm that carries the claim. See nifeos/record:notes/observed-failing.md.
 
 # `needs-architect` means "waiting on calef" and nothing else. A pull request an architect has
 # already ruled on carried both labels, passed `architect-hold.yml` (which releases on
@@ -34,7 +34,7 @@ name: architect ruled clears needs-architect
 # shape. The rule: when `architect-ruled` is added, or `needs-architect` or `held-by-lane` is
 # removed, and no hold remains by architect-hold.yml's own test, rerun every failed or cancelled
 # pull_request hold run on the current head. helpers/hold-rerun.sh holds the logic and the
-# same-second-duplicate note (notes/merge-queue.md BUGS); helpers/hold-rerun-selftest.sh, run by
+# same-second-duplicate note (nifeos/record:notes/merge-queue.md BUGS); helpers/hold-rerun-selftest.sh, run by
 # script/lint, pins both it and this file's triggers. `actions: write` on the workflow's own token,
 # as merge-drain.yml does for its one `gh run rerun`: the App's token cannot rerun a workflow.
 #

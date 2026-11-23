@@ -9,7 +9,7 @@ use crate::{RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, build};
 ///
 /// `-s` opens the stub on :1234, `-S` holds the CPU before the first instruction.
 /// The kernel ELF carries symbols and DWARF, so GDB shows Rust source lines rather
-/// than raw addresses (notes/elf.md). Point GDB at the **ELF**, even though QEMU is
+/// than raw addresses (nifeos/record:notes/elf.md). Point GDB at the **ELF**, even though QEMU is
 /// running the flat image: the image has no symbols, and the addresses match.
 ///
 /// This is the tool that will save you at milestone 4, when the MMU comes on and
@@ -61,7 +61,7 @@ pub(crate) fn objdump() -> bool {
 ///
 /// Useful when the header is wrong, which is a failure mode with no diagnostics at
 /// all: QEMU simply falls back to treating the file as an anonymous blob, boots it,
-/// and hands you a zero in x0. See notes/boot-protocol.md.
+/// and hands you a zero in x0. See nifeos/record:notes/boot-protocol.md.
 pub(crate) fn image() -> bool {
     if !build() {
         return false;
@@ -155,7 +155,7 @@ fn strip_tag(path: &str) -> &'static str {
 /// to 1.1 MB and overran `user_timetable_keeper`'s region. A missing `llvm-objcopy`
 /// is a hard failure, because the measured-boot digest (§26 (the fault endpoint)'s phase B.1) is
 /// taken over these bytes, and a build whose bytes depended on installed tools would have a
-/// different trust root on each machine. See notes/progenitor-and-loading.md, "The archive carries
+/// different trust root on each machine. See nifeos/record:notes/progenitor-and-loading.md, "The archive carries
 /// stripped ELFs".
 pub(crate) fn read_stripped(path: &str) -> std::io::Result<Vec<u8>> {
     let objcopy = llvm_tool("llvm-objcopy").ok_or_else(|| {

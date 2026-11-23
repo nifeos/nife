@@ -6,7 +6,7 @@
 //! `user_mode_runtime::counter_ticks` and SENDs `[crc, ticks, freq]` on slot 0, its one capability, so the
 //! receiver computes iterations per second without a second system call. Under HVF the ticks are real
 //! nanoseconds; under TCG they are icount fiction, and only the CRC means anything. The compute is
-//! a portable crate, so the identical code runs on macOS and Linux too (notes/benchmarks.md).
+//! a portable crate, so the identical code runs on macOS and Linux too (nifeos/record:notes/benchmarks.md).
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63) as a proper noun, EEMBC's industry benchmark. It
 //! shares its crate's name for the reason DECISIONS §63 gives: the crate is the logic, the program

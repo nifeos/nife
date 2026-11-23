@@ -3,7 +3,7 @@
 //! one beside the stick and boots it, so the file a person uploads is the file the gate booted.
 //! `cargo xtask stick-boot` writes and boots the riscv64 one, whose `BOOTRISCV64.EFI` is the name
 //! that needs `file_allocation_table`'s long-name entries, so EDK2 reads that run on every run of
-//! the gate. The import procedure and what it costs are in `notes/rented-metal/oracle-a1.md`.
+//! the gate. The import procedure and what it costs are in `nifeos/record:notes/rented-metal/oracle-a1.md`.
 
 //! # EXAMPLES
 //!

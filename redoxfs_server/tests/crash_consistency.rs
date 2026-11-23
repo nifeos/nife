@@ -2,7 +2,7 @@
 //!
 //! §34 (RedoxFS is the primary filesystem, on three conditions) set three conditions, and the first
 //! was that crash consistency stop being a claim taken from the upstream design description. See
-//! notes/fs-server/crash-consistency.md.
+//! nifeos/record:notes/fs-server/crash-consistency.md.
 
 //! # The property, stated so it can fail
 //!
@@ -68,7 +68,7 @@ type State = Vec<(&'static str, Option<Entry>)>;
 /// filesystem refused these bytes" from "it handed back the wrong ones". `ENOENT` is the only error
 /// that means absent: a dropped write to a directory's tree block makes a lookup answer `EIO`, and
 /// reading that as absence once reported nine states that never existed
-/// (notes/fs-server/crash-consistency.md).
+/// (nifeos/record:notes/fs-server/crash-consistency.md).
 fn snapshot<D: redoxfs::Disk>(srv: &mut Server<D>) -> Result<State, syscall::error::Error> {
     let mut state = State::new();
     for &name in &NAMES {
@@ -258,7 +258,7 @@ fn record_workload() -> Recorded {
     // its file live in different files on the platter, and a recovery holding one change without
     // the other never existed and fails the sweep. 9 creates the store and the node's first blob
     // (two creations in one commit), 11 grows the blob, and 12 shrinks it, the path that must
-    // truncate afterwards (DECISIONS §27, notes/xattr.md).
+    // truncate afterwards (DECISIONS §27, nifeos/record:notes/xattr.md).
     srv.set_xattr(
         h,
         b"user.DOSATTRIB",

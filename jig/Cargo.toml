@@ -61,7 +61,7 @@ pinned_tls_client = { path = "../pinned_tls_client" }
 entropy_backend = { path = "../entropy_backend" }
 
 # `std_exerciser`'s profile, for its reasons: overflow checks in release (calef, 2026-10-04 (UTC),
-# notes/overflow-checks.md), a small deterministic image, no unwinding.
+# nifeos/record:notes/overflow-checks.md), a small deterministic image, no unwinding.
 [profile.release]
 overflow-checks = true
 opt-level = "s"

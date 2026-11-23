@@ -46,7 +46,7 @@ exclude_globs = [
     # it, deriving this entry from `cargo metadata` rather than asking anyone to remember it.
     #
     # What proves this file is `cargo xtask uefi-boot` under OVMF, on `script/test`'s own leg.
-    # Excluding it here does not make it proved; see notes/mutation-testing.md for the split.
+    # Excluding it here does not make it proved; see nifeos/record:notes/mutation-testing.md for the split.
     "uefi_loader/src/main.rs",
     # And the modules `main.rs` declares, which are the same unbuilt target in other files. Found
     # 2026-09-24: the entry above covered the root only, so `src/arch/` scored 132 of the crate's
@@ -130,7 +130,7 @@ exclude_globs = [
     # "bench")))` compiles them into a production boot and into no test image, so a mutant there
     # is unreachable in both tiers: the group above, worn from the other side. Their checker is
     # the boot ladder verdict (`boot_ladder::Heads::self_test`), which a program reads, and
-    # notes/self-test-checks.md holds the checks.
+    # nifeos/record:notes/self-test-checks.md holds the checks.
     "kernel/src/self_test.rs",
 
     # The test harness and what the two suites share. `cfg(any(test, feature = "system_tests"))`

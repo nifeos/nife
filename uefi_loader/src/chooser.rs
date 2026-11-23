@@ -5,7 +5,7 @@
 //! be ours: UEFI reserves GPT attribute bits 48 to 63 to the owner of the partition type, so
 //! ordinary firmware never reads them. The chooser and the image are the same binary, so a machine
 //! whose slots are all bad still boots the chooser's own image; [`STARTED_BY_CHOOSER`] in the
-//! child's `LoadOptions` stops it chain-loading itself. notes/boot-slots.md has the failure table.
+//! child's `LoadOptions` stops it chain-loading itself. nifeos/record:notes/boot-slots.md has the failure table.
 
 //! # The steps
 //!
@@ -18,7 +18,7 @@
 //! 5. `LoadImage` from that buffer, `StartImage`, and never come back. A slot failing a check,
 //!    `LoadImage` or `StartImage` is given up ([`boot_slot::State::unreadable`]), the next tried.
 
-//! # BUGS (the full accounts are in notes/boot-slots.md)
+//! # BUGS (the full accounts are in nifeos/record:notes/boot-slots.md)
 //!
 //! - Only disks the firmware connected are seen; `install-boot` names the disk as a second option.
 //! - The logical block size is assumed to be 512; other disks are skipped.

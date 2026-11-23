@@ -2,9 +2,9 @@ name: merge drain
 
 # Observed failing: 2026-10-04, run 37219317166: `LABELLED #1611 (conflict)`, putting
 #   `needs-maintainer` on a pull request a maintainer had to pick up. Green by design; the label is
-#   the claim. See notes/observed-failing.md.
+#   the claim. See nifeos/record:notes/observed-failing.md.
 
-# **The merge drain, moved off a laptop** (`design/decisions/` on `who-took-the-step`, approved by
+# **The merge drain, moved off a laptop** (`nifeos/record:design/decisions/` on `who-took-the-step`, approved by
 # calef 2026-09-23). It used to run under `launchd` on patagonia as calef's own token, which made
 # three different actors wear one name and made a singleton singleton only because one laptop
 # happened to be awake. Here it is `nife-smelter[bot]`, one workflow, one schedule, owned by the
@@ -74,7 +74,7 @@ on:
 permissions:
   contents: read
   # `actions: write` is for exactly one call, `gh run rerun` on a CI run a concurrency group
-  # cancelled as a same-second duplicate (2026-09-24, notes/merge-queue.md BUGS). The App's token
+  # cancelled as a same-second duplicate (2026-09-24, nifeos/record:notes/merge-queue.md BUGS). The App's token
   # does the rest of the pass and cannot rerun a workflow: milestone 128 (automation identity) minted it with Contents
   # and Pull requests only. This token is passed to the script as MERGE_DRAIN_RERUN_TOKEN and is
   # read nowhere else, so the rerun shows as `github-actions[bot]` while the log line, which is
@@ -122,8 +122,8 @@ jobs:
     # branches are `main` only. A merge-group build runs on a `gh-readonly-queue/main/...` ref, which
     # is not `main`, so it cannot read them even if a pull request edits this workflow to name the
     # environment. Adopted by calef 2026-09-24 (options 2 and 3 of
-    # design/roadmap/0588-a-merge-needs-a-review-no-fork-can-supply.md; the finding is 1 in
-    # design/audit-reports/2026-09-24-new-trust-boundaries.md). The protection holds
+    # nifeos/record:design/roadmap/0588-a-merge-needs-a-review-no-fork-can-supply.md; the finding is 1 in
+    # nifeos/record:design/audit-reports/2026-09-24-new-trust-boundaries.md). The protection holds
     # since calef deleted the organisation-level copies of the two secrets on 2026-10-03 (UTC); an
     # org secret would have been visible to every job whatever its environment. Only jobs that mint the App token name it,
     # because each run of a job that does records a deployment.
@@ -145,7 +145,7 @@ jobs:
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
           # Exactly the set the App held before milestone 128 (the automation gets its own identity)
           # widened it for sessions, Administration among them. Named here so the widening reaches no
-          # workflow; notes/session-identity.md.
+          # workflow; nifeos/record:notes/session-identity.md.
           permission-contents: write
           permission-pull-requests: write
 

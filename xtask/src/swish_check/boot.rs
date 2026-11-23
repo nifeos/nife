@@ -19,7 +19,7 @@ use super::*;
 /// The `x86_64` leg boots under OVMF from the UEFI image a customer boots, not through QEMU's PVH
 /// loader (milestone 182 (x86_64's own interactive-boot entry point)), and builds its entropy
 /// service on `RDSEED`, since `q35` has no mmio bus for a virtio-rng; the leg asserts the
-/// progenitor said so. See notes/swish-check-boot.md.
+/// progenitor said so. See nifeos/record:notes/swish-check-boot.md.
 ///
 /// Falsification: replayable `xtask/falsifications/swish_check.boot.swish_check_leg.patch`
 pub(super) fn swish_check_leg(arch: &str) -> bool {
@@ -31,7 +31,7 @@ pub(super) fn swish_check_leg(arch: &str) -> bool {
     // gpu and no keyboard and launches at the end of its short script: the keystrokes are the
     // guest's UART, the configuration all three target boards have. A third, scriptless boot
     // attaches a gpu and a keyboard for the other arm. aarch64 and riscv64 only: x86_64 has no
-    // virtio-gpu in its runner (`design/roadmap/0632-*.md`'s BUGS has what it would take).
+    // virtio-gpu in its runner (`nifeos/record:design/roadmap/0632-*.md`'s BUGS has what it would take).
     let graphical = arch != "x86_64";
     // The panic probe halts the kernel and the input-race probe proves itself on the first
     // script, so neither boots again.
@@ -68,7 +68,7 @@ const USB_KEYBOARD_KEYS: [&str; 11] = ["e", "c", "h", "o", "spc", "h", "e", "l",
 /// `sendkey`, and `hello` required back. On all three architectures, behind each one's IOMMU, which
 /// the kernel refuses to hand the controller over without. The keyboard enumerates at full speed,
 /// as real keyboards do. Returns true when `hello` came back. It does not prove a real keyboard, a
-/// hub or a low-speed device. The name is provisional. See notes/swish-check-boot.md.
+/// hub or a low-speed device. The name is provisional. See nifeos/record:notes/swish-check-boot.md.
 fn usb_keyboard_boot(arch: &str) -> bool {
     let x86 = arch == "x86_64";
     let kvm = x86 && kvm_is_usable();
@@ -318,7 +318,7 @@ fn stop_runner(child: &mut std::process::Child, x86: bool) {
 /// Only the `x86_64` leg asks: the other two stay on TCG so CI's arm64 runner puts their kernels in
 /// front of a weakly ordered host, and the `x86_64` guest is TSO either way. Milestone 628 (the
 /// x86_64 swish-check leg costs what the others do) measured what it buys; see
-/// notes/benchmarks/swish-check-x86-leg.md and notes/swish-check-boot.md. The name is provisional.
+/// nifeos/record:notes/benchmarks/swish-check-x86-leg.md and nifeos/record:notes/swish-check-boot.md. The name is provisional.
 pub(crate) fn kvm_is_usable() -> bool {
     cfg!(all(target_os = "linux", target_arch = "x86_64"))
         && std::fs::OpenOptions::new()
@@ -546,7 +546,7 @@ fn transcript_failures(leg: &Leg, console: &Console, failed: &mut Vec<String>) -
     // The transcript is printed on failure, because that is when somebody needs it. This
     // prints it on success too, and it exists because the notes in this tree quote real prompt
     // sessions: `NIFE_SHOW_TRANSCRIPT=1 script/swish-check --arch aarch64` is where the EXAMPLES
-    // in notes/swish-language.md and notes/pipes.md come from, rather than from somebody retyping
+    // in nifeos/record:notes/swish-language.md and notes/pipes.md come from, rather than from somebody retyping
     // what they remember the shell saying.
     if std::env::var_os("NIFE_SHOW_TRANSCRIPT").is_some() {
         eprintln!("--- swish-check ({arch}) transcript ---");
@@ -712,7 +712,7 @@ fn build_leg(arch: &str, fresh: bool) -> bool {
 ///
 /// # BUGS
 ///
-/// - The keyboard boot's NIC guard is inert; see notes/swish-check-boot.md.
+/// - The keyboard boot's NIC guard is inert; see nifeos/record:notes/swish-check-boot.md.
 fn swish_check_runner(
     arch: &str,
     kvm: bool,
@@ -763,7 +763,7 @@ fn swish_check_runner(
     // peer through that. The runner attaches an mmio NIC and a PCIe one behind the IOMMU; the
     // kernel grants the progenitor the mmio one. The keyboard boot is meant to go without, but
     // this guard removes nothing: `host::cargo` sets `NIFE_NET=1` in this process and `cmd`
-    // inherits it (notes/capability-peak-trace.md, notes/swish-check-boot.md).
+    // inherits it (nifeos/record:notes/capability-peak-trace.md, nifeos/record:notes/swish-check-boot.md).
     if !x86 && graphics != Some(Keystrokes::Device) {
         cmd.env("NIFE_NET", "1");
     }
@@ -907,7 +907,7 @@ fn boot_claim_failures(x86: bool, now: &dyn Fn() -> String) -> Vec<String> {
     // and `rg pattern` works at the prompt); the instruction backend is milestone 162 (real hardware
     // entropy on x86_64 and aarch64: RDSEED and RNDRRS)). A missing marker means only a missing
     // marker; the complaint names the string, never a capability state.
-    // Why each claim is shaped so: notes/swish-check-boot.md.
+    // Why each claim is shaped so: nifeos/record:notes/swish-check-boot.md.
     let claims: [(&str, &str, &str); 4] = [
         (
             "giving the construction budget away",
@@ -1162,7 +1162,7 @@ fn report_line_times(
             "{arch} under {accel} costs a median {:.2}s a line, over {LEG_COST_FACTOR}x its \
              baseline {:.2}s. A leg this far off its own history is a cost defect rather than \
              a hang (milestone 628 was a runnable boot thread halting until the next tick; \
-             notes/benchmarks/swish-check-x86-leg.md). If this host is simply slower, measure \
+             nifeos/record:notes/benchmarks/swish-check-x86-leg.md). If this host is simply slower, measure \
              it and add a row to `LEG_COST_BASELINE` with the source.",
             cost.median,
             cost.baseline.unwrap_or(0.0)
@@ -1272,7 +1272,7 @@ fn one_answer_failures(l: &Line, answer: &str, before_next: &str) -> Vec<String>
                  own words, so a kernel line was written straight to the UART over this answer \
                  (the counted fallback, kernel/src/kernel_log.rs's BUGS) rather than the answer \
                  being lost. NOT treated as a failure; the splice is the defect, and \
-                 notes/swish-check-flake.md records its family.",
+                 nifeos/record:notes/swish-check-flake.md records its family.",
                 intruder.chars().count()
             );
             continue;
@@ -1358,7 +1358,7 @@ fn resolver_refusal_failure(transcript: &str) -> Option<String> {
 /// on purpose: its failing lines are refusals, so a trap is a real regression. Reads the first two
 /// of `KERNEL_FAULT_TOKENS`, the pair `kernel_wrote_during_boot` reads, since a fault during the
 /// boot is also what can shuffle a console line. A deliberate trap was measured against this
-/// check (milestone 230 (`script/shell-check` is red on `main`) named it); notes/swish-check-boot.md
+/// check (milestone 230 (`script/shell-check` is red on `main`) named it); nifeos/record:notes/swish-check-boot.md
 /// has the result, including the hang a trapped command leaves in the shell. The self-test's named
 /// subjects are already out of `transcript` ([`after_hand_over`]).
 pub(super) fn kernel_fault_failure(transcript: &str) -> Option<String> {
@@ -1382,7 +1382,7 @@ pub(super) fn kernel_fault_failure(transcript: &str) -> Option<String> {
 /// is one nobody would miss) or says `ABOVE`, past the peak
 /// `kernel::capability_object::CAPABILITY_TABLE_PEAK_MEASURED` records. That constant is a measurement, so the
 /// fix is to measure, update it, and re-read the headroom arithmetic beside
-/// `CAPABILITY_TABLE_SLOTS`. See notes/swish-check-boot.md.
+/// `CAPABILITY_TABLE_SLOTS`. See nifeos/record:notes/swish-check-boot.md.
 fn slot_gauge_failure(arch: &str, raw_after_hand_over: &str) -> Option<String> {
     match raw_after_hand_over
         .lines()
@@ -1434,7 +1434,7 @@ fn stack_gauge_failures(
         if gauge.contains("BELOW") {
             failed.push(format!(
                 "the progenitor's stack came within its headroom floor: {gauge:?}, after \
-                 {after:?}. Something on that path grew a frame; notes/stack/progenitor-stack.md says how \
+                 {after:?}. Something on that path grew a frame; nifeos/record:notes/stack/progenitor-stack.md says how \
                  to list the progenitor's largest frames. Trim the frame, or raise \
                  PROGENITOR_STACK_PAGES in kernel/src/user/progenitor_boot.rs, measurement beside it."
             ));
@@ -1467,7 +1467,7 @@ fn job_pool_failure(filtered: &str) -> Option<String> {
              {YOURS_CEILING_KIBIBYTES} KiB that `free` itself and one job the reaper has not reached yet \
              account for. Something left a region behind: memory_regions' \
              `RegionTable::return_to_parent` is where a returned job's pages go back, and \
-             notes/swish-check-flake.md has how this was traced."
+             nifeos/record:notes/swish-check-flake.md has how this was traced."
         )
     })
 }
