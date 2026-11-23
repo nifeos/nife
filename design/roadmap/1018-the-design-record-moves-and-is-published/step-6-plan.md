@@ -46,7 +46,7 @@ The readers whose behavior changes:
 | `record-site.yml`, `site/`, `script/site` | the whole record | leave nife in the removal pull request; step 8 builds in `nifeos/nifeos.org` |
 | `script/lint` | 9 `record` sections, 36 `both` | the record's driver runs the 9 and its half of the 36; nife keeps the rest |
 
-Three findings change the order of work.
+Two findings change the order of work, and a third holds already.
 
 - `xtask/src/manual.rs` bundles `notes/documentation.md`, `pipes.md`, `line-discipline.md`,
   `ipc-naming.md`, `stack.md`, `capabilities.md` and `glob.md` into the image, and
@@ -59,9 +59,8 @@ Three findings change the order of work.
   `.cargo/mutants-baseline.txt` and `helpers/kani-peaks.tsv`. The record's lint pull request
   writes those rows to the record's own baselines, and the removal pull request drops them from
   nife's.
-- 15 of the 253 cut link targets do not exist at the nife commit basalt pins today, `0f18f3ba`
-  of 2026-11-10. A qualified path resolves at that pin, so basalt's nife pin must reach a commit
-  that holds every target before the links are rewritten.
+- A qualified path resolves at the nife commit basalt pins, `edcbb2209` of 2026-11-23. Every one
+  of the 253 cut link targets exists there, so the rewrite needs no pin bump first.
 
 No code includes a record file with `include_str!`.
 
@@ -133,8 +132,7 @@ them changes every hash.
 Each lands alone with green checks. Until the removal pull request, every record file still lives
 in nife and every lane works as today.
 
-1. basalt: bump the nife pin to a commit that holds every cut link target. This waits on the
-   question already open about basalt's pin.
+1. basalt: done. Its nife pin, `edcbb2209`, holds every cut link target.
 2. nife: re-sort in `homes.toml` the seven bundled notes and `notes/project-metrics.md`, and
    add `helpers/record_paths.py`, which writes `keep` and `drop` from `homes.toml` and checks
    that they cover the record exactly.
