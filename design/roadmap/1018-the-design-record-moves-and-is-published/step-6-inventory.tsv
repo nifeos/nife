@@ -10,68 +10,63 @@
 .github/workflows/coe-architect-label.yml	notes/coes notes/corrections	copied into nifeos/record by its lint pull request; removed from nife by the removal pull request
 .github/workflows/metrics.yml	notes/project-metrics.md	stays; notes/project-metrics.md re-sorts to tool data so the bot writes one repository
 .github/workflows/mutation.yml	notes/mutation-testing.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
-.github/workflows/record-site.yml	briefs/** design/** notes/**	leaves nife in the removal pull request; step 8 builds the site in nifeos/nifeos.org
+.github/workflows/record-site.yml	design/** notes/**	leaves nife in the removal pull request; step 8 builds the site in nifeos/nifeos.org
 .github/workflows/stranger-cadence.yml	notes/stranger-test notes/stranger-test.md	stays with script/stranger-test; reads the run record at the record pin
 .github/workflows/toolchain-bump.yml	notes/kernel-proofs/riscv64-with-a-patched-kani.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 Cargo.toml	design	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 deny.toml	notes/cryptography-provider.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
-helpers/agents-index-check.py	notes/skills	stays; checks AGENTS.md against the vendored skills
-helpers/agents-md-split-check.py	design/tenets/*.md notes/skills/*/SKILL.md	stays; reads tenets and skills at the record pin
-helpers/architect-label-comment.sh	notes/skills/decisions/SKILL.md	stays in nife until the fleet repository exists; reworked to read the record at the pin
-helpers/architect-label-rules.py	briefs design design/decisions design/decisions/0* design/decisions/0088-needs-architect-as-a-check.md design/decisions/README.md design/naming.md notes notes/merge-queue.md	stays for code paths; the design/decisions rule fires in the record (T)
+helpers/agents-md-split-check.py	design/tenets/*.md	stays; reads the tenets at the record pin; the skills stay in nife
+helpers/architect-label-rules.py	design design/decisions design/decisions/0* design/decisions/0088-needs-architect-as-a-check.md design/decisions/README.md design/naming.md notes notes/merge-queue.md	stays for code paths; the design/decisions rule fires in the record (T)
 helpers/architect-label-unflag-selftest.sh	design/decisions/0130-cmos-rtc-delegation.md	stays in nife until the fleet repository exists; reworked to read the record at the pin
 helpers/architect-label-unflag.jq	notes	stays in nife until the fleet repository exists; reworked to read the record at the pin
 helpers/baseline_drift.py	notes/project-metrics.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/boot_line_heads.py	design notes	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
-helpers/booted_rows.py	briefs/confinement-outsider-pass.md notes/confinement-claims.md	stays; reads the record at the pin
+helpers/booted_rows.py	notes/confinement-claims.md	stays; reads the record at the pin
 helpers/catch-up-selftest.sh	design/roadmap design/roadmap/README.md	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
 helpers/ci_job_times.py	notes	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/coe_actions.py	design/decisions design/roadmap design/roadmap/proposals notes/coes notes/corrections	moves to nifeos/record with its history
 helpers/comment_block_ratchet.py	design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md design/roadmap/0860-comments-state-the-constraint-as-it-is-now.md design/roadmap/0929-kernel-comments-in-the-linux-style.md	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
 helpers/consumer_census.py	design notes	stays; reads the record at the pin
 helpers/crate_move.py	design notes notes/fuzzing/targets.md	stays; the crate-move tooling reads the record at the pin
-helpers/crate_release.py	briefs design notes	stays; reads the record at the pin
-helpers/crate_review_packet.py	briefs design notes	stays; reads the record at the pin
+helpers/crate_release.py	design notes	stays; reads the record at the pin
+helpers/crate_review_packet.py	design notes	stays; reads the record at the pin
 helpers/decisions-renumber-selftest.sh	design/decisions notes	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
-helpers/document_name_migrate.py	briefs design design/decisions design/decisions/0027-filesystem-service/README.md design/naming.md design/naming/README.md design/naming/convention-rulings.md design/roadmap design/roadmap/0020-portable-hal/README.md notes notes/README.md	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
+helpers/document_name_migrate.py	design design/decisions design/decisions/0027-filesystem-service/README.md design/naming.md design/naming/README.md design/naming/convention-rulings.md design/roadmap design/roadmap/0020-portable-hal/README.md notes notes/README.md	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
 helpers/fuzz-daily-publish-selftest.sh	notes	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/fuzz-daily-publish.sh	notes	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/fuzz-follow-main.py	notes/fuzzing/continuous-host.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/fuzz-heartbeat.py	notes/fuzzing/continuous-host.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/handoff-check.py	design	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/history_ratchet.py	design design/audit-reports design/roadmap/0679-the-prompt-suggests-from-history.md notes/coes notes/corrections	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
-helpers/hooks/refuse-ci-polling	briefs/gate-in-ci.md briefs/session-start.md	stays; names the vendored briefs
 helpers/host_exclusion_wiring.py	design notes	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/idle_pull_requests.py	design	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/interface_declarations_check.py	design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
-helpers/interface_stability.py	briefs design design/roadmap notes notes/abi.md notes/interface-stability.md	stays; reads the record at the pin
+helpers/interface_stability.py	design design/roadmap notes notes/abi.md notes/interface-stability.md	stays; reads the record at the pin
 helpers/kani-peaks.tsv	design	baseline row for a record file: the row moves to the record's own baseline
 helpers/known-flakes.tsv	notes/kani-shutdown-flake.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/lane-claim-check.sh	notes	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
-helpers/launch_pass.py	briefs briefs/confinement-outsider-pass-launch.md briefs/confinement-outsider-pass.md design/roadmap notes/confinement-claims.md	stays; reads the vendored briefs
+helpers/launch_pass.py	design/roadmap notes/confinement-claims.md	stays; the briefs stay in nife; reads the roadmap and notes at the record pin
 helpers/lint-section-index.tsv	notes	splits with script/lint
 helpers/lint_arch_parity.py	notes/x86-port.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/lint_link_section_target.py	notes/kernel-proofs.md notes/linker-scripts.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
-helpers/lint_ratchet.py	briefs design notes	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
-helpers/merge-drain.sh	briefs/rebase-onto-main.md notes	stays; names the vendored brief
+helpers/lint_ratchet.py	design notes	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
+helpers/merge-drain.sh	notes	stays; the brief stays in nife; reads notes at the record pin
 helpers/milestone-branch-block-selftest.sh	design/roadmap	stays in nife until the fleet repository exists; reworked to read the record at the pin
-helpers/milestone-branch-block.sh	design design/roadmap notes/skills/developer-lane/SKILL.md	stays in nife until the fleet repository exists; reworked to read the record at the pin; the status flip moves to the record pull request
+helpers/milestone-branch-block.sh	design design/roadmap	stays in nife until the fleet repository exists; reworked to read the record at the pin; the status flip moves to the record pull request; the skill it names stays in nife
 helpers/mutation_survivor_rows.py	design/roadmap design/roadmap/0008-* design/roadmap/proposals design/roadmap/proposals/{rest}.md design/roadmap/{int notes	stays; reads blocks at the record pin
-helpers/name_census.py	briefs design notes notes/skills	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
+helpers/name_census.py	design notes	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
 helpers/name_checks.py	design/naming.md design/naming/acronyms-and-abbreviations.md design/roadmap design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
 helpers/name_release.py	design/naming/convention-rulings.md	reads design/naming/convention-rulings.md: reads it at the record pin
 helpers/name_ruled.py	design/naming/convention-rulings.md	reads design/naming/convention-rulings.md: reads it at the record pin
-helpers/name_rules.py	briefs design design/naming/convention-rulings.md design/roadmap notes notes/coes	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
-helpers/needs-maintainer-selftest.sh	briefs/gate-in-ci.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
+helpers/name_rules.py	design design/naming/convention-rulings.md design/roadmap notes notes/coes	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
 helpers/observed_failing.py	notes/observed-failing.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/packages.py	notes/package-boundaries.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/parent_index.py	design/decisions	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
 helpers/patch-section-check.sh	notes/crate-move.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/preflight-arm-check-selftest.sh	notes	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
-helpers/prose_only.py	briefs design notes	stays; record paths drop out of its prose class in nife and the record copy keeps them
+helpers/prose_only.py	design notes	stays; record paths drop out of its prose class in nife and the record copy keeps them
 helpers/prose_ratchet.py	design/fatal-risks/README.md design/roadmap	to nifeos/record as a copy of the record half; the code half stays and reads the record at the pin
-helpers/push-requeue-selftest.sh	briefs notes/skills notes/swish-check-flake.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
-helpers/push-rewrite-check.sh	notes/skills/worktree-commits/SKILL.md	stays; names the vendored skill
+helpers/push-requeue-selftest.sh	notes/swish-check-flake.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep; the skill and brief paths stay
 helpers/qemu-bounded-selftest.sh	notes/qemu.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/qemu-runner-aarch64.sh	notes/hvf-leg.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 helpers/qualified_paths.py	design design/naming.md	stays and moves: both repositories resolve qualified paths; the record copies it
@@ -108,7 +103,6 @@ script/lint	design design/*.md design/audit-reports design/audit-reports/README.
 script/metrics	design/decisions design/decisions/README.md design/fatal-risks design/fatal-risks/README.md design/naming/convention-rulings.md design/roadmap design/roadmap/README.md design/roadmap/proposals notes notes/coes notes/net.md notes/project-metrics.md	stays; its block and decision counts read the record at the pin
 script/mutation-census	notes/mutation-testing.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 script/names	design/naming.md design/naming/programs-scripts-and-directories.md	reads the naming rules: reads them at the record pin
-script/nanny	briefs/rebase-onto-main.md briefs/survey-the-queue.md	stays; runs the vendored briefs
 script/preflight-queue	notes	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 script/record-ruling	design/decisions	stays in nife until the fleet repository exists; reworked to read the record at the pin
 script/redo-rate	notes/delegation/ledger.tsv	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
@@ -120,10 +114,10 @@ script/stranger-test	notes notes/stranger-test notes/stranger-test.md	stays (the
 script/supply-chain	notes/packages/container-format-measurements/fuzz	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 script/verify	design notes	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 script/verify-riscv64	notes/kani-upstream.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
-site/build.mjs	briefs design notes	leaves nife in the removal pull request; step 8 builds the site in nifeos/nifeos.org
+site/build.mjs	design notes	leaves nife in the removal pull request; step 8 builds the site in nifeos/nifeos.org
 site/layouts/index.njk	design	leaves nife in the removal pull request; step 8 builds the site in nifeos/nifeos.org
 site/layouts/page.njk	design	leaves nife in the removal pull request; step 8 builds the site in nifeos/nifeos.org
-site/lib/address.js	briefs design design/decisions design/fatal-risks design/journeys design/roadmap notes	leaves nife in the removal pull request; step 8 builds the site in nifeos/nifeos.org
+site/lib/address.js	design design/decisions design/fatal-risks design/journeys design/roadmap notes	leaves nife in the removal pull request; step 8 builds the site in nifeos/nifeos.org
 site/lib/markdown.js	design/decisions design/roadmap	leaves nife in the removal pull request; step 8 builds the site in nifeos/nifeos.org
 site/package.json	design	leaves nife in the removal pull request; step 8 builds the site in nifeos/nifeos.org
 tools/redoxfs_host/src/main.rs	notes/host-recovery.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
@@ -190,21 +184,21 @@ script/lint section 142: package boundaries	both	stays in nife; any record file 
 script/lint section 148: halves that are not halves	both	stays in nife; any record file it names is read at the record pin
 script/lint section 149: spelling	both	runs in each repository on its own files
 script/lint section 152: every kani-verifier install reads .kani-version	both	stays in nife; any record file it names is read at the record pin
-.claude/skills/decisions	symlink to ../../notes/skills/decisions	points at the vendored copy of the skills (open question 1)
-.claude/skills/developer-lane	symlink to ../../notes/skills/developer-lane	points at the vendored copy of the skills (open question 1)
-.claude/skills/maintainer	symlink to ../../notes/skills/maintainer	points at the vendored copy of the skills (open question 1)
-.claude/skills/naming-authority	symlink to ../../notes/skills/naming-authority	points at the vendored copy of the skills (open question 1)
-.claude/skills/qemu-hygiene	symlink to ../../notes/skills/qemu-hygiene	points at the vendored copy of the skills (open question 1)
-.claude/skills/working-with-the-architect	symlink to ../../notes/skills/working-with-the-architect	points at the vendored copy of the skills (open question 1)
-.claude/skills/worktree-commits	symlink to ../../notes/skills/worktree-commits	points at the vendored copy of the skills (open question 1)
-.agents/skills/decisions	symlink to ../../notes/skills/decisions	points at the vendored copy of the skills (open question 1)
-.agents/skills/developer-lane	symlink to ../../notes/skills/developer-lane	points at the vendored copy of the skills (open question 1)
-.agents/skills/maintainer	symlink to ../../notes/skills/maintainer	points at the vendored copy of the skills (open question 1)
-.agents/skills/naming-authority	symlink to ../../notes/skills/naming-authority	points at the vendored copy of the skills (open question 1)
-.agents/skills/qemu-hygiene	symlink to ../../notes/skills/qemu-hygiene	points at the vendored copy of the skills (open question 1)
-.agents/skills/working-with-the-architect	symlink to ../../notes/skills/working-with-the-architect	points at the vendored copy of the skills (open question 1)
-.agents/skills/worktree-commits	symlink to ../../notes/skills/worktree-commits	points at the vendored copy of the skills (open question 1)
+.claude/skills/decisions	symlink to ../../notes/skills/decisions	unchanged; the skills stay in nife
+.claude/skills/developer-lane	symlink to ../../notes/skills/developer-lane	unchanged; the skills stay in nife
+.claude/skills/maintainer	symlink to ../../notes/skills/maintainer	unchanged; the skills stay in nife
+.claude/skills/naming-authority	symlink to ../../notes/skills/naming-authority	unchanged; the skills stay in nife
+.claude/skills/qemu-hygiene	symlink to ../../notes/skills/qemu-hygiene	unchanged; the skills stay in nife
+.claude/skills/working-with-the-architect	symlink to ../../notes/skills/working-with-the-architect	unchanged; the skills stay in nife
+.claude/skills/worktree-commits	symlink to ../../notes/skills/worktree-commits	unchanged; the skills stay in nife
+.agents/skills/decisions	symlink to ../../notes/skills/decisions	unchanged; the skills stay in nife
+.agents/skills/developer-lane	symlink to ../../notes/skills/developer-lane	unchanged; the skills stay in nife
+.agents/skills/maintainer	symlink to ../../notes/skills/maintainer	unchanged; the skills stay in nife
+.agents/skills/naming-authority	symlink to ../../notes/skills/naming-authority	unchanged; the skills stay in nife
+.agents/skills/qemu-hygiene	symlink to ../../notes/skills/qemu-hygiene	unchanged; the skills stay in nife
+.agents/skills/working-with-the-architect	symlink to ../../notes/skills/working-with-the-architect	unchanged; the skills stay in nife
+.agents/skills/worktree-commits	symlink to ../../notes/skills/worktree-commits	unchanged; the skills stay in nife
 .github/workflows/ready-status.yml	design/roadmap through script/roadmap --ready-branch	stays (T); the status flip moves to the record pull request
 script/lint-fleet section 4b	design/roadmap through helpers/milestone-branch-block.sh	stays (T); the status flip moves to the record pull request
 xtask/src/disk.rs	the seven notes of manual.rs through doc_store()	stays; reads the notes once they re-sort as package documentation
-nifeos/basalt AGENTS.md and README.md	notes/skills and design through links into nifeos/nife	links become URLs into nifeos/record
+nifeos/basalt AGENTS.md and README.md	and design through links into nifeos/nife	links become URLs into nifeos/record
