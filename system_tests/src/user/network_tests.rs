@@ -58,7 +58,7 @@ const NET_LISTEN_PORT: u16 = socket_fixture::LISTEN_PORT;
 /// granted port binds and is exclusive, and asks for 4444 outside it to prove the refusal.
 ///
 /// The numbers carry no meaning of their own (5353 is multicast DNS's port, which nothing here uses
-/// any more; notes/mdns.md); they are kept so the client and this grant agree.
+/// any more; nifeos/record:notes/mdns.md); they are kept so the client and this grant agree.
 #[cfg(target_arch = "aarch64")]
 const NET_UDP_GRANT_BOTTOM: u16 = 5353;
 #[cfg(target_arch = "aarch64")]
@@ -105,7 +105,7 @@ fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net() {
          trip did not complete correctly",
     );
     // No fresh routed interrupt is asserted, unlike the disk read test: the net driver's completion
-    // is the used ring advancing, not one interrupt per operation (notes/dma.md), and the suite
+    // is the used ring advancing, not one interrupt per operation (nifeos/record:notes/dma.md), and the suite
     // shares one NIC across many drivers, so a prior operator's leftover completion can be consumed
     // as a stale wakeup. The OFFER round trip is the proof the interrupt path carried it.
 }
@@ -463,7 +463,7 @@ fn a_reopened_socket_id_connects_again_over_tcp() {
 /// (`hostfwd`), sends a payload and reads back an answer the guest composed. The guest holds only a
 /// `Stack` rendezvous and a shared frame, listens on the one port its spawn granted, and serves two
 /// connections on one listener, which proves it re-arms. The listen and UDP bind grants are
-/// refused, bound and collided in the same spawn; notes/net/the-inbound-half.md has both halves.
+/// refused, bound and collided in the same spawn; nifeos/record:notes/net/the-inbound-half.md has both halves.
 // RISC-V twin: `riscv64_virtual_io_tests::a_host_process_connects_to_the_guest_and_is_answered`.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
@@ -481,11 +481,11 @@ fn a_host_process_connects_to_the_guest_and_is_answered() {
     ) else {
         crate::testing::skip!("no virtio-net device attached");
     };
-    // E2 (milestone 134, design/roadmap/0134-the-measurements-that-decide.md): the thread census on
+    // E2 (milestone 134, nifeos/record:design/roadmap/0134-the-measurements-that-decide.md): the thread census on
     // the customer path. Every process this topology needs is spawned by now, and each is a
     // single-threaded event loop that spawns nothing per connection, so this is the peak. Its
     // topology is narrower than the one milestone 134 recorded, so the numbers are not comparable.
-    // See notes/benchmarks.md.
+    // See nifeos/record:notes/benchmarks.md.
     crate::println!(
         "    (E2 thread census: {} threads created by wiring this customer-path topology \
          ({} live now, {e2_baseline_threads} live before this test wired anything): main + \
@@ -563,7 +563,7 @@ fn std_net_runs_over_the_socket_contract() {
 /// listener re-arms. `denied refused` (`fixture::DENIED_PORT`, `PermissionDenied`) and `in use
 /// refused` (`AddrInUse`) ride the same spawn, because a boot is the expensive unit; the sibling
 /// test above is the stack with no grant. xtask's inbound prober checks the answer was the guest's
-/// own, which the guest cannot know. See notes/net/std-tcp-listener.md.
+/// own, which the guest cannot know. See nifeos/record:notes/net/std-tcp-listener.md.
 // RISC-V twin: `riscv64_virtual_io_tests::a_std_program_serves_a_granted_listening_port`.
 #[cfg(target_arch = "aarch64")]
 #[test_case]

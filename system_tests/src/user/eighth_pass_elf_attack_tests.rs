@@ -6,7 +6,7 @@
 //! half, a benign first header with a second naming the kernel, and `W|X` dressed in vendor OS
 //! bits. `load` must refuse each with the error that names why, and the kernel keeps executing.
 //! Cross-ISA over each ISA's `Mapper` (DECISIONS §19 (architectural parity is a tenet)). See
-//! notes/confinement-claims/the-eighth-pass-tests.md.
+//! nifeos/record:notes/confinement-claims/the-eighth-pass-tests.md.
 
 use super::*;
 

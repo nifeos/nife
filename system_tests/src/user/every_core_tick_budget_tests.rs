@@ -1,6 +1,6 @@
 //! `testing::EveryCoreTickBudget` and `testing::wait_on_every_core`, the seeded fuzz drivers' wait:
 //! a core that runs nothing holds the wait open, a machine that runs and still does not finish ends
-//! it, and the backstop bounds it. See notes/kernel-test-harness.md.
+//! it, and the backstop bounds it. See nifeos/record:notes/kernel-test-harness.md.
 //!
 //! A host that stops running one vCPU looks, from inside the guest, like a core that takes no ticks
 //! while the counter runs on. A core spinning with its interrupts masked gives the guest the same

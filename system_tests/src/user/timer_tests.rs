@@ -6,7 +6,7 @@
 //! through §101 (notification objects)'s path, and that the system call layer checks the right rights
 //! on the right objects. The arithmetic (the cache never passes an armed deadline, a walk fires
 //! exactly the due timers, a replaced or cancelled deadline never fires) is proved in
-//! `crates/inter_process_communication/src/timer.rs`. See notes/timer.md.
+//! `crates/inter_process_communication/src/timer.rs`. See nifeos/record:notes/timer.md.
 
 //! # Timing
 //!

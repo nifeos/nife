@@ -6,7 +6,7 @@
 //! proves this end to end through the real `root_supervisor`, which needs the initial ramdisk. This
 //! drives the same mechanism through the dispatcher with no program, so it runs on every
 //! architecture: `SYSTEM_CALL_CAPABILITY_DELETE` is the progenitor's self-drop, and `RETYPE`/`SPLIT` through an
-//! empty slot is its later build. See notes/confinement-outsider-pass-9.md, "The kernel tests".
+//! empty slot is its later build. See nifeos/record:notes/confinement-outsider-pass-9.md, "The kernel tests".
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC), for the module, the file and each
 //! function. Cross-ISA: untyped retype and split and the capability table are portable kernel code

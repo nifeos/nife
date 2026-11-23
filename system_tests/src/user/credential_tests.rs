@@ -11,7 +11,7 @@ use super::*;
 /// whose receiver is gone and block forever. `login_tests` and `login_user_schedule_tests` share
 /// this sealed store, and the latch makes every caller safe in any order. The readiness message is
 /// drained here, before any client `CALL`: the service sends it between the seal and its serve
-/// loop, and an undrained `SEND` deadlocks the boot (notes/credentials/what-is-proven.md).
+/// loop, and an undrained `SEND` deadlocks the boot (nifeos/record:notes/credentials/what-is-proven.md).
 pub(super) fn provisioned() -> Option<(cs::Wiring, [u64; 3], [u64; 3])> {
     use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     // Plain atomics rather than a lock or a `Once`: the only writer is the test thread, and the
@@ -221,7 +221,7 @@ fn the_same_endowment_cannot_write_the_store() {
     // `SEAL` is opcode 2, which the verify endpoint does not serve, so MALFORMED. Its answer moves
     // only when opcode 2 is added to or removed from the verify endpoint, and nothing breaks,
     // because a word arriving at a serve loop never carried authority
-    // (notes/credentials/what-is-proven.md).
+    // (nifeos/record:notes/credentials/what-is-proven.md).
     assert_eq!(
         cs::nth(codes, 1),
         credential_contract::MALFORMED,

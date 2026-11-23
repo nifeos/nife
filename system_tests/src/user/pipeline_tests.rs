@@ -77,7 +77,7 @@ fn one_program_two_destinations_and_the_same_bytes() {
 ///
 /// `echo hello world | wc` is a real two-party pipeline with only one spawned process in it:
 /// the shell writes the bytes into the endpoint itself. That costs no new mechanism, and it is
-/// what the sink contract being register-only buys (notes/sink-protocol.md): being a writer
+/// what the sink contract being register-only buys (nifeos/record:notes/sink-protocol.md): being a writer
 /// needs one capability and nothing else.
 ///
 /// Twelve bytes: `hello world` plus the newline the shell adds, which is what `echo` prints.

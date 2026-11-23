@@ -333,7 +333,7 @@ fn a_program_cannot_tell_what_its_output_slot_holds() {
 /// (§16 (object revocation)) classifies `Gone` from a blocked `SEND`, as in `yes | head`. An empty
 /// slot classifies `NoSink` and the program keeps running, which is what makes `Gone` mean
 /// anything: a writer that ended on both would kill every program never given a console. A writer
-/// in a system call on a dead capability needs no `SIGPIPE`. See notes/sink-protocol.md.
+/// in a system call on a dead capability needs no `SIGPIPE`. See nifeos/record:notes/sink-protocol.md.
 #[test_case]
 fn a_destroyed_sink_ends_the_writer_and_an_absent_one_does_not() {
     let image = program("sink_transcript_writer")
@@ -407,7 +407,7 @@ fn a_destroyed_sink_ends_the_writer_and_an_absent_one_does_not() {
 /// served by `terminal_sink_caretaker`, holding the sink `READ` and a terminal endpoint `WRITE`;
 /// the kernel serves the terminal contract on the far side here, so the transcript is asserted byte
 /// for byte through a real adapter speaking `terminal_contract::OPERATION_PRINT`. The writer holds
-/// one capability, to the adapter, so it cannot read a line. See notes/sink-protocol.md, "The
+/// one capability, to the adapter, so it cannot read a line. See nifeos/record:notes/sink-protocol.md, "The
 /// terminal's sink adapter, and the wall it hit".
 #[test_case]
 fn the_terminal_is_a_sink_like_any_other_and_the_writer_cannot_tell() {

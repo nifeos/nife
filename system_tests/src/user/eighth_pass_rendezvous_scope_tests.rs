@@ -6,7 +6,7 @@
 //! privileged supervisor of its own domain (READ and ENUMERATE) reaches sideways at another
 //! domain's live and dead members through `REAP` and `SURVEY`. A live and a dead stranger must get
 //! the same refusal, or liveness leaks (claim 7). Nothing blocks. Cross-ISA (DECISIONS §19
-//! (architectural parity is a tenet)). See notes/confinement-claims/the-eighth-pass-tests.md.
+//! (architectural parity is a tenet)). See nifeos/record:notes/confinement-claims/the-eighth-pass-tests.md.
 
 use moho_abi::Error;
 

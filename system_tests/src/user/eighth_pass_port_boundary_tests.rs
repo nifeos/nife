@@ -7,7 +7,7 @@
 //! red as `EVENT_EXIT`, never a hang. `x86_64` only, because port I/O is (DECISIONS §121 (what a
 //! device capability is when the device has no page: x86 port I/O), milestone 299 (the x86
 //! port-range capability: the serial console becomes a userspace driver)). See
-//! notes/confinement-claims/the-eighth-pass-tests.md.
+//! nifeos/record:notes/confinement-claims/the-eighth-pass-tests.md.
 
 use super::supervision_tests::{CODE_VA, build_child_with};
 use super::x86_programs;
@@ -176,7 +176,7 @@ fn a_non_holder_cannot_read_a_port_and_a_read_only_holder_may_not_write_it() {
 /// instant. The first wakes after its exact range is revoked and its `out` must fault; the second
 /// wakes after an unheld range is revoked and its `out` must still work. A sub-range revoke is no
 /// leg: the sweep matches exact `(base, count)` and no system call can name a narrower range (near
-/// miss 1 of notes/confinement-outsider-pass-8.md).
+/// miss 1 of nifeos/record:notes/confinement-outsider-pass-8.md).
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

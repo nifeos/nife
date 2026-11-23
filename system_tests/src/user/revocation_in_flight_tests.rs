@@ -5,7 +5,7 @@
 //! `sched::inter_process_communication_send_capability` writes and `sched::inter_process_communication_receive_capability` takes. The `PageFrame`, `DeviceFrame`
 //! and `PortRange` sweeps clear that slot, as `sched::delete_reply_capabilities_naming` does. A slot left
 //! unswept reopens the use-after-free DECISIONS §13 (capability revocation and untyped reclamation)
-//! exists to prevent. See notes/confinement-claims/adversarial-pass-2026-09-21.md.
+//! exists to prevent. See nifeos/record:notes/confinement-claims/adversarial-pass-2026-09-21.md.
 
 //! # BUGS
 //!

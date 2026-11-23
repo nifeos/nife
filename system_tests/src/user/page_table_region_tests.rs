@@ -7,7 +7,7 @@
 //! tables from `R`, destroys `R` through the real `DESTROY`, then asks whether the first page still
 //! translates, whether the log lists it, and whether a second map (tables from `R2`) builds fresh
 //! tables or descends into a page `R` gave back, which names the use-after-free. A kernel test, as
-//! a program cannot see its page tables. See notes/frames.md, "Page tables a region paid for".
+//! a program cannot see its page tables. See nifeos/record:notes/frames.md, "Page tables a region paid for".
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 

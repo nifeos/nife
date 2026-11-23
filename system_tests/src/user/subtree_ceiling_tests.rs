@@ -5,7 +5,7 @@
 //! region as a program would and creates every kind of kernel object in it through the real
 //! dispatcher until each refuses. Each kind must stop at the split child's sixteenth of the root's
 //! ceiling while the region still has pages, and a child built in a sibling region afterwards must
-//! still start. Reclaiming the subtree must give every count back. See notes/memory-regions.md,
+//! still start. Reclaiming the subtree must give every count back. See nifeos/record:notes/memory-regions.md,
 //! "Subtree ceilings".
 //!
 //! Name: provisional, for the module and the file.

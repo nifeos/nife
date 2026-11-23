@@ -171,7 +171,7 @@ fn assert_screen_is(w: &Wiring, committed: usize) {
 /// its neighbour's pixels (asserted to be the neighbour's frame). It finds its ungranted input slot
 /// empty (`NoSuchSlot`); its write faults at that address; the victim's pattern digests the same
 /// before and after, read by the kernel and by the victim held in a `CALL`; and a third client
-/// faults reading the screen's address. See notes/system-test-modules/compositor-tests.md.
+/// faults reading the screen's address. See nifeos/record:notes/system-test-modules/compositor-tests.md.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.compositor_tests.a_client_holds_no_capability_for_its_neighbours_pixels_or_the_screen.patch`
 #[test_case]
@@ -300,7 +300,7 @@ fn a_client_holds_no_capability_for_its_neighbours_pixels_or_the_screen() {
 // the others sit behind the fault wait (the digests), behind a probe that cannot see a read-only
 // exposure (the neighbour's pixels, as a confidentiality claim), or behind an address the fixture
 // never maps (the screen). Each part below is its own test so each can carry its own replayable
-// falsification; `notes/confinement-claims.md` row 25 says which patch reaches which.
+// falsification; `nifeos/record:notes/confinement-claims.md` row 25 says which patch reaches which.
 // ================================================================================================
 
 /// Receive the next report on `ep`, but bounded: a client whose `CALL` the compositor never answers
@@ -652,7 +652,7 @@ fn a_one_window_redraw_costs_one_rectangle_and_not_the_screen() {
 /// input endpoint, so one without cannot be sent anything. Who decides: the compositor, in
 /// userspace, witnessed through the window-list page it publishes. After focus moves, the unfocused
 /// client must receive nothing, checked with `rendezvous_waiting_senders` rather than a receive
-/// that would block forever. See notes/system-test-modules/compositor-tests.md.
+/// that would block forever. See nifeos/record:notes/system-test-modules/compositor-tests.md.
 #[test_case]
 fn input_reaches_only_the_focused_client_and_focus_is_the_compositors_call() {
     let (display, screen, display_region) = kernel_display();
@@ -712,7 +712,7 @@ fn input_reaches_only_the_focused_client_and_focus_is_the_compositors_call() {
 /// Terminal 1 receives because it holds an input endpoint (§33 (the compositor's authority is
 /// memory, not messages)), and the compositor cannot tell a terminal from a `window` client. It
 /// uses the kernel's display stand-in, because a third `gpu_driver` would race the host's scanout
-/// check. See notes/system-test-modules/compositor-tests.md.
+/// check. See nifeos/record:notes/system-test-modules/compositor-tests.md.
 #[test_case]
 fn focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours() {
     let (display, screen, display_region) = kernel_display();
@@ -844,7 +844,7 @@ fn focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours() {
 /// screen, and the host's `screendump` through QEMU's monitor, which `cargo xtask` runs because
 /// under `-display none` only it sees the device's own surface. The capture client enumerates
 /// windows from the published page and faults writing the screen. See
-/// notes/system-test-modules/compositor-tests.md.
+/// nifeos/record:notes/system-test-modules/compositor-tests.md.
 #[test_case]
 fn three_clients_compose_into_one_scanout_and_the_host_sees_it() {
     // **A missing GPU is not always the build-order mistake this test exists to catch.** On the
@@ -859,13 +859,13 @@ fn three_clients_compose_into_one_scanout_and_the_host_sees_it() {
         crate::testing::skip!(
             "no virtio-gpu-pci function on the bus: either this kernel enumerated no PCI at all, \
              or (x86_64 under OVMF) the firmware runner attaches no GPU; see \
-             design/roadmap/0420-the-rest-of-the-x86-64-fixture-set.md"
+             nifeos/record:design/roadmap/0420-the-rest-of-the-x86-64-fixture-set.md"
         );
     };
     assert!(
         crate::iommu::is_active(),
         "a virtio-gpu is present but the IOMMU is not active: the GPU's pixel reads are \
-         unconfined (notes/framebuffer-contract.md)",
+         unconfined (nifeos/record:notes/framebuffer-contract.md)",
     );
     let [tag, geometry, ..] = sched::ipc_receive(driver_report);
     assert_eq!(
@@ -964,7 +964,7 @@ fn three_clients_compose_into_one_scanout_and_the_host_sees_it() {
 /// The forger rewrites `ID`, `WIDTH`, `HEIGHT`, `STRIDE`, `STATUS`, `ACKED` and `SEQ`, committing
 /// after each forge; the compositor trusting any of it back would be the escape. It reports
 /// `WIN_FORGED` only if all three commits were answered, and the victim and the screen must be
-/// unchanged. See notes/system-test-modules/compositor-tests.md.
+/// unchanged. See nifeos/record:notes/system-test-modules/compositor-tests.md.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

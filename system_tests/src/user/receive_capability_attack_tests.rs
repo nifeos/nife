@@ -7,7 +7,7 @@
 //! capability was installed for this delivery (`Thread::capability_delivered`, `kernel/src/sched.rs`), so
 //! the receiver-first order, where `ipc_send` drops its words into the parked receiver's mailbox,
 //! matches the sender-first one. A chosen word would aim a server's `capability_delete` at its own
-//! capabilities. See notes/confinement-claims.md, "What `RECEIVE_CAPABILITY` hands back".
+//! capabilities. See nifeos/record:notes/confinement-claims.md, "What `RECEIVE_CAPABILITY` hands back".
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 

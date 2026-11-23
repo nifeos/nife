@@ -1,5 +1,5 @@
 //! **Somebody else's C, unmodified, on nife's C library** (milestone 835 (a C library, stage 1:
-//! files, clock and memory); `design/fatal-risks/1-only-software-written-for-nife.md`).
+//! files, clock and memory); `nifeos/record:design/fatal-risks/1-only-software-written-for-nife.md`).
 //!
 //! SQLite's `speedtest1` and ioping, built by basalt from pinned sources nobody here touched, run
 //! through a C library (§265 (a C library started from relibc, whose Rust platform layer holds the
@@ -7,7 +7,7 @@
 //! archive**, except where CI's `rg-threads` rows set `NIFE_SPEEDTEST1_REQUIRED` and
 //! `NIFE_IOPING_REQUIRED` to 1 and a missing one fails. **All three ISAs** (§19 (architectural
 //! parity is a tenet; the targets are aarch64, riscv64, and x86_64)). The programs, their pins and
-//! what differs from a Linux build are in notes/system-test-modules.md.
+//! what differs from a Linux build are in nifeos/record:notes/system-test-modules.md.
 
 use super::*;
 

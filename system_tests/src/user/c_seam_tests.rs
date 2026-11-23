@@ -62,7 +62,7 @@ fn spawn_confiner() -> (sched::RendezvousId, u64) {
 /// The confiner reports a death only when one is delivered, so under a broken confinement (the
 /// out-of-bounds store landing instead of faulting) a bare blocking receive here has nothing to
 /// take, and the test would fail for the right reason as a watchdog livelock, saying the wrong
-/// thing (`design/roadmap/0202-confinement-claims-falsified.md`). Thirty seconds against a
+/// thing (`nifeos/record:design/roadmap/0202-confinement-claims-falsified.md`). Thirty seconds against a
 /// 90-second per-test budget: a healthy run's largest gap, a shim build and start, is well under a
 /// second, and a stalled run fails here with a sentence about confinement.
 fn wait_for_report(report: sched::RendezvousId) -> bool {

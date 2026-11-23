@@ -349,7 +349,7 @@ fn rayons_parallel_sum_runs_on_every_online_core() {
 /// four threads before replacing it").
 ///
 /// `std_heap_contention` does the same allocations with one thread and then four; this logs both
-/// times (a ratio under QEMU, recorded in `notes/std/threads.md` and `notes/std/allocation.md`) and
+/// times (a ratio under QEMU, recorded in `nifeos/record:notes/std/threads.md` and `nifeos/record:notes/std/allocation.md`) and
 /// checks that both arrived. It also checks that a thread's end gives its allocation cache back
 /// (milestone 561 (a per-CPU allocator is what the current-CPU page was for)): 64 threads run in
 /// turn, each ending with a full cache, twice the program's heap budget between them.

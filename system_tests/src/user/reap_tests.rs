@@ -66,7 +66,7 @@ fn reap(slot: u64, tid: u64) -> Result<i64, Error> {
 /// it by design. `depart` publishes a supervised thread `Dead` and parks it on its supervision
 /// rendezvous before it reaches `switch_to`, so when a test sees the death message or the parked
 /// sender the corpse is still executing, and `reap_region_objects` refuses to unmap a stack a core
-/// stands on (`NotPermitted`). See notes/stack/kernel-stack-freed-under-its-owner.md and milestone
+/// stands on (`NotPermitted`). See nifeos/record:notes/stack/kernel-stack-freed-under-its-owner.md and milestone
 /// 124 (a thread is born where it lives).
 ///
 /// A test meaning "refused for good" calls [`reap`] and asserts on it; this is for "it succeeds".
