@@ -1,17 +1,21 @@
 # Item 6: Kani harnesses for the on-disk parsers of `rsext4`
 
 The draft of upstream item 6 in [milestone 190](../../0190-ext4-read-write.md): the claims nife
-proves of its own on-disk parsers, written for `rsext4`'s. Nobody files it until the architect
-reviews this exact text and gives a separate go.
+proves of its own on-disk parsers, written for `rsext4`'s. It is upstream as
+[rcore-os/tgoskits#2836](https://github.com/rcore-os/tgoskits/issues/2836), with the title and
+Chinese body below.
 
 - Repository: `rcore-os/tgoskits`, branch `dev`, package `fs/rsext4` (0.9.2).
-- Base commit: `6e80b940d46167a59a795e158bb17a7eb28333af`, the head of `dev` when this draft
-  last checked it.
-- The harnesses: [tools/ext4_oracle/tests/parser_proofs.rs](../../../../tools/ext4_oracle/tests/parser_proofs.rs),
+- Base commit: `0353572d1e2cca79e25a2805deeff4521449a5c1`, the head of `dev` at filing. Its only
+  change under `fs/rsext4` since `6e80b940d` is in `src/ext4/alloc.rs`, which no harness reads.
+- The harnesses:
+  [tools/ext4_oracle/tests/parser_proofs.rs](../../../../tools/ext4_oracle/tests/parser_proofs.rs),
   in nife, against the crate's public API. There is no patch beside this file, because the
   submission is an issue, not a pull request.
-- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar and
-  the filer sets: Assignees `calef`, labels `task` and `q4`, Type `Task`, Milestone `2026Q4`.
+- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar:
+  Assignees `calef`, labels `task` and `q4`, Type `Task`, Milestone `2026Q4`. GitHub dropped these
+  at creation, because the filing account has no triage permission on the repository; the guide asks
+  a maintainer to fill them in.
 
 ## Why an issue and not a pull request
 
@@ -66,9 +70,9 @@ reads.
 | `directory_block_walk_ends_inside_its_block` | `DirEntryIterator` ends after at most one step per eight bytes, and each entry, name included, lies inside its record and its record inside the block | 24 bytes | 53 s |
 
 Times are wall clock on one x86_64 Linux host with Kani 0.68.0 and CBMC 6.11.0, build excluded.
-Three bounds sit below what the claim would ideally cover, because a larger input did not finish
-in fifteen minutes. They are the extent node at 36 bytes (a header and two entries), the directory
-walk at 32 bytes, and a whole slicing round of CRC32C with an arbitrary seed. The tables harness covers
+Three bounds sit below what the claim would ideally cover, because a larger input did not finish in
+fifteen minutes. They are the extent node at 36 bytes (a header and two entries), the directory walk
+at 32 bytes, and a whole slicing round of CRC32C with an arbitrary seed. The tables harness covers
 the round by its parts, and its doc says what it leaves to linearity.
 
 ## Issue title

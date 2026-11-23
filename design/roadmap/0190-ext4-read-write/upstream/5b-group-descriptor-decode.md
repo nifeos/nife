@@ -3,18 +3,23 @@
 The second half of upstream item 5 in [milestone 190](../../0190-ext4-read-write.md): a sound
 replacement for the two group-descriptor casts in `rsext4`, tested against 32-byte and 64-byte
 descriptors. The CRC32C safety arguments are [item 5a](5a-crc32c-safety-arguments.md), a pull
-request of their own. Nobody files either until the architect reviews this exact text and gives a
-separate go.
+request of their own. Both submissions are upstream, each with the title and Chinese body below: the
+issue as [rcore-os/tgoskits#2832](https://github.com/rcore-os/tgoskits/issues/2832) and the pull
+request as [rcore-os/tgoskits#2833](https://github.com/rcore-os/tgoskits/pull/2833), whose one
+commit is the patch beside this file.
 
 - Repository: `rcore-os/tgoskits`, branch `dev`, package `fs/rsext4` (0.9.2).
-- Base commit: `6e80b940d46167a59a795e158bb17a7eb28333af`, the head of `dev` when this draft
-  last checked it; `dev` has no later commit under `fs/rsext4`.
+- Base commit: `0353572d1e2cca79e25a2805deeff4521449a5c1` ("fix(x86_vlapic): stop the APIC timer
+  without yielding in the vCPU entry window (#2819)"), the head of `dev` at filing. The patch beside this file dates from the earlier base
+  `6e80b940d` and applies to this one unchanged.
 - The change: [5b-group-descriptor-decode.patch](5b-group-descriptor-decode.patch), one commit,
   `git format-patch` output. It applies with `git am` on the base commit, with or without 5a.
 - Upstream's contributing guide (section 4.3) processes no pull request without a linked issue, so
   the issue below goes first, and the pull request body names its number.
-- Issue settings, which the guide (section 3.7) requires in the sidebar and the filer sets:
+- Issue settings, which the guide (section 3.7) requires in the sidebar:
   Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`.
+  GitHub dropped these at creation, because the filing account has no triage
+  permission on the repository; the guide asks a maintainer to fill them in.
 
 ## What upstream may refuse
 
@@ -33,7 +38,7 @@ the bug, fall on code outside `tgoskits` that uses the crates.io release's publi
 upstream prefers to keep the old names through a deprecation release, the change still stands; only
 the removal of `get_desc_mut` would wait.
 
-## Issue to file first
+## Issue (filed)
 
 ### Issue title
 
@@ -108,7 +113,7 @@ fix(rsext4)!: decode group descriptors instead of casting
 ```markdown
 ## 当前问题
 
-关联 Issue：#<to be filled>
+关联 Issue：#2832
 
 `BlockGroupDescTable::get_desc` 和 `BlockGroupDescTableMut::get_desc_mut` 把表中某个字节偏移直接转换为 `&Ext4GroupDesc` / `&mut Ext4GroupDesc`：未对齐时这是未定义行为，字段按本机字节序读取而磁盘格式是小端序（ext4 格式文档，2 High Level Design），而且引用总是覆盖 64 字节，所以 32 字节描述符（ext4 格式文档，3.2 Block Group Descriptors：未启用 `64bit` 时描述符为 32 字节）的读取会把下一条记录当作高半部分，更新会写进下一条记录。挂载路径直接用 `Ext4GroupDesc::decode_checked` 解码描述符，不使用这两个视图；仓库中只有 crate 自己的测试使用它们，受影响的是 crates.io 发布版公共接口的使用者。
 
@@ -122,11 +127,11 @@ fix(rsext4)!: decode group descriptors instead of casting
 
 ## 测试验证
 
-- 修复前（基线 `6e80b940d`，只换入新测试文件）：debug 构建下两个新测试都在 `table.rs:36:23` 以 `misaligned pointer dereference` 中止；release 构建下 32 字节测试在 `tests.rs:133` 失败（`left: Some(18446744069414584577)`，`right: Some(257)`，即读到了下一条记录的字节），64 字节测试通过（release 构建不检查对齐，所以未对齐引用的未定义行为在这里没有表现出来）。
+- 修复前（基线 `0353572d1`，只换入新测试文件）：debug 构建下两个新测试都在 `table.rs:36:23` 以 `misaligned pointer dereference` 中止；release 构建下 32 字节测试在 `tests.rs:133` 失败（`left: Some(18446744069414584577)`，`right: Some(257)`，即读到了下一条记录的字节），64 字节测试通过（release 构建不检查对齐，所以未对齐引用的未定义行为在这里没有表现出来）。
 - 修复后：两个新测试通过，`cargo test -p rsext4 --lib` 430 个测试全部通过。
 - `cargo xtask clippy --package rsext4`：3 项检查全部通过。
 - `cargo fmt --check` 通过。
-- `cargo xtask test --since 6e80b940d`：除 `rsext4` 的 `tests/filesystem_growth.rs` 中两个测试和 `ax-fs-ng` 的 `root_growth_preserves_other_partitions_and_ext4_contents` 外全部通过。这三个测试在基线提交上以同样方式失败，原因相同：测试机的 `mke2fs` 1.47.2 默认启用 `orphan_file`，扩容在 `fs/rsext4/src/ext4/grow/layout.rs:93` 以 `grow:features_or_durability` 拒绝它。
+- `cargo xtask test --since 0353572d1`：除 `rsext4` 的 `tests/filesystem_growth.rs` 中两个测试和 `ax-fs-ng` 的 `root_growth_preserves_other_partitions_and_ext4_contents` 外全部通过。这三个测试在基线提交上以同样方式失败，原因相同：测试机的 `mke2fs` 1.47.2 默认启用 `orphan_file`，扩容在 `fs/rsext4/src/ext4/grow/layout.rs:93` 以 `grow:features_or_durability` 拒绝它。
 - 没有运行 QEMU：挂载路径不使用这两个视图，运行时行为没有变化；改变的只有公共表类型，宿主机单元测试已覆盖。
 ```
 
@@ -149,15 +154,23 @@ Compatibility: the public signatures change, so this is a breaking change. Nothi
 
 ## Test and verification
 
-- Before the fix (the base `6e80b940d`, with only the new test file swapped in): in a debug build both new tests abort at `table.rs:36:23` with `misaligned pointer dereference`. In a release build the 32-byte test fails at `tests.rs:133` (`left: Some(18446744069414584577)`, `right: Some(257)`, the bytes of the next record) and the 64-byte test passes (a release build does not check alignment, so the undefined behavior of the unaligned reference does not show there).
+- Before the fix (the base `0353572d1`, with only the new test file swapped in): in a debug build both new tests abort at `table.rs:36:23` with `misaligned pointer dereference`. In a release build the 32-byte test fails at `tests.rs:133` (`left: Some(18446744069414584577)`, `right: Some(257)`, the bytes of the next record) and the 64-byte test passes (a release build does not check alignment, so the undefined behavior of the unaligned reference does not show there).
 - After the fix: both new tests pass, and all 430 tests of `cargo test -p rsext4 --lib` pass.
 - `cargo xtask clippy --package rsext4`: all 3 checks pass.
 - `cargo fmt --check` passes.
-- `cargo xtask test --since 6e80b940d`: everything passes except two tests in `rsext4`'s `tests/filesystem_growth.rs` and `ax-fs-ng`'s `root_growth_preserves_other_partitions_and_ext4_contents`. The three fail the same way on the base commit, for one reason: the test host's `mke2fs` 1.47.2 enables `orphan_file` by default, and growth refuses it with `grow:features_or_durability` at `fs/rsext4/src/ext4/grow/layout.rs:93`.
+- `cargo xtask test --since 0353572d1`: everything passes except two tests in `rsext4`'s `tests/filesystem_growth.rs` and `ax-fs-ng`'s `root_growth_preserves_other_partitions_and_ext4_contents`. The three fail the same way on the base commit, for one reason: the test host's `mke2fs` 1.47.2 enables `orphan_file` by default, and growth refuses it with `grow:features_or_durability` at `fs/rsext4/src/ext4/grow/layout.rs:93`.
 - QEMU was not run: the mount path does not use these views, so runtime behavior does not change; only the public table types change, and the host unit tests cover them.
 ```
 
 ## Test evidence
+
+Before filing, every check the pull request cites ran again on `0353572d1`, the head of `dev` then.
+With only the new test file on that base, the debug build aborted with `misaligned pointer
+dereference` in `get_desc`. The release build failed the 32-byte test with the same values and
+passed the 64-byte one. With the patch, `cargo test -p rsext4 --lib` passed 430 tests. `cargo xtask
+clippy --package rsext4` passed its 3 checks, and `cargo fmt --check` was clean. `cargo xtask test
+--since 0353572d1` failed only the three growth tests, and they fail the same way on unchanged
+`dev`. The runs below are the earlier ones, on `6e80b940d`.
 
 Each command ran in the clone on the base commit or on the patch applied to it.
 

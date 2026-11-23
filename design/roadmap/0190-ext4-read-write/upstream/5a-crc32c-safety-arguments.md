@@ -3,20 +3,26 @@
 The first half of upstream item 5 in [milestone 190](../../0190-ext4-read-write.md): a safety
 argument at each CRC32C `unsafe` use in `rsext4`, with no change to what runs. The other half, the
 group-descriptor casts, is [item 5b](5b-group-descriptor-decode.md), because upstream takes one
-task per pull request and keeps a documentation change apart from a fix. Nobody files either until
-the architect reviews this exact text and gives a separate go.
+task per pull request and keeps a documentation change apart from a fix. Both submissions are
+upstream, each with the title and Chinese body below: the issue as
+[rcore-os/tgoskits#2830](https://github.com/rcore-os/tgoskits/issues/2830) and the pull request as
+[rcore-os/tgoskits#2831](https://github.com/rcore-os/tgoskits/pull/2831), whose one commit is the
+patch beside this file.
 
 - Repository: `rcore-os/tgoskits`, branch `dev`, package `fs/rsext4` (0.9.2).
-- Base commit: `6e80b940d46167a59a795e158bb17a7eb28333af`, the head of `dev` when this draft
-  last checked it; `dev` has no later commit under `fs/rsext4`.
+- Base commit: `0353572d1e2cca79e25a2805deeff4521449a5c1` ("fix(x86_vlapic): stop the APIC timer
+  without yielding in the vCPU entry window (#2819)"), the head of `dev` at filing. The patch beside this file dates from the earlier base
+  `6e80b940d` and applies to this one unchanged.
 - The change: [5a-crc32c-safety-arguments.patch](5a-crc32c-safety-arguments.patch), one commit,
   `git format-patch` output. It applies with `git am` on the base commit.
 - Upstream's contributing guide (section 4.3) processes no pull request without a linked issue, so
   the issue below goes first, and the pull request body names its number.
-- Issue settings, which the guide (section 3.7) requires in the sidebar and the filer sets:
+- Issue settings, which the guide (section 3.7) requires in the sidebar:
   Assignees `calef`, labels `task` and `q4`, Type `Task`, Milestone `2026Q4`.
+  GitHub dropped these at creation, because the filing account has no triage
+  permission on the repository; the guide asks a maintainer to fill them in.
 
-## Issue to file first
+## Issue (filed)
 
 ### Issue title
 
@@ -103,7 +109,7 @@ docs(rsext4): state the safety argument at each CRC32C unsafe use
 ```markdown
 ## 当前问题
 
-关联 Issue：#<to be filled>
+关联 Issue：#2830
 
 CRC32C 路径中，aarch64 的 `mrs` 读取、aarch64 的硬件循环（整个函数体是一个 `unsafe` 块）、以及 `crc32c_append` 和测试中对 `crc32c_hardware` 的三处调用没有说明它们的安全性依据。x86_64 的两处 `asm!` 已有说明，两处 `unsafe fn` 声明已有 `# Safety` 文档，本 PR 不修改它们。
 
@@ -124,7 +130,7 @@ CRC32C 路径中，aarch64 的 `mrs` 读取、aarch64 的硬件循环（整个�
 - `cargo xtask clippy --package rsext4`：3 项检查全部通过（base、`USE_MULTILEVEL_CACHE`、`host-test`，都在宿主机目标上）。
 - `cargo clippy --no-deps -p rsext4 --target aarch64-unknown-none-softfloat -- -D warnings` 通过。`rsext4` 没有声明 docs.rs 目标，`cargo xtask clippy` 只检查宿主机目标，而修改的 `arm64.rs` 只在 aarch64 上编译，所以补充这一项，不是替代 `cargo xtask clippy`。
 - `cargo fmt --check` 通过。
-- `cargo xtask test --since 6e80b940d`：除 `rsext4` 的 `tests/filesystem_growth.rs` 中两个测试和 `ax-fs-ng` 的 `root_growth_preserves_other_partitions_and_ext4_contents` 外全部通过。这三个测试在基线提交上以同样方式失败，原因相同：测试机的 `mke2fs` 1.47.2 默认启用 `orphan_file`，扩容在 `fs/rsext4/src/ext4/grow/layout.rs:93` 以 `grow:features_or_durability` 拒绝它。第一次运行中 `ax-block` 的六个缓存测试也失败过一次（`fs/ax-block/src/block/cache/tests.rs:890`，随后是锁中毒）；本 PR 只改 `rsext4` 的注释，不影响 `ax-block`，在同一分支上重跑 `ax-block` 的 host-test 测试五次（其中三次加 `write-zeroes,reclaim` 特性）均通过，所以这是一次偶发失败。
+- `cargo xtask test --since 0353572d1`：除 `rsext4` 的 `tests/filesystem_growth.rs` 中两个测试和 `ax-fs-ng` 的 `root_growth_preserves_other_partitions_and_ext4_contents` 外全部通过。这三个测试在基线提交上以同样方式失败，原因相同：测试机的 `mke2fs` 1.47.2 默认启用 `orphan_file`，扩容在 `fs/rsext4/src/ext4/grow/layout.rs:93` 以 `grow:features_or_durability` 拒绝它。
 
 未验证：aarch64 的硬件 CRC32C 路径只做了编译和 clippy 检查，没有在 aarch64 硬件上运行；本 PR 不改变执行的指令。没有运行 QEMU，因为没有运行时行为变化。
 ```
@@ -155,12 +161,20 @@ Compatibility: no change to the public API or to behavior.
 - `cargo xtask clippy --package rsext4`: all 3 checks pass (base, `USE_MULTILEVEL_CACHE` and `host-test`, all on the host target).
 - `cargo clippy --no-deps -p rsext4 --target aarch64-unknown-none-softfloat -- -D warnings` passes. `rsext4` declares no docs.rs targets, so `cargo xtask clippy` checks only the host target, and the changed `arm64.rs` compiles only on aarch64. This check adds to `cargo xtask clippy` and does not replace it.
 - `cargo fmt --check` passes.
-- `cargo xtask test --since 6e80b940d`: everything passes except two tests in `rsext4`'s `tests/filesystem_growth.rs` and `ax-fs-ng`'s `root_growth_preserves_other_partitions_and_ext4_contents`. The three fail the same way on the base commit, for one reason: the test host's `mke2fs` 1.47.2 enables `orphan_file` by default, and growth refuses it with `grow:features_or_durability` at `fs/rsext4/src/ext4/grow/layout.rs:93`. On the first run six `ax-block` cache tests also failed once (`fs/ax-block/src/block/cache/tests.rs:890`, then poisoned locks). This PR changes only comments in `rsext4` and cannot reach `ax-block`; five reruns of the `ax-block` host tests on the same branch (three with the `write-zeroes,reclaim` features) all pass, so that failure is intermittent.
+- `cargo xtask test --since 0353572d1`: everything passes except two tests in `rsext4`'s `tests/filesystem_growth.rs` and `ax-fs-ng`'s `root_growth_preserves_other_partitions_and_ext4_contents`. The three fail the same way on the base commit, for one reason: the test host's `mke2fs` 1.47.2 enables `orphan_file` by default, and growth refuses it with `grow:features_or_durability` at `fs/rsext4/src/ext4/grow/layout.rs:93`.
 
 Not verified: the aarch64 hardware CRC32C path was only compiled and checked with clippy, not run on aarch64 hardware; this PR does not change the instructions executed. QEMU was not run, because no runtime behavior changes.
 ```
 
 ## Test evidence
+
+Before filing, every check the pull request cites ran again on `0353572d1`, the head of `dev` then,
+with the patch applied. `cargo test -p rsext4 --lib` passed 428 tests, and the aarch64 clippy run
+was clean. `cargo xtask clippy --package rsext4` passed its 3 checks, and `cargo fmt --check` was
+clean. `cargo xtask test --since 0353572d1` failed only the three growth tests, and they fail the
+same way on unchanged `dev`. `ax-block` passed all its tests in that run, so the pull request no
+longer mentions its earlier intermittent failure. The runs below are the earlier ones, on
+`6e80b940d`.
 
 Each command ran in the clone on the patch applied to the base commit.
 
