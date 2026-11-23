@@ -36,8 +36,8 @@ wakeups (`:803`) and reports `0xE9`; the disk loops forever (`:488`). A one-shot
 device that never completes hangs the suite past the watchdog instead of reporting. The fix, with
 item 7's single `complete`, is one bound for both. Effort: S. Two-way.
 
-17. The register map is unchecked against a second driver. Open. Before the library that holds the
-name `virtio` is cut, check nife's virtio register offsets, feature bits and device configuration
+17. The register map has no check against a second driver. Open. Before anyone cuts the library that
+holds the name `virtio`, check nife's virtio register offsets, feature bits and device configuration
 layouts against rcore-os/virtio-drivers 0.13 (MIT). The constants live in `moho_abi::virtual_io`,
 `components/src/block_driver_roles.rs`, `components/src/virtual_io_net_transport.rs` and
 `kernel/src/virtual_io`. Its fake transport (`src/transport/fake.rs`) is the model: a host test

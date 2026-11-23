@@ -29,8 +29,8 @@ and the first step toward more than one command in flight per queue.
 
 Reuse: the kernel's MSI-X and MSI programming in `kernel/src/pci.rs` (`function_interrupt`,
 `program_msix`, `program_msi`, `intx_intid`), the `Interrupt` capability and its `WAIT` and
-`ACKNOWLEDGE` operations, the VT-d remapping that milestone 1068 (the kernel turns interrupt
-remapping on where an IOMMU offers it) built, and the crate's ring arithmetic. No third-party
+`ACKNOWLEDGE` operations, and the crate's ring arithmetic. It also reuses the VT-d remapping that
+milestone 1068 (the kernel turns interrupt remapping on where an IOMMU offers it) built. No third-party
 crate: the prior art below is a design to read, not a dependency.
 
 ## What reaches a user-space driver today
@@ -136,7 +136,7 @@ calls `ACKNOWLEDGE`.
   completion by interrupt: MSI-X on x86_64, INTx on aarch64 and riscv64. The test fails if the
   driver falls back to the spin.
 - Where milestone 1068 has landed for a machine, a component that holds no grant for the vector
-  cannot raise it, shown in the shape of milestone 202 (every confinement test is a ritual until
+  cannot raise it. The test takes the shape of milestone 202 (every confinement test is a ritual until
   somebody breaks the confinement and watches it fail).
 
 ## Follow-on

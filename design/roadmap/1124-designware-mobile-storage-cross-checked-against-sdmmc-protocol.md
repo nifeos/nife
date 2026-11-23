@@ -35,7 +35,7 @@ adapt, not a dependency, and the crate takes no new crate.
 ## Where the work lands
 
 The crate lives in `nifeos/designware_mobile_storage`. Every change lands there, as an ordinary
-pull request through that repository's queue, and this block cites each one as
+pull request through that repository's queue. This block cites each one as
 `nifeos/designware_mobile_storage#N` when it merges. nife changes nothing but this block, and its
 pin moves only when the crate next releases.
 
@@ -43,13 +43,13 @@ pin moves only when the crate next releases.
 
 Read at `rcore-os/tgoskits@b6aa8e5d4`, on its `dev` branch.
 
-1. `drivers/blk/sdmmc-protocol/src/sdio/tests/mmc_init.rs`. Its two cases check that an eMMC's
-   high-capacity erase geometry is set before trim is published, and that an advertised write
-   cache is turned on before bring-up completes. The crate does neither. Each case becomes a test
+1. `drivers/blk/sdmmc-protocol/src/sdio/tests/mmc_init.rs`. Its two cases check that the driver
+   sets an eMMC's high-capacity erase geometry before it publishes trim, and that it turns on an
+   advertised write cache before bring-up completes. The crate does neither. Each case becomes a test
    of what the crate does today against the same simulated card. Each difference becomes a finding
    that says whether the crate should do it, or a `BUGS` line where it should not yet.
-2. `drivers/blk/sdmmc-protocol/src/sdio/tests/sd_speed.rs`. Its five cases cover speed selection:
-   a cap at legacy high speed, the fall back to high speed when the UHS voltage switch fails, a
+2. `drivers/blk/sdmmc-protocol/src/sdio/tests/sd_speed.rs`. Its five cases cover speed selection.
+   They are a cap at legacy high speed, the fall back to high speed when the UHS voltage switch fails, a
    reset of the voltage only, speed selection turned off, and a card that does not support the
    switch function keeping default speed. The crate runs default speed only. The last two cases
    port as written, since they assert default speed. The others become findings against the
@@ -67,14 +67,15 @@ Read at `rcore-os/tgoskits@b6aa8e5d4`, on its `dev` branch.
 
 ## The license notice
 
-The rule in force (milestone 1019 items 3 to 6) is that a file followed closely carries its
-source's copyright and permission notice, and the README, the notes and the `Reuse:` line name
-it. A test adapted from tgoskits is followed closely. The crate already ships `LICENSE-APACHE`,
-so the work adds the attribution: the source path and commit at the top of each adapted test, a
-line in the README's License section, and an entry in `NOTICE` or its equivalent if the crate
-adds one. The tgoskits root `LICENSE` is the Apache License 2.0 text with no copyright line, and
-the repository has no `NOTICE` file. The attribution therefore names the project, and the finding
-records that tgoskits states no copyright holder.
+The rule in force comes from milestone 1019 (the driver crates carry facts from their sources, not
+their text), items 3 to 6. A file followed closely carries its source's copyright and permission
+notice, and the README, the notes and the `Reuse:` line name it. A test adapted from tgoskits
+follows its source closely. The crate already ships `LICENSE-APACHE`, so the work adds the
+attribution. That is the source path and commit at the top of each adapted test, a line in the
+README's License section, and an entry in `NOTICE` or its equivalent if the crate adds one. The
+tgoskits root `LICENSE` is the Apache License 2.0 text with no copyright line, and the repository
+has no `NOTICE` file. The attribution therefore names the project, and the finding records that
+tgoskits states no copyright holder.
 
 ## Findings
 
