@@ -20,7 +20,8 @@
 //!
 //! - One command in flight, so measured throughput is a lower bound on the device.
 //! - It polls: no interrupt vector, and nothing would confine one aimed from userspace (§86
-//!   (whether an NVMe driver can leave the kernel)).
+//!   (whether an NVMe driver can leave the kernel)). Milestone 1123 (the NVMe driver learns of a
+//!   completion by interrupt, not by polling) moves it to MSI-X and INTx.
 //! - A hung controller is `EIO` after [`SPIN_BOUND`] polls: `CSTS.CFS` is on the unmapped page.
 //! - A PRP aimed backwards from [`Handoff::data_plane_physical_address`] could overwrite the admin
 //!   ring; not an escape, and §86 option 4's doorbell validator would close it.

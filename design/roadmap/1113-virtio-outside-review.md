@@ -63,6 +63,7 @@ logic is testable on the host, and its names pass `design/naming.md`.
 - P2-14, one request in flight on the production path: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P2-15, an unused parameter of `run_attack`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P2-16, an unbounded `complete_block`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
+- P2-17, the register map unchecked against a second driver: Open.
 - Decision 1, fold the roles into `block_driver`: Done, [#3662](https://github.com/nifeos/nife/pull/3662) (ruled 2026-11-16 UTC, A).
 - Decision 2, the ring layout moves to `moho_abi::virtual_io`: Waiting on milestone 1075 (what an
   outside maintainer would fix before the move) item 11. Ruled (maintainer, provisional, 2026-11-14
@@ -248,6 +249,8 @@ The kernel's scan does not offer the slot, so nothing starts a driver for it.
 - **Milestone 1062.** The shared library that holds the name `virtio`, ruled 2026-11-16 UTC.
   Whether and when to cut it waits on milestone 1062 (the device control planes leave the kernel),
   step 7.
+- **Outstanding.** P2-17, the check against `virtio-drivers`, before anyone cuts the library
+  that holds the name `virtio`.
 
 ## Done when
 
