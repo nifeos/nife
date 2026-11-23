@@ -49,9 +49,9 @@ Read at `rcore-os/tgoskits@b6aa8e5d4`, on its `dev` branch.
    of what the crate does today against the same simulated card. Each difference becomes a finding
    that says whether the crate should do it, or a `BUGS` line where it should not yet.
 2. `drivers/blk/sdmmc-protocol/src/sdio/tests/sd_speed.rs`. Its five cases cover speed selection.
-   They are a cap at legacy high speed, the fall back to high speed when the UHS voltage switch fails, a
-   reset of the voltage only, speed selection turned off, and a card that does not support the
-   switch function keeping default speed. The crate runs default speed only. The last two cases
+   They cap at legacy high speed, fall back to high speed when the UHS voltage switch fails,
+   and reset the voltage only. Two more turn speed selection off and give a card with no switch
+   function, which keeps default speed. The crate runs default speed only. The last two cases
    port as written, since they assert default speed. The others become findings against the
    crate's `BUGS` line on speed.
 3. The rest of that directory (`init_flow.rs` and its neighbors), read for any eMMC or SD step the
