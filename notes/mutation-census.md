@@ -160,10 +160,16 @@ reason to check them, not a reason to change definitions between two rows of one
 
 ## BUGS
 
-- Nothing gates capture. A census can still be run and thrown away, exactly as four of them
-  were; this makes it one command not to, which is rung three of AGENTS.md's ladder and honest about
-  being rung three. The mechanism would be a step in `mutation.yml`, which has `contents: read`
-  today and would need write permission on the tree, a decision rather than a patch.
+- A census pull request goes stale when `notes/project-metrics/mutation-triage.csv` changes on
+  main before it merges. The `record` job in `mutation.yml` regenerates
+  `notes/mutation-testing/survivor-classification.md` with `helpers/mutation_real_holes.py write`
+  against the triage file at the run's own commit, and `script/lint`'s "the survivor classification
+  is current" reruns that script against the merged tree. The pull request then fails its lint
+  until someone runs `write` on its branch and commits the result.
+- The `record` job force-pushes one branch, `mutation/census`. A census whose pull request has not
+  merged by the next Monday's run loses its rows: that run starts from main and replaces the branch
+  with its own census. The older one survives only in its run's artifacts, which expire after about
+  90 days, and `script/mutation-census --add-run` recovers it from them.
 - The 2026-08-03 row's counts are derived, not observed. The file it came from said so: the run was resumed twice, `caught` is total-minus-the-rest, and three of 5,551 mutants
   could not be matched to any pass. A comparison against it is a comparison against a
   reconstruction.
