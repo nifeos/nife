@@ -5,7 +5,7 @@ on two byte strings with no filesystem in it; this note is the layer that turns 
 authority, and the demonstration that hangs on it.
 
 The code is `crates/grant_plan/src/expansion.rs` (the expander and the name set, host-tested),
-`crates/file_system_contract`'s `nameset` module (the wire encoding),
+`file_system_contract`'s `nameset` module (in `nifeos/file_system_contract`) (the wire encoding),
 `components/src/fs_nameset_caretaker.rs` (the caretaker), `components/src/swish/` (`echo`, and the
 grant path), `components/src/rm.rs` (the namespace mode), and `kernel/src/user/fs_service/set_grant.rs`'s
 `start_granted_set`, and `system_tests/src/user/glob_grant_tests.rs`.

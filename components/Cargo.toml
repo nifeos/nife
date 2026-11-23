@@ -773,8 +773,8 @@ measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
 # and it brings only `measured_boot`, already above.
 installed_programs = { version = "0.1.0", path = "../crates/installed_programs" }
 disk_tree = { version = "0.1.0", path = "../crates/disk_tree" }
-file_system_contract = { version = "0.1.0", path = "../crates/file_system_contract" }
-file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+file_system_fixture = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 # The NVMe queue arithmetic (milestone 53's crate, milestone 261's consumer):
 # non_volatile_memory_express.rs is the volatile shell of ring copies and doorbell writes over it,
 # the crate/program pair this tree already uses for `jh7110_entropy` and `line_editor`.

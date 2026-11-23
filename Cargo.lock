@@ -539,10 +539,12 @@ source = "git+https://github.com/nifeos/file_allocation_table?rev=6f8aa1df729d4d
 [[package]]
 name = "file_system_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
 
 [[package]]
 name = "file_system_fixture"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
 dependencies = [
  "file_system_contract",
 ]

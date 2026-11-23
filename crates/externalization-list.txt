@@ -7,8 +7,6 @@
 capability_manifest_note
 current_cpu_contract
 domain_name_resolution_contract
-file_system_contract
-file_system_fixture
 globally_unique_identifier_partition_table
 machine_statistics_contract
 socket_contract

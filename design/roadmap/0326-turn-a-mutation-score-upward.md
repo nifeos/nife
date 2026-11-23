@@ -193,7 +193,7 @@ Parts 1 and 2 only. Each of these was checked against the tree on 2026-09-19, on
   rather than a test.
 - **Recorded.** `notes/mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md`,
   under `file_system_contract`'s *Two recorded gaps*: `verb`'s compile-time table walk in
-  `crates/file_system_contract/src/lib.rs` has two mutants no `cargo test` can kill, because its
+  the crate root of `nifeos/file_system_contract`'s `file_system_contract` has two mutants no `cargo test` can kill, because its
   checker is `rustc`. The same object as the Kani harnesses, without a module path to exclude by.
 
 - **Done.** *`machine_discovery`, 2026-09-19: 77 survivors to 19, 86.2% to 95.5% of viable,* on
