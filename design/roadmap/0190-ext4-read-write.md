@@ -42,9 +42,8 @@ public API:
 
 - Read. On a 640 MiB image `mke2fs` made with its defaults (3,025 entries, an extent tree of
   depth 2, an htree directory), every file read back byte-identical to what Linux wrote. Images
-  with 1 KiB and 2 KiB blocks failed to mount because the test device reported 4,096-byte sectors,
-  which cannot hold such a block. The refusal is right; 0.9.2 reports it as a bare `Io`, the fork
-  as the geometry refusal (item 7).
+  with 1 KiB and 2 KiB blocks rightly failed to mount on the test device's 4,096-byte sectors
+  (BUGS); 0.9.2 reports a bare `Io`, the fork the geometry refusal (item 7).
 - Read oracle, 2026-11-16 (UTC). Seven images `mke2fs` 1.47.2 generated, of 3,060 entries each:
   its defaults at 4, 2 and 1 KiB blocks, without `metadata_csum` at 4 and 1 KiB, with
   `inline_data`, and without `orphan_file`. `debugfs` and `rsext4` each list every entry's kind,
@@ -213,7 +212,7 @@ it. That ruling is not the adoption ruling above, which stays open.
 
 - Whether nife hosts borg repositories or makes borg archives. Hosting needs only this milestone.
   Making them needs a borg client, and no Rust implementation of the repository format exists. That
-  is a separate and much larger block, minted only if calef wants nife to make backups.
+  is a separate, larger block, minted only if calef wants nife to make backups.
 - Whether ext4 replaces RedoxFS as the launch store. Milestone 997 measures that, and its result
   does not change this milestone's plan.
 - FAT32 and ext2, which keep milestone 140's order.
@@ -241,7 +240,7 @@ it. That ruling is not the adoption ruling above, which stays open.
   arrive shuffled, in 0.9.2 and on `dev`; in ascending order the file builds. No upstream draft yet.
 - The read oracle compares against `debugfs`, which is libext2fs, not the Linux kernel; this host
   could not mount a loop device.
-- No phase is priced. The honest estimate comes after the corpus survey and the first upstream
+- No phase is priced. The estimate comes after the corpus survey and the first upstream
   round.
 
 ## Follow-on
@@ -269,8 +268,7 @@ it. That ruling is not the adoption ruling above, which stays open.
 - **Outstanding.** Our side: the oracle on aarch64 and riscv64 hosts, the kernel as a
   second read oracle, a volume over 1 GiB, the write-reordering and power-cut sweeps,
   hostile-image fuzzing, and `ext4_server` itself.
-- **Outstanding.** Upstream review of items 2a and 2b, filed as `rcore-os/tgoskits#2827` and
-  `rcore-os/tgoskits#2829`. nifeos/rsext4 carries both fixes until an upstream release does.
+- **Outstanding.** Upstream review of items 2a and 2b, `rcore-os/tgoskits#2827` and `#2829`.
 - **Outstanding.** The adoption ruling under §46 (thin primitives or whole subsystems), which no lane can give.
 
 ## Index row
