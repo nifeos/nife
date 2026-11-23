@@ -31,9 +31,9 @@ them costs more than getting them wrong, and deliberating them *with an architec
 architect's attention, which is the scarcest thing in this project.
 
 Speed matters in itself: delay has a cost even on a reversible decision, so waiting is never free
-and never the safe default. Calculated risk is expected: once the risk has been weighed, act under
-the uncertainty that remains, because on a reversible decision a reasonable bet made now beats
-extensive study.
+and never the safe default. Calculated risk is expected: once you have weighed the risk, act under
+the uncertainty that remains, because on a reversible decision a reasonable bet now beats extensive
+study.
 
 A few decisions are expensive, and the expense is almost never the code. Be methodical on these:
 
