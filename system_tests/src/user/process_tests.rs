@@ -12,7 +12,7 @@
 //!
 //! - **A killed member runs on until its next preemption**, the §16 (object revocation) amendment's
 //!   mechanism, so these tests wait for members to go rather than asserting they are gone the
-//!   instant a process ends. `notes/processes.md` records it.
+//!   instant a process ends. `nifeos/record:notes/processes.md` records it.
 
 use moho_abi::Error;
 use moho_abi::address_wait::{PRIVATE, WIDTH_32_BITS};

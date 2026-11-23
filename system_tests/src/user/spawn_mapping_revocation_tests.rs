@@ -6,7 +6,7 @@
 //! into a process it builds (a [`super::Spawn`]`::maps` entry, a [`super::DeviceRun`], the initial
 //! ramdisk, the `x86_64` timebase page) is unmapped by `PageFrame::REVOKE`, `DeviceFrame::REVOKE`
 //! and `MemoryRegion::DESTROY`. The module is named to sort before `thread_leak_police`, whose
-//! header says why. See notes/confinement-claims/adversarial-pass-2026-09-21.md.
+//! header says why. See nifeos/record:notes/confinement-claims/adversarial-pass-2026-09-21.md.
 
 //! # BUGS
 //!

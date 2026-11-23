@@ -18,7 +18,7 @@
 //! - The test keeps 32 frames, unexplained.
 //! - It proves the loader, not the progenitor.
 //!
-//! notes/unmap.md, "The scratch window test", has each in full.
+//! nifeos/record:notes/unmap.md, "The scratch window test", has each in full.
 
 use super::*;
 use crate::capability_object::{

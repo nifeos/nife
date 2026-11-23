@@ -7,7 +7,7 @@
 //! cannot forge a right out of a system call register", both driven through `system_call::invoke`. Each
 //! refused path returns promptly, so a regression is red at an assertion and not at the watchdog.
 //! The same test runs on each architecture (DECISIONS §19 (architectural parity is a tenet)). See
-//! notes/confinement-claims/the-rights-gate-tests.md.
+//! nifeos/record:notes/confinement-claims/the-rights-gate-tests.md.
 
 use moho_abi::Error;
 

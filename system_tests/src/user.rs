@@ -5,7 +5,7 @@
 //! puts the kernel `user` module's `pub` items in this module too, so those paths resolve to the
 //! kernel's items, and a module declared here (`alloc_service`, say) shadows nothing, because the
 //! kernel has none of that name. See `kernel/src/lib.rs`'s `system_test_access` for the other half,
-//! and notes/system-test-modules.md for what the modules below prove beyond their summaries.
+//! and nifeos/record:notes/system-test-modules.md for what the modules below prove beyond their summaries.
 
 // The imports `kernel/src/user.rs` makes for itself. Its children saw them through `use super::*`,
 // private or not; a glob across crates sees only `pub` items, so the suite's half repeats them.
@@ -100,7 +100,7 @@ macro_rules! wired_or_skip {
             }
             Err(why) => panic!(
                 "an e1000e NIC is on the bus and could not be wired: {why:?}. Not a skip: see \
-                 notes/e1000e.md"
+                 nifeos/record:notes/e1000e.md"
             ),
         }
     };
@@ -127,7 +127,7 @@ mod disk_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod clock_tests;
 
-/// **`date`** (milestone 51; DECISIONS §43, notes/date.md).
+/// **`date`** (milestone 51; DECISIONS §43, nifeos/record:notes/date.md).
 ///
 /// The command that makes the wall clock visible to a person, and the first thing in the tree that
 /// exercises `jiff`'s civil arithmetic against a clock the machine read. One portable binary over
@@ -138,7 +138,7 @@ mod clock_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod date_tests;
 
-/// **`printenv`** (milestone 47's environment-variable fork, DECISIONS §111, notes/env-config.md).
+/// **`printenv`** (milestone 47's environment-variable fork, DECISIONS §111, nifeos/record:notes/env-config.md).
 ///
 /// The program that makes the inert-configuration page visible, and the first spawnable,
 /// shell-facing program to declare [`grant_contract::Manifest::configuration`]. One portable binary
@@ -150,7 +150,7 @@ mod date_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod printenv_tests;
 
-/// **`uuid`** (milestone 111, `components/src/uuid.rs`, notes/entropy.md).
+/// **`uuid`** (milestone 111, `components/src/uuid.rs`, nifeos/record:notes/entropy.md).
 ///
 /// The first spawnable, shell-facing program that needs random bytes
 /// ([`grant_contract::Manifest::entropy`]). Arch-neutral, so **both ISAs run literally this test**
@@ -304,8 +304,8 @@ mod heap_tests;
 /// tests**. All but one take a kernel stand-in for the display, which makes the flush rectangles
 /// observable. **These tests run before `display_tests`** (`compositor_tests` sorts first): the
 /// composed screen goes up first and rung one's pattern last, and `cargo xtask`'s host-side scanout
-/// check looks for both in that order. See notes/compositor.md and
-/// notes/system-test-modules/compositor-tests.md.
+/// check looks for both in that order. See nifeos/record:notes/compositor.md and
+/// nifeos/record:notes/system-test-modules/compositor-tests.md.
 #[cfg(all(test, initial_ramdisk))]
 mod compositor_tests;
 
@@ -557,7 +557,7 @@ mod job_undertaker_tests;
 /// `fixtures/c/c_seam.c`. `c_confiner` asserts four claims from outside the dead address space: it
 /// faults, at the address the C computed, changing nothing outside its grant, and the restart does
 /// real work; an in-grant marker store is the control. Both ISAs, by different fault paths. See
-/// notes/c-seam/the-confinement-test.md.
+/// nifeos/record:notes/c-seam/the-confinement-test.md.
 #[cfg(all(test, initial_ramdisk))]
 mod c_seam_tests;
 
@@ -570,7 +570,7 @@ mod c_seam_tests;
 /// witness, the operator's version page (no request unserved, never two owners of the device), a
 /// control that must fail (the outgoing instance reads its revoked UART and faults), and a usurper
 /// refused `RECEIVE_CAPABILITY`. The replacement is C (`fixtures/c/c_swappable.c`, the seam DECISIONS §31
-/// built). The second test covers the opt-in `broker` rung. Both ISAs; notes/live-replacement.md.
+/// built). The second test covers the opt-in `broker` rung. Both ISAs; nifeos/record:notes/live-replacement.md.
 #[cfg(all(test, initial_ramdisk))]
 mod live_swap_tests;
 
@@ -632,14 +632,14 @@ mod notification_tests;
 mod timer_tests;
 
 /// **A process listing is a capability, not a fact about the machine** (milestone 126,
-/// `rendezvous::SURVEY`, notes/process-view.md). Cross-ISA for `reap_tests`' reason.
+/// `rendezvous::SURVEY`, nifeos/record:notes/process-view.md). Cross-ISA for `reap_tests`' reason.
 ///
 /// Every survey goes through `system_call::invoke`, driven by `ps::collect` (the loop
 /// `components/src/ps.rs` runs), over real supervised children. A viewer of a domain it was not
 /// granted is **refused loudly**, and an empty domain answers, both in one test. `pgrep`'s filter
 /// is driven here too, the only place it can be (the prompt cannot spell a selector,
 /// `crates/pgrep`'s `BUGS`), adding a fourth answer: a selector that **matched nothing** in a
-/// domain with members. See notes/system-test-modules.md.
+/// domain with members. See nifeos/record:notes/system-test-modules.md.
 #[cfg(test)]
 mod survey_tests;
 
@@ -749,7 +749,7 @@ mod process_label_tests;
 #[cfg(test)]
 mod machine_statistics_tests;
 
-/// **Scheduled execution, where every entry is a grant** (milestone 129, notes/scheduled-execution.md).
+/// **Scheduled execution, where every entry is a grant** (milestone 129, nifeos/record:notes/scheduled-execution.md).
 ///
 /// One module for both ISAs (DECISIONS §19). A crontab line runs with its user's whole authority;
 /// here an entry is a grant expression checked at registration by the `program_table::plan` the prompt
@@ -761,7 +761,7 @@ mod machine_statistics_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod timetable_tests;
 
-/// **The directory capability, attacked** (milestone 47, notes/dir-capability.md).
+/// **The directory capability, attacked** (milestone 47, nifeos/record:notes/dir-capability.md).
 ///
 /// One module for both ISAs rather than an aarch64 test with a riscv twin, which the FS tests above
 /// have. Nothing here is architecture-specific: it wires three portable programs and asserts on a
@@ -772,7 +772,7 @@ mod timetable_tests;
 mod dir_capability_tests;
 
 /// **One process, two directory capabilities** (milestone 154,
-/// design/roadmap/0154-multi-directory-namespace.md).
+/// nifeos/record:design/roadmap/0154-multi-directory-namespace.md).
 ///
 /// One module for both ISAs, for [`dir_capability_tests`]'s reason: nothing here is
 /// architecture-specific, so the parity gate (DECISIONS §19) is met by literally the same test
@@ -785,7 +785,7 @@ mod dir_capability_tests;
 mod multi_dir_namespace_tests;
 
 /// **The navigation builtins, and the property that two shells cannot name each other's files**
-/// (milestone 47's commands; notes/shell-navigation.md).
+/// (milestone 47's commands; nifeos/record:notes/shell-navigation.md).
 ///
 /// One module for both ISAs, for [`dir_capability_tests`]'s reason: nothing here is
 /// architecture-specific, so the parity gate (DECISIONS §19) is met by the same test running twice.
@@ -798,7 +798,7 @@ mod multi_dir_namespace_tests;
 mod shell_navigation_tests;
 
 /// **`rm` as a program, and a recursive removal bounded by the capability it was handed**
-/// (milestone 47's `rm -r`; notes/rm.md).
+/// (milestone 47's `rm -r`; nifeos/record:notes/rm.md).
 ///
 /// One module for both ISAs, for [`dir_capability_tests`]'s reason (DECISIONS §19). The **real
 /// `rm` binary** (`components/src/rm.rs`) runs behind a real `fs_subtree_caretaker`, started as the
@@ -810,7 +810,7 @@ mod shell_navigation_tests;
 mod rm_program_tests;
 
 /// **Globbing: the expansion you see is the grant** (milestone 47's globbing lane;
-/// notes/glob-grant.md).
+/// nifeos/record:notes/glob-grant.md).
 ///
 /// One module for both ISAs, for [`dir_capability_tests`]'s reason: nothing here is
 /// architecture-specific, so the parity gate (DECISIONS §19) is met by the same test running twice.
@@ -827,7 +827,7 @@ mod glob_grant_tests;
 ///
 /// One module for both ISAs, for [`dir_capability_tests`]'s reason: nothing here is
 /// architecture-specific, so the parity gate (DECISIONS §19) is met by the same test running on
-/// every architecture `script/test` boots. It builds finding 1 of `notes/shared-page-audit.md` (the
+/// every architecture `script/test` boots. It builds finding 1 of `nifeos/record:notes/shared-page-audit.md` (the
 /// escape the set grant at the prompt would make live) and asserts the per-client windows close it.
 #[cfg(all(test, initial_ramdisk))]
 mod fs_shared_page_tests;
@@ -877,7 +877,7 @@ mod pipeline_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod redirection_tests;
 
-/// **`time <command>` at a real prompt** (milestone 86, notes/time-command.md).
+/// **`time <command>` at a real prompt** (milestone 86, nifeos/record:notes/time-command.md).
 ///
 /// [`pipeline_tests`]'s shell with at most one more capability, a read-only clock page. The claim:
 /// **the timed command needs no authority to be timed**, so the timing is the shell's own reading
@@ -888,7 +888,7 @@ mod redirection_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod time_tests;
 
-/// **Quoting, sequencing and `$?` at a real prompt** (milestone 67, notes/swish-language.md).
+/// **Quoting, sequencing and `$?` at a real prompt** (milestone 67, nifeos/record:notes/swish-language.md).
 ///
 /// The **same run** of the same script [`redirection_tests`] asserts about: one shell, once,
 /// because another scripted shell is another live process whose frames nothing reclaims, enough to
@@ -900,7 +900,7 @@ mod time_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod language_tests;
 
-/// **The sink contract, and the one behaviour it changed** (milestone 50, notes/sink-protocol.md).
+/// **The sink contract, and the one behaviour it changed** (milestone 50, nifeos/record:notes/sink-protocol.md).
 ///
 /// Two claims, one per test, and they need each other. The first is that a program cannot tell what
 /// its output slot holds; the second is that when what it held is destroyed, the program finds out.
@@ -949,7 +949,7 @@ mod terminal_swap_tests;
 /// the rest of the boot, and enough of them on one core starve a later heavy test past the 60 s
 /// watchdog. It quiesces, then asserts only the idle threads and this probe are runnable, so a leak
 /// fails here with the thread in the dump. Tests run in link order, alphabetical by module path, so
-/// its name, sorting after `tests`, is what makes it run late. See notes/system-test-modules.md.
+/// its name, sorting after `tests`, is what makes it run late. See nifeos/record:notes/system-test-modules.md.
 ///
 /// # BUGS
 ///
@@ -1008,7 +1008,7 @@ mod system_call_fuzzer_tests;
 /// **The fuzz drivers' wait counts ticks on every core** (lane
 /// fuzz-deadlines-count-guest-progress, provisional). A core that takes no ticks holds the wait
 /// open, a running machine that does not finish ends it, and a backstop bounds it. See
-/// notes/kernel-test-harness.md.
+/// nifeos/record:notes/kernel-test-harness.md.
 ///
 /// Cross-ISA: one portable body over every architecture's per-core tick count (DECISIONS §19).
 #[cfg(test)]

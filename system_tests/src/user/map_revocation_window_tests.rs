@@ -6,7 +6,7 @@
 //! `MemoryRegion::MAP`, after it reads its source and before it records the mapping; the test runs
 //! a whole sweep, lets it go, and asserts no mapping survived. The first two run under both
 //! `REVOKE` and `DESTROY`, whose predicates and scans differ. `revoke::MappingHold` is the fix. See
-//! notes/capability-lifecycle.md, "A sweep inside a `MAP`".
+//! nifeos/record:notes/capability-lifecycle.md, "A sweep inside a `MAP`".
 
 //! # BUGS
 //!

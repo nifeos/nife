@@ -20,7 +20,7 @@ use crate::sched;
 /// did not ride the root register, or two spaces shared a tag, B's read would hit A's cached entry
 /// and see A's byte: one process reading another's memory. The assertion means the same on aarch64
 /// and RISC-V only because neither context switch flushes (DECISIONS §19 (architectural parity is a
-/// tenet)); see notes/system-test-modules/address-space-tests.md.
+/// tenet)); see nifeos/record:notes/system-test-modules/address-space-tests.md.
 #[test_case]
 fn asid_tagging_keeps_address_spaces_apart_without_flushes() {
     let mut a = AddressSpace::new(2).expect("no space A");
@@ -83,7 +83,7 @@ fn asid_tagging_keeps_address_spaces_apart_without_flushes() {
 /// IPI the other harts through SBI RFENCE, where aarch64's `tlbi aside1is` broadcasts. A probe on
 /// another core caches `VA`'s translation; this core moves `VA` to a new frame with no per-address
 /// invalidation and calls `flush_asid`; the probe re-reads, space still installed, and must see the
-/// new frame. See notes/system-test-modules/address-space-tests.md.
+/// new frame. See nifeos/record:notes/system-test-modules/address-space-tests.md.
 ///
 /// # BUGS
 ///
@@ -337,7 +337,7 @@ fn a_read_only_segment_is_mapped_read_only() {
 /// between the install and `translate_user`'s walk would take the space away under the body;
 /// `while_installed` holds interrupts off. The test makes that preemption certain: a competitor is
 /// queued on this core inside the window, and the body spans five ticks. See
-/// notes/system-test-modules/address-space-tests.md.
+/// nifeos/record:notes/system-test-modules/address-space-tests.md.
 ///
 /// Name: provisional, lane maintainer/map-physical-flake, 2026-10-13 (UTC).
 ///
@@ -483,7 +483,7 @@ fn a_dead_user_thread_frees_its_whole_address_space() {
     // the whole table, so a baseline taken while an earlier test's teardown is still in flight is a
     // number the system moves on its own; the per-ThreadId wait is immune to neighbours by
     // construction. Same fix as the reap wait in
-    // `reclaim_frees_a_started_then_exited_childs_regions`; see notes/load-sensitive-assertions.md.
+    // `reclaim_frees_a_started_then_exited_childs_regions`; see nifeos/record:notes/load-sensitive-assertions.md.
     let f0 = USER_FAULTS.load(Ordering::Relaxed);
     let warmup = kernel_test_subject_here().expect("spawn failed");
     assert!(wait_for(|| USER_FAULTS.load(Ordering::Relaxed) > f0));
@@ -519,7 +519,7 @@ fn a_dead_user_thread_frees_its_whole_address_space() {
     // teardown may free frames inside this window. The message prints `seen`, the count the wait
     // decided on: `wait_for` re-evaluates once past its deadline, so on a timeout `seen > before`
     // by construction, where a fresh sample could print zero or a negative count. See
-    // notes/load-sensitive-assertions.md and notes/system-test-modules/address-space-tests.md.
+    // nifeos/record:notes/load-sensitive-assertions.md and nifeos/record:notes/system-test-modules/address-space-tests.md.
     let mut seen = before;
     let came_back = wait_for(|| {
         seen = used();

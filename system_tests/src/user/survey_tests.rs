@@ -135,7 +135,7 @@ pub(super) fn drain(parking: sched::RendezvousId, n: usize) {
 /// rather than leaving them to `tidy`. It also asserts every tid a survey reported is reapable
 /// through the same rendezvous, `survey_includes`'s scope property from the control
 /// side. The wait is the clock's, not a yield count: a released child's time to exit is the host's
-/// (notes/hvf-leg.md).
+/// (nifeos/record:notes/hvf-leg.md).
 pub(super) fn collect_all(capability: u64, tids: &[u64]) {
     for &tid in tids {
         assert!(
@@ -573,7 +573,7 @@ fn a_resumed_walk_reports_every_member_exactly_once() {
 /// `a_domain_is_exactly_the_children_of_the_rendezvous_that_was_granted`). But `next_cursor` is the
 /// machine-wide `generational_table::Table` slot + 1, and a tid's low half is that slot and its
 /// high half the slot's machine-wide recycle count, so the gap between two members' cursors counts
-/// the threads created between them. notes/process-view.md's `BUGS` has the disposition.
+/// the threads created between them. nifeos/record:notes/process-view.md's `BUGS` has the disposition.
 #[test_case]
 fn the_survey_cursor_counts_threads_the_viewer_cannot_name() {
     let (budget, rendezvous_region) = arena();
@@ -670,7 +670,7 @@ fn the_survey_cursor_counts_threads_the_viewer_cannot_name() {
 /// (not the empty answer, not a refusal, which upstream's exit 1 conflates), the domain is empty
 /// (`crates/ps`'s sentence), and refused (a send-only holder, as in the negative control). The tid
 /// `pgrep` printed cannot be reaped through the capability that printed it, which is why there is
-/// no `pkill`. See notes/process-view/pgrep.md.
+/// no `pkill`. See nifeos/record:notes/process-view/pgrep.md.
 #[test_case]
 fn a_filter_names_members_and_tells_its_four_answers_apart() {
     let (budget, rendezvous_region) = arena();

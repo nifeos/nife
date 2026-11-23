@@ -6,7 +6,7 @@
 //! `system_call::invoke`, with a stale slot number, an out-of-range index forged in a register, and a
 //! deleted slot the table hands out again. Nothing blocks, and the frame and region ledgers end
 //! flat. Cross-ISA (DECISIONS §19 (architectural parity is a tenet)). See
-//! notes/confinement-claims/the-eighth-pass-tests.md.
+//! nifeos/record:notes/confinement-claims/the-eighth-pass-tests.md.
 
 use moho_abi::Error;
 

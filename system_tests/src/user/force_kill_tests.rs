@@ -28,7 +28,7 @@ fn destroy_force_kills_a_runaway_and_reclaims_its_region() {
     let region = crate::memory_region::create(16).expect("no region for the runaway");
     // These sixteen frames, by name: the window below (a remote core's tick and up to a second of
     // yielding) is room for a neighbour's teardown to land in a machine-wide free-frame delta. See
-    // §28 (SMP placement: two random choices at spawn) and notes/load-sensitive-assertions.md.
+    // §28 (SMP placement: two random choices at spawn) and nifeos/record:notes/load-sensitive-assertions.md.
     let run = crate::testing::RegionRun::of(region);
     let aspace = user_address_space_create(region).expect("no aspace");
 
@@ -232,7 +232,7 @@ fn is_reclaimed_within_two_seconds(region: u64) -> bool {
 /// §16's kill is armed by the refusal and spent by `schedule()`, which a parked thread never
 /// reaches. The child's rendezvous is in the region, so `reap_region_objects`' sweep, which runs
 /// before the refusal for this reason, aborts the IPC and wakes it, and the armed kill is spent.
-/// See notes/object-revocation.md and notes/frames.md.
+/// See nifeos/record:notes/object-revocation.md and nifeos/record:notes/frames.md.
 ///
 /// Verified it can fail, and it was: moving the rendezvous sweep back below the refusal in
 /// `reap_region_objects` makes this test spend its whole two-second deadline and trip its own
@@ -321,7 +321,7 @@ fn destroy_reclaims_a_region_whose_resident_is_blocked_in_receive() {
 /// This is what a hung component is: a resident waiting on somebody else's object, which the
 /// region sweep never touches, so nothing wakes it to spend the armed kill. Asserted in order: the
 /// region comes back; the child is off the receiver queue (else a freed TCB is still linked, a
-/// dangling pointer rather than a leak); every frame returns. See notes/blocked-thread-teardown.md.
+/// dangling pointer rather than a leak); every frame returns. See nifeos/record:notes/blocked-thread-teardown.md.
 ///
 /// Verified it can fail: reverting `region_reap_verdict`'s `Blocked` arm to
 /// `RegionReap::RefuseAndArm` spends the two-second deadline and trips the first assertion.
@@ -370,7 +370,7 @@ fn destroy_reclaims_a_region_whose_resident_blocks_on_a_rendezvous_it_does_not_o
 /// `Object::Reply(tid)` carries no call identity, so a stale one could forge an answer to a later
 /// `CALL`. Proposal A never wakes the caller and also sweeps the capability (seL4's two fixes);
 /// this pins the sweep, which a change could drop while every capacity assertion passed. The
-/// caller is collected, on no queue at all. See notes/blocked-thread-teardown.md, "A hazard".
+/// caller is collected, on no queue at all. See nifeos/record:notes/blocked-thread-teardown.md, "A hazard".
 ///
 /// Verified it can fail: deleting the `delete_matching` sweep from `sched::finish_blocked_resident`
 /// trips the middle assertion while the reclaim still succeeds.
@@ -427,7 +427,7 @@ fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
 
 /// A region lent to an address space is freed by its owner, and by nobody else.
 ///
-/// The deterministic half of the intermittent riscv64 double free in notes/object-revocation.md
+/// The deterministic half of the intermittent riscv64 double free in nifeos/record:notes/object-revocation.md
 /// ("Two names for one region"), staged by hand. `sched::reclaim_region` reaps under `IPC_TABLES`, unpins, destroys; the
 /// reaper drops a dead space after releasing `IPC_TABLES` (its `Drop` takes it), so unpin and drop
 /// are unordered. Asserted: dropping a space built from a lent region returns nothing. Against the

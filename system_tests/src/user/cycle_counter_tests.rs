@@ -27,7 +27,7 @@ fn cycle_counter_image() -> &'static [u8] {
 /// traps the read and `USER_FAULTS` counts the kill. The reported meaning is checked against
 /// `expected_cycle_meaning` (milestone 353 (the aarch64 half of 74), calef's ruling B4 of
 /// 2026-10-07 UTC), and the delta of the two reads only where `el0_cycle_counter_is_known_to_run`
-/// (milestone 74 (cycle counters)). Under QEMU the delta is emulator time. See notes/pmu.md.
+/// (milestone 74 (cycle counters)). Under QEMU the delta is emulator time. See nifeos/record:notes/pmu.md.
 #[test_case]
 fn a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults() {
     if !crate::arch::timer::is_cycle_counter_grantable() {

@@ -7,7 +7,7 @@
 //! switch. One hand-written program per ISA proves it from user mode on all three architectures by
 //! reading the word its thread pointer names (`fs:[0]`, `[TPIDR_EL0]`, `0(tp)`), not the register:
 //! `x86_64` keeps `CR4.FSGSBASE` off (§269), so ring 3 can only address through its `FS` base. See
-//! notes/thread-pointer.md.
+//! nifeos/record:notes/thread-pointer.md.
 
 //! # BUGS
 //!

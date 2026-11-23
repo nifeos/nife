@@ -4,7 +4,7 @@
 //!
 //! `x86_port_tests` proves a non-holder faults, a holder transmits, a revoked holder faults, a
 //! self-deleter faults, and a `READ`-only capability grants no output. Each test here comes at one
-//! of those claims from an angle that suite lacks (notes/confinement-outsider-pass-9.md, "The
+//! of those claims from an angle that suite lacks (nifeos/record:notes/confinement-outsider-pass-9.md, "The
 //! kernel tests"). A wrongly permitted stub exits cleanly, so a broken gate arrives as `EVENT_EXIT`
 //! where the test wants `EVENT_FAULT`, never as a hang on a `SEND` nobody receives.
 //!

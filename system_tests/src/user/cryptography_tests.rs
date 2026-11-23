@@ -7,7 +7,7 @@
 //! specifications print. All three ISAs run it, DECISIONS §19 (architectural parity is a tenet).
 //! `cargo xtask test` builds the program (`helpers/build-cryptography-exerciser.sh`) for every leg
 //! it boots; a boot that skips that build (`cargo xtask run`, a bench) has none, and this skips.
-//! See notes/cryptography-provider/the-exerciser-test.md.
+//! See nifeos/record:notes/cryptography-provider/the-exerciser-test.md.
 
 use super::*;
 
@@ -54,7 +54,7 @@ const VECTORS: &[&str] = &[
 /// them safe) made for `std::random`, which a silently stubbed backend fails. `provider ok` is the
 /// object §196's ruling is about, this tree's own `cryptography_provider`: three TLS 1.3 suites,
 /// two key exchange groups with X25519 first, three signature algorithms, and a key provider that
-/// refuses. No handshake happens. See notes/cryptography-provider/the-exerciser-test.md.
+/// refuses. No handshake happens. See nifeos/record:notes/cryptography-provider/the-exerciser-test.md.
 #[test_case]
 fn a_tls_crypto_provider_computes_what_the_specifications_say() {
     if program("cryptography_exerciser").is_none() {

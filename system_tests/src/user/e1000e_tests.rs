@@ -1,12 +1,12 @@
 //! **Milestone 30 (the network stack as a confined component)'s gates, over the network card a PC
-//! actually has** (milestone 494 (a driver for the network card a PC actually has); notes/e1000e.md).
+//! actually has** (milestone 494 (a driver for the network card a PC actually has); nifeos/record:notes/e1000e.md).
 //!
 //! The same `net_stack`, smoltcp, socket contract and client role as the virtio gates in
 //! `network_tests.rs`, with the NIC changed to QEMU's `e1000e` (an Intel 82574L, the family xenon's
 //! I219 belongs to): reset and programmed by the kernel, driven at EL0 through two pages of BAR0 and
 //! a DMA region the IOMMU confines. One module for all three architectures; the parity claim is that
 //! the same cases pass on each. A pass is not a claim about the I219: xenon's bench step
-//! (notes/e1000e.md) proves the real part.
+//! (nifeos/record:notes/e1000e.md) proves the real part.
 
 use super::*;
 
@@ -25,7 +25,7 @@ fn image() -> &'static [u8] {
 }
 
 /// **The lease, and the confinement it was won under:** DHCP over the `e1000e` at EL0 reaches
-/// slirp's 10.0.2.0/24 behind the IOMMU that owns the NIC (notes/e1000e/the-system-tests.md).
+/// slirp's 10.0.2.0/24 behind the IOMMU that owns the NIC (nifeos/record:notes/e1000e/the-system-tests.md).
 ///
 /// Falsification: attested 2026-10-04. On patagonia, x86_64 under the PVH runner, with
 /// `kernel/src/e1000e.rs::region_for`'s `iommu::confine` call skipped so the NIC had no domain:

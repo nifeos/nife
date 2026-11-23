@@ -1,13 +1,13 @@
 //! **A seeded system call driver with a shadow model** (milestone 752 (a seeded system call driver with a
 //! shadow model), provisional; part (b) of
-//! `design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md`).
+//! `nifeos/record:design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md`).
 //!
 //! From a seed, seven actor threads issue random capability operations through `system_call::invoke`.
 //! The conductor models every capability table, rendezvous queue and the notification's word,
 //! predicts each answer and each actor's whole table, and fails on the first mismatch. The witness,
 //! actor 6, holds nothing: its every call must be refused `NoSuchSlot`, its table stay empty.
 //! A seed always replays the same calls; `NIFE_SYSTEM_CALL_FUZZ_SEEDS=<first>:<count>` at build time
-//! (`option_env!`) replaces the committed seeds. See notes/fuzzing/the-system-call-driver.md.
+//! (`option_env!`) replaces the committed seeds. See nifeos/record:notes/fuzzing/the-system-call-driver.md.
 
 //! # What the generator reaches
 //!
@@ -26,7 +26,7 @@
 //! - A kernel change that re-rolls a corpus seed's walk can leave it green with its defect still
 //!   reachable.
 //!
-//! Each is told in full in notes/fuzzing/the-system-call-driver.md.
+//! Each is told in full in nifeos/record:notes/fuzzing/the-system-call-driver.md.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -40,7 +40,7 @@ use crate::thread::{State, ThreadId, Wait, WaitRole};
 
 /// [`wait_on_every_core`] for a site whose message has nothing to add to it. An actor's work may sit
 /// on another core, which the host can deschedule while this one runs. See
-/// notes/kernel-test-harness.md.
+/// nifeos/record:notes/kernel-test-harness.md.
 fn wait_for(done: impl FnMut() -> bool) -> bool {
     wait_on_every_core(done).is_ok()
 }
@@ -61,7 +61,7 @@ const SUITE_SEEDS: u64 = 32;
 /// confinement claim)'s patch, and seed 559 the first under the revocation-in-flight patch. A
 /// change to `pick_op` or `endow`, or to any answer the model predicts, re-rolls every seed, and
 /// the corpus is re-found with the roadmap block's replay table. A new finding's seed belongs here
-/// with its reason. See notes/fuzzing/the-system-call-driver.md.
+/// with its reason. See nifeos/record:notes/fuzzing/the-system-call-driver.md.
 const CORPUS: &[u64] = &[180, 559];
 /// The sweep's guest-time cap: it stops between seeds once this has passed and says how far it
 /// got, so a weekly run with a large count fits under the per-test budget

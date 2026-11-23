@@ -104,7 +104,7 @@ fn std_fs_reads_a_file_through_a_granted_directory_capability() {
 }
 
 /// The RedoxFS filesystem service, end to end (milestone 32 (a real filesystem: RedoxFS behind a
-/// capability FS server) phase 2). See notes/fs-server.md.
+/// capability FS server) phase 2). See nifeos/record:notes/fs-server.md.
 ///
 /// A block server, an FS server and a client, all confined; the client opens `motd` through a
 /// granted directory capability and round-trips a pattern through `scratch`. It names nothing but
@@ -149,7 +149,7 @@ fn the_redoxfs_server_serves_redoxfs_over_a_capability_contract() {
 }
 
 /// A read-only per-file grant survives an attacker (milestone 31 (a capability shell: designation
-/// is authorization) phase 2, notes/grant-expression.md).
+/// is authorization) phase 2, nifeos/record:notes/grant-expression.md).
 ///
 /// `run wc report.txt` must hand over one file, not its directory. An `fs_file_caretaker` holds
 /// the directory; `fs_test_client`'s attacker role holds a read-only grant of `motd` and attacks
@@ -330,7 +330,7 @@ fn a_kill_mid_transaction_leaves_the_filesystem_consistent() {
 /// to the depth RedoxFS reached across a mount, reads, writes, a create and two truncates. It
 /// prints the number and fails if less than a quarter of the grant is left. An overflow kills the
 /// server mid-request and leaves its client blocked, which only the per-test wall-clock ceiling
-/// notices. See notes/fs-server.md and notes/fs-server/stack-sizing.md.
+/// notices. See nifeos/record:notes/fs-server.md and nifeos/record:notes/fs-server/stack-sizing.md.
 // RISC-V twin: `riscv64_virtual_io_tests::the_redoxfs_servers_stack_still_has_headroom`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]

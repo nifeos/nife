@@ -1,6 +1,6 @@
 //! **Two confined EL0 processes drive the machine's NVMe disk** (milestone 261 (the NVMe driver
 //! leaves the kernel); DECISIONS §86 (whether an NVMe driver can leave the kernel),
-//! notes/non-volatile-memory-express.md).
+//! nifeos/record:notes/non-volatile-memory-express.md).
 //!
 //! The sequence milestone 53 (the board's own peripherals) proved: find the controller over §18
 //! (the PCIe transport), confine it behind the IOMMU, bring it from reset through identify to an
@@ -26,10 +26,10 @@ fn start() -> Option<non_volatile_memory_express_service::Wiring> {
         Err(crate::non_volatile_memory_express::Absent::NoController) => return None,
         Err(crate::non_volatile_memory_express::Absent::Unconfined { rid, why }) => panic!(
             "an NVMe controller at requester id {rid:#06x} is on the bus and the IOMMU refused it: \
-             {why}. Not a skip: see notes/risk-6-bench-evening.md"
+             {why}. Not a skip: see nifeos/record:notes/risk-6-bench-evening.md"
         ),
         Err(crate::non_volatile_memory_express::Absent::Refused { rid, why }) => panic!(
-            "an NVMe controller at requester id {rid:#06x} is on the bus and this driver refused              it: {why:?}. Not a skip: see notes/risk-6-bench-evening.md"
+            "an NVMe controller at requester id {rid:#06x} is on the bus and this driver refused              it: {why:?}. Not a skip: see nifeos/record:notes/risk-6-bench-evening.md"
         ),
     };
     if let Some(report) = w.wait_for_ready() {
@@ -265,7 +265,7 @@ fn a_client_stages_in_the_window_its_badge_names() {
 ///
 /// The proof is the IOMMU fault and an untouched canary, not the completion status; the patch
 /// widens the domain over the victim and the escape lands. See
-/// notes/non-volatile-memory-express/the-direct-memory-access-escape-test.md.
+/// nifeos/record:notes/non-volatile-memory-express/the-direct-memory-access-escape-test.md.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.non_volatile_memory_express_tests.a_confined_el0_server_cannot_dma_outside_its_region.patch`
 #[test_case]

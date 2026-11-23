@@ -24,8 +24,8 @@ const NO_PROGRAM: &str = "no package_fetch_exerciser in this archive: `cargo xta
 /// fetches nothing** (calef's Q1, Q2, Q4 and Q5 of 2026-10-10 (UTC) on #1884).
 ///
 /// Only the index's digest can refuse the altered copy, a correct HTTPS exchange of a well-formed
-/// package. Row 35 of `notes/confinement-claims.md` cites this test, and
-/// notes/packages/over-the-internet.md, "The index fetch test", has its hand attestations.
+/// package. Row 35 of `nifeos/record:notes/confinement-claims.md` cites this test, and
+/// nifeos/record:notes/packages/over-the-internet.md, "The index fetch test", has its hand attestations.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.package_index_tests.a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest.patch`
 #[test_case]
@@ -82,7 +82,7 @@ fn a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_dig
 
 /// The exerciser's report, `text`, holds every step's line in order: the index, its refusals, the
 /// fetch, the six redirect probes through a second test authority (one fetched and five refused,
-/// falsified in `notes/packages/the-index-format.md`, question C, per C2 on #2048), and the final
+/// falsified in `nifeos/record:notes/packages/the-index-format.md`, question C, per C2 on #2048), and the final
 /// line last. The altered copy must be refused as `NotCataloged`, which only the index's digest
 /// gives; the package's own table of contents would say `MemberMismatch`.
 fn every_step_was_printed_in_order(text: &str) {

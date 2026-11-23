@@ -49,7 +49,7 @@ pub(super) fn assert_std_transcript_from(
 /// A program that aborts is never heard: this ends only on the end-of-stream marker `cleanup`
 /// sends, so a `panic = "abort"` trap leaves the caller blocked until the watchdog, its panic
 /// message unread. [`drain_sink_from`] covers callers that know the writer's thread; see
-/// notes/std/the-proof.md, "How the tests read a std program's stream".
+/// nifeos/record:notes/std/the-proof.md, "How the tests read a std program's stream".
 pub(super) fn drain_sink(ep: crate::sched::RendezvousId, out: &mut [u8], what: &str) -> usize {
     let mut len = 0usize;
     loop {
@@ -192,7 +192,7 @@ fn printable(bytes: &[u8]) -> &str {
 /// tears a block at 2048 bytes and traps with the commit unwritten (`CUT` says the kill was the
 /// injector's). A second FS-server process mounts the disk, its readiness sentinel the consistency
 /// result, and a client reads the payload. Either payload passes; a mixture, a length nobody wrote
-/// or the pre-boot contents fail. See notes/fs-server/crash-consistency.md.
+/// or the pre-boot contents fail. See nifeos/record:notes/fs-server/crash-consistency.md.
 pub(super) fn assert_a_kill_mid_transaction_recovers(
     blk_image: &'static [u8],
     redoxfs_server_image: &'static [u8],
@@ -410,7 +410,7 @@ pub(super) const EXPECTED: &[u8] = b"hello from std on nife\n\
 /// the two `unsupported` lines are no ambient filesystem and no ambient network, felt from inside
 /// std. Several lines (`wall clock ok`, `config seeded`, `env ok`, `paths ok`, `entropy ok`) guard
 /// a call that once compiled and then killed the program, so a no-crash check would have passed.
-/// `std::process::exit` must end the program as an exit, not a trap. See notes/std/the-proof.md,
+/// `std::process::exit` must end the program as an exit, not a trap. See nifeos/record:notes/std/the-proof.md,
 /// "What the offline transcript's lines guard".
 #[test_case]
 fn a_whole_std_program_runs_on_the_native_abi() {

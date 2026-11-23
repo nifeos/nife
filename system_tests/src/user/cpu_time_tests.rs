@@ -6,7 +6,7 @@
 //! runaway that never yields against a child parked in a send nobody receives, because a
 //! wall-clock age reports the two identically. The counter and its increment (`sched::on_tick`) are
 //! portable, so all three ISAs run these assertions (DECISIONS §19 (architectural parity is a
-//! tenet)). See notes/process-view/cpu-time-tests.md.
+//! tenet)). See nifeos/record:notes/process-view/cpu-time-tests.md.
 
 use moho_abi::survey::record;
 
@@ -169,7 +169,7 @@ fn the_thread_that_ran_is_the_thread_that_is_charged() {
     // than of the machine's free count, which a neighbor's late teardown can move. Not covered: the
     // child's non-region pages (the current-cpu page among them), which no region names;
     // `user/current_cpu_tests.rs` asserts on that frame, and the whole-boot frame ledger in
-    // `testing.rs` catches a drift. See notes/load-sensitive-assertions/unowned-reds.md.
+    // `testing.rs` catches a drift. See nifeos/record:notes/load-sensitive-assertions/unowned-reds.md.
     budget_run.assert_returned("the builder's budget did not come back");
     rendezvous_run.assert_returned("this test's rendezvous region did not come back");
 }
