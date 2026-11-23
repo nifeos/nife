@@ -36,7 +36,7 @@ The output is a worklist of defects, and the shapes are predictable enough to na
   know whether to start at "Try it", "Quick start", or "The notes are the point".
   *(Landed 2026-08-18 as a `## Start here` section, provisional. Run 3 is the evidence it was
   needed and the evidence it is not enough. Its stranger built a good order by instinct, and reached
-  `AGENTS.md` twelfth from a pointer at line 226. It reached `crates/abi/src/lib.rs`, four system call
+  `AGENTS.md` twelfth from a pointer at line 226. It reached `crates/moho_abi/src/lib.rs`, four system call
   numbers and the whole design on one screen, far too late to help it.)*
 - No `CONTRIBUTING.md`. GitHub links it from the pull request UI and it does not exist, so the
   answer to "how do I propose a change here" is nowhere. `CLAUDE.md` is the closest thing and it is

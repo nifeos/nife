@@ -18,7 +18,7 @@ Each variant of `Object` is a decision. What follows is why each is there.
   way, so the kernel knows nothing about a UART on any path a user program can take.
 - The endpoint's badge rides on the capability, not on the endpoint. The kernel delivers it to a
   server's `RECEIVE_CAPABILITY`, so a server can tell apart clients sharing one endpoint. `0` means
-  unbadged, which every capability is until `abi::rendezvous::BADGE` stamps one. This is seL4's
+  unbadged, which every capability is until `moho_abi::rendezvous::BADGE` stamps one. This is seL4's
   model: a badge is set once on an unbadged capability and never altered, and two clients can hold
   differently badged views of one rendezvous. §148 (a supervisor restarts by asking) refused `BADGE`
   as a thread-identity method so it stays free for this. The field fits without growing `Object`,
@@ -119,12 +119,12 @@ be the wrong yardstick for the suite's much larger workload.
 
 ## Two rights vocabularies, one meaning
 
-`abi::rights` is the word that travels in a system call register, from the progenitor's grant tables to
+`moho_abi::rights` is the word that travels in a system call register, from the progenitor's grant tables to
 every `SEND_CAPABILITY` and `CAPABILITY_INSERT` in `components/` and `fixtures/`. `capability_table::Rights` is what the
 kernel means by one. They are two arrays of numbers in two dependency-free crates that cannot see
 each other, so `cap.rs` compares them at compile time.
 
-The failure this closes is a right added to one crate and not the other. A bit in `abi::rights`
+The failure this closes is a right added to one crate and not the other. A bit in `moho_abi::rights`
 missing from `Rights::ALL` is a right userspace can name that `Rights::from_bits` masks to zero, so a
 delegation asking for it succeeds and confers nothing. A bit in `ALL` with no ABI name is a right the
 kernel honors that no caller can ask for, which is how a hand-listed set drifts into granting more

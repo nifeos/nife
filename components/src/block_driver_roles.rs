@@ -190,7 +190,7 @@ const FEATURE_BLOCK_FLUSH_LOW_WORD: u32 = 1 << 9;
 // layout the kernel builds and `direct_memory_access_validator` proves (`LAYOUT_QSIZE`,
 // `DESC_OFF`, `AVAIL_OFF`, `USED_OFF`, `RING_BLOCK`) as literals, and nothing checks the copy: a
 // change to the proved layout would leave this driver on the wrong offsets until a QEMU test
-// failed. The fix is to move the constants to `abi::virtual_io`, where this crate, the kernel and the
+// failed. The fix is to move the constants to `moho_abi::virtual_io`, where this crate, the kernel and the
 // validator all name them, as Decision 2 of milestone 1113 (what an outside maintainer would fix
 // before it leaves this tree) decides.
 const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000; // 16 * QUEUE_ENTRIES = 128 bytes
@@ -1389,9 +1389,16 @@ pub fn run_block_server(direct_memory_access_physical_address: u64) -> ! {
         let request = receive_request(BLOCK_REQUEST_ENDPOINT);
         let (first_word, block) = (request.w0, request.w1);
         let to = request.delivered.into_reply();
-        // Clamp, as `fs_service.rs` does for the file channel: a request is never trusted to stay
-        // inside the shared region just because its packing could spell a larger count.
-        let count = block::request_block_count(first_word).min(block::TRANSFER_BLOCKS) as u64;
+        // Refuse a count past the shared region: a request is never trusted to stay inside it just
+        // because its packing could spell a larger count, and a clamped transfer would move fewer
+        // blocks than asked without saying so.
+        let Some(count) = block::request_block_count(first_word) else {
+            if let Some(to) = to {
+                reply(to, file_system_contract::error::word(22) as u64, 0); // EINVAL
+            }
+            continue;
+        };
+        let count = count as u64;
         let operation = file_system_contract::operation(first_word);
         let answer: i64 = match operation {
             block::READ | block::WRITE => {

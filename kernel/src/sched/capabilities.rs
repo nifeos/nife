@@ -355,12 +355,14 @@ impl Delegation {
     pub(super) fn derive(
         self,
         table: &crate::capability_object::CapabilityTable,
-    ) -> Result<crate::capability_object::Capability, abi::Error> {
-        let src = table.get(self.slot).map_err(|_| abi::Error::NoSuchSlot)?;
+    ) -> Result<crate::capability_object::Capability, moho_abi::Error> {
+        let src = table
+            .get(self.slot)
+            .map_err(|_| moho_abi::Error::NoSuchSlot)?;
         // The crate's rule, proved there: the holder may pass it on (`GRANT`) and the copy only
         // narrows. Both refusals are one answer on the system call surface.
         src.delegate(self.rights)
-            .map_err(|_| abi::Error::NotPermitted)
+            .map_err(|_| moho_abi::Error::NotPermitted)
     }
 }
 
@@ -372,10 +374,10 @@ pub(crate) fn grant_derived(
     slot: u64,
     derive: impl FnOnce(
         crate::capability_object::Capability,
-    ) -> Result<crate::capability_object::Capability, abi::Error>,
-) -> Result<u64, abi::Error> {
-    let mut table = current_capabilities().ok_or(abi::Error::NoSuchSlot)?;
-    let src = table.get(slot).map_err(|_| abi::Error::NoSuchSlot)?;
+    ) -> Result<crate::capability_object::Capability, moho_abi::Error>,
+) -> Result<u64, moho_abi::Error> {
+    let mut table = current_capabilities().ok_or(moho_abi::Error::NoSuchSlot)?;
+    let src = table.get(slot).map_err(|_| moho_abi::Error::NoSuchSlot)?;
     let copy = derive(src)?;
-    table.insert(copy).map_err(|_| abi::Error::OutOfMemory)
+    table.insert(copy).map_err(|_| moho_abi::Error::OutOfMemory)
 }

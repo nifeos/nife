@@ -8,7 +8,7 @@
 //! portable, so all three ISAs run these assertions (DECISIONS §19 (architectural parity is a
 //! tenet)). See notes/process-view/cpu-time-tests.md.
 
-use abi::survey::record;
+use moho_abi::survey::record;
 
 use super::supervision_tests::{REPORT_STUB, build_child_in};
 use super::survey_tests::{
@@ -57,7 +57,14 @@ fn spend_a_window() {
 /// userspace caller reads out of its registers.
 fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    match invoke(&mut frame, slot, abi::rendezvous::SURVEY, cursor, record, 0) {
+    match invoke(
+        &mut frame,
+        slot,
+        moho_abi::rendezvous::SURVEY,
+        cursor,
+        record,
+        0,
+    ) {
         Ok(next) => (next, frame.arg(1), frame.arg(2)),
         Err(e) => (e as i64, 0, 0),
     }
@@ -75,7 +82,11 @@ fn record_of(viewer: u64, tid: u64, record: u64) -> u64 {
         let (next, seen, word) = survey_record(viewer, cursor, record);
         assert!(next >= 0, "the walk was refused with {next}");
         let next = next as u64;
-        assert_ne!(next, abi::survey::DONE, "tid {tid} is not in this domain");
+        assert_ne!(
+            next,
+            moho_abi::survey::DONE,
+            "tid {tid} is not in this domain"
+        );
         if seen == tid {
             return word;
         }
@@ -223,7 +234,7 @@ fn a_corpse_keeps_what_it_earned() {
     // a member of the domain and still has a record to report.
     drain(parking, 1);
     assert!(
-        super::wait_for(|| record_of(viewer, sleeper, record::STATE) == abi::survey::DEAD),
+        super::wait_for(|| record_of(viewer, sleeper, record::STATE) == moho_abi::survey::DEAD),
         "the child never became a corpse",
     );
 

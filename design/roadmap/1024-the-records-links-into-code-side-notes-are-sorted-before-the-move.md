@@ -26,7 +26,7 @@ repository points at nothing in the record repository, and the site build fails 
 A rough count on 2026-11-01 (UTC), by name match and not by reading each note:
 
 - 296 links from `design/` and `briefs/` reach 168 distinct files under `notes/`. Five of those
-  files carry a crate's name (`abi`, `address-space-map`, `e1000e`, `job-mix`, `nifefs`), so they
+  files carry a crate's name (`moho_abi`, `address-space-map`, `e1000e`, `job-mix`, `nifefs`), so they
   probably concern that crate alone. The rest were not read.
 - Two links reach a crate directory: `design/decisions/0148-reap-and-thread-identity.md` and
   `design/roadmap/0060-isa-discovery.md`. Only `script/record-ruling` edits a decision, so the first waits for a ruling or counts as bookkeeping.

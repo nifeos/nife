@@ -56,7 +56,7 @@ were reworded to match their sibling variants' own `A`/`An` + noun heading patte
 `Frame`'s "A physical page" and `Aspace`'s "An address space under construction", rather than
 reading "MemoryRegion memory".
 
-One historical citation in `crates/abi/src/lib.rs`'s own crate-naming rationale kept `Untyped`. It
+One historical citation in `crates/moho_abi/src/lib.rs`'s own crate-naming rationale kept `Untyped`. It
 names `Tcb`/`Aspace`/`Untyped` as the abbreviations a naming review "sank". The reason is the one
 the `Tcb` lane kept it for: renaming it would make the sentence describe the winning name as the one
 that lost.

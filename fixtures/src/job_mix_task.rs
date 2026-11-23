@@ -107,7 +107,7 @@ const CHILD_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS
 /// the loader maps, which is the choice `os_primitives_benchmarker` made for the same frame.
 const STUB_SCRATCH_VA: u64 = address_space_layout::pair_page(0x0100_0000);
 
-/// A job's system call was refused: the refusal, as the negative `abi::Error` the kernel returned.
+/// A job's system call was refused: the refusal, as the negative `moho_abi::Error` the kernel returned.
 type Refused = i64;
 
 /// A system call's result as a slot or a refusal: the retype and split verbs return the new slot, or a
@@ -137,7 +137,7 @@ fn map_job() -> Result<u64, Refused> {
     let mut region_ticks = counter_ticks() - t0;
     let aspace = slot(user_mode_runtime::retype_into_kernel_object(
         region,
-        abi::object_type::ADDRESS_SPACE,
+        moho_abi::object_type::ADDRESS_SPACE,
     ))?;
     let frame = slot(user_mode_runtime::retype_into_page_frame(region))?;
     let mut i = 0;
@@ -146,7 +146,7 @@ fn map_job() -> Result<u64, Refused> {
             aspace,
             MAP_TARGET_VA + i * PAGE,
             frame,
-            abi::address_space::MAP_READ_ONLY,
+            moho_abi::address_space::MAP_READ_ONLY,
         ))?;
         i += 1;
     }
@@ -180,30 +180,30 @@ fn spawn_job(code_frame: u64) -> Result<u64, Refused> {
         region_ticks += counter_ticks() - t0;
         let aspace = slot(user_mode_runtime::retype_into_kernel_object(
             child,
-            abi::object_type::ADDRESS_SPACE,
+            moho_abi::object_type::ADDRESS_SPACE,
         ))?;
         zero(user_mode_runtime::address_space_layout_into(
             aspace,
             CHILD_CODE_VA,
             code_frame,
-            abi::address_space::MAP_CODE,
+            moho_abi::address_space::MAP_CODE,
         ))?;
         let stack = slot(user_mode_runtime::retype_into_page_frame(child))?;
         zero(user_mode_runtime::address_space_layout_into(
             aspace,
             CHILD_STACK_VA,
             stack,
-            abi::address_space::MAP_READ_WRITE,
+            moho_abi::address_space::MAP_READ_WRITE,
         ))?;
         user_mode_runtime::capability_delete(stack);
         let tcb = slot(user_mode_runtime::retype_into_kernel_object(
             child,
-            abi::object_type::THREAD_CONTROL_BLOCK,
+            moho_abi::object_type::THREAD_CONTROL_BLOCK,
         ))?;
         slot(user_mode_runtime::thread_control_block_capability_insert(
             tcb,
             job_mix::SLOT_CHILD_DONE,
-            abi::rights::WRITE,
+            moho_abi::rights::WRITE,
             0,
         ))?;
         // CONFIGURE consumes the address-space capability, so there is no slot to delete for it.
@@ -228,7 +228,7 @@ fn spawn_job(code_frame: u64) -> Result<u64, Refused> {
             if r == 0 {
                 break;
             }
-            if r != abi::Error::NotPermitted as i64 {
+            if r != moho_abi::Error::NotPermitted as i64 {
                 return Err(r);
             }
             yield_now();
@@ -248,7 +248,7 @@ fn prepare_child_code() -> Result<u64, Refused> {
         job_mix::SLOT_BUDGET,
     ))?;
     if !user_mode_runtime::map_page_frame(frame, STUB_SCRATCH_VA, true, job_mix::SLOT_BUDGET) {
-        return Err(abi::Error::OutOfMemory as i64);
+        return Err(moho_abi::Error::OutOfMemory as i64);
     }
     // SAFETY: `STUB_SCRATCH_VA` is the page just mapped read/write into this address space, and
     // the stub is far smaller than it. The source is this program's `.rodata` and the destination a

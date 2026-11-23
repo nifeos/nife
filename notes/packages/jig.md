@@ -86,7 +86,7 @@ must vouch for its digest (`package_archive::installable_as`), or nothing is sen
 
 Then `spawn_protocol`'s activation request goes out on the installer endpoint, unchanged from the
 builtin's: three words, one `READ` frame per page, one answer. The frames are slices of the run
-(`abi::page_frame::SLICE`), so the buffer and the frames are the same memory. The progenitor copies
+(`moho_abi::page_frame::SLICE`), so the buffer and the frames are the same memory. The progenitor copies
 each page before it hashes, checks its copy against its own catalog, places the program and writes
 a generation. The row records `jig` in its manager column.
 

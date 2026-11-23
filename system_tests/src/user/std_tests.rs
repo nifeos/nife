@@ -122,7 +122,7 @@ pub(super) fn drain_sink_from(
     let mut line = 0usize;
     let ended = loop {
         let words = crate::sched::ipc_receive(ep);
-        if words[4] == abi::notification::BOUND {
+        if words[4] == moho_abi::notification::BOUND {
             if !crate::sched::is_thread_present(writer) {
                 break false;
             }

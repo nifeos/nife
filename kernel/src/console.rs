@@ -470,17 +470,17 @@ pub(crate) fn configure_from_dtb() {
 
 /// The register shape the userspace console and input drivers must use: they
 /// map this same UART and read no device tree, so `boot_progenitor` passes this as the
-/// progenitor's first start word and the progenitor hands it to both. See `abi::uart`.
+/// progenitor's first start word and the progenitor hands it to both. See `moho_abi::uart`.
 #[cfg(target_arch = "riscv64")]
-pub(crate) fn uart_register_shape() -> abi::uart::RegisterShape {
+pub(crate) fn uart_register_shape() -> moho_abi::uart::RegisterShape {
     let shape = CONSOLE.lock().uart.shape();
-    abi::uart::RegisterShape::new(shape.reg_shift, shape.reg_io_width)
+    moho_abi::uart::RegisterShape::new(shape.reg_shift, shape.reg_io_width)
 }
 
 /// The PL011 and COM1 have no stride; the zero word says so. See the riscv64 arm.
 #[cfg(not(target_arch = "riscv64"))]
-pub(crate) fn uart_register_shape() -> abi::uart::RegisterShape {
-    abi::uart::RegisterShape::BYTES
+pub(crate) fn uart_register_shape() -> moho_abi::uart::RegisterShape {
+    moho_abi::uart::RegisterShape::BYTES
 }
 
 /// Has anyone typed at the console? True while a byte sits unread in the console UART's receive

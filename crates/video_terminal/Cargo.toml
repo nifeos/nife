@@ -27,4 +27,4 @@ glyph_atlas = { version = "0.1.0", path = "../glyph_atlas" }
 # the escape sequences this engine must understand are exactly the ones the line discipline already
 # emits (DECISIONS §21). Rather than assert that from a hand-written list of sequences that could
 # drift, the test runs the real `line_editor` and feeds its echo stream to this parser.
-line_editor = { version = "0.1.0", path = "../line_editor" }
+line_editor = { version = "0.1.0", git = "https://github.com/nifeos/line_editor", rev = "b43cb319b1cf57b8e38680d090348f347408ffa2" }

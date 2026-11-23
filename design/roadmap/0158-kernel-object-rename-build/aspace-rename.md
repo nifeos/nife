@@ -80,7 +80,7 @@ DECISIONS §113 is retiring sitting in prose next to its own renamed identifier.
 `notes/thread-spawn-fork.md` were updated for the same reason `notes/ipc-naming.md` was. Two
 genuinely historical citations were deliberately left alone:
 
-- `crates/abi/src/lib.rs`'s crate-naming-ratification note ("...the actual test (does the architect
+- `crates/moho_abi/src/lib.rs`'s crate-naming-ratification note ("...the actual test (does the architect
   have to ask what this means, which sank `Tcb`/`Aspace`/ `Untyped`)...", 2026-08-23). It describes
   the state of the tree at the moment that test was applied.
 - `design/decisions/0114-aspace-enumerate.md`, a DECIDED record whose own text already

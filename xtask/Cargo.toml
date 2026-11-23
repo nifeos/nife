@@ -29,7 +29,7 @@ c_program_fixture = { path = "../crates/c_program_fixture" }
 # The FS wire contract's crate stays out: everything xtask read from it was the test fixture,
 # which is crates/file_system_fixture since milestone 886 (the filesystem test fixture moves to
 # its own crate).
-file_system_fixture = { version = "0.1.0", path = "../crates/file_system_fixture" }
+file_system_fixture = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 # Milestone 121 (`ripgrep` on nife: enumeration as a capability)'s priced tree: the image builder stages it with the same function a host
 # comparison stages it with, so the two cannot be walks over different shapes.
 walk_pricing = { version = "0.1.0", path = "../crates/walk_pricing" }
@@ -96,7 +96,7 @@ screen_console = { version = "0.1.0", path = "../crates/screen_console" }
 # The programs the shell can spawn (milestone 150): the packer refuses to build an archive missing
 # one, because a `Program` whose binary is not packed compiles, passes every host test and cannot be
 # spawned. Both `no_std`, so they cost the host build nothing.
-grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
+grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # To find a program's manifest note on the host and stage a copy of it that cannot be read
 # (milestone 597 (a program carries its manifest in an ELF note), provisional), for

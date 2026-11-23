@@ -16,7 +16,7 @@ incumbent swallows one request and stops answering. Six results:
    drain step is asserted absent, and the verdict precedes everything the operator does about it.
    How the bound was chosen is in [what-counts-as-hung.md](what-counts-as-hung.md).
 2. The domain does not report a hang. `SURVEY` reports every member `BLOCKED` and none `DEAD`,
-   which is byte for byte what a healthy idle system reads as: `abi::survey::BLOCKED` is the state of
+   which is byte for byte what a healthy idle system reads as: `moho_abi::survey::BLOCKED` is the state of
    a server parked in `RECEIVE_CAPABILITY`, and that is every healthy server between requests. The verdict
    in result 1 had to come from the clock because this view cannot give it.
 3. The supervisor's reap vocabulary is refused. `Rendezvous::REAP` is asked about *every* member of
@@ -27,7 +27,7 @@ incumbent swallows one request and stops answering. Six results:
    count falls by exactly one instance across the `DESTROY`, and the incumbent leaves no death
    message, because a thread finished in place (milestone 133 (ending a permanently blocked thread,
    and deciding who may)) never runs again.
-6. The caller it stranded sees `abi::Error::Gone` (milestone 254 (a caller stranded by a server that
+6. The caller it stranded sees `moho_abi::Error::Gone` (milestone 254 (a caller stranded by a server that
    died)) and asks the replacement again. The client's `CL_WAS_GONE` bit is its own testimony, and
    both witnesses put the version change at the swallowed request.
 

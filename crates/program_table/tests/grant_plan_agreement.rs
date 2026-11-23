@@ -1,0 +1,116 @@
+//! `grant_plan` against the filesystem contract and its fixture. The planner checks a command line
+//! without linking the filesystem contract, so it spells the contract's name and set bounds as its
+//! own constants, and the glob fixtures the filesystem tests stage are only trustworthy if they are
+//! what the planner's matcher matches. This crate links the planner and the contract both, so the
+//! pins live here: a change to one side without the other fails on the host, in milliseconds.
+
+/// **The name limits and the set bounds are the contract's**, one number spelled in two crates.
+#[test]
+fn the_planner_bounds_match_the_file_system_contract() {
+    use file_system_contract::{grant, nameset};
+    assert_eq!(
+        grant_plan::MAXIMUM_FILE_NAME_BYTES,
+        grant::MAXIMUM_NAME_BYTES
+    );
+    assert_eq!(
+        grant_plan::MAXIMUM_WORDS_NAME_BYTES,
+        grant::MAXIMUM_WORDS_NAME_BYTES
+    );
+    assert_eq!(grant_plan::expansion::MAXIMUM_NAMES, nameset::MAXIMUM_NAMES);
+    assert_eq!(
+        grant_plan::expansion::MAXIMUM_NAME_SET_BYTES,
+        nameset::MAXIMUM_NAME_SET_BYTES
+    );
+    assert_eq!(
+        grant_plan::expansion::MAXIMUM_NAME_BYTES,
+        grant::MAXIMUM_NAME_BYTES
+    );
+}
+
+/// **The widest set the planner can plan fits the buffer the contract sizes for it**: every name
+/// it may hold, sharing every byte it may hold.
+#[test]
+fn the_widest_planned_set_encodes_in_the_contract_buffer() {
+    use file_system_contract::nameset;
+    use grant_plan::expansion::{MAXIMUM_NAME_SET_BYTES, MAXIMUM_NAMES};
+    let wide = [b'w'; MAXIMUM_NAME_SET_BYTES / MAXIMUM_NAMES];
+    let widest: [(&[u8], bool); MAXIMUM_NAMES] = [(&wide[..], false); MAXIMUM_NAMES];
+    let mut buffer = [0u8; nameset::MAXIMUM_BYTES];
+    assert!(nameset::encode(&widest, &mut buffer).is_some());
+}
+
+/// **The set the globbing lane grants is exactly what the pattern matches**, checked against the
+/// matcher rather than asserted twice.
+///
+/// The kernel test states its set literally (a `[(&[u8], bool); 2]` it hands to
+/// [`file_system_contract::nameset::encode`]), which is the only way to build a grant without an
+/// enumeration. That literal is only trustworthy if it *is* the expansion, so this pins it: the pattern matches the
+/// two names in the set and neither of the two controls, over the fixture as staged.
+#[test]
+fn the_glob_fixture_is_matched_by_the_pattern_it_is_staged_for() {
+    use file_system_contract::grant;
+    use file_system_fixture::tree;
+    let p = tree::GLOB_PATTERN;
+    for name in [tree::GLOB_ONE, tree::GLOB_TWO] {
+        assert!(
+            byte_glob::matches(p, name.as_bytes()),
+            "{name} is in the granted set and the pattern does not match it",
+        );
+    }
+    for name in [tree::GLOB_MISS, tree::GLOB_DIRECTORY, tree::GLOB_INNER] {
+        assert!(
+            !byte_glob::matches(p, name.as_bytes()),
+            "{name} is a control and the pattern matches it, so it proves nothing",
+        );
+    }
+    // Every name in the set has to be able to travel in one, or the grant cannot be built.
+    for name in [
+        tree::GLOB_ONE,
+        tree::GLOB_TWO,
+        tree::GLOB_MISS,
+        tree::GLOB_DIRECTORY,
+    ] {
+        assert!(grant::fits(name.as_bytes()), "{name} does not fit a grant");
+    }
+}
+
+/// **The batching fixture is over the bound, and the two batches printed in the gate are the
+/// ones the rule produces** .
+///
+/// The shell gate asserts two literal strings at a real prompt, and a literal is only
+/// worth asserting if it is the answer rather than a second opinion about it. So this pins all
+/// three claims: the pattern matches every name and not the control, there are more names than
+/// one grant can carry, and the batch boundary falls where [`file_system_fixture::tree::MANY_FIRST_BATCH`]
+/// says it does.
+#[test]
+fn the_batching_fixture_is_over_the_bound_and_splits_where_the_gate_says() {
+    use file_system_contract::{grant, nameset};
+    use file_system_fixture::tree;
+    let p = tree::MANY_PATTERN;
+    for name in tree::MANY_NAMES {
+        assert!(
+            byte_glob::matches(p, name.as_bytes()),
+            "{name} is staged for the sweep and the pattern does not match it",
+        );
+        assert!(grant::fits(name.as_bytes()), "{name} does not fit a grant");
+    }
+    assert!(
+        !byte_glob::matches(p, tree::MANY_MISS.as_bytes()),
+        "the control matches, so 'the batches are the match' proves nothing",
+    );
+    assert!(
+        tree::MANY_NAMES.len() > nameset::MAXIMUM_NAMES,
+        "the fixture fits in one grant, so nothing here is batched",
+    );
+    // The names are staged in sorted order, which is what lets the two batches below be read off
+    // the array rather than sorted at the assertion.
+    assert!(tree::MANY_NAMES.windows(2).all(|w| w[0] < w[1]));
+    assert_eq!(
+        tree::MANY_FIRST_BATCH,
+        tree::MANY_NAMES[..nameset::MAXIMUM_NAMES].join(" "),
+    );
+    assert_eq!(
+        tree::MANY_SECOND_BATCH,
+        tree::MANY_NAMES[nameset::MAXIMUM_NAMES..].join(" "),
+    );
+}

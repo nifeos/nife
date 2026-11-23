@@ -6,14 +6,14 @@
 
 The enforcement of the shape calef ruled on 2026-10-29 (UTC, PR #2852, question 5), built by
 milestone 956 (the linked interfaces carry checkable versions) step 4. The pinned-values test in
-`crates/abi` catches a renumber that skips the test; this catches the other half, a value that
+`crates/moho_abi` catches a renumber that skips the test; this catches the other half, a value that
 moves with its test edited and its version constant left alone. It reads the pull request's
 changed lines (the merge base against the tree) and fails in two cases:
 
 1. A `MAGIC` constant's value changed in a crate, and no `VERSION` or `REVISION` constant's value
    changed in that crate. A magic is a format's identity, and a format never changes in place, so
    a new magic is a new version.
-2. A public number in `crates/abi` changed or was removed (a `pub const` of any module, or an
+2. A public number in `crates/moho_abi` changed or was removed (a `pub const` of any module, or an
    `Error` discriminant), and `ABI_VERSION` did not change. The system call surface is one version;
    adding a number is an addition and owes nothing.
 
@@ -52,7 +52,7 @@ CONST = re.compile(r'^\s*pub\s+const\s+([A-Z][A-Z0-9_]*)\s*:([^=]+)=\s*([^;]+);'
 DISCRIMINANT = re.compile(r'^\s+([A-Z][A-Za-z0-9]*)\s*=\s*(-?\d+)\s*,', re.M)
 MAGIC = re.compile(r'(^|_)MAGIC($|_)')
 VERSION = re.compile(r'(^|_)(VERSION|REVISION)($|_)')
-ABI_CRATE = 'crates/abi/'
+ABI_CRATE = 'crates/moho_abi/'
 
 
 def squeeze(text):
@@ -91,7 +91,7 @@ def doc_above(text, start, name=None):
 
 
 def values(text, path):
-    """{key: (normalized value, meaning)} of the public constants (and, in abi, the
+    """{key: (normalized value, meaning)} of the public constants (and, in moho_abi, the
     discriminants). The meaning is what a rename must keep: the type and the doc comment."""
     found = {}
     # Drop the test module: everything from `#[cfg(test)]` on is not a public format.
@@ -268,81 +268,81 @@ def selftest():
 
     abi = 'pub const ABI_VERSION: u32 = 1;\npub const SYSTEM_CALL_EXIT: u64 = 0;\n'
     fails('a renumbered system call without the version fails',
-          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\npub const SYSTEM_CALL_EXIT: u64 = 9;\n')}, True)
+          {'crates/moho_abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\npub const SYSTEM_CALL_EXIT: u64 = 9;\n')}, True)
     fails('a renumbered system call with the version passes',
-          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 2;\npub const SYSTEM_CALL_EXIT: u64 = 9;\n')}, False)
-    fails('a number in a module of abi without the version fails',
-          {'crates/abi/src/timer.rs': ('pub const ARM: u64 = 0;\n', 'pub const ARM: u64 = 1;\n'),
-           'crates/abi/src/lib.rs': (abi, abi)}, True)
+          {'crates/moho_abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 2;\npub const SYSTEM_CALL_EXIT: u64 = 9;\n')}, False)
+    fails('a number in a module of moho_abi without the version fails',
+          {'crates/moho_abi/src/timer.rs': ('pub const ARM: u64 = 0;\n', 'pub const ARM: u64 = 1;\n'),
+           'crates/moho_abi/src/lib.rs': (abi, abi)}, True)
     fails('an added system call is an addition',
-          {'crates/abi/src/lib.rs': (abi, abi + 'pub const SYSTEM_CALL_NEW: u64 = 5;\n')}, False)
+          {'crates/moho_abi/src/lib.rs': (abi, abi + 'pub const SYSTEM_CALL_NEW: u64 = 5;\n')}, False)
     fails('a removed number fails',
-          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\n')}, True)
+          {'crates/moho_abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\n')}, True)
     fails('a renumbered error without the version fails',
-          {'crates/abi/src/lib.rs': ('    NoSuchSlot = -1,\n', '    NoSuchSlot = -2,\n')}, True)
-    fails('a constant outside abi is not an abi number',
+          {'crates/moho_abi/src/lib.rs': ('    NoSuchSlot = -1,\n', '    NoSuchSlot = -2,\n')}, True)
+    fails('a constant outside moho_abi is not an abi number',
           {'crates/x/src/lib.rs': ('pub const SIZE: u64 = 1;\n', 'pub const SIZE: u64 = 2;\n')}, False)
 
     # A rename is not a move; a changed value, a deleted name or a reused value still is.
     word = ('pub const ABI_VERSION: u32 = 1;\n/// The word\'s offset.\n///\n/// Name: provisional.\n'
             '#[doc(alias = "w")]\npub const {}: u64 = 4096 - 8;\n')
     fails('a renamed constant with its value, type and doc passes',
-          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW'))}, False)
+          {'crates/moho_abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW'))}, False)
     named = ('pub const ABI_VERSION: u32 = 1;\n/// `invoke(c, {0}, _)` makes one object.\n{1}'
              'pub const {0}: u64 = 2;\n')
     fails('a renamed constant whose doc names it, gaining a Name: block, passes',
-          {'crates/abi/src/memory_region.rs': (named.format('OLD', ''),
+          {'crates/moho_abi/src/memory_region.rs': (named.format('OLD', ''),
                                                named.format('NEW', '///\n/// Name: provisional. Refused `OLD`.\n'))},
           False)
     fails('a renamed constant whose doc names another constant still fails',
-          {'crates/abi/src/memory_region.rs': (named.format('OLD', ''),
+          {'crates/moho_abi/src/memory_region.rs': (named.format('OLD', ''),
                                                named.format('NEW', '').replace('makes one', 'OTHER makes one'))},
           True)
     spelled = ('pub const ABI_VERSION: u32 = 1;\n/// The {} number is not one of the five.\n'
                'pub const {}: u64 = 6;\n')
     fails('a renamed constant whose doc respells the system call passes',
-          {'crates/abi/src/lib.rs': (spelled.format('syscall', 'BAD_SYSCALL'),
+          {'crates/moho_abi/src/lib.rs': (spelled.format('syscall', 'BAD_SYSCALL'),
                                      spelled.format('system call', 'BAD_SYSTEM_CALL'))}, False)
     fails('a renamed constant whose doc changes more than the spelling still fails',
-          {'crates/abi/src/lib.rs': (spelled.format('syscall', 'BAD_SYSCALL'),
+          {'crates/moho_abi/src/lib.rs': (spelled.format('syscall', 'BAD_SYSCALL'),
                                      spelled.format('system call', 'BAD_SYSTEM_CALL').replace('five', 'six'))}, True)
     siblings = ('pub const ABI_VERSION: u32 = 1;\n/// End the process.\npub const {0}EXIT: u64 = 0;\n'
                 '/// End the thread; the last one ends the process, as [`{0}EXIT`] would.\n'
                 'pub const {0}EXIT_THREAD: u64 = 4;\n')
     fails('renamed siblings whose docs name each other pass',
-          {'crates/abi/src/lib.rs': (siblings.format('OLD_'), siblings.format('NEW_'))}, False)
+          {'crates/moho_abi/src/lib.rs': (siblings.format('OLD_'), siblings.format('NEW_'))}, False)
     fails('a renamed sibling whose doc names a constant no rename accounts for still fails',
-          {'crates/abi/src/lib.rs': (siblings.format('OLD_'),
+          {'crates/moho_abi/src/lib.rs': (siblings.format('OLD_'),
                                      siblings.format('NEW_').replace('[`NEW_EXIT`]', '[`OTHER`]'))},
           True)
     fails('a renamed constant whose value changed fails',
-          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW').replace('- 8', '- 16'))}, True)
+          {'crates/moho_abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW').replace('- 8', '- 16'))}, True)
     fails('a renamed constant whose type changed fails',
-          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW').replace('u64', 'usize'))}, True)
+          {'crates/moho_abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW').replace('u64', 'usize'))}, True)
     fails('a deleted constant fails',
-          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), 'pub const ABI_VERSION: u32 = 1;\n')}, True)
+          {'crates/moho_abi/src/virtual_io.rs': (word.format('OLD'), 'pub const ABI_VERSION: u32 = 1;\n')}, True)
     fails('a value reused under a new name for a different meaning fails',
-          {'crates/abi/src/virtual_io.rs': (word.format('OLD'),
+          {'crates/moho_abi/src/virtual_io.rs': (word.format('OLD'),
                                         word.format('NEW').replace("word's offset", 'ring length'))}, True)
     fails('a value moved onto a name that already held another fails',
-          {'crates/abi/src/lib.rs': ('pub const A: u64 = 5;\npub const B: u64 = 6;\n',
+          {'crates/moho_abi/src/lib.rs': ('pub const A: u64 = 5;\npub const B: u64 = 6;\n',
                                      'pub const B: u64 = 5;\n')}, True)
     fails('two removed names of one value are not one rename',
-          {'crates/abi/src/lib.rs': ('pub const A: u64 = 5;\npub const B: u64 = 5;\n',
+          {'crates/moho_abi/src/lib.rs': ('pub const A: u64 = 5;\npub const B: u64 = 5;\n',
                                      'pub const C: u64 = 5;\n')}, True)
     fails('one removed name added twice is not one rename',
-          {'crates/abi/src/lib.rs': ('pub const A: u64 = 5;\n',
+          {'crates/moho_abi/src/lib.rs': ('pub const A: u64 = 5;\n',
                                      'pub const C: u64 = 5;\npub const D: u64 = 5;\n')}, True)
-    fails('a name moved to another file of abi is not a rename',
-          {'crates/abi/src/a.rs': ('pub const A: u64 = 5;\n', ''),
-           'crates/abi/src/b.rs': ('', 'pub const A: u64 = 5;\n')}, True)
+    fails('a name moved to another file of moho_abi is not a rename',
+          {'crates/moho_abi/src/a.rs': ('pub const A: u64 = 5;\n', ''),
+           'crates/moho_abi/src/b.rs': ('', 'pub const A: u64 = 5;\n')}, True)
     fails('a renamed error discriminant passes',
-          {'crates/abi/src/lib.rs': ('    /// No slot.\n    NoSuchSlot = -1,\n',
+          {'crates/moho_abi/src/lib.rs': ('    /// No slot.\n    NoSuchSlot = -1,\n',
                                      '    /// No slot.\n    SlotAbsent = -1,\n')}, False)
     fails('a renamed magic with its value passes',
           {'crates/x/src/lib.rs': (magic_old, magic_old.replace('MAGIC', 'FORMAT_MAGIC'))}, False)
     fails('a rename with a version bump still passes',
-          {'crates/abi/src/virtual_io.rs': (word.format('OLD'),
+          {'crates/moho_abi/src/virtual_io.rs': (word.format('OLD'),
                                         word.format('NEW').replace('VERSION: u32 = 1', 'VERSION: u32 = 2'))},
           False)
 

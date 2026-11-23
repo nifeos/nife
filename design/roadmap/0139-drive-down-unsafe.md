@@ -139,7 +139,7 @@ proofs and the type system are standing aside and a person's comment is the whol
 - **Done.** `kernel/src/revoke.rs`'s log-page walk is `revoke::chain`, one block.
 - **Done.** `system_tests/src/user/tests.rs` carries seven blocks, each a one-off with its own
   argument at the site.
-- **Done.** `crates/abi`'s `START` doc comment says what the kernel does with its three arguments.
+- **Done.** `crates/moho_abi`'s `START` doc comment says what the kernel does with its three arguments.
 - **Done.** The ratchet's scope: `unsafe-trait-claims` gates the other `unsafe impl`s, and
   `unsafe fn` gets no ceiling, for the reason under "Where it stands".
 - **Done.** The renames calef ruled on #1842 and #1998 are applied, each with `Name: ratified` at

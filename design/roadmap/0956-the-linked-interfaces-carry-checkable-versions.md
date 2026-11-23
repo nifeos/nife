@@ -100,7 +100,7 @@ table. No registry outside it exists.
 
 | id | interface |
 |---|---|
-| 1 | `abi` |
+| 1 | `moho_abi` |
 | 2 | `address_space_layout` |
 | 3 | retired, `byte_glob` |
 | 4 | `machine_statistics_contract` |
@@ -124,6 +124,7 @@ table. No registry outside it exists.
 | 22 | `base_digest_contract` |
 | 23 | `startup_page_contract` |
 | 24 | `jh7110_clock_and_reset_contract` |
+| 25 | `terminal_contract` |
 
 A reserved row holds a number for a ruled wire whose crate has not landed; the crate's pull request
 replaces it with the crate's row. An interface is the module that holds the id, so `file_system_contract` carries one in `blk` and

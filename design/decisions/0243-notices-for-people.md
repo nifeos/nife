@@ -43,7 +43,7 @@ sections that follow keep each question's reasoning with the ruling folded in.
 ## The name comes first, because the obvious one is taken
 
 "Notification" is a kernel object: §101 (notification objects), milestone 151 (notification objects), `objtype::NOTIFICATION
-= 4` in `crates/abi/src/lib.rs:512`, with `SIGNAL`, `WAIT`, `POLL` and `BIND`, and
+= 4` in `crates/moho_abi/src/lib.rs:512`, with `SIGNAL`, `WAIT`, `POLL` and `BIND`, and
 `Received::Notification` in `crates/user_mode_runtime`. The design below uses that object as a
 display's doorbell, so the two would meet in one sentence, and the person-facing thing needs
 another word. Names are calef's call (`design/naming.md`, CLAUDE.md's naming authority); these were
@@ -156,7 +156,7 @@ its audience. The writer never states its audience, program or time.
 
 A display is woken with a §101 notification object: it hands the board one with `SIGNAL` right
 when it subscribes, and binds it (`BIND`) so a new notice wakes it out of `RECV`. That is the
-tree's doorbell, "a doorbell, not a meeting" (`crates/abi/src/lib.rs:520`).
+tree's doorbell, "a doorbell, not a meeting" (`crates/moho_abi/src/lib.rs:520`).
 
 ## Curation
 

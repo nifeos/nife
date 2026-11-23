@@ -91,7 +91,7 @@ fn build_labelled(elf: &static_elf::Elf, attempt: u64, fault: u64) -> bool {
         region,
         elf,
         &ChildEndowment {
-            capabilities: &[(REPORT, abi::rights::WRITE)],
+            capabilities: &[(REPORT, moho_abi::rights::WRITE)],
             maps: &[],
             blobs: &[],
             fault: Some(fault),

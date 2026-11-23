@@ -9,7 +9,7 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use abi::Error;
+use moho_abi::Error;
 
 use super::{Spawn, program, run, wait_for};
 use crate::arch::exceptions::TrapFrame;
@@ -104,11 +104,11 @@ fn a_bound_receiver_is_woken_out_of_receive_and_the_endpoint_still_works() {
     assert_eq!(
         first,
         [
-            abi::notification::BOUND,
+            moho_abi::notification::BOUND,
             0b1010,
             0,
             0,
-            abi::notification::BOUND
+            moho_abi::notification::BOUND
         ],
         "a bound delivery must carry the tag in w0 and w4 and the word in w1"
     );
@@ -118,7 +118,7 @@ fn a_bound_receiver_is_woken_out_of_receive_and_the_endpoint_still_works() {
         wait_for(|| sched::rendezvous_waiting_receivers(ep) == 1),
         "the receiver did not re-park, or the bound delivery left the queue corrupt"
     );
-    sched::ipc_send(ep, [abi::notification::BOUND, 0xdead, 7]);
+    sched::ipc_send(ep, [moho_abi::notification::BOUND, 0xdead, 7]);
     assert!(
         wait_for(|| SECOND_DONE.load(Ordering::Acquire) == 1),
         "a message after a bound delivery never arrived"
@@ -126,7 +126,7 @@ fn a_bound_receiver_is_woken_out_of_receive_and_the_endpoint_still_works() {
     let second: [u64; 5] = core::array::from_fn(|i| SECOND[i].load(Ordering::Relaxed));
     assert_eq!(
         second,
-        [abi::notification::BOUND, 0xdead, 7, 0, 0],
+        [moho_abi::notification::BOUND, 0xdead, 7, 0, 0],
         "a sender that forged BOUND in w0 must still arrive with w4 == 0"
     );
     reclaim(r);
@@ -179,11 +179,11 @@ fn a_signal_counted_while_elsewhere_ends_the_next_receive_at_once() {
     assert_eq!(
         plain,
         [
-            abi::notification::BOUND,
+            moho_abi::notification::BOUND,
             0b101,
             0,
             0,
-            abi::notification::BOUND
+            moho_abi::notification::BOUND
         ],
         "RECEIVE must take the accumulated word on entry"
     );
@@ -203,11 +203,11 @@ fn a_signal_counted_while_elsewhere_ends_the_next_receive_at_once() {
     assert_eq!(
         with_capability,
         [
-            abi::notification::BOUND,
+            moho_abi::notification::BOUND,
             0b1000,
             0,
             0,
-            abi::notification::BOUND
+            moho_abi::notification::BOUND
         ],
         "RECEIVE_CAPABILITY must take it too"
     );
@@ -327,8 +327,8 @@ fn the_rights_are_101s_and_retype_object_mints_a_full_rights_notification() {
         .expect("grant the region");
     let (minted, _) = invoke(
         ut,
-        abi::memory_region::RETYPE_OBJECT,
-        abi::object_type::NOTIFICATION,
+        moho_abi::memory_region::RETYPE_OBJECT,
+        moho_abi::object_type::NOTIFICATION,
     );
     let full = minted.expect("RETYPE_OBJECT(NOTIFICATION)") as u64;
     let capability = sched::current_capability(full).expect("the minted slot");
@@ -349,30 +349,33 @@ fn the_rights_are_101s_and_retype_object_mints_a_full_rights_notification() {
     .expect("write view");
 
     assert_eq!(
-        invoke(read, abi::notification::SIGNAL, 1).0,
+        invoke(read, moho_abi::notification::SIGNAL, 1).0,
         Err(Error::NotPermitted)
     );
     assert_eq!(
-        invoke(read, abi::notification::BIND, write).0,
+        invoke(read, moho_abi::notification::BIND, write).0,
         Err(Error::NotPermitted)
     );
     assert_eq!(
-        invoke(write, abi::notification::POLL, 0).0,
+        invoke(write, moho_abi::notification::POLL, 0).0,
         Err(Error::NotPermitted)
     );
     assert_eq!(
-        invoke(write, abi::notification::WAIT, 0).0,
+        invoke(write, moho_abi::notification::WAIT, 0).0,
         Err(Error::NotPermitted)
     );
     assert_eq!(invoke(write, 99, 0).0, Err(Error::BadMethod));
 
-    assert_eq!(invoke(write, abi::notification::SIGNAL, 0b11).0, Ok(0));
-    assert_eq!(invoke(read, abi::notification::POLL, 0).0, Ok(0b11));
-    assert_eq!(invoke(write, abi::notification::SIGNAL, 0b100).0, Ok(0));
-    assert_eq!(invoke(read, abi::notification::WAIT, 0).0, Ok(0b100));
+    assert_eq!(invoke(write, moho_abi::notification::SIGNAL, 0b11).0, Ok(0));
+    assert_eq!(invoke(read, moho_abi::notification::POLL, 0).0, Ok(0b11));
+    assert_eq!(
+        invoke(write, moho_abi::notification::SIGNAL, 0b100).0,
+        Ok(0)
+    );
+    assert_eq!(invoke(read, moho_abi::notification::WAIT, 0).0, Ok(0b100));
     // BIND's thread slot must hold a thread.
     assert_eq!(
-        invoke(write, abi::notification::BIND, read).0,
+        invoke(write, moho_abi::notification::BIND, read).0,
         Err(Error::WrongObject)
     );
 
@@ -418,7 +421,7 @@ fn a_kernel_signal_ends_an_interrupt_wait_with_the_word_in_x1_and_the_tag_in_x4(
             Rights::READ,
         ))
         .expect("grant the interrupt");
-        let (answer, frame) = invoke(slot, abi::interrupt::WAIT, 0);
+        let (answer, frame) = invoke(slot, moho_abi::interrupt::WAIT, 0);
         RESULT[0].store(answer.map_or(u64::MAX - 1, |v| v as u64), Ordering::SeqCst);
         RESULT[1].store(frame.arg(1), Ordering::SeqCst);
         RESULT[2].store(frame.arg(4), Ordering::SeqCst);
@@ -436,9 +439,15 @@ fn a_kernel_signal_ends_an_interrupt_wait_with_the_word_in_x1_and_the_tag_in_x4(
     );
     sched::signal_notification_from_interrupt(n, 0x8000);
     assert!(wait_for(|| RESULT[2].load(Ordering::SeqCst) != u64::MAX));
-    assert_eq!(RESULT[0].load(Ordering::SeqCst), abi::notification::BOUND);
+    assert_eq!(
+        RESULT[0].load(Ordering::SeqCst),
+        moho_abi::notification::BOUND
+    );
     assert_eq!(RESULT[1].load(Ordering::SeqCst), 0x8000);
-    assert_eq!(RESULT[2].load(Ordering::SeqCst), abi::notification::BOUND);
+    assert_eq!(
+        RESULT[2].load(Ordering::SeqCst),
+        moho_abi::notification::BOUND
+    );
     reclaim(r);
 }
 
@@ -486,7 +495,7 @@ fn a_program_binds_a_notification_and_receive_tells_a_signal_from_a_forgery() {
     let [_, slot, ..] = sched::inter_process_communication_receive_capability(report);
     assert_ne!(
         slot,
-        abi::rendezvous::NO_CAPABILITY,
+        moho_abi::rendezvous::NO_CAPABILITY,
         "the binder's checks failed before delegating"
     );
     let capability = sched::current_capability(slot).expect("delegated slot");
@@ -499,21 +508,21 @@ fn a_program_binds_a_notification_and_receive_tells_a_signal_from_a_forgery() {
         wait_for(|| sched::rendezvous_waiting_receivers(ep) == 1),
         "the binder never blocked in RECEIVE"
     );
-    let (signalled, _) = invoke(slot, abi::notification::SIGNAL, 0x1_0000);
+    let (signalled, _) = invoke(slot, moho_abi::notification::SIGNAL, 0x1_0000);
     assert_eq!(signalled, Ok(0));
     let m = sched::ipc_receive(report);
     assert_eq!(
         [m[0], m[1], m[2]],
-        [abi::notification::BOUND, 0x1_0000, 1],
+        [moho_abi::notification::BOUND, 0x1_0000, 1],
         "the program's RECEIVE was not ended by the signal, or could not tell"
     );
 
     assert!(wait_for(|| sched::rendezvous_waiting_receivers(ep) == 1));
-    sched::ipc_send(ep, [abi::notification::BOUND, 0xbad, 0]);
+    sched::ipc_send(ep, [moho_abi::notification::BOUND, 0xbad, 0]);
     let m = sched::ipc_receive(report);
     assert_eq!(
         [m[0], m[1], m[2]],
-        [abi::notification::BOUND, 0xbad, 0],
+        [moho_abi::notification::BOUND, 0xbad, 0],
         "a sender that put BOUND in w0 was taken for a notification"
     );
     let _ = sched::delete_current_capability(slot);

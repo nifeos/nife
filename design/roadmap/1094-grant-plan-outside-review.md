@@ -85,6 +85,14 @@ milestone reaches delivery.
   architect cleared `grant_plan` and `grant_contract` together, which approves creating both
   repositories with `publish = false`, no tag and no publication. `grant_contract` moves after
   `program_argument_contract` has its own repository, since it depends on that crate.
+- The move of `grant_contract`: Done as a pin, [#4016](https://github.com/nifeos/nife/pull/4016).
+  nifeos/grant_contract exists, and nife depends on it at commit
+  d4e9ca29d51bc71d678aadaa00411eba953202b3 (`version = "0.1.0"`, `publish = false`). No tag and
+  no publish; a pre-release tag moves the pin later.
+- The move of `grant_plan`: Done as a pin, [#4018](https://github.com/nifeos/nife/pull/4018).
+  nifeos/grant_plan exists, and nife depends on it at commit
+  a5d87c426ec0aeebeb51a13d3ffb116caebd73c9 (`version = "0.1.0"`, `publish = false`). No tag and
+  no publish; a pre-release tag moves the pin later.
 - Decision, the names of both crates: Done, [#3868](https://github.com/nifeos/nife/pull/3868), ruled 2026-11-20 (UTC). Names with no block
   wait on rulings by family.
 

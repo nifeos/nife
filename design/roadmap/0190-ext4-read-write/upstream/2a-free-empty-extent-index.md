@@ -1,0 +1,262 @@
+# Upstream item 2a: free an emptied extent index node
+
+Appendix to [milestone 190](../../0190-ext4-read-write.md), upstream item 2, first of its two
+submissions (bug 2's `extent:empty_index` failure). Name provisional.
+
+This is a draft. Nobody has filed anything here. The architect reviews the exact text below, and
+filing it is a separate step. The Issue goes first, since upstream does not process a pull request
+with no linked Issue; its number then replaces `#<to be filled>` in the pull request body.
+
+- Repository and branch: `rcore-os/tgoskits`, `dev`.
+- Base commit: `6e80b940d46167a59a795e158bb17a7eb28333af` ("feat(ivc): add fragmented Message V1
+  full-duplex transport (#2068)"). No commit after it on `dev` touches `fs/rsext4`.
+- The change: [`2a-free-empty-extent-index.patch`](2a-free-empty-extent-index.patch), one commit,
+  `git format-patch` output against that base. It stands alone; the companion
+  [item 2b](2b-restore-truncate-tail.md) does not depend on it.
+- Issue sidebar, which the filer sets: Type `Bug`, labels `bug` and `q4`, Milestone `2026Q4`,
+  Assignees the filer.
+
+## Issue to file first
+
+### Title
+
+```
+rsext4: truncate of a depth-2 extent tree fails with extent:empty_index
+```
+
+### Body (Chinese, as filed)
+
+```markdown
+## 当前问题
+
+`truncate_inode` 缩小一个盘区树深度为 2 的文件时，如果新的文件末尾位于某个一级索引节点覆盖的第一个块之前，
+操作返回 `Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }`，文件无法缩小。
+
+- 代码版本：`dev` 分支 `6e80b940d`；crates.io 上的 rsext4 0.9.2 同样复现。
+- 环境：x86_64 Linux 宿主，`rust-toolchain.toml` 指定的 nightly，`cargo test -p rsext4 --features host-test`
+  使用的内存块设备。
+- 复现步骤：在新建的文件系统上创建一个文件，每隔一个块写入一个块，共写 1,500 个块。每个块成为一个单块盘区，
+  树的深度为 2，根节点含两个一级索引节点。然后调用 `truncate_inode` 把文件缩小到 100 字节。
+- 实际结果：每次都返回上面的错误。期望结果：缩小成功，文件剩下 100 字节，第二个索引节点及其叶子被释放。
+
+已有排查：`remove_extent` 的第二阶段删除某个外部索引节点下的全部叶子之后，仍把这个已经没有条目的索引节点写回磁盘。
+`write_node_to_block` 校验节点时拒绝条目数为 0 的索引节点，于是整个删除失败。父节点在看到子节点为空时本来就会删除并释放它。
+
+## 修改方案
+
+交付范围：在 `fs/rsext4/src/extents_tree/remove.rs` 的索引分支中，外部索引节点删除最后一个子节点后不再写回，
+由父节点照常删除并释放该块。根节点没有自己的块，保持原有处理（第三阶段把空的根变成空的叶子）。
+不放宽校验：条目数为 0 的外部索引节点在 ext4 中是非法的，`e2fsck` 也会报告。
+
+不包含：截断失败后被清零的文件尾部（另一个 Issue），以及盘区插入的其他问题。
+
+依赖与兼容性：无新依赖；不改变磁盘格式，只是不再写出一个非法节点。负责人：提交者。期望季度：2026Q4。
+
+## 测试验证
+
+验收条件：在 `fs/rsext4/tests/file_operations.rs` 新增一个测试，按上面的步骤建出深度为 2 的树并缩小到 100 字节，
+要求操作成功、内容正确、释放的块多于数据块数，并在卸载、重新挂载后再次读取相同内容。
+去掉修复时该测试失败并报告 `extent:empty_index`，加上修复后通过。
+`cargo xtask clippy --package rsext4`、`cargo fmt` 与 `cargo xtask test --since <基准>` 中的 rsext4 测试通过。
+```
+
+### Body (English rendering, for review)
+
+```markdown
+## Current problem
+
+When `truncate_inode` shrinks a file whose extent tree has depth 2, and the new end of file lies
+before the first block a level-1 index node covers, it returns
+`Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }` and the file
+does not shrink.
+
+- Code version: `dev` at `6e80b940d`; rsext4 0.9.2 on crates.io reproduces it too.
+- Environment: an x86_64 Linux host, the nightly `rust-toolchain.toml` names, and the in-memory
+  block device `cargo test -p rsext4 --features host-test` uses.
+- Steps: on a new filesystem, create a file and write one block in every two, 1,500 blocks in all.
+  Each block becomes a single-block extent, and the tree has depth 2 with two level-1 index nodes
+  in its root. Then call `truncate_inode` to shrink the file to 100 bytes.
+- Actual result: the error above, every time. Expected: the shrink succeeds, the file keeps 100
+  bytes, and the second index node and its leaves are freed.
+
+Investigation so far: after phase 2 of `remove_extent` deletes every leaf under an external index
+node, it still writes that node, now with no entries, back to disk. `write_node_to_block`
+validates the node and refuses an index node with 0 entries, so the whole removal fails. The
+parent already deletes and frees a child it sees as empty.
+
+## Proposed change
+
+Scope: in the index branch of `fs/rsext4/src/extents_tree/remove.rs`, an external index node
+whose last child was removed is no longer written back, and the parent removes and frees its block
+as before. The root has no block of its own and keeps its existing handling (phase 3 turns an
+empty root into an empty leaf). The validation stays: an external index node with 0 entries is
+invalid in ext4, and `e2fsck` reports it too.
+
+Out of scope: the file tail a failed truncate leaves zeroed (a separate Issue), and other extent
+insertion problems.
+
+Dependencies and compatibility: no new dependency; the on-disk format does not change, and the
+only difference is that an invalid node is no longer written. Owner: the filer. Target quarter:
+2026Q4.
+
+## Test plan
+
+Acceptance: a new test in `fs/rsext4/tests/file_operations.rs` builds the depth-2 tree as above
+and shrinks it to 100 bytes. It requires the shrink to succeed, the contents to be correct and
+more blocks to be freed than there were data blocks, and reads the same contents again after an
+unmount and a remount. Without the fix the test fails with `extent:empty_index`; with it the test
+passes. `cargo xtask clippy --package rsext4`, `cargo fmt` and the rsext4 tests in
+`cargo xtask test --since <base>` pass.
+```
+
+## Pull request
+
+### Title
+
+```
+fix(rsext4): free an emptied extent index node instead of writing it back
+```
+
+### Body (Chinese, as filed)
+
+```markdown
+## 当前问题
+
+关联 Issue：#<to be filled>
+
+`truncate_inode` 缩小盘区树深度为 2 的文件时，如果新的文件末尾位于某个一级索引节点覆盖的第一个块之前，
+返回 `Corrupted { op: "extent:empty_index" }`。`remove_extent` 的第二阶段删除该索引节点下的全部叶子之后，
+仍然把这个已经没有条目的索引节点写回磁盘；`write_node_to_block` 校验节点时拒绝条目数为 0 的索引节点，
+于是整个缩小操作失败。本 PR 只修复这一点；截断失败后被清零的尾部由另一个 PR 处理。
+
+## 修改方案
+
+一个提交，只改 `fs/rsext4/src/extents_tree/remove.rs` 的索引分支：外部索引节点删除最后一个子节点后不再写回。
+
+- 为什么不写回而不是放宽校验：条目数为 0 的外部索引节点在 ext4 中是非法的，`e2fsck` 也会报告，
+  校验是对的，错误在于写出它。
+- 为什么跳过写回是安全的：父节点看到 `empty` 后会立即删除并释放这个块，写回的内容随后就被丢弃，
+  跳过它不会遗漏任何需要持久化的数据。
+- 根节点没有自己的块，保持原有处理：第三阶段把空的根变成空的叶子。
+
+兼容性：不改变磁盘格式，也不改变任何公开接口；受影响的只有删除盘区时会清空外部索引节点的情况。
+
+## 测试验证
+
+环境：x86_64 Linux 宿主，`rust-toolchain.toml` 指定的 nightly，e2fsprogs 1.47.2。
+
+- 新增测试 `shrinking_extent_inode_past_a_whole_index_node_frees_that_node`
+  （`fs/rsext4/tests/file_operations.rs`）：每隔一个块写一个块，共 1,500 个，建出根节点含两个一级索引节点、
+  深度为 2 的树，再缩小到 100 字节；要求操作成功、数据正确、释放的块多于数据块数，并在卸载、重新挂载后再次读取。
+- `cargo test -p rsext4 --features host-test --test file_operations shrinking_extent_inode_past`：
+  去掉本修复时失败，`shrinking a depth-2 tree must succeed: Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }`；
+  加上修复后通过。
+- `cargo fmt`、`cargo xtask clippy --package rsext4` 通过。
+- `cargo xtask test --since 6e80b940d`：rsext4 只有 `tests/filesystem_growth.rs` 中的两个测试失败，ax-fs-ng 的
+  `root_growth_preserves_other_partitions_and_ext4_contents` 失败，其余全部通过。这三个测试在基准提交上同样失败，
+  原因是宿主的 `mke2fs` 默认启用 `orphan_file`，而扩容拒绝该特性（`fs/rsext4/src/ext4/grow/layout.rs` 的特性检查），
+  与本改动无关。同一次运行中 ax-block 的 6 个 `block::cache` 测试失败（`independent global sync cannot borrow
+  maintenance`）；ax-block 不依赖 rsext4，在同一分支上重跑三次均为 188 个全部通过。
+
+未验证：没有运行 QEMU 或板卡测试，改动只影响宿主测试可以覆盖的 rsext4 行为，不涉及启动路径。
+```
+
+### Body (English rendering, for review)
+
+```markdown
+## Current problem
+
+Linked Issue: #<to be filled>
+
+When `truncate_inode` shrinks a file whose extent tree has depth 2, and the new end of file lies
+before the first block a level-1 index node covers, it returns
+`Corrupted { op: "extent:empty_index" }`. After phase 2 of `remove_extent` deletes every leaf
+under that index node, it still writes the index node, now with no entries, back to disk.
+`write_node_to_block` validates the node and refuses an index node with 0 entries, so the whole
+shrink fails. This pull request fixes only that; another pull request handles the tail a failed
+truncate leaves zeroed.
+
+## Change
+
+One commit, in the index branch of `fs/rsext4/src/extents_tree/remove.rs` alone: an external
+index node whose last child was removed is no longer written back.
+
+- Why skip the write rather than relax the validation: an external index node with 0 entries is
+  invalid in ext4, and `e2fsck` reports it too, so the validation is right and the mistake is
+  writing such a node.
+- Why skipping the write is safe: the parent removes and frees this block as soon as it sees
+  `empty`, so whatever the write stored is discarded at once, and skipping it loses nothing that
+  had to be made durable.
+- The root has no block of its own and keeps its existing handling: phase 3 turns an empty root
+  into an empty leaf.
+
+Compatibility: the on-disk format and every public interface stay the same; the change affects
+only removals that empty an external index node.
+
+## Test results
+
+Environment: an x86_64 Linux host, the nightly `rust-toolchain.toml` names, e2fsprogs 1.47.2.
+
+- New test `shrinking_extent_inode_past_a_whole_index_node_frees_that_node`
+  (`fs/rsext4/tests/file_operations.rs`): it writes one block in every two, 1,500 in all, which
+  builds a depth-2 tree with two level-1 index nodes in its root, and shrinks it to 100 bytes. It
+  requires the shrink to succeed, the data to be correct and more blocks to be freed than there
+  were data blocks, then reads the file again after an unmount and a remount.
+- `cargo test -p rsext4 --features host-test --test file_operations shrinking_extent_inode_past`:
+  without this fix it fails with `shrinking a depth-2 tree must succeed: Ext4Error { kind:
+  Corrupted, context: Some(Operation { op: "extent:empty_index" }) }`; with it, it passes.
+- `cargo fmt` and `cargo xtask clippy --package rsext4` pass.
+- `cargo xtask test --since 6e80b940d`: in rsext4 only two tests in `tests/filesystem_growth.rs`
+  fail, plus ax-fs-ng's `root_growth_preserves_other_partitions_and_ext4_contents`; everything
+  else passes. Those three fail the same way at the base commit, because the host's `mke2fs`
+  enables `orphan_file` by default and growth refuses that feature (the feature check in
+  `fs/rsext4/src/ext4/grow/layout.rs`), so they are unrelated to this change. In the same run 6
+  of ax-block's `block::cache` tests failed (`independent global sync cannot borrow maintenance`);
+  ax-block does not depend on rsext4, and three reruns on the same branch passed all 188.
+
+Not verified: no QEMU or board test ran; the change affects only rsext4 behavior host tests reach,
+and no boot path.
+```
+
+## Test evidence
+
+Run on the base commit above with the patch applied, on an x86_64 Linux host with e2fsprogs
+1.47.2. The test ran with the commit's source change reverted (red), then as committed (green),
+through `cargo test -q -p rsext4 --features host-test --test file_operations <test>`, the profile
+`cargo xtask test` runs for rsext4. Then `cargo xtask clippy --package rsext4` and
+`cargo fmt --check -p rsext4`:
+
+```
+== 8610d52e5 with remove.rs from the base
+thread 'file_functional_tests::shrinking_extent_inode_past_a_whole_index_node_frees_that_node' panicked at fs/rsext4/tests/file_operations.rs:2056:14:
+shrinking a depth-2 tree must succeed: Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 49 filtered out; finished in 2.62s
+== 8610d52e5 as committed
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 49 filtered out; finished in 2.00s
+passed checks: 3, failed checks: 0, skipped checks: 0
+cargo fmt --check -p rsext4: clean
+```
+
+`cargo xtask test --since 6e80b940d` selected 20 packages and exited 1. rsext4 passed 543 tests and
+failed 2, both in `tests/filesystem_growth.rs`; ax-fs-ng failed
+`root_growth_preserves_other_partitions_and_ext4_contents` in two feature profiles. ax-block failed 6 of its `block::cache` tests in that run (`independent global sync cannot
+borrow maintenance`); ax-block does not depend on rsext4, and it passed 188 of 188 in each of three
+reruns on the same branch. Every
+other selected package passed. The growth failures come from this host's `mke2fs.conf`, which
+enables `orphan_file`; `layout.rs`'s feature check refuses any compatible feature outside its
+list. At the base commit the same three tests fail the same way. With `MKE2FS_CONFIG` pointing at a copy of `/etc/mke2fs.conf` without `orphan_file`, they
+pass:
+
+```
+== host mke2fs.conf
+thread 'growth_recovers_commit_checkpoint_and_flush_interruptions' panicked at fs/rsext4/tests/filesystem_growth.rs:562:65:
+thread 'growth_preserves_files_and_exposes_new_groups_to_linux' panicked at fs/rsext4/tests/filesystem_growth.rs:225:5:
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s
+== MKE2FS_CONFIG without orphan_file
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 99.90s
+== ax-fs-ng with MKE2FS_CONFIG without orphan_file
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 222 filtered out; finished in 7.10s
+== ax-fs-ng with the host mke2fs.conf
+thread 'root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents' panicked at fs/ax-fs-ng/src/root/grow.rs:533:17:
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 222 filtered out; finished in 0.19s
+```

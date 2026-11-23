@@ -1,0 +1,245 @@
+From cc8b0ca9702f8d3e27e9c2aee69d4479e6e007fc Mon Sep 17 00:00:00 2001
+From: Chris Alef <476570+calef@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 22:31:02 +0000
+Subject: [PATCH] fix(rsext4): restore the zeroed EOF tail when a
+ single-transaction truncate fails
+
+A shrink zeroes the tail of the block it keeps before it changes any
+mapping, as Linux does. When the metadata transaction that follows
+fails, it rolls back and the file keeps its old size, but the tail
+stayed zeroed, so a failed truncate lost the bytes from the new end of
+file to the end of that block.
+
+The zeroing now returns the bytes it replaced, and the single
+transaction extent and legacy paths write them back when the commit
+fails. A restarted truncate commits in several transactions, an earlier
+one may already be durable, and its tail is left zeroed as before.
+
+The test fails a truncate at its inode write and requires every byte of
+the file to read back unchanged.
+---
+ fs/rsext4/src/file/io/resize.rs    | 24 +++++++---
+ fs/rsext4/src/file/io/zero.rs      | 72 +++++++++++++++++++++++++++---
+ fs/rsext4/tests/file_operations.rs | 37 +++++++++++++++
+ 3 files changed, 122 insertions(+), 11 deletions(-)
+
+diff --git a/fs/rsext4/src/file/io/resize.rs b/fs/rsext4/src/file/io/resize.rs
+index 2cab563d3..40bf3a023 100644
+--- a/fs/rsext4/src/file/io/resize.rs
++++ b/fs/rsext4/src/file/io/resize.rs
+@@ -12,7 +12,7 @@ use super::{
+     transaction::{
+         MetadataTransactionStart, MetadataTransactionStep, finalize_restarted_inode_update,
+     },
+-    zero::zero_mapped_inode_tail,
++    zero::{restore_tail_on_error, zero_mapped_inode_tail, zero_mapped_inode_tail_with_undo},
+     *,
+ };
+ 
+@@ -212,8 +212,13 @@ fn truncate_inode_mapping<B: BlockIo>(
+                 u64::from(u32::MAX) + 1,
+                 &removal,
+             )?;
+-            zero_mapped_inode_tail(device, fs, inode_num, &mut inode, truncate_size)?;
++            let zeroed_tail =
++                zero_mapped_inode_tail_with_undo(device, fs, inode_num, &mut inode, truncate_size)?;
+             if let Some(credit_limit) = restart_limit {
++                // A restarted shrink commits in several transactions, and an
++                // earlier one may already be durable, so its zeroed tail is
++                // not put back.
++                drop(zeroed_tail);
+                 if purpose == TruncatePurpose::UserResize {
+                     begin_restarted_truncate(device, fs, inode_num, &mut inode, truncate_size)?;
+                 }
+@@ -240,7 +245,9 @@ fn truncate_inode_mapping<B: BlockIo>(
+                     )
+                 };
+             } else {
+-                return commit_extent_mapping_removal(
++                // One transaction carries the whole shrink and rolls back on
++                // failure, so the zeroed tail is put back with it.
++                let result = commit_extent_mapping_removal(
+                     device,
+                     fs,
+                     inode_num,
+@@ -252,6 +259,7 @@ fn truncate_inode_mapping<B: BlockIo>(
+                         payload: removal,
+                     },
+                 );
++                return restore_tail_on_error(device, fs, zeroed_tail, result);
+             }
+         }
+ 
+@@ -280,8 +288,11 @@ fn truncate_inode_mapping<B: BlockIo>(
+     // Linux zeros the retained partial EOF block before detaching later
+     // mappings. A corrupt hidden branch therefore still fails during the plan
+     // preflight before any data or metadata is changed.
+-    zero_mapped_inode_tail(device, fs, inode_num, &mut inode, truncate_size)?;
++    let zeroed_tail =
++        zero_mapped_inode_tail_with_undo(device, fs, inode_num, &mut inode, truncate_size)?;
+     if let Some(credit_limit) = restart_limit {
++        // As for extents: a restarted shrink keeps its zeroed tail.
++        drop(zeroed_tail);
+         if purpose == TruncatePurpose::UserResize {
+             begin_restarted_truncate(device, fs, inode_num, &mut inode, truncate_size)?;
+         }
+@@ -308,7 +319,7 @@ fn truncate_inode_mapping<B: BlockIo>(
+             )
+         }
+     } else {
+-        commit_legacy_mapping_removal(
++        let result = commit_legacy_mapping_removal(
+             device,
+             fs,
+             inode_num,
+@@ -319,7 +330,8 @@ fn truncate_inode_mapping<B: BlockIo>(
+                 start: MetadataTransactionStart::Join,
+                 payload: transaction,
+             },
+-        )
++        );
++        restore_tail_on_error(device, fs, zeroed_tail, result)
+     }
+ }
+ 
+diff --git a/fs/rsext4/src/file/io/zero.rs b/fs/rsext4/src/file/io/zero.rs
+index 348472067..6217118ce 100644
+--- a/fs/rsext4/src/file/io/zero.rs
++++ b/fs/rsext4/src/file/io/zero.rs
+@@ -69,18 +69,80 @@ pub(super) fn zero_mapped_inode_tail<B: BlockIo>(
+     inode: &mut Ext4Inode,
+     size: u64,
+ ) -> Ext4Result<()> {
++    zero_mapped_inode_tail_with_undo(device, fs, inode_num, inode, size).map(drop)
++}
++
++/// The bytes that zeroing a retained EOF block replaced.
++///
++/// A shrink zeroes the tail of the block it keeps before it changes any
++/// mapping, as Linux does. When the metadata transaction that follows fails
++/// and rolls back, the file keeps its old size, so these bytes are visible
++/// again and must be put back.
++pub(super) struct ZeroedTail {
++    physical: AbsoluteBN,
++    offset: usize,
++    bytes: Vec<u8>,
++}
++
++impl ZeroedTail {
++    /// Writes the replaced bytes back into the cached block.
++    pub(super) fn restore<B: BlockIo>(
++        self,
++        device: &mut Jbd2Dev<B>,
++        fs: &mut Ext4FileSystem,
++    ) -> Ext4Result<()> {
++        fs.datablock_cache.modify(device, self.physical, |block| {
++            block[self.offset..].copy_from_slice(&self.bytes)
++        })
++    }
++}
++
++/// Zeroes the retained EOF block's tail and returns what it replaced.
++pub(super) fn zero_mapped_inode_tail_with_undo<B: BlockIo>(
++    device: &mut Jbd2Dev<B>,
++    fs: &mut Ext4FileSystem,
++    inode_num: InodeNumber,
++    inode: &mut Ext4Inode,
++    size: u64,
++) -> Ext4Result<Option<ZeroedTail>> {
+     let block_size = fs.block_size();
+     let block_bytes = block_size as u64;
+     let tail_offset = size % block_bytes;
+     if tail_offset == 0 {
+-        return Ok(());
++        return Ok(None);
+     }
+ 
+     let logical = u32::try_from(size / block_bytes).map_err(|_| Ext4Error::file_too_large())?;
+     let Some(physical) = resolve_inode_block(fs, device, inode_num, inode, logical)? else {
+-        return Ok(());
++        return Ok(None);
+     };
+-    let tail_offset = usize::try_from(tail_offset).map_err(|_| Ext4Error::overflow())?;
+-    fs.datablock_cache
+-        .modify(device, physical, |block| block[tail_offset..].fill(0))
++    let offset = usize::try_from(tail_offset).map_err(|_| Ext4Error::overflow())?;
++    let mut bytes = Vec::new();
++    fs.datablock_cache.modify(device, physical, |block| {
++        bytes.extend_from_slice(&block[offset..]);
++        block[offset..].fill(0);
++    })?;
++    Ok(Some(ZeroedTail {
++        physical,
++        offset,
++        bytes,
++    }))
++}
++
++/// Puts a zeroed tail back when the shrink that zeroed it failed.
++///
++/// The shrink's own error is the one returned; a failure to restore the bytes
++/// cannot be reported in its place without hiding why the shrink failed.
++pub(super) fn restore_tail_on_error<B: BlockIo, T>(
++    device: &mut Jbd2Dev<B>,
++    fs: &mut Ext4FileSystem,
++    zeroed_tail: Option<ZeroedTail>,
++    result: Ext4Result<T>,
++) -> Ext4Result<T> {
++    if result.is_err()
++        && let Some(zeroed_tail) = zeroed_tail
++    {
++        let _ = zeroed_tail.restore(device, fs);
++    }
++    result
+ }
+diff --git a/fs/rsext4/tests/file_operations.rs b/fs/rsext4/tests/file_operations.rs
+index 1575fc513..0290ff921 100644
+--- a/fs/rsext4/tests/file_operations.rs
++++ b/fs/rsext4/tests/file_operations.rs
+@@ -2016,6 +2016,43 @@ mod file_functional_tests {
+         assert!(data.iter().all(|&byte| byte == 0));
+     }
+ 
++    #[test]
++    fn failed_extent_truncate_restores_the_zeroed_tail_of_the_retained_block() {
++        let (device, fail_after_write_sector) =
++            MockBlockDevice::with_write_failure_handle(100 * 1024 * 1024);
++        let mut jbd2_dev = Jbd2Dev::initial_jbd2dev(0, device, true);
++
++        mkfs(&mut jbd2_dev).expect("mkfs failed");
++        let mut fs = Ext4FileSystem::mount(&mut jbd2_dev).expect("mount failed");
++        mkfile(&mut jbd2_dev, &mut fs, "/extent-truncate-tail", None, None)
++            .expect("file creation failed");
++        let original: Vec<u8> = (0..2 * BLOCK_SIZE).map(|i| (i % 251) as u8 + 1).collect();
++        write_file(
++            &mut jbd2_dev,
++            &mut fs,
++            "/extent-truncate-tail",
++            0,
++            &original,
++        )
++        .unwrap();
++        jbd2_dev.umount_commit().unwrap();
++        jbd2_dev.set_journal_use(false).unwrap();
++        let inode_table = fs.group_descs[0].inode_table();
++
++        fail_after_write_sector.set(Some(inode_table));
++        let error = truncate(&mut jbd2_dev, &mut fs, "/extent-truncate-tail", 100)
++            .expect_err("inode finalize failure must abort the extent truncate");
++        assert_eq!(error.kind(), Ext4ErrorKind::Io);
++
++        let data = read_file(&mut jbd2_dev, &mut fs, "/extent-truncate-tail").unwrap();
++        assert_eq!(data.len(), original.len());
++        let first_changed = data.iter().zip(&original).position(|(now, was)| now != was);
++        assert_eq!(
++            first_changed, None,
++            "a failed truncate must leave every byte of the file as it was"
++        );
++    }
++
+     #[test]
+     fn deleting_fast_symlink_does_not_treat_inline_bytes_as_indirect_blocks() {
+         let device = MockBlockDevice::new(100 * 1024 * 1024);
+-- 
+2.53.0
+

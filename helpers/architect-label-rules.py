@@ -34,9 +34,9 @@ yields it, and drops one in a file that an open pull request carrying `architect
 
 # The six rules (the brief's wording; this file is the one place that has to agree with it)
 
-1. **abi-surface**: an object type, method number or system call number moved under `crates/abi/`.
+1. **abi-surface**: an object type, method number or system call number moved under `crates/moho_abi/`.
    Detected as any changed `pub const NAME: <int type> = ...` line under that path. Broad on
-   purpose: `crates/abi/src/lib.rs` also declares rights bitflags and the register convention's
+   purpose: `crates/moho_abi/src/lib.rs` also declares rights bitflags and the register convention's
    constants the same way, so this also fires on those (see BUGS). A false positive there costs a
    human one look; a system call number landing unlabelled costs more. A removed `pub const A: T = V`
    paired with an added `pub const B: T = V` (same type, same value) is a rename and does not fire;
@@ -214,6 +214,13 @@ by design: #2416's handoff crosses a live swap and #2512's page is read by publi
 
 # BUGS
 
+- **abi-surface reads a path the crate has left.** The binary interface lives in its own
+  repository, `nifeos/moho_abi`, and reaches this tree as a bump of a pinned `rev`, which rule 2
+  exempts as a pinned first-party git dependency. A pull request that moves the pin to a commit that
+  changed a system call number therefore fires nothing here, and `helpers/format_values_check.py`'s
+  second case reads the same path. The crate's own counting test and its repository's review are
+  what see the number move. Milestone 1075 (`abi`: what an outside maintainer would fix before the
+  move) records the gap.
 - **decisions still fires on a rename sweep, an emphasis sweep, a line citation turned anchor, and
   an unbackticked path.** Measured 2026-10-11 (UTC) over 75 merges: 6, 26, 3 and 4 file firings
   (the section above names them). The first is deliberate: calef's 2026-10-11 ruling covered link
@@ -557,7 +564,7 @@ class Context:
         self.renames = diff_renames(files)
 
 
-# ---- rule 1: crates/abi -------------------------------------------------------------------------
+# ---- rule 1: crates/moho_abi --------------------------------------------------------------------
 
 ABI_CONST_RE = re.compile(
     r'^\s*pub const [A-Za-z_][A-Za-z0-9_]*\s*:\s*(u8|u16|u32|u64|usize|i8|i16|i32|i64|isize)\b')
@@ -608,7 +615,7 @@ def unpaired_const_changes(fd, const_re, renames=None):
 
 
 def rule_abi_surface(fd, out, ctx):
-    if not (fd['path'].startswith('crates/abi/') and fd['path'].endswith('.rs')):
+    if not (fd['path'].startswith('crates/moho_abi/') and fd['path'].endswith('.rs')):
         return
     if code_unchanged(fd, ctx.renames):
         return
@@ -1335,9 +1342,9 @@ KNOWN_BASE = KnownDeps(
 
 FIXTURES = [
     ("abi: a new object type constant fires", """\
-diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
---- a/crates/abi/src/lib.rs
-+++ b/crates/abi/src/lib.rs
+diff --git a/crates/moho_abi/src/lib.rs b/crates/moho_abi/src/lib.rs
+--- a/crates/moho_abi/src/lib.rs
++++ b/crates/moho_abi/src/lib.rs
 @@ -1,4 +1,5 @@
  pub mod object_type {
      pub const RENDEZVOUS: u64 = 1;
@@ -1347,16 +1354,16 @@ diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
 """, 'abi-surface'),
 
     ("abi: a doc comment change alone stays quiet", """\
-diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
---- a/crates/abi/src/lib.rs
-+++ b/crates/abi/src/lib.rs
+diff --git a/crates/moho_abi/src/lib.rs b/crates/moho_abi/src/lib.rs
+--- a/crates/moho_abi/src/lib.rs
++++ b/crates/moho_abi/src/lib.rs
 @@ -1,3 +1,3 @@
 -/// old wording
 +/// new wording, no number moved
  pub const SYSTEM_CALL_EXIT: u64 = 0;
 """, None),
 
-    ("abi: outside crates/abi, the same const shape stays quiet", """\
+    ("abi: outside crates/moho_abi, the same const shape stays quiet", """\
 diff --git a/crates/other/src/lib.rs b/crates/other/src/lib.rs
 --- a/crates/other/src/lib.rs
 +++ b/crates/other/src/lib.rs
@@ -1366,9 +1373,9 @@ diff --git a/crates/other/src/lib.rs b/crates/other/src/lib.rs
 """, None),
 
     ("abi: a rename with the same type and value stays quiet", """\
-diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
---- a/crates/abi/src/lib.rs
-+++ b/crates/abi/src/lib.rs
+diff --git a/crates/moho_abi/src/lib.rs b/crates/moho_abi/src/lib.rs
+--- a/crates/moho_abi/src/lib.rs
++++ b/crates/moho_abi/src/lib.rs
 @@ -1,3 +1,3 @@
  pub mod method {
 -    pub const RECV: u64 = 1;
@@ -1377,9 +1384,9 @@ diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
 """, None),
 
     ("abi: a renamed constant whose value also changed fires", """\
-diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
---- a/crates/abi/src/lib.rs
-+++ b/crates/abi/src/lib.rs
+diff --git a/crates/moho_abi/src/lib.rs b/crates/moho_abi/src/lib.rs
+--- a/crates/moho_abi/src/lib.rs
++++ b/crates/moho_abi/src/lib.rs
 @@ -1,3 +1,3 @@
  pub mod method {
 -    pub const RECV: u64 = 1;
@@ -1388,9 +1395,9 @@ diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
 """, 'abi-surface'),
 
     ("abi: a changed value under the same name fires", """\
-diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
---- a/crates/abi/src/lib.rs
-+++ b/crates/abi/src/lib.rs
+diff --git a/crates/moho_abi/src/lib.rs b/crates/moho_abi/src/lib.rs
+--- a/crates/moho_abi/src/lib.rs
++++ b/crates/moho_abi/src/lib.rs
 @@ -1,3 +1,3 @@
  pub mod method {
 -    pub const SEND: u64 = 0;
@@ -1399,9 +1406,9 @@ diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
 """, 'abi-surface'),
 
     ("abi: a rename paired with an extra added constant still fires for the extra", """\
-diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
---- a/crates/abi/src/lib.rs
-+++ b/crates/abi/src/lib.rs
+diff --git a/crates/moho_abi/src/lib.rs b/crates/moho_abi/src/lib.rs
+--- a/crates/moho_abi/src/lib.rs
++++ b/crates/moho_abi/src/lib.rs
 @@ -1,3 +1,4 @@
  pub mod method {
 -    pub const RECV: u64 = 1;
@@ -1411,9 +1418,9 @@ diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
 """, 'abi-surface'),
 
     ("abi: a removed constant with no added partner fires", """\
-diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
---- a/crates/abi/src/lib.rs
-+++ b/crates/abi/src/lib.rs
+diff --git a/crates/moho_abi/src/lib.rs b/crates/moho_abi/src/lib.rs
+--- a/crates/moho_abi/src/lib.rs
++++ b/crates/moho_abi/src/lib.rs
 @@ -1,3 +1,2 @@
  pub mod method {
 -    pub const RECV: u64 = 1;
@@ -2253,7 +2260,7 @@ diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
 
 # (report line, a phrase its question must contain): one per rule, plus the unexamined case.
 ASK_FIXTURES = [
-    ("abi-surface: crates/abi/src/lib.rs: pub const NOTIFICATION: u64 = 8;", "system call number"),
+    ("abi-surface: crates/moho_abi/src/lib.rs: pub const NOTIFICATION: u64 = 8;", "system call number"),
     ("dependency: fuzz/Cargo.toml: brand_new 1.0", "taking `brand_new 1.0` as a dependency"),
     ("format-crate: crates/network_time_protocol/src/lib.rs: // the offset",
      "the bytes of `network_time_protocol`'s format"),

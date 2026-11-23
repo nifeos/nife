@@ -16,9 +16,10 @@ before the signaling stratum was built, and mostly abolished it. The reason is o
 already made without anybody reading it back:
 
 - a survey returns a tid, which is a name and not a capability;
-- `abi::tcb` has no `DESTROY`, so there is no method that takes a tid and ends the thread;
-- killing a live child is `abi::untyped::DESTROY` on the region it was built from (DECISIONS §24's
-  forcible `^C`), held by whoever spawned it, which is the shell and not a monitor.
+- `moho_abi::tcb` has no `DESTROY`, so there is no method that takes a tid and ends the thread;
+- killing a live child is `moho_abi::untyped::DESTROY` on the region it was built from (the forcible
+  `^C` of DECISIONS §24 (interrupting the foreground process)), held by whoever spawned it,
+  which is the shell and not a monitor.
 
 So `pkill` cannot be assembled out of a view here. Making a domain confer control would be the one
 place this system copied the thing it exists to refuse.

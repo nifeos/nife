@@ -81,14 +81,14 @@ pub fn create_notification_from(region: u64) -> Option<NotificationId> {
 
 /// The mailbox of a receive the bound notification ended, `(BOUND, word, 0, 0, BOUND)`: §101's
 /// `w0 = 2`, the word in `w1`, and the tag again in `w4`, the one register no sender can write (see
-/// `abi::notification::BOUND`, and notes/notification-objects.md for why `w0` alone is forgeable).
+/// `moho_abi::notification::BOUND`, and notes/notification-objects.md for why `w0` alone is forgeable).
 pub(super) const fn bound_delivery(word: u64) -> [u64; 5] {
     [
-        abi::notification::BOUND,
+        moho_abi::notification::BOUND,
         word,
         0,
         0,
-        abi::notification::BOUND,
+        moho_abi::notification::BOUND,
     ]
 }
 
@@ -177,9 +177,9 @@ pub(super) fn signal_locked(
     id: NotificationId,
     bits: u64,
     placement: WakePlacement,
-) -> Result<Option<usize>, abi::Error> {
+) -> Result<Option<usize>, moho_abi::Error> {
     use inter_process_communication::notification::SignalVerdict;
-    let page = notification_of(sched, id).ok_or(abi::Error::Gone)?;
+    let page = notification_of(sched, id).ok_or(moho_abi::Error::Gone)?;
     let bound = bound_receiver(sched, page);
     match page.state.signal(bits, bound.is_some()) {
         SignalVerdict::Woke(waiter, word) => {
@@ -203,7 +203,7 @@ pub(super) fn signal_locked(
 }
 
 /// `Notification::SIGNAL`: OR `bits` in, waking a waiter or the bound receiver. Never blocks.
-pub fn notification_signal(id: NotificationId, bits: u64) -> Result<(), abi::Error> {
+pub fn notification_signal(id: NotificationId, bits: u64) -> Result<(), moho_abi::Error> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
     // A local wake never returns a core to poke.
@@ -233,13 +233,13 @@ pub fn signal_notification_from_interrupt(id: NotificationId, bits: u64) {
 
 /// `Notification::WAIT`: take the word, or block until a signal arrives. `Err(Gone)` if the
 /// notification is stale or destroyed while this thread waits (the region sweep aborts waiters).
-pub fn notification_wait(id: NotificationId) -> Result<u64, abi::Error> {
+pub fn notification_wait(id: NotificationId) -> Result<u64, moho_abi::Error> {
     use inter_process_communication::notification::WaitVerdict as Waited;
     let immediate = {
         let mut guard = IPC_TABLES.lock();
         let sched = guard.as_mut().expect("no scheduler");
         let current = current_thread_id();
-        let page = notification_of(sched, id).ok_or(abi::Error::Gone)?;
+        let page = notification_of(sched, id).ok_or(moho_abi::Error::Gone)?;
         // A queued token stays live: the reaper never frees a `Blocked` thread.
         match page.state.wait(take_token(sched, current)) {
             Waited::Word(word, me) => {
@@ -269,16 +269,16 @@ pub fn notification_wait(id: NotificationId) -> Result<u64, abi::Error> {
         "notification wait resumed with nothing delivered"
     );
     if t.handshake.take_aborted() {
-        return Err(abi::Error::Gone);
+        return Err(moho_abi::Error::Gone);
     }
     Ok(t.mailbox[0])
 }
 
 /// `Notification::POLL`: take the word without blocking; `0` if nothing was pending.
-pub fn notification_poll(id: NotificationId) -> Result<u64, abi::Error> {
+pub fn notification_poll(id: NotificationId) -> Result<u64, moho_abi::Error> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
-    let page = notification_of(sched, id).ok_or(abi::Error::Gone)?;
+    let page = notification_of(sched, id).ok_or(moho_abi::Error::Gone)?;
     Ok(page.state.try_wait())
 }
 
@@ -287,21 +287,21 @@ pub fn notification_poll(id: NotificationId) -> Result<u64, abi::Error> {
 /// `Gone` if the notification is stale or the thread is gone or dead; `NotPermitted` if either side
 /// is bound to something that still exists. A word already waiting is delivered at once if the
 /// thread is receiving, or a server blocked forever in `RECEIVE` would never see it.
-pub fn notification_bind(id: NotificationId, tid: ThreadId) -> Result<(), abi::Error> {
+pub fn notification_bind(id: NotificationId, tid: ThreadId) -> Result<(), moho_abi::Error> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
-    let page = notification_of(sched, id).ok_or(abi::Error::Gone)?;
+    let page = notification_of(sched, id).ok_or(moho_abi::Error::Gone)?;
     if page.bound.is_some_and(|b| sched.threads.get(b).is_some()) {
-        return Err(abi::Error::NotPermitted);
+        return Err(moho_abi::Error::NotPermitted);
     }
-    let t = sched.threads.get(tid).ok_or(abi::Error::Gone)?;
+    let t = sched.threads.get(tid).ok_or(moho_abi::Error::Gone)?;
     if matches!(t.handshake.state, State::Finished | State::Dead) {
-        return Err(abi::Error::Gone);
+        return Err(moho_abi::Error::Gone);
     }
     if t.bound_notification
         .is_some_and(|n| notification_of(sched, n).is_some())
     {
-        return Err(abi::Error::NotPermitted);
+        return Err(moho_abi::Error::NotPermitted);
     }
     page.bound = Some(tid);
     sched

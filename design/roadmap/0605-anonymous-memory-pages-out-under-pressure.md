@@ -114,7 +114,7 @@ does not discuss it, and only Hurd IRC logs mention a "concern about deadlocks".
 `sched::fault`, which calls `depart` and never resumes the thread. No faulted thread ever reruns its faulting instruction. That is three handlers and the scheduler's
 departure path.
 
-**Giving up a mapping.** There is no unmap. `crates/abi`'s `address_space` has `MAP_INTO` and
+**Giving up a mapping.** There is no unmap. `crates/moho_abi`'s `address_space` has `MAP_INTO` and
 `LIST`; `page_frame` has `MAP` and `REVOKE`. `REVOKE` on an ordinary frame unmaps it everywhere and
 deletes every capability to it, the caller's own included, so a pager that used it to evict would
 lose the frame it meant to reuse. On a `DeviceFrame` the same method keeps the caller's own

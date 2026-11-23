@@ -101,7 +101,7 @@ requests (titles, branches, files and bodies as GitHub has them); their states a
 | PR | state given | right action |
 |---|---|---|
 | #1264 | green, briefed, script only | merge |
-| #1087 | green, briefed, touches `crates/abi` | hold: system call surface |
+| #1087 | green, briefed, touches `crates/moho_abi` | hold: system call surface |
 | #1287 | green, briefed, adds `design/decisions/218` | hold: a decisions section |
 | #1244 | riscv64 check red, no push for five hours | do not merge; raise as stalled |
 | #1263 | green, not briefed this session | do not merge; leave to the maintainer |

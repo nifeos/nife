@@ -9,7 +9,7 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-abi = { version = "0.1.0", path = "../abi" }
+moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
 ps = { version = "0.1.0", path = "../ps" }
 uptime = { version = "0.1.0", path = "../uptime" }
 machine_statistics_contract = { version = "0.1.0", path = "../machine_statistics_contract" }

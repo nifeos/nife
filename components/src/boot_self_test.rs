@@ -267,8 +267,8 @@ fn images() -> Images {
 /// A timer and a notification bound to this thread, or `None` when they cannot be made, in which
 /// case a receive here has no deadline.
 fn deadline() -> Option<Deadline> {
-    let notification = retype_into_kernel_object(slot::BUDGET, abi::object_type::NOTIFICATION);
-    let timer = retype_into_kernel_object(slot::BUDGET, abi::object_type::TIMER);
+    let notification = retype_into_kernel_object(slot::BUDGET, moho_abi::object_type::NOTIFICATION);
+    let timer = retype_into_kernel_object(slot::BUDGET, moho_abi::object_type::TIMER);
     if notification < 0 || timer < 0 {
         return None;
     }
@@ -371,7 +371,7 @@ impl Child {
     fn state(&self) -> u64 {
         let (r, tid, state) = survey(self.supervisor, 0);
         if r < 0 || tid != self.tid {
-            abi::survey::DEAD
+            moho_abi::survey::DEAD
         } else {
             state
         }
@@ -380,7 +380,7 @@ impl Child {
     /// **Wait up to `seconds` for the child to die, then take its death message**: event, thread,
     /// pc and address. `None` while it is still alive.
     fn death(&self, seconds: u64) -> Option<Death> {
-        if !wait_until(seconds, || self.state() == abi::survey::DEAD) {
+        if !wait_until(seconds, || self.state() == moho_abi::survey::DEAD) {
             return None;
         }
         // A corpse parked as the endpoint's sender makes this return at once.
@@ -424,8 +424,8 @@ fn spawn(
     let region = process_builder::memory_region_split(slot::BUDGET, pages)
         .map_err(|_| "no region for it in this program's budget")?;
     let endpoints = (
-        process_builder::retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS),
-        process_builder::retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS),
+        process_builder::retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS),
+        process_builder::retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS),
     );
     let (Ok(supervisor), Ok(report)) = endpoints else {
         end_region(region);
@@ -441,7 +441,7 @@ fn spawn(
     let mut capabilities = [(0u64, 0u64); 4];
     for (to, g) in capabilities.iter_mut().zip(grants) {
         *to = match *g {
-            Grant::Report => (report, abi::rights::WRITE),
+            Grant::Report => (report, moho_abi::rights::WRITE),
             Grant::Ours(s, rights) => (s, rights),
         };
     }
@@ -515,7 +515,7 @@ fn userspace(r: &mut Report, half: &KernelHalf, images: &Images) {
         );
         return;
     };
-    let faulted = event == abi::fault::EVENT_FAULT;
+    let faulted = event == moho_abi::fault::EVENT_FAULT;
     let collected = child.collect();
     r.record(
         check!("userspace"),
@@ -561,7 +561,10 @@ fn budget(r: &mut Report, images: &Images, d: Option<&Deadline>) {
         return;
     };
     // The depleter's slot 0 is the region it spends and slot 1 its report endpoint.
-    let grants = [Grant::Ours(spend, abi::rights::SPEND_ONLY), Grant::Report];
+    let grants = [
+        Grant::Ours(spend, moho_abi::rights::SPEND_ONLY),
+        Grant::Report,
+    ];
     let outcome = spawn(bytes, &grants, &[], [0; 3]).map(|child| {
         let ready = receive_within(child.report, 2, d).map(|_| free_frames());
         let done = ready.and_then(|before| {
@@ -643,8 +646,10 @@ fn supervised(r: &mut Report, images: &Images) {
         let (start, end) = s.page_range(process_builder::PAGE_BYTES);
         s.is_executable() && (start..end).contains(&pc)
     });
-    let ok =
-        event == abi::fault::EVENT_FAULT && tid == child && in_code && address == UNMAPPED_ADDRESS;
+    let ok = event == moho_abi::fault::EVENT_FAULT
+        && tid == child
+        && in_code
+        && address == UNMAPPED_ADDRESS;
     r.record(
         check!("supervised"),
         ok,
@@ -726,19 +731,20 @@ fn block_device(
         );
         return;
     }
-    let offset = abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET;
+    let offset =
+        moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET;
     // SAFETY: just mapped read-only, one page; the offset is its last word, which the kernel wrote.
     let physical = unsafe { core::ptr::read_volatile((DISK_DMA_PEEK_VA + offset) as *const u64) };
     // `block_driver`'s slots: 0 its report, 1 the interrupt, 2 the transport.
     let grants = [
         Grant::Report,
-        Grant::Ours(slot::DISK_INTERRUPT, abi::rights::READ),
-        Grant::Ours(slot::DISK_TRANSPORT, abi::rights::WRITE),
+        Grant::Ours(slot::DISK_INTERRUPT, moho_abi::rights::READ),
+        Grant::Ours(slot::DISK_TRANSPORT, moho_abi::rights::WRITE),
     ];
     let maps = [(
         BLOCK_DRIVER_DMA_VA,
         slot::DISK_DIRECT_MEMORY_ACCESS,
-        abi::address_space::MAP_READ_WRITE,
+        moho_abi::address_space::MAP_READ_WRITE,
     )];
     let child = match spawn(bytes, &grants, &maps, [BLOCK_DRIVER_READ_ROLE, physical, 0]) {
         Ok(c) => c,

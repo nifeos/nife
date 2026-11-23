@@ -5,7 +5,7 @@
 `kernel/src/system_call.rs` and its children under `kernel/src/system_call/` are the whole of what a user
 program can ask the kernel for. This note carries the design those files' doc comments link to. The
 semantics of each method are recorded in `design/decisions/`, and the wire contract is in
-`crates/abi`.
+`nifeos/moho_abi`.
 
 ## The surface
 
@@ -180,7 +180,7 @@ the top of the parent's watermark, so `destroy` returns its pages and the parent
 `SURVEY`'s `record` argument selects which per-thread fact comes back in x2, so x0 and x1 are the
 same for every record (calef, 2026-09-21). Linux reached 52 fields through a pseudo-file and Zircon
 41 topics through a selector; nobody grows a register row. `record::STATE` is 0, so a caller written
-before the selector keeps working, and `abi`'s own tests assert it.
+before the selector keeps working, and `moho_abi`'s own tests assert it.
 [process-view/survey-design.md](process-view/survey-design.md) has the placement record's authority
 argument against §150 (how does a thread's CPU time reach userspace?).
 

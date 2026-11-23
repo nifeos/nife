@@ -1,5 +1,5 @@
 //! **`ps`: who else is running, and who is allowed to ask** (notes/process-view.md). Walk one
-//! supervision domain with `abi::rendezvous::SURVEY`, say what it found on one stream and what went
+//! supervision domain with `moho_abi::rendezvous::SURVEY`, say what it found on one stream and what went
 //! wrong on the other. The listing is `crates/ps`, host-tested; this is the system call and two sinks.
 //!
 //! **It cannot enumerate the machine.** A Unix `ps` reads an ambient `/proc`. This holds a
@@ -74,8 +74,8 @@ static HAS_DIAG: AtomicBool = AtomicBool::new(false);
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
 interfaces_note::carry_interfaces!(&[
     interfaces_note::DeclaredInterface {
-        id: abi::INTERFACE_ID,
-        version: abi::ABI_VERSION
+        id: moho_abi::INTERFACE_ID,
+        version: moho_abi::ABI_VERSION
     },
     interfaces_note::DeclaredInterface {
         id: address_space_layout::INTERFACE_ID,
@@ -148,12 +148,12 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // makes possible)): `SURVEY` answers one record per call, so the two facts are two walks joined
     // on the tid, over the same endpoint and right as the listing above.
     found.join_cpu_time(&mut |cursor| {
-        survey_record(DOMAIN_SLOT, cursor, abi::survey::record::CPU_TIME)
+        survey_record(DOMAIN_SLOT, cursor, moho_abi::survey::record::CPU_TIME)
     });
     // **And `PROC` and `THR` are a third** (milestone 942 (`ps` and `top` show which process each thread belongs to), §313 (`ENUMERATE` on a domain covers which of its threads share a process)): the process label, over the same
     // endpoint and right. The count is computed here from the rows, so the kernel exposes none.
     found.join_process(&mut |cursor| {
-        survey_record(DOMAIN_SLOT, cursor, abi::survey::record::PROCESS)
+        survey_record(DOMAIN_SLOT, cursor, moho_abi::survey::record::PROCESS)
     });
 
     found.write_diagnostics(&mut |bytes| write_on(diag_slot(), bytes));

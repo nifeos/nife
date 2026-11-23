@@ -11,7 +11,7 @@ the byte layout is in the crate's module documentation. This page states what th
 ## What it is for
 
 A program links shared crates that define formats another, separately released part
-reads at run time: the system call numbers (`abi`), the clock page (`clock_contract`), the sink framing
+reads at run time: the system call numbers (`moho_abi`), the clock page (`clock_contract`), the sink framing
 (`byte_sink_contract`) and so on. Once a package leaves this repository, a program and the system
 that runs it may come from different commits. The note is how a program says, inside its own
 bytes, which version of each such format it expects, so the other side can check.
@@ -48,7 +48,7 @@ that a decoded list encodes back to its bytes and that decoding never panics.
 ## The id table
 
 Every interface owns a number for good. The one table is the "Interface ids" section of the
-milestone's block: `abi` is 1, `address_space_layout` 2, `machine_statistics_contract` 4,
+milestone's block: `moho_abi` is 1, `address_space_layout` 2, `machine_statistics_contract` 4,
 `byte_sink_contract` 6, `capability_manifest_note` 7, `clock_contract` 8, and so on to
 `user_mode_runtime` at 20 and `interfaces_note` at 21; 3 stays retired (it named `byte_glob`). An interface is the module that holds
 `INTERFACE_ID`, so `file_system_contract` holds two, `blk` at 14 and `fs` at 15. A new interface
@@ -69,7 +69,7 @@ The kernel does not read this note; nothing under `kernel/` names it. The progen
 `crates/system_initializer/src/image_request.rs`, function `serves_declared_abi`, which
 `endowed_image` in the same file calls after decoding the manifest note. It finds the note by owner
 `nife` and type 4. No note passes. A note that does not decode refuses. For a note that decodes, the
-progenitor calls `check_served(abi::INTERFACE_ID, abi::ABI_VERSION)`: an entry for id 1 that is not the
+progenitor calls `check_served(moho_abi::INTERFACE_ID, moho_abi::ABI_VERSION)`: an entry for id 1 that is not the
 served version refuses, and a list with no entry for id 1 passes. The progenitor compares only the ABI entry.
 
 A refusal makes `endowed_image` return `None`. The spawn loop
@@ -120,7 +120,7 @@ which names exactly the `programs` of `packages/process-tools.package.toml`,
 
 ## A worked example: `uptime`
 
-`components/src/uptime.rs` declares ten interfaces, each at version 1: `abi` (1),
+`components/src/uptime.rs` declares ten interfaces, each at version 1: `moho_abi` (1),
 `address_space_layout` (2), `byte_sink_contract` (6), `clock_contract` (8),
 `counter_frequency_contract` (9), `current_cpu_contract` (10), `entropy_contract` (12),
 `socket_contract` (19), `user_mode_runtime` (20) and `interfaces_note` (21). It carries no manifest note of its own, so this
@@ -137,7 +137,7 @@ descriptor of `8 + 10 * 12` = 128 bytes. Built for `aarch64-unknown-none-softflo
 
 and the eight records after run 6, 8, 9, 10, 12, 19 (`0x13`), 20 (`0x14`) and 21 (`0x15`), each at
 version 1.
-Sent to the progenitor as a file, those bytes pass while `abi::ABI_VERSION` is 1. A progenitor
+Sent to the progenitor as a file, those bytes pass while `moho_abi::ABI_VERSION` is 1. A progenitor
 built with any other value answers `SPAWN_REFUSED_BY_MANIFEST`.
 
 ## Not verified here

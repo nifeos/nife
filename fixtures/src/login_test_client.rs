@@ -484,7 +484,9 @@ fn prove_run_unvouched(behavior: u64, ru: u64) -> u64 {
         send(ru, RUN_UNVOUCHED_MAGIC, 0, 0);
         flags |= F_RUN_UNVOUCHED_WORKS;
     }
-    if send_capability(REPORT, ru, abi::rights::WRITE, 0) == abi::Error::NotPermitted as i64 {
+    if send_capability(REPORT, ru, moho_abi::rights::WRITE, 0)
+        == moho_abi::Error::NotPermitted as i64
+    {
         flags |= F_RUN_UNVOUCHED_NOT_GRANTABLE;
     }
     flags
@@ -497,7 +499,7 @@ fn hold_pending_work(budget: u64) -> u64 {
     let mut flags = 0u64;
     let job = split_memory_region(budget, PENDING_JOB_PAGES);
     if job >= 0 {
-        if destroy_memory_region(budget) == abi::Error::NotPermitted as i64 {
+        if destroy_memory_region(budget) == moho_abi::Error::NotPermitted as i64 {
             flags |= F_LOGOUT_REFUSED_WHILE_PENDING;
         }
         if retype_into_page_frame(budget) >= 0 {
@@ -576,7 +578,7 @@ fn schedule(behaviour: u64, budget: u64, dir: u64) -> u64 {
         flags |= F_TIMETABLE_EXITED;
     }
     // Both detach with the session still standing, so the budget must refuse to come down.
-    if destroy_memory_region(budget) == abi::Error::NotPermitted as i64 {
+    if destroy_memory_region(budget) == moho_abi::Error::NotPermitted as i64 {
         flags |= F_LOGOUT_REFUSED_WHILE_PENDING;
     }
     flags

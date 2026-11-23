@@ -34,7 +34,7 @@ retyped from the client's own budget gives it the second. `ipc_recv_cap` install
 and returns its slot in `x1`. `user_mode_runtime::reply` is `invoke(slot, abi::reply::REPLY, ..)`
 and `REPLY` is `0`, which is `SEND` on a rendezvous, `SIGNAL` on a notification, `ARM` on a timer,
 `MAP` on a region or frame, `MAP_INTO` on an address space, `CONFIGURE` on a thread control block
-and `WAIT` on an interrupt (`crates/abi`). `components/src/compositor.rs` calls
+and `WAIT` on an interrupt (`crates/moho_abi`). `components/src/compositor.rs` calls
 `reply(reply_slot, ..)` with no guard; `components/src/net_stack.rs` guards `NO_CAP` only.
 
 So a client that `SEND_CAP`s its own rendezvous parks the server in `SEND` for the life of the

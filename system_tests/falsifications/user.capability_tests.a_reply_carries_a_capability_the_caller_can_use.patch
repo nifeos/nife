@@ -23,9 +23,9 @@ index c59bccd96..554ccf9f0 100644
 --- a/kernel/src/sched/rendezvous.rs
 +++ b/kernel/src/sched/rendezvous.rs
 @@ -926,11 +926,11 @@ pub fn ipc_reply_capability(
-             .ok_or(abi::Error::NoSuchSlot)?;
+             .ok_or(moho_abi::Error::NoSuchSlot)?;
          let table = ours.lock();
-         let src = table.get(slot).map_err(|_| abi::Error::NoSuchSlot)?;
+         let src = table.get(slot).map_err(|_| moho_abi::Error::NoSuchSlot)?;
 -        Delegation {
 +        let _ = Delegation {
              slot,

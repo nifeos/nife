@@ -90,7 +90,7 @@ fn sbi_system_reset(reset_type: usize) -> isize {
 }
 
 /// Ask the firmware for a cold reboot, printing each attempt prefixed with `marker`, and return
-/// the refusal as an `abi::Error` only if firmware says no.
+/// the refusal as a `moho_abi::Error` only if firmware says no.
 ///
 /// The arch reboot contract: one line per route before trying it, drained to the wire, then the
 /// firmware's error after. Called by the rebooting soak and `kernel::reboot::restart`. See
@@ -98,7 +98,7 @@ fn sbi_system_reset(reset_type: usize) -> isize {
 ///
 /// Name: provisional (milestone 249 (the boot lottery is sampled by a person walking to the
 /// board)): calef names public items.
-pub fn reboot(marker: &str) -> abi::Error {
+pub fn reboot(marker: &str) -> moho_abi::Error {
     crate::println!(
         "{marker} attempt 1 of 1: SBI SRST system_reset, reset type 1 (cold reboot). The next thing \
          this console should show is the firmware's banner."
@@ -110,7 +110,7 @@ pub fn reboot(marker: &str) -> abi::Error {
         "{marker} SBI SRST refused: sbiret.error={error} (-2 is SBI_ERR_NOT_SUPPORTED, an OpenSBI \
          that implements shutdown and not reset type 1)"
     );
-    abi::reboot::from_sbi(error as i64)
+    moho_abi::reboot::from_sbi(error as i64)
 }
 
 /// Terminate the board run with `code` (0 = success): print the UART marker line a serial harness

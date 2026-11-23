@@ -52,8 +52,9 @@ then the three decisions.
 - Item 3 (P0), acronyms and British spelling: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 4 (P0), names the gates refuse: Done, [#3910](https://github.com/nifeos/nife/pull/3910) applied
   Decision 2's three tables as provisional names, and the naming gates report none refused.
-- Item 5 (P0), no review package and unratified names: Waiting on a ruling (#4009). The package
-  lists the built names and asks for their ratification and the fixture's half of the clearance.
+- Item 5 (P0), no review package and unratified names: Done, [#4009](https://github.com/nifeos/nife/pull/4009).
+  The architect ratified the crate name, `INTERFACE_ID` 16 at `VERSION` 1 and the item names as
+  built, ruled 2026-11-22 UTC.
 - Item 6 (P1), the crate describes this tree: Done, [#4000](https://github.com/nifeos/nife/pull/4000).
   The externalization lint counts no consumer name, and the crate has no waiver.
 - Item 7 (P1), history residue: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -61,10 +62,9 @@ then the three decisions.
 - Item 9 (P1), the shared-frame witness doc states the refuted outcome: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 10 (P1), 14 equivalent mutants: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 11 (P1), caller workflows, manifest and stranger run: At the move. The manifest half is in
-  [#4000](https://github.com/nifeos/nife/pull/4000); the caller workflows (three targets,
-  `allow-unpublished`), the accepted words and the stranger run before a tag belong to the new
-  repository.
+- Item 11 (P1), caller workflows, manifest and stranger run: Done in part,
+  [#4000](https://github.com/nifeos/nife/pull/4000) and [#4020](https://github.com/nifeos/nife/pull/4020). The manifest and the caller
+  workflows (three targets, `allow-unpublished`) are in place; the stranger run comes before a tag.
 - Item 12 (P1), the README's claims mislead: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 13 (P2), `rg_match_path` unbounded: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 14 (P2), `wide_name` wraps: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -76,15 +76,17 @@ then the three decisions.
 - Item 18 (P2), outsiders get nothing to run: Waiting on milestone 1017's move. A harness a third
   party can run belongs to the shared repository once both crates are there; the README and the
   crate root's `BUGS` record the gap.
-- Decision 1, the repository: At the move. One workspace repository shared with
-  `file_system_contract`, ruled 2026-11-14 (UTC); milestone 1017's step 2 builds it.
+- Decision 1, the repository: Done, [#4020](https://github.com/nifeos/nife/pull/4020). One workspace repository shared with
+  `file_system_contract`, ruled 2026-11-14 (UTC); nife depends on both crates at commit
+  7577a7d0df339107f75747c3681f5990f116cf61.
 - Decision 2, the names: Done, [#3910](https://github.com/nifeos/nife/pull/3910).
-- Decision 3, the review package and clearance: Waiting on a ruling (#4009).
+- Decision 3, the review package and clearance: Done, [#4009](https://github.com/nifeos/nife/pull/4009). Ruled 2026-11-22
+  UTC: `file_system_fixture` is cleared as the second crate of the shared repository
+  `nifeos/file_system_contract`, `publish = false`.
 
 ## Open decisions
 
-None. The review package carries the name ratification and the clearance of the review, which stay
-the architect's.
+None.
 
 ## Goal
 

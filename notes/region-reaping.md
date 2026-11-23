@@ -206,4 +206,4 @@ meets it.
   foreground process)'s `^C` escalation depends on this.
 - **It reaches outside the region.** Tearing down a rendezvous aborts every waiter wherever it
   lives, and frees every caller reply-parked on it or named by a reply capability in a thread this
-  reclaim reaps. Those callers see `abi::Error::Gone` from a `CALL` to somebody else's rendezvous.
+  reclaim reaps. Those callers see `moho_abi::Error::Gone` from a `CALL` to somebody else's rendezvous.

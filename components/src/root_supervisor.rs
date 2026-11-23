@@ -67,22 +67,22 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     // The channels. The spawner serves `req` and answers on `rep`; `childfault` is where the
     // sub-server's deaths go (sub_server_supervisor receives them); `rootfault` is where OUR children's deaths go.
     let Ok(req) =
-        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::object_type::RENDEZVOUS)
+        process_builder::retype_into_kernel_object_from(ROOT_UT, moho_abi::object_type::RENDEZVOUS)
     else {
         bail(5)
     };
     let Ok(rep) =
-        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::object_type::RENDEZVOUS)
+        process_builder::retype_into_kernel_object_from(ROOT_UT, moho_abi::object_type::RENDEZVOUS)
     else {
         bail(6)
     };
     let Ok(childfault) =
-        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::object_type::RENDEZVOUS)
+        process_builder::retype_into_kernel_object_from(ROOT_UT, moho_abi::object_type::RENDEZVOUS)
     else {
         bail(7)
     };
     let Ok(rootfault) =
-        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::object_type::RENDEZVOUS)
+        process_builder::retype_into_kernel_object_from(ROOT_UT, moho_abi::object_type::RENDEZVOUS)
     else {
         bail(8)
     };
@@ -101,11 +101,11 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
         &spawner,
         &ChildEndowment {
             capabilities: &[
-                (req, abi::rights::READ),
-                (rep, abi::rights::WRITE),
-                (sp_ut, abi::rights::SPEND_ONLY),
-                (REPORT, abi::rights::WRITE | abi::rights::GRANT),
-                (childfault, abi::rights::READ | abi::rights::GRANT),
+                (req, moho_abi::rights::READ),
+                (rep, moho_abi::rights::WRITE),
+                (sp_ut, moho_abi::rights::SPEND_ONLY),
+                (REPORT, moho_abi::rights::WRITE | moho_abi::rights::GRANT),
+                (childfault, moho_abi::rights::READ | moho_abi::rights::GRANT),
             ],
             maps: &[],
             blobs: &[(SPAWNER_IMAGE_VA, first_attempt_crasher)],
@@ -128,10 +128,10 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
         &sub_server_supervisor,
         &ChildEndowment {
             capabilities: &[
-                (req, abi::rights::WRITE),
-                (rep, abi::rights::READ),
-                (childfault, abi::rights::READ),
-                (REPORT, abi::rights::WRITE),
+                (req, moho_abi::rights::WRITE),
+                (rep, moho_abi::rights::READ),
+                (childfault, moho_abi::rights::READ),
+                (REPORT, moho_abi::rights::WRITE),
             ],
             maps: &[],
             blobs: &[],
@@ -157,7 +157,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     // retype a kernel object. Both must now fail with `NoSuchSlot` (-1), which is what
     // no-ambient-authority feels like: there is nothing there, and no way to name what used to be.
     let frame = retype_into_page_frame(ROOT_UT);
-    let object = retype_into_kernel_object(ROOT_UT, abi::object_type::THREAD_CONTROL_BLOCK);
+    let object = retype_into_kernel_object(ROOT_UT, moho_abi::object_type::THREAD_CONTROL_BLOCK);
     send(
         REPORT,
         REPORT_CONSTRUCTION_AUTHORITY_DROPPED,

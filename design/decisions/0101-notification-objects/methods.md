@@ -1,7 +1,7 @@
 # §101's methods and rights, as ruled
 
 An appendix of [`0101-notification-objects.md`](../0101-notification-objects.md): the surface as §101 ruled it. The shipped ABI is
-`crates/abi/src/notification.rs`.
+`crates/moho_abi/src/notification.rs`.
 
 ## New methods
 

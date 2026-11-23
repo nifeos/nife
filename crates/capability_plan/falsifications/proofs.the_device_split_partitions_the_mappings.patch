@@ -4,7 +4,7 @@ The defect: `PageKind::mode` returns `MAP_READ_WRITE` for device registers as we
 pages, so every device register window a component is endowed with is mapped writable.
 A one-word slip in a short match, and the kind of thing a copy-paste produces.
 
-Expected to fail: `assert!(m.2 == abi::address_space::MAP_READ_ONLY)` over the late half of the
+Expected to fail: `assert!(m.2 == moho_abi::address_space::MAP_READ_ONLY)` over the late half of the
 split, on any declaration containing a device page.
 
 **Measured blind before milestone 211.** The harness used to assert
@@ -17,12 +17,12 @@ that collapsed them cannot pass by making the partition trivially uniform.
 diff --git a/crates/capability_plan/src/lib.rs b/crates/capability_plan/src/lib.rs
 --- a/crates/capability_plan/src/lib.rs
 +++ b/crates/capability_plan/src/lib.rs
-@@ -277,7 +277,7 @@ impl PageKind {
-     pub const fn mode(self) -> u64 {
+@@ -114,7 +114,7 @@ impl PageKind {
          match self {
-             PageKind::Shared => abi::address_space::MAP_READ_WRITE,
--            PageKind::ReadOnly | PageKind::DeviceRegisters => abi::address_space::MAP_READ_ONLY,
-+            PageKind::ReadOnly | PageKind::DeviceRegisters => abi::address_space::MAP_READ_WRITE,
+             PageKind::Shared => moho_abi::address_space::MAP_READ_WRITE,
+             PageKind::ReadOnly | PageKind::DeviceRegisters => {
+-                moho_abi::address_space::MAP_READ_ONLY
++                moho_abi::address_space::MAP_READ_WRITE
+             }
          }
      }
- }

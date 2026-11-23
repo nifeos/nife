@@ -17,7 +17,7 @@ pub enum Object {
     /// An IPC endpoint, by generational name in the scheduler's registry, and the capability's
     /// badge. `WRITE` lets the holder `SEND` and `READ` lets it `RECEIVE`. The badge is a `u64` the
     /// kernel delivers to a server's `RECEIVE_CAPABILITY` so it can tell apart clients sharing one
-    /// endpoint; `0` is unbadged, and `abi::rendezvous::BADGE` sets one once (milestone 599 (a
+    /// endpoint; `0` is unbadged, and `moho_abi::rendezvous::BADGE` sets one once (milestone 599 (a
     /// frame per filesystem client channel)). See notes/capability-objects.md.
     Rendezvous(crate::sched::RendezvousId, u64),
 
@@ -83,7 +83,7 @@ pub enum Object {
     /// A process (milestone 812 (`std::thread::spawn` runs real threads in one address space), §269
     /// (how threads share a process) forks 1, 3 and 5), by generational name over the scheduler's
     /// process registry: the capability table its threads share, the space they run in, its
-    /// supervision and its end. `BIND` on it joins a thread (`abi::process`).
+    /// supervision and its end. `BIND` on it joins a thread (`moho_abi::process`).
     Process(crate::sched::ProcessId),
 
     /// A virtio device's **transport**, by generational name (into the kernel's virtio device
@@ -114,8 +114,8 @@ pub enum Object {
     /// instead.
     ///
     /// The kernel mints exactly one, at boot, into the progenitor's table, and nothing else mints
-    /// one: no retype makes it, so it has no `abi::object_type` number. Its one method is
-    /// `abi::reboot::REBOOT`; see kernel/src/reboot.rs.
+    /// one: no retype makes it, so it has no `moho_abi::object_type` number. Its one method is
+    /// `moho_abi::reboot::REBOOT`; see kernel/src/reboot.rs.
     ///
     /// Name: provisional, milestone 805's lane, 2026-10-06 (UTC).
     Reboot,
@@ -230,44 +230,44 @@ fn announce_peak(_peak: usize, _ceiling: usize) {}
 // The ABI names the reserved fault slot as `CAPABILITY_TABLE_SLOTS - 1`, so the two constants
 // must agree or the kernel would read the fault endpoint from a different slot than the
 // supervisor wrote it to.
-const _: () = assert!(CAPABILITY_TABLE_SLOTS as u64 == abi::CAPABILITY_TABLE_SLOTS);
+const _: () = assert!(CAPABILITY_TABLE_SLOTS as u64 == moho_abi::CAPABILITY_TABLE_SLOTS);
 
 pub use capability_table::{Error, Rights};
 
-// The rights vocabulary is written twice, in two crates that cannot see each other: `abi::rights`
+// The rights vocabulary is written twice, in two crates that cannot see each other: `moho_abi::rights`
 // is what userspace names a right with, `capability_table::Rights` what the kernel means by one. These
 // make a right added to one and not the other a compile error rather than a delegation that drops a
 // bit at `from_bits`. See notes/capability-objects.md.
-const _: () = assert!(Rights::READ.bits() as u64 == abi::rights::READ);
-const _: () = assert!(Rights::WRITE.bits() as u64 == abi::rights::WRITE);
-const _: () = assert!(Rights::GRANT.bits() as u64 == abi::rights::GRANT);
-const _: () = assert!(Rights::ENUMERATE.bits() as u64 == abi::rights::ENUMERATE);
-const _: () = assert!(Rights::BIND.bits() as u64 == abi::rights::BIND);
+const _: () = assert!(Rights::READ.bits() as u64 == moho_abi::rights::READ);
+const _: () = assert!(Rights::WRITE.bits() as u64 == moho_abi::rights::WRITE);
+const _: () = assert!(Rights::GRANT.bits() as u64 == moho_abi::rights::GRANT);
+const _: () = assert!(Rights::ENUMERATE.bits() as u64 == moho_abi::rights::ENUMERATE);
+const _: () = assert!(Rights::BIND.bits() as u64 == moho_abi::rights::BIND);
 
 // **`ALL` is exactly the ABI's vocabulary and no more.** Both directions are load-bearing and they
-// fail differently. A bit in `abi::rights` that is missing from `ALL` is a right userspace can name
+// fail differently. A bit in `moho_abi::rights` that is missing from `ALL` is a right userspace can name
 // and `Rights::from_bits` masks to zero, so a delegation asking for it succeeds while conferring
 // nothing. A bit in `ALL` with no ABI name is a right the kernel honors that no caller can ask for
 // by name, which is how a hand-listed set drifts into granting more than any manifest says.
 const _: () = assert!(
     Rights::ALL.bits() as u64
-        == abi::rights::READ
-            | abi::rights::WRITE
-            | abi::rights::GRANT
-            | abi::rights::ENUMERATE
-            | abi::rights::BIND
+        == moho_abi::rights::READ
+            | moho_abi::rights::WRITE
+            | moho_abi::rights::GRANT
+            | moho_abi::rights::ENUMERATE
+            | moho_abi::rights::BIND
 );
 
-// `abi::rights` is `u64` and `Rights` is `u32`, and the system call path narrows with `a1 as u32`
+// `moho_abi::rights` is `u64` and `Rights` is `u32`, and the system call path narrows with `a1 as u32`
 // (`SEND_CAPABILITY` and `CAPABILITY_INSERT` in kernel/src/system_call.rs). A right defined at bit 32 or above would
 // therefore be truncated to nothing on the way in, silently, and the delegation would appear to
 // succeed. Nothing about the ABI's type stops somebody writing `1 << 32`; this does.
 const _: () = assert!(
-    abi::rights::READ
-        | abi::rights::WRITE
-        | abi::rights::GRANT
-        | abi::rights::ENUMERATE
-        | abi::rights::BIND
+    moho_abi::rights::READ
+        | moho_abi::rights::WRITE
+        | moho_abi::rights::GRANT
+        | moho_abi::rights::ENUMERATE
+        | moho_abi::rights::BIND
         <= u32::MAX as u64
 );
 
@@ -302,7 +302,7 @@ pub fn rendezvous_capability(ep: crate::sched::RendezvousId, rights: Rights) -> 
 /// An endpoint capability carrying a **badge** (milestone 599, provisional). The kernel delivers
 /// `badge` to a server's `RECEIVE_CAPABILITY` when this capability's holder `CALL`s or `SEND_CAPABILITY`s here, so a
 /// server serving many clients on one endpoint can tell them apart. `badge` `0` is unbadged and
-/// equivalent to [`rendezvous_capability`]; a non-zero badge is minted once by `abi::rendezvous::BADGE` and
+/// equivalent to [`rendezvous_capability`]; a non-zero badge is minted once by `moho_abi::rendezvous::BADGE` and
 /// then rides through delegation unchanged, because `SEND_CAPABILITY` and `CAPABILITY_INSERT` copy the object.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
@@ -374,14 +374,14 @@ pub fn memory_region_lending_capability(region: u64) -> Capability {
 }
 
 /// The rights of the spend-only budget [`memory_region_capability`] mints: [`Rights::ALL`] without
-/// `GRANT`, the kernel's spelling of `abi::rights::SPEND_ONLY`, which a userspace builder hands its
+/// `GRANT`, the kernel's spelling of `moho_abi::rights::SPEND_ONLY`, which a userspace builder hands its
 /// leaves. Name: provisional (milestone 824's lane, 2026-10-12 UTC).
-pub const SPEND_ONLY: Rights = Rights::from_bits(abi::rights::SPEND_ONLY as u32);
+pub const SPEND_ONLY: Rights = Rights::from_bits(moho_abi::rights::SPEND_ONLY as u32);
 
-// `abi::rights::ALL` is what userspace hands a builder and `Rights::ALL` what the kernel's root
+// `moho_abi::rights::ALL` is what userspace hands a builder and `Rights::ALL` what the kernel's root
 // budget carries; a right added to one and not the other would make a builder's objects silently
 // narrower than the progenitor's.
-const _: () = assert!(Rights::ALL.bits() as u64 == abi::rights::ALL);
+const _: () = assert!(Rights::ALL.bits() as u64 == moho_abi::rights::ALL);
 
 /// A capability to an untyped region with explicit rights. Its one caller is
 /// [`memory_region_root_capability`]; `MemoryRegion::SPLIT` mints through `Capability::mint_child`, whose

@@ -8,7 +8,7 @@ An appendix to [`notes/documentation.md`](../documentation.md), which states the
 image. It is milestone 117 (the stranger test)'s finding rather than a convenience. Three stranger
 runs have measured what a newcomer cannot reach by following this tree while doing ordinary work. It
 is a list rather than an impression: `notes/net.md`, `notes/capabilities.md`, any
-`design/decisions/` file, and `crates/abi/src/lib.rs`, which is four system call numbers and the whole
+`design/decisions/` file, and `crates/moho_abi/src/lib.rs`, which is four system call numbers and the whole
 design on one screen. None of them is hidden. Nothing a person would type led to them.
 
 ```text
@@ -40,7 +40,7 @@ shell there can designate, and this one names a path in this repository, because
 person with a checkout opens. Both come out of the same `Found`; the store location and the origin
 are two fields it already carried.
 
-Crate and program module headers are pages. That is the half that makes `crates/abi/src/lib.rs`
+Crate and program module headers are pages. That is the half that makes `crates/moho_abi/src/lib.rs`
 findable at all, and no markdown page was ever going to do it: the document a reader wants about the
 ABI *is* that file's header. A `//!` block is markdown already, so it indexes with no conversion and
 no copy, and the result names the source file, which is the thing to open. A header shorter than a

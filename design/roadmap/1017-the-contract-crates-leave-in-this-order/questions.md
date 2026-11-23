@@ -147,7 +147,7 @@ the 22 through normal dependencies (`address_space_layout`, `capability_manifest
 `byte_glob`, `globally_unique_identifier_partition_table`, `grant_plan`, `program_argument_contract`).
 They also reach two crates outside the 22, `subtree_scope` and `memory_region_heap`, which leave
 first (`memory_region_heap` only for the target build's `el0` feature, with `user_mode_runtime`
-and `abi` behind it). `entropy_contract` is named in `mkfs.rs` prose and is not a dependency, so it
+and `moho_abi` behind it). `entropy_contract` is named in `mkfs.rs` prose and is not a dependency, so it
 need not have left. Both manifests also patch `talc` to `vendor/talc`, a reference back into nife
 that the ruling above does not place; the proposal's talc section records the maintainer's
 provisional decision of 2026-11-01 (UTC). Unverified, not decided:

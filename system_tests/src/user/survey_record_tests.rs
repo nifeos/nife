@@ -8,8 +8,8 @@
 //! three ISAs run these assertions literally (DECISIONS §19 (architectural parity is a tenet)). See
 //! notes/process-view/survey-design.md.
 
-use abi::Error;
-use abi::survey::record;
+use moho_abi::Error;
+use moho_abi::survey::record;
 
 use super::supervision_tests::REPORT_STUB;
 use super::survey_tests::{
@@ -49,7 +49,14 @@ fn the_unknown_record_is_really_unknown() {
 /// reading.
 pub(super) fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    match invoke(&mut frame, slot, abi::rendezvous::SURVEY, cursor, record, 0) {
+    match invoke(
+        &mut frame,
+        slot,
+        moho_abi::rendezvous::SURVEY,
+        cursor,
+        record,
+        0,
+    ) {
         Ok(next) => (next, frame.arg(1), frame.arg(2)),
         Err(e) => (e as i64, 0, 0),
     }
@@ -73,7 +80,7 @@ fn walk(slot: u64, record: u64) -> ([(u64, u64); TEST_ROWS], usize) {
             "a walk that should have been permitted was refused with {next}",
         );
         let next = next as u64;
-        if next == abi::survey::DONE {
+        if next == moho_abi::survey::DONE {
             return (out, n);
         }
         assert!(
@@ -229,7 +236,7 @@ fn a_caller_that_names_no_record_gets_the_state_record() {
     for &(tid, state) in &named[..n_named] {
         assert_eq!(
             state,
-            abi::survey::BLOCKED,
+            moho_abi::survey::BLOCKED,
             "thread {tid} is parked in a send and the default record reported {state}",
         );
     }
@@ -314,7 +321,7 @@ fn an_unknown_record_is_refused_even_when_the_domain_is_empty() {
     let (r0, ..) = survey_record(viewer, 0, record::STATE);
     assert_eq!(
         r0,
-        abi::survey::DONE as i64,
+        moho_abi::survey::DONE as i64,
         "an empty domain did not answer with DONE, so this test is not measuring what it thinks",
     );
 

@@ -85,7 +85,7 @@ Milestone 126 (procps) set the frame. A domain names its members and does not ac
 | The region capability (`Untyped`) | the builder | `DESTROY`: reclaim the region and everything retyped from it | nothing new. `DESTROY` already commits to ending every resident; it just cannot finish |
 | The `ThreadControlBlock` capability | the builder, during construction | configure, endow, start | a lifetime handle where there is now a construction tool. seL4's answer |
 | The supervision endpoint (`READ`) | the supervisor | `RECEIVE` a death message, `REAP` a corpse | the "stronger right" §32 declined, and the hung-component note showed it is insufficient for case (c) anyway |
-| A new right (`Rights::TERMINATE`) | nobody | nothing | a fifth bit; `Rights::ALL` is `0b1111` today, so this is an ABI change to `abi::rights` |
+| A new right (`Rights::TERMINATE`) | nobody | nothing | a fifth bit; `Rights::ALL` is `0b1111` today, so this is an ABI change to `moho_abi::rights` |
 
 Three observations, offered as analysis rather than as a verdict.
 

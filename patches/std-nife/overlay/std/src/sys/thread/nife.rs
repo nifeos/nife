@@ -23,7 +23,7 @@ use crate::ffi::CStr;
 use crate::io;
 use crate::num::NonZero;
 use crate::sync::atomic::{Atomic, AtomicU32, Ordering};
-use crate::sys::pal::nife::{abi, rt, runtimeproto};
+use crate::sys::pal::nife::{moho_abi, rt, runtimeproto};
 use crate::sys::thread_local::key::nife as tls;
 use crate::thread::ThreadInit;
 use crate::time::Duration;
@@ -113,8 +113,8 @@ impl Thread {
         let tcb = unsafe {
             rt::invoke(
                 runtimeproto::MEMORY_REGION_SLOT,
-                abi::memory_region::RETYPE_OBJECT,
-                abi::object_type::THREAD_CONTROL_BLOCK,
+                moho_abi::memory_region::RETYPE_OBJECT,
+                moho_abi::object_type::THREAD_CONTROL_BLOCK,
                 0,
                 runtimeproto::SLOTS, // above every fixed slot (`RETYPE_OBJECT`'s floor)
             )
@@ -146,7 +146,7 @@ impl Thread {
         let started = unsafe {
             rt::invoke(
                 tcb,
-                abi::thread_control_block::START,
+                moho_abi::thread_control_block::START,
                 data as u64,
                 packet as u64,
                 0,
@@ -209,9 +209,9 @@ impl Drop for Thread {
 }
 
 fn error(code: i64, what: &'static str) -> io::Error {
-    if code == abi::Error::OutOfMemory as i64 {
+    if code == moho_abi::Error::OutOfMemory as i64 {
         io::Error::new(io::ErrorKind::OutOfMemory, what)
-    } else if code == abi::Error::NoSuchSlot as i64 || code == abi::Error::NotPermitted as i64 {
+    } else if code == moho_abi::Error::NoSuchSlot as i64 || code == moho_abi::Error::NotPermitted as i64 {
         io::Error::UNSUPPORTED_PLATFORM
     } else {
         io::Error::other(what)
@@ -301,14 +301,14 @@ pub fn set_name(_name: &CStr) {
 /// threads sleeping at once must not share one notification, or one would take the other's wake.
 /// Where they cannot be made, a yield loop to the deadline, as before.
 pub fn sleep(dur: Duration) {
-    let ticks = abi::timer::counter_ticks_for(dur.as_secs(), dur.subsec_nanos(), rt::cntfrq());
+    let ticks = moho_abi::timer::counter_ticks_for(dur.as_secs(), dur.subsec_nanos(), rt::cntfrq());
     let deadline = rt::now().saturating_add(ticks);
     if let Some((timer, notification)) = tls::sleep_objects() {
         // SAFETY: `invoke` traps to the kernel, which validates both capabilities.
-        let armed = unsafe { rt::invoke(timer, abi::timer::ARM, deadline, notification, 1) };
+        let armed = unsafe { rt::invoke(timer, moho_abi::timer::ARM, deadline, notification, 1) };
         if armed == 0 {
             // SAFETY: as above.
-            unsafe { rt::invoke(notification, abi::notification::WAIT, 0, 0, 0) };
+            unsafe { rt::invoke(notification, moho_abi::notification::WAIT, 0, 0, 0) };
         }
     }
     while rt::now() < deadline {

@@ -8,7 +8,7 @@
 //! exactly the source's rights. Nothing blocks. Cross-ISA (DECISIONS §19 (architectural parity is
 //! a tenet)). See notes/confinement-claims/the-eighth-pass-tests.md.
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Rights, rendezvous_capability};
@@ -60,7 +60,7 @@ fn a_client_cannot_upgrade_or_badge_its_way_to_the_receiving_side() {
     assert_eq!(
         call(
             client,
-            abi::rendezvous::SEND_CAPABILITY,
+            moho_abi::rendezvous::SEND_CAPABILITY,
             client,
             upgrade_mask,
             0
@@ -78,7 +78,7 @@ fn a_client_cannot_upgrade_or_badge_its_way_to_the_receiving_side() {
     // 2. Badge its own copy: the one method GRANT legitimately gates. The mint must succeed (it
     //    is the client's own capability, badged within the rules) and carry exactly the source's
     //    rights, which is the whole question.
-    let badged = call(client, abi::rendezvous::BADGE, 0x5EED, 0, 0)
+    let badged = call(client, moho_abi::rendezvous::BADGE, 0x5EED, 0, 0)
         .expect("BADGE refused a GRANT-holding client's own capability") as u64;
     assert_eq!(
         current_capability(badged)
@@ -92,26 +92,26 @@ fn a_client_cannot_upgrade_or_badge_its_way_to_the_receiving_side() {
     //    a right. A receiver is parked first for the two blocking methods, so a let-open gate
     //    would deliver and be observed.
     assert_eq!(
-        call(badged, abi::rendezvous::RECEIVE, 0, 0, 0),
+        call(badged, moho_abi::rendezvous::RECEIVE, 0, 0, 0),
         Err(Error::NotPermitted),
         "a badged client copy was let RECEIVE: a client became its server by wearing a badge",
     );
     assert_eq!(
-        call(badged, abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0),
+        call(badged, moho_abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0),
         Err(Error::NotPermitted),
         "a badged client copy was let RECEIVE_CAPABILITY",
     );
     assert_eq!(
-        call(badged, abi::rendezvous::REAP, 0, 0, 0),
+        call(badged, moho_abi::rendezvous::REAP, 0, 0, 0),
         Err(Error::NotPermitted),
         "a badged client copy was let REAP",
     );
     assert_eq!(
         call(
             badged,
-            abi::rendezvous::SURVEY,
+            moho_abi::rendezvous::SURVEY,
             0,
-            abi::survey::record::STATE,
+            moho_abi::survey::record::STATE,
             0
         ),
         Err(Error::NotPermitted),
@@ -127,7 +127,7 @@ fn a_client_cannot_upgrade_or_badge_its_way_to_the_receiving_side() {
     // sender's message. The endpoint was live all along.
     let server = sched::grant(rendezvous_capability(ep, Rights::READ)).expect("grant the READ cap");
     assert_eq!(
-        call(server, abi::rendezvous::RECEIVE, 0, 0, 0),
+        call(server, moho_abi::rendezvous::RECEIVE, 0, 0, 0),
         Ok(SENT_WORD as i64),
         "a READ holder could not receive: the endpoint was not really live",
     );

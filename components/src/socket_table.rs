@@ -188,7 +188,13 @@ impl Table {
         }
         // SAFETY: the system call; the kernel checks the capability, the right and the address.
         let gone = unsafe {
-            user_mode_runtime::invoke(OWN_SPACE, abi::address_space::UNMAP, socket_va(entry), 0, 0)
+            user_mode_runtime::invoke(
+                OWN_SPACE,
+                moho_abi::address_space::UNMAP,
+                socket_va(entry),
+                0,
+                0,
+            )
         } == 0;
         if gone {
             self.mapped[entry] = false;

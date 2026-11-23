@@ -36,7 +36,7 @@ one of 32. Severity medium: a denial of service on any `CALL` server, not an esc
 - The kernel tag. `RECV_CAP` returns `abi::rendezvous::REPLY_DELIVERED` (`1`, name provisional)
   in `x4` exactly when `x1` is the Reply the kernel minted for a `CALL`. `ipc_call_badged`'s
   rendezvous arm and `ipc_recv_cap`'s collect of a parked caller write it through one helper,
-  `reply_tag`, in `kernel/src/sched.rs`. A `const` assertion in `crates/abi` keeps it apart from
+  `reply_tag`, in `kernel/src/sched.rs`. A `const` assertion in `crates/moho_abi` keeps it apart from
   `notification::BOUND`, which shares the register.
 - The typed helper in `crates/user_mode_runtime` (all names provisional). `recv_request(slot)`
   returns a `Request { w0, w1, badge, delivered }`, where `delivered` is a `Delivered`:
@@ -94,7 +94,7 @@ system-test image every leg boots; the falsification is replayed on aarch64 only
   in and the kernel refuses a delegation at the `SEND_CAP` arm, the shape milestone 603 (an
   interrupt's endpoint refuses every send) took for `SEND`. A wire-format change in the rights word
   or a new attribute, so an architect's call; it waits until a server asks for it. Recorded in §245
-  and in the `RECV_CAP` BUGS in `crates/abi`.
+  and in the `RECV_CAP` BUGS in `nifeos/moho_abi`.
 
 ## Index row
 

@@ -589,7 +589,7 @@ pub enum Listing {
     ForeignCursor,
 }
 
-/// One entry of what `root` has mapped, resuming from `cursor`, for `abi::address_space::LIST`
+/// One entry of what `root` has mapped, resuming from `cursor`, for `moho_abi::address_space::LIST`
 /// (design/decisions/0114-aspace-enumerate.md). Start at 0 and feed each returned cursor back. A
 /// cursor is a log page's address OR'd with an index, checked for membership in this space's chain
 /// before anything follows it. A slot reused between calls can show the wrong mapping

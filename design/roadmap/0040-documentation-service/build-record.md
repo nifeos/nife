@@ -43,12 +43,12 @@ have made it silently search for `line`, which is worse than no answer.
 
 Milestone 117 (the stranger test) is three stranger runs. They have measured what a newcomer
 cannot reach by following this tree: `notes/net.md`, `notes/capabilities.md`, any
-`design/decisions/` file, and `crates/abi/src/lib.rs`, which is four system call numbers and the whole design on one screen. None of them is hidden; nothing a
+`design/decisions/` file, and `crates/moho_abi/src/lib.rs`, which is four system call numbers and the whole design on one screen. None of them is hidden; nothing a
 person would type led to them. This milestone already owned the machinery, pointed at the six pages
 a guest can hold. So it is now also pointed at the 512 pages a checkout holds. It uses the same
 `manual::index::build` and `manual::index::search`, one shard per part of the tree, and a result
 that names a repository path rather than a store location. Crate and program module headers are
-indexed as pages, which is what makes `crates/abi/src/lib.rs` findable at all. The document a reader
+indexed as pages, which is what makes `crates/moho_abi/src/lib.rs` findable at all. The document a reader
 wants about the ABI *is* that file's header, and no markdown page was ever going to fix it.
 
 ## The one fork

@@ -87,7 +87,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         };
         child.running = false;
 
-        if event != abi::fault::EVENT_FAULT {
+        if event != moho_abi::fault::EVENT_FAULT {
             // A clean exit is not a reason to restart, which is why §26 delivers both events.
             continue;
         }

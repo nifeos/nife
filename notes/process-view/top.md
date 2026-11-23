@@ -8,7 +8,7 @@ An appendix to [the process view](../process-view.md). `crates/top` is the progr
 ## What it ranks by
 
 `top` means the top N by consumption, so the program waited for something to rank by:
-`abi::survey::record::CPU_TIME`, a measurement. §150 (how does a thread's CPU time reach
+`moho_abi::survey::record::CPU_TIME`, a measurement. §150 (how does a thread's CPU time reach
 userspace?) refused wall-clock age and userspace sampling as numbers that would not mean what the
 name says. The walk, the CPU-time join, the ranking and the table are all `ps`'s. They are `ps::collect`,
 `ps::Survey::join_cpu_time`, `ps::Survey::rank_by_cpu_time` and `ps::Survey::write_report`. `top`

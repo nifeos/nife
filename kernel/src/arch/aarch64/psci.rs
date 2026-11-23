@@ -85,7 +85,7 @@ pub(super) const PSCI_SYSTEM_RESET: u64 = 0x8400_0009;
 /// - **The ACPI half (`machine_discovery::acpi::parse_arm_boot`) is not wired**: device tree only.
 ///
 /// Name: provisional (milestone 249): calef names public items.
-pub fn reboot(marker: &str) -> abi::Error {
+pub fn reboot(marker: &str) -> moho_abi::Error {
     use ::machine_discovery::aarch64::Conduit;
 
     let Some(conduit) = isa::psci_record().and_then(|p| p.conduit) else {
@@ -94,7 +94,7 @@ pub fn reboot(marker: &str) -> abi::Error {
              usable method, so hvc-versus-smc cannot be chosen and a guess is an undefined \
              instruction"
         );
-        return abi::Error::NoResetMechanism;
+        return moho_abi::Error::NoResetMechanism;
     };
     let call = |func: u64| -> i64 {
         match conduit {
@@ -119,7 +119,7 @@ pub fn reboot(marker: &str) -> abi::Error {
         "{marker} PSCI SYSTEM_RESET refused: returned {error} (-1 is NOT_SUPPORTED, a PSCI 0.1 \
          firmware or one that does not offer system reset)"
     );
-    abi::reboot::from_psci(error)
+    moho_abi::reboot::from_psci(error)
 }
 
 /// Can this machine start a secondary core at all? Asked once by `smp::bring_up_secondaries`.

@@ -125,7 +125,7 @@ first slice's step 0, before anything is built on it.
 "that likely means we're just limiting a single session to how much memory can be used since most
 of the time there will be a single session."
 
-What the kernel allows, read in `crates/abi` and `kernel/src/memory_region.rs`:
+What the kernel allows, read in `crates/moho_abi` and `kernel/src/memory_region.rs`:
 
 - A region cannot grow. `memory_region` has `MAP`, `RETYPE`, `RETYPE_OBJECT`, `SPLIT`, `DESTROY` and
   `USAGE`, and nothing that enlarges a region or shrinks one after `SPLIT`.

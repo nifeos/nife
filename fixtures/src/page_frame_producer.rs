@@ -53,7 +53,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     }
 
     // Delegate a READ-only view: drop WRITE and GRANT on the way over.
-    send_capability(CHANNEL, frame as u64, abi::rights::READ, 0);
+    send_capability(CHANNEL, frame as u64, moho_abi::rights::READ, 0);
 
     exit()
 }
