@@ -765,6 +765,11 @@ impl Query {
 // =================================================================================================
 #[cfg(test)]
 mod tests {
+    extern crate std;
+
+    use std::hash::{BuildHasher, Hasher, RandomState};
+    use std::sync::OnceLock;
+
     use super::*;
 
     /// A server reply, assembled by hand from the `RFC 5905` section 7.3 field layout rather than captured
@@ -774,12 +779,13 @@ mod tests {
     ///
     /// It describes a stratum 2 server synchronized to 17.253.14.251, with a 50.8 ms root delay and
     /// 23.4 ms root dispersion, replying to a request sent at 2026-07-30 12:00:00 UTC (plus a
-    /// fraction) with a server clock 0.5 s ahead of ours. Its origin field echoes `TEST_NONCE`.
+    /// fraction) with a server clock 0.5 s ahead of ours. Its origin field is left zero here;
+    /// [`reply`] fills it with [`test_nonce`], as a server echoes a request's nonce.
     const REPLY: [u8; PACKET_BYTES] = [
         0x24, 0x02, 0x06, 0xe9, 0x00, 0x00, 0x0d, 0x01, // LI/VN/mode, stratum, poll, prec
         0x00, 0x00, 0x05, 0xfe, 0x11, 0xfd, 0x0e, 0xfb, // root delay, root dispersion, refid
         0xee, 0x15, 0xba, 0xb7, 0x1c, 0x8a, 0x3d, 0x00, // reference
-        0x6a, 0x09, 0xe6, 0x67, 0xf3, 0xbc, 0xc9, 0x08, // origin (TEST_NONCE, echoed)
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // origin (filled in by `reply`)
         0xee, 0x15, 0xbb, 0x40, 0xde, 0x31, 0x24, 0x8d, // receive (T2)
         0xee, 0x15, 0xbb, 0x40, 0xde, 0x4b, 0x5b, 0x70, // transmit (T3)
     ];
@@ -787,24 +793,47 @@ mod tests {
     /// T1: our clock when the request left. Only the offset arithmetic reads it; it never goes on
     /// the wire.
     const T1: Timestamp = Timestamp::from_bits(0xee15_bb40_5b3f_7a91);
-    /// **A fixed nonce, for these tests only.** The packet above echoes it, so a test can check a
-    /// reply against a known request. A real client never uses a constant here: it draws 64 fresh
-    /// bits from the entropy service for every request (`components/src/network_time_client.rs`),
-    /// because a nonce an attacker can predict lets an off-path one forge the reply. The value is
-    /// the fractional part of the square root of 2 (SHA-512's first initial hash word), chosen so
-    /// that it visibly hides nothing and shares no bits with T1.
-    const TEST_NONCE: Timestamp = Timestamp::from_bits(0x6a09_e667_f3bc_c908);
     /// T4: the reply arrived 23.1 ms after we sent, on our clock.
     const T4: Timestamp = Timestamp::from_bits(0xee15_bb40_6129_5c42);
 
+    /// **A nonce drawn at run time, as a real client draws one.** No test, and no reader of this
+    /// file, knows its value in advance, so no test can pass by matching a constant, and the tests
+    /// hold no fixed nonce for a client to copy. The real client draws 64 bits from the entropy
+    /// service for every request (`components/src/network_time_client.rs`), because a nonce an
+    /// attacker can predict lets an off-path one forge the reply. Here the bits come from the
+    /// standard library's per-process hash keys. It refuses zero and T1, the two values a test
+    /// below forges, so no draw can turn a forgery into a match.
+    fn fresh_nonce() -> Timestamp {
+        loop {
+            let bits = RandomState::new().build_hasher().finish();
+            if bits != 0 && bits != T1.bits() {
+                return Timestamp::from_bits(bits);
+            }
+        }
+    }
+
+    /// The nonce of the request [`query`] builds and [`reply`] answers: one [`fresh_nonce`] per
+    /// test process, so the two agree.
+    fn test_nonce() -> Timestamp {
+        static NONCE: OnceLock<Timestamp> = OnceLock::new();
+        *NONCE.get_or_init(fresh_nonce)
+    }
+
     fn query() -> Query {
-        Query::with_nonce(T1, TEST_NONCE)
+        Query::with_nonce(T1, test_nonce())
+    }
+
+    /// The good reply: [`REPLY`] with its origin field echoing [`test_nonce`].
+    fn reply() -> [u8; PACKET_BYTES] {
+        let mut w = REPLY;
+        w[24..32].copy_from_slice(&test_nonce().bits().to_be_bytes());
+        w
     }
 
     /// Mutate a copy of the good reply, so every rejection test differs from an acceptance by
     /// exactly the bytes under test.
     fn tweak(f: impl FnOnce(&mut [u8; PACKET_BYTES])) -> [u8; PACKET_BYTES] {
-        let mut w = REPLY;
+        let mut w = reply();
         f(&mut w);
         w
     }
@@ -889,7 +918,7 @@ mod tests {
 
     #[test]
     fn the_hand_assembled_reply_decodes_field_by_field() {
-        let p = Packet::parse(&REPLY).unwrap();
+        let p = Packet::parse(&reply()).unwrap();
         assert_eq!(p.leap, leap::NONE);
         assert_eq!(p.version, 4);
         assert_eq!(p.mode, mode::SERVER);
@@ -899,7 +928,7 @@ mod tests {
         assert_eq!(p.root_delay, ShortFormat::from_bits(0x0D01));
         assert_eq!(p.root_dispersion, ShortFormat::from_bits(0x05FE));
         assert_eq!(p.reference_id, [17, 253, 14, 251]);
-        assert_eq!(p.origin, TEST_NONCE);
+        assert_eq!(p.origin, test_nonce());
         // 0x0D01 in 16.16 is 3329/65536 s = 50.796 ms.
         assert_eq!(p.root_delay.nanoseconds(), 50_796_508);
         // The reference timestamp is 137 s before T1: the server last corrected itself at 11:57:43.
@@ -909,7 +938,7 @@ mod tests {
 
     #[test]
     fn parse_then_serialize_is_the_identity() {
-        assert_eq!(Packet::parse(&REPLY).unwrap().to_bytes(), REPLY);
+        assert_eq!(Packet::parse(&reply()).unwrap().to_bytes(), reply());
         // Including on bytes that are not a sensible packet at all: parse judges nothing.
         let junk = [0xFFu8; PACKET_BYTES];
         assert_eq!(Packet::parse(&junk).unwrap().to_bytes(), junk);
@@ -919,7 +948,7 @@ mod tests {
 
     #[test]
     fn a_request_is_a_version_4_client_packet_carrying_only_the_nonce() {
-        let nonce = Timestamp::from_bits(0x1234_5678_9abc_def0);
+        let nonce = fresh_nonce();
         let w = Query::with_nonce(T1, nonce).request();
         assert_eq!(w[0], 0b00_100_011, "LI 0, VN 4, mode 3");
         assert_eq!(w[1], 0, "no stratum: we are a client, not a source");
@@ -949,7 +978,7 @@ mod tests {
     /// ```
     #[test]
     fn the_offset_and_delay_are_the_numbers_the_rfc_formula_gives() {
-        let s = query().accept(&REPLY, T4).unwrap();
+        let s = query().accept(&reply(), T4).unwrap();
         // 1 ns under 500_150_000: the fixed-point representation of 0.5115 s is not exact.
         assert_eq!(s.offset.nanoseconds(), 500_149_999);
         assert_eq!(s.delay.nanoseconds(), 22_700_000);
@@ -963,7 +992,7 @@ mod tests {
     /// trusts an offset further than this is trusting the network.
     #[test]
     fn the_offset_is_within_half_the_delay_of_the_truth() {
-        let s = query().accept(&REPLY, T4).unwrap();
+        let s = query().accept(&reply(), T4).unwrap();
         let truth = 500_000_000i128;
         assert!((s.offset.nanoseconds() - truth).abs() <= s.delay.nanoseconds() / 2);
     }
@@ -980,10 +1009,10 @@ mod tests {
         let t3 = Timestamp::from_bits(0x0000_0000_8000_0000);
         let t4 = Timestamp::from_bits(0x0000_0001_0000_0000);
 
-        let mut p = Packet::parse(&REPLY).unwrap();
+        let mut p = Packet::parse(&reply()).unwrap();
         p.receive = t2;
         p.transmit = t3;
-        let s = Query::with_nonce(t1, TEST_NONCE)
+        let s = Query::with_nonce(t1, test_nonce())
             .accept(&p.to_bytes(), t4)
             .unwrap();
         assert_eq!(s.delay.nanoseconds(), 1_500_000_000);
@@ -1006,12 +1035,14 @@ mod tests {
         let w = tweak(|w| w[24..32].copy_from_slice(&T1.bits().to_be_bytes()));
         assert_eq!(query().accept(&w, T4), Err(Reject::OriginMismatch));
         assert_eq!(
-            query().accept(&REPLY, T4).unwrap().offset.nanoseconds(),
+            query().accept(&reply(), T4).unwrap().offset.nanoseconds(),
             500_149_999
         );
         // A reply to one request does not answer another that carries a different nonce.
-        let other = Query::with_nonce(T1, Timestamp::from_bits(TEST_NONCE.bits() ^ 1));
-        assert_eq!(other.accept(&REPLY, T4), Err(Reject::OriginMismatch));
+        let other_nonce = fresh_nonce();
+        assert_ne!(other_nonce, test_nonce());
+        let other = Query::with_nonce(T1, other_nonce);
+        assert_eq!(other.accept(&reply(), T4), Err(Reject::OriginMismatch));
     }
 
     /// A broadcast packet is unsolicited, so nobody should believe it, even carrying our origin
@@ -1082,13 +1113,13 @@ mod tests {
         // T4 < T1: the reply arrived before we sent. Our side of the wire, our clock.
         let early = Timestamp::from_bits(T1.bits() - 1);
         assert_eq!(
-            query().accept(&REPLY, early),
+            query().accept(&reply(), early),
             Err(Reject::ClientOrderReversed)
         );
 
         // The round trip shorter than the server's own turnaround: each half is causally fine and
         // the pair is impossible, so this is the check the two above do not make.
-        let mut p = Packet::parse(&REPLY).unwrap();
+        let mut p = Packet::parse(&reply()).unwrap();
         p.receive = T1;
         p.transmit = Timestamp::from_bits(T1.bits() + (1 << 32)); // a full second of thinking
         assert_eq!(
@@ -1111,7 +1142,7 @@ mod tests {
             ShortFormat::from_bits(u32::MAX)
         );
         // RFC 5905 refuses `>= MAXDISP`: a tick under 16 seconds is inside, 16 exactly is not.
-        let mut p = Packet::parse(&REPLY).unwrap();
+        let mut p = Packet::parse(&reply()).unwrap();
         p.root_delay = ShortFormat::from_bits(0);
         p.root_dispersion = ShortFormat::from_bits(MAXIMUM_ROOT_DISTANCE.bits() - 1);
         assert!(query().accept(&p.to_bytes(), T4).is_ok());
@@ -1123,7 +1154,7 @@ mod tests {
 
     #[test]
     fn a_reference_timestamp_after_the_transmit_timestamp_is_refused() {
-        let mut p = Packet::parse(&REPLY).unwrap();
+        let mut p = Packet::parse(&reply()).unwrap();
         // Equal is fine, one tick later is not.
         p.reference = p.transmit;
         assert!(query().accept(&p.to_bytes(), T4).is_ok());
@@ -1136,7 +1167,7 @@ mod tests {
         // after it.
         p.reference = Timestamp::from_bits(0xFFFF_FFFF_0000_0000);
         p.transmit = Timestamp::from_bits(0x0000_0001_0000_0000);
-        let q = Query::with_nonce(Timestamp::from_bits(0xFFFF_FFFE_0000_0000), p.origin);
+        let q = Query::with_nonce(Timestamp::from_bits(0xFFFF_FFFE_0000_0000), test_nonce());
         let dest = Timestamp::from_bits(0x0000_0002_0000_0000);
         p.receive = Timestamp::from_bits(0xFFFF_FFFF_8000_0000);
         assert!(q.accept(&p.to_bytes(), dest).is_ok());
@@ -1168,9 +1199,9 @@ mod tests {
     #[test]
     fn a_reply_of_the_wrong_size_is_refused_rather_than_truncated() {
         let mut long = [0u8; PACKET_BYTES + 20];
-        long[..PACKET_BYTES].copy_from_slice(&REPLY);
+        long[..PACKET_BYTES].copy_from_slice(&reply());
         assert_eq!(query().accept(&long, T4), Err(Reject::Length(68)));
-        assert_eq!(query().accept(&REPLY[..47], T4), Err(Reject::Length(47)));
+        assert_eq!(query().accept(&reply()[..47], T4), Err(Reject::Length(47)));
         assert_eq!(query().accept(&[], T4), Err(Reject::Length(0)));
     }
 
@@ -1223,7 +1254,7 @@ mod tests {
     /// fixture reply's tiny delay could not tell them apart.
     #[test]
     fn root_distance_halves_the_delay_it_is_given() {
-        let mut p = Packet::parse(&REPLY).unwrap();
+        let mut p = Packet::parse(&reply()).unwrap();
         p.root_delay = ShortFormat::from_bits(6 << 16);
         p.root_dispersion = ShortFormat::from_bits(1 << 16);
         assert_eq!(p.root_distance().seconds(), 4);
