@@ -1,7 +1,7 @@
 # The file and block protocols, verb by verb
 
 An appendix to [notes/fs-server.md](../fs-server.md). The doc comments in
-`crates/file_system_contract` give each verb's wire, its rights and its refusals. This page carries
+`file_system_contract` (in `nifeos/file_system_contract`) give each verb's wire, its rights and its refusals. This page carries
 why each verb is shaped the way it is. The directory rights and their errnos are in
 [notes/dir-capability.md](../dir-capability.md), `RENAME` is in
 [dir-capability/rename.md](../dir-capability/rename.md), `UNLINK` and `RMDIR` are in

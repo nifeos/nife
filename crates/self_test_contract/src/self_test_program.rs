@@ -192,7 +192,7 @@ pub const fn images_fit(lengths: &[u64; image::COUNT]) -> bool {
 }
 
 /// **The program's two messages on [`slot::REPORT`]**: three words, the code first and the
-/// transcript's new end second. Neither is `abi::fault::EVENT_FAULT` or `EVENT_EXIT`, which arrive
+/// transcript's new end second. Neither is `moho_abi::fault::EVENT_FAULT` or `EVENT_EXIT`, which arrive
 /// on the same endpoint when the program dies.
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-10 UTC).

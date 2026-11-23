@@ -74,5 +74,5 @@ pub mod report {
 }
 
 /// The ABI names both binaries this crate serves share, re-exported so each spells them from one place.
-pub use abi::SYSTEM_CALL_CAPABILITY_DELETE;
-pub use abi::rendezvous::{NO_CAPABILITY, RECEIVE_CAPABILITY, SEND_CAPABILITY};
+pub use moho_abi::SYSTEM_CALL_CAPABILITY_DELETE;
+pub use moho_abi::rendezvous::{NO_CAPABILITY, RECEIVE_CAPABILITY, SEND_CAPABILITY};

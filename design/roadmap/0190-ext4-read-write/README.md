@@ -16,7 +16,8 @@ main page's prose budget has no room for.
 - [`upstream/`](upstream/): one draft per submission to `rsext4` upstream, each a text for the
   architect's review with the change beside it as a `.patch`: so far
   [`2a-free-empty-extent-index.md`](upstream/2a-free-empty-extent-index.md) and
-  [`2b-restore-truncate-tail.md`](upstream/2b-restore-truncate-tail.md), the two truncate fixes.
+  [`2b-restore-truncate-tail.md`](upstream/2b-restore-truncate-tail.md), the two truncate fixes, and
+  [`9-inode-bitmap-padding.md`](upstream/9-inode-bitmap-padding.md), the inode bitmap's padding.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default,
 `design/roadmap/X/` beside `design/roadmap/X.md`. calef names directories.*

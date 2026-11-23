@@ -156,7 +156,7 @@ kernel change and no opcode. What it does cost:
 - One `BADGE` call per endowment, which `system_log`'s writers already pay.
 
 Refused: an endpoint per level, since a receive here takes one endpoint with at most a bound
-notification beside it (`abi::notification::BIND`). Refused: a breaking change as a new contract
+notification beside it (`moho_abi::notification::BIND`). Refused: a breaking change as a new contract
 name, which moves the dispatch problem without solving it.
 
 ### 9. A level stays served until no package in basalt needs it

@@ -4,7 +4,7 @@
 //!
 //! Name: provisional (milestone 812's lane, 2026-10-10 UTC).
 
-use abi::Error;
+use moho_abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Object, Rights};
@@ -23,39 +23,39 @@ pub(super) fn thread_control_block_invoke(
     [a0, a1, a2]: [u64; 3],
 ) -> Result<i64, Error> {
     match method {
-        abi::thread_control_block::CONFIGURE => {
+        moho_abi::thread_control_block::CONFIGURE => {
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             thread_control_block_configure(tid, a0, a1, a2, frame.arg(5))
         }
-        abi::thread_control_block::SET_THREAD_POINTER => {
+        moho_abi::thread_control_block::SET_THREAD_POINTER => {
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             thread_control_block_set_thread_pointer(tid, a0, frame)
         }
-        abi::thread_control_block::CAPABILITY_INSERT => {
+        moho_abi::thread_control_block::CAPABILITY_INSERT => {
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             thread_control_block_capability_insert(tid, a0, a1, a2)
         }
-        abi::thread_control_block::START => {
+        moho_abi::thread_control_block::START => {
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             sched::start_thread_control_block(tid, [a0, a1, a2])?; // the child's x0, x1, x2 (19d/19e)
             Ok(0)
         }
-        abi::thread_control_block::SUSPEND => {
+        moho_abi::thread_control_block::SUSPEND => {
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             sched::suspend_thread_control_block(tid)?;
             Ok(0)
         }
-        abi::thread_control_block::RESUME => {
+        moho_abi::thread_control_block::RESUME => {
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }

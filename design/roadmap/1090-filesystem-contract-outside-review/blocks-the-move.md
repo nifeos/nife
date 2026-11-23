@@ -13,7 +13,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
    `src/xattr.rs` line 61, `:62`; `src/verb/tests.rs` line 133, `:174`). The last is
    `least_authority_demo` (`src/grant/tests.rs` line 40, `:44`, `:51`). Beyond the lint: `rm.rs`
    describes the `rm` program and cites `byte_sink_contract::eof()`; `fs.rs` line 298 cites
-   `abi::rendezvous::BADGE`; `fs.rs` line 274 cites `bench/transfer-size-sweep.sh`; `fs.rs` line 232 cites
+   `moho_abi::rendezvous::BADGE`; `fs.rs` line 274 cites `bench/transfer-size-sweep.sh`; `fs.rs` line 232 cites
    `subtree_scope::Bindings::bind`; `nameset.rs` line 7 cites `grant_plan::Refusal::TooManyNames`;
    `xattr.rs` line 73 cites `redoxfs_host extract`. `standalone.py` adds: `publish = false`
    (`Cargo.toml` line 11, with a comment pointing at a nife file), 31 provenance blocks, 7 milestone

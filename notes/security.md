@@ -63,7 +63,7 @@ page, which is process-local and bounded by the untyped, so it is left as-is.)
 4. Stale documentation described defenses the code no longer has. Comments still pointed at
 `user_slice` and the confused-deputy `AT S1E0R` reader, which milestone 8 deleted when the console
 left the kernel; a future reader could have believed a pointer path was guarded when there is no
-pointer path at all. Corrected, and the historical `abi::console` methods are marked as such.
+pointer path at all. Corrected, and the historical `moho_abi::console` methods are marked as such.
 
 ## What is deferred, on purpose, and named honestly
 

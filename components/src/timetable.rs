@@ -79,9 +79,10 @@ const REAP_ATTEMPTS: usize = 1024;
 /// happened. The plan and the summary are text; these are the two ways the program ends.
 use contract::{E_ARCHIVE, E_BUDGET, E_CONFIG, E_IMAGE, E_STORE, E_UNVOUCHED};
 
-// The relation `grant_plan` cannot state without depending on `abi`, held here as every reader of
+// The relation `grant_plan` cannot state without depending on `moho_abi`, held here as every reader of
 // the slot holds it (`components/src/swish.rs` does the same).
-const _: () = assert!(spawn_protocol::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
+const _: () =
+    assert!(spawn_protocol::RUN_UNVOUCHED_SLOT == moho_abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 // No slot this program hands a job is the run-unvouched slot. The job's other capability is a
 // region this program split for it, which cannot be the run-unvouched capability (see `_start`).
 const _: () = assert!(CHILD_REPORT != spawn_protocol::RUN_UNVOUCHED_SLOT);
@@ -896,15 +897,15 @@ fn slots(
 ) -> &[(u64, u64, u64)] {
     let mut n = 0;
     if report {
-        out[n] = (0, CHILD_REPORT, abi::rights::WRITE);
+        out[n] = (0, CHILD_REPORT, moho_abi::rights::WRITE);
         n += 1;
     }
     if clock {
-        out[n] = (1, contract::CLOCK_SLOT, abi::rights::READ);
+        out[n] = (1, contract::CLOCK_SLOT, moho_abi::rights::READ);
         n += 1;
     }
     if let Some(g) = grant {
-        out[n] = (1 + clock as u64, g, abi::rights::WRITE);
+        out[n] = (1 + clock as u64, g, moho_abi::rights::WRITE);
         n += 1;
     }
     &out[..n]
@@ -915,7 +916,7 @@ fn clock_map(clock: bool) -> &'static [(u64, u64, u64)] {
     const MAP: [(u64, u64, u64); 1] = [(
         contract::CLOCK_VA,
         contract::CLOCK_SLOT,
-        abi::address_space::MAP_READ_ONLY,
+        moho_abi::address_space::MAP_READ_ONLY,
     )];
     if clock { &MAP } else { &[] }
 }
@@ -952,7 +953,7 @@ fn collect_grant(exits: &mut u64, faults: &mut u64, mem_slot: u64) {
     let Message {
         w0: event, w1: tid, ..
     } = receive_message(DEATHS).into_message();
-    if event == abi::fault::EVENT_EXIT {
+    if event == moho_abi::fault::EVENT_EXIT {
         *exits += 1;
     } else {
         *faults += 1;
@@ -983,7 +984,7 @@ fn collect(exits: &mut u64, faults: &mut u64) {
     let Message {
         w0: event, w1: tid, ..
     } = receive_message(DEATHS).into_message();
-    if event == abi::fault::EVENT_EXIT {
+    if event == moho_abi::fault::EVENT_EXIT {
         *exits += 1;
     } else {
         *faults += 1;

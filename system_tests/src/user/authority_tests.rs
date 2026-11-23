@@ -169,7 +169,7 @@ fn a_dead_sub_server_is_restarted_by_its_supervisor_not_by_the_root() {
     let crash = crashing.next().expect("the supervisor saw no death");
     assert_eq!(
         crash[2],
-        abi::fault::EVENT_FAULT,
+        moho_abi::fault::EVENT_FAULT,
         "the crash should reach the supervisor as a FAULT event",
     );
     // The other half of §26's "both events flow": a clean exit must arrive as EXIT, because that
@@ -179,7 +179,7 @@ fn a_dead_sub_server_is_restarted_by_its_supervisor_not_by_the_root() {
         .expect("the replacement's clean exit never reached the supervisor");
     assert_eq!(
         finished[2],
-        abi::fault::EVENT_EXIT,
+        moho_abi::fault::EVENT_EXIT,
         "attempt 1 exited cleanly, so the supervisor must see EXIT, not FAULT",
     );
     assert!(
@@ -194,7 +194,7 @@ fn a_dead_sub_server_is_restarted_by_its_supervisor_not_by_the_root() {
     let mut finishing = of_kind(&msgs, REPORT_SUP_SAW_DEATH).filter(|m| m[1] == LABEL_FINISHES);
     assert_eq!(
         finishing.next().map(|m| m[2]),
-        Some(abi::fault::EVENT_EXIT),
+        Some(moho_abi::fault::EVENT_EXIT),
         "the finishing child's clean exit did not arrive under its label",
     );
     assert!(

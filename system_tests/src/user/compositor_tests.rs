@@ -218,7 +218,7 @@ fn a_client_holds_no_capability_for_its_neighbours_pixels_or_the_screen() {
     );
     assert_eq!(
         errno as i64,
-        abi::Error::NoSuchSlot as i64,
+        moho_abi::Error::NoSuchSlot as i64,
         "receiving on an ungranted slot must be NoSuchSlot (-1), 'there is nothing there', not \
          {} (a permission error would mean the authority exists and was withheld)",
         errno as i64,
@@ -336,7 +336,7 @@ fn a_client_with_no_input_grant_finds_nothing_in_the_input_slot() {
     );
     assert_eq!(
         errno as i64,
-        abi::Error::NoSuchSlot as i64,
+        moho_abi::Error::NoSuchSlot as i64,
         "a non-focusable client's input slot must be empty (NoSuchSlot, -1); {} means something \
          was granted there",
         errno as i64,

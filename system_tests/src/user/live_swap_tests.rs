@@ -445,7 +445,7 @@ fn a_client_keeps_talking_while_the_server_underneath_it_is_replaced() {
         .expect("the outgoing instance never died");
     assert_eq!(
         death[2],
-        abi::fault::EVENT_FAULT,
+        moho_abi::fault::EVENT_FAULT,
         "the outgoing instance should have faulted on the revoked device, not exited cleanly",
     );
     let site = of_kind(msgs, RPT_SITE)
@@ -482,7 +482,7 @@ fn a_client_of_the_stable_rendezvous_cannot_become_its_server() {
         .expect("the attacker never reported");
     assert_eq!(
         attack[1],
-        (-(abi::Error::NotPermitted as i64)) as u64,
+        (-(moho_abi::Error::NotPermitted as i64)) as u64,
         "a client of the stable rendezvous received on it (or was refused for the wrong reason): \
          error {}, wanted NotPermitted. If this succeeded, any holder of a request capability \
          could impersonate the component.",
@@ -515,7 +515,7 @@ fn a_confined_client_drives_the_server_to_write_past_its_log() {
         .expect("the attacker never reported its RECEIVE_CAPABILITY refusal");
     assert_eq!(
         attack[1],
-        (-(abi::Error::NotPermitted as i64)) as u64,
+        (-(moho_abi::Error::NotPermitted as i64)) as u64,
         "the attacker's RECEIVE_CAPABILITY was not refused, so this run proves nothing about the deputy",
     );
     let deputy = of_kind(&msgs[..n], RPT_DEPUTY)
@@ -613,7 +613,7 @@ fn a_producer_never_blocks_on_an_absent_consumer_and_loses_nothing() {
 // component that stops answering **without dying**.
 // ===============================================================================================
 
-/// `abi::survey`'s state codes, unpacked from `RPT_SURVEY` by `hot_swap_contract::survey_counts`'s layout.
+/// `moho_abi::survey`'s state codes, unpacked from `RPT_SURVEY` by `hot_swap_contract::survey_counts`'s layout.
 /// Mirrored here for the reason every other constant in this file is: userspace owns the definition.
 fn survey_blocked(w: u64) -> u64 {
     (w >> 16) & 0xff
@@ -885,7 +885,7 @@ fn the_hung_component_is_reclaimed_while_still_hung(msgs: &[[u64; 5]]) {
         of_kind(msgs, RPT_DEATH).count(),
     );
     assert!(
-        of_kind(msgs, RPT_DEATH).all(|m| m[2] != abi::fault::EVENT_FAULT),
+        of_kind(msgs, RPT_DEATH).all(|m| m[2] != moho_abi::fault::EVENT_FAULT),
         "a child faulted: the incumbent ran again after its region was destroyed",
     );
 }
@@ -897,7 +897,7 @@ fn the_stranded_caller_sees_gone(client: &[u64; 5], log: &[u64; 5]) {
     assert_ne!(
         client[1] & CL_WAS_GONE,
         0,
-        "the client never saw abi::Error::Gone (verdict {:#x}). Either its call was answered \
+        "the client never saw moho_abi::Error::Gone (verdict {:#x}). Either its call was answered \
          normally, and it was never stranded, which proves nothing about a hang; or the DESTROY \
          finished the incumbent without answering the callers it held reply capabilities for, \
          and the client would still be parked (milestone 254's sched::strand_callers_of).",
@@ -1006,7 +1006,7 @@ fn a_component_keeps_its_state_across_a_swap_and_a_swap_that_cannot_absorb_it_do
     // retired on commit, the client finished, and the replacement was retired at the end.
     assert_eq!(of_kind(msgs, RPT_DEATH).count(), 4);
     assert!(
-        of_kind(msgs, RPT_DEATH).all(|m| m[2] != abi::fault::EVENT_FAULT),
+        of_kind(msgs, RPT_DEATH).all(|m| m[2] != moho_abi::fault::EVENT_FAULT),
         "a child of the handoff system faulted",
     );
 }

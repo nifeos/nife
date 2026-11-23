@@ -1,6 +1,6 @@
-use file_system_contract::{directory, rm as rr};
+use file_system_contract::directory;
 use file_system_fixture::tree;
-use grant_plan::rm_options;
+use grant_plan::{rm_options, rm_report as rr};
 
 use super::*;
 use crate::sched;
@@ -11,7 +11,7 @@ const MAXIMUM_MESSAGES: usize = 64;
 
 /// What one run of the program reported.
 struct Outcome {
-    /// Its exit status: 0, or the errno of the first failure (`file_system_contract::rm`).
+    /// Its exit status: 0, or the errno of the first failure (`grant_plan::rm_report`).
     status: u64,
     /// How many names it removed.
     removed: u64,
@@ -66,7 +66,7 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
         ) {
             byte_sink_contract::Message::Bytes(_) => {}
             byte_sink_contract::Message::EndOfStream => {
-                // The verdict comes after the end, on its own endpoint (`file_system_contract::rm`).
+                // The verdict comes after the end, on its own endpoint (`grant_plan::rm_report`).
                 // Receiving it only now is what keeps it from overtaking the text.
                 let [status, removed, zero, _, _] = sched::ipc_receive(verdict);
                 assert_eq!(zero, 0, "rm's verdict has a third word, and it is zero");

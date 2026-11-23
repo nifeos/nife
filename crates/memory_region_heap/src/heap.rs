@@ -15,7 +15,7 @@ use talc::source::Manual;
 use crate::growth::{PAGE_BYTES, growth_pages, required_bytes, run_succeeded};
 
 /// Why a page source did not map a page: the raw nonzero answer of the call that maps one. For
-/// [`MemoryRegionPages`] it is the kernel's return, one of [`abi::Error`]'s codes.
+/// [`MemoryRegionPages`] it is the kernel's return, one of [`moho_abi::Error`]'s codes.
 ///
 /// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -30,7 +30,7 @@ impl Refusal {
     ///
     /// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
     pub fn is_budget_spent(self) -> bool {
-        abi::Error::try_from(self.code) == Ok(abi::Error::OutOfMemory)
+        moho_abi::Error::try_from(self.code) == Ok(moho_abi::Error::OutOfMemory)
     }
 }
 
@@ -67,7 +67,13 @@ impl PageSource for MemoryRegionPages {
     fn map_page(&mut self, virtual_address: u64) -> Result<(), Refusal> {
         // SAFETY: plain system call; the kernel validates the slot, the virtual address, and the budget.
         let answer = unsafe {
-            user_mode_runtime::invoke(self.slot, abi::memory_region::MAP, virtual_address, 0, 0)
+            user_mode_runtime::invoke(
+                self.slot,
+                moho_abi::memory_region::MAP,
+                virtual_address,
+                0,
+                0,
+            )
         };
         if answer == 0 {
             Ok(())

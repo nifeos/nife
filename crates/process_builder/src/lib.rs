@@ -112,12 +112,20 @@ pub fn map_scratch(frame: u64, writable: bool, own_ut: u64) -> Result<u64, ()> {
         };
         // SAFETY: `invoke` is the system call; the kernel validates the capability, the rights and the
         // address, and maps nothing on any refusal.
-        let r = unsafe { invoke(frame, abi::page_frame::MAP, va, u64::from(writable), own_ut) };
+        let r = unsafe {
+            invoke(
+                frame,
+                moho_abi::page_frame::MAP,
+                va,
+                u64::from(writable),
+                own_ut,
+            )
+        };
         if r == 0 {
             SCRATCH_NEXT.store(next, Relaxed);
             return Ok(va);
         }
-        if r != abi::Error::BadPointer as i64 {
+        if r != moho_abi::Error::BadPointer as i64 {
             SCRATCH_NEXT.store(va, Relaxed);
             return Err(());
         }
@@ -167,7 +175,7 @@ pub fn give_up_own_page(va: u64) -> bool {
     }
     // SAFETY: `invoke` is the system call; the kernel validates the capability, the right and the
     // address, and changes nothing on a refusal. The caller is done with every byte at `va`.
-    unsafe { invoke(own, abi::address_space::UNMAP, va, 0, 0) == 0 }
+    unsafe { invoke(own, moho_abi::address_space::UNMAP, va, 0, 0) == 0 }
 }
 
 /// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
@@ -263,7 +271,7 @@ pub fn build_child_space(
         return Err(());
     }
 
-    let aspace = retype_into_kernel_object_from(build_ut, abi::object_type::ADDRESS_SPACE)?;
+    let aspace = retype_into_kernel_object_from(build_ut, moho_abi::object_type::ADDRESS_SPACE)?;
     match lay_out_child(own_ut, build_ut, elf, endow, aspace) {
         Ok(tcb) => Ok((
             Child {
@@ -291,11 +299,11 @@ fn lay_out_child(
 ) -> Result<u64, ()> {
     for seg in elf.segments() {
         let mode = if seg.is_executable() {
-            abi::address_space::MAP_CODE
+            moho_abi::address_space::MAP_CODE
         } else if seg.is_writable() {
-            abi::address_space::MAP_READ_WRITE
+            moho_abi::address_space::MAP_READ_WRITE
         } else {
-            abi::address_space::MAP_READ_ONLY
+            moho_abi::address_space::MAP_READ_ONLY
         };
         let (start, end) = seg.page_range(PAGE_BYTES);
         let mut va = start;
@@ -320,8 +328,12 @@ fn lay_out_child(
     for k in 0..endow.stack_pages {
         let stack_frame = retype_into_page_frame_from(build_ut)?;
         let va = CHILD_STACK_VA - k * PAGE;
-        if address_space_layout_into(aspace, va, stack_frame, abi::address_space::MAP_READ_WRITE)
-            != 0
+        if address_space_layout_into(
+            aspace,
+            va,
+            stack_frame,
+            moho_abi::address_space::MAP_READ_WRITE,
+        ) != 0
         {
             capability_delete(stack_frame);
             return Err(());
@@ -337,7 +349,7 @@ fn lay_out_child(
         build_ut,
         aspace,
         startup_page_contract::PAGE_VIRTUAL_ADDRESS,
-        abi::address_space::MAP_READ_ONLY,
+        moho_abi::address_space::MAP_READ_ONLY,
         |page| startup_page_contract::write(page, endow.windows).map_err(|_| ()),
     )?;
 
@@ -354,7 +366,7 @@ fn lay_out_child(
             build_ut,
             aspace,
             counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
-            abi::address_space::MAP_READ_ONLY,
+            moho_abi::address_space::MAP_READ_ONLY,
             copy_in(page.as_ref().map(|bytes| (0usize, &bytes[..]))),
         )?;
     }
@@ -371,7 +383,7 @@ fn lay_out_child(
                 build_ut,
                 aspace,
                 base + off as u64,
-                abi::address_space::MAP_READ_ONLY,
+                moho_abi::address_space::MAP_READ_ONLY,
                 copy_in(Some((0, &bytes[off..off + n]))),
             )?;
             off += n;
@@ -384,7 +396,8 @@ fn lay_out_child(
         }
     }
 
-    let tcb = retype_into_kernel_object_from(build_ut, abi::object_type::THREAD_CONTROL_BLOCK)?;
+    let tcb =
+        retype_into_kernel_object_from(build_ut, moho_abi::object_type::THREAD_CONTROL_BLOCK)?;
     if endow_child(tcb, endow, aspace).is_err() {
         capability_delete(tcb);
         return Err(());
@@ -405,12 +418,12 @@ fn endow_child(tcb: u64, endow: &ChildEndowment, aspace: u64) -> Result<(), ()> 
         let source = if our_slot == CHILDS_OWN_SPACE {
             // `WRITE` to shape it, or `READ` alone for the address waits a `std` program's locks make
             // on it (milestone 812); never `GRANT`.
-            if rights != abi::rights::WRITE && rights != abi::rights::READ {
+            if rights != moho_abi::rights::WRITE && rights != moho_abi::rights::READ {
                 return Err(());
             }
             aspace
         } else if our_slot == CHILDS_OWN_THREAD {
-            if rights != abi::rights::WRITE {
+            if rights != moho_abi::rights::WRITE {
                 return Err(());
             }
             tcb
@@ -428,8 +441,8 @@ fn endow_child(tcb: u64, endow: &ChildEndowment, aspace: u64) -> Result<(), ()> 
     if let Some(fault) = endow.fault {
         // The spawn-slot convention: target slot `n + 1` means "slot n", so the supervision endpoint
         // lands in the reserved last slot rather than wherever first-free fell.
-        let target = abi::fault::FAULT_RENDEZVOUS_SLOT + 1;
-        if thread_control_block_capability_insert(tcb, fault, abi::rights::READ, target) < 0 {
+        let target = moho_abi::fault::FAULT_RENDEZVOUS_SLOT + 1;
+        if thread_control_block_capability_insert(tcb, fault, moho_abi::rights::READ, target) < 0 {
             return Err(());
         }
     }
@@ -448,7 +461,7 @@ fn configure_child_as_process(
     slot: u64,
     rights: u64,
 ) -> Result<(), ()> {
-    if rights != abi::rights::BIND {
+    if rights != moho_abi::rights::BIND {
         return Err(());
     }
     // SAFETY: `invoke` is the system call; the kernel validates the region, the object_type and the
@@ -457,8 +470,8 @@ fn configure_child_as_process(
     let process = unsafe {
         invoke(
             build_ut,
-            abi::memory_region::RETYPE_OBJECT,
-            abi::object_type::PROCESS,
+            moho_abi::memory_region::RETYPE_OBJECT,
+            moho_abi::object_type::PROCESS,
             aspace,
             0,
         )
@@ -529,7 +542,7 @@ fn copy_in(content: Option<(usize, &[u8])>) -> impl FnOnce(&mut [u8]) -> Result<
     }
 }
 
-/// Retype one page of `memory_region` into a kernel object of `object_type` (`abi::object_type`),
+/// Retype one page of `memory_region` into a kernel object of `object_type` (`moho_abi::object_type`),
 /// returning the capability slot it landed in.
 ///
 /// Name: ratified 2026-11-11 (UTC). It pairs with `user_mode_runtime::retype_into_kernel_object`,
@@ -615,7 +628,7 @@ pub fn start_child(child: Child, a0: u64, a1: u64, a2: u64) -> bool {
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/48-ctrl-z.
 pub fn hand_to_requester(tcb: u64, endpoint: u64) {
-    let _ = send_capability(endpoint, tcb, abi::rights::WRITE, 0);
+    let _ = send_capability(endpoint, tcb, moho_abi::rights::WRITE, 0);
     forget_thread_control_block(tcb);
 }
 

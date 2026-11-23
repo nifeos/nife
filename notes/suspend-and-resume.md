@@ -7,7 +7,7 @@ rules what `ThreadControlBlock::SUSPEND` and `RESUME` are: two methods on the TC
 gated on `WRITE`, telling nobody, with `RESUME` continuing at the saved PC. This note records how
 the kernel carries that out and the choices the ruling left to the builder. The code is
 [`kernel/src/sched/suspension.rs`](../kernel/src/sched/suspension.rs); the contract a caller reads
-is on the constants in [`crates/abi/src/thread_control_block.rs`](../crates/abi/src/thread_control_block.rs).
+is on the constants in [`src/thread_control_block.rs` of `nifeos/moho_abi`](https://github.com/nifeos/moho_abi/blob/main/src/thread_control_block.rs).
 
 ## What a suspended thread is
 
@@ -22,7 +22,7 @@ wake aimed at a suspended thread is refused the same way one aimed at a parked r
 `RESUME` serves the wait. A seventh `RunState` would have needed its own arm at each of those
 sites, and a site that forgot one would leak a thread that can never be reaped.
 
-The cost: a survey (`abi::survey`) reports a suspended thread as `BLOCKED`. The survey's codes are a
+The cost: a survey (`moho_abi::survey`) reports a suspended thread as `BLOCKED`. The survey's codes are a
 wire two programs agree on, and adding `STOPPED` is a change to that wire with no consumer yet.
 The `BUGS` entry below carries it.
 

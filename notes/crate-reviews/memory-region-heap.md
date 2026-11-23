@@ -33,7 +33,7 @@ the growth policy runs on a host with a fake source. The crate is `no_std`, has 
 | license | none of its own yet. The move lane adds `MIT OR Apache-2.0` with both texts, as ruled for every crate that leaves |
 | `publish` | `false`; the allowlist lint holds the exception. No publish until the review milestones are delivered |
 | size | one `src/lib.rs` of 1,160 lines (library, host tests, Kani harnesses), three falsification patches, and an unpublished `fuzz` crate with seeds |
-| dependencies | `abi`, `address_space_layout` and `user_mode_runtime` by path, each `version = "0.1.0"`; `talc = "5.1.1"` without default features |
+| dependencies | `moho_abi`, `address_space_layout` and `user_mode_runtime` by path, each `version = "0.1.0"`; `talc = "5.1.1"` without default features |
 
 ## Who in nife depends on it
 
@@ -47,7 +47,7 @@ policy is still to come. `packages/runtime.package.toml` lists the crate, and
 before `redoxfs`, which shares its `talc` and keeps its own track.
 
 Four things point back into nife from the crate. The three path dependencies become `git` and
-`rev` pins once `abi`, `address_space_layout` and `user_mode_runtime` have repositories, which
+`rev` pins once `moho_abi`, `address_space_layout` and `user_mode_runtime` have repositories, which
 steps 2 and 3 of milestone 1017 produce first. The rest are citations of nife milestones and paths in the
 crate's text and fuzz crate, and the `Cargo.toml` inheritance. `script/crate-standalone` and
 `script/crate-move --dry-run` list each (below).
@@ -160,7 +160,7 @@ The move is step 9 of milestone 1017, after the contract crates it links, on thi
 
 | item | owner |
 |---|---|
-| Convert `abi`, `address_space_layout` and `user_mode_runtime` from path dependencies to `git` and `rev` pins with `version`, once their repositories exist. | move lane |
+| Convert `moho_abi`, `address_space_layout` and `user_mode_runtime` from path dependencies to `git` and `rev` pins with `version`, once their repositories exist. | move lane |
 | Write the README (what pays, where it lives, how it grows, the minimum cap, what null means, the `talc` sentence and monotonic growth), both license files, `license`, `rust-version`, `description` and `repository`; drop the inherited `lints`. | move lane |
 | Remove nife citations from the fuzz crate, the falsification patch comments and the manifest comments; rename `va` in the fuzz crate's policy copy. | move lane |
 | One copy of the growth policy: the std overlay and `second_mount.rs` copy `MINIMUM_GROW_PAGES = 8` today. | a later lane, item 8 of the milestone |
@@ -171,5 +171,5 @@ The move is step 9 of milestone 1017, after the contract crates it links, on thi
 
 None for the maintainer. The package is cleared (2026-11-20 UTC, no tag, no publish), and the
 clearance approves the repository, `nifeos/memory_region_heap`, with `publish = false`. The move, in
-step 9 of milestone 1017, waits for `abi`, `address_space_layout` and `user_mode_runtime` to get
+step 9 of milestone 1017, waits for `moho_abi`, `address_space_layout` and `user_mode_runtime` to get
 repositories. It leaves with `subtree_scope` or alone, decided at the move, and before `redoxfs`.

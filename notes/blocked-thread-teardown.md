@@ -20,7 +20,7 @@ no server, and the shipped code asks both queues rather than believing the role.
 
 Proposal C's first half shipped as milestone 254 (caller) on 2026-09-04, on calef's ruling that it
 is a defect rather than a fork, because it asks for no authority anybody does not hold. A caller
-reply-parked on a server that stops being able to answer now returns `abi::Error::Gone`. The stale
+reply-parked on a server that stops being able to answer now returns `moho_abi::Error::Gone`. The stale
 reply capability this note identified as the blocking hazard is deleted before the wake. B, C's
 second piece and D are not built. *(Updated 2026-10-11 (UTC): this paragraph said the fork was
 untouched and milestone 133's, which stopped being true when A was chosen and built.)*
@@ -65,7 +65,7 @@ has the reading behind each point:
   queue at all, and `handshake.wait_on` says which. (The role-versus-queue error the opening
   paragraphs record is in this claim.)
 - The abort-and-resume pair, `set_ipc_aborted` then `wake`, already exists and already hands
-  userspace `abi::Error::Gone`. It is only ever entered from an endpoint's wait queue.
+  userspace `moho_abi::Error::Gone`. It is only ever entered from an endpoint's wait queue.
 - The one missing primitive was `remove_receiver`, the twin of `Endpoint::remove_sender`, about
   twelve lines. A reply-parked thread needs no unlink at all.
 - Reaching outside the region is settled precedent: `reap_region_objects` already unlinks a corpse
@@ -96,7 +96,7 @@ The `_` is the endpoint, and it is discarded. Today this is sound, and the reaso
 because it is what an abort would invalidate. There are three ways out of a reply park, and no
 server holds an unconsumed `Reply(tid)` at the end of any of them:
 
-- The reply arrives. `abi::reply::REPLY` calls `ipc_reply` and then `delete_current_capability(slot)`,
+- The reply arrives. `moho_abi::reply::REPLY` calls `ipc_reply` and then `delete_current_capability(slot)`,
   "so a second reply is `NoSuchSlot`". The cap is gone whether or not the delivery landed.
 - The caller is drained off a sender queue. A `CALL` that met no receiver leaves the caller
   *both* Reply-parked and queued as a sender, with the reply cap riding in `outgoing_capability` rather than

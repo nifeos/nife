@@ -74,7 +74,7 @@ rendering of your authority and cannot offer a path no capability reaches.
 
 `^C` at the prompt is a byte the shell's editor turns into a discarded line. A supervised job still
 takes `^C` through the terminal's count, per §24 (interrupting the foreground process), so the shell
-leaves raw mode just before it spawns one. Host tests in `crates/line_editor` and `crates/swish`
+leaves raw mode just before it spawns one. Host tests in `line_editor` and `crates/swish`
 cover it, and `script/swish-check` types a Tab twice and a `^C` once at a real prompt on all three
 architectures. The binary cost and the per-keystroke cost are measured in
 notes/shell-line-editing.md, with its BUGS. fish's extras are proposals (the Follow-on on

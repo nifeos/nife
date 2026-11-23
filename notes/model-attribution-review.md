@@ -142,7 +142,7 @@ differential, and the expensive evidence would be hard to obtain and easy to fak
 
 ### Tier 1: the irreversible surface, unblinded, no control. 1 lane, 2 to 3 hours, ~400k tokens.
 
-Read every Sonnet diff touching `crates/abi`, `kernel/src/system_call.rs`, and `crates/*_proto`: 25
+Read every Sonnet diff touching `crates/moho_abi`, `kernel/src/system_call.rs`, and `crates/*_proto`: 25
 commits, 649 diff lines. Then the 7 new crates' and 7 new programs' manifests and capability
 declarations, and the 14 Cargo manifest changes against §46's rule that a dependency is a decision.
 

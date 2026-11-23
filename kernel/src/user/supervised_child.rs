@@ -95,7 +95,7 @@ pub const REPORT_STUB: &[u32] = &[
     0xD280_0000 | ((REPORT_WORD as u32) << 5) | 2, // movz x2, #REPORT_WORD
     0xD280_0003,                                   // movz x3, #0
     0xD280_0004,                                   // movz x4, #0
-    0xD280_0000 | ((abi::SYSTEM_CALL_INVOKE as u32) << 5) | 8, // movz x8, #SYSTEM_CALL_INVOKE
+    0xD280_0000 | ((moho_abi::SYSTEM_CALL_INVOKE as u32) << 5) | 8, // movz x8, #SYSTEM_CALL_INVOKE
     0xD400_0001,                                   // svc #0                 (SEND)
     0xD280_0008,                                   // movz x8, #0            (SYSTEM_CALL_EXIT)
     0xD400_0001,                                   // svc #0                 (exit)
@@ -106,14 +106,14 @@ pub const REPORT_STUB: &[u32] = &[
 #[cfg(target_arch = "riscv64")]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub const REPORT_STUB: &[u32] = &[
-    0x0000_0513,                                            // li a0, 0            (slot 0)
+    0x0000_0513,                                // li a0, 0            (slot 0)
     0x0000_0593,                                // li a1, 0            (rendezvous::SEND)
     0x0000_0613 | ((REPORT_WORD as u32) << 20), // li a2, REPORT_WORD
     0x0000_0693,                                // li a3, 0
     0x0000_0713,                                // li a4, 0
-    0x0000_0893 | ((abi::SYSTEM_CALL_INVOKE as u32) << 20), // li a7, SYSTEM_CALL_INVOKE
+    0x0000_0893 | ((moho_abi::SYSTEM_CALL_INVOKE as u32) << 20), // li a7, SYSTEM_CALL_INVOKE
     0x0000_0073,                                // ecall               (SEND)
-    0x0000_0893 | ((abi::SYSTEM_CALL_EXIT as u32) << 20), // li a7, SYSTEM_CALL_EXIT
+    0x0000_0893 | ((moho_abi::SYSTEM_CALL_EXIT as u32) << 20), // li a7, SYSTEM_CALL_EXIT
     0x0000_0073,                                // ecall               (exit)
 ];
 /// [`REPORT_STUB`] on `x86_64`.
@@ -149,7 +149,7 @@ pub fn code_page(region: u64, code: &[u32]) -> Option<u64> {
 /// The address space, the code and stack pages and the TCB all come out of `region`, so one reap
 /// of it (`sched::reap_supervised`, or `sched::reclaim_region`) gives every frame back. `capabilities` land
 /// in slots 0, 1, ... in order, because a stub names its slots by number. `fault`, if given, goes in
-/// the reserved fault slot (`abi::fault::FAULT_RENDEZVOUS_SLOT`), so `START` records it as the child's
+/// the reserved fault slot (`moho_abi::fault::FAULT_RENDEZVOUS_SLOT`), so `START` records it as the child's
 /// supervision endpoint and keeps its badge as the child's label (milestone 105 (the two forks)).
 /// Its rights do not matter: the kernel reads only the endpoint and the badge, and consumes the
 /// slot. Returns the child's thread id, or which step refused.
@@ -193,8 +193,12 @@ pub fn spawn(
         }
     }
     if let Some(capability) = fault {
-        insert_capability(tid, capability, Some(abi::fault::FAULT_RENDEZVOUS_SLOT))
-            .map_err(|_| "no room for the child's supervision endpoint")?;
+        insert_capability(
+            tid,
+            capability,
+            Some(moho_abi::fault::FAULT_RENDEZVOUS_SLOT),
+        )
+        .map_err(|_| "no room for the child's supervision endpoint")?;
     }
     crate::sched::configure_thread_control_block(
         tid,

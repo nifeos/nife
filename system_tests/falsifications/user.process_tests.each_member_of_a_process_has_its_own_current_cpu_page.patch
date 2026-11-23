@@ -12,10 +12,10 @@ page is never written.
 diff --git a/kernel/src/sched/configure.rs b/kernel/src/sched/configure.rs
 --- a/kernel/src/sched/configure.rs
 +++ b/kernel/src/sched/configure.rs
-@@ -194,7 +194,8 @@ pub fn configure_thread_control_block_joining(
-         }
-         let bound = super::process::join(sched, tid, pid)?;
-         let t = sched.threads.get_mut(tid).ok_or(abi::Error::NoSuchSlot)?;
+@@ -165,7 +165,8 @@ pub fn configure_thread_control_block_joining(
+             .threads
+             .get_mut(tid)
+             .ok_or(moho_abi::Error::NoSuchSlot)?;
 -        t.space = Some(bound.with_current_cpu_page(kernel_va));
 +        let _ = kernel_va;
 +        t.space = Some(bound);

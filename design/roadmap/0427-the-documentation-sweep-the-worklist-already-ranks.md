@@ -35,7 +35,7 @@ Two mechanisms came out of it. Five of the core-harnesses appendix's nine harnes
 wrong (8 to 14, 2 to 4, 8 to 37, 6 to 15, 3 to 4). All nine counts are corrected and are now
 counted claims, with one derivation per crate in `script/lint`'s registry, so the next harness
 lands with its number or not at all. And the ABI-constants trigger had gone blind to most of the
-ABI: the derivation read only `crates/abi/src/lib.rs`, where 6 of the crate's 95 constants now
+ABI: the derivation read only `crates/moho_abi/src/lib.rs`, where 6 of the crate's 95 constants now
 live, so `script/audits` walks the crate's `src/`. The drop that fired this sweep's own trigger
 was that blindness, not a shrinking surface.
 
@@ -68,7 +68,7 @@ documents were pointed at files the scheduler split had moved. A tooling appendi
 their subjects to basalt three days after its snapshot got a dated note. Five wrong harness counts
 in the verification appendix were corrected and all nine converted into counted claims with
 derivations in `script/lint`'s registry, so the class cannot rot again. The ABI-constants
-trigger's derivation, which read only `crates/abi/src/lib.rs` while the crate grew per-object
+trigger's derivation, which read only `crates/moho_abi/src/lib.rs` while the crate grew per-object
 modules and held 95 constants where the counter saw 6, was made to walk the crate; this audit's
 baseline row is the first taken under it. What it left: milestone 622 (the fence inventory is
 re-adjudicated) owes more than when it was minted, 23 fences against the 13 adjudicated.

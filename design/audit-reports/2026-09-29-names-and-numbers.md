@@ -53,7 +53,7 @@ main page it names: "The inbound half" (`notes/net.md`), "What still ends a nife
 own inbound sides, which is what the 2026-09-24 sweep asked the next split to do.
 
 `notes/timer.md` checked out on every number: the tick is 100 Hz (`TICK_HZ` in `kernel/src/arch/aarch64/timer.rs`),
-`counter_ticks_for` rounds up (in `crates/abi/src/timer.rs`), `CANCEL` answers a `bool`, and
+`counter_ticks_for` rounds up (in `crates/moho_abi/src/timer.rs`), `CANCEL` answers a `bool`, and
 `SYS_EXIT` exists (`dispatch` in `kernel/src/system_call.rs`). `notes/notification-objects.md` semantics matched
 the kernel at every claim this sweep checked, which is also why the security audit of the same
 session accepted its recordings.

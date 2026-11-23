@@ -2,7 +2,7 @@
 
 *Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-16, for the crate it describes.*
 
-`crates/file_system_fixture` holds the names and contents of the files the test image ships, the
+The `file_system_fixture` crate of `nifeos/file_system_contract` holds the names and contents of the files the test image ships, the
 witnesses' verdict words, and the shapes of the `walk` and `throughput` benchmarks. Three programs
 read it and must agree: the host build that writes the RedoxFS image, the client that reads and
 writes through the FS server, and the kernel test that asserts the client's report. This page

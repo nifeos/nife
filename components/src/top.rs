@@ -51,8 +51,8 @@ static HAS_DIAG: AtomicBool = AtomicBool::new(false);
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
 interfaces_note::carry_interfaces!(&[
     interfaces_note::DeclaredInterface {
-        id: abi::INTERFACE_ID,
-        version: abi::ABI_VERSION
+        id: moho_abi::INTERFACE_ID,
+        version: moho_abi::ABI_VERSION
     },
     interfaces_note::DeclaredInterface {
         id: address_space_layout::INTERFACE_ID,
@@ -128,12 +128,12 @@ fn start(_a0: u64, a1: u64, _a2: u64) -> ! {
     // and the second stream's reader drains it to end-of-stream before it reads the first.
     let mut found = ps::collect(rows(), &mut |cursor| survey(DOMAIN_SLOT, cursor));
     found.join_cpu_time(&mut |cursor| {
-        survey_record(DOMAIN_SLOT, cursor, abi::survey::record::CPU_TIME)
+        survey_record(DOMAIN_SLOT, cursor, moho_abi::survey::record::CPU_TIME)
     });
     // **The process walk** (milestone 942 (`ps` and `top` show which process each thread belongs to), §313 (`ENUMERATE` on a domain covers which of its threads share a process)): a third record over the same endpoint and right,
     // joined on the tid like the second.
     found.join_process(&mut |cursor| {
-        survey_record(DOMAIN_SLOT, cursor, abi::survey::record::PROCESS)
+        survey_record(DOMAIN_SLOT, cursor, moho_abi::survey::record::PROCESS)
     });
     // The ranking is the program. Everything above it is `ps`.
     if top::ranks_by_process(a1) {

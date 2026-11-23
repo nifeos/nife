@@ -107,7 +107,7 @@ def selftest():
     good_arm = 'asm!("svc #0", in("x8") n, inlateout("x0") a => b, lateout("x1") _, out("x2") _,\n' \
                '     inout("x3") c, lateout("x4") _, lateout("x5") _, options(nostack))'
     # The 2026-10-05 defect, verbatim in shape: no output at all.
-    old_yield = 'asm!("svc #0", in("x8") abi::SYS_YIELD, options(nostack, nomem));'
+    old_yield = 'asm!("svc #0", in("x8") moho_abi::SYS_YIELD, options(nostack, nomem));'
     # Declares the result but not the four words a RECEIVE writes.
     half = 'asm!("ecall", in("a7") n, inlateout("a0") s => r, in("a1") m, options(nostack))'
     # Every word, but not the instruction's own clobbers.

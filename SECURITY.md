@@ -238,7 +238,7 @@ disagreeing.)
   discipline does not ask who is holding it, so a compromised session can queue the boot shell's
   next command line. Also: the plain-`SEND` badge is on the wire but not in §230 (badged endpoint
   capabilities), and a `RECEIVE_CAPABILITY`
-  entry in `crates/abi` still said a fixed escape was open. Its follow-up added two more worth
+  entry in `crates/moho_abi` still said a fixed escape was open. Its follow-up added two more worth
   knowing: the boot shell keeps the seven display capabilities with `GRANT` for its whole life,
   and a real capability delegated to a `CALL` server passes the `NO_CAPABILITY` guard, so any client can
   park `net_stack` or the compositor in `SEND` forever (recorded and proposed; an architect's

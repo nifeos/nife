@@ -1,6 +1,6 @@
 //! The process object (§269 (how threads share a process) forks 1, 3 and 5): a page retyped from
 //! its creator's region, holding what its threads share, the capability table, the address space,
-//! the count of its members, and how it ended. `abi::process` is the contract; `notes/processes.md`
+//! the count of its members, and how it ended. `moho_abi::process` is the contract; `notes/processes.md`
 //! has the argument and the limits.
 //!
 //! Membership is counted, and the count keeps every pointer here sound: the page is reclaimed only
@@ -41,7 +41,7 @@ pub(super) struct ProcessPage {
     started: u32,
     /// No thread may join or start here any more, and every member has been ended.
     ended: bool,
-    /// How it ended, `[event, pc, addr]` in `abi::fault`'s format: what a supervised member reports
+    /// How it ended, `[event, pc, addr]` in `moho_abi::fault`'s format: what a supervised member reports
     /// when it is ended by another member's `exit` or fault.
     ended_by: [u64; 3],
 }
@@ -72,19 +72,19 @@ fn process_of(sched: &IpcTables, pid: ProcessId) -> Option<&'static mut ProcessP
 /// **`RETYPE_OBJECT` of `object_type::PROCESS`**: a process in `region`'s memory, holding the space
 /// `space` names. `WrongObject` if the space already has a holder, `NoSuchSlot` if it does not
 /// resolve, `OutOfMemory` if the region or the registry is full.
-pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, abi::Error> {
+pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, moho_abi::Error> {
     let mut created = None;
     crate::user::bind_user_address_space(space, |bound| {
         let mut guard = IPC_TABLES.lock();
-        let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
+        let sched = guard.as_mut().ok_or(moho_abi::Error::NoSuchSlot)?;
         if sched.processes.len() >= MAXIMUM_PROCESSES {
-            return Err(abi::Error::OutOfMemory);
+            return Err(moho_abi::Error::OutOfMemory);
         }
         let phys = crate::memory_region::retype_object_page(
             region,
             crate::memory_region::ObjectKind::Process,
         )
-        .ok_or(abi::Error::OutOfMemory)?;
+        .ok_or(moho_abi::Error::OutOfMemory)?;
         // SAFETY: a fresh page retyped for this process alone, direct-mapped; both writes are
         // inside it by the assertion on `TABLE_OFFSET`.
         unsafe {
@@ -106,12 +106,12 @@ pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, abi::Er
             .map(generational_table::EntryName::to_bits)
         else {
             crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Process);
-            return Err(abi::Error::OutOfMemory);
+            return Err(moho_abi::Error::OutOfMemory);
         };
         created = Some(pid);
         Ok(Holder::Process(pid))
     })?;
-    created.ok_or(abi::Error::OutOfMemory)
+    created.ok_or(moho_abi::Error::OutOfMemory)
 }
 
 /// **Join the embryo `tid` to `pid`**: the `CONFIGURE` that is given a process capability with
@@ -127,24 +127,27 @@ pub(super) fn join(
     sched: &mut IpcTables,
     tid: ThreadId,
     pid: ProcessId,
-) -> Result<BoundSpace, abi::Error> {
+) -> Result<BoundSpace, moho_abi::Error> {
     let phys = sched
         .processes
         .get(process_entry(pid))
-        .ok_or(abi::Error::Gone)?
+        .ok_or(moho_abi::Error::Gone)?
         .address();
-    let process = process_of(sched, pid).ok_or(abi::Error::Gone)?;
+    let process = process_of(sched, pid).ok_or(moho_abi::Error::Gone)?;
     let (false, Some(space)) = (process.ended, process.space) else {
-        return Err(abi::Error::Gone);
+        return Err(moho_abi::Error::Gone);
     };
-    let ptr = sched.threads.pointer(tid).ok_or(abi::Error::NoSuchSlot)?;
+    let ptr = sched
+        .threads
+        .pointer(tid)
+        .ok_or(moho_abi::Error::NoSuchSlot)?;
     // SAFETY: a live embryo's page pointer and this process's page, under IPC_TABLES. The two
     // tables are locked one at a time, never nested, since they share a rank; and slot by slot,
     // not copied whole, because a table is two kilobytes and this runs on a kernel stack.
     unsafe {
         let own = &*crate::thread::own_capability_table_of(ptr);
         let shared = &*table_at(phys);
-        let slots = 0..abi::CAPABILITY_TABLE_SLOTS;
+        let slots = 0..moho_abi::CAPABILITY_TABLE_SLOTS;
         let held = |table: &CapabilityTableLock, slot| {
             let guard = table.lock();
             guard.get(slot).is_ok()
@@ -153,7 +156,7 @@ pub(super) fn join(
             .clone()
             .any(|slot| held(own, slot) && held(shared, slot))
         {
-            return Err(abi::Error::WrongObject);
+            return Err(moho_abi::Error::WrongObject);
         }
         for slot in slots {
             let carried = {
@@ -436,12 +439,12 @@ pub(super) fn reap_corpses(pid: ProcessId) {
 /// **`Process::DESTROY`**: the supervisor's kill (§269 fork 5). Ends the process and every member,
 /// and releases the space at once if no member remains. A caller that is itself a member ends with
 /// it, by `exit`. `Gone` if the name no longer resolves.
-pub fn destroy(pid: ProcessId) -> Result<(), abi::Error> {
+pub fn destroy(pid: ProcessId) -> Result<(), moho_abi::Error> {
     let current = super::current_thread_id();
     let member = {
         let guard = IPC_TABLES.lock();
-        let sched = guard.as_ref().ok_or(abi::Error::Gone)?;
-        process_of(sched, pid).ok_or(abi::Error::Gone)?;
+        let sched = guard.as_ref().ok_or(moho_abi::Error::Gone)?;
+        process_of(sched, pid).ok_or(moho_abi::Error::Gone)?;
         sched
             .threads
             .get(current)
@@ -452,18 +455,18 @@ pub fn destroy(pid: ProcessId) -> Result<(), abi::Error> {
     }
     {
         let mut guard = IPC_TABLES.lock();
-        let sched = guard.as_mut().ok_or(abi::Error::Gone)?;
+        let sched = guard.as_mut().ok_or(moho_abi::Error::Gone)?;
         end(
             sched,
             pid,
             crate::cpu::NO_TID,
-            [abi::fault::EVENT_EXIT, 0, 0],
+            [moho_abi::fault::EVENT_EXIT, 0, 0],
         );
     }
     reap_corpses(pid);
     let released = {
         let mut guard = IPC_TABLES.lock();
-        let sched = guard.as_mut().ok_or(abi::Error::Gone)?;
+        let sched = guard.as_mut().ok_or(moho_abi::Error::Gone)?;
         process_of(sched, pid).and_then(release)
     };
     if let Some(name) = released {
@@ -492,7 +495,7 @@ pub(super) fn reap_region(sched: &mut IpcTables, base: u64, end_: u64) {
             sched,
             pid,
             crate::cpu::NO_TID,
-            [abi::fault::EVENT_EXIT, 0, 0],
+            [moho_abi::fault::EVENT_EXIT, 0, 0],
         );
     }
     // Detach each embryo member of a doomed process. `leave` clears its `process`, so each is

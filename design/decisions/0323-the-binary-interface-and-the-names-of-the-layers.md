@@ -44,7 +44,7 @@ what the layer above a kernel is. The rule follows.
 Mostly. One part of it meets an existing decision.
 
 - The tree builds one kernel for one platform. `targets/` holds three target specifications, all
-  with `"os": "nife"` and none with a `target-family`. The tree has one ABI crate (`crates/abi`,
+  with `"os": "nife"` and none with a `target-family`. The tree has one ABI crate (`crates/moho_abi`,
   `publish = false`) and one `std` port (`patches/std-nife`).
 - The word "family" appears on 45 lines in 29 files of `design/decisions/` and `design/naming.md`
   (`git grep -c -iw family`), never as a defined term for a set of kernels. The project does not
@@ -77,7 +77,7 @@ Ruled 2026-11-14 (UTC).
 ### Background
 
 A program here targets three things. The compiler builds it for `target_os = "nife"`, it links the
-`std` port, and it calls the kernel through the numbers in `crates/abi`. At spawn, the kernel
+`std` port, and it calls the kernel through the numbers in `crates/moho_abi`. At spawn, the kernel
 compares the program's `ABI_VERSION` with its own and refuses a mismatch.
 
 Some bytes in every image spell the project's name. Every program's capability manifest has

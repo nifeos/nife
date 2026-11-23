@@ -87,7 +87,7 @@ Can a file capability or a memory object carry an executable? The tree answers b
   shell's file-service endpoint carries no `GRANT`, which is exactly why `DIR_BIT` carries data
   rather than a capability.
 - There is no multi-page memory object either. The kernel's object types are the rendezvous,
-  the address space, the thread and the one-page `PageFrame` (`crates/abi`, `objtype` and
+  the address space, the thread and the one-page `PageFrame` (`crates/moho_abi`, `objtype` and
   `page_frame`). Nothing like Fuchsia's VMO exists. An executable of N pages is N frame
   capabilities, and a `SEND_CAP` carries one.
 - `build_child` needs a parsed `elf::Elf` over bytes in the builder's own address space

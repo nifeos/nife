@@ -12,7 +12,7 @@ is the implementation record and the one proposal the build produced.
 ## Decided: how a woken receiver tells a notification from a message
 
 calef ruled option B on 2026-09-26, the day this was raised: the kernel writes
-`abi::notification::BOUND` (2) into `w4` on every receive a bound notification ends (`RECEIVE`,
+`moho_abi::notification::BOUND` (2) into `w4` on every receive a bound notification ends (`RECEIVE`,
 `RECEIVE_CAPABILITY`, `Interrupt::WAIT`), keeping §101's `w0 = 2` and the word in `w1`. A maintainer records it as
 an amendment to §101. What follows is the proposal as it reached him, kept because how the decision
 was reached is part of the record. Its measured cost on the call/reply path is in
@@ -90,7 +90,7 @@ left `RECEIVE` exactly as it was.
 
 ## The semantics, and the choices §101 left open
 
-§101 specified the four methods; `abi::notification`'s doc comments are the contract. Four choices
+§101 specified the four methods; `moho_abi::notification`'s doc comments are the contract. Four choices
 were not in §101 and were made in the build, each for a stated reason:
 
 - The binding wakes every receive, not only `RECEIVE`. A thread parked as a receiver on an endpoint
@@ -117,12 +117,12 @@ input the proof takes on trust, "the bound thread is parked in a receive right n
 
 Can `w4` already be 2 on a §26 death message? No. There is exactly one place the kernel builds
 a fault or exit message, `depart` in `kernel/src/sched.rs`: `let msg = [event, current, pc, addr,
-0];`. `w4` is the literal `0` on every death, fault or exit alike, and `abi::fault`'s own table calls
+0];`. `w4` is the literal `0` on every death, fault or exit alike, and `moho_abi::fault`'s own table calls
 it "reserved 0 today". Ordinary messages get `0` there too (`wide()` pads a three-word send, and the
 `CALL` rendezvous writes `[w0, slot, w1, 0, 0]`). So B's tag collides with nothing that exists. It
-does constrain the future: §26.4's fault-reply protocol, which `abi::fault` says "arrives here
+does constrain the future: §26.4's fault-reply protocol, which `moho_abi::fault` says "arrives here
 additively", must not put `2` in `w4` of a death message, or it must move the tag. That constraint
-is written beside the constant (`abi::notification::BOUND`) so the author of §26.4 meets it.
+is written beside the constant (`moho_abi::notification::BOUND`) so the author of §26.4 meets it.
 
 Is `SEND(1, ...)` a forged interrupt signal today? Not reachable today, and nothing stops it
 becoming reachable. An interrupt signal is `[1, 0, 0, 0, 0]` in the receiver's mailbox, the same

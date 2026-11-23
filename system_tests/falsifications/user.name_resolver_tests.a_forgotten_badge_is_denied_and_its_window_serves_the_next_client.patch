@@ -22,7 +22,7 @@ index dbbb588e5..7d85a6487 100644
 -        let _ = unsafe {
 -            user_mode_runtime::invoke(
 -                OWN_SPACE,
--                abi::address_space::UNMAP,
+-                moho_abi::address_space::UNMAP,
 -                window_va(window),
 -                0,
 -                0,

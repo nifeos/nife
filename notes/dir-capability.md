@@ -6,7 +6,7 @@ This note is the design that splits that into separable rights, the verb that ha
 back rather than bytes, and the process that makes a subtree grant checkable from outside the
 program being confined.
 
-The contract lives with its code in `crates/file_system_contract` (the `dir` and `dirent` modules, and the
+The contract lives with its code in the `file_system_contract` crate of `nifeos/file_system_contract` (the `dir` and `dirent` modules, and the
 `OPENDIR`/`READDIR`/`MKDIR`/`RENAME` verbs in `fs`). The engine-side implementation is
 `redoxfs_server/src/lib.rs`; the caretaker is `components/src/fs_subtree_caretaker.rs`; the wiring and the
 attacks are `kernel/src/user/fs_service/directory_grant.rs`'s `start_granted_dir` and

@@ -76,7 +76,7 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
    message, and `rm`'s status and count need somewhere to go that is not the stream.
    Change: `unpack` refuses any end of stream but `(eof(), 0, 0)` as malformed, with a test and a
    Kani harness, and `rm` sends its verdict on an endpoint of its own after its report ends
-   (`file_system_contract::rm`). Every other writer in the tree already sent zero.
+   (`grant_plan::rm_report`). Every other writer in the tree already sent zero.
    Door: one-way (wire format), decision C, ruled. Effort: S.
 
 9. Names that a later rule reopens at release review.

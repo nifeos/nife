@@ -186,7 +186,7 @@ both are in `notes/futex.md`'s `BUGS`.
 ### `SYSTEM_CALL_EXIT_THREAD` (4): ending one thread
 
 `exit_thread(word)`, a bare system call that needs no capability and never returns; the ruling of
-2026-11-11 (UTC) spelled out the names of system calls 0 and 4. `crates/abi`,
+2026-11-11 (UTC) spelled out the names of system calls 0 and 4. `crates/moho_abi`,
 `kernel/src/system_call.rs`, `kernel/src/sched.rs` (`exit_thread`).
 
 - Ends the calling thread only. `SYSTEM_CALL_EXIT` (0) keeps meaning "end my process"; no flag was added
@@ -259,5 +259,5 @@ The `std` contract (`crates/std_runtime_contract`) fixes three slots after the r
   amended, in its own file. Amendment (b)'s refusal now applies per holder, not per thread. A
   member's space dies when its process has ended and its last member is reaped.
 - §269's open consequence is answered by ruling 1 above.
-- `SYS_EXIT`'s doc comment in `crates/abi` said "terminate the calling thread", which stopped being
+- `SYS_EXIT`'s doc comment in `crates/moho_abi` said "terminate the calling thread", which stopped being
   true at `ddd38f0b0`; corrected beside this section.

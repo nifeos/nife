@@ -50,8 +50,8 @@ pub const fn ranks_by_process(argument: u64) -> bool {
 /// use ps::Row;
 ///
 /// let rows = [
-///     Row { tid: 5, state: abi::survey::RUNNING, cpu_milliseconds: Some(310), process: None },
-///     Row { tid: 9, state: abi::survey::DEAD, cpu_milliseconds: Some(10), process: None },
+///     Row { tid: 5, state: moho_abi::survey::RUNNING, cpu_milliseconds: Some(310), process: None },
+///     Row { tid: 9, state: moho_abi::survey::DEAD, cpu_milliseconds: Some(10), process: None },
 /// ];
 /// let mut text = Vec::new();
 /// top::write_summary(&rows, 72_000_000_000, &mut |b| text.extend_from_slice(b));
@@ -72,10 +72,10 @@ pub fn write_summary(rows: &[ps::Row], uptime_nanoseconds: u64, out: &mut dyn Fn
 
     let mut first = true;
     for state in [
-        abi::survey::RUNNING,
-        abi::survey::READY,
-        abi::survey::BLOCKED,
-        abi::survey::DEAD,
+        moho_abi::survey::RUNNING,
+        moho_abi::survey::READY,
+        moho_abi::survey::BLOCKED,
+        moho_abi::survey::DEAD,
     ] {
         if !first {
             out(b", ");
@@ -176,10 +176,10 @@ mod tests {
     #[test]
     fn the_summary_reads_as_a_sentence() {
         let rows = [
-            row(3, abi::survey::RUNNING, 300),
-            row(5, abi::survey::BLOCKED, 20),
-            row(7, abi::survey::DEAD, 40),
-            row(9, abi::survey::READY, 0),
+            row(3, moho_abi::survey::RUNNING, 300),
+            row(5, moho_abi::survey::BLOCKED, 20),
+            row(7, moho_abi::survey::DEAD, 40),
+            row(9, moho_abi::survey::READY, 0),
         ];
         assert_eq!(
             shown(&rows, 72_000_000_000),
@@ -192,7 +192,7 @@ mod tests {
     /// not counted".
     #[test]
     fn a_state_with_nobody_in_it_still_reports_zero() {
-        let line = shown(&[row(3, abi::survey::RUNNING, 10)], 0);
+        let line = shown(&[row(3, moho_abi::survey::RUNNING, 10)], 0);
         assert!(line.contains("0 dead"), "{line}");
         assert!(line.contains("0 blocked"), "{line}");
     }

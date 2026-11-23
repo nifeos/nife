@@ -86,7 +86,7 @@ An appendix to [the milestone](../1075-abi-outside-review.md).
     Effort: S. Door: two-way.
 
 11. The version gate stays behind.
-    Finding: `helpers/format_values_check.py` (`ABI_CRATE = 'crates/abi/'`) is the check that a
+    Finding: `helpers/format_values_check.py` (`ABI_CRATE = 'crates/moho_abi/'`) is the check that a
     changed or removed public number arrives with an `ABI_VERSION` bump. It reads nife's diff and
     will see nothing once the crate has left. The crate's own tests pin every value, and the
     test's doc claims the list is exhaustive, but nothing counts: 99 `pub const` `u64` items today

@@ -60,8 +60,8 @@ diff --git a/fixtures/src/c_confiner.rs b/fixtures/src/c_confiner.rs
                      (
                          c_seam::WITNESS_RO_VA,
                          wit_ro,
--                        abi::address_space::MAP_READ_ONLY,
-+                        abi::address_space::MAP_READ_WRITE,
+-                        moho_abi::address_space::MAP_READ_ONLY,
++                        moho_abi::address_space::MAP_READ_WRITE,
                      ),
                  ],
                  blobs: &[],

@@ -67,7 +67,7 @@ per session. Measured against this tree on 2026-09-26:
   "kernel-resident name", and its option C is the block's "userspace-resident name". The two forks
   were the same fork, written twice.
 - CPU time: now exists, since milestone 282 (a thread's CPU time) built
-  `abi::survey::record::CPU_TIME`.
+  `moho_abi::survey::record::CPU_TIME`.
 
 So the block's own display-name fork is withdrawn in favor of §164, which is the one written where
 rulings live. What 126 adds to §164, and what §164's "what is blocked" section does not yet list:

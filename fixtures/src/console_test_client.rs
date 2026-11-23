@@ -23,7 +23,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use abi::Error;
+use moho_abi::Error;
 use user_mode_runtime::{exit, receive, require, send};
 
 /// The page shared with the console server. We write text here; the server reads it. Mapped

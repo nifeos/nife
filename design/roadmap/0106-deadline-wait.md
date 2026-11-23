@@ -32,7 +32,7 @@ hold, and §147 ruled the same day.
 
 | piece | where |
 |---|---|
-| `objtype::TIMER = 5`, `abi::timer::{ARM = 0, CANCEL = 1}`, and `counter_ticks_for` | `crates/abi/src/lib.rs` |
+| `objtype::TIMER = 5`, `abi::timer::{ARM = 0, CANCEL = 1}`, and `counter_ticks_for` | `crates/moho_abi/src/lib.rs` |
 | the decision core: one deadline per timer, the cached earliest, the expiry walk | `crates/inter_process_communication/src/timer.rs` |
 | three Kani harnesses, each with a replayable falsification | the same file, `falsifications/timer.verification.*` |
 | the registry, `ARM`, `CANCEL`, the tick's one comparison, `expire_timers`, the region sweep | `kernel/src/sched.rs` |

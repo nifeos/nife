@@ -88,7 +88,7 @@ pub struct BootEndowment {
     /// The gpu's whole DMA region: one `PageFrame` capability naming the run (DECISIONS §102 (a Frame names a run of pages)), rings
     /// and control buffers in the first page and the surface after it. `READ | WRITE | GRANT`. The
     /// region carries its own physical base at
-    /// `abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, which
+    /// `moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, which
     /// `gpu_driver` reads itself, so this process never maps it.
     pub gpu_dma: u64,
     /// **A virtio keyboard, when this boot has a gpu too**: the confined transport, `WRITE |
@@ -100,7 +100,7 @@ pub struct BootEndowment {
     /// The keyboard's event interrupt, `READ | GRANT`.
     pub keyboard_interrupt: u64,
     /// The keyboard's one DMA page, `READ | WRITE | GRANT`, carrying its own physical base at
-    /// `abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET` as
+    /// `moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET` as
     /// [`gpu_dma`](BootEndowment::gpu_dma) does.
     pub keyboard_dma: u64,
     /// **A virtio-net device, when this boot has one.** The confined transport, `WRITE | GRANT`,

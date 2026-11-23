@@ -107,7 +107,7 @@ pub(super) fn page_frame_map(
 
 /// `PageFrame::SLICE`: a new capability, with the same rights, naming the `len` pages `first`
 /// pages into the run in `slot`. Returns its slot. Needs `GRANT`; `BadPointer` for an empty or
-/// out-of-range window. `abi::page_frame::SLICE` has the rules.
+/// out-of-range window. `moho_abi::page_frame::SLICE` has the rules.
 #[inline(never)]
 pub(super) fn page_frame_slice(slot: u64, first: u64, len: u64) -> Result<i64, Error> {
     // The source is read under the table lock the slice is filed under, so no reclamation sweep

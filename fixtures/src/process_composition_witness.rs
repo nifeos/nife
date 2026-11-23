@@ -78,12 +78,12 @@ fn compose(initial_ramdisk_len: u64) -> u64 {
     };
     let mut verdict = CHILD_FOUND;
 
-    let answer = retype_into_kernel_object(MEMORY_REGION, abi::object_type::RENDEZVOUS);
+    let answer = retype_into_kernel_object(MEMORY_REGION, moho_abi::object_type::RENDEZVOUS);
     if answer < 0 {
         return verdict;
     }
     let answer = answer as u64;
-    let capabilities = [(answer, abi::rights::WRITE)];
+    let capabilities = [(answer, moho_abi::rights::WRITE)];
     let endow = ChildEndowment {
         capabilities: &capabilities,
         ..ChildEndowment::new(Retention::Nothing)
@@ -98,10 +98,13 @@ fn compose(initial_ramdisk_len: u64) -> u64 {
     let frame = retype_into_page_frame(MEMORY_REGION);
     if frame >= 0 {
         let frame = frame as u64;
-        if address_space_layout_into(aspace, VA, frame, abi::address_space::MAP_READ_WRITE) == 0 {
+        if address_space_layout_into(aspace, VA, frame, moho_abi::address_space::MAP_READ_WRITE)
+            == 0
+        {
             verdict |= FRAME_MAPPED;
         }
-        if address_space_layout_into(aspace, VA, frame, abi::address_space::MAP_READ_WRITE) < 0 {
+        if address_space_layout_into(aspace, VA, frame, moho_abi::address_space::MAP_READ_WRITE) < 0
+        {
             verdict |= DOUBLE_MAP_REFUSED;
         }
     }

@@ -195,17 +195,17 @@ fn login_gives_back_everything_when_any_retype_of_a_login_fails() {
 /// `RETYPE` one page, `RETYPE_OBJECT` one page for a rendezvous, `SPLIT` a two-page child.
 /// `(method, argument, pages)`; `RETYPE`'s argument `0` is one page, the way every caller asks.
 const SCRIPT: [(u64, u64, u64); 3] = {
-    use abi::memory_region::{RETYPE, RETYPE_OBJECT, SPLIT};
+    use moho_abi::memory_region::{RETYPE, RETYPE_OBJECT, SPLIT};
     [
         (RETYPE, 0, 1),
-        (RETYPE_OBJECT, abi::object_type::RENDEZVOUS, 1),
+        (RETYPE_OBJECT, moho_abi::object_type::RENDEZVOUS, 1),
         (SPLIT, 2, 2),
     ]
 };
 
 /// Run [`SCRIPT`] from a fresh region through the real handler, and give everything back. Returns
 /// each call's answer and the pages the region had spent at the end.
-fn run_script() -> ([Result<i64, abi::Error>; 3], u64) {
+fn run_script() -> ([Result<i64, moho_abi::Error>; 3], u64) {
     let mut trap = crate::arch::exceptions::TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     let region = crate::memory_region::create(8).expect("a region to retype from");
     let slot = sched::grant(crate::capability_object::memory_region_root_capability(
@@ -259,7 +259,7 @@ fn the_nth_retype_fails_as_an_empty_region_would_and_no_other() {
             if k as u64 + 1 == n {
                 assert_eq!(
                     *answer,
-                    Err(abi::Error::OutOfMemory),
+                    Err(moho_abi::Error::OutOfMemory),
                     "retype {n} was armed and was not refused"
                 );
             } else {

@@ -154,8 +154,8 @@ exclude_globs = [
 # Matched against mutant names ("replace X with Y in path::fn"). Entries arrive with reasons or
 # not at all.
 exclude_re = [
-    # The Kani harness modules: 18 `mod verification` blocks and 3 `mod proofs` (credential_contract,
-    # file_system_contract, regions), every one behind `#[cfg(kani)]`, so `cargo test` never compiles them: a
+    # The Kani harness modules: 18 `mod verification` blocks and 2 `mod proofs` (credential_contract,
+    # regions), every one behind `#[cfg(kani)]`, so `cargo test` never compiles them: a
     # mutant there always "survives", and the first full run reported dozens of exactly that (whole
     # harnesses, mutated to `()`, "missed"). Their checker is script/verify, not
     # the test suite, and mutating the proof rather than the code under proof measures nothing this
@@ -218,15 +218,6 @@ exclude_re = [
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in keyboard_report$",
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in ports_report$",
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in failure_report$",
-    # grant_plan: the rights bits (five single bits), per RIGHTS_BITS_DO_NOT_OVERLAP, beside
-    # WordGrant::rights, whose fn-local `1 << 0` constants are the shift survivor.
-    "^crates/grant_contract/src/manifest\\.rs:\\d+:\\d+: replace \\| with \\^ in WordGrant::rights$",
-    "^crates/grant_contract/src/manifest\\.rs:\\d+:\\d+: replace << with >> in WordGrant::rights$",
-    # The const-level shift survivors are command.rs's RECURSIVE and verbs.rs's CLOCK, both
-    # `1 << 0`, the identity; the rest of each file's constant shifts are pinned by existing
-    # tests, which stay.
-    "^crates/grant_plan/src/command\\.rs:\\d+:\\d+: replace << with >>$",
-    "^crates/grant_contract/src/verbs\\.rs:\\d+:\\d+: replace << with >>$",
     # serial_console: decode_exact's three pixel channels, each a byte shifted to its own third
     # of the word, per THE_PIXEL_CHANNELS_SHARE_NO_BIT, beside the function.
     "^crates/serial_console/src/screen\\.rs:\\d+:\\d+: replace \\| with \\^ in decode_exact$",

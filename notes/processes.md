@@ -2,8 +2,8 @@
 
 *Written 2026-10-10 (UTC) by milestone 812 (`std::thread::spawn` runs real threads in one address
 space)'s lane. The rulings are §269 (how threads share a process) forks 1, 3 and 5, and calef's four
-answers on pull request #1892 the same day. The wire contract is `abi::process`, `abi::object_type::PROCESS`,
-`abi::rights::BIND` and `abi::SYSTEM_CALL_EXIT_THREAD`; the kernel half is `kernel/src/sched/process.rs`.*
+answers on pull request #1892 the same day. The wire contract is `moho_abi::process`, `moho_abi::object_type::PROCESS`,
+`moho_abi::rights::BIND` and `moho_abi::SYSTEM_CALL_EXIT_THREAD`; the kernel half is `kernel/src/sched/process.rs`.*
 
 ## The object
 

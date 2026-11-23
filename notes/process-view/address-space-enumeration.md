@@ -7,8 +7,8 @@ An appendix to [notes/process-view.md](../process-view.md), which summarizes it.
 
 ## The method
 
-`pmap` works on both ISAs, over `abi::address_space::LIST`: `Rendezvous::SURVEY`'s split one object type
-over. `abi::aspace::MAP_INTO` needs `WRITE`, the authority to shape a space; `LIST` needs
+`pmap` works on both ISAs, over `moho_abi::address_space::LIST`: `Rendezvous::SURVEY`'s split one object type
+over. `moho_abi::aspace::MAP_INTO` needs `WRITE`, the authority to shape a space; `LIST` needs
 `ENUMERATE`, the authority to look. A capability holding `ENUMERATE` alone lists every mapping and
 cannot make one. `kernel::user::pmap_tests` proves that in both directions, with the discipline
 `survey_tests` established. A viewer is refused `MAP_INTO`, and a builder is refused `LIST`. An
@@ -20,7 +20,7 @@ So `LIST` costs nothing that log did not already pay for, and the answer cannot 
 agreement with what a real revoke would find. `revoke::list_mapping` hands back a `va`. The system call
 handler turns it into a permission with `arch::mmu::translate_at(root, va)`, present on both
 architectures already and previously reachable only from revocation's own tests. `kind` reuses
-`abi::aspace::MAP_RO`/`MAP_RW`/`MAP_CODE`, the same three words `MAP_INTO`'s mode argument takes.
+`moho_abi::aspace::MAP_RO`/`MAP_RW`/`MAP_CODE`, the same three words `MAP_INTO`'s mode argument takes.
 A second vocabulary would have been invented for what is, read back, the same fact about the same
 page.
 

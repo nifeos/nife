@@ -12,8 +12,8 @@
 
 //! Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
 
-use abi::fault::FAULT_RENDEZVOUS_SLOT;
-use abi::survey::record;
+use moho_abi::fault::FAULT_RENDEZVOUS_SLOT;
+use moho_abi::survey::record;
 
 use super::process_tests::{SPINNER, STACK_VA, call, create_process, join, lay_out, wait_for};
 use super::survey_record_tests::survey_record;
@@ -200,7 +200,7 @@ fn tear_down(
     let supervisor = hold_supervisor(domain);
     for (process, _) in processes {
         assert_eq!(
-            call(process, abi::process::DESTROY, 0, 0, 0),
+            call(process, moho_abi::process::DESTROY, 0, 0, 0),
             Ok(0),
             "DESTROY refused"
         );
@@ -209,8 +209,14 @@ fn tear_down(
         assert!(
             wait_for(5, || {
                 let mut frame = crate::arch::exceptions::TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-                crate::system_call::invoke(&mut frame, supervisor, abi::rendezvous::REAP, tid, 0, 0)
-                    == Ok(0)
+                crate::system_call::invoke(
+                    &mut frame,
+                    supervisor,
+                    moho_abi::rendezvous::REAP,
+                    tid,
+                    0,
+                    0,
+                ) == Ok(0)
             }),
             "a member could not be collected through the rendezvous that showed it",
         );

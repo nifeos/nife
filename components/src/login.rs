@@ -80,8 +80,8 @@ const RUN_UNVOUCHED: u64 = program_table::spawn_protocol::RUN_UNVOUCHED_SLOT;
 /// window's number for the two store caretakers ([`open_schedule`]). The window is shared by a
 /// session's two caretakers and its timetable and nothing else.
 const DURABLE_WINDOW: u64 = login_contract::DURABLE_WINDOW_SLOT;
-// `grant_plan` states the slot without depending on `abi`; the relation is held by each reader.
-const _: () = assert!(RUN_UNVOUCHED == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
+// `grant_plan` states the slot without depending on `moho_abi`; the relation is held by each reader.
+const _: () = assert!(RUN_UNVOUCHED == moho_abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 
 /// Whether [`RUN_UNVOUCHED`] holds a capability. Probed at [`_start`], before this process has
 /// allocated anything, which is what makes the probe sound: later, a slot this process retyped
@@ -185,12 +185,12 @@ const CLIENT_BUDGET_PAGES: u64 = login_contract::durable::CLIENT_BUDGET_PAGES;
 const DURABLE_UT_PAGES: u64 = DURABLE_BUDGET_PAGES;
 /// **How many durable sessions this process keeps**: the fewer of what its capability table
 /// holds beside one ordinary login (`login_contract::durable::sessions_held`, derived from
-/// `abi::CAPABILITY_TABLE_SLOTS`, so a wider table raises it with no edit here) and what
+/// `moho_abi::CAPABILITY_TABLE_SLOTS`, so a wider table raises it with no edit here) and what
 /// [`DURABLE_UT_PAGES`] has memory for, and one, because the durable window is one channel and two
 /// timetables staging in one page would overwrite each other (Fork 8 D). Raising it past one takes
 /// a window and a budget per session from this process's spawners.
 const DURABLE_SESSIONS: usize = {
-    let slots = login_contract::durable::sessions_held(abi::CAPABILITY_TABLE_SLOTS);
+    let slots = login_contract::durable::sessions_held(moho_abi::CAPABILITY_TABLE_SLOTS);
     let memory = (DURABLE_UT_PAGES / DURABLE_BUDGET_PAGES) as usize;
     let fewer = if slots < memory { slots } else { memory };
     if fewer < 1 { fewer } else { 1 }
@@ -455,9 +455,13 @@ impl FrontDoor<'_> {
         // `FS_PAGE_FRAME` (shared with every future client, forever), this channel is this process's
         // for exactly as long as `serve_login` is running and no longer, so its objects are reclaimed
         // the moment it returns (below).
-        delegate(RESULT, channel.request, abi::rights::WRITE);
-        delegate(RESULT, channel.result, abi::rights::READ);
-        delegate(RESULT, channel.page, abi::rights::READ | abi::rights::WRITE);
+        delegate(RESULT, channel.request, moho_abi::rights::WRITE);
+        delegate(RESULT, channel.result, moho_abi::rights::READ);
+        delegate(
+            RESULT,
+            channel.page,
+            moho_abi::rights::READ | moho_abi::rights::WRITE,
+        );
 
         serve_login(
             &channel,
@@ -732,32 +736,32 @@ fn hand_over(
         flags |= login_contract::SCHEDULE_FOLLOWS;
     }
     send(channel.result, login_contract::OK, flags, 0);
-    delegate(channel.result, dir_ep, abi::rights::WRITE);
+    delegate(channel.result, dir_ep, moho_abi::rights::WRITE);
     // `WRITE` alone: the kernel's `page_frame_map` grants a read+write mapping on `WRITE`, and
     // `crates/system_initializer::boot` holds only `WRITE | GRANT` on this page, so a real boot
     // could never delegate `READ` here (`script/swish-check` refused exactly that `SEND_CAPABILITY`).
-    delegate(channel.result, FS_PAGE_FRAME, abi::rights::WRITE);
+    delegate(channel.result, FS_PAGE_FRAME, moho_abi::rights::WRITE);
     // Every right (milestone 824 (a retype mints no right its budget lacks)): the session builds
     // from it, and what it builds carries the budget's rights.
-    delegate(channel.result, budget, abi::rights::ALL);
+    delegate(channel.result, budget, moho_abi::rights::ALL);
     // The logout ticket: `WRITE` is the one right `MemoryRegion::DESTROY` needs (notes/login.md,
     // "Reclaiming a session: the design argument"). Not `GRANT`: a client that could delegate its
     // logout ticket could hand another principal the means to end this one's session.
-    delegate(channel.result, region, abi::rights::WRITE);
+    delegate(channel.result, region, moho_abi::rights::WRITE);
     // **The terminal, fifth** (milestone 49's terminal update). Reaching here already proved
     // `!*terminal_held`, so this is never refused. `WRITE` only: a login session gets to write the
     // terminal, never to hand the capability to read keystrokes on to anything it spawns.
-    delegate(channel.result, TERM_EP, abi::rights::WRITE);
+    delegate(channel.result, TERM_EP, moho_abi::rights::WRITE);
     // **The run-unvouched capability, sixth, and only as announced** (DECISIONS §219 gate D2;
     // `login_contract::OK`'s doc). `WRITE` alone: the session may present it to the progenitor
     // and may hand it to nothing.
     if run_unvouched {
-        delegate(channel.result, RUN_UNVOUCHED, abi::rights::WRITE);
+        delegate(channel.result, RUN_UNVOUCHED, moho_abi::rights::WRITE);
     }
     // **The registration page, last, and only as announced** (milestone 152). `WRITE` alone: the
     // client writes a document into it and reads the plan back, and has no reason to lend it.
     if let Some(page) = page {
-        delegate(channel.result, page, abi::rights::WRITE);
+        delegate(channel.result, page, moho_abi::rights::WRITE);
     }
 }
 
@@ -1107,7 +1111,7 @@ fn open_schedule(
     };
     let (Ok(page), Ok(ready)) = (
         retype_into_page_frame_from(keeper),
-        retype_into_kernel_object_from(keeper, abi::object_type::RENDEZVOUS),
+        retype_into_kernel_object_from(keeper, moho_abi::object_type::RENDEZVOUS),
     ) else {
         discard(its_budget);
         fail(&[activation, packages]);
@@ -1119,17 +1123,20 @@ fn open_schedule(
         &elf,
         &ChildEndowment {
             capabilities: &[
-                (ready, abi::rights::WRITE),
+                (ready, moho_abi::rights::WRITE),
                 // `GRANT` too: a region split off this one inherits its rights, and the session
                 // process hands its timetable a split of it, which `CAPABILITY_INSERT` refuses without
                 // `GRANT`.
-                (its_budget, abi::rights::ALL),
-                (page, abi::rights::WRITE),
+                (its_budget, moho_abi::rights::ALL),
+                (page, moho_abi::rights::WRITE),
                 // `GRANT` on the two endpoints `user_timetable_keeper` only hands on; the page it
                 // only maps into its timetable, which `WRITE` alone allows.
-                (activation, abi::rights::WRITE | abi::rights::GRANT),
-                (packages, abi::rights::WRITE | abi::rights::GRANT),
-                (DURABLE_WINDOW, abi::rights::WRITE),
+                (
+                    activation,
+                    moho_abi::rights::WRITE | moho_abi::rights::GRANT,
+                ),
+                (packages, moho_abi::rights::WRITE | moho_abi::rights::GRANT),
+                (DURABLE_WINDOW, moho_abi::rights::WRITE),
             ],
             blobs: &[(
                 login_contract::user_timetable_keeper::TIMETABLE_VA,
@@ -1197,11 +1204,13 @@ fn store_caretaker(
     name: &str,
 ) -> Option<u64> {
     let grant = grant_page(own_ut, region, name.as_bytes())?;
-    let Ok(narrow_ep) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
+    let Ok(narrow_ep) = retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS)
+    else {
         capability_delete(grant);
         return None;
     };
-    let Ok(ready) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
+    let Ok(ready) = retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS)
+    else {
         capability_delete(narrow_ep);
         capability_delete(grant);
         return None;
@@ -1217,17 +1226,21 @@ fn store_caretaker(
         care,
         &ChildEndowment {
             capabilities: &[
-                (badged, abi::rights::WRITE),
-                (narrow_ep, abi::rights::READ),
-                (ready, abi::rights::WRITE),
+                (badged, moho_abi::rights::WRITE),
+                (narrow_ep, moho_abi::rights::READ),
+                (ready, moho_abi::rights::WRITE),
             ],
             maps: &[
                 (
                     CARETAKER_FS_VA,
                     DURABLE_WINDOW,
-                    abi::address_space::MAP_READ_WRITE,
+                    moho_abi::address_space::MAP_READ_WRITE,
                 ),
-                (CARETAKER_GRANT_VA, grant, abi::address_space::MAP_READ_ONLY),
+                (
+                    CARETAKER_GRANT_VA,
+                    grant,
+                    moho_abi::address_space::MAP_READ_ONLY,
+                ),
             ],
             stack_pages: CARETAKER_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -1274,11 +1287,13 @@ fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
     let region = memory_region_split(channel_ut, CHANNEL_REGION_PAGES).ok()?;
     // Every abandoned step below gives back its capability slots as well as its memory
     // ([`discard`], and `capability_delete` for what was retyped before the step that failed).
-    let Ok(request) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
+    let Ok(request) = retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS)
+    else {
         discard(region);
         return None;
     };
-    let Ok(result) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
+    let Ok(result) = retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS)
+    else {
         capability_delete(request);
         discard(region);
         return None;
@@ -1333,12 +1348,14 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
         discard(region);
         return None;
     };
-    let Ok(narrow_ep) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
+    let Ok(narrow_ep) = retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS)
+    else {
         capability_delete(grant);
         discard(region);
         return None;
     };
-    let Ok(ready) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
+    let Ok(ready) = retype_into_kernel_object_from(region, moho_abi::object_type::RENDEZVOUS)
+    else {
         capability_delete(narrow_ep);
         capability_delete(grant);
         discard(region);
@@ -1358,17 +1375,21 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
         care,
         &ChildEndowment {
             capabilities: &[
-                (FS_EP, abi::rights::WRITE),
-                (narrow_ep, abi::rights::READ),
-                (ready, abi::rights::WRITE),
+                (FS_EP, moho_abi::rights::WRITE),
+                (narrow_ep, moho_abi::rights::READ),
+                (ready, moho_abi::rights::WRITE),
             ],
             maps: &[
                 (
                     CARETAKER_FS_VA,
                     FS_PAGE_FRAME,
-                    abi::address_space::MAP_READ_WRITE,
+                    moho_abi::address_space::MAP_READ_WRITE,
                 ),
-                (CARETAKER_GRANT_VA, grant, abi::address_space::MAP_READ_ONLY),
+                (
+                    CARETAKER_GRANT_VA,
+                    grant,
+                    moho_abi::address_space::MAP_READ_ONLY,
+                ),
             ],
             stack_pages: CARETAKER_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -1631,7 +1652,7 @@ fn file_page() -> Option<&'static mut [u8]> {
 }
 
 /// Delegate our own copy of `slot`, narrowed to `rights`, over `ep`. `GRANT` must already be on our
-/// own copy for the kernel to allow this at all (`abi::rendezvous::SEND_CAPABILITY`'s contract); every
+/// own copy for the kernel to allow this at all (`moho_abi::rendezvous::SEND_CAPABILITY`'s contract); every
 /// capability this process delegates was retyped or split by this process, so it always is. `ep` is
 /// [`RESULT`] for a [`login_contract::CONNECTED`] answer and a channel's own private `result` for a
 /// [`login_contract::OK`] one; both are this process's own copy, always held with `GRANT`.

@@ -209,14 +209,14 @@ fn start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
     // Where the page is, read out of the page (milestone 600 (provisional)): the progenitor holds
     // the page as a capability and knows no physical address, so whoever built this process wrote
     // the base into its tail
-    // (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, past
+    // (`moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, past
     // `EVENT_BASE`'s eight records).
     // SAFETY: the page is mapped read/write at `DMA_VA` before `_start` runs (the spawner's `maps`),
     // and the offset is inside it.
     let direct_memory_access_phys = unsafe {
         core::ptr::read_volatile(
             (DMA_VA
-                + abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET)
+                + moho_abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET)
                 as *const u64,
         )
     };

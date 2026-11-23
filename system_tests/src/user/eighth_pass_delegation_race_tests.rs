@@ -18,11 +18,11 @@ use crate::sched;
 use crate::system_call::invoke;
 
 /// What the paused sender's `SEND_CAPABILITY` answered, as one word: the system call's return on success, or
-/// the `Error` code negated the way `abi` represents it (`Error as i64` is already negative).
+/// the `Error` code negated the way `moho_abi` represents it (`Error as i64` is already negative).
 const UNANSWERED: i64 = i64::MIN;
 
 /// `invoke` through the real dispatcher, the way a program's `svc`/`ecall` reaches it.
-fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, abi::Error> {
+fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, moho_abi::Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     invoke(&mut frame, slot, method, a0, a1, a2)
 }
@@ -60,7 +60,7 @@ fn a_revocation_landing_inside_the_delegation_window_is_still_seen() {
         crate::delegation_pause::arm(sched::current());
         let answer = call(
             door,
-            abi::rendezvous::SEND_CAPABILITY,
+            moho_abi::rendezvous::SEND_CAPABILITY,
             frame_slot,
             Rights::ALL.bits() as u64,
             0,
@@ -92,7 +92,7 @@ fn a_revocation_landing_inside_the_delegation_window_is_still_seen() {
     );
     assert_eq!(
         ANSWER.load(Ordering::SeqCst),
-        abi::Error::NoSuchSlot as i64,
+        moho_abi::Error::NoSuchSlot as i64,
         "the delegation answered something other than NoSuchSlot after its source was revoked \
          mid-flight: the copy was filed out of a window the sweep had already swept",
     );
@@ -132,7 +132,7 @@ fn the_same_seam_without_a_revoke_delivers(region: u64, ep: sched::RendezvousId)
         crate::delegation_pause::arm(sched::current());
         let answer = call(
             door,
-            abi::rendezvous::SEND_CAPABILITY,
+            moho_abi::rendezvous::SEND_CAPABILITY,
             frame_slot,
             Rights::ALL.bits() as u64,
             0,
@@ -155,7 +155,7 @@ fn the_same_seam_without_a_revoke_delivers(region: u64, ep: sched::RendezvousId)
         sched::inter_process_communication_receive_capability(ep);
     assert_ne!(
         slot,
-        abi::rendezvous::NO_CAPABILITY,
+        moho_abi::rendezvous::NO_CAPABILITY,
         "the control delivery was empty"
     );
     let delivered = sched::current_capability(slot).expect("the delivered slot is empty");
@@ -222,7 +222,7 @@ fn a_port_capability_revoked_while_in_flight_does_not_reach_the_receiver() {
 
     let [_word, slot, _second, _badge, ..] =
         sched::inter_process_communication_receive_capability(ep);
-    let delivered = if slot == abi::rendezvous::NO_CAPABILITY {
+    let delivered = if slot == moho_abi::rendezvous::NO_CAPABILITY {
         None
     } else {
         sched::current_capability(slot).ok()

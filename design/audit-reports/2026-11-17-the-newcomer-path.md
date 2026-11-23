@@ -74,13 +74,13 @@ the generated index on 2026-09-21. Severity high for the newcomer path: the tool
 and says nothing about it. Minted as [`script/catch-up` reads the milestone
 blocks](../roadmap/proposals/catch-up-reads-the-milestone-blocks.md).
 
-### 2. MINTED: `script/apropos system call` no longer finds `crates/abi`
+### 2. MINTED: `script/apropos system call` no longer finds `crates/moho_abi`
 
 The script's header, and `CONTRIBUTING.md`, give `script/apropos system call` as the way to find
-`crates/abi/src/lib.rs`, and the header says that finding it is why the tool exists. The search
-returns `16 of 520 pages`, a fixed cap (`RESULTS_MAXIMUM`), and `crates/abi` is not among them.
+`crates/moho_abi/src/lib.rs`, and the header says that finding it is why the tool exists. The search
+returns `16 of 520 pages`, a fixed cap (`RESULTS_MAXIMUM`), and `crates/moho_abi` is not among them.
 The header's figures are stale too: it says 512 pages and five megabytes where the script reports
-`2040 pages, 16602078 bytes`, and "four system call numbers" where `crates/abi` declares five calls.
+`2040 pages, 16602078 bytes`, and "four system call numbers" where `crates/moho_abi` declares five calls.
 Severity medium. Minted as item 1 of [the newcomer path says what the tree
 does](../roadmap/proposals/the-newcomer-path-says-what-the-tree-does.md).
 

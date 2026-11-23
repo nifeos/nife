@@ -7,7 +7,7 @@
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
-use abi::cycle_counter::CycleMeaning;
+use moho_abi::cycle_counter::CycleMeaning;
 
 /// The virtual counter, `CNTVCT_EL0`: a monotonic tick count for self-timing. Readable at EL0 only
 /// because the kernel sets `CNTKCTL_EL1.EL0VCTEN` when it starts the timer on each core; the

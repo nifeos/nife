@@ -254,7 +254,7 @@ is the record. What was considered and refused for each choice is in
   for, so the combination needs no edit outside its own declaration.
 - This page is prose and the code can move without it. The step that rots first is the manifest
   field list, which is why it is not repeated here: [program-manifest.md](program-manifest.md) has it,
-  and the struct in `crates/grant_contract/src/manifest.rs` is the authority over both.
+  and the struct in `src/manifest.rs` of `nifeos/grant_contract` is the authority over both.
 - **Written from having done it, and wrong most times it was walked.** Every walk before milestone
   150 found the page wrong, and the reason was structural rather than careless: the fact it described
   lived in seven hand-maintained places it did not control, so it went stale inside two days, twice.
