@@ -50,6 +50,10 @@ import subprocess
 import sys
 import tomllib
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import record_root  # noqa: E402
+
 # The packages of milestone 756's first cut, whose every program declares what it links.
 CUT = ('process-tools', 'core-tools', 'disk-tools')
 
@@ -275,7 +279,7 @@ def tree_problems():
                 versions[path] = consts
                 interfaces.setdefault(name, set()).add(path)
 
-    out = id_problems(found, table_rows(open(TABLE, encoding='utf-8').read()))
+    out = id_problems(found, table_rows(open(record_root.path(TABLE), encoding='utf-8').read()))
 
     bins = {}
     for i in members:

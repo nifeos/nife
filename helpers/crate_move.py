@@ -20,6 +20,7 @@ import tomllib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import crate_release  # noqa: E402
+import record_root  # noqa: E402
 
 TEMPLATE_URL = 'https://github.com/nifeos/crate-workflows'
 REPOSITORY_URL = 'https://github.com/nifeos/{crate}'
@@ -500,7 +501,7 @@ def fuzz_readme(root, crate, names, weekly):
         if copied:
             head += (f'`corpus/{name}` also holds copies of the inputs in '
                      + ', '.join(f'`{d}`' for d in copied) + '.\n\n')
-    sections = readme_sections(os.path.join(root, 'notes', 'fuzzing', 'targets.md'),
+    sections = readme_sections(record_root.path('notes', 'fuzzing', 'targets.md', top=root),
                                [f'`{n}`' for n in names])
     sections += readme_sections(os.path.join(root, 'fuzz', 'seeds', 'README.md'),
                                 [f'`{n}/' for n in names])

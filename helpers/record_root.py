@@ -33,6 +33,11 @@ BUGS
   record's repository and its commits, which a directory does not give.
 - `MARKER` is one file. A checkout that holds the record without that file reads as one the record
   has left, and the refusal names the file it looked for.
+- `helpers/name_census.py` and `helpers/name_release.py` do not ask here. The census takes one
+  path list and one `read` callback over a single tree, and reads `name_rules.RULES_DOC` and the
+  documents' own blocks through it; `script/metrics` hands it each week's commit the same way. A
+  record path read through that callback stays in the code's tree, so the census needs a second
+  reader for the record's paths before it can read the record anywhere else.
 """
 
 import os
