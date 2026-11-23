@@ -36,7 +36,7 @@ fn link_el0() {
 /// workspace lockfile, and measured boot refuses an archive from a different build than its kernel,
 /// so the line names the driver that ran. A package the lockfile does not hold, or one from a
 /// source with no commit, reads `unknown`, which `helpers/crate_hardware_run.py` refuses. See
-/// design/roadmap/1035-a-crate-names-the-version-that-ran-on-hardware/bench-steps.md.
+/// nifeos/record:design/roadmap/1035-a-crate-names-the-version-that-ran-on-hardware/bench-steps.md.
 fn carry_jh7110_entropy_identity(manifest_dir: &Path) {
     let lockfile = manifest_dir
         .parent()

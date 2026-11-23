@@ -1,5 +1,5 @@
 //! The nameset caretaker: a directory capability attenuated to the names a pattern matched
-//! (milestone 47's globbing lane, notes/glob-grant.md).
+//! (milestone 47's globbing lane, nifeos/record:notes/glob-grant.md).
 //!
 //! `fs_file_caretaker` narrows a directory capability to one file and `fs_subtree_caretaker` to
 //! one subtree; this narrows it to a set of names in one directory, which is what `rm *.txt`
@@ -8,12 +8,12 @@
 //! `kernel/src/user/fs_service/set_grant.rs` wires its slots, passes the rights in the `START`
 //! words, and maps the grant page at [`SET_VA`]: the directory's name, then the set
 //! ([`file_system_contract::grant::write_page`]).
-//! Why it is a third caretaker is in notes/glob-grant/third-caretaker.md.
+//! Why it is a third caretaker is in nifeos/record:notes/glob-grant/third-caretaker.md.
 
 //! # BUGS
 //!
 //! **No host fuzz target reaches this caretaker's decode.** It is inline in this EL0 binary with no
-//! library half, so a target would need it extracted first (`notes/fuzzing-the-services.md`).
+//! library half, so a target would need it extracted first (`nifeos/record:notes/fuzzing-the-services.md`).
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 61), replacing `swarden`. Refused `swarden` and the
 //! `warden` family. A reader should predict exactly these names, in one directory.
@@ -148,7 +148,7 @@ fn name_at(off: usize, len: usize, buf: &mut [u8; grant::MAXIMUM_NAME_BYTES]) ->
 /// Which verbs are asked is [`verb::Verb::takes_name`], a row in `file_system_contract`'s verb
 /// table, so a name-taking verb added to the contract is filtered from the day its row exists. An
 /// attribute name ([`verb::Operand::Payload`]) is a payload, not a name in the directory, so the
-/// four extended-attribute verbs are never compared against the set. See notes/glob-grant.md.
+/// four extended-attribute verbs are never compared against the set. See nifeos/record:notes/glob-grant.md.
 fn serve(dir: u64, set: &[u8]) -> ! {
     let mut table = Table([None; SLOTS]);
     table.0[0] = Some(dir);
@@ -202,7 +202,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
                 continue;
             }
             // Write the checked name back before forwarding (milestone 43,
-            // notes/shared-page-audit.md finding 2): the FS server reads the shared page again,
+            // nifeos/record:notes/shared-page-audit.md finding 2): the FS server reads the shared page again,
             // so re-staging makes the bytes it resolves the bytes the filter approved.
             put_at(0, &buf[..n]);
         }
@@ -223,12 +223,12 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         } else if code == file_system::READDIR && filtered {
             // At the granted directory `READDIR` is answered from the set, which is the namespace.
             // It is not gated on the grant's `ENUMERATE`: a listing here reveals exactly the set,
-            // which the command line already printed (notes/glob-grant.md).
+            // which the command line already printed (nifeos/record:notes/glob-grant.md).
             list(set, w1 as usize)
         } else if v.operand == verb::Operand::Rename {
             // `RENAME` needs both names in the set: renaming a matched name onto an unmatched one
             // destroys a name this capability was never granted. So a set capability cannot move a
-            // name out of the set, and `mv *.txt` is not expressible (notes/glob-grant.md).
+            // name out of the set, and `mv *.txt` is not expressible (nifeos/record:notes/glob-grant.md).
             let destination_length_bytes = file_system::destination_length_bytes(w1).min(PAGE);
             let mut src = [0u8; grant::MAXIMUM_NAME_BYTES];
             let mut dst = [0u8; grant::MAXIMUM_NAME_BYTES];

@@ -1,7 +1,7 @@
 //! **The operators `>`, `<` and `|`** (milestone 50 (pipes and redirection),
 //! notes/pipes.md), and the file behind a
 //! `>` and a `<`, which this shell serves itself. One of the modules §273 (the shell program
-//! becomes a directory of modules) lays out. See notes/pipes/the-shell-side.md.
+//! becomes a directory of modules) lays out. See nifeos/record:notes/pipes/the-shell-side.md.
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
@@ -19,7 +19,7 @@ const PIPE_REGION_PAGES: u64 = 8;
 /// **Run a line that has operators on it.**
 ///
 /// Designates the redirection targets and plans every stage before anything moves, so a line that
-/// cannot run spawns nothing. Refusals are said, not returned. See notes/pipes/the-shell-side.md.
+/// cannot run spawns nothing. Refusals are said, not returned. See nifeos/record:notes/pipes/the-shell-side.md.
 pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
     // The names on the ends, resolved against where we stand now, exactly as an operand is.
     let out = match l.output {
@@ -46,7 +46,7 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
     };
 
     // On the heap, not the stack (milestone 47 (navigation and naming), calef's allocator
-    // ruling): this array is what the four stack overflows in notes/pipes/the-boot.md shared.
+    // ruling): this array is what the four stack overflows in nifeos/record:notes/pipes/the-boot.md shared.
     let mut plans = match heap::filled::<Option<Endowment>>(l.stage_count(), None) {
         Ok(v) => v,
         Err(s) => return say(s),
@@ -122,7 +122,7 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
 ///
 /// The shell itself backs a `>` and a `<`, because `file_system_contract`'s one shared page cannot
 /// serve two clients (§55 (the file behind a `>` is the shell itself)); a redirected child still
-/// holds only a rendezvous with `WRITE`. See notes/pipes.md and notes/pipes/the-shell-side.md.
+/// holds only a rendezvous with `WRITE`. See notes/pipes.md and nifeos/record:notes/pipes/the-shell-side.md.
 #[allow(clippy::too_many_arguments)] // one parameter per operator, and there are four of them now
 pub(super) fn run_pipeline(
     nav: &mut Nav,
@@ -630,7 +630,7 @@ impl ByteOut for SinkWriter {
 
 /// How many bytes of a file this shell stages in the page it shares with the FS server before it
 /// makes a request. Small because the shell runs on four stack pages; see
-/// notes/pipes/the-shell-side.md.
+/// nifeos/record:notes/pipes/the-shell-side.md.
 const FILE_CHUNK: usize = 256;
 
 /// **Walk to the directory a resolved grant records**, from the root of what this shell holds.
@@ -675,7 +675,7 @@ fn open_at(
 /// opens the existing name, as `fixtures/src/file_sink.rs` does. `mode` is decided here because the
 /// shell backs the file (§55); the child is wired identically either way. [`line::Mode::Truncate`]
 /// truncates before the command runs; [`line::Mode::Append`] starts the offset at `FSTAT`'s size.
-/// See notes/pipes/the-file-end.md.
+/// See nifeos/record:notes/pipes/the-file-end.md.
 fn open_sink(nav: &mut Nav, g: grant_plan::FileGrant, mode: line::Mode) -> Result<FileOut, Say> {
     let t = nav.tree(g.side);
     let mut tmp = [0u64; grant_navigation::MAXIMUM_DEPTH];
@@ -915,7 +915,7 @@ fn drain_into(f: &mut FileOut) {
 /// in its slots.
 ///
 /// The progenitor puts the delegated rendezvous where the result rendezvous would have gone, which
-/// is why `>` and `|` are one mechanism. The wiring rules are in notes/pipes/the-shell-side.md.
+/// is why `>` and `|` are one mechanism. The wiring rules are in nifeos/record:notes/pipes/the-shell-side.md.
 ///
 /// Returns whether the stage started; a failure has already been printed.
 #[allow(clippy::too_many_arguments)] // the row and its endowment, four operator ends, argv and words
@@ -956,7 +956,7 @@ fn spawn_stage(
         source: source.is_some(),
         diagnostics: diagnostics.is_some(),
         // Directory-granted only for words (milestone 205 (how a foreign program is told what to
-        // do)); `rm`'s required grant is met only in `spawn`. See notes/dir-capability.md's BUGS.
+        // do)); `rm`'s required grant is met only in `spawn`. See nifeos/record:notes/dir-capability.md's BUGS.
         directory_grant: words.is_some(),
         second_directory_grant: false,
         screen: screen.is_some(),

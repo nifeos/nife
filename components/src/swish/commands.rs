@@ -27,7 +27,7 @@ pub(super) fn builtin(nav: &mut Nav, cmd: &[u8], each: &mut dyn FnMut(&[u8], boo
 }
 
 /// **Read one typed line and run the commands on it** (milestone 67 (`swish` the language: quoting,
-/// sequencing, and exit status), notes/swish-language.md): the outermost thing the prompt calls. It
+/// sequencing, and exit status), nifeos/record:notes/swish-language.md): the outermost thing the prompt calls. It
 /// cuts the line on `;`, `&&` and `||` and hands each segment to [`dispatch`], so a segment is a
 /// whole command line and nothing under here learned a grammar.
 ///
@@ -89,7 +89,7 @@ pub(super) fn dispatch(nav: &mut Nav, cmd: &[u8]) {
     }
 }
 
-/// **Run a command and say how long it took** (milestone 86, notes/time-command.md).
+/// **Run a command and say how long it took** (milestone 86, nifeos/record:notes/time-command.md).
 ///
 /// The tail goes back through [`dispatch`], so what you time is what you run: a pipeline as a
 /// pipeline, a builtin as a builtin, a refusal as a refusal. The command is told nothing. The number
@@ -98,7 +98,7 @@ pub(super) fn dispatch(nav: &mut Nav, cmd: &[u8]) {
 pub(super) fn time_command(nav: &mut Nav, tail: &[u8]) {
     // Collapse a nested prefix rather than recursing through [`dispatch`]. `time time date` is a line
     // a person can type, and each level of recursion here costs a `dispatch` frame on a stack that
-    // has run out four times already (notes/pipes/the-boot.md). Timing something twice measures
+    // has run out four times already (nifeos/record:notes/pipes/the-boot.md). Timing something twice measures
     // nothing twice.
     let mut tail = tail.trim_ascii();
     while let CommandLine::Time(inner) = grant_plan::parse(tail) {
@@ -134,7 +134,7 @@ pub(super) const MAXIMUM_BATCHES: u64 = 256;
 /// goes where the directory authority already is. The iteration is the builtin; `rm` stays a
 /// program with an attenuated grant. The sweep stops at the first batch that does not run, so what
 /// ran is a prefix of the match, and each batch's set is printed before it runs, so the shell can
-/// name the boundary. See notes/glob-grant/xargs.md.
+/// name the boundary. See nifeos/record:notes/glob-grant/xargs.md.
 pub(super) fn xargs(nav: &mut Nav, tail: &[u8]) {
     // Collapse a nested prefix rather than recursing, [`time_command`]'s reason: `xargs xargs rm
     // *.txt` is a line a person can type, batching a batch is still one sweep, and every level of
@@ -241,7 +241,7 @@ pub(super) fn dispatch_one(nav: &mut Nav, cmd: &[u8]) {
 /// # BUGS
 ///
 /// It does not send `login_contract::SUSPEND`, holding no capability to `login`'s front door, so a
-/// durable session ends at the identity's next login attempt (notes/shell/the-program.md).
+/// durable session ends at the identity's next login attempt (nifeos/record:notes/shell/the-program.md).
 pub(super) fn user(nav: &mut Nav, verb: grant_plan::UserVerb<'_>) {
     use grant_plan::UserVerb;
     let (name, suspend) = match verb {

@@ -6,7 +6,7 @@
 //! `CALL` answered through the kernel's one-shot Reply (DECISIONS §12), so a `READLINE` with no
 //! line ready is held while the server keeps serving. `mode` picks the sink ([`MODE_CONSOLE`] or
 //! [`MODE_DISPLAY`]) and only [`Con::flush`] differs. The editing is the host-tested `line_editor`
-//! crate, the protocol notes/terminal-contract.md, and the design notes/line-discipline.md.
+//! crate, the protocol nifeos/record:notes/terminal-contract.md, and the design notes/line-discipline.md.
 
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46) for the word and again
 //! 2026-08-01 (milestone 63) for the spelling, replacing `termd` and then `lineedit`. Refused
@@ -269,7 +269,7 @@ impl Terminal {
             proto::OPERATION_READLINE => self.read_line(w0, slot),
             proto::OPERATION_PRINT => {
                 // A second writer, with no second page (DECISIONS §67 (a program's second stream
-                // is a declaration, not a number), notes/sink-protocol.md): the bytes ride in the
+                // is a declaration, not a number), nifeos/record:notes/sink-protocol.md): the bytes ride in the
                 // request's words, since a second page-based client would need a page index.
                 // Through the same `expand_output` as `OPERATION_WRITE`, so a sink adapter's
                 // newline becomes a carriage return and a newline, as the shell's does.

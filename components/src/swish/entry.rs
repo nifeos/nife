@@ -49,7 +49,7 @@ const HEADS: boot_ladder::Heads<'static> = boot_ladder::Heads::new("nife");
 /// **What `arg1` carries into every role that holds a directory**: the `file_system_contract::directory`
 /// rights that capability was granted, 0 for none. Told rather than asked, because nothing on that
 /// wire reports what a handle carries and `OPENDIR` refuses a request wider than the parent, so a
-/// guess of `directory::rights::ALL` could not `cd` (notes/shell-navigation.md). **`x2` carries the clock slot**
+/// guess of `directory::rights::ALL` could not `cd` (nifeos/record:notes/shell-navigation.md). **`x2` carries the clock slot**
 /// (milestone 86 (`time`: the shell times a command)), or [`NO_CLOCK`]: the slot moves with what
 /// else the boot granted, and a probe of the wrong number would map some other object as a clock.
 /// See [`CLOCK_SLOT`].

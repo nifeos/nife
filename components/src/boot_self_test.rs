@@ -9,7 +9,7 @@
 //! from that budget and supervises it, writes each check's line into a transcript the progenitor
 //! copies to the console, then the verdict (`boot_ladder::Heads::self_test`), and exits. Every check here
 //! runs on every architecture, and one the machine has nothing for says `absent` and why. See
-//! notes/self-test-checks.md, "The two halves".
+//! nifeos/record:notes/self-test-checks.md, "The two halves".
 //!
 //! # BUGS
 //!
@@ -894,7 +894,7 @@ fn clock(r: &mut Report, half: &KernelHalf) {
 
 /// **Say what the TRNG's `STAT` says about its output width**: in 128-bit mode only `RAND0..RAND3`
 /// carry an answer, so 16 of 32 reported bytes would not be device output. An all-zero `STAT` is a
-/// register window that answered nothing. See notes/self-test-checks.md.
+/// register window that answered nothing. See nifeos/record:notes/self-test-checks.md.
 fn mode_note(status: u32, wide: bool) -> &'static str {
     if status == 0 {
         "the whole status register read zero, so this says nothing about the mode"

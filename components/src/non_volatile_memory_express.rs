@@ -1,5 +1,5 @@
 //! **The NVMe driver, at EL0, as two processes from one image** (§86 (whether an NVMe driver can
-//! leave the kernel), notes/non-volatile-memory-express.md). `arg0` picks the role, and the
+//! leave the kernel), nifeos/record:notes/non-volatile-memory-express.md). `arg0` picks the role, and the
 //! capabilities each spawn grants are what separate them. [`admin`] owns the controller and grants
 //! the data plane its pages; [`data_plane`] is the block server. All the arithmetic is in
 //! `crates/non_volatile_memory_express`, host-tested and Kani-reachable; what is left here is

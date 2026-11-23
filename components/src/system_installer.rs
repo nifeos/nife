@@ -5,8 +5,8 @@
 //! spawned only after a person answers a question naming the disk, asked by
 //! `kernel/src/user/install_service.rs`, because a confirmation it printed itself could be skipped.
 //! `a0` is [`ROLE_SURVEY`], [`ROLE_INSTALL`] or [`ROLE_CONFIRM`]. The layout an install writes, and
-//! why each part sits where it does, is in notes/installing/system-installer.md; see also
-//! notes/installing.md and notes/boot-slots.md.
+//! why each part sits where it does, is in nifeos/record:notes/installing/system-installer.md; see also
+//! nifeos/record:notes/installing.md and nifeos/record:notes/boot-slots.md.
 
 //! # BUGS
 //!
@@ -266,7 +266,7 @@ const MAXIMUM_PARTITIONS: usize = 16;
 /// `uefi_loader`'s chooser counts them (`the_disk_with_slots`) before writing it onto the kernel's
 /// command line. A number that matches no slot is a refusal, never a nearest slot. It is safe to
 /// run twice and to interrupt: the changed bits sit in one 512-byte block, and the backup table is
-/// complete before the primary is touched. See notes/installing/system-installer.md; nothing yet
+/// complete before the primary is touched. See nifeos/record:notes/installing/system-installer.md; nothing yet
 /// reads the backup when the primary fails to parse (`uefi_loader::chooser`'s `BUGS`).
 fn confirm(slot: u64) -> ! {
     let size = call(BLK, request(block::GET_SIZE_BYTES), 0).0 as i64;
@@ -474,7 +474,7 @@ impl Layout {
     /// fit. **All of the arithmetic, in one place**, so the writes below have nothing to decide.
     ///
     /// The EFI system partition goes at the end, the boot slots just below it, and the data
-    /// partition takes everything before them, for the reason notes/installing/system-installer.md
+    /// partition takes everything before them, for the reason nifeos/record:notes/installing/system-installer.md
     /// gives.
     fn fit(block_count: u64) -> Option<Layout> {
         // The last block a partition may use: the backup entry array and its header sit above it.
@@ -663,7 +663,7 @@ fn write_efi_system_partition(
     // The boot file itself, contiguous from the cluster the volume's directory entry names.
     //
     // Refuse a volume whose clusters do not land on transfer blocks rather than divide and write
-    // somewhere else (notes/installing.md, "FAT32 had to be written").
+    // somewhere else (nifeos/record:notes/installing.md, "FAT32 had to be written").
     let first = layout.esp_first + volume.file_first_sector();
     if !first.is_multiple_of(SECTORS_PER_TRANSFER) {
         return Err(42);
@@ -679,7 +679,7 @@ fn write_efi_system_partition(
 /// it leaves a slot holding a valid-looking prefix of a boot image.
 ///
 /// `crates/boot_slot` reserves a whole 4096-byte transfer block for the header so the image after
-/// it starts on a block boundary (notes/installing.md, "FAT32 had to be written").
+/// it starts on a block boundary (nifeos/record:notes/installing.md, "FAT32 had to be written").
 fn write_slot(slot_first: u64, boot_file_len: u64) -> Result<(), u64> {
     // SAFETY: the kernel mapped `boot_file_len` bytes read-only at `BOOT_FILE_VA`; this program
     // has one thread, and nothing else in it writes there.

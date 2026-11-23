@@ -1,9 +1,9 @@
-# Name: recorded (design/roadmap/0039-repository-structure.md's naming section, performed by milestone
+# Name: recorded (nifeos/record:design/roadmap/0039-repository-structure.md's naming section, performed by milestone
 # 175). A **component** is this project's word for the shippable unit, a binary plus its manifest,
 # and a **service** is what one offers over a contract. 39 refused the Unix word for a long-running
 # background process on a technical rather than an aesthetic argument, and that argument is written
 # there rather than repeated here, because `script/lint` keeps the rejected word inside `design/`
-# and design/naming.md where the case for rejecting it lives.
+# and nifeos/record:design/naming.md where the case for rejecting it lives.
 #
 # The package holds every EL0 program a distribution would ship because somebody wants its function:
 # the services and drivers, the progenitor and supervision spine, and the tools a person invokes at the
@@ -57,7 +57,7 @@ bench = false
 
 # The line discipline (milestone 28): the tty layer as a swappable userspace component between
 # the input/console drivers and applications. Serves the terminal contract
-# (notes/terminal-contract.md); the editing engine is the host-tested `line_editor` crate.
+# (nifeos/record:notes/terminal-contract.md); the editing engine is the host-tested `line_editor` crate.
 [[bin]]
 name = "line_editor"
 path = "src/line_editor.rs"
@@ -724,7 +724,7 @@ boot_slot = { version = "0.1.0", path = "../crates/boot_slot" }
 # Civil dates for `date`, `clock` and `swish`'s `touch -t`: a reading to text in five layouts, RFC
 # 3339 text to an instant, RTC fields to Unix seconds. Third-party, ruled 2026-11-12 (UTC) under §46
 # (thin primitives or whole subsystems); default features off, so no `std`, no `alloc` and no time
-# zone database, only fixed offsets. See notes/calendar.md.
+# zone database, only fixed offsets. See nifeos/record:notes/calendar.md.
 jiff = { version = "1.0.0", default-features = false }
 grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 grant_plan = { version = "0.1.0", git = "https://github.com/nifeos/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
@@ -833,7 +833,7 @@ smoltcp = { version = "0.14.0", default-features = false, features = [
     # No "multicast". Milestone 55's mDNS stack half enabled it (group membership, IGMP, and RX
     # acceptance of datagrams addressed to a joined group) and milestone 298 took it out again on
     # 2026-09-15 with the only thing that joined a group. Without it the IPv4 input path accepts
-    # multicast only to 224.0.0.1, so a future multicast client must put it back; notes/mdns.md
+    # multicast only to 224.0.0.1, so a future multicast client must put it back; nifeos/record:notes/mdns.md
     # records what it took and what QEMU could and could not prove.
     "proto-ipv4",
     "proto-dhcpv4",

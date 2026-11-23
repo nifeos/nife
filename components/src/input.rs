@@ -3,11 +3,11 @@
 //!
 //! It owns the UART's receive side and its interrupt and forwards every byte that arrives,
 //! interpreting nothing. Bytes travel up to 8 per `OPERATION_BYTES` `CALL`
-//! (notes/terminal-contract.md), whose rendezvous is the flow control. Its whole authority is
+//! (nifeos/record:notes/terminal-contract.md), whose rendezvous is the flow control. Its whole authority is
 //! `WRITE` on the terminal endpoint ([`TERM`]), the receive interrupt ([`INTERRUPT`]) and the
 //! device: the
 //! UART registers mapped device-typed on aarch64 and riscv64, and on x86 a `PortRange` capability for COM1 (slot 2, milestone 299 (the x86 port-range
-//! capability: the serial console becomes a userspace driver)). See notes/uart.md.
+//! capability: the serial console becomes a userspace driver)). See nifeos/record:notes/uart.md.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39), among the names recorded there as always
 //! right.
@@ -97,13 +97,13 @@ mod uart {
         !regs().FR().is_set(FR::RXFE)
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/acronyms-and-abbreviations.md; `read_byte` reads the byte `is_byte_waiting`
+    /// nifeos/record:design/naming/acronyms-and-abbreviations.md; `read_byte` reads the byte `is_byte_waiting`
     /// reports.
     pub fn read_byte() -> u8 {
         regs().DR().get() as u8
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/acronyms-and-abbreviations.md; `arm_receive_interrupt` is the word the NS16550
+    /// nifeos/record:design/naming/acronyms-and-abbreviations.md; `arm_receive_interrupt` is the word the NS16550
     /// and PL011 manuals spell out.
     pub fn arm_receive_interrupt() {
         regs().IMSC().modify(IMSC::RXIM::SET);
@@ -174,13 +174,13 @@ mod uart {
         rd(LSR) & LSR_DR != 0
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/acronyms-and-abbreviations.md; `read_byte` reads the byte `is_byte_waiting`
+    /// nifeos/record:design/naming/acronyms-and-abbreviations.md; `read_byte` reads the byte `is_byte_waiting`
     /// reports.
     pub fn read_byte() -> u8 {
         rd(RBR) // reading clears the receive interrupt; that is why clear_interrupt is a no-op
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/acronyms-and-abbreviations.md; `arm_receive_interrupt` is the word the NS16550
+    /// nifeos/record:design/naming/acronyms-and-abbreviations.md; `arm_receive_interrupt` is the word the NS16550
     /// and PL011 manuals spell out.
     pub fn arm_receive_interrupt() {
         wr(IER, IER_ERBFI);
@@ -219,13 +219,13 @@ mod uart {
         port_read_byte(LSR) & LSR_DR != 0
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/acronyms-and-abbreviations.md; `read_byte` reads the byte `is_byte_waiting`
+    /// nifeos/record:design/naming/acronyms-and-abbreviations.md; `read_byte` reads the byte `is_byte_waiting`
     /// reports.
     pub fn read_byte() -> u8 {
         port_read_byte(RBR) // reading clears the receive condition, as on the NS16550
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/acronyms-and-abbreviations.md; `arm_receive_interrupt` is the word the NS16550
+    /// nifeos/record:design/naming/acronyms-and-abbreviations.md; `arm_receive_interrupt` is the word the NS16550
     /// and PL011 manuals spell out.
     ///
     /// **`OUT2` as well as the receive enable**, which is the one PC-specific fact here: on a PC
@@ -247,7 +247,7 @@ user_mode_runtime::program_entry!(start);
 /// Forward wire bytes forever, interrupt-driven on all three architectures: wait on the receive
 /// interrupt, clear it at the device, drain the FIFO, hand the bytes on, acknowledge. `uart_shape`
 /// is riscv64's register shape (`moho_abi::uart`); the other arguments are unused. A polled loop would
-/// never let the core idle; the measurement is in notes/uart.md.
+/// never let the core idle; the measurement is in nifeos/record:notes/uart.md.
 fn start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
     #[cfg(target_arch = "riscv64")]
     uart::set_shape(uart_shape);
@@ -255,7 +255,7 @@ fn start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
     let _ = uart_shape;
     // Drain by polling before arming: input piped in at boot is already in the FIFO. This narrows
     // the race with the first interrupt and does not close it; a line burst-piped into QEMU before
-    // this drain runs can lose its first character (notes/uart.md).
+    // this drain runs can lose its first character (nifeos/record:notes/uart.md).
     drain();
     uart::arm_receive_interrupt();
 

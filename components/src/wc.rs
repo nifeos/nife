@@ -168,7 +168,7 @@ fn count() -> (u64, u64, u64) {
 /// The end-of-stream message is not politeness. A reader downstream (the shell draining the answer,
 /// or another `wc`) blocks until something tells it the producer is finished, and "the producer
 /// exited" is a fact about process supervision that a reader of a stream should not have to know
-/// how to find out. See notes/sink-protocol.md.
+/// how to find out. See nifeos/record:notes/sink-protocol.md.
 fn report(lines: u64, words: u64, bytes: u64) {
     let mut out = [0u8; 64];
     let mut n = 0usize;

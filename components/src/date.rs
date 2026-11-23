@@ -1,4 +1,4 @@
-//! `date`: print the wall-clock time (notes/date.md, notes/clock.md, notes/calendar.md).
+//! `date`: print the wall-clock time (nifeos/record:notes/date.md, nifeos/record:notes/clock.md, nifeos/record:notes/calendar.md).
 //!
 //! It reads the clock page, adds the ambient counter, finds the civil time with `jiff`, prints it and
 //! sends the bytes.
@@ -13,7 +13,7 @@
 //!
 //! - One-second resolution; the counter is sampled just after the page, so an `a2` run's two lines
 //!   can straddle a step and disagree about the generation.
-//! - A fixed UTC offset is not a time zone, and there is no `strftime` (notes/calendar.md).
+//! - A fixed UTC offset is not a time zone, and there is no `strftime` (nifeos/record:notes/calendar.md).
 //!
 //! Name: ratified 2026-09-14 (calef): the Unix command's name, a plain noun.
 
@@ -198,7 +198,7 @@ fn local_reading(unix_seconds: i64, offset_minutes: i32) -> Option<DateTime> {
 /// than an error: this is a register, not a parsed string, and the caller that got it wrong wants
 /// the default.
 ///
-/// The five layouts are the ones notes/calendar.md lists: `Rfc3339` prints `Z` at zero offset and
+/// The five layouts are the ones nifeos/record:notes/calendar.md lists: `Rfc3339` prints `Z` at zero offset and
 /// `±HH:MM` otherwise, and `Human` prints `UTC` at zero offset. `Unix` is the instant, whatever the
 /// offset. The digits are written here from jiff's civil fields rather than through jiff's
 /// `strtime`, whose formatter needs more stack than the one page a spawned program is given.
@@ -390,7 +390,7 @@ fn source_line(slot: u64, st: u64, generation: u64) {
 /// **Announce the end of the stream, then exit** (milestone 50).
 ///
 /// Every exit path from `_start` comes here, so a reader downstream of a `|` is told the stream
-/// ended rather than inferring it from a death (notes/sink-protocol.md). The send blocks until
+/// ended rather than inferring it from a death (nifeos/record:notes/sink-protocol.md). The send blocks until
 /// somebody takes it, so a reader that stopped at the newline leaves this process parked.
 fn end() -> ! {
     diag_end();

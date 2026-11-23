@@ -17,7 +17,7 @@
 //! honest, but it is the fixture reading this ruling rejected), `least_authority` (the same name one
 //! word shorter; calef took the longer form, which says it is a demonstration rather than a claim
 //! about the program's own authority). The ruling also settled a classification three records had
-//! made by repetition rather than by ruling (`design/naming.md`, milestones 39 and 175 all listed it
+//! made by repetition rather than by ruling (`nifeos/record:design/naming.md`, milestones 39 and 175 all listed it
 //! as a fixture): it is the canonical minimal program, so milestone 175 moved it into `components/`
 //! rather than `fixtures/`, and performed the rename in the same change.
 

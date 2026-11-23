@@ -6,7 +6,7 @@
 //! `call_reply`), and an immediate `ACCEPTED` with the item held when it is away. The backlog is
 //! bounded and lives in this process's own `.bss`, so the kernel does not grow; a full queue
 //! answers [`QUEUE_FULL`](hot_swap_contract::QUEUE_FULL). It writes nothing to storage and does
-//! not survive its own crash. See notes/live-replacement.md, "The latency ladder".
+//! not survive its own crash. See nifeos/record:notes/live-replacement.md, "The latency ladder".
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46), replacing `brokerd`.
 //! Refused `brokerd` (the `-d` suffix claims the Unix process model DECISIONS §39 rejects, before a

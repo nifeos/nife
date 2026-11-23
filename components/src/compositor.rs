@@ -6,7 +6,7 @@
 //! which input capability it uses, so a client holding none cannot be sent input. Its mappings are
 //! the scanout, the window-list page, the input ring and each client's control page and surface;
 //! it holds no device, interrupt, DMA authority or physical address. Nothing in a doorbell message
-//! is trusted, and its one wait point lets a silent client stall it. See notes/compositor.md.
+//! is trusted, and its one wait point lets a silent client stall it. See nifeos/record:notes/compositor.md.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46), replacing `compd`.
 //! Refused `compd` (the `-d` claim). Sharing the crate's name is deliberate: the crate is this
@@ -115,7 +115,7 @@ fn publish(n: usize, focus: u32) {
         // MAGIC last, though `write_volatile` orders nothing: the check is sound because
         // `publish` runs once before the serve loop, so no client's `HELLO` reply can arrive
         // before every control page is written. Publishing again while clients run would need
-        // a release fence here and an acquire in each client. See notes/memory-ordering.md.
+        // a release fence here and an acquire in each client. See nifeos/record:notes/memory-ordering.md.
         wr32(c + ctl::MAGIC, ctl::MAGIC_VALUE);
     }
 
@@ -169,7 +169,7 @@ fn drain_input(focusable: usize, focus: &mut u32) {
     let mut head = rd32(RING_VA + ring::HEAD);
     let tail = rd32(RING_VA + ring::TAIL);
     // **The acquire half of `keyboard_driver::ring_publish`'s release** (milestone 43,
-    // notes/shared-page-audit.md finding 7). The producer fences before it stores the tail, with a
+    // nifeos/record:notes/shared-page-audit.md finding 7). The producer fences before it stores the tail, with a
     // comment saying the bytes must be visible before the tail that advertises them; that orders
     // the producer's stores and does nothing whatever for this reader. `rd32` is a plain volatile
     // load, and on aarch64 the byte loads below may be satisfied before the tail load above, so
@@ -177,7 +177,7 @@ fn drain_input(focusable: usize, focus: &mut u32) {
     // for this same ring (`kernel/src/user/keyboard_service.rs`, `take_typed`) already fences
     // here; the userspace reader of the same contract did not.
     // PAIR: `keyboard_driver::ring_publish`'s release fence in the input source (milestone 43,
-    // notes/shared-page-audit.md finding 7), which fences before it stores the tail loaded above.
+    // nifeos/record:notes/shared-page-audit.md finding 7), which fences before it stores the tail loaded above.
     core::sync::atomic::fence(core::sync::atomic::Ordering::Acquire);
     while head != tail {
         let at = RING_VA + ring::BYTES + (head % ring::CAPACITY) as u64;
@@ -232,7 +232,7 @@ fn serve_frame(
         last_seq[i] = seq;
         committed[i] = true;
 
-        // The acquire half of each client's release (notes/shared-page-audit.md finding 7):
+        // The acquire half of each client's release (nifeos/record:notes/shared-page-audit.md finding 7):
         // without it a fresh sequence can be read beside the previous frame's pixels.
         // PAIR: each client's release fence in fixtures/src/window.rs and components/src/display_terminal.rs
         // (milestone 43), between the pixel/rectangle stores and the `ctl::SEQ` store loaded above.

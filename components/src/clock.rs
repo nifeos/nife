@@ -8,10 +8,10 @@
 //! over its two ports, §121 (x86 port I/O), §130 (how the userspace clock service
 //! reads the x86 CMOS RTC)), publishes only a
 //! plausible reading (§42 (a filesystem must be truthful)'s no-silent-degradation rule), then
-//! serves proposals judged by `clock_contract::policy`. See notes/clock.md, "Three authorities".
+//! serves proposals judged by `clock_contract::policy`. See nifeos/record:notes/clock.md, "Three authorities".
 
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist), confirming milestone 63's
-//! name table (design/roadmap/0063-name-spellings.md). Introduced 2026-07-30. Milestone 63 argues
+//! name table (nifeos/record:design/roadmap/0063-name-spellings.md). Introduced 2026-07-30. Milestone 63 argues
 //! this name from the other side, while settling `credentialer`: it treats `clock` and `entropy`
 //! as the established resource-name pattern and departs from that pattern only where the departure
 //! is earned, because the credential service will never hand you a credential and naming it for
@@ -196,7 +196,7 @@ fn goldfish_unix_nanoseconds(base: u64) -> u64 {
 
 /// **The CMOS RTC driver** (`x86_64`): an MC146818-compatible clock behind
 /// [`real_time_clock::INDEX_PORT`] and [`real_time_clock::DATA_PORT`], reached through the `PortRange` the
-/// wiring grants in slot 2. See notes/clock.md for the register map, tearing and the century.
+/// wiring grants in slot 2. See nifeos/record:notes/clock.md for the register map, tearing and the century.
 ///
 /// # BUGS
 /// - No century byte: the year is `2000 + value`, so dates outside 2000..=2099 cannot be read.
@@ -289,7 +289,7 @@ mod cmos {
                 break first;
             }
             // An update began between the snapshots; one UIP wait alone is not enough
-            // (notes/clock.md, "Tearing").
+            // (nifeos/record:notes/clock.md, "Tearing").
         };
 
         let status_b = read(REGISTER_STATUS_B);
@@ -319,7 +319,7 @@ mod cmos {
             (false, false, h) => h,
         };
 
-        // No century byte; see notes/clock.md.
+        // No century byte; see nifeos/record:notes/clock.md.
         let year = 2000 + i32::from(year);
 
         let reading = jiff::civil::DateTime::new(

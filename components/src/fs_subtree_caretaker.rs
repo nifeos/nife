@@ -1,5 +1,5 @@
 //! The subtree caretaker: a directory capability attenuated to one subtree (milestone 47,
-//! notes/dir-capability.md).
+//! nifeos/record:notes/dir-capability.md).
 //!
 //! It narrows a directory capability to the granted directory and everything beneath it, and it
 //! performs no checks: one [`file_system::OPENDIR`] at startup asks the FS server for a handle carrying the
@@ -8,12 +8,12 @@
 //! is the boundary: the confined program holds nothing that names the FS server. `start_granted_dir`
 //! (`kernel/src/user/fs_service/directory_grant.rs`) wires its slots, maps the granted name on a
 //! read-only grant page at [`GRANT_VA`] and passes the rights in the `START` words
-//! ([`file_system_contract::grant`]). See notes/dir-capability/caretaker.md.
+//! ([`file_system_contract::grant`]). See nifeos/record:notes/dir-capability/caretaker.md.
 
 //! # BUGS
 //!
 //! **No host fuzz target reaches this caretaker's decode.** It is inline in this EL0 binary with no
-//! library half, so a target would need it extracted first (`notes/fuzzing-the-services.md`).
+//! library half, so a target would need it extracted first (`nifeos/record:notes/fuzzing-the-services.md`).
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 61 (the caretakers)), replacing `dwarden`, named
 //! for what it **holds** while both siblings are named for what they **serve**. Refused `dwarden`
@@ -127,7 +127,7 @@ impl Table {
 /// reaches through that handle. [`file_system_contract::verb`] decides only whether the length field
 /// and the second word travel, which is dispatch and cannot refuse anything, so a verb added to the
 /// contract is forwarded from the day its row exists. The extended-attribute verbs take a handle, so
-/// the server applies the grant's rights to them too. See notes/dir-capability/caretaker.md.
+/// the server applies the grant's rights to them too. See nifeos/record:notes/dir-capability/caretaker.md.
 fn serve(dir: u64) -> ! {
     let mut table = Table([None; SLOTS]);
     table.0[0] = Some(dir);
