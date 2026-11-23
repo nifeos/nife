@@ -196,13 +196,25 @@ a second rung. When (A) lands, the driver's model changes in the two receiver-fi
   confined driver 0 of 64; the table is in `notes/fuzzing/rates-on-x86-64-under-kvm.md`.
 - That one failure is not explained. On 2026-11-01 (UTC), at 8 guests, actor 5 neither finished
   nor parked after 2732 ms of the counter. In that time core 0 took 200 ticks and core 1 took 255,
-  so both cores ran and no stopped vCPU covers it. The message prints no seed. The failure came about
+  so both cores ran and no stopped vCPU covers it. The message printed no seed then. The failure came about
   13,300 seeds into the sweep; seeds 900,012,000 to 900,015,000 passed alone 3 of 3 times, and
   every other guest passed the same seeds. A wake the scheduler lost (the class in
   `notes/scheduler/missed-reschedule-poke.md`) would fit; so would a host stall that ticks did not
   show. A budget-expired failure prints `sched::dump_threads` after its message (thread states, and
   each core's `inbox_len`), so a recurrence shows which threads sat parked, runnable or waiting.
-  A recurrence still wants the seed, which the message does not carry.
+  Every budget-expired message of both drivers carries the seed it was running.
+- **On the continuous fuzz host, both drivers' waits run out in bursts that cross guests.** The
+  host is itself a virtual machine, so its four guests run under nested KVM. In a burst, every
+  vCPU of every guest runs flat out for tens of seconds while the guests make little progress.
+  Each core still takes its ticks on time, about 200 in 2,000 ms of the counter, so the
+  every-core budget runs out as if the guest had hung. Kernel-thread and confined windows that
+  start within a second of each other fail together, far more often than chance gives. Their
+  seeds replay clean on a second nested host, one guest at a time and eight at once. In the
+  thread dump the awaited thread is most often running or runnable, not parked. That reads as
+  slowness, though a lost wake is not ruled out. What starts a burst is not known. The fuzz
+  host's own scheduler shows no run-queue wait and next to no steal, so the cause sits below it.
+  A tick budget cannot tell such a burst from a hang. No measured figure for a burst fits under
+  the 20 s backstop.
 - A stopped vCPU is what the wait exists for, and an instrumented run on 2026-11-01 saw one. Four
   guests at once waited about 1.8 s. One loop went 1.54 s between two polls, and its guest took 6
   or 7 ticks where two running cores take about 360. What stops them is not known; four guests pinned to four

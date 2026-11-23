@@ -897,6 +897,8 @@ struct Stage {
     tids: [ThreadId; ACTORS],
     doorbells: [RendezvousId; ACTORS],
     seq: u64,
+    /// The seed being run, for a wait that runs out before a [`Run`] holds it.
+    seed: u64,
 }
 
 impl Stage {
@@ -934,7 +936,8 @@ impl Stage {
         let seq = self.post(a, cmd);
         if let Err(budget) = wait_on_every_core(|| Self::finished(a, seq) || self.parked(a)) {
             panic!(
-                "{BUDGET_EXPIRED_MARKER} actor {a} neither finished nor parked within the budget: {budget}"
+                "{BUDGET_EXPIRED_MARKER} seed {:#x}: actor {a} neither finished nor parked within the budget: {budget}",
+                self.seed
             );
         }
         Self::finished(a, seq).then(|| Self::answer(a))
@@ -1328,6 +1331,7 @@ fn endow(rng: &mut Rng, model: &mut Model, a: usize) -> [Option<ModelCapability>
 }
 
 fn run_seed(stage: &mut Stage, seed: u64) -> Census {
+    stage.seed = seed;
     let mut rng = Rng(splitmix(seed));
     let region = crate::memory_region::create(8).expect("no region for the fuzz objects");
     let eps = [
@@ -1443,6 +1447,7 @@ fn seeded_system_calls_agree_with_the_shadow_model() {
         tids,
         doorbells,
         seq: 0,
+        seed: 0,
     };
 
     let hertz = crate::arch::timer::frequency();

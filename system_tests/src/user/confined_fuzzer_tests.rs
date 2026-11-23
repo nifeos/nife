@@ -1312,7 +1312,8 @@ fn park_and_take_baselines(c: &mut Conductor) {
     for x in 0..FUZZERS {
         if let Err(budget) = wait_on_every_core(|| parked_on_go(c, x)) {
             panic!(
-                "{BUDGET_EXPIRED_MARKER} fuzzer {x} never parked on its conductor channel: {budget}"
+                "{BUDGET_EXPIRED_MARKER} seed {:#x}: fuzzer {x} never parked on its conductor channel: {budget}",
+                c.seed
             );
         }
         // A failure here is not yet understood; the `BUGS` of milestone 779 (fuzz the surface a
