@@ -11,10 +11,12 @@ with no linked Issue; its number then replaces `#<to be filled>` in the pull req
 - Base commit: `6e80b940d46167a59a795e158bb17a7eb28333af` ("feat(ivc): add fragmented Message V1
   full-duplex transport (#2068)"). No commit after it on `dev` touches `fs/rsext4`.
 - The change: [`2a-free-empty-extent-index.patch`](2a-free-empty-extent-index.patch), one commit,
-  `git format-patch` output against that base. It stands alone; the companion
-  [item 2b](2b-restore-truncate-tail.md) does not depend on it.
-- Issue sidebar, which the filer sets: Type `Bug`, labels `bug` and `q4`, Milestone `2026Q4`,
-  Assignees the filer.
+  `git format-patch` output against that base. It applies to the base alone. The
+  companion [item 2b](2b-restore-truncate-tail.md) adds its test at the same place in
+  `fs/rsext4/tests/file_operations.rs`, so 2b is filed after this one and rebased on it once this
+  one lands.
+- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar and
+  the filer sets: Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`.
 
 ## Issue to file first
 
@@ -35,7 +37,7 @@ rsext4: truncate of a depth-2 extent tree fails with extent:empty_index
 - 代码版本：`dev` 分支 `6e80b940d`；crates.io 上的 rsext4 0.9.2 同样复现。
 - 环境：x86_64 Linux 宿主，`rust-toolchain.toml` 指定的 nightly，`cargo test -p rsext4 --features host-test`
   使用的内存块设备。
-- 复现步骤：在新建的文件系统上创建一个文件，每隔一个块写入一个块，共写 1,500 个块。每个块成为一个单块盘区，
+- 复现步骤：在新建的文件系统上创建一个文件，每隔一个块写入一个块，共写 1500 个块。每个块成为一个单块盘区，
   树的深度为 2，根节点含两个一级索引节点。然后调用 `truncate_inode` 把文件缩小到 100 字节。
 - 实际结果：每次都返回上面的错误。期望结果：缩小成功，文件剩下 100 字节，第二个索引节点及其叶子被释放。
 
@@ -52,7 +54,7 @@ rsext4: truncate of a depth-2 extent tree fails with extent:empty_index
 
 不包含：截断失败后被清零的文件尾部（另一个 Issue），以及盘区插入的其他问题。
 
-依赖与兼容性：无新依赖；不改变磁盘格式，只是不再写出一个非法节点。负责人：提交者。期望季度：2026Q4。
+依赖与兼容性：无新依赖；不改变磁盘格式，只是不再写出一个非法节点。负责人：@calef。期望季度：2026Q4。
 
 ## 测试验证
 
@@ -75,7 +77,7 @@ does not shrink.
 - Code version: `dev` at `6e80b940d`; rsext4 0.9.2 on crates.io reproduces it too.
 - Environment: an x86_64 Linux host, the nightly `rust-toolchain.toml` names, and the in-memory
   block device `cargo test -p rsext4 --features host-test` uses.
-- Steps: on a new filesystem, create a file and write one block in every two, 1,500 blocks in all.
+- Steps: on a new filesystem, create a file and write one block in every two, 1500 blocks in all.
   Each block becomes a single-block extent, and the tree has depth 2 with two level-1 index nodes
   in its root. Then call `truncate_inode` to shrink the file to 100 bytes.
 - Actual result: the error above, every time. Expected: the shrink succeeds, the file keeps 100
@@ -101,7 +103,7 @@ Out of scope: the file tail a failed truncate leaves zeroed (a separate Issue), 
 insertion problems.
 
 Dependencies and compatibility: no new dependency; the on-disk format does not change, and the
-only difference is that an invalid node is no longer written. Owner: the filer. Target quarter:
+only difference is that an invalid node is no longer written. Owner: @calef. Target quarter:
 2026Q4.
 
 ## Test plan
@@ -152,7 +154,7 @@ fix(rsext4): free an emptied extent index node instead of writing it back
 环境：x86_64 Linux 宿主，`rust-toolchain.toml` 指定的 nightly，e2fsprogs 1.47.2。
 
 - 新增测试 `shrinking_extent_inode_past_a_whole_index_node_frees_that_node`
-  （`fs/rsext4/tests/file_operations.rs`）：每隔一个块写一个块，共 1,500 个，建出根节点含两个一级索引节点、
+  （`fs/rsext4/tests/file_operations.rs`）：每隔一个块写一个块，共 1500 个，建出根节点含两个一级索引节点、
   深度为 2 的树，再缩小到 100 字节；要求操作成功、数据正确、释放的块多于数据块数，并在卸载、重新挂载后再次读取。
 - `cargo test -p rsext4 --features host-test --test file_operations shrinking_extent_inode_past`：
   去掉本修复时失败，`shrinking a depth-2 tree must succeed: Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }`；
@@ -205,7 +207,7 @@ only removals that empty an external index node.
 Environment: an x86_64 Linux host, the nightly `rust-toolchain.toml` names, e2fsprogs 1.47.2.
 
 - New test `shrinking_extent_inode_past_a_whole_index_node_frees_that_node`
-  (`fs/rsext4/tests/file_operations.rs`): it writes one block in every two, 1,500 in all, which
+  (`fs/rsext4/tests/file_operations.rs`): it writes one block in every two, 1500 in all, which
   builds a depth-2 tree with two level-1 index nodes in its root, and shrinks it to 100 bytes. It
   requires the shrink to succeed, the data to be correct and more blocks to be freed than there
   were data blocks, then reads the file again after an unmount and a remount.
@@ -234,17 +236,20 @@ through `cargo test -q -p rsext4 --features host-test --test file_operations <te
 `cargo fmt --check -p rsext4`:
 
 ```
-== bae856610 with remove.rs from the base
+== cc399e11c with remove.rs from the base
 thread 'file_functional_tests::shrinking_extent_inode_past_a_whole_index_node_frees_that_node' panicked at fs/rsext4/tests/file_operations.rs:2056:14:
 shrinking a depth-2 tree must succeed: Ext4Error { kind: Corrupted, context: Some(Operation { op: "extent:empty_index" }) }
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 49 filtered out; finished in 2.38s
-== bae856610 as committed
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 49 filtered out; finished in 2.21s
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 49 filtered out; finished in 2.18s
+== cc399e11c as committed
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 49 filtered out; finished in 1.76s
 passed checks: 3, failed checks: 0, skipped checks: 0
 cargo fmt --check -p rsext4: clean
 ```
 
-`cargo xtask test --since 6e80b940d`, run before the last edit to this commit, which changed only
+On the commit as it now stands, `cargo test -p rsext4 --features host-test`, with `MKE2FS_CONFIG`
+pointing at a copy of `/etc/mke2fs.conf` without `orphan_file`, passed all 656 tests.
+
+`cargo xtask test --since 6e80b940d`, run before the last edits to this commit, which changed only
 comments, selected 20 packages and exited 1. rsext4 passed 543 tests and
 failed 2, both in `tests/filesystem_growth.rs`; ax-fs-ng failed
 `root_growth_preserves_other_partitions_and_ext4_contents` in two feature profiles. ax-block failed 6 of its `block::cache` tests in that run (`independent global sync cannot

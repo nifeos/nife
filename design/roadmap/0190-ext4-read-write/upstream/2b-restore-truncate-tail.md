@@ -6,16 +6,19 @@ submissions (bug 2's lost tail). Name provisional.
 This is a draft. Nobody has filed anything here. The architect reviews the exact text below, and
 filing it is a separate step. The Issue goes first, since upstream does not process a pull request
 with no linked Issue; its number then replaces `#<to be filled>` in the pull request body.
+`#<to be filled: 2a>` takes item 2a's Issue number in the Issue and its pull request number in
+the pull request.
 
 - Repository and branch: `rcore-os/tgoskits`, `dev`.
 - Base commit: `6e80b940d46167a59a795e158bb17a7eb28333af` ("feat(ivc): add fragmented Message V1
   full-duplex transport (#2068)"). No commit after it on `dev` touches `fs/rsext4`.
 - The change: [`2b-restore-truncate-tail.patch`](2b-restore-truncate-tail.patch), one commit,
-  `git format-patch` output against that base. It stands alone; the companion
-  [item 2a](2a-free-empty-extent-index.md) does not depend on it, and the two apply in either
-  order.
-- Issue sidebar, which the filer sets: Type `Bug`, labels `bug` and `q4`, Milestone `2026Q4`,
-  Assignees the filer.
+  `git format-patch` output against that base. It applies to the base alone, but
+  [item 2a](2a-free-empty-extent-index.md) adds its test at the same place in
+  `fs/rsext4/tests/file_operations.rs`. So 2b is filed after 2a, and rebased on 2a once 2a lands;
+  its bodies say so.
+- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar and
+  the filer sets: Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`.
 
 ## Issue to file first
 
@@ -57,7 +60,7 @@ Linux 的 `ext4_truncate`（`fs/ext4/inode.c`）同样在 `ext4_ext_truncate` �
 不包含：需要重新启动、分多个事务提交的缩小。较早的事务可能已经持久化，文件大小已经变化，恢复旧字节反而会把已经超出文件末尾的数据写回，
 所以这条路径保持原有行为，代码中加注释说明。深度为 2 的盘区树缩小失败（`extent:empty_index`）是另一个 Issue。
 
-依赖与兼容性：无新依赖，不改变磁盘格式和公开接口。负责人：提交者。期望季度：2026Q4。
+依赖与兼容性：无新依赖，不改变磁盘格式和公开接口。合入顺序：`extent:empty_index` 的修复（#<to be filled: 2a>）与本任务在 `fs/rsext4/tests/file_operations.rs` 的同一位置新增测试，本任务的 PR 在它之后提交，并在它合入后变基到其上。负责人：@calef。期望季度：2026Q4。
 
 ## 测试验证
 
@@ -114,7 +117,9 @@ comment in the code saying why. A depth-2 extent tree that fails to shrink
 (`extent:empty_index`) is a separate Issue.
 
 Dependencies and compatibility: no new dependency; the on-disk format and the public interface do
-not change. Owner: the filer. Target quarter: 2026Q4.
+not change. Merge order: the `extent:empty_index` fix (#<to be filled: 2a>) adds its test at the
+same place in `fs/rsext4/tests/file_operations.rs`, so this task's pull request is filed after
+that one and rebased on it once it lands. Owner: @calef. Target quarter: 2026Q4.
 
 ## Test plan
 
@@ -142,7 +147,7 @@ fix(rsext4): restore the zeroed EOF tail when a single-transaction truncate fail
 
 缩小文件时，`truncate` 先把保留下来的末尾块中新文件末尾之后的字节清零，再提交元数据事务。事务失败时元数据回滚、
 文件大小不变，但被清零的字节不在回滚范围内，于是一次失败的 truncate 会丢失从新文件末尾到该块末尾的数据。
-本 PR 只修复这一点；深度为 2 的盘区树缩小失败由另一个 PR 处理。
+本 PR 只修复这一点；深度为 2 的盘区树缩小失败由另一个 PR（#<to be filled: 2a>）处理。该 PR 与本 PR 在 `fs/rsext4/tests/file_operations.rs` 的同一位置新增测试，所以本 PR 在它之后提交，并在它合入后变基到其上。
 
 ## 修改方案
 
@@ -195,7 +200,9 @@ When it shrinks a file, `truncate` first zeroes the bytes after the new end of f
 keeps, then commits the metadata transaction. When the transaction fails, the metadata rolls back
 and the size stays the same, but the zeroed bytes are outside the rollback, so a failed truncate
 loses the data from the new end of file to the end of that block. This pull request fixes only
-that; another pull request handles a depth-2 extent tree that fails to shrink.
+that; another pull request (#<to be filled: 2a>) handles a depth-2 extent tree that fails to
+shrink. That pull request adds its test at the same place in `fs/rsext4/tests/file_operations.rs`,
+so this one is filed after it and rebased on it once it lands.
 
 ## Change
 

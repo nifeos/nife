@@ -1,4 +1,4 @@
-From bae856610d4b209d42aa7049c01d427d616b9c05 Mon Sep 17 00:00:00 2001
+From cc399e11c89c7648727a50f92719336d12cf02ca Mon Sep 17 00:00:00 2001
 From: Chris Alef <476570+calef@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 22:31:02 +0000
 Subject: [PATCH] fix(rsext4): free an emptied extent index node instead of
@@ -43,7 +43,7 @@ index 40c54e2e7..b51bb24c2 100644
                                          header: *header,
                                          entries: entries.clone(),
 diff --git a/fs/rsext4/tests/file_operations.rs b/fs/rsext4/tests/file_operations.rs
-index 1575fc513..aa1043dbf 100644
+index 1575fc513..33cca12ab 100644
 --- a/fs/rsext4/tests/file_operations.rs
 +++ b/fs/rsext4/tests/file_operations.rs
 @@ -2016,6 +2016,57 @@ mod file_functional_tests {
@@ -51,7 +51,7 @@ index 1575fc513..aa1043dbf 100644
      }
  
 +    /// Writing every other block makes one single-block extent per block, so
-+    /// 1,500 of them need a depth-2 tree whose root holds two level-1 index
++    /// 1500 of them need a depth-2 tree whose root holds two level-1 index
 +    /// nodes. Shrinking to one block removes every leaf under the second
 +    /// index node, which must then be freed rather than written back empty.
 +    #[test]
@@ -91,7 +91,7 @@ index 1575fc513..aa1043dbf 100644
 +
 +        let data = read_file(&mut jbd2_dev, &mut fs, "/extent-depth-two").unwrap();
 +        assert_eq!(data, vec![1u8; 100]);
-+        // 1,499 data blocks and at least the second index node and its
++        // 1499 data blocks and at least the second index node and its
 +        // leaves are free again.
 +        assert!(fs.superblock.free_blocks_count() > free_blocks_before + EXTENTS);
 +
