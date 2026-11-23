@@ -1,18 +1,25 @@
 # Upstream draft 7: mount reports why it refused the superblock
 
 Item 7 of [milestone 190](../../0190-ext4-read-write.md)'s upstream round: an issue, then the pull
-request that links it. The slug is provisional. Nobody has filed either; the architect reviews this
-text before anyone files it.
+request that links it. The slug is provisional. The issue is upstream as
+[rcore-os/tgoskits#2837](https://github.com/rcore-os/tgoskits/issues/2837), with the title and
+Chinese body below. The pull request waits. GitHub refused to create it ("calef does not have the
+correct permissions to execute `CreatePullRequest`") while calef had five open pull requests on the
+repository, most likely a cap on open pull requests per contributor. The branch is on calef's fork,
+and the body below goes up when one of those five closes.
 
 - Repository and base: rcore-os/tgoskits, branch `dev`, commit
-  `6e80b940d46167a59a795e158bb17a7eb28333af`, still the head of `dev` as of this draft.
+  `0353572d1e2cca79e25a2805deeff4521449a5c1`, the head of `dev` at filing. The patch dates from the
+  earlier base `6e80b940d` and applies to this one unchanged.
 - Patch: [7-mount-refusal-reason.patch](7-mount-refusal-reason.patch), one commit.
 - Issue title: `fix(rsext4): mount reports every superblock refusal as a bare Io`
 - Pull request title: `fix(rsext4): report why mount refused the superblock`
-- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar and
-  the filer sets: Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`.
+- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar:
+  Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`. GitHub dropped these at
+  creation, because the filing account has no triage permission on the repository; the guide asks a
+  maintainer to fill them in.
 
-## Issue to file first (Chinese, as filed)
+## Issue (Chinese, as filed)
 
 ```markdown
 ## 当前问题
@@ -34,7 +41,7 @@ text before anyone files it.
 - 环境：x86_64 Linux，`cargo xtask test`，e2fsprogs。
 ```
 
-## Issue to file first (English rendering, for review)
+## Issue (English rendering, for review)
 
 ```markdown
 ## Current problem
@@ -72,12 +79,12 @@ affected are `fs/rsext4`, and `fs/ax-fs-ng` through it.
 - Environment: x86_64 Linux, `cargo xtask test`, e2fsprogs.
 ```
 
-## Pull request body (Chinese, as filed)
+## Pull request body (Chinese, to file)
 
 ```markdown
 ## 当前问题
 
-关联 Issue：#<to be filled>
+关联 Issue：#2837
 
 `Ext4FileSystem::mount`、`device_has_error_state` 和日志重放后的 `reload_after_journal_replay` 都把 `read_superblock` 的任何错误映射成不带上下文的 `Ext4Error::io()`。`read_superblock` 读出超级块后会按其中的块大小调用 `set_filesystem_block_size`；当文件系统块小于设备逻辑扇区时（例如 1 KiB 块的镜像放在 4096 字节扇区的设备上），这一步返回带有 `device:filesystem_geometry` 上下文的 `BadSuperblock`。映射之后，调用者只看到 `Ext4Error { kind: Io, context: None }`，与一次真正失败的设备读取无法区分，也无从得知该换一个扇区大小的设备还是更换介质。
 
@@ -95,7 +102,7 @@ affected are `fs/rsext4`, and `fs/ax-fs-ng` through it.
 
 - 先在未修复的代码上运行新测试，它失败：`left: Io, right: InvalidMagic`，错误为 `Ext4Error { kind: Io, context: None }`。修复后通过。
 - `cargo xtask clippy --package rsext4` 通过（3 项检查），`cargo fmt` 无改动。
-- `cargo xtask test --since 6e80b940d` 中，除下面三项外所有被选中的软件包都通过。`rsext4` 的 `tests/filesystem_growth.rs` 中 `growth_recovers_commit_checkpoint_and_flush_interruptions` 和 `growth_preserves_files_and_exposes_new_groups_to_linux`，以及 `ax-fs-ng` 的 `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents` 失败；这三项在未改动的基准提交上以同样的方式失败，与本改动无关。原因是本机 `mke2fs`（e2fsprogs 1.47.2）默认启用 `orphan_file`，而扩容在 `GrowthLayout::check`（`fs/rsext4/src/ext4/grow/layout.rs`）拒绝该特性（`grow:features_or_durability`）。`orphan_file` 是兼容特性：ext4 格式文档（Linux 内核 Documentation/filesystems/ext4/）“3.1. Super Block”一节规定，`s_feature_compat` 中的特性即使不被理解，也仍可读写该文件系统，因此这一拒绝是 `rsext4` 扩容自身的限制，不是格式规则的要求。
+- `cargo xtask test --since 0353572d1` 中，除下面三项外所有被选中的软件包都通过。`rsext4` 的 `tests/filesystem_growth.rs` 中 `growth_recovers_commit_checkpoint_and_flush_interruptions` 和 `growth_preserves_files_and_exposes_new_groups_to_linux`，以及 `ax-fs-ng` 的 `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents` 失败；这三项在未改动的基准提交上以同样的方式失败，与本改动无关。原因是本机 `mke2fs`（e2fsprogs 1.47.2）默认启用 `orphan_file`，而扩容在 `GrowthLayout::check`（`fs/rsext4/src/ext4/grow/layout.rs`）拒绝该特性（`grow:features_or_durability`）。`orphan_file` 是兼容特性：ext4 格式文档（Linux 内核 Documentation/filesystems/ext4/）“3.1. Super Block”一节规定，`s_feature_compat` 中的特性即使不被理解，也仍可读写该文件系统，因此这一拒绝是 `rsext4` 扩容自身的限制，不是格式规则的要求。
 - 另用一个外部读取比对工具（用 `mke2fs` 生成 1 KiB、2 KiB、4 KiB 块的镜像，分别放在 512 和 4096 字节扇区的设备上挂载）验证：修复前 1 KiB 和 2 KiB 块镜像在 4096 字节扇区上被拒绝为 `Ext4Error { kind: Io, context: None }`，修复后为 `BadSuperblock` 及 `device:filesystem_geometry` 上下文；其余镜像与扇区组合的结果不变。
 - 未验证：QEMU 和实体板卡。本改动只影响挂载失败时返回的错误类型，不改变任何成功挂载的路径。
 ```
@@ -159,7 +166,7 @@ first at the block size, and mount reports `Io` rather than `InvalidMagic`.
 - We ran the new test first on the unfixed code, and it failed (`left: Io, right: InvalidMagic`, the
   error `Ext4Error { kind: Io, context: None }`). It passes with the fix.
 - `cargo xtask clippy --package rsext4` passes (3 checks), and `cargo fmt` changes nothing.
-- In `cargo xtask test --since 6e80b940d`, every selected package passes except three tests:
+- In `cargo xtask test --since 0353572d1`, every selected package passes except three tests:
   `growth_recovers_commit_checkpoint_and_flush_interruptions` and
   `growth_preserves_files_and_exposes_new_groups_to_linux` in `rsext4`'s
   `tests/filesystem_growth.rs`, and `ax-fs-ng`'s
@@ -190,6 +197,12 @@ first at the block size, and mount reports `Io` rather than `InvalidMagic`.
   `expected.txt` lines for those three image and sector pairings change with it.
 
 ## Test evidence
+
+Before filing, every check the pull request cites ran again on `0353572d1`, the head of `dev` then,
+with the patch applied. Without the fix the new test failed with `left: Io, right: InvalidMagic`,
+and with it the test passed. `cargo xtask clippy --package rsext4` passed its 3 checks, and `cargo
+fmt --check` was clean. `cargo xtask test --since 0353572d1` failed only the three growth tests, and
+they fail the same way on unchanged `dev`. The runs below are the earlier ones, on `6e80b940d`.
 
 Red, with the test on the unfixed code (`cargo test -p rsext4 --features host-test --test
 error_handling mount_reports_why_it_refused_the_superblock`):

@@ -1,20 +1,27 @@
 # Upstream draft 4: fuzz targets
 
 Item 4 of [milestone 190](../../0190-ext4-read-write.md)'s upstream round: an issue, then the pull
-request that links it. The slug and the seven target names are provisional. Nobody has filed
-either; the architect reviews this text before anyone files it.
+request that links it. The slug and the seven target names are provisional. Both are upstream, each
+with the title and Chinese body below: the issue as
+[rcore-os/tgoskits#2834](https://github.com/rcore-os/tgoskits/issues/2834) and the pull request as
+[rcore-os/tgoskits#2835](https://github.com/rcore-os/tgoskits/pull/2835), whose one commit is the
+patch beside this file.
 
 - Repository and base: rcore-os/tgoskits, branch `dev`, commit
-  `6e80b940d46167a59a795e158bb17a7eb28333af`, still the head of `dev` as of this draft.
+  `0353572d1e2cca79e25a2805deeff4521449a5c1`, the head of `dev` at filing. The patch dates from the
+  earlier base `6e80b940d` and applies to this one unchanged.
 - Patch: [4-fuzz-targets.patch](4-fuzz-targets.patch), one commit, which adds only files under
   `fs/rsext4/fuzz/`.
 - Issue title: `test(rsext4): fuzz the on-disk parsers, mount and journal replay`
-- Pull request title: `test(rsext4): add fuzz targets for the on-disk parsers, mount and journal replay`
+- Pull request title: `test(rsext4): add fuzz targets for the on-disk parsers, mount and journal
+  replay`
 - Filing order: after item 5, the group-descriptor fix on its own pull request.
-- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar and
-  the filer sets: Assignees `calef`, labels `task` and `q4`, Type `Task`, Milestone `2026Q4`.
+- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar:
+  Assignees `calef`, labels `task` and `q4`, Type `Task`, Milestone `2026Q4`. GitHub dropped these
+  at creation, because the filing account has no triage permission on the repository; the guide asks
+  a maintainer to fill them in.
 
-## Issue to file first (Chinese, as filed)
+## Issue (Chinese, as filed)
 
 ```markdown
 ## 当前问题
@@ -34,7 +41,7 @@ either; the architect reviews this text before anyone files it.
 - 环境：x86_64 Linux，夜间 Rust 工具链，`cargo-fuzz`，e2fsprogs。
 ```
 
-## Issue to file first (English rendering, for review)
+## Issue (English rendering, for review)
 
 ```markdown
 ## Current problem
@@ -72,7 +79,7 @@ memory. The component affected is `fs/rsext4`.
 ```markdown
 ## 当前问题
 
-关联 Issue：#<to be filled>
+关联 Issue：#2834
 
 `rsext4` 没有用任意输入检验磁盘解析和挂载路径的手段，仓库中也没有任何 `cargo fuzz` 目标（详见关联 Issue）。本 PR 交付该 Issue 的全部范围：七个 fuzz 目标和种子语料脚本，不修改 `rsext4` 本身。
 
@@ -102,6 +109,18 @@ memory. The component affected is `fs/rsext4`.
 - `cargo xtask clippy --package rsext4` 通过；fuzz crate 上 `cargo clippy --all-targets -- -D warnings` 通过；`cargo fmt --check` 无改动。
 - 未运行 `cargo xtask test`：本改动不修改任何被测软件包的源代码，fuzz crate 不在工作区中，`xtask` 不会构建它。
 - 未验证：持续集成中的运行。本 PR 不增加持续集成任务；如果维护者希望，我们可以之后另提一个 PR，在持续集成中至少检查 fuzz crate 能够编译。
+
+各目标 600 秒运行的结果（`-print_final_stats=1`；覆盖率、特征数和语料取自最后一行状态）：
+
+| 目标 | 运行次数 | 秒 | 最终状态 | 崩溃 |
+|---|---|---|---|---|
+| `superblock` | 6952314 | 601 | cov: 867 features: 870 corp: 27/26Kb | 0 |
+| `group_descriptor_table` | 6459995 | 601 | cov: 602 features: 1212 corp: 42/56Kb | 0 |
+| `extent_tree` | 45019720 | 601 | cov: 136 features: 286 corp: 44/6284b | 0 |
+| `directory_block` | 32870447 | 601 | cov: 186 features: 508 corp: 90/28Kb | 0 |
+| `mount_and_walk` | 273613 | 601 | cov: 2853 features: 6287 corp: 230/63Mb | 0 |
+| `htree_lookup` | 66171 | 603 | cov: 3159 features: 7828 corp: 174/79Mb | 0 |
+| `journal_replay` | 33066 | 601 | cov: 3657 features: 6068 corp: 37/73Mb | 0 |
 ```
 
 ## Pull request body (English rendering, for review)
@@ -174,6 +193,18 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
   crate is outside the workspace, so `xtask` does not build it.
 - Not verified: a run in CI. This pull request adds no CI job; if the maintainers want one, we can
   send a later pull request that at least checks in CI that the fuzz crate builds.
+
+Each target's 600-second run (`-print_final_stats=1`; coverage, features and corpus from the last status line):
+
+| Target | Runs | Seconds | Final status | Crashes |
+|---|---|---|---|---|
+| `superblock` | 6952314 | 601 | cov: 867 features: 870 corp: 27/26Kb | 0 |
+| `group_descriptor_table` | 6459995 | 601 | cov: 602 features: 1212 corp: 42/56Kb | 0 |
+| `extent_tree` | 45019720 | 601 | cov: 136 features: 286 corp: 44/6284b | 0 |
+| `directory_block` | 32870447 | 601 | cov: 186 features: 508 corp: 90/28Kb | 0 |
+| `mount_and_walk` | 273613 | 601 | cov: 2853 features: 6287 corp: 230/63Mb | 0 |
+| `htree_lookup` | 66171 | 603 | cov: 3159 features: 7828 corp: 174/79Mb | 0 |
+| `journal_replay` | 33066 | 601 | cov: 3657 features: 6068 corp: 37/73Mb | 0 |
 ```
 
 ## Notes for the reviewer (not filed)
@@ -195,6 +226,11 @@ A new `fs/rsext4/fuzz/`, a `cargo-fuzz` crate with seven targets:
   over the hostile-image corpus, in milestone 190's own list, is where longer runs belong.
 
 ## Test evidence
+
+Before filing, every check the pull request cites ran again on `0353572d1`, the head of `dev` then,
+with the patch applied. `cargo clippy --all-targets -- -D warnings` passed on the fuzz crate, and
+`cargo fuzz build -O` built every target. `cargo xtask clippy --package rsext4` passed its 3 checks,
+and `cargo fmt --check` was clean. The runs below are the earlier ones, on `6e80b940d`.
 
 Each target's 600-second run (`-print_final_stats=1`; coverage, features and corpus from the last
 status line):

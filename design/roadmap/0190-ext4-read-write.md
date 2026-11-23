@@ -252,10 +252,9 @@ it. That ruling is not the adoption ruling above, which stays open.
   (drafted), the safety arguments, the cast replacement and the Kani harnesses. Each text goes to
   the architect before anyone files it. `rcore-os/tgoskits@dde4020be` fixes bug 1 and the
   recovery-flag order.
-- **Outstanding.** Drafts awaiting the architect's review: the
-  [fuzz targets](0190-ext4-read-write/upstream/4-fuzz-targets.md), the
-  [mount's error report](0190-ext4-read-write/upstream/7-mount-refusal-reason.md) and
-  [whole times in `InodeInfo`](0190-ext4-read-write/upstream/8-whole-inode-times.md).
+- **Outstanding.** Filing the pull requests of
+  [item 7](0190-ext4-read-write/upstream/7-mount-refusal-reason.md) and
+  [item 8](0190-ext4-read-write/upstream/8-whole-inode-times.md).
 - **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the

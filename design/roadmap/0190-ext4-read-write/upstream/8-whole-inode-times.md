@@ -1,18 +1,25 @@
 # Upstream draft 8: InodeInfo reports whole times
 
 Item 8 of [milestone 190](../../0190-ext4-read-write.md)'s upstream round: an issue, then the pull
-request that links it. The slug is provisional. Nobody has filed either; the architect reviews this
-text before anyone files it.
+request that links it. The slug is provisional. The issue is upstream as
+[rcore-os/tgoskits#2838](https://github.com/rcore-os/tgoskits/issues/2838), with the title and
+Chinese body below. The pull request waits. GitHub refused to create it ("calef does not have the
+correct permissions to execute `CreatePullRequest`") while calef had five open pull requests on the
+repository, most likely a cap on open pull requests per contributor. The branch is on calef's fork,
+and the body below goes up when one of those five closes.
 
 - Repository and base: rcore-os/tgoskits, branch `dev`, commit
-  `6e80b940d46167a59a795e158bb17a7eb28333af`, still the head of `dev` as of this draft.
+  `0353572d1e2cca79e25a2805deeff4521449a5c1`, the head of `dev` at filing. The patch dates from the
+  earlier base `6e80b940d` and applies to this one unchanged.
 - Patch: [8-whole-inode-times.patch](8-whole-inode-times.patch), one commit.
 - Issue title: `fix(rsext4): InodeInfo drops nanoseconds and misreads times outside 1970-2106`
 - Pull request title: `fix(rsext4)!: report whole inode times in InodeInfo`
-- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar and
-  the filer sets: Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`.
+- Issue settings, which upstream's contributing guide (section 3.7) requires in the sidebar:
+  Assignees `calef`, labels `bug` and `q4`, Type `Bug`, Milestone `2026Q4`. GitHub dropped these at
+  creation, because the filing account has no triage permission on the repository; the guide asks a
+  maintainer to fill them in.
 
-## Issue to file first (Chinese, as filed)
+## Issue (Chinese, as filed)
 
 ```markdown
 ## 当前问题
@@ -38,7 +45,7 @@ crate 已有正确的解码（`Ext4Inode::atime_ts` 等访问器），写入接�
 - 环境：x86_64 Linux，`cargo xtask test`，e2fsprogs。
 ```
 
-## Issue to file first (English rendering, for review)
+## Issue (English rendering, for review)
 
 ```markdown
 ## Current problem
@@ -82,12 +89,12 @@ the `u32` seconds 4294880896, with no nanoseconds. The components affected are `
 - Environment: x86_64 Linux, `cargo xtask test`, e2fsprogs.
 ```
 
-## Pull request body (Chinese, as filed)
+## Pull request body (Chinese, to file)
 
 ```markdown
 ## 当前问题
 
-关联 Issue：#<to be filled>
+关联 Issue：#2838
 
 拥有型接口 `Ext4::inode`、`lookup_child`、`update_inode_metadata` 等返回的 `InodeInfo` 把 `atime`、`ctime`、`mtime`、`btime` 存为 inode 中原始的 32 位秒字段（`i_atime` 等）。按 ext4 格式文档（Linux 内核 Documentation/filesystems/ext4/）“4.1. Index Nodes”页的“4.1.3. Inode Timestamps”一节，这样做有三个后果：
 
@@ -111,7 +118,7 @@ crate 本身已经能正确处理这些时间：`Ext4Inode::atime_ts` 等访问�
 
 - 先把 `owned/metadata.rs` 的解码临时恢复为只读 32 位秒字段，新测试失败：`left: Ext4Timestamp { sec: 4294880896, nsec: 0 }, right: Ext4Timestamp { sec: -86400, nsec: 123456789 }`；`ax-fs-ng` 的持久化测试也失败：`left: 123s, right: 123.456789012s`。恢复修复后两者都通过。
 - `cargo xtask clippy --package rsext4`（3 项检查）和 `cargo xtask clippy --package ax-fs-ng`（6 项检查）通过，`cargo fmt` 无改动。
-- `cargo xtask test --since 6e80b940d` 中，除下面三项外所有被选中的软件包都通过。`rsext4` 的 `tests/filesystem_growth.rs` 中 `growth_recovers_commit_checkpoint_and_flush_interruptions` 和 `growth_preserves_files_and_exposes_new_groups_to_linux`，以及 `ax-fs-ng` 的 `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents` 失败；这三项在未改动的基准提交上以同样的方式失败，与本改动无关。原因是本机 `mke2fs`（e2fsprogs 1.47.2）默认启用 `orphan_file`，而扩容在 `GrowthLayout::check`（`fs/rsext4/src/ext4/grow/layout.rs`）拒绝该特性（`grow:features_or_durability`）。`orphan_file` 是兼容特性：ext4 格式文档（Linux 内核 Documentation/filesystems/ext4/）“3.1. Super Block”一节规定，`s_feature_compat` 中的特性即使不被理解，也仍可读写该文件系统，因此这一拒绝是 `rsext4` 扩容自身的限制，不是格式规则的要求。
+- `cargo xtask test --since 0353572d1` 中，除下面三项外所有被选中的软件包都通过。`rsext4` 的 `tests/filesystem_growth.rs` 中 `growth_recovers_commit_checkpoint_and_flush_interruptions` 和 `growth_preserves_files_and_exposes_new_groups_to_linux`，以及 `ax-fs-ng` 的 `root::grow::tests::root_growth_preserves_other_partitions_and_ext4_contents` 失败；这三项在未改动的基准提交上以同样的方式失败，与本改动无关。原因是本机 `mke2fs`（e2fsprogs 1.47.2）默认启用 `orphan_file`，而扩容在 `GrowthLayout::check`（`fs/rsext4/src/ext4/grow/layout.rs`）拒绝该特性（`grow:features_or_durability`）。`orphan_file` 是兼容特性：ext4 格式文档（Linux 内核 Documentation/filesystems/ext4/）“3.1. Super Block”一节规定，`s_feature_compat` 中的特性即使不被理解，也仍可读写该文件系统，因此这一拒绝是 `rsext4` 扩容自身的限制，不是格式规则的要求。
 - 另用一个外部读取比对工具（用 `mke2fs` 和 `debugfs` 生成包含带纳秒、1970 年以前和 2106 年以后时间的文件的镜像，与 `debugfs` 读出的时间比较）验证：修复前所有镜像和扇区组合中这三类文件的时间都与 `debugfs` 不同，修复后全部相同。
 - 未验证：QEMU 和实体板卡上的 StarryOS 和 ArceOS `stat` 结果。改动只影响 inode 时间的读取和转换，`ax-fs-ng` 的主机测试已覆盖该转换。
 ```
@@ -184,7 +191,7 @@ converts with `Duration::from_secs(u64::from(inode.atime))`, so the VFS sees no 
   123.456789012s`). Both pass with the fix restored.
 - `cargo xtask clippy --package rsext4` (3 checks) and `cargo xtask clippy --package ax-fs-ng`
   (6 checks) pass, and `cargo fmt` changes nothing.
-- In `cargo xtask test --since 6e80b940d`, every selected package passes except three tests:
+- In `cargo xtask test --since 0353572d1`, every selected package passes except three tests:
   `growth_recovers_commit_checkpoint_and_flush_interruptions` and
   `growth_preserves_files_and_exposes_new_groups_to_linux` in `rsext4`'s
   `tests/filesystem_growth.rs`, and `ax-fs-ng`'s
@@ -216,6 +223,13 @@ converts with `Duration::from_secs(u64::from(inode.atime))`, so the VFS sees no 
   fix, the oracle's `/timestamps/` outcomes in `expected.txt` turn from `differs` to `equal`.
 
 ## Test evidence
+
+Before filing, every check the pull request cites ran again on `0353572d1`, the head of `dev` then,
+with the patch applied. With the 32-bit-seconds decode put back, the new test and the `ax-fs-ng`
+durability test both failed with the same values, and with the fix both passed. `cargo xtask clippy`
+passed its 3 checks on `rsext4` and its 6 on `ax-fs-ng`, and `cargo fmt --check` was clean. `cargo
+xtask test --since 0353572d1` failed only the three growth tests, and they fail the same way on
+unchanged `dev`. The runs below are the earlier ones, on `6e80b940d`.
 
 Red, `rsext4`, decoding put back to the 32-bit seconds fields (`cargo test -p rsext4 --features
 host-test --test integration_test owned_metadata_update_reports_whole_times`):
