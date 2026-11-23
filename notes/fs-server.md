@@ -6,7 +6,7 @@ story the prior-art survey predicted (notes/prior-art.md, notes/redoxfs-audit.md
 confines a serious component it knows nothing about, and the thing milestone 31's per-file grants
 point at (they now exist; see the caretaker section below).
 
-The written contract lives with its code in `crates/file_system_contract`, the way the terminal contract lives
+The written contract lives with its code in the `file_system_contract` crate of `nifeos/file_system_contract`, the way the terminal contract lives
 in `terminal_contract` (notes/terminal-contract.md). This note is the design around it.
 
 The evidence behind several sections is in [`fs-server/`](fs-server/README.md), one appendix per

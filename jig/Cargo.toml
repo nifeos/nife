@@ -30,7 +30,7 @@ publish = false
 [dependencies]
 moho_abi = { path = "../crates/moho_abi" }
 address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
-file_system_contract = { path = "../crates/file_system_contract" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 program_table = { path = "../crates/program_table" }
 http_response = { path = "../crates/http_response" }

@@ -90,7 +90,7 @@ machine_discovery = { path = "../crates/machine_discovery" }
 # names no registry crate beyond `libfuzzer-sys`.
 redoxfs_server = { path = "../redoxfs_server" }
 redoxfs = { path = "../vendor/redoxfs", default-features = false, features = ["std"] }
-file_system_contract = { path = "../crates/file_system_contract" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 system_log = { path = "../crates/system_log" }
 system_log_contract = { path = "../crates/system_log_contract" }
 byte_sink_contract = { version = "0.1.0", git = "https://github.com/nifeos/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }

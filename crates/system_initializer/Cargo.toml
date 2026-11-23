@@ -37,7 +37,7 @@ interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfac
 # answers a directory grant's descent with (milestone 31 phase 3). An in-tree protocol crate rather
 # than a constant copied here, which is rule 7: what two binaries agree on is a crate. It brings
 # nothing with it (file_system_contract has no non-dev dependencies of its own).
-file_system_contract = { version = "0.1.0", path = "../file_system_contract" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 # The terminal contract's framing, for the one sentence init prints (`proto::OPERATION_WRITE`).
 terminal_contract = { version = "0.1.0", git = "https://github.com/nifeos/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
 # The slot order `terminal_supervisor` is endowed in, which init builds it with.
