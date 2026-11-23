@@ -1,6 +1,6 @@
 # ext4, read and write: the write oracle
 
-The write half of [milestone 190](../0190-ext4-read-write.md)'s oracle: what `rsext4` 0.9.2 writes,
+The write half of [milestone 190](../0190-ext4-read-write.md)'s oracle: what `rsext4` writes,
 judged by `e2fsck -fn` and read back through `debugfs`. The read half is in
 [the read-oracle appendix](read-oracle.md).
 
@@ -49,38 +49,42 @@ together.
 
 ## What it measured
 
-Measured 2026-11-22 (UTC) on a Linux host with e2fsprogs 1.47.2, against `rsext4` 0.9.2. A run takes
-100 seconds on a developer machine, about five minutes of processor time.
+The writer is the `rsext4` the read oracle names: nifeos/rsext4, upstream's 0.9.2 with the fixes
+its `CHANGES.md` lists. Measured on a Linux host with e2fsprogs 1.47.2, against 0.9.2 on 2026-11-22
+(UTC) and against the fork on 2026-11-23. A run takes 100 seconds on a developer machine, about
+five minutes of processor time.
 
-Every operation applies, and the readback equals the model, in every case but bug 2's. `e2fsck`
-calls 35 of the 48 images clean. The other 13 are three bugs, two already known and one the oracle
-found:
+Against the fork, every operation applies and every readback equals the model. `e2fsck` calls 42
+of the 48 images clean:
 
 | case | 4 KiB on 4,096 | 4 KiB on 512 | 1 KiB on 512 |
 |---|---|---|---|
-| `directory-past-inline-extents` (bug 1) | exit 4, `i_blocks` 72 for 88 | exit 4, 72 for 88 | exit 4, 58 for 62, padding |
-| `truncate-depth-2-to-zero` (bug 2) | fails, readback equal | fails, equal | fails, equal |
-| `truncate-depth-2-inside-a-block` (bug 2) | fails, content differs | fails, differs | fails, differs |
-| `inode-bitmap-padding` (bug 3) | clean | clean | exit 4, padding |
-| `create`, `mkdir-rmdir`, `htree-growth` | clean | clean | exit 4, padding |
+| `directory-past-inline-extents` (bug 1) | exit 4, `i_blocks` 72 for 88 | exit 4, 72 for 88 | exit 4, 58 for 62 |
+| `truncate-depth-2-inside-a-block` | exit 0, offers to shorten the tree | the same | the same |
 
 - Bug 1. A directory that grows while files' data takes the blocks after it fragments, so it passes
   the four extents its inode holds into a level-1 leaf. Its `i_blocks` then comes out two blocks
   short: 16 sectors at 4 KiB blocks, 4 at 1 KiB. `e2fsck` also offers to narrow the tree. A
   directory grown with empty files stays contiguous, keeps its extents in the inode and is clean, at
-  3,000 entries as at 500. The directory's entries read back correct.
-- Bug 2. A file written as 1,400 separate blocks has an extent tree of depth 2 at both block sizes.
-  `truncate_inode` to 0 or to 100 bytes returns `Corrupted { op: "extent:empty_index" }` every
-  time. To 0 it leaves the file's bytes as they were. To 100 it has already zeroed bytes 100 to
-  4,095 of the first block, which the readback shows as a content difference: the failure is not
-  atomic. In both, `e2fsck` exits 0 but offers to narrow the tree. A depth-2 file `mke2fs` wrote
-  (`/extents/depth-2`) truncates to 0 cleanly.
-- Bug 3, found here. At 1 KiB blocks a group's 1,024 inodes take 1,024 bits of an 8,192-bit bitmap
-  block, and `e2fsck` requires the bits past them set. The first inode `rsext4` allocates in a group `mke2fs`
-  left `INODE_UNINIT` gets a bitmap whose padding is clear, and `e2fsck` exits 4 ("Padding at end of
-  inode bitmap is not set"). In the corpus image `mke2fs` initialized groups 0 to 2, which hold three
-  free inodes, so the fourth new inode is the first to reach group 3; any case that makes four inodes at
-  1 KiB shows it. The 4 KiB image has one group and never reaches the path.
+  3,000 entries as at 500. The directory's entries read back correct. Upstream fixed it after 0.9.2
+  (`rcore-os/tgoskits@dde4020be`), and the fork does not carry that fix.
+- Truncating a depth-2 tree to 100 bytes leaves a level-1 index `e2fsck` would shorten. `e2fsck`
+  exits 0, so the tree is valid, only not minimal.
+
+Against 0.9.2, 13 images were not clean. Two more bugs gave the difference, and the fork fixes both:
+
+- Bug 2 (upstream items 2a and 2b). A file written as 1,400 separate blocks has an extent tree of
+  depth 2 at both block sizes. In 0.9.2, `truncate_inode` to 0 or to 100 bytes returns
+  `Corrupted { op: "extent:empty_index" }` every time. To 100 it has already zeroed bytes 100 to
+  4,095 of the first block, so the failure is not atomic. In the fork both truncations apply, and
+  the readback is equal.
+- Bug 3 (upstream item 9), which this oracle found. At 1 KiB blocks a group's 1,024 inodes take
+  1,024 bits of an 8,192-bit bitmap block, and `e2fsck` requires the bits past them set. In 0.9.2,
+  the first inode allocated in a group `mke2fs` left `INODE_UNINIT` gets a bitmap whose padding is
+  clear, and `e2fsck` exits 4 ("Padding at end of inode bitmap is not set"). In the corpus image
+  `mke2fs` initialized groups 0 to 2, which hold three free inodes, so any case that makes four
+  inodes at 1 KiB reaches group 3 and showed it. The 4 KiB image has one group and never reaches
+  the path.
 
 ## What it does not cover
 

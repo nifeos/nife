@@ -113,4 +113,66 @@ for driver in $drivers; do
     want "$driver replay line" "$(verdict "x (replay: $var=111:1)" 1 100)" "held-finding 11 112"
 done
 
+# A slot's seed file. One window runs through `--once` against stubs: `/dev/null` stands in for
+# KVM (a character device anyone may open), a stub QEMU passes the KVM probe, and a stub cargo fails
+# the build, so the window is infrastructure within a second and no guest starts. The slot's
+# worktree is a throwaway repository made here, so `prepare_slot` adds no worktree to this clone.
+cat > "$work/home/.cargo/bin/qemu-system-x86_64" <<'STUB'
+#!/bin/sh
+exit 0
+STUB
+cat > "$work/home/.cargo/bin/cargo" <<'STUB'
+#!/bin/sh
+exit 1
+STUB
+chmod +x "$work/home/.cargo/bin/qemu-system-x86_64" "$work/home/.cargo/bin/cargo"
+seeds="$work/seeds"
+mkdir -p "$seeds/work/0"
+git -C "$seeds/work/0" init -q
+git -C "$seeds/work/0" -c user.name=selftest -c user.email=selftest@invalid commit -q --allow-empty -m selftest
+once() { # SEED-FILE-TEXT
+    rm -rf "$seeds/state" "$seeds/logs"
+    mkdir -p "$seeds/state"
+    printf '%s' "$1" > "$seeds/state/next-0"
+    set +e
+    out=$(HOME="$work/home" NIFE_FUZZ_HOME="$seeds" NIFE_FUZZ_KVM_DEVICE=/dev/null \
+        STUB_CALLS=/dev/null NIFE_RUSTUP_ATTEMPTS=1 NIFE_RUSTUP_BACKOFF=0 \
+        "$sup" --once kernel-thread 0 2>&1)
+    rc=$?
+    set -e
+}
+
+# A good seed: the window runs, writes one row with that first seed, and moves the slot one on.
+once 12345
+[ "$rc" -eq 0 ] || fail "good seed: exit $rc ($out)"
+want "good seed row" "$(cut -f3,4,7 "$seeds/state/windows.tsv")" "0	12345	infrastructure"
+want "good seed next" "$(cat "$seeds/state/next-0")" "12346"
+
+# An empty seed file, as every slot's was after the write below failed on the host: the slot stops
+# with a message, writes no row, and leaves the file as it found it. Before the fix the window read
+# the empty file as seed 0, wrote a row with an empty first seed and set the file to 1.
+for bad in '' 'x12' '12
+13'; do
+    once "$bad"
+    [ "$rc" -ne 0 ] || fail "seed '$bad': exit 0 ($out)"
+    printf '%s' "$out" | grep -q 'refusing to start a window' || fail "seed '$bad': no refusal ($out)"
+    [ ! -e "$seeds/state/windows.tsv" ] || fail "seed '$bad': a window row was written: $(cat "$seeds/state/windows.tsv")"
+    want "seed '$bad' file" "$(cat "$seeds/state/next-0")" "$bad"
+done
+
+# A write that fails after the shell has opened the file, as the host's did with an I/O error:
+# `ulimit -f 0` makes every write fail, and `--write-seed` is the step a window ends with. An
+# `echo > file` there leaves the file empty; the seed must stay as it was.
+printf '12345\n' > "$seeds/state/next-0"
+set +e
+out=$(trap '' XFSZ; ulimit -f 0; NIFE_FUZZ_HOME="$seeds" "$sup" --write-seed 0 12346 2>&1)
+rc=$?
+set -e
+[ "$rc" -ne 0 ] || fail "failed write: exit 0 ($out)"
+printf '%s' "$out" | grep -q 'could not record its next first seed' || fail "failed write: no message ($out)"
+want "failed write file" "$(cat "$seeds/state/next-0")" "12345"
+[ ! -e "$seeds/state/next-0.tmp" ] || fail "failed write: the temporary file was left behind"
+NIFE_FUZZ_HOME="$seeds" "$sup" --write-seed 0 12346 || fail "write: exit non-zero"
+want "write file" "$(cat "$seeds/state/next-0")" "12346"
+
 echo "continuous-fuzz-selftest: ok"
