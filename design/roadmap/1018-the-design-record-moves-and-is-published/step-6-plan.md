@@ -39,10 +39,11 @@ The readers whose behavior changes:
 | `script/claim` | no record file; help text names `notes/debt-paydown.md` | stays; the help text takes the qualified form |
 | `helpers/architect-label-rules.py`, `coe-architect-label.yml` | changes under `design/decisions/`, `notes/coes/` | the decision rule fires in the record; nife keeps the code rules |
 | `helpers/prose_only.py`, `helpers/name_*`, `helpers/history_ratchet.py`, `helpers/prose_ratchet.py` | record paths as a class, the naming rules | the record copies its half; nife reads the naming rules at the record pin |
-| `script/metrics`, `helpers/consumer_census.py`, `helpers/interface_stability.py` | block and decision counts | stay; read the record at its pin |
+| `script/metrics` | block and decision counts, restated from each week's commit; writes `notes/project-metrics.md` | stays; its counts read the record's history at the pin, and the page it writes moves with the record |
+| `helpers/consumer_census.py`, `helpers/interface_stability.py` | roadmap blocks | stay; read the record through `helpers/record_root.py`, at its pin once it leaves |
 | `helpers/agents-md-split-check.py` | `notes/skills/`, `design/tenets/` | stays; reads the skills in place and the tenets at the pin |
 | `xtask/src/manual.rs` and `xtask/src/disk.rs` | seven notes installed in the disk image | stay; the seven notes re-sort as package documentation that stays |
-| `metrics.yml` | regenerates lines of `notes/project-metrics.md` | stays; that page re-sorts to tool data, so the bot writes one repository |
+| `metrics.yml` | regenerates lines of `notes/project-metrics.md` | stays; the page moves with the record, so the workflow writes it into `nifeos/record` by pull request, and the data under `notes/project-metrics/` stays in nife |
 | `script/stranger-test`, `stranger-cadence.yml` | the run record under `notes/stranger-test/` | stay, since the test builds the system; the run record lands in the record by pull request |
 | `record-site.yml`, `site/`, `script/site` | the whole record | leave nife in the removal pull request; step 8 builds in `nifeos/nifeos.org` |
 | `script/lint` | 9 `record` sections, 36 `both` | the record's driver runs the 9 and its half of the 36; nife keeps the rest |

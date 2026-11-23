@@ -59,6 +59,7 @@ import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import mutation_inflow as mi  # noqa: E402
+import record_root  # noqa: E402
 
 TRIAGE = pathlib.Path("notes/project-metrics/mutation-triage.csv")
 RENAMES = pathlib.Path("notes/project-metrics/mutation-census-renames.csv")
@@ -165,10 +166,10 @@ def home_problem(home, root):
     root = pathlib.Path(root)
     kind, _, rest = home.partition(" ")
     if kind == "milestone":
-        if not list((root / "design/roadmap").glob(f"{int(rest):04d}-*")):
+        if not list(pathlib.Path(record_root.path("design/roadmap", top=root)).glob(f"{int(rest):04d}-*")):
             return f"home {home!r}: no design/roadmap/{int(rest):04d}-* block"
     elif kind == "proposal":
-        if not (root / "design/roadmap/proposals" / f"{rest}.md").is_file():
+        if not pathlib.Path(record_root.path("design/roadmap/proposals", f"{rest}.md", top=root)).is_file():
             return f"home {home!r}: no design/roadmap/proposals/{rest}.md"
     elif kind == "BUGS":
         p = root / rest
@@ -332,6 +333,7 @@ def selftest():
         root = pathlib.Path(tmp)
         for d in ("design/roadmap/proposals", "notes", "notes/project-metrics"):
             (root / d).mkdir(parents=True, exist_ok=True)
+        (root / record_root.MARKER).write_text("# the roadmap\n")
         (root / "design/roadmap/0007-a-thing.md").write_text("# a thing\n")
         (root / "design/roadmap/proposals/later.md").write_text("# later\n")
         (root / "notes/has.md").write_text("text\n\n## BUGS\n\n- a limit\n")

@@ -36,6 +36,10 @@ import subprocess
 import sys
 import tempfile
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import record_root  # noqa: E402
+
 ISAS = ('aarch64', 'riscv64', 'x86_64')
 FLOOR_KEYS = {'exempt': 'exempt', 'carried from pass 7': 'carried', 'x86_64 only': 'x86_64_only'}
 FLOOR_LINE = re.compile(r'^ {4}(exempt|carried from pass 7|x86_64 only): (.+)$')
@@ -277,7 +281,7 @@ def log_isa(path):
 def run(args):
     root = args.tree
     with open(os.path.join(root, 'briefs/confinement-outsider-pass.md')) as brief, \
-            open(os.path.join(root, 'notes/confinement-claims.md')) as claims:
+            open(record_root.path('notes/confinement-claims.md', top=root)) as claims:
         floor = read_floor(brief.read(), claims.read())
     if args.from_table:
         with open(args.from_table) as note:
@@ -382,10 +386,10 @@ REPLAYS = (('notes/confinement-outsider-pass-8.md', 25), ('notes/confinement-out
 def selftest_replays(tree):
     """Pass 8's and pass 9's per-row tables, replayed against this tree's brief and claims table."""
     with open(os.path.join(tree, 'briefs/confinement-outsider-pass.md')) as brief, \
-            open(os.path.join(tree, 'notes/confinement-claims.md')) as claims:
+            open(record_root.path('notes/confinement-claims.md', top=tree)) as claims:
         floor = read_floor(brief.read(), claims.read())
     for path, booted in REPLAYS:
-        with open(os.path.join(tree, path)) as note:
+        with open(record_root.path(path, top=tree)) as note:
             last = report(floor, grade_table(note.read(), floor))[0][-1]
         assert last.startswith('booted %d of ' % booted), (path, last)
 

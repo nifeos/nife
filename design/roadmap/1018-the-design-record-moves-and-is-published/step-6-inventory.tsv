@@ -8,7 +8,7 @@
 .github/workflows/audit-cadence.yml	design/audit-reports/README.md	copied into nifeos/record by its lint pull request; removed from nife by the removal pull request
 .github/workflows/ci.yml	design	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 .github/workflows/coe-architect-label.yml	notes/coes notes/corrections	copied into nifeos/record by its lint pull request; removed from nife by the removal pull request
-.github/workflows/metrics.yml	notes/project-metrics.md	stays; notes/project-metrics.md re-sorts to tool data so the bot writes one repository
+.github/workflows/metrics.yml	notes/project-metrics.md	stays; notes/project-metrics.md moves with the record, so the workflow writes it into nifeos/record by pull request
 .github/workflows/mutation.yml	notes/mutation-testing.md	names a record file in a message or comment: becomes nifeos/record:<path> in the mention sweep
 .github/workflows/record-site.yml	design/** notes/**	leaves nife in the removal pull request; step 8 builds the site in nifeos/nifeos.org
 .github/workflows/stranger-cadence.yml	notes/stranger-test notes/stranger-test.md	stays with script/stranger-test; reads the run record at the record pin
