@@ -138,7 +138,7 @@ mod clock_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod date_tests;
 
-/// **`printenv`** (milestone 47's environment-variable fork, DECISIONS §111, nifeos/record:notes/env-config.md).
+/// **`printenv`** (the environment-variable fork of milestone 47 (navigation and naming), DECISIONS §111 (inert configuration is a read-only page), nifeos/record:notes/env-config.md).
 ///
 /// The program that makes the inert-configuration page visible, and the first spawnable,
 /// shell-facing program to declare [`grant_contract::Manifest::configuration`]. One portable binary
@@ -150,7 +150,7 @@ mod date_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod printenv_tests;
 
-/// **`uuid`** (milestone 111, `components/src/uuid.rs`, nifeos/record:notes/entropy.md).
+/// **`uuid`** (milestone 111 (a shell that can endow a child with entropy), `components/src/uuid.rs`, nifeos/record:notes/entropy.md).
 ///
 /// The first spawnable, shell-facing program that needs random bytes
 /// ([`grant_contract::Manifest::entropy`]). Arch-neutral, so **both ISAs run literally this test**
@@ -749,7 +749,7 @@ mod process_label_tests;
 #[cfg(test)]
 mod machine_statistics_tests;
 
-/// **Scheduled execution, where every entry is a grant** (milestone 129, nifeos/record:notes/scheduled-execution.md).
+/// **Scheduled execution, where every entry is a grant** (milestone 129 (scheduled execution: a cron whose every entry is a grant), nifeos/record:notes/scheduled-execution.md).
 ///
 /// One module for both ISAs (DECISIONS §19). A crontab line runs with its user's whole authority;
 /// here an entry is a grant expression checked at registration by the `program_table::plan` the prompt
@@ -877,7 +877,7 @@ mod pipeline_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod redirection_tests;
 
-/// **`time <command>` at a real prompt** (milestone 86, nifeos/record:notes/time-command.md).
+/// **`time <command>` at a real prompt** (milestone 86 (the shell times a command), nifeos/record:notes/time-command.md).
 ///
 /// [`pipeline_tests`]'s shell with at most one more capability, a read-only clock page. The claim:
 /// **the timed command needs no authority to be timed**, so the timing is the shell's own reading
@@ -888,7 +888,7 @@ mod redirection_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod time_tests;
 
-/// **Quoting, sequencing and `$?` at a real prompt** (milestone 67, nifeos/record:notes/swish-language.md).
+/// **Quoting, sequencing and `$?` at a real prompt** (milestone 67 (`swish` the language), nifeos/record:notes/swish-language.md).
 ///
 /// The **same run** of the same script [`redirection_tests`] asserts about: one shell, once,
 /// because another scripted shell is another live process whose frames nothing reclaims, enough to
@@ -900,7 +900,7 @@ mod time_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod language_tests;
 
-/// **The sink contract, and the one behaviour it changed** (milestone 50, nifeos/record:notes/sink-protocol.md).
+/// **The sink contract, and the one behaviour it changed** (milestone 50 (pipes and redirection), nifeos/record:notes/sink-protocol.md).
 ///
 /// Two claims, one per test, and they need each other. The first is that a program cannot tell what
 /// its output slot holds; the second is that when what it held is destroyed, the program finds out.
