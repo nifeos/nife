@@ -51,6 +51,7 @@ import tomllib
 sys.dont_write_bytecode = True
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(ROOT, "helpers"))
+import record_root  # noqa: E402
 import roadmap_block  # noqa: E402
 
 LIST = "--list" in sys.argv[1:]
@@ -71,7 +72,7 @@ def git_files(*pathspec):
 
 # ---- roadmap blocks ------------------------------------------------------------------------------
 def roadmap():
-    d = os.path.join(ROOT, "design", "roadmap")
+    d = record_root.path("design", "roadmap", top=ROOT)
     blocks = {}
     for name in sorted(os.listdir(d)):
         m = re.fullmatch(r"(\d{4})-.*\.md", name)

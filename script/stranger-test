@@ -345,8 +345,10 @@ done
 # date of the last run are sentences a person reads, not numbers kept somewhere for a script.
 KEY="notes/stranger-test.md"
 KEY_DIR="notes/stranger-test"
-[ -f "$REPO/$KEY" ] || {
-    echo "stranger-test: $REPO/$KEY is missing, so there is no rubric to ask and no answer key to" >&2
+# The record's directory, from helpers/record_root.py: this work tree while the record lives here.
+RECORD="$(python3 "$REPO/helpers/record_root.py")"
+[ -f "$RECORD/$KEY" ] || {
+    echo "stranger-test: $RECORD/$KEY is missing, so there is no rubric to ask and no answer key to" >&2
     echo "               withhold. Run this from a full checkout." >&2
     exit 1
 }
@@ -363,7 +365,7 @@ if [ -n "$cadence" ]; then
         echo "stranger-test: 'python3' is not on PATH, and the cadence check needs it" >&2
         exit 1
     }
-    exec python3 - "$REPO/$KEY" "$KEY" "$cadence" <<'PY'
+    exec python3 - "$RECORD/$KEY" "$KEY" "$cadence" <<'PY'
 import datetime
 import re
 import sys
@@ -843,7 +845,7 @@ echo "==> Debrief, pass 1: contamination"
 
 # Pass 2 asks the rubric's own questions, read out of the withheld note. It comes second so that the
 # contamination answers cannot be shaped by seeing what the rubric wanted.
-rubric="$(python3 - "$REPO/$KEY" <<'PY'
+rubric="$(python3 - "$RECORD/$KEY" <<'PY'
 import re, sys
 
 # Scoped to the ONE table whose header is `| # | question | pass means |`, and to its middle
