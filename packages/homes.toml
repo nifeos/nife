@@ -39,19 +39,35 @@ paths = [
 # ---- What moves: the design record ------------------------------------------------------------
 [[home]]
 # The design record, milestone 1018 (the design record moves to `nifeos/record` and is published as
-# a website): the roadmap, decisions, journeys, naming, tenets, cross-cutting notes, the briefs and
-# the lane skills, in a repository of their own. The website pulls them at build time.
+# a website): the roadmap, decisions, journeys, naming, tenets and cross-cutting notes, in a
+# repository of their own. The website pulls them at build time. helpers/record_paths.py writes the
+# extraction's path lists from this file.
 status = "provisional"
 repo = "record"
-paths = ["design/", "briefs/", "notes/"]
+paths = ["design/", "notes/"]
+
+[[home]]
+# The lane skills and the briefs are agent instructions, not documentation, so they stay with the
+# lanes that read them (milestone 1018, question 1).
+status = "undecided"
+reason = "agent instructions; they follow the integrating repository, not yet named"
+paths = ["notes/skills/", "briefs/"]
+
+[[home]]
+# The notes xtask/src/manual.rs bundles into the disk image. Each documents the program whose
+# bundle installs it, so it stays with the code (§315 (a crate's documentation leaves with it)).
+status = "undecided"
+reason = "documentation the image installs; it leaves with the program whose bundle ships it"
+paths = ["notes/documentation.md", "notes/pipes.md", "notes/line-discipline.md", "notes/ipc-naming.md",
+         "notes/stack.md", "notes/capabilities.md", "notes/glob.md"]
 
 [[home]]
 # Tool data and the scripts' own documentation under notes/, which stay with the code whose tools
 # read or describe them (milestone 1018, question 4).
 status = "undecided"
 reason = "tool data; it leaves with the tool that reads it, whose repository is not yet named"
-paths = ["notes/project-metrics/", "notes/mutation-testing/", "notes/kernel-dependency-unsafe/sites.tsv",
-         "notes/scripts.md"]
+paths = ["notes/project-metrics.md", "notes/project-metrics/", "notes/mutation-testing/",
+         "notes/kernel-dependency-unsafe/sites.tsv", "notes/scripts.md"]
 
 [[home]]
 status = "undecided"
