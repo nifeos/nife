@@ -13,7 +13,7 @@
 # This script is that gap closed: one row per crate per census, committed, plus a `--compare` that
 # says which crates moved and by how much.
 #
-#   script/mutation-census --add-run 35421192143      capture a finished GitHub Actions census
+#   script/mutation-census --add-run 35421192143      recover a census from a run's artifacts
 #   script/mutation-census --add 2026-09-19 35421192143 DIR...   capture local run output
 #   script/mutation-census --list                     the censuses on record
 #   script/mutation-census --show 2026-09-19          one census, per crate
@@ -65,8 +65,8 @@
 #
 # EXAMPLES
 #
-# Capture the weekly census as soon as the workflow goes green, which is the habit this milestone
-# exists to establish (the artifacts expire; the record does not):
+# mutation.yml's record job captures each complete weekly census itself, on the `mutation/census`
+# branch and its pull request. Recover one that branch lost, while the run's artifacts last:
 #
 #     $ script/mutation-census --add-run 35421192143
 #     ==> downloading run 35421192143 (2026-09-19)
@@ -127,9 +127,9 @@
 # - **`--save-baseline` trusts the record to hold only whole censuses.** mutation.yml's record job
 #   refuses a partial one, but `--add` and `--add-run` do not check, so a census added by hand from
 #   a lost shard would pass. Its crate check catches a per-crate subset, not a missing shard.
-# - **Nothing gates capture.** A census can still be run and thrown away, exactly as four of them
-#   were; this only makes it one command not to. A gate would have to know a run happened, and the
-#   thing that knows is the workflow, which does not write to the tree.
+# - **The record job force-pushes one branch, `mutation/census`.** A census whose pull request has
+#   not merged by the next run loses its rows, because that run starts from main and replaces the
+#   branch. `--add-run` recovers it only while the run's artifacts last, about 90 days.
 # - **A crate deleted and a crate renamed to something git could not follow look identical here**,
 #   and both print as "only in A". `multicast_dns_protocol` and `multicast_dns_config` are that
 #   case between 2026-09-14 and 2026-09-19.
@@ -296,8 +296,8 @@ def add(census, run, crates, holes=None):
 
 
 def add_run(run_id):
-    """Ingest a GitHub Actions census by its run id. The artifacts expire (90 days by default) and
-    the record does not, which is the whole argument for doing this the day the run goes green."""
+    """Ingest a GitHub Actions census by its run id: the recovery path for a census the record job's
+    branch lost. The artifacts expire (90 days by default), so this works only within that window."""
     if not shutil.which("gh"):
         print("mutation-census: --add-run needs the gh CLI; use --add with downloaded dirs", file=sys.stderr)
         return 2
