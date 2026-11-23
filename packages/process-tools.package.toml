@@ -3,7 +3,7 @@
 #
 # Milestone 611 (every program and crate belongs to a package). The package's kind, home and
 # membership are provisional, the lane's proposal for calef to ratify; the format is
-# helpers/packages.py's header, and notes/package-boundaries.md has the table and the reasons.
+# helpers/packages.py's header, and nifeos/record:notes/package-boundaries.md has the table and the reasons.
 #
 # Name: ratified 2026-10-06 (calef, relayed to lane/disk-tools-rename). He answered
 # "process-tools". Refused `procps` (the GNU/Linux term of art, given up on purpose so package

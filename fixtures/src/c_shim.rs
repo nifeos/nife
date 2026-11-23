@@ -6,7 +6,7 @@
 //! DECISIONS §4 (kernel shape)), and it can corrupt memory inside its grant and nothing else. Its
 //! `malloc` is the [`MemoryRegionHeap`] of milestone 27 (Rust `std` on the native ABI) on slot 1,
 //! the region this instance was built in, so a C leak exhausts only this instance and the
-//! `MemoryRegion::DESTROY` that reaps the corpse reclaims the heap too. See notes/c-seam.md.
+//! `MemoryRegion::DESTROY` that reaps the corpse reclaims the heap too. See nifeos/record:notes/c-seam.md.
 
 //! # What this shell is endowed with
 //!
@@ -107,7 +107,7 @@ fn start(_a0: u64, attempt: u64, _a2: u64) -> ! {
 
 // The libc, in full: `malloc` and `free`. The C object also references `memcpy`, `memset` and
 // `strlen`, which `compiler_builtins` already defines weakly, and a Rust shim of them would lower to
-// a call to itself. notes/c-seam.md ("The libc question, answered by tier") has the measurement.
+// a call to itself. nifeos/record:notes/c-seam.md ("The libc question, answered by tier") has the measurement.
 
 /// `malloc`'s header size. **This is the one place the C ABI costs us something real.** `free(p)`
 /// carries no size, but `GlobalAlloc::dealloc` requires the original `Layout`, so every allocation

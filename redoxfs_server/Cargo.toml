@@ -8,20 +8,20 @@
 # The crate is host-testable and target-buildable from one source. `cargo test` (default features,
 # `hosttest`) builds the sans-IO Server<D> core against std RedoxFS and a DiskMemory fixture, in
 # milliseconds, no emulator. The EL0 binary (added under `--features el0 --no-default-features` for
-# the bare targets) wraps that core in the IPC Disk and the serve loop. See notes/fs-server.md.
+# the bare targets) wraps that core in the IPC Disk and the serve loop. See nifeos/record:notes/fs-server.md.
 [workspace]
 
 # Milestone 63 renamed the DIRECTORY from `fs-server/` to `fs_server/` to match the package on
 # 2026-08-01. That package name itself was never put to calef and predated the `*_proto`/`*_server`
 # habit being written down; it stood until milestone 140's decision doc pointed out it was wrong for
-# a different reason (design/roadmap/0140-foreign-filesystems.md, "fs_server is misnamed, and the
+# a different reason (nifeos/record:design/roadmap/0140-foreign-filesystems.md, "fs_server is misnamed, and the
 # architecture is what makes it wrong"): this project is moving to one program per filesystem type,
 # so this crate genuinely only ever will serve RedoxFS, and a generic `fs_server` name claims
 # something a second filesystem server (`fat32_server`, when it exists) would contradict.
 #
 # Name: ratified 2026-10-22 (calef, #2562). Refused `fs_server` (generic, where this crate only ever
 # serves RedoxFS). calef, 2026-08-18: "fs_server is misnamed. Its something like redoxfs_server."
-# design/roadmap/0140-foreign-filesystems.md has the change.
+# nifeos/record:design/roadmap/0140-foreign-filesystems.md has the change.
 
 [package]
 name = "redoxfs_server"
@@ -82,7 +82,7 @@ el0 = ["dep:user_mode_runtime", "dep:memory_region_heap", "dep:clock_contract"]
 
 # The initial ramdisk carries this binary's ELF, so keep it small and deterministic (the same knobs
 # std_exerciser uses). Only the target build uses the release profile; host tests use dev and unwind.
-# Overflow checks in release, ruled by calef 2026-10-04 (UTC) (notes/overflow-checks.md, option A).
+# Overflow checks in release, ruled by calef 2026-10-04 (UTC) (nifeos/record:notes/overflow-checks.md, option A).
 # The shipped build now means by `a + b` what every tested build means: an overflow halts rather
 # than wraps into a quiet wrong answer. Where a hot path wants a wrap, it says so at the site with
 # `wrapping_*` and a reason.

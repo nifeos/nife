@@ -1,7 +1,7 @@
 name: trunk health
 
 # Observed failing: 2026-10-02, run 37072842858: red with `main is red and nobody is assigned to
-#   it`, three cadences having never succeeded. See notes/observed-failing.md.
+#   it`, three cadences having never succeeded. See nifeos/record:notes/observed-failing.md.
 
 # **The trunk watcher, moved off a laptop** (the `who-took-the-step` proposal, approved by calef
 # 2026-09-23). Same move and same reasons as `merge-drain.yml`, which carries the tested premise and
@@ -12,7 +12,7 @@ name: trunk health
 # and their `git status`. A runner has no lane worktrees, so running it here would report nothing
 # forever while the real hazard sat on somebody's laptop unwatched. The fold was undone rather than
 # carried along: the at-risk watch stays per-developer under its own `launchd` job, and
-# notes/merge-queue.md has the plist and the retirement commands.
+# nifeos/record:notes/merge-queue.md has the plist and the retirement commands.
 #
 # **Why this job fails when the trunk is red, rather than only printing.** On a laptop the script
 # spoke on the transition to red and stayed quiet after, because a trunk broken for an hour is one
@@ -64,8 +64,8 @@ jobs:
     # branches are `main` only. A merge-group build runs on a `gh-readonly-queue/main/...` ref, which
     # is not `main`, so it cannot read them even if a pull request edits this workflow to name the
     # environment. Adopted by calef 2026-09-24 (options 2 and 3 of
-    # design/roadmap/0588-a-merge-needs-a-review-no-fork-can-supply.md; the finding is 1 in
-    # design/audit-reports/2026-09-24-new-trust-boundaries.md). The protection holds
+    # nifeos/record:design/roadmap/0588-a-merge-needs-a-review-no-fork-can-supply.md; the finding is 1 in
+    # nifeos/record:design/audit-reports/2026-09-24-new-trust-boundaries.md). The protection holds
     # since calef deleted the organisation-level copies of the two secrets on 2026-10-03 (UTC); an
     # org secret would have been visible to every job whatever its environment. Only jobs that mint the App token name it,
     # because each run of a job that does records a deployment.
@@ -81,7 +81,7 @@ jobs:
           # The set the App held before milestone 128 (the automation gets its own identity)
           # widened it for sessions, Administration among them, plus issues, so the repeat and
           # stopped-watcher issues are written as the App (calef, #2477, 2026-10-20 UTC). Named
-          # here so the widening reaches no workflow; notes/session-identity.md.
+          # here so the widening reaches no workflow; nifeos/record:notes/session-identity.md.
           permission-contents: write
           permission-issues: write
           permission-pull-requests: write

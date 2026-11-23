@@ -7,7 +7,7 @@ use super::*;
 
 /// Split an image path into components. Leading, trailing and doubled slashes are ignored, `.` is
 /// ignored, and **`..` is refused**: paths resolve from the image root downward and nothing else.
-/// That is the same rule the FS server enforces on the wire (notes/fs-server.md), kept here so a
+/// That is the same rule the FS server enforces on the wire (nifeos/record:notes/fs-server.md), kept here so a
 /// path means the same thing whether nife or this tool resolves it.
 pub(crate) fn components(path: &str) -> Result<Vec<&str>, String> {
     let mut out = Vec::new();

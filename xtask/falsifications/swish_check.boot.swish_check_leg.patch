@@ -7,7 +7,7 @@ Architecture: aarch64
 Line: caps
 
 Milestone 715 (the spawn service holds the display grants, and the shell holds none), row 32 of
-notes/confinement-claims.md. `script/falsifications --sweep xtask` replays it (milestone 742 (every
+nifeos/record:notes/confinement-claims.md. `script/falsifications --sweep xtask` replays it (milestone 742 (every
 test is falsified as routine), provisional): it boots `script/swish-check --arch aarch64` with this
 patch applied and calls it red only when swish-check's FAILED report names the `Line:` above. By
 hand, the same thing is:

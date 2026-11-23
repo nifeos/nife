@@ -5,7 +5,7 @@
 //! bytes it was handed. Now the build measures that entry and the kernel image carries the digest, so
 //! the check means "this kernel runs exactly this progenitor." The ordering is one-way and the build
 //! already had it: userspace -> archive -> manifest -> kernel. See kernel/build.rs (which consumes
-//! the manifest) and notes/trusted-init.md.
+//! the manifest) and nifeos/record:notes/trusted-init.md.
 
 use std::path::PathBuf;
 

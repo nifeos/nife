@@ -191,7 +191,7 @@ pub(crate) fn screendump(sock: &str, out: &Path) -> bool {
 /// under load). QEMU prints its `(qemu) ` prompt only after a command finishes, `screendump`
 /// included (50 of 50 dumps whole when the prompt came back), so waiting for it makes each command
 /// synchronous and leaves nothing waiting in the backlog.
-/// notes/framebuffer-contract/scanout-referee.md has the runs.
+/// nifeos/record:notes/framebuffer-contract/scanout-referee.md has the runs.
 ///
 /// Name: provisional, minted 2026-10-12 by lane/scanout-referee-flake.
 pub(crate) struct Monitor {
@@ -278,7 +278,7 @@ fn monitor_output(reply: &[u8]) -> String {
 /// **The host's load average across one emulated leg**, so a red timing assertion says whether the
 /// machine was busy (milestone 117 (the stranger test)). The guest knows how late it was, not who
 /// shared its cores; this process does. It **suggests**, and says so, with min/mean/peak, since the
-/// one-minute average decays over a leg. See notes/load-sensitive-assertions/host-load-line.md.
+/// one-minute average decays over a leg. See nifeos/record:notes/load-sensitive-assertions/host-load-line.md.
 ///
 /// # BUGS
 /// - Sampled only while a leg runs, so contention during the build before it is not seen.
@@ -358,13 +358,13 @@ impl HostLoad {
                 "  {:.1}x oversubscribed at the peak. A timing assertion that failed above may be \
                  measuring this machine rather than this kernel; `script/icount` asserts the timer \
                  claims in instructions, which nothing the host does can move. See \
-                 notes/load-sensitive-assertions.md.",
+                 nifeos/record:notes/load-sensitive-assertions.md.",
                 self.maximum / cpus as f64,
             );
         } else {
             eprintln!(
                 "  Not oversubscribed, so contention is the less likely explanation for a failure \
-                 above. See notes/load-sensitive-assertions.md."
+                 above. See nifeos/record:notes/load-sensitive-assertions.md."
             );
         }
     }
@@ -713,7 +713,7 @@ impl ScanoutReferee {
                 );
                 eprintln!(
                     "  A compositor's output is exactly what a guest-side digest cannot confirm; this is \
-                 the check that can. See notes/compositor.md."
+                 the check that can. See nifeos/record:notes/compositor.md."
                 );
                 ok = false;
             }
@@ -732,7 +732,7 @@ impl ScanoutReferee {
                 );
                 eprintln!(
                     "  A wrong pixel format makes a test pattern look odd and makes text unreadable, \
-                 which is why this check exists for glyphs too. See notes/glyphs.md."
+                 which is why this check exists for glyphs too. See nifeos/record:notes/glyphs.md."
                 );
                 ok = false;
             }
@@ -753,7 +753,7 @@ impl ScanoutReferee {
                 );
                 eprintln!(
                     "  This is the check that catches a wrong pixel format or scanout rectangle, which \
-                 the in-guest test cannot see. See notes/framebuffer-contract.md."
+                 the in-guest test cannot see. See nifeos/record:notes/framebuffer-contract.md."
                 );
                 ok = false;
             }

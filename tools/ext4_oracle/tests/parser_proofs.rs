@@ -6,7 +6,7 @@
 //! harness states; a directory block walk ends and stays inside its block; and the software
 //! CRC32C's one-byte step and every entry of its tables equal the bitwise definition. Milestone
 //! 190 holds them here because upstream runs no Kani (see
-//! design/roadmap/0190-ext4-read-write/upstream/6-kani-harnesses.md).
+//! nifeos/record:design/roadmap/0190-ext4-read-write/upstream/6-kani-harnesses.md).
 //!
 //! They live in this tool's workspace, and not in the nife workspace, so that `rsext4` stays out
 //! of every shipping lockfile (the host-only ruling in `Cargo.toml`). `script/verify` runs them

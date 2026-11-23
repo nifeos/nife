@@ -53,7 +53,7 @@ uuid = { version = "1.28.0", default-features = false }
 # read by its errno. Recovery needs exactly one of those. **`ENOENT` is the only error that may be
 # read as "this image has no attribute store"**; treating any other one that way is the false
 # negative that reports a file's attributes as absent when the lookup actually failed, which is the
-# same discipline the FS server's own `find_store` keeps (notes/fs-server.md).
+# same discipline the FS server's own `find_store` keeps (nifeos/record:notes/fs-server.md).
 redox_syscall = { version = "0.9.0", default-features = false, features = ["std"] }
 
 # The host's extended-attribute calls, which `std` does not wrap: `setxattr` on macOS, `lsetxattr` on

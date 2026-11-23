@@ -4,7 +4,7 @@
 //! other platform. Links are never followed, since an extracted symlink's target on the host is
 //! somebody else's file. A failure carries the platform's errno, because it decides what the person
 //! recovering does next. Names are bytes, passed with a NUL terminator and never given a namespace
-//! prefix. See notes/host-recovery/the-library.md.
+//! prefix. See nifeos/record:notes/host-recovery/the-library.md.
 
 use std::ffi::CString;
 use std::io;
@@ -37,7 +37,7 @@ fn c_args(path: &Path, name: &[u8]) -> io::Result<(CString, CString)> {
 /// Set one extended attribute on `path` itself, not following a symlink.
 ///
 /// **The type code cannot come along.** No host filesystem has a per-attribute type word, so
-/// [`file_system_contract::extended_attribute`]'s `kind` is dropped here and the caller reports it (notes/host-recovery.md).
+/// [`file_system_contract::extended_attribute`]'s `kind` is dropped here and the caller reports it (nifeos/record:notes/host-recovery.md).
 /// The bytes are what a reader needs; the codes remain readable in the extracted `.extended-attributes`
 /// blobs, which is why those are still copied out.
 #[cfg(target_os = "macos")]

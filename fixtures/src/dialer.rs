@@ -5,7 +5,7 @@
 //! (`capability_manifest_note`'s zoned layout): the network, the zone `nife.test`, and the root
 //! zone. Installing it lists those asks; nothing records a grant of them yet, so the installed
 //! program is refused the network at the prompt and never runs.
-//! notes/packages/the-test-programs.md has the transcript.
+//! nifeos/record:notes/packages/the-test-programs.md has the transcript.
 
 //! # BUGS
 //!

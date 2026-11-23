@@ -4,7 +4,7 @@
 //! a `sys` backend on the capability ABI, not a libc shim). `std-src` materializes a patched
 //! rust-src into a farm linked as this worktree's own toolchain ([`toolchain_name`]);
 //! `std-exerciser` builds the `std_exerciser` program for the
-//! custom targets with -Zbuild-std against it. See notes/std.md.
+//! custom targets with -Zbuild-std against it. See nifeos/record:notes/std.md.
 
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
@@ -19,7 +19,7 @@ use crate::host::{capture, run, workspace_root};
 /// Each worktree links its own name, and none links the bare `nife-dev`: `rustup toolchain link` is
 /// one symlink per user account, so a shared name is one that lanes take from each other. The
 /// legacy `nife-dev` link is never written, read for a build, or deleted here; removing it is the
-/// maintainer's (briefs/merge-and-cleanup.md). See notes/std.md, "Each worktree has its own
+/// maintainer's (briefs/merge-and-cleanup.md). See nifeos/record:notes/std.md, "Each worktree has its own
 /// toolchain name".
 const TOOLCHAIN_PREFIX: &str = "nife-dev-";
 

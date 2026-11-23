@@ -6,7 +6,7 @@
 //! Rows key on the digest (ruling 2), so a second version carrying the same bytes would be the same
 //! row relabelled. This one's line differs, so `script/swish-check` can tell which copy ran, and
 //! its digest differs, so the table holds two rows for `greeting`.
-//! notes/packages/the-test-programs.md has the transcript.
+//! nifeos/record:notes/packages/the-test-programs.md has the transcript.
 
 //! # What this program holds
 //!

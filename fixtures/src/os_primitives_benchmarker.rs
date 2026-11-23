@@ -8,7 +8,7 @@
 //! switch, IPC round trip and spawn, which reclaims each child's region
 //! (`MemoryRegion::DESTROY`). The null system call, the pipe throughput and the page map are programs of
 //! their own (`null_system_call`, `sink_producer`, `sink_consumer`, `map_el0`), because a person can type them at the
-//! production shell; they need no peer this program would have to build. See notes/benchmarks/cross-os-primitives.md.
+//! production shell; they need no peer this program would have to build. See nifeos/record:notes/benchmarks/cross-os-primitives.md.
 //!
 
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `elbench`, and it is the name that

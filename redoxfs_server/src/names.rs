@@ -37,7 +37,7 @@ impl From<subtree_scope::Refusal> for Fault {
 /// 2026-10-15 UTC). The only constructor, [`NameCopy::copy_in`], copies into this value's own
 /// bounded buffer and validates UTF-8 on the copy, so a name read straight from a client's window
 /// cannot reach a verb. The text is reachable only through `NameCopy::component` and
-/// `NameCopy::path`, which run `check_component` first. See notes/fs-server/the-core.md.
+/// `NameCopy::path`, which run `check_component` first. See nifeos/record:notes/fs-server/the-core.md.
 ///
 /// A window-borrowed `&str` does not reach a verb:
 ///
@@ -113,11 +113,11 @@ impl NameCopy {
 /// Reject anything that is not a single path component, with `EINVAL`.
 ///
 /// Our contract's rule, enforced here rather than in the vendored engine, whose `check_name` passes
-/// `/`, `.` and `..` (notes/fs-server.md). It also refuses `\`, `:` and the attribute store's
+/// `/`, `.` and `..` (nifeos/record:notes/fs-server.md). It also refuses `\`, `:` and the attribute store's
 /// directory name, in every directory, so attributes are never reachable as ordinary bytes
 /// (DECISIONS §34 (RedoxFS is the primary filesystem, on three conditions)'s amendment);
 /// [`Server::read_dir`] does not list it either. `EINVAL` because such a name is not expressible
-/// here. See notes/fs-server/the-core.md.
+/// here. See nifeos/record:notes/fs-server/the-core.md.
 pub(crate) fn check_component(name: &str) -> Result<()> {
     // What a name is anywhere is `subtree_scope`'s (ruling D); what RedoxFS adds is this server's.
     if !subtree_scope::is_name(name.as_bytes())

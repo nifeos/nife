@@ -3,7 +3,7 @@
 //! `(ALICE, WRONG)` is the honest program presenting a secret that is nobody's, and a refusal is
 //! tested on the honest path. Each behaviour constant ([`LOGIN`] through [`EMPTY_SCHEDULE`])
 //! documents its own flow. Session teardown and freeing the terminal are independent acts
-//! ([`HOLD_TERMINAL`]). See notes/login.md.
+//! ([`HOLD_TERMINAL`]). See nifeos/record:notes/login.md.
 
 //! # What every behaviour shares
 //!
@@ -771,7 +771,7 @@ fn teardown_directory(dir: u64, region: u64) -> u64 {
 /// Mac under TCG, ten logouts per run, 100 waits over ten full-suite runs), the worst single wait
 /// was 12.8 ms on aarch64 with no induced load (load average 7 to 15), 44.3 ms on aarch64 at 13 to
 /// 29, and 126.4 ms on riscv64 at 27 to 47. Five seconds is 40x the worst
-/// (notes/load-sensitive-assertions/caretaker-teardown-wait.md).
+/// (nifeos/record:notes/load-sensitive-assertions/caretaker-teardown-wait.md).
 const DESTROY_WAIT_SECONDS: u64 = 5;
 
 /// **`MemoryRegion::DESTROY` on `ut`, retried until the region comes down**; `true` if it did.

@@ -2,7 +2,7 @@
 //!
 //! Two groups, because TLS 1.3 lets the server choose and a client offering only one fails against
 //! a peer configured for the other. `github.com`'s chain is ECDSA P-256 throughout
-//! (notes/cryptography-provider.md), and X25519 is what almost every modern server prefers for the
+//! (nifeos/record:notes/cryptography-provider.md), and X25519 is what almost every modern server prefers for the
 //! exchange. The ephemeral secret comes from the primitive crate, not `rustls`' `SecureRandom`, as
 //! `rustls` documents ("it is assumed that the cryptography library provides for this itself"). Both
 //! draw through `getrandom`'s `SysRng`, which on nife is `entropy_backend` and the entropy service.

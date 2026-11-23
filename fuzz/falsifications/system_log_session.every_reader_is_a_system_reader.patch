@@ -15,7 +15,7 @@ not fuzz targets):
     mkdir -p /tmp/plant && cargo fuzz run -O system_log_session /tmp/plant -- -max_total_time=600
     git apply -R fuzz/falsifications/system_log_session.every_reader_is_a_system_reader.patch
 
-Measured 2026-10-04 (UTC) on an M-series Mac, from an empty corpus: see notes/fuzzing-the-services.md.
+Measured 2026-10-04 (UTC) on an M-series Mac, from an empty corpus: see nifeos/record:notes/fuzzing-the-services.md.
 
 diff --git a/crates/system_log/src/log.rs b/crates/system_log/src/log.rs
 index bf79c7523..2ba14f921 100644

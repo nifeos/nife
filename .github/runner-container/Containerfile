@@ -4,7 +4,7 @@
 # failed once on a developer machine: fifteen local boots across three lanes, zero failures. The
 # difference that matters is not the tree, it is the host. CI is `ubuntu-26.04-arm`; the developer
 # machine is macOS on Apple Silicon, with a different QEMU build, a different libslirp, a different
-# host TCP stack and twice the cores. notes/net/the-inbound-check.md states the consequence
+# host TCP stack and twice the cores. nifeos/record:notes/net/the-inbound-check.md states the consequence
 # outright: a reproduction attempt that is not on that runner class is not a reproduction attempt.
 # This is the runner class, on the developer's own machine.
 #

@@ -21,7 +21,7 @@ use crate::channel::{FILE, REPORT, dir_descend, dir_open, get_page, put_page, pu
 /// attributes, and not filtering the second would be an escape. The kernel test wires it over `sub`
 /// with the set `{inner}`, so `deeper` is one entry away and undesignated; this asks the naming
 /// question with `READ`. It removes its attribute before reporting, so the file the post-run host
-/// check pins is left as found. See notes/fs-server/the-test-client.md.
+/// check pins is left as found. See nifeos/record:notes/fs-server/the-test-client.md.
 pub(crate) fn set_attrs() -> ! {
     use fixture::{directory_escape as esc, tree};
     let mut v = 0u64;

@@ -1,5 +1,5 @@
 # The `getrandom` backend for nife (milestone 64, rank 1 of the measured gap list). See src/lib.rs
-# for what it is and why it is a crate; notes/crates-io-on-nife.md for the measurement that ranked it
+# for what it is and why it is a crate; nifeos/record:notes/crates-io-on-nife.md for the measurement that ranked it
 # first.
 #
 # Deliberately NOT a member of the main workspace, for `std_exerciser`'s reason and one more of its

@@ -4,13 +4,13 @@ name: kani reach
 #   proved FAILED in one table, 10 in another) with zero kills outside computed reach. A measurement,
 #   not a gate, so this is the arm that carries its claim firing; the red shards of 37179003058 do not
 #   count, because they died on `Failed to match the following harness(es)`, a detector defect fixed
-#   before #1587 merged, before proving anything. See notes/observed-failing.md.
+#   before #1587 merged, before proving anything. See nifeos/record:notes/observed-failing.md.
 
 # **Does a standing proof notice a regression in the code it covers?** Milestone 741 (provisional),
 # for fatal risk 2. cargo-mutants lists the mutants of each package below, and every mutant is proved
 # with `cargo kani`; a harness that goes FAILED on a named check kills it. The join against the weekly
 # mutation census is what says whether the tests kill it too. helpers/kani_reach.py holds the method
-# and its caveats; notes/kani-reach-2026-10-04.md holds the numbers.
+# and its caveats; nifeos/record:notes/kani-reach-2026-10-04.md holds the numbers.
 #
 # A measurement, not a gate, and on demand only: one Kani compile per mutant is hours of CPU. Run it
 # here rather than on a laptop, per AGENTS.md's memory ceiling (never a mutation sweep beside lanes).
@@ -65,7 +65,7 @@ jobs:
         id: plan
         env:
           # Every row of script/verify's table but glob, which the 2026-10-04 cost estimate
-          # (notes/kani-reach-2026-10-04.md) put among the most expensive and which is left out
+          # (nifeos/record:notes/kani-reach-2026-10-04.md) put among the most expensive and which is left out
           # by default. Shard counts are from that estimate.
           # A `package:shards:only` entry runs one shard of n, which is how a lost shard is
           # rerun with a fix (`gh run rerun` replays the old commit).

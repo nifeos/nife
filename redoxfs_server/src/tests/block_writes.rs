@@ -163,7 +163,7 @@ fn a_write_after_a_reopen_of_a_previously_written_image_does_not_loop() {
 /// the mechanism behind the "cross-boot second-mount write failure" (fix/redoxfs-second-mount). One
 /// boot's client left a 64-byte payload in `scratch`; the next boot's `std::fs` test wrote 61 bytes,
 /// compared the whole file against them and got 64 back. The write succeeded every time
-/// (notes/fs-server/write-path-history.md). `TRUNCATE` is what replaces a file's contents. The byte
+/// (nifeos/record:notes/fs-server/write-path-history.md). `TRUNCATE` is what replaces a file's contents. The byte
 /// counts here are the real ones, so the arithmetic is legible.
 #[test]
 fn a_shorter_write_does_not_truncate_and_that_is_what_broke_across_boots() {

@@ -15,14 +15,14 @@ use user_mode_runtime::{call, exit, send};
 
 use crate::channel::put_page;
 
-/// The two-directory witness (milestone 154, design/roadmap/0154-multi-directory-namespace.md):
+/// The two-directory witness (milestone 154, nifeos/record:design/roadmap/0154-multi-directory-namespace.md):
 /// holds two `fs_subtree_caretaker`s, slot 0 labeled `a` (the fixture's `sub`) and slot 1 labeled
 /// `b` (`other`), per `start_granted_two_dirs` in `kernel/src/user/fs_service/two_dirs.rs`.
 ///
 /// It proves the block's deliverable: `/a/inner` and `/b/secret` (its `/a/x` and `/b/y`) resolve
 /// through [`grant_plan::navigation::TwoRoots`] and then open on the named caretaker; `/a/../b` is refused
 /// by `TwoRoots::resolve` before any request is sent; and neither caretaker's tree is reachable
-/// through the other's endpoint, asked directly of each (notes/dir-capability.md).
+/// through the other's endpoint, asked directly of each (nifeos/record:notes/dir-capability.md).
 pub(crate) fn two_dir() -> ! {
     use file_system_fixture::endpoint_boundary as t;
     use fixture::tree;

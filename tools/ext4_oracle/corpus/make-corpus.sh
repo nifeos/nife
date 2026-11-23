@@ -19,7 +19,7 @@
 # Needs: mke2fs, e2fsck and dumpe2fs from e2fsprogs 1.47 or later, and python3. Linux only: the
 # tree carries user extended attributes, which macOS cannot set on a file for mke2fs to copy.
 #
-# See design/roadmap/0190-ext4-read-write.md.
+# See nifeos/record:design/roadmap/0190-ext4-read-write.md.
 #
 # Name: provisional. calef names files.
 set -eu

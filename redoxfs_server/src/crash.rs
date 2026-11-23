@@ -5,7 +5,7 @@
 //! and hands the result to the same [`Server::open`](crate::Server::open) the FS server always
 //! mounts with. The seam is [`BlockIo`], the trait the server reaches its disk through on device
 //! and host alike, so the property is host-testable in milliseconds. See
-//! notes/fs-server/crash-consistency.md.
+//! nifeos/record:notes/fs-server/crash-consistency.md.
 
 //! # The model: record once, replay damaged
 //!

@@ -27,7 +27,7 @@ const UNIT_LENGTH: usize = fixture::throughput::UNIT_BYTES as usize;
 /// One request moves at most `file_system::MAXIMUM_TRANSFER_BYTES` bytes (`tp::UNIT_BYTES`), and each phase
 /// moves `tp::TOTAL_BYTES` whatever the unit is. The write phase runs first because it creates the file. Random
 /// offsets come from a fixed seed, page-aligned and inside the file. A read loop issues only the
-/// `CALL`; a write loop repaints the page first. See notes/benchmarks/filesystem-throughput.md.
+/// `CALL`; a write loop repaints the page first. See nifeos/record:notes/benchmarks/filesystem-throughput.md.
 pub(crate) fn throughput() -> ! {
     use fixture::throughput as tp;
 
@@ -39,7 +39,7 @@ pub(crate) fn throughput() -> ! {
     // there. So a benchmark that sends one constant
     // page measures the short circuit on every repeat, and one that sends several copies of an
     // incompressible page into a single record measures lz4 finding the copies. See
-    // notes/benchmarks/filesystem-throughput.md.
+    // nifeos/record:notes/benchmarks/filesystem-throughput.md.
     let mut payload = 0x9E37_79B9_7F4A_7C15_u64;
 
     // What that costs, measured on its own so a reader can take it back out of the write phases,

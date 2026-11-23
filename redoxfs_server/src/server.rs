@@ -9,7 +9,7 @@ use super::*;
 
 /// What one handle names, and what may be done through it. The rights ride on the handle, so a
 /// child directory handle is a different authority from its parent held at the same time; see
-/// notes/fs-server/the-core.md.
+/// nifeos/record:notes/fs-server/the-core.md.
 #[derive(Clone, Copy)]
 pub(crate) enum Entry {
     /// A directory. Its rights are the full ladder.
@@ -42,7 +42,7 @@ pub trait WallClock {
 ///   counter that starts at 2 and adds 1 per stamp, read as Unix seconds, so every file looks
 ///   modified in January 1970. Once the clock is set, stamps continue from the larger of the wall
 ///   time and the last stamp, so a time never moves backward, but a file stamped before the clock was
-///   set keeps its 1970 time. See notes/touch.md.
+///   set keeps its 1970 time. See nifeos/record:notes/touch.md.
 pub struct Server<D: Disk> {
     pub(crate) fs: FileSystem<D>,
     /// The open-handle table: `handles[h]` is what handle `h` names, or `None` for a freed slot. A
@@ -79,7 +79,7 @@ impl<D: Disk> Server<D> {
     /// the nodes nothing points at and commits, so a mount does not leak.
     /// `tests/crash_consistency.rs` measures the recovery; see [`crate::crash`], DECISIONS §34
     /// (RedoxFS is the primary filesystem, on three conditions) and
-    /// notes/fs-server/crash-consistency.md. The server never uses the creation APIs, which are
+    /// nifeos/record:notes/fs-server/crash-consistency.md. The server never uses the creation APIs, which are
     /// std-gated and stay host-side.
     pub fn open(disk: D) -> Result<Self> {
         let fs = FileSystem::open(disk, None, None, true)?;
@@ -169,7 +169,7 @@ impl<D: Disk> Server<D> {
         subtree_scope::check_landing(kind, false).map_err(refused)?;
         // Registered open in the engine's usage table, so an unlink leaves this handle a live node
         // ([`Server::unlink`]). Done directly rather than by `Transaction::on_open_node`, whose
-        // transaction clones the allocator; see notes/fs-server/the-core.md.
+        // transaction clones the allocator; see nifeos/record:notes/fs-server/the-core.md.
         let uses = self.fs.node_usages.entry(ptr.id()).or_insert(0);
         *uses = uses.checked_add(1).ok_or(Error::new(EINVAL))?;
         Ok(self.install(Entry::File(
@@ -312,7 +312,7 @@ impl<D: Disk> Server<D> {
     ///
     /// [`directory::EROFS`] without [`directory::rights::WRITE`]. `EFBIG` when `offset + data.len()` overflows or passes
     /// [`MAXIMUM_FILE_END`], checked before the engine, which adds the two unchecked (found by the
-    /// `redoxfs_server_session` fuzz target; notes/fs-server/the-core.md).
+    /// `redoxfs_server_session` fuzz target; nifeos/record:notes/fs-server/the-core.md).
     pub fn write(&mut self, handle: u32, offset: u64, data: &[u8]) -> Result<usize> {
         let ptr = self.file_at(handle, directory::rights::WRITE, EROFS)?;
         match offset.checked_add(data.len() as u64) {
@@ -383,7 +383,7 @@ impl<D: Disk> Server<D> {
     ///
     /// - A shrink costs time linear in the logical size, sparse or not, so a writable handle can
     ///   stall every client. Proposed as
-    ///   `design/roadmap/0772-a-client-cannot-stall-the-file-server-with-a-sparse-file.md`.
+    ///   `nifeos/record:design/roadmap/0772-a-client-cannot-stall-the-file-server-with-a-sparse-file.md`.
     pub fn truncate(&mut self, handle: u32, size: u64) -> Result<()> {
         // A truncate destroys a file as thoroughly as a write, so it takes the same right and word.
         let ptr = self.file_at(handle, directory::rights::WRITE, EROFS)?;
@@ -404,7 +404,7 @@ impl<D: Disk> Server<D> {
     /// with [`directory::EROFS`] before anything is resolved. `EINVAL` for a directory moved between
     /// directories ([`file_system_contract::file_system::RENAME`]) or a name that is not one component.
     /// `EISDIR` or `ENOTDIR` for replacing a destination of the other kind, a check the engine does
-    /// not make; `ENOTEMPTY` from the engine. See notes/fs-server/the-core.md.
+    /// not make; `ENOTEMPTY` from the engine. See nifeos/record:notes/fs-server/the-core.md.
     pub fn rename(
         &mut self,
         src_dir: u32,
@@ -462,7 +462,7 @@ impl<D: Disk> Server<D> {
     /// Needs [`directory::rights::REMOVE`], refused with [`directory::EROFS`] before the name is resolved. `ENOENT` if
     /// there is no such entry, `EINVAL` if it is not one component, [`directory::EISDIR`] for a directory
     /// ([`file_system_contract::file_system::UNLINK`]). A file still open survives until its last
-    /// [`Server::close`] (milestone 47; notes/fs-server/the-core.md).
+    /// [`Server::close`] (milestone 47; nifeos/record:notes/fs-server/the-core.md).
     ///
     /// # BUGS
     ///
@@ -493,7 +493,7 @@ impl<D: Disk> Server<D> {
     ///
     /// - Directory handles are not registered open, so a handle to the removed directory names
     ///   whichever directory next takes its id, with its rights, outside the grant (milestone 633
-    ///   (an outside agent attacks the confinement claim), read not run; notes/fs-server/the-core.md).
+    ///   (an outside agent attacks the confinement claim), read not run; nifeos/record:notes/fs-server/the-core.md).
     pub fn rmdir(&mut self, handle: u32, name: &NameCopy) -> Result<()> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
@@ -542,7 +542,7 @@ impl<D: Disk> Server<D> {
     /// lands earlier than the write, even across a clock step backward. Two touches in sequence
     /// observe increasing times. Needs [`directory::rights::WRITE`], refused with [`directory::EROFS`]
     /// before the name is resolved, and no more, because the server observed the value (DECISIONS
-    /// §112). See `file_system_contract::file_system::SET_MODIFICATION_TIME` and notes/touch.md's `BUGS`.
+    /// §112). See `file_system_contract::file_system::SET_MODIFICATION_TIME` and nifeos/record:notes/touch.md's `BUGS`.
     pub fn set_mtime_now(&mut self, handle: u32, name: &NameCopy) -> Result<()> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;
@@ -580,13 +580,13 @@ impl<D: Disk> Server<D> {
     //
     // A layer the engine knows nothing of: a store in the image keyed on the node's `TreePtr` id
     // (`file_system_contract::extended_attribute::store`), which nothing can bypass because every path to these
-    // bytes goes through `file_system_contract`. See notes/xattr.md.
+    // bytes goes through `file_system_contract`. See nifeos/record:notes/xattr.md.
 
     /// Read one extended attribute of the node `handle` names, returning its type code and the
     /// number of bytes written into `out`.
     ///
     /// `EBADF` without [`directory::rights::READ`], as [`Server::read`] answers. `ENODATA` if the attribute is
-    /// not set, the only error that means absence (notes/fs-server.md). `ERANGE` if `out` is
+    /// not set, the only error that means absence (nifeos/record:notes/fs-server.md). `ERANGE` if `out` is
     /// shorter than the value, never a short read (DECISIONS §42); on the wire `out` is the shared
     /// page, larger than [`extended_attribute::MAXIMUM_VALUE_BYTES`], so it cannot fire there.
     pub fn get_xattr(&mut self, handle: u32, name: &[u8], out: &mut [u8]) -> Result<(u32, usize)> {
@@ -690,7 +690,7 @@ impl<D: Disk> Server<D> {
     /// ([`Server::unbind`] releases that one): closing either would fail every later request or
     /// let a later open reuse the slot outside the grant (found by the `redoxfs_server_session`
     /// fuzz target, 2026-10-04 UTC). Closing a file handle also frees a node unlinked while it was
-    /// open. See notes/fs-server/the-core.md.
+    /// open. See nifeos/record:notes/fs-server/the-core.md.
     pub fn close(&mut self, handle: u32) -> Result<()> {
         if handle as u64 == file_system_contract::file_system::ROOT || self.is_grant_root(handle) {
             return Err(Error::new(EINVAL));
@@ -719,7 +719,7 @@ impl<D: Disk> Server<D> {
     /// The handle is validated and not used: holding any minted handle entitles a caller to ask, so
     /// `EBADF` is the whole check and no right is demanded. Both numbers are read outside a
     /// transaction, from the committed header and allocator, so a read-only verb makes no commit.
-    /// See notes/fs-server/the-core.md.
+    /// See nifeos/record:notes/fs-server/the-core.md.
     pub fn statfs(&mut self, handle: u32) -> Result<(u64, u64, u64)> {
         self.entry(handle)?;
         let block = redoxfs::BLOCK_SIZE;

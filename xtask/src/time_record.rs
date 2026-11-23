@@ -7,7 +7,7 @@
 //! x86_64 the clock is a TSC calibrated once (milestone 571 (the x86 boot calibrates the TSC once,
 //! and can be wrong by 4x)). A gap or a lying clock fails the leg. The rows go to the file at
 //! [`record_path`], which CI uploads and [`summary`] turns into the step summary (§254, Fork 3).
-//! See notes/kernel-suite-time.md, "How the record is taken".
+//! See nifeos/record:notes/kernel-suite-time.md, "How the record is taken".
 
 //! # The file
 //!
@@ -63,9 +63,9 @@ pub(crate) struct Stamped {
 /// **The host watchdog's grace: how long past a test's own budget the host ends the boot itself.**
 /// [`Watch::wait`] and [`Watch::enforce`] kill QEMU's whole tree once the running stage passes
 /// [`bound_for`]. The guest's two watchdogs (`kernel/src/testing.rs`) both run off the boot core's
-/// timer interrupt, so this backstop needs nothing from the guest (notes/scheduler.md). The grace
+/// timer interrupt, so this backstop needs nothing from the guest (nifeos/record:notes/scheduler.md). The grace
 /// lets the guest's own ceiling, whose report says more, exit first; the default bound is 150 s,
-/// against a slowest honest test of 20.5 s. See notes/kernel-suite-time.md, "How the record is
+/// against a slowest honest test of 20.5 s. See nifeos/record:notes/kernel-suite-time.md, "How the record is
 /// taken".
 /// # BUGS
 /// - **`build` is not bounded**: a cold build is minutes, so only CI's `timeout-minutes` covers it.
@@ -316,7 +316,7 @@ impl Watch {
 ///
 /// The child is cargo (or the UEFI runner script), and QEMU is its grandchild: cargo runs the
 /// runner script, which runs QEMU. Killing cargo alone orphans QEMU, which then holds the disk
-/// images and a core until somebody finds it (notes/qemu.md; milestone 663 (bound the host pass, so a test that spins fails instead of running for days) records rustdoc's
+/// images and a core until somebody finds it (nifeos/record:notes/qemu.md; milestone 663 (bound the host pass, so a test that spins fails instead of running for days) records rustdoc's
 /// runners surviving five days the same way). So the tree is collected with `pgrep -P` before
 /// anything is signaled, sent SIGTERM (QEMU exits cleanly on it), given five seconds, and then
 /// sent SIGKILL. Not a process group: cargo stays in ours, so a Ctrl-C at the terminal still
@@ -635,7 +635,7 @@ pub(crate) fn whole(r: &Reading) -> Result<(), String> {
 /// sum sits below it, and above it only if the guest clock runs fast. Upper: the span plus 5% and
 /// half a second. Lower: half the span less three seconds, far above the 25% a 4x TSC error gives.
 /// Both are first guesses: every run prints its ratio, and a wrong band is widened here with the
-/// run that showed it. See notes/kernel-suite-time.md, "How the record is taken".
+/// run that showed it. See nifeos/record:notes/kernel-suite-time.md, "How the record is taken".
 pub(crate) struct ClockCheck;
 
 impl ClockCheck {

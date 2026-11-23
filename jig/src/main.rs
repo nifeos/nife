@@ -6,7 +6,7 @@
 //! a package itself, so the progenitor parses no network input, and sends it only if it is the one
 //! asked for and the catalog vouches for its digest (`package_archive::installable_as`). `update`
 //! fetches the image's index over HTTPS, pinned to the root the image names (milestone 801 (packages
-//! over the internet)), and keeps a copy later lookups consult first. notes/packages/jig.md has what
+//! over the internet)), and keeps a copy later lookups consult first. nifeos/record:notes/packages/jig.md has what
 //! each verb holds, how an install and an `update` travel, and the BUGS.
 
 //! # SYNOPSIS

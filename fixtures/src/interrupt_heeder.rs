@@ -5,7 +5,7 @@
 //! up, records that it stopped gracefully, and exits: the cooperative tier of §24 (interrupting the
 //! foreground process) made visible. The flag is shared memory and not an endpoint because a
 //! running computation can neither poll an endpoint (there is no non-blocking receive) nor block on
-//! one without stalling its work. See `program_table::job_channel_page` and notes/grant-expression.md.
+//! one without stalling its work. See `program_table::job_channel_page` and nifeos/record:notes/grant-expression.md.
 
 //! # What it holds
 //!

@@ -22,7 +22,7 @@
 # is no author to correct and nothing to ratchet. Spell-checking it is the same category error as
 # spell-checking a lockfile. It became a gate failure rather than a theoretical point on 2026-09-16,
 # when `script/board-console` wrote a truncated `evice` into a job-mix transcript (its own defect,
-# recorded in notes/bench-runbook.md's BUGS); the alternative was editing a transcript to please a
+# recorded in nifeos/record:notes/bench-runbook.md's BUGS); the alternative was editing a transcript to please a
 # checker, which would make it no longer a transcript.
 # The terminal replay harness's expected screens join them for the same reason:
 # `crates/video_terminal/recordings/**/*.expected.txt` is a verbatim capture of what a program
@@ -48,10 +48,10 @@ extend-ignore-re = ["\\b[0-9a-f]{12,}\\b"]
 # a held tool with no authority of its own. That is the same coin as this entry. Recorded here rather
 # than argued with, and worth knowing before the rename lands: every contributor's spell-checker will
 # reach the same conclusion about all 1,001 renamed occurrences until it is told otherwise.
-# calef's own spelling, quoted verbatim in design/roadmap/0710-firefox-port.md (2026-10-03). A
+# calef's own spelling, quoted verbatim in nifeos/record:design/roadmap/0710-firefox-port.md (2026-10-03). A
 # ruling is recorded as spoken, so the quotation is not corrected to please the checker.
 targetting = "targetting"
-# calef's reply of 2026-10-17, quoted verbatim in design/decisions/0305 and marked (sic) there.
+# calef's reply of 2026-10-17, quoted verbatim in nifeos/record:design/decisions/0305 and marked (sic) there.
 Agrred = "Agrred"
 nife = "nife"
 Nife = "Nife"
@@ -60,7 +60,7 @@ NIFE = "NIFE"
 # writes the legacy format; Linux's `defines.h` spells it `E1000_RFCTL_EXTEN` (milestone 494 (a
 # driver for the network card a PC actually has)).
 EXTEN = "EXTEN"
-# `HCR_EL2.TGE`, Trap General Exceptions (Arm ARM), the bit notes/arm-plan-under-hvf.md measures
+# `HCR_EL2.TGE`, Trap General Exceptions (Arm ARM), the bit nifeos/record:notes/arm-plan-under-hvf.md measures
 # HVF ignoring; `tge` names the probe that does it.
 TGE = "TGE"
 tge = "tge"
@@ -181,11 +181,11 @@ everybodies = "everybodies"
 # stray D.
 ANDD = "ANDD"
 # A misspelling in somebody else's document, quoted verbatim (milestone 168). Warton's 2005 thesis
-# abstract writes "single stack architecure", and notes/job-mix.md quotes the sentence because the
+# abstract writes "single stack architecure", and nifeos/record:notes/job-mix.md quotes the sentence because the
 # strength of that claim differs from the retrospective's summary of it, which is the whole point of
 # the quotation. Correcting a source inside quotation marks would be worse than the typo.
 architecure = "architecure"
-# Two verified-kernel projects named in notes/redleaf.md's comparison of proof-to-code ratios.
+# Two verified-kernel projects named in nifeos/record:notes/redleaf.md's comparison of proof-to-code ratios.
 # `CertiKOS` (Yale, Coq) splits into "Certi" + "KOS" and the checker offers "Certificate"/"Certify";
 # `SeKVM` (Columbia, Coq) is the verified KVM core cited beside it. Both are proper nouns in the
 # literature, spelled by their authors, and both appear inside or beside quoted material.

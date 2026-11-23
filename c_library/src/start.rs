@@ -1,6 +1,6 @@
 //! How a C program starts on nife (milestone 835 (a C library, stage 1: files, clock and memory)).
 //!
-//! relibc's `crt0` is not seeded. A nife program is entered at `std`'s `_start` (notes/std.md),
+//! relibc's `crt0` is not seeded. A nife program is entered at `std`'s `_start` (nifeos/record:notes/std.md),
 //! which sets up `std`'s runtime and calls a Rust `main`; [`run`] is what that `main` calls to
 //! become the C program. Its words come from `std::env::args_os`, which reads nife's argument page
 //! (milestone 205 (how a foreign program is told what to do)), and its environment from

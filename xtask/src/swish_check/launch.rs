@@ -1,5 +1,5 @@
 //! **What a leg does after its script**: keystrokes over the monitor, the reboot phase, the
-//! graphical terminal's launch, and the `rg` walk. See notes/swish-check-harness.md, "What a leg
+//! graphical terminal's launch, and the `rg` walk. See nifeos/record:notes/swish-check-harness.md, "What a leg
 //! does after its script".
 //!
 //! Name: provisional (milestone 847's lane, 2026-10-11 UTC; §280 (the swish-check harness
@@ -18,7 +18,7 @@ use super::*;
 /// Neither the screen nor the session can tell which variant a byte came by, so a change that made
 /// it matter turns exactly one run red. Any `$ ` on the screen is the proof, since a
 /// capability-slot collision anywhere in the session's build fails in total silence. See
-/// notes/swish-check-harness.md, "What a leg does after its script".
+/// nifeos/record:notes/swish-check-harness.md, "What a leg does after its script".
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Keystrokes {
     /// A virtio-input device, pressed with the monitor's `sendkey`. Milestone 177.
@@ -415,7 +415,7 @@ pub(super) const RG_WALK_CD: &str = "cd /search";
 /// **How long [`RG_WALK_LINE`] may take**, typed to prompt-back, on every leg (milestone 121
 /// (`ripgrep` on nife)). The slowest measured walk was 432.1 s, emulated `x86_64` on patagonia
 /// under load on 2026-10-07 UTC; ten minutes covers it with room, and a hang still reports inside
-/// one CI job. The table, and why `x86_64` is slower, are in notes/swish-check-harness.md, "The
+/// one CI job. The table, and why `x86_64` is slower, are in nifeos/record:notes/swish-check-harness.md, "The
 /// `rg` walk".
 pub(super) const RG_WALK_SECONDS: u64 = 600;
 
@@ -423,7 +423,7 @@ pub(super) const RG_WALK_SECONDS: u64 = 600;
 /// or fetching a 2.8 MiB image is most of it: up to 38.7 s to load and 46.1 s to fetch on `x86_64`
 /// under TCG on patagonia, so the shared 30 s bound is too short. Where the time goes inside a
 /// spawn of that size is not measured (milestone 121's BUGS). The figures and their dates are in
-/// notes/swish-check-harness.md, "The `rg` walk".
+/// nifeos/record:notes/swish-check-harness.md, "The `rg` walk".
 pub(super) const RG_LINE_SECONDS: u64 = 90;
 
 /// **Whether `rg`'s answer at the prompt is the host's answer**, as a set of lines: every line the

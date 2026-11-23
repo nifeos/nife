@@ -15,7 +15,7 @@ use crate::host::capture;
 /// opening the file the run left behind; if it and the in-guest check ever disagreed, the guest
 /// would be the one to doubt. The partition is named by type GUID, not slot number, as the guest's
 /// `mkfs` finds it: the type is what the partition is, and the slot is this table's current order.
-/// See notes/host-recovery/devices-and-partitions.md.
+/// See nifeos/record:notes/host-recovery/devices-and-partitions.md.
 ///
 /// # BUGS
 /// - The table is not checked against the image's size (`check_disk_size`); the protective MBR's
@@ -200,7 +200,7 @@ pub(crate) fn redoxfs_check_after_run() -> bool {
 /// expansion is the grant" is a fact about the disk. The two unmatched names, one entry away and
 /// removable by the caretaker a hop up, are still there, so their survival is a fact about the
 /// *set*. The unmatched directory still holds its file, since a set capability with no `-r` cannot
-/// look inside even one it matched. See notes/glob-grant/tests.md.
+/// look inside even one it matched. See nifeos/record:notes/glob-grant/tests.md.
 fn redoxfs_glob_grant_took_exactly_the_match() -> bool {
     use file_system_fixture::tree;
     let img = redoxfs_disk_path();
@@ -268,7 +268,7 @@ fn redoxfs_glob_grant_took_exactly_the_match() -> bool {
 /// (milestone 47), on the image the run left behind. Returns whether every fixture name is still in
 /// the root, none of the attacker's names is, its creations (one renamed, one not) are in `sub`,
 /// `other/secret` and `sub/inner` read back unchanged, and both shells pass
-/// [`shell_navigation_landed`]. See notes/dir-capability/tests-and-stack-usage.md.
+/// [`shell_navigation_landed`]. See nifeos/record:notes/dir-capability/tests-and-stack-usage.md.
 ///
 /// # BUGS
 /// - The root check is containment, not equality, because other tests write the root too
@@ -354,7 +354,7 @@ fn redoxfs_subtree_was_confined() -> bool {
 ///
 /// The kept name is what makes "the removed name is absent" non-vacuous. `touch`'s content claim (a
 /// second `touch` does not truncate) is checked in-guest, since this file has no run index to
-/// rebuild the exact name `redoxfs_reads_back` would need. See notes/shell-navigation.md.
+/// rebuild the exact name `redoxfs_reads_back` would need. See nifeos/record:notes/shell-navigation.md.
 fn shell_navigation_landed(root: &[String], home: &[String]) -> bool {
     use file_system_fixture::tree;
     let count = |dir: &[String], prefix: &str| dir.iter().filter(|n| n.starts_with(prefix)).count();

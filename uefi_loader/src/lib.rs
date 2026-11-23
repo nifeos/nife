@@ -5,7 +5,7 @@
 //! A library for the reason the `device_tree_blob` package and `machine_discovery` exist: **a structure
 //! layout proved only by booting is proved by nothing that runs in milliseconds.** Everything here
 //! compiles for the host and is tested there. The binary (`src/main.rs`) calls firmware and leaves
-//! long mode, so it cannot be. See notes/x86-uefi-boot.md, and `src/main.rs` for the boot sequence.
+//! long mode, so it cannot be. See nifeos/record:notes/x86-uefi-boot.md, and `src/main.rs` for the boot sequence.
 
 #![cfg_attr(not(test), no_std)]
 

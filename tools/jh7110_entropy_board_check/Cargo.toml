@@ -3,7 +3,7 @@
 # enters the kernel, so the board's network-first boot script serves it with no typing at the
 # prompt. Its own workspace: it is built for one bare-metal target with its own link script, and it
 # pins the crate at the commit under test rather than the commit the kernel uses. See
-# notes/jh7110-entropy-board-check.md.
+# nifeos/record:notes/jh7110-entropy-board-check.md.
 # Name: provisional.
 [package]
 name = "jh7110_entropy_board_check"

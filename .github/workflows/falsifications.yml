@@ -3,7 +3,7 @@ name: falsification sweep
 # Observed failing: 2026-09-28, run 36419492753: the scheduled sweep reported `165 swept, 0
 #   survivors, 1 stale or broken` (system_tests::port_holder_transmits_then_a_non_holder_faults).
 #   Green by design, since a finding is a worklist entry and not a red check; the stale line is the
-#   arm that fired. No run has shown a survivor yet. See notes/observed-failing.md.
+#   arm that fired. No run has shown a survivor yet. See nifeos/record:notes/observed-failing.md.
 
 # **Does each harness's own recorded falsification still turn it red?** Asked weekly, of every Kani
 # harness carrying a `replayable` record (DECISIONS §134, milestone 194).
@@ -233,7 +233,7 @@ jobs:
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
           # Exactly the set the App held before milestone 128 (the automation gets its own identity)
           # widened it for sessions, Administration among them. Named here so the widening reaches no
-          # workflow; notes/session-identity.md.
+          # workflow; nifeos/record:notes/session-identity.md.
           permission-contents: write
           permission-pull-requests: write
 

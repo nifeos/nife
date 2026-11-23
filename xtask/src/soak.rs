@@ -28,7 +28,7 @@ use crate::{
 /// mid-subrun ends with status 2 rather than hanging. This is a rehearsal, not the measurement: TCG
 /// models no caches and HVF puts the host scheduler under every guest thread, so the number
 /// DECISIONS §96 (process kernel or event kernel, and how to decide it) waits for is taken on radon
-/// by `notes/job-mix.md`'s procedure. It proves the workload runs, the sweep completes and the
+/// by `nifeos/record:notes/job-mix.md`'s procedure. It proves the workload runs, the sweep completes and the
 /// output has the shape the bench evening reads. See `script/job-mix`.
 pub(crate) fn job_mix_sweep() -> ExitCode {
     use std::time::Duration;
@@ -56,7 +56,7 @@ pub(crate) fn job_mix_sweep() -> ExitCode {
         // An emulator has no firmware prologue to climb; see `boot_check`'s note.
         board: &serial_console::board::EMULATOR,
     };
-    // `--hvf` and `--release` (for the HVF cross-check in notes/job-mix.md): the
+    // `--hvf` and `--release` (for the HVF cross-check in nifeos/record:notes/job-mix.md): the
     // two flags the tree already spells this way, `run`'s and `bench`'s, rather than new ones. HVF
     // is aarch64 on an Apple host only, and release is what `script/board-image` builds for radon,
     // so the cross-check runs the optimisation level the board does.
@@ -118,7 +118,7 @@ pub(crate) fn job_mix_sweep() -> ExitCode {
     let mut cmd = qemu_command(runner, target, &initial_ramdisk, arch, run.smp.as_deref());
 
     eprintln!(
-        "--- job-mix: {arch}, a rehearsal; the number is taken on radon (notes/job-mix.md), \
+        "--- job-mix: {arch}, a rehearsal; the number is taken on radon (nifeos/record:notes/job-mix.md), \
          logging to {} ---",
         log_path.display()
     );
@@ -374,7 +374,7 @@ fn stop_qemu(child: &mut std::process::Child, sink: &mut impl std::io::Write) {
 /// milestone 219's block requires; this adds only building, starting QEMU and killing it. Named for
 /// the command rather than the workload (milestone 297 (`soak` becomes `soak-test`)): this *is*
 /// `script/soak-test`, where `BootProgress::soak` one crate over keeps the workload's spelling. See
-/// `script/soak-test` and notes/soak.md.
+/// `script/soak-test` and nifeos/record:notes/soak.md.
 pub(crate) fn soak_test() -> ExitCode {
     use std::time::Duration;
 
@@ -642,19 +642,19 @@ fn report_beat(beat: &serial_console::progress::SoakBeat) {
     if beat.wakes > 0 {
         eprintln!(
             "soak-test: the {} crossings are tick waiters being placed by the wake protocol \
-             ({} tick wakes drove them), NOT the IPC pairs migrating. See notes/soak.md.",
+             ({} tick wakes drove them), NOT the IPC pairs migrating. See nifeos/record:notes/soak.md.",
             beat.crossings, beat.wakes
         );
     }
     // The gap milestone 219 measured rather than assumed, said on every run that shows it
     // because a reader who does not know it will read the round-trip total as covering
-    // more than it does. See notes/soak.md.
+    // more than it does. See nifeos/record:notes/soak.md.
     if beat.crossings < beat.rounds / 1000 {
         if beat.wakes == 0 {
             eprintln!(
                 "soak-test: and it barely crossed cores ({} handoffs against {} round trips): \
                  this scheduler does not rebalance, so a saturated workload stays where it \
-                 was placed. See notes/soak.md.",
+                 was placed. See nifeos/record:notes/soak.md.",
                 beat.crossings, beat.rounds
             );
         } else {

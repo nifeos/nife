@@ -1,12 +1,12 @@
 //! The wait-on-address pair relibc's locks are built on (`Pal::futex_wait` and `futex_wake`, relibc's names), on
 //! `std`'s thread parking (milestone 836 (a C library, stage 2: threads)).
 //!
-//! `std` does not export the kernel address wait its own locks use (`notes/address-wait.md`), so this builds the
+//! `std` does not export the kernel address wait its own locks use (`nifeos/record:notes/address-wait.md`), so this builds the
 //! pair from `thread::park` and `Thread::unpark` as a parking lot: a fixed table of buckets keyed by
 //! address, each a short `std::sync::Mutex` over a queue of parked threads. A wait checks the word
 //! and queues itself under the bucket's lock, and a wake dequeues under the same lock, so a wake
 //! never falls between a waiter's check and its sleep. The word is read `Relaxed` because the bucket
-//! lock's release and acquire order the waker's writes before it. notes/c-library.md ("The platform
+//! lock's release and acquire order the waker's writes before it. nifeos/record:notes/c-library.md ("The platform
 //! layer's own constraints") has the rest.
 
 //! # BUGS
@@ -15,7 +15,7 @@
 //!   table does it again in userspace, and a woken waiter is woken through its own parking word.
 //!   A `std` that exported its address wait would remove the table and the extra wake.
 //! - **A timed wait burns a core**, as every timed wait in nife's `std` does until the kernel's
-//!   `WAIT` takes a deadline (`notes/address-wait.md`): `park_timeout` yields until its deadline.
+//!   `WAIT` takes a deadline (`nifeos/record:notes/address-wait.md`): `park_timeout` yields until its deadline.
 //!
 //! Name: provisional, lane milestone/836-a-c-library-stage-two-threads (#2009), 2026-10-12 (UTC),
 //! for the module and the file. The pull request records no other name considered.

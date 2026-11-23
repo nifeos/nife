@@ -1,7 +1,7 @@
 //! **The install gate**: a stick boots, puts itself on a disk, and the machine boots from that disk
 //! with the stick gone (milestone 198 (a package manager, and the trivial install that makes a
 //! second customer possible), rung 2a). Milestone 515 (a stick that puts itself on the machine's
-//! disk) is the proposal it follows. See notes/installing.md.
+//! disk) is the proposal it follows. See nifeos/record:notes/installing.md.
 
 //! # Why it is two boots, and then a third
 //!
@@ -33,8 +33,8 @@
 //!
 //! - One disk of one size (1 GiB), so the installer's floor and rounding go untested.
 //! - It proves nothing about a real firmware; OVMF is one implementation and a generous one.
-//! - It runs nowhere on its own: `design/roadmap/0712-the-install-gates-run-nowhere.md`.
-//! - Boot 3's unchanged disk is proved under OVMF only (notes/installing.md says why).
+//! - It runs nowhere on its own: `nifeos/record:design/roadmap/0712-the-install-gates-run-nowhere.md`.
+//! - Boot 3's unchanged disk is proved under OVMF only (nifeos/record:notes/installing.md says why).
 //! - Boot 3 needs the disk in the firmware's boot order (`NIFE_NVME_DEVICE_OPTS=,bootindex=1`).
 //! - A failure leaves the NVMe image behind, on purpose: it is the evidence.
 //! - The table it reads back is not checked against the image's size (`check_disk_size`).
@@ -173,7 +173,7 @@ pub(crate) fn install_boot() -> bool {
 /// **Boot 3: the stick again, on the machine it just installed, and nobody types anything.**
 /// Returns whether the stick's own image ran and the disk came through byte for byte unchanged.
 ///
-/// It measures the two defects the live stick proposal (`design/roadmap/0773-a-live-stick.md`, G1
+/// It measures the two defects the live stick proposal (`nifeos/record:design/roadmap/0773-a-live-stick.md`, G1
 /// and G2) read out of the code: a stick loader that chain-loads the installed disk's boot slot,
 /// and a stick boot that mounts, and so writes, the internal disk. A write anywhere (the partition
 /// table, the filesystem, the EFI system partition) fails it and is named by region. It runs after

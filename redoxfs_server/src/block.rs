@@ -1,6 +1,6 @@
 //! **The block layer beneath RedoxFS**: whole-block transfers ([`BlockIo`], [`BlockDisk`]) and the
 //! single-block read cache ([`CachedDisk`]); [`crate::Server`] reaches it only through
-//! [`redoxfs::Disk`]. See notes/fs-server/caches-and-io.md. The module name is provisional.
+//! [`redoxfs::Disk`]. See nifeos/record:notes/fs-server/caches-and-io.md. The module name is provisional.
 
 use alloc::vec::Vec;
 
@@ -14,12 +14,12 @@ pub const BLOCK: usize = 4096;
 /// host test measures the cache the device runs. 256 blocks, 1 MiB at most, allocated as they
 /// fill: the smallest size that holds the walk fixture's 207-block metadata working set
 /// (milestone 606 (a directory walk costs what it does on Linux), `examples/walk_replay.rs`). A
-/// larger tree wants more. See notes/fs-server/caches-and-io.md.
+/// larger tree wants more. See nifeos/record:notes/fs-server/caches-and-io.md.
 pub const CACHE_SLOTS: usize = 256;
 
 /// The wire-to-store assertions, here because this is the one place in the tree that sees both
 /// `file_system_contract` and the store. `const` rather than tests, so they fire in the EL0 build
-/// too, where no test harness runs. See notes/fs-server/caches-and-io.md.
+/// too, where no test harness runs. See nifeos/record:notes/fs-server/caches-and-io.md.
 const _: () = {
     // `BLOCK` is the transfer unit for a store whose block size is `BLOCK_SIZE`; if they disagree,
     // every chunked read and write in this file is off by a factor.
@@ -100,7 +100,7 @@ impl<T: BlockIo> Disk for BlockDisk<T> {
 /// holds at most one `(block number, block bytes)` pair, chosen by `block % capacity`; a collision
 /// evicts, which is safe because a miss falls through to the disk. A slot's 4 KiB is allocated the
 /// first time something lands in it, so a server pays only for what it touched.
-/// Why not an LRU, and the heap sizes, are in notes/fs-server/caches-and-io.md.
+/// Why not an LRU, and the heap sizes, are in nifeos/record:notes/fs-server/caches-and-io.md.
 struct BlockCache {
     slots: Vec<Option<alloc::boxed::Box<Slot>>>,
 }
@@ -161,19 +161,19 @@ impl BlockCache {
 /// Whether `block` is one [`CachedDisk`] keeps (milestone 606): everything but the header ring,
 /// which is read once at mount and then only written. This server opens images whose filesystem
 /// starts at block 0 (`FileSystem::open(disk, None, ..)`), so the ring is blocks
-/// `0..HEADER_RING`. See notes/fs-server/caches-and-io.md.
+/// `0..HEADER_RING`. See nifeos/record:notes/fs-server/caches-and-io.md.
 fn cacheable(block: u64) -> bool {
     block >= redoxfs::HEADER_RING
 }
 
 /// A [`Disk`] wrapping another, caching single-block reads (milestone 138 step 2): the five
 /// single-block reads of `Transaction::read_tree_and_addr`'s tree walk on every
-/// `Server::read`/`write`/`fstat` (notes/benchmarks/read-path-block-contract-and-metadata-cache.md).
+/// `Server::read`/`write`/`fstat` (nifeos/record:notes/benchmarks/read-path-block-contract-and-metadata-cache.md).
 ///
 /// Only a `buffer.len() == BLOCK` read consults the cache. A write updates it only after the inner
 /// write succeeded, and a short final chunk invalidates its slot. No generation counter is needed:
 /// RedoxFS never rewrites a live block in place, and this type's [`Disk::write_at`] is the only
-/// path a write reaches the platter through. See notes/fs-server/caches-and-io.md.
+/// path a write reaches the platter through. See nifeos/record:notes/fs-server/caches-and-io.md.
 pub struct CachedDisk<D> {
     inner: D,
     cache: BlockCache,

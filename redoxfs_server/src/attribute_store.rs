@@ -22,7 +22,7 @@ pub(crate) fn store_file(id: u32) -> Result<([u8; 8], usize)> {
 /// **`ENOENT` is the only error read as absence**, and every other one is propagated. A dropped
 /// write to the root's tree block makes a lookup answer `EIO`, and reading that as "there are no
 /// attributes" is exactly the false negative that made milestone 37's harness report filesystems
-/// that never existed (notes/fs-server.md). Here it would silently hand a client an empty attribute
+/// that never existed (nifeos/record:notes/fs-server.md). Here it would silently hand a client an empty attribute
 /// set for a file that has some.
 pub(crate) fn find_store<D: Disk>(
     transaction: &mut Transaction<D>,
@@ -130,7 +130,7 @@ pub(crate) fn purge_attrs<D: Disk>(transaction: &mut Transaction<D>, node_id: u3
 /// `remove_node` with `MODE_DIR` refuses a non-empty directory with `ENOTEMPTY`, so the engine's
 /// check is the emptiness test and costs one lookup. `ENOENT` is tolerated too; every other error is
 /// propagated, because a store that failed to be removed is not a store known to be gone. See
-/// notes/fs-server/the-core.md.
+/// nifeos/record:notes/fs-server/the-core.md.
 pub(crate) fn drop_store_if_empty<D: Disk>(transaction: &mut Transaction<D>) -> Result<()> {
     match transaction.remove_node(
         TreePtr::root(),

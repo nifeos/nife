@@ -15,7 +15,7 @@
 //! and a confined client can run a second thread that rewrites it (milestone 812 (threads in one
 //! address space)). So every name-taking arm copies the name into a [`NameCopy`], which the check
 //! and the resolve both read; an arm that skipped the copy would not compile. This is milestone 825
-//! (a hostile client races the file server's name window)'s fix, and `notes/confinement-claims.md`
+//! (a hostile client races the file server's name window)'s fix, and `nifeos/record:notes/confinement-claims.md`
 //! rows 19 and 24 are the claims it holds. The attribute-name arms take bytes in a separate
 //! namespace, checked by `extended_attribute::is_valid_name`; `get_xattr_request` copies its name too.
 
@@ -242,7 +242,7 @@ impl<D: Disk> Server<D> {
             // Durability (milestone 55 (Time Machine: SMB3 with Apple's extensions, and mDNS)): the
             // rights check is the core's, the flush is the edge's. The block server's reply (a
             // flush count, or a negative errno) passes through unmapped, the one exception to
-            // mapping errors once (notes/fs-server/caches-and-io.md).
+            // mapping errors once (nifeos/record:notes/fs-server/caches-and-io.md).
             file_system::SYNC => self.sync_permitted(handle).map(|()| edges.sync()),
             // A record in the channel, `r0` its length: three u64s do not fit a reply word, and
             // encoding here keeps the core's verbs free of the wire's layout.
@@ -321,7 +321,7 @@ impl<D: Disk> Server<D> {
     fn get_xattr_request(&mut self, handle: u32, len: usize, window: &mut [u8]) -> Result<i64> {
         // The name comes in on the page and the value goes back out on it, so the name is
         // copied to the stack before the reply is written over it. 255 bytes against a
-        // measured 127 KiB high-water on a 397 KiB grant (notes/fs-server.md).
+        // measured 127 KiB high-water on a 397 KiB grant (nifeos/record:notes/fs-server.md).
         let mut name = [0u8; extended_attribute::MAXIMUM_NAME_BYTES];
         if len > name.len() {
             Err(Error::new(extended_attribute::ERANGE))

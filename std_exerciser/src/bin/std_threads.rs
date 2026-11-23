@@ -5,7 +5,7 @@
 //! both must read four million. Each keeps a `thread_local!` value that survives, and the main
 //! thread's is untouched. The first thread is joined early and shared state used after it.
 //! `system_tests/src/user/std_threads_tests.rs` runs it on all three architectures and compares
-//! the printed `available_parallelism` with the cores online. See notes/std/the-proof.md.
+//! the printed `available_parallelism` with the cores online. See nifeos/record:notes/std/the-proof.md.
 
 use std::cell::Cell;
 use std::sync::atomic::{AtomicU64, Ordering};

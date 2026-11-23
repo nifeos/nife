@@ -34,7 +34,7 @@
 //!
 //! - **It is unobservable in a healthy boot.** The kernel clears the screen within milliseconds of
 //!   this being painted, so no gate can assert it on a working machine. What proves it is the
-//!   halted-loader experiment in `notes/serial-less-output.md`.
+//!   halted-loader experiment in `nifeos/record:notes/serial-less-output.md`.
 //! - **Only ASCII**, like everything else `screen_console` draws.
 //! - **It puts a 36,000-byte `screen_console::Cells` on the firmware's stack** for two lines that
 //!   never scroll. UEFI promises an x64 application at least 128 KiB of stack (recalled from the

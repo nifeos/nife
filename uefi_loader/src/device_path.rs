@@ -1,5 +1,5 @@
 //! **Is this file on that disk?** The one device-path question the loader asks (the live stick
-//! proposal's G1, `design/roadmap/0773-a-live-stick.md`).
+//! proposal's G1, `nifeos/record:design/roadmap/0773-a-live-stick.md`).
 //!
 //! A UEFI device path is a run of nodes, each `type: u8, subtype: u8, length: u16` (little-endian,
 //! header included) and then its data, ending in the end-of-entire-path node (type `0x7F`, subtype

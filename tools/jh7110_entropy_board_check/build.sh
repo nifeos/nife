@@ -20,7 +20,7 @@
 #
 # --rehearse boots the model build under QEMU virt for at most ten minutes and runs
 # `results.py summarize` and `results.py check --allow-model` on its log. It needs
-# qemu-system-riscv64 on PATH. See notes/jh7110-entropy-board-check.md.
+# qemu-system-riscv64 on PATH. See nifeos/record:notes/jh7110-entropy-board-check.md.
 #
 # Name: provisional.
 set -eu

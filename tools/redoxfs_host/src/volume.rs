@@ -70,7 +70,7 @@ impl<'a> From<&'a Path> for Volume<'a> {
 /// The window keeps the engine inside the partition by construction: its addresses are relative to
 /// block zero, `size` reports the partition's length, and an address past the end is `EIO`. A
 /// whole-file volume has `first_block: 0` and no length, and must not become a block count: a raw
-/// device on macOS reports length zero. See notes/host-recovery/the-library.md.
+/// device on macOS reports length zero. See nifeos/record:notes/host-recovery/the-library.md.
 pub struct PartitionDisk {
     file: DiskFile,
     /// Where the window starts, in RedoxFS blocks from the start of the file.
@@ -121,7 +121,7 @@ impl Volume<'_> {
     ///
     /// Refuses a partition whose first byte is off a 4096-byte boundary, one that runs past the end
     /// of a regular file (not a raw device, which reports length zero on macOS), and one shorter
-    /// than a block. The length is floored to whole blocks. notes/host-recovery/the-library.md has
+    /// than a block. The length is floored to whole blocks. nifeos/record:notes/host-recovery/the-library.md has
     /// why.
     fn window(&self, file: &File, path: &Path) -> Result<(u64, Option<u64>), String> {
         let Some(selector) = self.partition else {
@@ -244,14 +244,14 @@ pub(crate) fn open_ro(volume: Volume) -> Result<FileSystem<PartitionDisk>, Strin
 ///
 /// An image from a different RedoxFS fails `Header::valid`'s version check everywhere in the ring,
 /// which the engine reports as ENOENT; when the signature is there, this names the version beside
-/// it, the message that sends you to find the pin (notes/host-recovery.md). `at` is where the
+/// it, the message that sends you to find the pin (nifeos/record:notes/host-recovery.md). `at` is where the
 /// filesystem starts in the file: zero for an image, the partition's first byte for a device.
 pub(crate) fn open_failed(image: &Path, at: u64, err: impl std::fmt::Display) -> String {
     match on_disk_version(image, at) {
         Some(v) if v != redoxfs::VERSION => format!(
             "{}: on-disk format version {v}, but this build of redoxfs_host reads version {}. \
              A reader must match the format version it reads; recover with the RedoxFS pin the \
-             backup was written by (see notes/host-recovery.md).",
+             backup was written by (see nifeos/record:notes/host-recovery.md).",
             image.display(),
             redoxfs::VERSION,
         ),

@@ -2,14 +2,14 @@ name: empty diff
 
 # Observed failing: 2026-10-19, run 39310089020: red on #2420, a throwaway draft of one empty
 #   commit with no `claim:` subject, kept as this check's live falsification; it printed the
-#   "net out to nothing" message. See notes/observed-failing.md.
+#   "net out to nothing" message. See nifeos/record:notes/observed-failing.md.
 # Observed failing: 2026-10-04, run 37228506894: red on #1623, a claim pull request whose only
 #   commit was the empty `claim:` commit, with the claim-commit hint.
 
 # **Fails a pull request, and a merge-queue entry, that changes no file.** Milestone 627 (a pull request that changes nothing
 # does not merge), number provisional: #1460 merged on 2026-09-30 carrying only its empty `claim:` commit §90 (the claim is a draft pull request; the status flip is a gate) while the finished work sat on another branch for three days. Every other gate
 # here asks a question about content, an empty diff has none, and so each of them passed. The
-# argument and the refused options are in design/roadmap/0627-*.md.
+# argument and the refused options are in nifeos/record:design/roadmap/0627-*.md.
 #
 # One job, no API call, no waiting: `helpers/empty-diff-check.sh BASE TIP` compares two tree ids. Like
 # `architect-hold.yml` it must never be the check that jams the queue, so it is small and always

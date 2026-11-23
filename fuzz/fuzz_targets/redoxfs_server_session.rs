@@ -6,7 +6,7 @@
 //! the kernel would deliver them. The rules are confinement claims, whose breach answers with
 //! success and crashes nothing, so a crash-only fuzzer would miss both. The image is formatted once
 //! and every input reopens it through a copy-on-write disk ([`Overlay`]);
-//! `notes/fuzzing-the-services.md` records what this layout runs.
+//! `nifeos/record:notes/fuzzing-the-services.md` records what this layout runs.
 
 //! # The rules it checks, beyond "no panic"
 //!
