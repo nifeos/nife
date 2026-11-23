@@ -1,6 +1,6 @@
 //! The ASID allocator: **which number tags this address space's TLB entries.**
 //!
-//! Milestone 15 (design/roadmap/0015-asids.md). The hardware tags every TLB entry from a
+//! Milestone 15 (tagged address spaces), `nifeos/record:design/roadmap/0015-asids.md`. The hardware tags every TLB entry from a
 //! non-global mapping with the ASID in `TTBR0_EL1` (or `satp`), so a context switch flushes
 //! nothing. Each address space keeps one ASID for life and allocation is a bitmap scan.
 //! The kernel's `MAXIMUM_SPACES` is 1,056, above the 255 numbers handed out, so a full bitmap is
@@ -8,9 +8,9 @@
 //! A number may be reused only once no core's TLB holds it: the kernel invalidates by ASID in
 //! `AddressSpace::drop` before [`free`](Allocator::free), one `tlbi aside1is` on aarch64 and an
 //! SBI RFENCE shootdown on RISC-V, whose `satp.ASID` may be narrower than these numbers. See
-//! notes/address-space-identifiers.md and notes/riscv-tlb-shootdown.md.
+//! `nifeos/record:notes/address-space-identifiers.md` and `nifeos/record:notes/riscv-tlb-shootdown.md`.
 
-//! Name: ratified 2026-09-18 (calef, `design/decisions/` §154 (the acronym test is whether the
+//! Name: ratified 2026-09-18 (calef, `nifeos/record:design/decisions/` §154 (the acronym test is whether the
 //! phrase is spoken)): "address space identifier" is a phrase people say, so the expansion is the
 //! name. Refused `asid`. The hardware fields `satp.ASID` and `TTBR0_EL1.ASID` keep their manuals'
 //! spelling wherever the tree names the field rather than the crate (`asid_bits()`, `flush_asid()`).
@@ -88,7 +88,7 @@ impl Default for Allocator {
     }
 }
 
-/// Machine-checked proofs (DECISIONS §14). notes/verification.md predicted "the ASID allocator
+/// Machine-checked proofs (DECISIONS §14). `nifeos/record:notes/verification.md` predicted "the ASID allocator
 /// when it lands" as a frontier crate; this is it landing. The properties are the ones the
 /// privilege boundary rests on: no user space ever tags its entries 0 (the kernel's), and no
 /// two live spaces ever share a tag (sharing one would let the TLB serve one process the

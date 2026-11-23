@@ -7,7 +7,7 @@
 //! architectures: no lock is needed. The wakes array (milestone 221 (the soak never crosses cores,
 //! so build the hook that makes it)) stands apart from the round-trip total, a different quantity.
 //! The anomaly counters are the kernel's and stay in `sched`'s per-core trace counters, out of the
-//! subject's reach. See notes/soak.md, "The shape".
+//! subject's reach. See `nifeos/record:notes/soak.md`, "The shape".
 
 //! # BUGS
 //!

@@ -3,7 +3,7 @@
 //! The answer is `riscv,isa-extensions` and `riscv,isa-base` (Linux 6.6 and later) or the older
 //! single `riscv,isa` string; [`Isa::from_device_tree`] parses both. [`Isa::common`] is the
 //! intersection over every hart that may speak for the machine and [`Isa::any`] the union, and
-//! `mmu-type` is the narrowest any such hart declares. See `notes/isa-discovery.md`.
+//! `mmu-type` is the narrowest any such hart declares. See `nifeos/record:notes/isa-discovery.md`.
 
 //! # BUGS
 //!

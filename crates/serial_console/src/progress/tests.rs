@@ -399,7 +399,7 @@ fn the_renamed_markers_are_read_from_a_real_run_of_the_renamed_command() {
     assert_eq!(beat.mismatches, 0);
     assert_eq!(beat.stalled, 0);
     // The tick route is live in this build, so unlike the pre-221 capture above this one both
-    // wakes and crosses. Neither number is a result: see notes/soak.md on what a soak rate is
+    // wakes and crosses. Neither number is a result: see `nifeos/record:notes/soak.md` on what a soak rate is
     // worth under emulation.
     assert_eq!(beat.wakes, 10_032);
     assert_eq!(beat.crossings, 2_717);
@@ -680,7 +680,7 @@ fn the_captured_sweep_runs_to_its_done_line() {
     );
     // These numbers are a draw rather than a result: TCG models no cache, and milestone 240's
     // census says the placement lottery decides throughput by up to fifteenfold on real
-    // silicon. See notes/job-mix.md. What is asserted here is the parse, not the figure.
+    // silicon. See `nifeos/record:notes/job-mix.md`. What is asserted here is the parse, not the figure.
 }
 
 /// **The whole of part 2, in one pair of assertions**: a sweep that stops partway is a

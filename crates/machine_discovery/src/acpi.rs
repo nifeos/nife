@@ -4,7 +4,7 @@
 //! from the RSDP through the RSDT or XSDT. One private module per table (`sdt`, `root`, `madt`,
 //! `mcfg`, `dmar`, `gtdt`, `spcr`, `fadt`) is re-exported here, beside the public [`ivrs`]. Every
 //! table's checksum is checked: the RSDP is found by scanning memory for a string. AML is not
-//! decoded. See `notes/x86-port/acpi-and-pci.md` and `notes/machine-discovery.md` ("ACPI").
+//! decoded. See `nifeos/record:notes/x86-port/acpi-and-pci.md` and `notes/machine-discovery.md` ("ACPI").
 
 //! # BUGS
 //!

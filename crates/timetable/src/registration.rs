@@ -23,7 +23,7 @@
 //! that matches. The timetable answers [`STATUS`], [`DETAIL`], [`VERDICTS`] and the plan at
 //! [`BODY`] ([`PLAN_LEN`]), then, last, [`REPLY`] set to the request's sequence number. With a page
 //! it is silent on its output endpoint ([`crate::contract`]) and leaves its exit code at [`EXIT`].
-//! See notes/scheduled-execution/the-crate.md, "The page".
+//! See `nifeos/record:notes/scheduled-execution/the-crate.md`, "The page".
 
 //! Name: provisional, minted 2026-09-26 (UTC) by milestone 129's lane, for this module,
 //! [`REPLACE`] and every constant here. Naming is calef's.

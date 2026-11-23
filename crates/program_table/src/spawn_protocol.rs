@@ -6,7 +6,7 @@
 //! grants, in the fixed order both sides read from the same [`Wiring`], and the progenitor answers
 //! on the result endpoint. A userspace protocol, not kernel ABI: the kernel routes these words as
 //! any IPC and never reads them (§10 (process model: capability-based)).
-//! notes/grant-expression/spawn-protocol.md has the exchange.
+//! `nifeos/record:notes/grant-expression/spawn-protocol.md` has the exchange.
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, spelled out.
 
@@ -69,13 +69,13 @@ const SCREEN_BIT: u64 = 1 << 37;
 const DIRECTORY_GRANT_BIT: u64 = 1 << 36;
 
 /// **A second directory grant follows, for the same confined program** (milestone 154,
-/// design/roadmap/0154-multi-directory-namespace.md). Set only alongside [`DIRECTORY_GRANT_BIT`].
+/// `nifeos/record:design/roadmap/0154-multi-directory-namespace.md`). Set only alongside [`DIRECTORY_GRANT_BIT`].
 ///
 /// Another two [`GRANT_WORDS`] messages follow the first pair, carrying the second caretaker's
 /// `START` words; the program's own are not repeated, since one program starts holding two
 /// narrowed endpoints, as `fs_service::start_granted_two_dirs` does. **Nothing sets this bit yet
 /// and the progenitor does not decode it**: no manifest declares two directory operands
-/// (notes/two-trees.md's BUGS).
+/// (`nifeos/record:notes/two-trees.md`'s BUGS).
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 const SECOND_DIRECTORY_GRANT_BIT: u64 = 1 << 38;
@@ -88,7 +88,7 @@ const SECOND_DIRECTORY_GRANT_BIT: u64 = 1 << 38;
 /// follow, one `READ` frame each in page order, tagged with its index, after the directory grant's
 /// data and before every other capability. The progenitor hashes its own copy. A miss runs
 /// only with [`RUN_UNVOUCHED_BIT`] and [`crate::UNVOUCHED_MANIFEST`], and is otherwise refused with
-/// [`SPAWN_UNVOUCHED`]. See notes/grant-expression/spawn-protocol.md.
+/// [`SPAWN_UNVOUCHED`]. See `nifeos/record:notes/grant-expression/spawn-protocol.md`.
 ///
 /// Name: provisional (milestone 198 rung 3a, 2026-09-26), §219's own word for it.
 const IMAGE_BIT: u64 = 1 << 39;
@@ -103,7 +103,7 @@ const IMAGE_BIT: u64 = 1 << 39;
 /// that name frame alone; for a rollback, nothing. A name's frame is laid out by
 /// `file_system_contract::grant::write_page`, the page a caretaker's own name travels on, so it
 /// carries any name up to `grant::MAXIMUM_NAME_BYTES` (milestone 1122 (every name travels on a
-/// page)). notes/grant-expression/spawn-protocol.md says why.
+/// page)). `nifeos/record:notes/grant-expression/spawn-protocol.md` says why.
 ///
 /// Name: provisional (2026-09-26).
 const ACTIVATION_BIT: u64 = 1 << 40;
@@ -116,7 +116,7 @@ const ACTIVATION_BIT: u64 = 1 << 40;
 /// A message rather than a capability, because the capability lacks `GRANT` and the kernel will not
 /// delegate it. It is the last thing a request sends, and the word is not read: that it arrived on
 /// an endpoint only holders can reach is the whole of what it says. See
-/// notes/grant-expression/spawn-protocol.md.
+/// `nifeos/record:notes/grant-expression/spawn-protocol.md`.
 ///
 /// Name: provisional (milestone 198 rung 3a, 2026-09-26).
 const RUN_UNVOUCHED_BIT: u64 = 1 << 41;
@@ -140,7 +140,7 @@ const PROGRAM_ARGUMENTS_BIT: u64 = 1 << 42;
 /// `crate::MACHINE_SLOT`, then deletes its copy.
 ///
 /// The page travels with the request because the progenitor's capability table has no slot to
-/// spare for it; notes/grant-expression/spawn-protocol.md has the measurement.
+/// spare for it; `nifeos/record:notes/grant-expression/spawn-protocol.md` has the measurement.
 ///
 /// Name: ratified 2026-09-27 (calef, #1360's table).
 const MACHINE_BIT: u64 = 1 << 44;
@@ -399,7 +399,7 @@ pub enum ActivationStatus {
     /// [`Activation::Rollback`] from a generation with none below it.
     NoEarlier = 4,
     /// The file service refused a write, or this boot has none. What was written before the
-    /// failure is described in `notes/packages.md`: never a `current` naming a generation that
+    /// failure is described in `nifeos/record:notes/packages.md`: never a `current` naming a generation that
     /// was not written whole.
     StoreFailed = 5,
     /// A verb this progenitor does not know, or a package larger than [`IMAGE_MAXIMUM_PAGES`].
@@ -723,7 +723,7 @@ pub fn stored_words(records: &[u8], at: usize) -> (u64, u64, u64) {
 
 /// **The largest image `IMAGE_BIT` may carry, in pages** (4 MiB). A ceiling both sides read, so the
 /// shell refuses a larger file before it sends anything and the progenitor never stages more than
-/// its image pool holds. `ripgrep` 14.1.1's image spans about 670 (`notes/ripgrep-on-nife.md`).
+/// its image pool holds. `ripgrep` 14.1.1's image spans about 670 (`nifeos/record:notes/ripgrep-on-nife.md`).
 ///
 /// Reserved, not spent: `IMAGE_MAXIMUM_PAGES * 3 + program_table::STD_REGION_PAGES` pages, about 13.5
 /// MiB, are set aside at boot for the shell's staging frames, the progenitor's copy, the child's
@@ -991,13 +991,13 @@ pub const CAPABILITY_TAG: u64 = 0x6361_705f; // "cap_" little-endian-ish marker
 pub const SPAWN_FAILED: u64 = u64::MAX;
 
 /// **The word for a job the kernel killed** (milestone 235,
-/// design/roadmap/0235-a-faulted-job-should-reach-the-prompt.md). Sent on the result endpoint by
+/// `nifeos/record:design/roadmap/0235-a-faulted-job-should-reach-the-prompt.md`). Sent on the result endpoint by
 /// `job_undertaker`, which already holds the progenitor's supervision endpoint, once it has
 /// collected the corpse. A child the kernel killed sends nothing, so without this the shell's
 /// single read would never complete.
 ///
 /// Distinct from [`SPAWN_FAILED`]: nothing ran, versus something ran and died. One below
-/// `u64::MAX`; no program answers with either. See notes/grant-expression/spawn-protocol.md.
+/// `u64::MAX`; no program answers with either. See `nifeos/record:notes/grant-expression/spawn-protocol.md`.
 ///
 /// Name: provisional, like everything a lane mints: a word in a protocol is exactly the kind of
 /// name an architect decides.
@@ -1011,7 +1011,7 @@ pub const JOB_FAULTED: u64 = u64::MAX - 1;
 ///
 /// Three words of a plain `SEND`, sent after the collect, so the region is already back: `w0` the
 /// label the progenitor put on the job's supervision capability (0 for none), which it keys on;
-/// `w1` the dead thread's id; `w2` zero. See notes/grant-expression/spawn-protocol.md. Name:
+/// `w1` the dead thread's id; `w2` zero. See `nifeos/record:notes/grant-expression/spawn-protocol.md`. Name:
 /// provisional.
 pub const UNDERTAKER_BADGE: u64 = 1;
 

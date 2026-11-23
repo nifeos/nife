@@ -3,10 +3,10 @@
 //! `components/src/display_terminal.rs` feeds it and paints what it says, and the kernel-side test
 //! and `cargo xtask` run it to predict and grade the same picture.
 //!
-//! It implements the sequences the line discipline emits (notes/terminal-contract.md), plus cursor
+//! It implements the sequences the line discipline emits (`nifeos/record:notes/terminal-contract.md`), plus cursor
 //! motion, erase, SGR and RIS; anything else is **swallowed whole** rather than printed as garbage.
 //! There is no alternate screen, scrolling region, reporting sequence or reflow. The sequences,
-//! limits and design are in notes/video-terminal.md; the font is in notes/glyphs.md.
+//! limits and design are in notes/video-terminal.md; the font is in `nifeos/record:notes/glyphs.md`.
 //!
 //! Name: ratified 2026-08-01 (calef), replacing `vt`. Refused `vt` (reads as *vector table* in a
 //! kernel), `virtual_terminal` (not what VT stood for, and Linux's virtual consoles have it) and

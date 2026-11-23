@@ -3,7 +3,7 @@
 //!
 //! A line parses into a [`Rule`], and [`next`] answers the first occurrence strictly after a
 //! minute. Every field RFC 5545 would derive from DTSTART is written in the line, so occurrences
-//! do not depend on registration (rule 4 of notes/scheduled-execution/calendar-grammar-g5.md). A
+//! do not depend on registration (rule 4 of `nifeos/record:notes/scheduled-execution/calendar-grammar-g5.md`). A
 //! **minute** counts whole UTC minutes since 1970-01-01T00:00Z, a **day** is that over 1440, and
 //! civil dates are `jiff`'s, limited to years 0000 to 9999 so a date always prints in four digits. No seconds
 //! (BYSECOND=0) and no zones: a line means UTC forever (rule 5).

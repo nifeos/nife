@@ -6,7 +6,7 @@
 //! translation alone, so it is proven on the host. The mapping is by meaning: a missing grant is
 //! `EACCES` (SQLite reads it as read-only), `Unsupported` is `ENOSYS`, and anything with no closer
 //! meaning is `EIO`. The numbers are Linux's generic ones, and `c_library` checks at compile time
-//! that its `errno.h` agrees. See notes/c-library.md, "The errno a C program sees".
+//! that its `errno.h` agrees. See `nifeos/record:notes/c-library.md`, "The errno a C program sees".
 //!
 //! Name: ratified 2026-10-18 (calef). The C library's crate name plus the one thing this holds.
 //! `errno` is C's own identifier, kept whole as a foreign name (design/decisions/0154's table).

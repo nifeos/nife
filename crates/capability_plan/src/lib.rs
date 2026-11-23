@@ -5,7 +5,7 @@
 //! is [`Refusal::Unprovided`] before the component is built, so a manifest can be unsatisfiable but
 //! cannot widen authority. A malformed declaration fails to compile through
 //! [`Requirements::problem`]; a provisioning mismatch is [`plan`]'s refusal at run time. See
-//! notes/component-manifest.md and notes/component-manifest/capability-plan.md.
+//! `nifeos/record:notes/component-manifest.md` and notes/component-manifest/capability-plan.md.
 
 //! # BUGS
 //! - A manifest is compiled into its supervisor, not read from the component's ELF note (§197 (a
@@ -171,7 +171,7 @@ pub struct StateHandoff {
 /// and the component derives its own slot numbers with [`slot_of`]. Supervision (§32 (a supervisor
 /// may collect a corpse without being able to build one)) and start arguments are not declared: a
 /// manifest declares what a component needs, not how it is started. See
-/// notes/component-manifest.md.
+/// `nifeos/record:notes/component-manifest.md`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Requirements {
     /// The contract this component implements, for a reader and for a diagnostic. Not matched

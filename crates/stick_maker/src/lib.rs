@@ -12,8 +12,8 @@
 //! One file per host operating system, carrying every architecture's boot file. It copies them onto
 //! a removable disk's FAT32 volume without administrator rights, and erases only a stick that is
 //! not FAT32. [`disk::refusal`] is the one rule for what may be written. No stick shares a GUID
-//! with another, because none has a GPT. See notes/boot-stick.md, and
-//! notes/boot-stick/the-program.md for each module's part and the GUID measurement.
+//! with another, because none has a GPT. See `nifeos/record:notes/boot-stick.md`, and
+//! `nifeos/record:notes/boot-stick/the-program.md` for each module's part and the GUID measurement.
 
 pub mod cli;
 pub mod disk;

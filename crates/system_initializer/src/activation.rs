@@ -2,7 +2,7 @@
 //! the spawn endpoint by the owner's console or on an installer endpoint by a package manager
 //! (DECISIONS §208 (installing a package is granting it, and the installed programs are
 //! versioned), §270 (a package manager holds an installer endpoint, not the spawn endpoint)). The
-//! spawn loop calls in. See notes/packages.md.
+//! spawn loop calls in. See `nifeos/record:notes/packages.md`.
 
 use spawn_protocol::Activation;
 
@@ -523,7 +523,7 @@ pub(super) struct Activating<'a> {
 /// `installed_programs::OWNER`. Vouch is served only on the spawn endpoint, the owner's console
 /// (§221 (the boot prompt is the owner's console)). Out of line, for [`build_grant`]'s reason: it
 /// holds a page-sized buffer with [`edit`]'s beneath it, and the spawn loop calls it from two
-/// places. See notes/packages.md.
+/// places. See `nifeos/record:notes/packages.md`.
 #[inline(never)]
 pub(super) fn activate(
     verb: Option<spawn_protocol::Activation>,

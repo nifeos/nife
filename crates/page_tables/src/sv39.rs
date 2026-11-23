@@ -396,7 +396,7 @@ mod tests {
 }
 
 /// Machine-checked proofs of the Sv39 format, mirroring the aarch64 module's. The shared `Mapper`
-/// walk inherits both formats' guarantees. See notes/verification.md.
+/// walk inherits both formats' guarantees. See `nifeos/record:notes/verification.md`.
 #[cfg(kani)]
 mod verification {
     use super::*;

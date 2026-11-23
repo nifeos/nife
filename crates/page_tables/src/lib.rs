@@ -64,7 +64,7 @@ mod eighth_pass_attacks;
 /// it was asked for would map bytes nobody granted, which on the direct map means a second,
 /// writable alias of the kernel image or a cacheable view of a device window. Loopless arithmetic,
 /// so it is proved for every address and length rather than tested through a built table (the
-/// "prefer refactoring the logic to shrinking the proof" move notes/verification.md records for
+/// "prefer refactoring the logic to shrinking the proof" move `nifeos/record:notes/verification.md` records for
 /// `domain::grant_pages`). The formats' own block encodings are proved in their modules.
 #[cfg(kani)]
 mod verification;

@@ -1,5 +1,5 @@
 //! **The bring-up sequence** over an injected register bus, in Linux's order. See
-//! notes/jh7110-pci-express.md.
+//! `nifeos/record:notes/jh7110-pci-express.md`.
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 

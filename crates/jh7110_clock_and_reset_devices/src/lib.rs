@@ -5,7 +5,7 @@
 //! with the plan that brings it up in each domain it draws on. [`Device::at`] finds it by that
 //! address, the badge a client's capability carries. Every store and read goes through a
 //! [`Windows`] the caller implements, so this crate dereferences no pointer and a host test
-//! drives it against an array. See notes/jh7110-clock-and-reset.md.
+//! drives it against an array. See `nifeos/record:notes/jh7110-clock-and-reset.md`.
 //!
 //! # BUGS
 //!

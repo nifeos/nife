@@ -1,7 +1,7 @@
 //! The address-space layout and page budgets: every address a child or the progenitor maps at, each
 //! stack's budget, and the constants each stack's program must agree on. Kept in one file because
 //! its correctness is that entries do not collide, and that is checked by reading them side by
-//! side. How each budget was counted is in notes/system-initializer/budgets.md.
+//! side. How each budget was counted is in `nifeos/record:notes/system-initializer/budgets.md`.
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
 
@@ -16,9 +16,9 @@ pub(super) const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 =
 /// `supervision_contract::CHILD_STACK_VA`; measured, with four pages of headroom.
 ///
 /// `kernel::user::pipeline_service`'s `SHELL_EXTRA_STACK` must stay level with this, or a test
-/// wiring finds faults the boot does not have (notes/pipes/the-boot.md). The kernel cannot depend
+/// wiring finds faults the boot does not have (`nifeos/record:notes/pipes/the-boot.md`). The kernel cannot depend
 /// on this crate, so that one is a second copy, and it follows this. See
-/// notes/system-initializer/budgets.md.
+/// `nifeos/record:notes/system-initializer/budgets.md`.
 pub const CHILD_STACK_PAGES: u64 = 12;
 
 /// **Stack pages the shell gets**, more than [`CHILD_STACK_PAGES`]. A debug shell keeps a copy of
@@ -29,7 +29,7 @@ pub const CHILD_STACK_PAGES: u64 = 12;
 /// pipeline's four planned endowments grew by, and the copies a debug build keeps of them. The shell
 /// is built from the progenitor's own pages, once a boot, so the pages are not a job's.
 /// `pipeline_service`'s `SHELL_EXTRA_STACK` stays level with this. See
-/// notes/system-initializer/budgets.md.
+/// `nifeos/record:notes/system-initializer/budgets.md`.
 ///
 /// Name: provisional (milestone 946).
 pub const SHELL_STACK_PAGES: u64 = 28;
@@ -69,7 +69,7 @@ pub(super) const SH_BUDGET_PAGES: u64 = spawn_protocol::SHELL_BUDGET_PAGES;
 /// reaching the loader's scratch window, which must never come out of a child's region, and the
 /// building of `job_undertaker`. The scratch window's tables cost at most
 /// `process_builder::SCRATCH_TABLE_PAGES`, and the assertion below keeps that half spoken for.
-/// See notes/system-initializer/budgets.md.
+/// See `nifeos/record:notes/system-initializer/budgets.md`.
 ///
 /// Name: ratified 2026-10-18 (calef: "Progenitors numbers are ratified."), replacing `INIT_OWN_PAGES`.
 pub const PROGENITOR_RESERVED_PAGES: u64 = 128;
@@ -79,7 +79,7 @@ const _: () = assert!(PROGENITOR_RESERVED_PAGES >= 2 * process_builder::SCRATCH_
 /// it. Spent per live job, not per job ever run. Counted from the largest debug image the prompt
 /// spawns, [`CHILD_STACK_PAGES`], a TCB, an address-space root, the tables for the windows a child
 /// touches and the mapping records of §13 (capability revocation and untyped reclamation); see
-/// notes/system-initializer/budgets.md.
+/// `nifeos/record:notes/system-initializer/budgets.md`.
 pub(super) const JOB_REGION_PAGES: u64 = program_table::JOB_REGION_PAGES;
 
 /// **One directory-granted job's region**: the program *and* the `fs_subtree_caretaker` that carries
@@ -87,7 +87,7 @@ pub(super) const JOB_REGION_PAGES: u64 = program_table::JOB_REGION_PAGES;
 /// ends both (DECISIONS §92 (a caretaker is supervised by the client it serves), §40 (a
 /// supervisor's death is its subtree's death)). The endpoints must come from this region: the reap
 /// sweeps them, and that is what wakes a caretaker parked in `RECEIVE`. See
-/// notes/system-initializer/children.md and notes/system-initializer/budgets.md.
+/// `nifeos/record:notes/system-initializer/children.md` and `nifeos/record:notes/system-initializer/budgets.md`.
 pub(super) const DIR_JOB_REGION_PAGES: u64 = program_table::DIRECTORY_JOB_REGION_PAGES;
 
 /// The stack a `fs_subtree_caretaker` gets, beyond the one page `build_child` maps for it: it has
@@ -110,7 +110,7 @@ pub(super) const GRANT_PAGE_VA: u64 =
 /// **The job pool**: six live native jobs and one `std` program's region
 /// ([`program_table::STD_REGION_PAGES`]). Small on purpose: `script/swish-check` runs more jobs
 /// through it than it could hold without the regions coming back, so widening it silently retires
-/// that gate. See notes/system-initializer/budgets.md.
+/// that gate. See `nifeos/record:notes/system-initializer/budgets.md`.
 pub const JOBS_BUDGET_PAGES: u64 = program_table::JOB_POOL_PAGES;
 
 /// **The image pool** (a provisional name), apart from [`JOBS_BUDGET_PAGES`], where an image run by
@@ -119,7 +119,7 @@ pub const JOBS_BUDGET_PAGES: u64 = program_table::JOB_POOL_PAGES;
 ///
 /// # BUGS
 ///
-/// - The image is held three times while a child is built (notes/system-initializer/budgets.md).
+/// - The image is held three times while a child is built (`nifeos/record:notes/system-initializer/budgets.md`).
 /// - Reserved at boot, not borrowed, whether or not an image ever runs.
 pub const IMAGE_POOL_PAGES: u64 = program_table::image_region_pages(
     spawn_protocol::IMAGE_MAXIMUM_PAGES,
@@ -129,7 +129,7 @@ pub const IMAGE_POOL_PAGES: u64 = program_table::image_region_pages(
 
 /// **Everything both pools can have built at once, and an image request's views, fit in half the
 /// loader's scratch window**: a job's pages stay mapped there until its region is destroyed. The
-/// other half is the boot servers', unmeasured; see notes/system-initializer/budgets.md.
+/// other half is the boot servers', unmeasured; see `nifeos/record:notes/system-initializer/budgets.md`.
 const _: () = assert!(
     JOBS_BUDGET_PAGES + IMAGE_POOL_PAGES + spawn_protocol::IMAGE_MAXIMUM_PAGES
         <= process_builder::SCRATCH_WINDOW_PAGES / 2
@@ -177,7 +177,7 @@ pub(super) const NET_DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0
 
 /// `net_stack`'s heap budget, in pages: matches
 /// `kernel::user::virtual_io_service::NET_SERVER_BUDGET_PAGES`, which carries the measurement. A
-/// spawner states the budget it hands; see notes/system-initializer/budgets.md.
+/// spawner states the budget it hands; see `nifeos/record:notes/system-initializer/budgets.md`.
 pub(super) const NET_STACK_BUDGET_PAGES: u64 = 128;
 
 /// `net_stack`'s stack, in pages: the kernel harness maps eight extra pages under the one every
@@ -290,7 +290,7 @@ pub(super) const CRED_STACK_PAGES: u64 = 16;
 /// of sessions (`components/src/login.rs`'s `OWN_UT_PAGES`, `CHANNEL_UT_PAGES`,
 /// `CARETAKER_REGION_PAGES` and `CLIENT_BUDGET_PAGES`), plus the durable session's budget it splits
 /// at start-up, derived from `login_contract::durable::BUDGET_PAGES` so the two cannot drift. See
-/// notes/system-initializer/budgets.md.
+/// `nifeos/record:notes/system-initializer/budgets.md`.
 pub(super) const LOGIN_CONSTRUCTION_PAGES: u64 = 768 + login_contract::durable::BUDGET_PAGES;
 /// Extra stack pages `login` needs, beyond the one page `build_child` maps: matches
 /// `kernel::user::login_service::LOGIN_STACK_PAGES`, "sized against `credentialer.rs`'s own lesson"
@@ -309,7 +309,7 @@ pub(super) const IDP_RPT_OK: u64 = 1;
 
 /// **The demo identity this boot provisions**, once per boot, with a freshly generated password: a
 /// role name, so nothing here decides whose account it is
-/// (`design/roadmap/0049-users-and-attribution.md`'s BUGS).
+/// (`nifeos/record:design/roadmap/0049-users-and-attribution.md`'s BUGS).
 pub(super) const DEMO_IDENTITY: &[u8] = b"operator";
 /// How many raw bytes of entropy the generated password draws. 12 bytes (96 bits) hex-encoded to
 /// [`PASSWORD_HEX_LEN`] printable characters: comfortably past what an online guesser could work

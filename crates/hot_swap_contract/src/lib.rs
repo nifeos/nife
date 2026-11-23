@@ -7,7 +7,7 @@
 //! *who is parked in `RECEIVE_CAPABILITY`* on one stable endpoint, so the client never changes (DECISIONS
 //! §12 (Call/Reply IPC)'s endpoint-only naming). The UART's registers are the one thing not
 //! shared: the operator takes them back with `PageFrame::REVOKE` between quiescing the old instance
-//! and endowing the new one. See notes/live-replacement.md.
+//! and endowing the new one. See `nifeos/record:notes/live-replacement.md`.
 //!
 //! Name: ratified 2026-10-18 (calef): "`hot_swap_contract` makes sense". "Swap" alone means paging in
 //! OS vocabulary; milestone 23's word for live replacement is hot swap.
@@ -26,10 +26,10 @@ pub const OPERATION_PUT: u64 = 1;
 
 /// **The sequence number a wedging instance swallows**: it takes the request, files the caller's
 /// one-shot `Reply` capability away, and stops answering *without dying* (milestone 23's third
-/// residual; notes/hung-component.md). Keyed on one request's identity, not a count, so it fires in
+/// residual; `nifeos/record:notes/hung-component.md`). Keyed on one request's identity, not a count, so it fires in
 /// the same place under any scheduling; it sits after [`SWAP_TRIGGER`] so there is a conversation
 /// on both sides of the hang. Zero means "never wedge", which the healthy roles pass. See
-/// notes/hung-component/the-wedge-test.md.
+/// `nifeos/record:notes/hung-component/the-wedge-test.md`.
 ///
 /// Provisional name (`wedge`), like everything else in this crate's report and role vocabulary. It
 /// is at least the word this tree already uses for the condition: DECISIONS §26 calls it "alive but
@@ -67,7 +67,7 @@ pub const BAD_REQUEST: u64 = u64::MAX;
 /// [`WANT_DOWN`] or [`WANT_UP`] in the first word of a page the broker maps read-only, signals a
 /// notification bound to the broker's thread, and does not wait. The broker reads the page on every
 /// wakeup, so a late or missed signal degrades to pass-through, which `ROLE_UNWARNED` measured as
-/// lossless. See notes/non-cooperative-fallback.md.
+/// lossless. See `nifeos/record:notes/non-cooperative-fallback.md`.
 ///
 /// Name: provisional (milestone 23's lane, 2026-09-27), for this constant and the two below.
 pub const BROKER_WARN_VA: u64 = 0x0330_0000;
@@ -374,7 +374,7 @@ pub const ROLE_DIRECT: u64 = 0;
 /// The queued channel's system: the producer/consumer variant, one rung up the latency ladder
 /// from [`ROLE_DIRECT`].
 pub const ROLE_QUEUED: u64 = 1;
-/// **The hung component** (milestone 23's third residual, notes/hung-component.md). The direct
+/// **The hung component** (milestone 23's third residual, `nifeos/record:notes/hung-component.md`). The direct
 /// channel's system, with one difference: the incumbent stops answering instead of being drained.
 /// The operator notices because `OPERATION_QUIESCE` goes unanswered within its bound, replaces the
 /// service, and destroys the hung incumbent's region.
@@ -387,7 +387,7 @@ pub const ROLE_HUNG: u64 = 2;
 /// Name: provisional (milestone 23's lane, 2026-09-26).
 pub const ROLE_HANDOFF: u64 = 3;
 /// **The queued system with its one dependent never warned** (the non-cooperative fallback,
-/// notes/non-cooperative-fallback.md). The dependency graph still names `broker`; the operator
+/// `nifeos/record:notes/non-cooperative-fallback.md`). The dependency graph still names `broker`; the operator
 /// behaves as if `broker` had not answered the warning and swaps the backend anyway. What that
 /// costs the producer is the measurement.
 ///
@@ -481,7 +481,7 @@ pub const BROKER_LOG_BASE: u64 = 128;
 // declarations live next to the wire format because a manifest belongs to the contract, not to
 // the build, and the operator wires from them: `rust_swappable` and `c_swappable` share one
 // declaration. A role name is the component's and the object is the supervisor's. The role names
-// are **provisional**. See notes/component-manifest.md.
+// are **provisional**. See `nifeos/record:notes/component-manifest.md`.
 // ===========================================================================================
 
 use capability_plan::Direction::{Serve, Use};

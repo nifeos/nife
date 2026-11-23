@@ -7,7 +7,7 @@ use super::*;
 /// full claim is proved by running the code on all 10^9 values in 0.6 s
 /// ([`super::tests::every_nanosecond_survives_the_round_trip`]); this harness guards the low
 /// corner, where 1 ns is 4.29 ticks and truncating instead of rounding turns it into 0. See
-/// notes/ntp/what-is-proved.md.
+/// `nifeos/record:notes/ntp/what-is-proved.md`.
 const PROVED_NANOSECONDS: u64 = 1 << 16;
 
 /// **Nanoseconds survive the fixed-point conversion**, for every value under [`PROVED_NANOSECONDS`].

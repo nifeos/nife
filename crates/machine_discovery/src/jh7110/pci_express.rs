@@ -16,7 +16,7 @@
 //!
 //! - Only mainline's node shape is read. Whether the vendor U-Boot tree a `VisionFive` 2's
 //!   firmware hands over carries these nodes under these names and `reg-names` is a board step in
-//!   notes/jh7110-pci-express-bench.md; a tree without them reads as no port.
+//!   `nifeos/record:notes/jh7110-pci-express-bench.md`; a tree without them reads as no port.
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane lane/163-jh7110-pcie-kernel-wiring, after
 //! the crate it serves. calef has not named it.

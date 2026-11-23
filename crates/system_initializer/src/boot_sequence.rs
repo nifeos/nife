@@ -1,7 +1,7 @@
 //! The boot sequence: `boot`, which builds the interactive system in numbered steps and then
 //! becomes its spawn service, and its last steps (what it says before the prompt, and the
 //! undertaker). The building steps and the password helpers are in `boot_steps`. See
-//! notes/trusted-init/interactive-boot.md, "What the boot keeps, and what it says before the
+//! `nifeos/record:notes/trusted-init/interactive-boot.md`, "What the boot keeps, and what it says before the
 //! prompt".
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).

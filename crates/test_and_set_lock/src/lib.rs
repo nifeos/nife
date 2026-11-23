@@ -5,10 +5,10 @@
 //!
 //! The release store is what makes everything a holder wrote visible to the next holder, whose
 //! Acquire compare-exchange reads it. Most of the kernel's ordering rests on that pair
-//! (notes/memory-ordering.md, "Where this kernel's ordering actually lives"). The loom models below
+//! (`nifeos/record:notes/memory-ordering.md`, "Where this kernel's ordering actually lives"). The loom models below
 //! explore two and three contending threads, and one of them runs this crate's own lock with the
 //! release store turned Relaxed and passes only when loom reports the race. No fairness: a waiter
-//! can lose every round, as with any test-and-set lock. See notes/interleaving/what-was-modeled.md,
+//! can lose every round, as with any test-and-set lock. See `nifeos/record:notes/interleaving/what-was-modeled.md`,
 //! "`crates/test_and_set_lock`, the kernel's lock".
 //!
 //! # What it is, and what it is not
@@ -31,7 +31,7 @@
 //! # BUGS
 //!
 //! - Loom models C11, not aarch64 or riscv64; a clean run is not a proof about the silicon
-//!   (notes/interleaving.md).
+//!   (`nifeos/record:notes/interleaving.md`).
 //! - [`SpinLock::force_unlock`] is outside the models: it exists to break a lock whose holder will
 //!   never release it, which is a broken invariant by construction.
 //!
@@ -445,7 +445,7 @@ mod interleavings {
 
     /// Non-vacuity: a real atomic that accumulates across every execution loom runs, so the
     /// harness can assert afterwards that the interesting branch was reached at all. See
-    /// notes/verification.md's non-vacuity section.
+    /// `nifeos/record:notes/verification.md`'s non-vacuity section.
     struct Reached(core::sync::atomic::AtomicBool);
 
     impl Reached {

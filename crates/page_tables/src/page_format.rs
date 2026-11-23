@@ -14,7 +14,7 @@ use super::*;
 /// use (aarch64 `TTBR0`/`TTBR1`; on RISC-V one `satp` per space, the sign-extended top bit telling
 /// the halves apart; on x86 one `CR3` per space, with the sign-extended bit 47 telling the halves
 /// apart), and the index comes from the lower bits identically for both halves. A
-/// higher-half kernel is a separate set of tables. See notes/page-tables.md.
+/// higher-half kernel is a separate set of tables. See `nifeos/record:notes/page-tables.md`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Half {
     /// The low half: user space.

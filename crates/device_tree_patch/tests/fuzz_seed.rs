@@ -3,7 +3,7 @@
 //! `fuzz/seeds/device_tree_patch_initial_ramdisk/no_root_node.dtb` is the 8043-byte input on which
 //! `with_initial_ramdisk` returned `Ok` for a tree the kernel then found no archive in: a valid
 //! header whose structure block, declared 7144 bytes long, begins with `END`. The unit tests build
-//! that shape by hand; this holds the bytes the fuzzer produced. See notes/fuzzing/targets.md.
+//! that shape by hand; this holds the bytes the fuzzer produced. See `nifeos/record:notes/fuzzing/targets.md`.
 
 use device_tree_blob::DeviceTreeBlob;
 use device_tree_patch::{Error, output_len, with_initial_ramdisk};

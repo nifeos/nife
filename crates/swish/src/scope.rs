@@ -3,7 +3,7 @@
 //! anything in it runs, whether it may run: the tail has to be one well-formed block, blocks nest
 //! only [`MAXIMUM_DEPTH`] deep, and nothing inside may change what leaving the block cannot put
 //! back. The restoring itself is the shell's, in `components/src/swish/scope.rs`, since the state
-//! is the shell's. See notes/swish-language/scoped-block.md.
+//! is the shell's. See `nifeos/record:notes/swish-language/scoped-block.md`.
 
 //! # BUGS
 //!
@@ -21,7 +21,7 @@ use grant_plan::{CommandLine, Refusal};
 use crate::sequence;
 
 /// How many scoped blocks may nest. Each level is a frame on a stack of a few pages (the stack
-/// that has run out four times already, notes/pipes/the-boot.md), so the ceiling is small and a
+/// that has run out four times already, `nifeos/record:notes/pipes/the-boot.md`), so the ceiling is small and a
 /// deeper line is refused. Must match [`Refusal::ScopeTooDeep`]'s message.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.

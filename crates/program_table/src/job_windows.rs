@@ -6,7 +6,7 @@
 //! once its last holder has been reaped and its badge unbound, so no two live jobs share one
 //! (confinement claim 24). [`ReapsDue`] names the finished jobs whose reap is on its way. Pure
 //! logic, tested on the host; the progenitor (`crates/system_initializer`) owns the capabilities
-//! and the binding. See notes/bound-grants-in-the-progenitor.md ("The window pool").
+//! and the binding. See `nifeos/record:notes/bound-grants-in-the-progenitor.md` ("The window pool").
 //!
 //! Name: provisional (milestone 685's lane).
 
@@ -132,7 +132,7 @@ pub const MAXIMUM_DUE: usize = 8;
 ///
 /// Waiting for such a reap waits for an event that will come; a job whose output went elsewhere
 /// may be waiting on a stage not yet built, so it is not recorded. See
-/// notes/bound-grants-in-the-progenitor.md.
+/// `nifeos/record:notes/bound-grants-in-the-progenitor.md`.
 ///
 /// Name: provisional.
 pub struct ReapsDue {

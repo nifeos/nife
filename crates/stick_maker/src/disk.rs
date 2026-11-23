@@ -6,7 +6,7 @@
 //! A disk is offered only when its media is removable: the SCSI removable-media bit, read as
 //! macOS's `RemovableMedia`, Linux's `/sys/block/<dev>/removable` (or an `SD` card type on the MMC
 //! bus) and Windows' `DRIVE_REMOVABLE`. "External" or "USB" is not enough: a USB hard disk is both
-//! and is not removable (`tests/fixtures/macos/usb-*-info.plist`). See notes/boot-stick.md,
+//! and is not removable (`tests/fixtures/macos/usb-*-info.plist`). See `nifeos/record:notes/boot-stick.md`,
 //! "Which disks it will touch, and the measurement that decided it".
 
 //! # BUGS

@@ -6,7 +6,7 @@
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-20
 //! (UTC), "Keep ours.", on milestone 784 (reuse what the tree wrote)'s item (f). The `plist` crate
 //! would bring nine crates new to the tree; `diskutil`'s grammar is eight element types and five
-//! character entities. See notes/boot-stick/the-program.md, "macOS".
+//! character entities. See `nifeos/record:notes/boot-stick/the-program.md`, "macOS".
 
 //! # BUGS
 //!

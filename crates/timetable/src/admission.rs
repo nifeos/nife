@@ -21,7 +21,7 @@ use crate::{Entry, Schedule};
 /// scheduler's capability table: the same document is four refusals in a scheduler granted only a
 /// budget and four running jobs in one granted a clock, a directory and a terminal. Widening a
 /// scheduler is a visible edit to its `Held` and to its printed plan, never something an entry can
-/// talk it into. See notes/scheduled-execution.md, "`Held`: what the scheduler holds is a
+/// talk it into. See `nifeos/record:notes/scheduled-execution.md`, "`Held`: what the scheduler holds is a
 /// parameter, not an era".
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct Held {
@@ -67,7 +67,7 @@ pub const SHIPPED_HELD: Held = Held {
 ///
 /// A [`Refusal`] is a fact about **the line**, fixed by editing the entry; an `Unbacked` is a fact
 /// about **the scheduler**: the line would run at a prompt, and the fix is to grant the scheduler
-/// more. See notes/scheduled-execution.md, "The four answers, and why three of them are the point".
+/// more. See `nifeos/record:notes/scheduled-execution.md`, "The four answers, and why three of them are the point".
 ///
 /// # BUGS
 ///

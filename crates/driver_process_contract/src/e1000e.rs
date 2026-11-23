@@ -12,7 +12,7 @@ use startup_page_contract::WindowKind;
 /// The spawner maps it here and lists it on the startup page, where the server reads it.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
-/// driver crate's `DATA_PLANE_VA`, renamed to spell out the address as design/naming.md asks.
+/// driver crate's `DATA_PLANE_VA`, renamed to spell out the address as `nifeos/record:design/naming.md` asks.
 pub const DATA_PLANE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_0090_0000);
 /// BAR0's receive-queue page, device memory.
 /// The spawner maps it here and lists it on the startup page, where the server reads it.

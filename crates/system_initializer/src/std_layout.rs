@@ -6,13 +6,13 @@
 /// one slot per authority (`crates/std_runtime_contract`), from the decisions
 /// [`spawn_service`](super::spawn_service) already made. A native child's output slot is a `std`
 /// child's heap budget, so a `std` program built natively dies on its first `println!`. The slot
-/// table is in notes/system-initializer/the-child-layouts.md, "The `std` layout".
+/// table is in `nifeos/record:notes/system-initializer/the-child-layouts.md`, "The `std` layout".
 ///
 /// Name: provisional.
 ///
 /// # BUGS
 /// - **The child holds `WRITE` on the region it is built in**, which is also `SPLIT`, so a program
-///   that splits its own heap pins its job region until reboot (notes/system-initializer.md).
+///   that splits its own heap pins its job region until reboot (`nifeos/record:notes/system-initializer.md`).
 pub(super) struct StdLayout {
     pub(super) capabilities: [(u64, u64); 2],
     placed: [(u64, u64, u64); 24],

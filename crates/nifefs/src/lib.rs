@@ -577,7 +577,7 @@ mod tests {
     }
 }
 
-/// Machine-checked proofs (`script/verify`; notes/verification.md).
+/// Machine-checked proofs (`script/verify`; `nifeos/record:notes/verification.md`).
 ///
 /// The kernel parses the initial ramdisk (`kernel::user::program`), so this parser is in the TCB
 /// on externally supplied bytes. A whole-parse proof did not converge, so two harnesses carry the

@@ -4,7 +4,7 @@
 //! The kernel's test runner stamps the timer before every test and, after the suite's other
 //! reports and before `test result:`, prints a block on the console, the one channel all three
 //! architectures share (§19 (architectural parity is a tenet)). The kernel prints it and `xtask`
-//! parses it, so the grammar is a crate (rule 7). See notes/system-tests-and-the-kernel-crate.md,
+//! parses it, so the grammar is a crate (rule 7). See `nifeos/record:notes/system-tests-and-the-kernel-crate.md`,
 //! "What each test cost, and its budget".
 
 //! # The grammar
@@ -133,7 +133,7 @@ pub const DEFAULT_BUDGET_SECONDS: u64 = 90;
 /// reviewable. Matched as a substring of the full test path, so the entry covers a test on every
 /// architecture. Keep budgets roughly 2x the measured time, taken from the kernel's report of any
 /// test over 5 s or from the `time per test` record. Empty since 2026-10-11 (UTC); the measurement
-/// behind that is in notes/system-tests-and-the-kernel-crate.md.
+/// behind that is in `nifeos/record:notes/system-tests-and-the-kernel-crate.md`.
 pub const SLOW_TESTS: &[(&str, u64)] = &[];
 
 /// The budget for a test, in seconds, by its full path: its [`SLOW_TESTS`] entry if it has one,

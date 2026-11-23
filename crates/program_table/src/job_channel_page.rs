@@ -3,7 +3,7 @@
 //! The cooperative interrupt tier (DECISIONS §24 (interrupting the foreground process)) signals a
 //! running child through one page the shell and the child both map, and the signal is a word the
 //! child reads with a plain load: a child busy computing cannot poll an endpoint, since there is no
-//! non-blocking receive. See notes/grant-expression.md ("The interrupt grant").
+//! non-blocking receive. See `nifeos/record:notes/grant-expression.md` ("The interrupt grant").
 //!
 //! The layout is four `u64` words at the byte offsets below. The shell writes [`INTERRUPT`]; the
 //! child writes [`DONE`], [`STATUS`] and [`HEARTBEAT`]. One writer per word, so no locking is

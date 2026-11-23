@@ -6,7 +6,7 @@
 //! timeout (`min 0 time 1`) did not take, a device that ignores it, or a file or pipe standing in
 //! for a port would block a single-threaded loop forever. The worker may still be parked in `read`
 //! when the session ends; the process exits and the descriptor goes with it.
-//! notes/board-console/design.md has the argument.
+//! `nifeos/record:notes/board-console/design.md` has the argument.
 
 use std::io::{self, Read, Write};
 use std::sync::mpsc::{self, RecvTimeoutError};
@@ -26,7 +26,7 @@ pub struct Policy {
     /// Stop early once the boot reaches this stage, if a stage was asked for.
     ///
     /// `None` means "watch for the whole duration", which is what sustained stress wants:
-    /// `design/fatal-risks/README.md`'s multicore entry needs a long look, not a boot check.
+    /// `nifeos/record:design/fatal-risks/README.md`'s multicore entry needs a long look, not a boot check.
     pub until: Option<Stage>,
     /// Stop if the board falls silent for this long **after it has said something**.
     ///
@@ -684,7 +684,7 @@ mod tests {
         assert!(session.progress.is_relocated());
     }
 
-    /// Sustained watching, which is what `design/fatal-risks/README.md`'s multicore entry needs: no
+    /// Sustained watching, which is what `nifeos/record:design/fatal-risks/README.md`'s multicore entry needs: no
     /// stage to wait for, so running the clock out is the plan rather than a disappointment.
     #[test]
     fn watching_for_a_duration_ends_successfully() {
@@ -825,12 +825,12 @@ mod tests {
         assert_eq!(beat.refused, 0);
         assert_eq!(beat.mismatches, 0);
         assert_eq!(beat.stalled, 0);
-        // A saturated workload does not migrate under this scheduler (notes/soak.md), so a run
+        // A saturated workload does not migrate under this scheduler (`nifeos/record:notes/soak.md`), so a run
         // that does cross cores fails here. The capture predates the tick route, so `wakes` parses
         // as zero; a fixture records what a machine said and is never updated.
         assert_eq!(
             beat.crossings, 21,
-            "this capture crossed cores 21 times in 25 seconds and then stopped; see notes/soak.md"
+            "this capture crossed cores 21 times in 25 seconds and then stopped; see nifeos/record:notes/soak.md"
         );
     }
 

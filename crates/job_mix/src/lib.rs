@@ -4,13 +4,13 @@
 //! whose live input is performance on a multitasking workload, and asks whether kernel cache and
 //! TLB footprint is live here, as a knee in jobs per minute against task count. Seven jobs stand
 //! in for AIM7's categories, [`COMPUTE`] through [`SPAWN`]; [`MAP`] and [`SPAWN`] build from each
-//! task's own budget ([`SLOT_BUDGET`]). notes/job-mix.md has the AIM7 background, and
+//! task's own budget ([`SLOT_BUDGET`]). `nifeos/record:notes/job-mix.md` has the AIM7 background, and
 //! notes/job-mix/instrument.md the job table and the reasons behind each constant.
 
 //! # BUGS
 //!
-//! - Not comparable with Warton's 20% (notes/job-mix.md): his is a ratio of two kernel models.
-//! - No disk-file job: `design/roadmap/0493-a-disk-file-job-mix-needs-a-disk-radon-can-drive.md`.
+//! - Not comparable with Warton's 20% (`nifeos/record:notes/job-mix.md`): his is a ratio of two kernel models.
+//! - No disk-file job: `nifeos/record:design/roadmap/0493-a-disk-file-job-mix-needs-a-disk-radon-can-drive.md`.
 //! - [`MAP`] and [`SPAWN`] take the memory-region lock; `region_ticks` lets a reader subtract it.
 //! - Per-kind ticks are wall time and include preemption, so they do not sum to the subrun.
 //! - [`MIX`] is chosen, not derived: quote a result with the mix that produced it.
@@ -97,7 +97,7 @@ pub const KIND: &str = "job-mix-kind:";
 /// - `job-mix-lock: tasks=<n> site=current_capability calls=<c> contended=<k> wait_ticks=<w>`, the one
 ///   lock the cheapest system call takes: every call, and the ones that found it held.
 ///
-/// Printed only with `--features lock_wait` (notes/job-mix/null-system-call-under-load.md). Name
+/// Printed only with `--features lock_wait` (`nifeos/record:notes/job-mix/null-system-call-under-load.md`). Name
 /// provisional.
 pub const LOCK: &str = "job-mix-lock:";
 

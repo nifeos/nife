@@ -4,7 +4,7 @@
 //! `mmu-type = "riscv,sv39"`, so the `status` gate `riscv64_jh7110.rs` proves never fires.
 //! Startability, the machine record and the PLIC expectations follow the hart's own `riscv,isa`
 //! instead. The two fixtures reach one conclusion through different lies, so a regression in either
-//! gate fails exactly one file. See `notes/visionfive2/hart-roster-stops.md`.
+//! gate fails exactly one file. See `nifeos/record:notes/visionfive2/hart-roster-stops.md`.
 
 use machine_discovery::cpu_list::CpuList;
 use machine_discovery::plic::PlicContexts;

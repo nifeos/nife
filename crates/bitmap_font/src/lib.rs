@@ -5,7 +5,7 @@
 //! QEMU), which makes on-screen text provable. A mirrored font hides in symmetric letters, so
 //! [`is_ink`]'s example prints an `F`. Not here: scalable outlines, kerning, proportional widths,
 //! anti-aliasing, anything past basic latin ([`glyph`] draws a box for it) and font loading. See
-//! notes/glyphs.md and notes/glyphs/bitmap-font.md.
+//! `nifeos/record:notes/glyphs.md` and notes/glyphs/bitmap-font.md.
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `bitfont` to spell out the contraction.
 

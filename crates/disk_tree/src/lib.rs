@@ -5,7 +5,7 @@
 //! [`FILE`] in it, whose bytes are the disk's bytes from block 0 and whose size is the disk's. Every
 //! [`file_system::READ`] this answers becomes exactly one device read ([`Answer::Read`]), with no buffer to
 //! answer from, and no mutating verb is answered (each is [`directory::EROFS`]). The shell mounts it as
-//! its second tree. See notes/block-devices.md, "The disk tree: a whole disk as one file, with no
+//! its second tree. See `nifeos/record:notes/block-devices.md`, "The disk tree: a whole disk as one file, with no
 //! cache".
 
 //! # BUGS

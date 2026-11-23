@@ -6,7 +6,7 @@
 //! format. [`BootInfo::parse`] reads the memory-map fields only when the version says they are
 //! there (version 0 stops at offset 40). [`Isa`] decides what a `CPUID` answer means, which is the
 //! part that can be wrong. See `notes/machine-discovery.md` ("x86_64") and
-//! `notes/x86-port/acpi-and-pci.md`.
+//! `nifeos/record:notes/x86-port/acpi-and-pci.md`.
 
 //! # BUGS
 //!

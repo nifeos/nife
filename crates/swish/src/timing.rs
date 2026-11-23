@@ -26,7 +26,7 @@ pub fn write_untimed(r: Untimed, out: &mut dyn FnMut(&[u8])) {
 /// point and nothing after that.
 ///
 /// Seconds, milliseconds or microseconds, and never nanoseconds: three digits is a rendering
-/// choice, and the counter's resolution differs by board (notes/shell/the-swish-crate.md, "What
+/// choice, and the counter's resolution differs by board (`nifeos/record:notes/shell/the-swish-crate.md`, "What
 /// `time` may say").
 ///
 /// ```

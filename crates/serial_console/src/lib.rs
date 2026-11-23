@@ -1,5 +1,5 @@
 //! **A serial console for a board this repository cannot see**: open the port, log every byte,
-//! recognise how far the boot got, and stop on a deadline. See notes/board-console.md.
+//! recognise how far the boot got, and stop on a deadline. See `nifeos/record:notes/board-console.md`.
 //!
 //! - [`port`] finds the adapter and puts it in raw mode at 115200 8N1; [`watch`] reads until the
 //!   policy says stop, teeing every byte to a log file.
@@ -21,8 +21,8 @@
 //!   everywhere else, so its mutants are killed only by
 //!   `the_dial_in_device_is_warned_about_and_the_call_out_one_is_not` on a macOS host). `scan`
 //!   carries the tested logic; see notes/mutation-testing/serial-console.md and
-//!   notes/board-console.md's BUGS.
-//! - The rest are notes/board-console.md's BUGS, in full in `notes/board-console/limitations.md`.
+//!   `nifeos/record:notes/board-console.md`'s BUGS.
+//! - The rest are `nifeos/record:notes/board-console.md`'s BUGS, in full in `nifeos/record:notes/board-console/limitations.md`.
 //!
 //! Name: ratified 2026-09-13 (calef), replacing `board_console`; half of a pair with
 //! `screen_console`, two consoles named for where the text comes out. The command a bench session

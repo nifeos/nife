@@ -33,7 +33,7 @@ fn in_region_is_sound() {
         // the granted region". It was the conjunction of the two above it, so it could not fail
         // under any defect: the readable statement of the claim was the unreachable one, which
         // is the shape milestone 305 found in DECISIONS §31 and in row 24 of
-        // notes/confinement-claims.md. Deleting it loses nothing and moving its sentence up
+        // `nifeos/record:notes/confinement-claims.md`. Deleting it loses nothing and moving its sentence up
         // means a reader who quotes this harness quotes something that fires.
         assert!(
             physical_address >= base,
@@ -233,7 +233,7 @@ fn walk(mem: &ChainMem, head: u16) -> bool {
 /// it lands. That covers both directions (the symbolic flags include the device-writable RX bit),
 /// indirect descriptors, any chain the queue can hold, and no access past the table. One head loses
 /// no coverage, because the outer loop only repeats it per head, bounded by
-/// [`an_oversized_batch_is_refused`]. See notes/dma/validator.md.
+/// [`an_oversized_batch_is_refused`]. See `nifeos/record:notes/dma/validator.md`.
 /// Falsification: replayable `crates/direct_memory_access_validator/falsifications/verification.validate_and_shadow_confines_every_chain.patch`
 #[kani::proof]
 #[kani::unwind(10)]
@@ -283,7 +283,7 @@ fn an_oversized_batch_is_refused() {
 /// second) trips the invariant in [`ChainMem::write64`]. After a successful walk the driver's own
 /// copy is aimed at an arbitrary address, and what the device reads from the shadow is unchanged.
 /// It cannot see the crate's `BUGS`, a device reading the shadow between the two `write64`s of one
-/// descriptor: the model has no concurrent reader. See notes/dma/validator.md.
+/// descriptor: the model has no concurrent reader. See `nifeos/record:notes/dma/validator.md`.
 /// Falsification: replayable `crates/direct_memory_access_validator/falsifications/verification.a_descriptor_mutated_after_validation_cannot_reach_the_device.patch`
 #[kani::proof]
 #[kani::unwind(10)]
@@ -343,7 +343,7 @@ const OUTER_SIZE: u64 = 0x1000;
 /// `avail.idx` publish or a `ring[slot]` mirror with `slot < qsize`, and a 64-bit access stays in
 /// a `qsize`-entry table. `#[kani::unwind(11)]` is one more than the walk can need, so Kani proves
 /// termination: a hostile `avail.idx` cannot hold the `DEVICES` lock with interrupts masked. See
-/// notes/dma/validator.md.
+/// `nifeos/record:notes/dma/validator.md`.
 /// Falsification: replayable `crates/direct_memory_access_validator/falsifications/verification.the_outer_walk_stays_inside_the_rings_and_terminates.patch`
 #[kani::proof]
 #[kani::unwind(11)]
@@ -432,7 +432,7 @@ fn the_outer_walk_stays_inside_the_rings_and_terminates() {
     );
 
     // **Non-vacuity, machine-checked rather than argued.** An assertion-only harness passes
-    // trivially if its inputs cannot reach the interesting states, and notes/verification.md names
+    // trivially if its inputs cannot reach the interesting states, and `nifeos/record:notes/verification.md` names
     // that ("it proves what you asserted, not what you meant") as the main failure mode, not solver
     // bugs. `kani::cover!` inverts the question: it fails if the state is *un*reachable. So these
     // are the claim "this harness really does exercise wraparound and really does walk descriptors",

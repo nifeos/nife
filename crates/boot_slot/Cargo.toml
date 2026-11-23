@@ -11,7 +11,7 @@ license.workspace = true
 # `globally_unique_identifier_partition_table` and `file_allocation_table` keep, so the installer
 # that writes the state and the loader that reads it share one implementation and the tests run on
 # the host in milliseconds.
-# See notes/boot-slots.md.
+# See `nifeos/record:notes/boot-slots.md`.
 
 [lints]
 workspace = true

@@ -6,7 +6,7 @@
 //! (`crates/machine_statistics_contract`), which the owner can withhold. `Yours:` is the job pool
 //! this prompt's jobs are carved from, read through `MemoryRegion::USAGE` on a view narrowed to
 //! `ENUMERATE`: the limit that binds a program started here. Why both:
-//! notes/process-view/the-machine-and-your-share.md.
+//! `nifeos/record:notes/process-view/the-machine-and-your-share.md`.
 
 //! # EXAMPLES
 //!

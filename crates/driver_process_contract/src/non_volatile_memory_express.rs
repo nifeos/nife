@@ -3,7 +3,7 @@
 //! the three words and two grants the admin process hands the data plane, the transfer windows the
 //! data plane keeps, one per client, and the largest doorbell stride its one page of BAR0 can
 //! serve. The NVMe protocol itself is `non_volatile_memory_express`'s; this module holds only
-//! nife's process plan around it. See notes/non-volatile-memory-express.md.
+//! nife's process plan around it. See `nifeos/record:notes/non-volatile-memory-express.md`.
 //!
 //! Name: provisional, minted 2026-10-26 (UTC) by lane driver-contracts-folded, after the crate it
 //! serves, as this crate's other modules are named.

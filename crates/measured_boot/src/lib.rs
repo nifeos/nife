@@ -6,7 +6,7 @@
 //! The hash is SHA-256, about a hundred lines with no dependency, allocation or unsafe: `sha2`
 //! stays out of the trusted base (calef, 2026-10-22 UTC, "Keep our SHA-256.", on milestone 784
 //! (reuse what the tree wrote) and §46 (thin primitives or whole subsystems)). The tests are the
-//! published FIPS 180-4 vectors. See notes/trusted-init/measured-boot.md.
+//! published FIPS 180-4 vectors. See `nifeos/record:notes/trusted-init/measured-boot.md`.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `measure`. Refused `measure` (a verb,
 //! and generic enough to name almost anything). "Measured boot" is the standard term for boot-time
@@ -25,7 +25,7 @@ pub const DIGEST_LEN: usize = 32;
 /// The measurement of a program's bytes: the SHA-256 of all of them. The type does not carry its
 /// algorithm (DECISIONS §197 (a package is one archive file)'s digest ruling, calef, 2026-10-07
 /// UTC): the text form ([`digest_text`], [`parse_digest`]) carries the label, and a later Merkle
-/// root gets its own type rather than a variant here. See notes/trusted-init/measured-boot.md.
+/// root gets its own type rather than a variant here. See `nifeos/record:notes/trusted-init/measured-boot.md`.
 pub type Digest = [u8; DIGEST_LEN];
 
 /// The round constants of SHA-256 (FIPS 180-4 §4.2.2): the first 32 bits of the fractional parts of
@@ -362,7 +362,7 @@ fn parse_digest_bytes(text: &[u8]) -> Result<Digest, DigestTextError> {
 /// The archive entry that carries the progenitor's measurement table (milestone 104 (the
 /// measurement continues past init)). The progenitor is in the archive it would measure, so its
 /// table is an archive entry the kernel's trust root names, vouched for as the progenitor is. See
-/// notes/trusted-init/measured-boot.md.
+/// `nifeos/record:notes/trusted-init/measured-boot.md`.
 ///
 /// The entry name is provisional and fits under `nifefs`'s `NAME_LEN = 32`. A string two programs
 /// agree on sits outside `script/names`' four surfaces, so this paragraph is its whole record; it
@@ -392,7 +392,7 @@ pub struct BadLine<'a> {
 /// The measurement manifest format, one entry per line: a name, one space, and the digest's text
 /// form ([`digest_text`]); blank lines and `#` comments are skipped. Yields borrowed names and
 /// never allocates. `Err` carries the line and the reason; a caller that skips errors still fails
-/// closed ([`VerifyError::Unmeasured`]). See notes/trusted-init/measured-boot.md.
+/// closed ([`VerifyError::Unmeasured`]). See `nifeos/record:notes/trusted-init/measured-boot.md`.
 ///
 /// ```
 /// use measured_boot::{manifest_entries, DigestTextError};
@@ -449,7 +449,7 @@ pub fn verify_in_manifest(text: &str, name: &str, bytes: &[u8]) -> Result<(), Ve
 /// missing, refused or not an ELF. `unvouched` tells the absence (a build left it out) from the
 /// refusal (a security event the boot reports). `Default` is the absence, derived on purpose
 /// (milestone 246): it is fail-safe, and it lets `cargo mutants` test [`verdict`]. See
-/// notes/trusted-init/measured-boot.md.
+/// `nifeos/record:notes/trusted-init/measured-boot.md`.
 #[derive(Default)]
 pub struct Verdict<'a> {
     /// The parsed image, if and only if the table vouched for the bytes and they are an ELF.
@@ -517,11 +517,11 @@ pub fn verdict<'a>(table: &str, name: &str, bytes: Option<&'a [u8]>) -> Verdict<
 /// `/chosen/bootargs`; on x86_64 in the PVH command line, beside `boot-slot=`. Every writer
 /// (`uefi_loader`, `xtask`'s archive packer for QEMU's `-append`, the board's boot script) calls
 /// [`encode`], and the kernel calls [`parse`], so the two sides read one grammar (rule 7). See
-/// notes/trusted-init/measured-boot.md.
+/// `nifeos/record:notes/trusted-init/measured-boot.md`.
 ///
 /// The words, their keys and the choice of the command line over binary `/chosen` properties were
 /// ruled 2026-11-01 (UTC), question 1 of
-/// `design/roadmap/0999-how-the-loader-hands-the-kernel-two-digests.md`.
+/// `nifeos/record:design/roadmap/0999-how-the-loader-hands-the-kernel-two-digests.md`.
 ///
 /// # Examples
 ///

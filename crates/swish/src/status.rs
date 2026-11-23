@@ -10,7 +10,7 @@
 /// authority moved; [`Failed`](Status::Failed) is something attempted that did not work. It is the
 /// shell's own reading of the line and designates nothing. A per-program status is DECISIONS §301
 /// (exit status and output)'s, which milestone 172 (a capability-native subprocess primitive)
-/// proposes and which is not built. See notes/swish-language.md, "Exit status: a refusal is not an error".
+/// proposes and which is not built. See `nifeos/record:notes/swish-language.md`, "Exit status: a refusal is not an error".
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Status {
     /// The command ran and the shell has nothing to report. `$?` is `0`.

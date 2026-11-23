@@ -3,7 +3,7 @@
 //! the loader's `nife.base` digest as a read-only page ([`BootEndowment::base_digest_page`]); this
 //! module maps it, reads it with `base_digest_contract`, hashes the archive's
 //! `program_measurements` entry and refuses the boot, out loud, unless the two agree. See
-//! notes/trusted-init/measured-boot.md.
+//! `nifeos/record:notes/trusted-init/measured-boot.md`.
 //!
 //! Name: ratified 2026-11-03 (UTC), #3102. The module and the file.
 
