@@ -85,6 +85,9 @@ else's kernel:
   notes/redleaf.md has it, together with the 2017 Tock-founding paper the argument descends from and
   what the same authors built afterwards, which is a hardware-isolated Verus-verified Rust
   microkernel rather than more of RedLeaf.
+- HongMeng (Huawei). Not a donor of code: closed source. It is here because its OSDI 2024 paper
+  measures what strict isolation costs under a general-purpose load and how much of it each
+  relaxation buys back. notes/hongmeng.md has the comparison.
 - **Fuchsia.** The closest general-purpose capability OS. Design prior art for milestone 23
   (a capability-routed component OS with live replacement) and for the "what would growing up
   look like"

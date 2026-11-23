@@ -49,4 +49,5 @@ Part of [the notes index](../README.md), which says how to add a line.
   what it loads, and the spawn service.
 - [Auditing the hand-written arch assembly](../arch-audit.md): a by-hand audit of the least-verified TCB code.
 - [The L4 lessons, audited against this kernel](../l4-lessons.md): the kernel checked against L4's twenty-year retrospective.
+- [HongMeng, and what its numbers say about strict isolation](../hongmeng.md): Huawei's production microkernel compared with nife, with its measured cost of isolation.
 - [How the log service drains the kernel's ring](../kernel-ring-drain.md): milestone 342 (the kernel and the `console` server drive one UART)'s proposal, a read-only frame plus a notification against a read method on a new object, with the seven questions answered.
