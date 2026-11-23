@@ -14,9 +14,12 @@ main page's prose budget has no room for.
 - [`write-oracle.md`](write-oracle.md): the write oracle, its cases and bases, what `rsext4`
   writes that `e2fsck` and a `debugfs` readback accept, and the bugs they do not.
 - [`upstream/`](upstream/): one draft per submission to `rsext4` upstream, each a text for the
-  architect's review with the change beside it as a `.patch`: so far
+  architect's review with the change beside it as a `.patch`. So far they are
   [`2a-free-empty-extent-index.md`](upstream/2a-free-empty-extent-index.md) and
   [`2b-restore-truncate-tail.md`](upstream/2b-restore-truncate-tail.md), the two truncate fixes, and
+  [`4-fuzz-targets.md`](upstream/4-fuzz-targets.md), the fuzz targets. Then come
+  [`7-mount-refusal-reason.md`](upstream/7-mount-refusal-reason.md), the mount's refusal reason,
+  [`8-whole-inode-times.md`](upstream/8-whole-inode-times.md), whole inode times, and
   [`9-inode-bitmap-padding.md`](upstream/9-inode-bitmap-padding.md), the inode bitmap's padding.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default,
@@ -25,3 +28,5 @@ main page's prose budget has no room for.
 - `survey` Name: provisional. For the candidates and refusals the parent cites. calef names files.
 - `read-oracle` Name: provisional. For the measurement the parent's phase 1 cites. calef names files.
 - `write-oracle` Name: provisional. For the measurement the parent's phase 3 cites. calef names files.
+- `upstream` Name: provisional. For the drafts of the parent's upstream round. calef names
+  directories.

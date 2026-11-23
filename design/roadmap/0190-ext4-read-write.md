@@ -250,9 +250,12 @@ it. That ruling is not the adoption ruling above, which stays open.
 - **Outstanding.** The upstream round: [the two truncate fixes](0190-ext4-read-write/upstream/README.md),
   [safety arguments](0190-ext4-read-write/upstream/5a-crc32c-safety-arguments.md),
   [cast replacement](0190-ext4-read-write/upstream/5b-group-descriptor-decode.md) and
-  [Kani harnesses](0190-ext4-read-write/upstream/6-kani-harnesses.md) (drafted), the fuzz targets,
-  the mount's error report and whole times in `InodeInfo`. Each text goes to the architect before
-  anyone files it. `rcore-os/tgoskits@dde4020be` fixes bug 1 and the recovery-flag order.
+  [Kani harnesses](0190-ext4-read-write/upstream/6-kani-harnesses.md) (drafted). Each text goes to
+  the architect before anyone files it. `rcore-os/tgoskits@dde4020be` fixes bug 1 and the
+  recovery-flag order.
+- **Outstanding.** Filing the pull requests of
+  [item 7](0190-ext4-read-write/upstream/7-mount-refusal-reason.md) and
+  [item 8](0190-ext4-read-write/upstream/8-whole-inode-times.md).
 - **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the

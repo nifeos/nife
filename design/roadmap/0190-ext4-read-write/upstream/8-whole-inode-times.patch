@@ -1,0 +1,180 @@
+From 275c9161eeb24c0539c8949a4b7321ff9ccd3960 Mon Sep 17 00:00:00 2001
+From: Chris Alef <476570+calef@users.noreply.github.com>
+Date: Sun, 22 Nov 2026 22:40:58 +0000
+Subject: [PATCH] fix(rsext4)!: report whole inode times in InodeInfo
+
+InodeInfo carried each time as the raw 32-bit seconds field, so it
+dropped the nanoseconds, read a time before 1970 as one near 2106 and
+wrapped a time past 2106, although the crate already decodes the extra
+time fields and writes them. Decode the four times through the
+existing Ext4Inode timestamp accessors and expose them as
+Ext4Timestamp, with the creation time optional because a 128-byte
+inode has no room for it.
+
+The encoding is the one the ext4 format documentation gives in
+"4.1. Index Nodes", section "4.1.3. Inode Timestamps": signed 32-bit
+seconds, and an extra field whose low two bits extend the seconds and
+whose upper 30 bits hold the nanoseconds. The inode table on the same
+page places the creation time, i_crtime, at offset 0x90, past the
+original 128-byte inode, and section "4.1.1. Inode Size" says to check
+that such a field lies within i_extra_isize before reading it.
+
+ax-fs-ng converts the new times to the VFS Duration, keeping the
+nanoseconds; a time before 1970, which a Duration cannot hold, reads
+as the epoch.
+
+BREAKING CHANGE: InodeInfo::{atime, ctime, mtime} are Ext4Timestamp
+and InodeInfo::btime is Option<Ext4Timestamp>.
+---
+ .../fs/ext4/rsext4/fs/tests/persistence.rs    |  5 ++-
+ .../src/fs/ext4/rsext4/inode/metadata.rs      | 14 +++++--
+ fs/rsext4/src/ext4/owned/inode.rs             | 13 ++++--
+ fs/rsext4/src/ext4/owned/metadata.rs          |  8 ++--
+ fs/rsext4/tests/integration_test.rs           | 42 +++++++++++++++++++
+ 5 files changed, 69 insertions(+), 13 deletions(-)
+
+diff --git a/fs/ax-fs-ng/src/fs/ext4/rsext4/fs/tests/persistence.rs b/fs/ax-fs-ng/src/fs/ext4/rsext4/fs/tests/persistence.rs
+index 0dd187631..467ad7d0a 100644
+--- a/fs/ax-fs-ng/src/fs/ext4/rsext4/fs/tests/persistence.rs
++++ b/fs/ax-fs-ng/src/fs/ext4/rsext4/fs/tests/persistence.rs
+@@ -25,8 +25,9 @@ fn metadata_owner_and_times_remain_durable_after_explicit_sync() {
+     let update = MetadataUpdate {
+         mode: Some(NodePermission::from_bits_truncate(0o640)),
+         owner: Some((123_456, 234_567)),
+-        atime: Some(Duration::from_secs(123)),
+-        mtime: Some(Duration::from_secs(456)),
++        // Nanoseconds, and a time past 2106 that needs the extra epoch bits.
++        atime: Some(Duration::new(123, 456_789_012)),
++        mtime: Some(Duration::new(5_000_000_000, 999_999_999)),
+         ..Default::default()
+     };
+ 
+diff --git a/fs/ax-fs-ng/src/fs/ext4/rsext4/inode/metadata.rs b/fs/ax-fs-ng/src/fs/ext4/rsext4/inode/metadata.rs
+index 819f2b70b..2c1b37561 100644
+--- a/fs/ax-fs-ng/src/fs/ext4/rsext4/inode/metadata.rs
++++ b/fs/ax-fs-ng/src/fs/ext4/rsext4/inode/metadata.rs
+@@ -35,9 +35,9 @@ impl NodeOps for Inode {
+                 .device_number
+                 .map(|device| DeviceId::new(device.major(), device.minor()))
+                 .unwrap_or_default(),
+-            atime: core::time::Duration::from_secs(u64::from(inode.atime)),
+-            mtime: core::time::Duration::from_secs(u64::from(inode.mtime)),
+-            ctime: core::time::Duration::from_secs(u64::from(inode.ctime)),
++            atime: Self::duration(inode.atime),
++            mtime: Self::duration(inode.mtime),
++            ctime: Self::duration(inode.ctime),
+         })
+     }
+ 
+@@ -112,4 +112,12 @@ impl Inode {
+             .map_err(|_| into_vfs_err(rsext4::Ext4Error::overflow()))?;
+         Ok(Ext4Timestamp::new(seconds, value.subsec_nanos()))
+     }
++
++    /// Converts an inode time to the VFS's time since the epoch. A `Duration`
++    /// cannot hold a time before 1970, so such a time reads as the epoch.
++    fn duration(value: Ext4Timestamp) -> core::time::Duration {
++        u64::try_from(value.sec).map_or(core::time::Duration::ZERO, |seconds| {
++            core::time::Duration::new(seconds, value.nsec)
++        })
++    }
+ }
+diff --git a/fs/rsext4/src/ext4/owned/inode.rs b/fs/rsext4/src/ext4/owned/inode.rs
+index 30482e81b..2b16330ad 100644
+--- a/fs/rsext4/src/ext4/owned/inode.rs
++++ b/fs/rsext4/src/ext4/owned/inode.rs
+@@ -87,10 +87,15 @@ pub struct InodeInfo {
+     pub links: u16,
+     pub size: u64,
+     pub blocks: u64,
+-    pub atime: u32,
+-    pub ctime: u32,
+-    pub mtime: u32,
+-    pub btime: u32,
++    /// Access time, with its nanoseconds and the epoch bits of the extra
++    /// field when the inode has room for them.
++    pub atime: Ext4Timestamp,
++    /// Status change time, decoded as `atime` is.
++    pub ctime: Ext4Timestamp,
++    /// Modification time, decoded as `atime` is.
++    pub mtime: Ext4Timestamp,
++    /// Creation time, or `None` when the inode is too small to hold one.
++    pub btime: Option<Ext4Timestamp>,
+     /// Persistent ext4 change attribute used to invalidate directory state.
+     pub change_attribute: u64,
+     pub project_id: u32,
+diff --git a/fs/rsext4/src/ext4/owned/metadata.rs b/fs/rsext4/src/ext4/owned/metadata.rs
+index 2c9579043..972328bfd 100644
+--- a/fs/rsext4/src/ext4/owned/metadata.rs
++++ b/fs/rsext4/src/ext4/owned/metadata.rs
+@@ -34,10 +34,10 @@ impl InodeLayout {
+             links: inode.i_links_count,
+             size: inode.size_in_filesystem(self.large_directory),
+             blocks: inode.blocks_count(self.block_size, self.huge_file),
+-            atime: inode.i_atime,
+-            ctime: inode.i_ctime,
+-            mtime: inode.i_mtime,
+-            btime: inode.i_crtime,
++            atime: inode.atime_ts(self.inode_size),
++            ctime: inode.ctime_ts(self.inode_size),
++            mtime: inode.mtime_ts(self.inode_size),
++            btime: inode.crtime_ts(self.inode_size),
+             change_attribute: inode.version(self.inode_size),
+             project_id: inode.i_projid,
+             flags: InodeFlags::from_bits_retain(inode.i_flags & Ext4Inode::EXT4_FL_USER_VISIBLE),
+diff --git a/fs/rsext4/tests/integration_test.rs b/fs/rsext4/tests/integration_test.rs
+index cef02c486..71ada45ca 100644
+--- a/fs/rsext4/tests/integration_test.rs
++++ b/fs/rsext4/tests/integration_test.rs
+@@ -1196,6 +1196,48 @@ fn owned_empty_metadata_update_is_a_noop() {
+     );
+ }
+ 
++#[test]
++fn owned_metadata_update_reports_whole_times() {
++    let mut filesystem = owned_test_filesystem();
++    let root = filesystem.root_inode();
++    let context = MutationContext::new(1000, 1001, 0, 0);
++    let inode = filesystem
++        .create_regular_file(
++            context,
++            root,
++            FileName::new(b"metadata-times").expect("valid raw name"),
++            FilePermissions::new(0o644).expect("valid permissions"),
++        )
++        .expect("create regular file");
++    assert_eq!(inode.btime, Some(inode.ctime));
++
++    let before_1970 = Ext4Timestamp::new(-86_400, 123_456_789);
++    let after_2106 = Ext4Timestamp::new(5_000_000_000, 999_999_999);
++    let updated = filesystem
++        .update_inode_metadata(
++            inode.number,
++            InodeMetadataUpdate {
++                atime: Some(before_1970),
++                mtime: Some(after_2106),
++                ..Default::default()
++            },
++        )
++        .expect("set access and modification times");
++    assert_eq!(updated.atime, before_1970);
++    assert_eq!(updated.mtime, after_2106);
++
++    filesystem.sync().expect("sync times before remount");
++    let read_only = MountOptions {
++        readonly: true,
++        ..filesystem.options()
++    };
++    filesystem.remount(read_only).expect("remount read-only");
++    let reread = filesystem.inode(inode.number).expect("inspect inode");
++    assert_eq!(reread.atime, before_1970);
++    assert_eq!(reread.mtime, after_2106);
++    assert_eq!(reread.btime, inode.btime);
++}
++
+ #[test]
+ fn owned_metadata_update_exposes_typed_flags_and_project_id() {
+     let mut filesystem = owned_test_filesystem();
+-- 
+2.53.0
+
