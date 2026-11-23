@@ -130,10 +130,21 @@ filer_line "no filer installed" \
 # records each call; every refusal must exit non-zero, name its cause in one line, print no token,
 # and call nothing. The last case, a token with an hour left, must reach the stub exactly once.
 mkdir -p "$work/bin"
+# GH_STUB_RELEASE sets what `gh release view` finds: unset, no release; `same`, the two ruled
+# assets; `partial`, report.md alone; `extra`, the two plus one more; `error`, a network failure.
 cat > "$work/bin/gh" <<STUB
 #!/bin/sh
 echo called >> "$work/gh-calls"
 echo "\$*" >> "$work/gh-args"
+if [ "\$1 \$2" = "release view" ]; then
+    case "\${GH_STUB_RELEASE:-}" in
+        same) printf 'report.md\\nclean-ranges.tsv\\n' ;;
+        partial) echo report.md ;;
+        extra) printf 'clean-ranges.tsv\\nreport.md\\nnotes.txt\\n' ;;
+        error) echo 'error connecting to api.github.com' >&2; exit 1 ;;
+        *) echo 'release not found' >&2; exit 1 ;;
+    esac
+fi
 STUB
 chmod +x "$work/bin/gh"
 
@@ -182,16 +193,20 @@ set -e
 grep -q "NIFE_FUZZ_PUBLISH=1 is not set" "$work/stderr" || fail "the NIFE_FUZZ_PUBLISH guard did not speak"
 [ ! -e "$work/gh-calls" ] || fail "gh was called without NIFE_FUZZ_PUBLISH"
 
-# A fresh token reaches gh.
-rm -f "$work/gh-calls"
+# A fresh token reaches gh: one view that finds no release, then one create.
+rm -f "$work/gh-calls" "$work/gh-args"
 PATH="$work/bin:$PATH" NIFE_FUZZ_PUBLISH=1 GH_TOKEN="$secret" GH_TOKEN_EXPIRES_AT="$(offset_time 3600)" \
     "$here/fuzz-daily-publish.sh" --publish >/dev/null 2>"$work/stderr" \
     || fail "a fresh token was refused: $(cat "$work/stderr")"
-[ "$(wc -l < "$work/gh-calls" | tr -d ' ')" = 1 ] || fail "a fresh token did not reach gh exactly once"
+[ "$(wc -l < "$work/gh-calls" | tr -d ' ')" = 2 ] || fail "a fresh token did not reach gh exactly twice"
+case "$(head -1 "$work/gh-args")" in
+    "release view fuzz-$today --repo nifeos/nife "*) ;;
+    *) fail "the first gh call is not 'release view fuzz-$today --repo nifeos/nife': $(head -1 "$work/gh-args")" ;;
+esac
 
-# The one call is the ruled release (design/roadmap/1026): `gh release create fuzz-<utc date>` on
+# The create is the ruled release (design/roadmap/1026): `gh release create fuzz-<utc date>` on
 # nifeos/nife, with report.md and clean-ranges.tsv as its only assets, and the script never pushes.
-args="$(cat "$work/gh-args")"
+args="$(tail -1 "$work/gh-args")"
 case "$args" in
     "release create fuzz-$today --repo nifeos/nife "*) ;;
     *) fail "gh was not called as 'release create fuzz-$today --repo nifeos/nife': $args" ;;
@@ -199,6 +214,28 @@ esac
 assets="$(printf '%s\n' "$args" | tr ' ' '\n' | grep '^/' | sed 's|.*/||' | sort -u | tr '\n' ' ')"
 [ "$assets" = "clean-ranges.tsv report.md " ] || fail "release assets are '$assets', want report.md and clean-ranges.tsv"
 ! grep -v '^ *#' "$here/fuzz-daily-publish.sh" | grep -q 'git push' || fail "the publish script calls git push"
+
+# A second run on the same day. The day's release with both assets is success with no create; any
+# other set of assets, or a view that fails for another reason, is a loud refusal with no create.
+second_run() { # name, want status (0 or 1), want (text in stdout or stderr), GH_STUB_RELEASE value
+    name="$1"; want_status="$2"; want="$3"
+    rm -f "$work/gh-calls" "$work/gh-args"
+    set +e
+    env PATH="$work/bin:$PATH" NIFE_FUZZ_PUBLISH=1 GH_TOKEN="$secret" GH_TOKEN_EXPIRES_AT="$(offset_time 3600)" \
+        GH_STUB_RELEASE="$4" "$here/fuzz-daily-publish.sh" --publish >"$work/stdout" 2>"$work/stderr"
+    status=$?
+    set -e
+    [ "$status" = "$want_status" ] || fail "$name: exited $status, want $want_status: $(cat "$work/stderr")"
+    grep -q -- "$want" "$work/stdout" "$work/stderr" || fail "$name: output lacks '$want'"
+    ! grep -q 'release create' "$work/gh-args" || fail "$name: gh release create was called"
+    ! grep -q -E 'release (delete|upload|edit)' "$work/gh-args" || fail "$name: the existing release was changed"
+    ! grep -q "$secret" "$work/stdout" "$work/stderr" || fail "$name: the token was printed"
+}
+second_run "release complete" 0 "already exists on nifeos/nife with report.md and clean-ranges.tsv" same
+[ ! -s "$work/stderr" ] || fail "release complete: wrote to stderr: $(cat "$work/stderr")"
+second_run "release missing an asset" 1 "assets 'report.md', want 'clean-ranges.tsv report.md'" partial
+second_run "release with an extra asset" 1 "assets 'clean-ranges.tsv notes.txt report.md'" extra
+second_run "view fails" 1 "cannot tell whether release fuzz-$today exists" error
 
 # No held finding appears in either asset: the held seed is absent from the report and the table.
 ! grep -q "$held_seed" "$NIFE_FUZZ_HOME/out/$today/report.md" "$ranges" \

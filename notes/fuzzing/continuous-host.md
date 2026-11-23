@@ -167,6 +167,16 @@ old release without touching history, and no clone carries it. An architect rule
 [`where-the-daily-fuzz-output-goes`](../../design/roadmap/1026-where-the-daily-fuzz-output-goes.md),
 which also records the rejected branch of artifacts.
 
+A second run on the same UTC day, from a person's repair or a timer catching up, finds the day's
+release with `gh release view` before it creates anything. If the release holds exactly `report.md`
+and `clean-ranges.tsv`, the run logs that and exits 0. The release keeps the day's first report, and
+the later report stays in the local output directory. Any other set of assets, such as one missing
+after a failed upload, makes the run refuse with exit 1 and leave the release as it is. The script
+never deletes, replaces or adds an asset, because a quiet replacement would hide that two runs
+disagreed; a person decides. It compares assets by name and not by content, since each run writes a
+newer report. A view that fails for a reason other than `release not found` also refuses, because the
+run cannot tell whether the release exists.
+
 The publish path refuses unless the host's environment holds `NIFE_FUZZ_PUBLISH=1`, and the timer
 stays disabled until a person installs the credential and sets that variable. `--dry-run` prints the tag
 and the asset list and runs nothing else.
@@ -178,7 +188,7 @@ narrower than the App. Nobody has placed the key yet; [`finishing-the-setup.md`]
 security advisories write on nifeos/nife alone (ruled 2026-11-01 UTC).
 [`the-fuzz-app.md`](the-fuzz-app.md) is the runbook for the person who creates it, and it states
 what the key can do. Main's ruleset requires a pull request and has no bypass actor, so the token
-cannot push to main; the script calls only `gh release create`.
+cannot push to main; the script calls only `gh release view` and `gh release create`.
 
 ## When the loop breaks
 
