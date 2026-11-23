@@ -30,17 +30,17 @@ covers the guest, so a window that reaches the second is a hung guest, and the s
 
 Before it starts any slot, the supervisor installs, or confirms, the toolchain that
 `rust-toolchain.toml` pins, once and serially, through `helpers/rustup-retry.sh show active-toolchain`
-with the same `PATH` it uses for everything else. If the install fails, the supervisor stops
+with the same `PATH` it uses for everything else, so four slots never download one nightly at once
+and collide. If the install fails, the supervisor stops
 with a message that names it, starts no slot and writes no row to `windows.tsv`.
 `helpers/continuous-fuzz-selftest.sh`, run by `script/lint`, holds this against a stub `rustup`.
 Decided by the maintainer 2026-11-01 (UTC), provisional; reversing costs one pull request.
 
 Below `NIFE_FUZZ_FREE_FLOOR_GIGABYTES` (default 20) free under `$NIFE_FUZZ_HOME`, no window
-starts and main is not followed. The journal says so once, and once more when the space returns.
+starts and main is not followed, and the journal says so when the space drops and when it returns.
 Each slot's `target/` is cleared before its first build with a newer pinned nightly, and whenever it
-passes `NIFE_FUZZ_TARGET_CAP_GIGABYTES` (default 10), since cargo keeps the artifacts of every commit
-a slot builds. The maintainer chose both,
-provisionally.
+passes `NIFE_FUZZ_TARGET_CAP_GIGABYTES` (default 10), since cargo removes no old artifacts. The
+maintainer chose both, provisionally.
 
 `helpers/systemd/nife-fuzz.service` starts the supervisor at boot and restarts it on failure. The
 supervisor exits non-zero after five windows in a row fail without a finding. A broken build reaches
@@ -172,17 +172,20 @@ old release without touching history, and no clone carries it. An architect rule
 [`where-the-daily-fuzz-output-goes`](../../design/roadmap/1026-where-the-daily-fuzz-output-goes.md),
 which also records the rejected branch of artifacts.
 
-The publish path refuses unless the host's environment holds `NIFE_FUZZ_PUBLISH=1`, and the timer
-stays disabled until a person installs the credential and sets that variable.
+A second run on the same UTC day reads the day's release first. If it holds exactly `report.md` and
+`clean-ranges.tsv`, the run logs that and exits 0, and the release keeps the first report. Any other
+set of assets, or a view that fails with anything but `release not found`, makes the run refuse with
+exit 1. It never deletes, replaces or adds an asset, so a disagreement between runs stays visible and
+a person decides. Assets match by name, since each run writes a newer report.
 
 The credential is a one-hour installation token of the `nife-fuzz` GitHub App, which a mint helper
 on the host makes from the App's private key, readable by root alone. The helper is `fuzz-token` in
 [nifeos/fuzz-host](https://github.com/nifeos/fuzz-host), and it mints one token per service, each
-narrower than the App. Nobody has placed the key yet; [`finishing-the-setup.md`](finishing-the-setup.md) lists what remains and in what order. The App holds Contents write and Repository
+narrower than the App. The App holds Contents write and Repository
 security advisories write on nifeos/nife alone (ruled 2026-11-01 UTC).
 [`the-fuzz-app.md`](the-fuzz-app.md) is the runbook for the person who creates it, and it states
 what the key can do. Main's ruleset requires a pull request and has no bypass actor, so the token
-cannot push to main; the script calls only `gh release create`.
+cannot push to main; the script calls only `gh release view` and `gh release create`.
 
 ## When the loop breaks
 
@@ -206,17 +209,13 @@ A person copies the three files in `helpers/systemd/` to
 That installs phase 1: the publish unit writes the day's report and clean ranges to local files and
 publishes nothing. Phase 2 publishes the release. It waits on the key and the installed mint helper,
 and step P7 of [`finishing-the-setup.md`](finishing-the-setup.md)
-gives its drop-in. The unit as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
-`NIFE_FUZZ_PUBLISH=1` the script refuses to publish. It also refuses, by name and before any `gh`
-call, a missing `GH_TOKEN`, a missing or unreadable `GH_TOKEN_EXPIRES_AT`, and a token that has expired
-or expires within five minutes. Either way the local files are still written.
+gives its drop-in. The unit as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and
+passes no flag. Before any `gh` call the script refuses a missing `NIFE_FUZZ_PUBLISH=1`, a missing
+token or expiry, and a token within five minutes of expiring. Either way it writes the local files.
 
 The supervisor moves every slot worktree to the clone's commit when it starts, so a restart after
 a person moves the clone runs every slot at that commit. The clone reaches the commit that carries
 the follower once, by hand, in step P1 of that page; from then on it follows main by itself.
-
-To check the wiring before the first release, run `helpers/fuzz-daily-publish.sh --dry-run` as the
-unit's user. It prints the tag and the assets and publishes nothing.
 
 ## BUGS
 
@@ -231,8 +230,6 @@ unit's user. It prints the tag and the assets and publishes nothing.
 - Coverage counters do not exist yet, so the report has no coverage figure. The heartbeat reads seeds
   run.
 - Only x86_64 runs. aarch64 and riscv64 need emulation and a larger machine.
-- Nobody has run the daily publish end to end against a real credential, because a person installs
-  the credential.
 - `windows.tsv` sits outside the held directory and any process of the fuzz account can read it. A
   held window's row carries its first seed and the seeds it ran before the replay, and their sum is
   the held seed. Only clean rows leave the host, so nothing has leaked; the filer's milestone should
