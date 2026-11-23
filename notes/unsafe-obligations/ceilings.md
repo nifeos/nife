@@ -33,7 +33,7 @@ Every move of this ceiling came behind a measured reduction. The rule each move 
 | 11 | 2026-10-19 | 60 to 52 | 52.74 | raw `invoke` calls onto the runtime's wrappers; four test suites' repeated contracts into one type or helper each |
 | 12 | 2026-10-19 | 52 to 51 | 51.48 | six more test suites' repeated contracts into one helper, token or fixture method each |
 | 784(g) | 2026-10-21 | 51 to 52 | 52.17 | nothing; 818 safe lines left the denominator and no unsafe was added (calef, on #2497) |
-| #4020 | 2026-11-22 | 52 to 53 | 53.75 | nothing; 3,439 safe lines left the denominator when `file_system_contract` and `file_system_fixture` moved to their own repository, and no unsafe was added |
+| #4020 | 2026-11-22 | 52 to 53 | 53.75 | nothing; 3,439 safe lines left the denominator when `file_system_contract` and `file_system_fixture` moved to their own repository, and no unsafe was added (maintainer, provisional, 2026-11-22) |
 
 ## Round 1 chose the headroom
 
