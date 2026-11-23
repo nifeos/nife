@@ -14,7 +14,7 @@ byte_sink_contract,req,replace | with ^,1,or_xor,none,,unrowed_noise_candidate,
 byte_sink_contract,with_severity,replace > with >=,1,comparison,none,,unrowed,
 byte_sink_contract,with_severity,replace | with ^,1,or_xor,none,,unrowed_noise_candidate,
 c_library_errno,errno_for,delete match arm ErrorKind::WriteZero,1,other,equivalent,unclassified,algebraic,
-c_seam,,replace << with >>,1,shift,equivalent,unclassified,noise,yes
+c_seam,,replace << with >>,1,shift,equivalent,unclassified,noise,
 capability_manifest_note,Scope::word,replace Scope::word -> u32 with 1,1,other,equivalent,unclassified,algebraic,
 capability_manifest_note,before,replace < with <=,1,comparison,equivalent,unclassified,algebraic,
 capability_manifest_note,decode,replace - with /,1,arithmetic,equivalent,unclassified,algebraic,
@@ -169,10 +169,10 @@ measured_boot,Sha256::compress,replace ^ with |,3,or_xor,equivalent,unclassified
 measured_boot,Sha256::update,replace < with <=,1,comparison,equivalent,unclassified,algebraic,
 measured_boot,parse_hex,replace | with ^,1,or_xor,equivalent,unclassified,noise_unargued,
 memory_corruption_canary_gate,pause,replace pause with (),2,other,equivalent,unclassified,algebraic,
-moho_abi,,replace << with >>,1,shift,equivalent,unclassified,noise,yes
-moho_abi,,replace | with ^,4,or_xor,equivalent,unclassified,noise,
-moho_abi,RegisterShape::to_word,replace | with ^,1,or_xor,equivalent,unclassified,noise,
-moho_abi,admitted,replace | with ^,1,or_xor,equivalent,unclassified,noise,
+moho_abi,,replace << with >>,1,shift,none,,unrowed_noise_candidate,
+moho_abi,,replace | with ^,4,or_xor,none,,unrowed_noise_candidate,
+moho_abi,RegisterShape::to_word,replace | with ^,1,or_xor,none,,unrowed_noise_candidate,
+moho_abi,admitted,replace | with ^,1,or_xor,none,,unrowed_noise_candidate,
 network_time_protocol,Packet::to_bytes,replace | with ^,2,or_xor,equivalent,unclassified,noise,
 network_time_protocol,Timestamp::from_unix,replace % with +,1,arithmetic,equivalent,unclassified,algebraic,yes
 network_time_protocol,Timestamp::from_unix,replace | with ^,1,or_xor,equivalent,unclassified,noise,

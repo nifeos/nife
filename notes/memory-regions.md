@@ -258,7 +258,7 @@ Limits that remain:
 - **`Error::OutOfMemory` collapses three causes into one code.** `SPLIT` returns it when the
   caller's own budget is exhausted, when the caller's capability table is full, or when
   `MAXIMUM_REGIONS` is exhausted; `RETYPE_OBJECT` collapses a different pair the same way (each
-  method's doc comment in `crates/moho_abi`). The first two are facts about the caller; the third is a
+  method's doc comment in `nifeos/moho_abi`). The first two are facts about the caller; the third is a
   fact about every other live region on the machine, which the caller did not cause and cannot fix.
   DECISIONS §119 (splitting `OutOfMemory`'s three causes is declined for want of a customer)
   declines it and records non-binding guidance for whoever has a customer: cause-specific `Error`

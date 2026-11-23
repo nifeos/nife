@@ -36,7 +36,7 @@ is a proposal.
   that milestone is BUILT, REFUSED, REMOVED or SUPERSEDED while the gap remains. They are in the
   table (their gap text names the milestone), and they are the clearest case for a
   check: the citation reads as coverage and is not. Examples: `components/src/swish/running.rs`
-  cites 0599 (BUILT), `crates/moho_abi/src/rendezvous.rs` cites 0706 (BUILT, its follow-on has no
+  cites 0599 (BUILT), `nifeos/moho_abi/src/rendezvous.rs` cites 0706 (BUILT, its follow-on has no
   milestone), `components/src/login_audit_receiver.rs` rests on 0480 (REFUSED).
 - **Stale entries.** About 510 entries record something since fixed or overtaken (for example the
   unpinned Kani entry, fixed by 0795). They are not listed; the mechanism below would catch the

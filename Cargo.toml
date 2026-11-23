@@ -7,7 +7,6 @@ members = [
     "components",
     "fixtures",
     "uefi_loader",
-    "crates/moho_abi",
     "crates/address_space_identifier",
     "crates/bitmap_font",
     "crates/glyph_atlas",

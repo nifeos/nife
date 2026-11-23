@@ -49,7 +49,7 @@ prints the path of each page that says the word:
 
 ```sh
 script/apropos socket      # notes/net.md, the socket decisions, and the program that serves them
-script/apropos system call     # the system call decisions, and crates/moho_abi/src/lib.rs, which holds the numbers
+script/apropos system call     # the system call decisions; the numbers themselves are in nifeos/moho_abi
 ```
 
 It is one word at a time and whole words only; `script/apropos`'s own header says what else it

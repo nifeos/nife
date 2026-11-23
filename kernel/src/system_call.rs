@@ -3,7 +3,7 @@
 //! `exit`, `exit_thread`, `yield` and `capability_delete` are authority over the caller itself, and
 //! `invoke(capability, method, a0, a1, a2)` is everything else, on a capability the caller was handed.
 //! Every argument is a scalar in a register, so the kernel follows no user pointer. The ABI is
-//! `crates/moho_abi`, which the kernel and every user program share.
+//! `nifeos/moho_abi`, which the kernel and every user program share.
 //!
 //! See notes/system-call-boundary.md, and DECISIONS §10 (process model: capability-based,
 //! microkernel) for the choice this surface carries out.

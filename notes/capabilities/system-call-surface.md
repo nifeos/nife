@@ -37,7 +37,7 @@ else. `notes/abi.md` is the current contract and has the full table.
 
 ## The ABI is a crate, not a convention
 
-`crates/moho_abi` is a `no_std` crate that both the kernel and every user program depend on. The
+`nifeos/moho_abi` is a `no_std` crate that both the kernel and every user program depend on. The
 system call numbers, the register layout, the method constants, the error codes: one definition. If
 it changes, both sides fail to compile. A boundary that can drift silently is not a boundary, and
 two files that "agree" by having been edited to match are exactly that.

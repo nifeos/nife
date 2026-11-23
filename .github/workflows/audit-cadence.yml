@@ -66,7 +66,8 @@ jobs:
         if: steps.checkout_first_1.outcome != 'success'
 
       # No toolchain, no cache, no build. Every number script/audits reads is counted out of files
-      # that are in the checkout, which is why this job takes seconds and can afford to run weekly.
+      # in the checkout, and the ABI constants out of one depth-one git fetch of moho_abi at the
+      # revision Cargo.lock pins, which is why this job takes seconds and can afford to run weekly.
       # `set -o pipefail` is load-bearing and not decoration. The default shell here is `bash -e`
       # WITHOUT pipefail, so a pipeline exits with `tee`'s status and `tee` always succeeds: without
       # this line the step would be green no matter what script/audits said, and the whole mechanism

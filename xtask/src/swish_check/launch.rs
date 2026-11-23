@@ -435,7 +435,7 @@ pub(super) fn rg_walk_verdict(answer: &str, expected: &str) -> Result<String, St
     use std::collections::BTreeMap;
     let count = |text: &str| {
         let mut lines: BTreeMap<String, usize> = BTreeMap::new();
-        // The shell indents the first line of an answer (`  crates/moho_abi/...`, every leg), and every
+        // The shell indents the first line of an answer (`  crates/...`, every leg), and every
         // line `rg` prints here starts with the path, so leading blanks are never `rg`'s.
         for line in text.lines().map(|l| l.trim_end_matches('\r').trim_start()) {
             *lines.entry(line.to_string()).or_default() += 1;
