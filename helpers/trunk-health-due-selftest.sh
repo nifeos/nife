@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # Selftest: the DUE half of helpers/trunk-health.sh (milestone 495 (a cadence that says "due" reaches nobody))
-# turns each way `script/stranger-test --due` and `script/audits --due` can answer into the right
+# turns each way `script/stranger-test --due` can answer into the right
 # row, and never into silence it cannot justify. Run by script/lint.
 #
 # The exit code is the authority and the sentence is the detail. A scratch copy of the tree holds
@@ -46,42 +46,36 @@ want() { # want LABEL OUT ROW...
 }
 
 stranger_unknown="$(row stranger-test "cannot ask" "DUE: unknown; script/stranger-test --check says what is wrong with the run record")"
-audits_unknown="$(row audits "cannot ask" "DUE: unknown; script/audits --check says what is wrong with the audit index")"
 
 # 1. exit 1 with the sentences: DUE rows, in the three-column shape.
 stub stranger-test 1 'stranger-test: DUE. no run in 31 days' 'Last run: 4, 2026-09-14, somebody'
-stub audits 1 'audits: 13 on record, DUE: documentation, security'
 out="$(pass)"
 want "due sentences" "$out" \
-	"$(row stranger-test "last run 2026-09-14" "DUE: no run in 31 days")" \
-	"$(row audits "2 overdue" "DUE: documentation, security")"
+	"$(row stranger-test "last run 2026-09-14" "DUE: no run in 31 days")"
 
-# 2. exit 1, no DUE sentence on stdout: cannot ask, for both.
+# 2. exit 1, no DUE sentence on stdout: cannot ask.
 stub stranger-test 1
-stub audits 1 'audits: could not read the index'
 out="$(pass)"
-want "no sentence" "$out" "$stranger_unknown" "$audits_unknown"
+want "no sentence" "$out" "$stranger_unknown"
 
 # 3. missing, and present but not executable: the same cannot-ask rows.
-rm "$tmp/tree/script/stranger-test" "$tmp/tree/script/audits"
+rm "$tmp/tree/script/stranger-test"
 out="$(pass)"
-want "missing" "$out" "$stranger_unknown" "$audits_unknown"
-stub stranger-test 0; stub audits 0
-chmod -x "$tmp/tree/script/stranger-test" "$tmp/tree/script/audits"
+want "missing" "$out" "$stranger_unknown"
+stub stranger-test 0
+chmod -x "$tmp/tree/script/stranger-test"
 out="$(pass)"
-want "not executable" "$out" "$stranger_unknown" "$audits_unknown"
+want "not executable" "$out" "$stranger_unknown"
 
 # 4. wording drift on exit 1: cannot ask, never silence.
 stub stranger-test 1 'stranger-test: overdue. no run in 31 days'
-stub audits 1 'audits: 13 on record, overdue: documentation'
 out="$(pass)"
-want "wording drift" "$out" "$stranger_unknown" "$audits_unknown"
+want "wording drift" "$out" "$stranger_unknown"
 
 # 5. exit 0 is authoritative even when stdout says DUE.
 stub stranger-test 0 'stranger-test: DUE. no run in 31 days'
-stub audits 0 'audits: 13 on record, DUE: documentation'
 out="$(pass)"
-for n in stranger-test audits; do
+for n in stranger-test; do
 	if printf '%s\n' "$out" | grep -q "^$n "; then
 		echo "$me: exit 0 must produce no $n row:" >&2; printf '%s\n' "$out" >&2; exit 1
 	fi
