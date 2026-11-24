@@ -219,7 +219,7 @@ pub(crate) fn tcp_listen(
 /// listener in place; the listener keeps its badge and port and is re-armed on a fresh socket
 /// before this returns. Returns the connection's entry, or `REPLY_ERROR` for a full table, a socket
 /// that is not a listener, or no peer within `service_until`'s 15 s. See
-/// nifeos/record:notes/net/the-inbound-half.md.
+/// partsfoundry/record:notes/net/the-inbound-half.md.
 ///
 /// BUGS: the backlog is one connection deep (smoltcp has no accept queue), so a peer arriving
 /// between a handshake completing and the re-arm gets a RST rather than a wait.

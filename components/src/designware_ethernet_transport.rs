@@ -1,5 +1,5 @@
 //! **The JH7110 Ethernet port's data plane inside `net_stack`** (milestone 53 (the board's own
-//! peripherals: network and storage on real silicon); nifeos/record:notes/designware-ethernet.md).
+//! peripherals: network and storage on real silicon); partsfoundry/record:notes/designware-ethernet.md).
 //!
 //! `e1000e_transport.rs`'s shape for radon: the volatile shell around
 //! the `designware_ethernet` crate's [`DataPlane`], which is two windows and a barrier. The ring

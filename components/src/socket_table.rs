@@ -48,7 +48,7 @@ pub(crate) const SOCK_BUF: usize = 2048;
 /// back the remainder), and every round trip then pays the stack's wait for the next frame.
 /// 16 KiB lets eleven 1460-byte segments fly at once. Measured on `cargo xtask network-bench`'s
 /// `e1000e` with added wire delay, 8 MiB in: 2 KiB moved 8.6 Mbit/s, 8 KiB 34, 16 KiB 67
-/// (nifeos/record:notes/designware-ethernet/the-receive-rate.md has the method). Two bounds hold it, checked
+/// (partsfoundry/record:notes/designware-ethernet/the-receive-rate.md has the method). Two bounds hold it, checked
 /// below.
 pub(crate) const TCP_RECEIVE_BUF: usize = 16 * 1024;
 

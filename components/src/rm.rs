@@ -1,4 +1,4 @@
-//! **`rm`: remove a name, and with `-r` the tree under it** (milestone 47 (navigation and naming), nifeos/record:notes/rm.md).
+//! **`rm`: remove a name, and with `-r` the tree under it** (milestone 47 (navigation and naming), partsfoundry/record:notes/rm.md).
 //!
 //! A **program, not a shell builtin**: a builtin would run with the shell's entire endowment, where
 //! a program takes an explicit attenuated grant, so `caps rm -r logs` prints the subtree at risk
@@ -14,7 +14,7 @@
 //!   the name is in**, because taking a name away is an operation on a directory.
 //! - **slot 1**: a report endpoint, `WRITE`: framed text, then one end of stream
 //!   ([`byte_sink_contract::end_of_stream`], its reserved words zero). Output at slot 1, unlike every other
-//!   program, so both wirings agree (nifeos/record:notes/rm.md, "The program's shape").
+//!   program, so both wirings agree (partsfoundry/record:notes/rm.md, "The program's shape").
 //! - **slot 2** ([`rm::VERDICT_SLOT`]): a verdict endpoint, `WRITE`, optional: the exit status
 //!   and the count, once, after the end of stream ([`grant_plan::rm_report`], [`verdict`]). The
 //!   shell leaves it empty.
@@ -209,7 +209,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
 ///
 /// Each round reads one page of entries **from cursor 0** and removes every name it decoded, then
 /// starts again, because removing a name shifts the entries after it and `READDIR`'s cursor is an
-/// index (nifeos/record:notes/dir-capability.md records that caveat where the verb is defined). Restarting is the
+/// index (partsfoundry/record:notes/dir-capability.md records that caveat where the verb is defined). Restarting is the
 /// cheap correct answer; carrying the cursor would skip names.
 ///
 /// A failure does not stop the round: `rm(1)` removes what it can and reports what it cannot, so

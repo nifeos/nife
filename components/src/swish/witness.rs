@@ -4,7 +4,7 @@
 //! **This is a temporary home** (calef, 2026-10-11 UTC, on §273's first fork: "Proceed with
 //! both"). Milestone 885 (the shell's test roles become scripts the shipping shell runs) deletes
 //! this file and the role numbers; until then the shipping binary carries them. Each script's
-//! design is in `nifeos/record:notes/swish-language/witness.md`.
+//! design is in `partsfoundry/record:notes/swish-language/witness.md`.
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
@@ -40,7 +40,7 @@ impl Nav {
 ///
 /// Every line goes through [`dispatch`], the prompt's own function, and the transcript printed over
 /// the terminal contract is the assertion. The answers check each other: `date | wc` has to count
-/// `date`'s length. See `nifeos/record:notes/swish-language/witness.md`.
+/// `date`'s length. See `partsfoundry/record:notes/swish-language/witness.md`.
 pub(super) fn piping() -> ! {
     let mut nav = Nav::empty();
     for line in [
@@ -75,7 +75,7 @@ const PIPELINE_DONE: &[u8] = b"== pipelines done\n";
 ///
 /// [`piping`]'s wiring plus one capability, the whole difference between a `>` that is refused and
 /// a `>` that writes a file. Every line goes through [`dispatch`], and the answers check each other
-/// rather than constants. See `nifeos/record:notes/swish-language/witness.md`, "The redirecting script".
+/// rather than constants. See `partsfoundry/record:notes/swish-language/witness.md`, "The redirecting script".
 pub(super) fn redirecting(rights: u64) -> ! {
     let mut nav = Nav::rooted_at(DIR_TERMINAL, rights);
     for line in [
@@ -112,10 +112,10 @@ pub(super) fn redirecting(rights: u64) -> ! {
         // diagnostics ride it, so the operator names nothing and the line does not run. The
         // sentence is the assertion; what it is *not* is a permission.
         b"wc out.txt 2> err.txt",
-        // ---- milestone 67 (`swish` the language)'s grammar, on this same shell (nifeos/record:notes/swish-language.md) ----
+        // ---- milestone 67 (`swish` the language)'s grammar, on this same shell (partsfoundry/record:notes/swish-language.md) ----
         //
         // On this shell, not a seventh: another live scripted shell puts `time_tests` over the
-        // frame pool (`nifeos/record:notes/swish-language/witness.md`, "One witness, not a seventh").
+        // frame pool (`partsfoundry/record:notes/swish-language/witness.md`, "One witness, not a seventh").
         //
         // A name with a space in it, written and read back.
         b"echo hello world > \"my notes.txt\"",
@@ -162,7 +162,7 @@ const REDIRECT_DONE: &[u8] = b"== redirections done\n";
 ///
 /// [`piping`]'s wiring plus at most one capability, the clock page. The same script runs against a
 /// published page, a blank page and no page, so each refusal comes from the capability table and
-/// not a test branch. The lines check each other. See `nifeos/record:notes/swish-language/witness.md`, "The
+/// not a test branch. The lines check each other. See `partsfoundry/record:notes/swish-language/witness.md`, "The
 /// timing script".
 pub(super) fn timing() -> ! {
     let mut nav = Nav::empty();
@@ -199,7 +199,7 @@ const REPORT: u64 = 1;
 ///
 /// `spec` carries the rights and a run index, nothing about which subtree it was rooted in. It
 /// reports which of `sub`'s and `other`'s files it reached, so confinement is read off the pair of
-/// runs. Lines go through [`builtin`], the prompt's path. See `nifeos/record:notes/swish-language/witness.md`,
+/// runs. Lines go through [`builtin`], the prompt's path. See `partsfoundry/record:notes/swish-language/witness.md`,
 /// "The navigating script".
 pub(super) fn navigate(spec: u64) -> ! {
     use file_system_fixture::{VERDICT, navigation as nb, tree};
@@ -550,7 +550,7 @@ fn probe_bind(
 /// Wired by `fs_service::start_granted_two_dirs`: `sub` at slot 0, `other` at slot 1, both with
 /// `spec`'s rights, and a report rendezvous at slot 2. Lines go through [`builtin`] and
 /// [`open_source`], the shell's own paths. Nothing here may print: this wiring maps no terminal
-/// page, so [`print`] would fault. See `nifeos/record:notes/swish-language/witness.md`, "The two-tree script".
+/// page, so [`print`] would fault. See `partsfoundry/record:notes/swish-language/witness.md`, "The two-tree script".
 pub(super) fn two_trees(spec: u64) -> ! {
     use file_system_fixture::{VERDICT, mounted_tree as tt, tree};
     const A: u64 = 0;
@@ -782,7 +782,7 @@ impl Text {
 ///
 /// Both halves share the expander and not the plumbing, over a real `READDIR`, so a planner that
 /// narrowed, reordered or added to a set shows up as a disagreement. Three refusals keep the
-/// agreement from being vacuous. See `nifeos/record:notes/swish-language/witness.md`, "The globbing script".
+/// agreement from being vacuous. See `partsfoundry/record:notes/swish-language/witness.md`, "The globbing script".
 pub(super) fn globbing(spec: u64) -> ! {
     use file_system_fixture::{VERDICT, globbing, tree};
     let mut nav = Nav::rooted(file_system_contract::grant::specification_rights(spec));
@@ -1080,7 +1080,7 @@ fn touch_mtime_without_settime(nav: &Nav, name: &[u8], v: &mut u64) {
 /// own address space, holding its own attenuated grant.
 ///
 /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-/// (nifeos/record:design/naming/functions-that-answer-yes-or-no.md). It acts, so the Rust predicate rule calef
+/// (partsfoundry/record:design/naming/functions-that-answer-yes-or-no.md). It acts, so the Rust predicate rule calef
 /// ratified 2026-09-24 exempts it, but it is a participle that reads as a question, on a function
 /// that sends the unlink; recommended `remove`.
 fn removed(nav: &Nav, verb: u64, name: &[u8]) -> bool {

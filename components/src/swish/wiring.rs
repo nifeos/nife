@@ -23,7 +23,7 @@ pub(super) const SH_BUDGET_PAGES: u64 = spawn_protocol::SHELL_BUDGET_PAGES;
 /// **The slot holding the clock page**, or [`NO_CLOCK`] when this wiring granted none. Told to us in
 /// `x2` at [`_start`](crate::entry::_start) rather than fixed, because the clock is granted after the filesystem pair and a
 /// boot with no disk attached has one fewer capability under it. Told, not probed: a wrong slot
-/// would map some other object as the clock (nifeos/record:notes/pipes/the-shell-side.md, "The shell's slots").
+/// would map some other object as the clock (partsfoundry/record:notes/pipes/the-shell-side.md, "The shell's slots").
 pub(super) static CLOCK_SLOT: core::sync::atomic::AtomicU64 =
     core::sync::atomic::AtomicU64::new(NO_CLOCK);
 
@@ -33,7 +33,7 @@ pub(super) static CLOCK_SLOT: core::sync::atomic::AtomicU64 =
 /// Probed once, at [`_start`](crate::entry::_start), before this shell allocates anything, so the
 /// slot holds only what its builder placed. Holding it lets an image request ([`run_image`]) run a
 /// digest miss with only what the line granted; it carries no `GRANT`. See
-/// nifeos/record:notes/pipes/the-shell-side.md, "The shell's slots".
+/// partsfoundry/record:notes/pipes/the-shell-side.md, "The shell's slots".
 pub(super) static HOLDS_RUN_UNVOUCHED: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
@@ -100,7 +100,7 @@ pub(super) const NO_CLOCK: u64 = 0;
 ///
 /// A per-file grant and a redirection both narrow a directory capability, so a shell granted one
 /// (slot [`DIR_TERMINAL`]) can back `>` and `<`, and a shell granted none refuses them. See
-/// nifeos/record:notes/pipes/the-shell-side.md, "The shell's slots".
+/// partsfoundry/record:notes/pipes/the-shell-side.md, "The shell's slots".
 pub(super) fn holdings(nav: &Nav) -> grant_plan::ShellHoldings {
     nav.holds
 }

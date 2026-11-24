@@ -47,7 +47,7 @@ pub(crate) static HEAP: memory_region_heap::MemoryRegionHeap =
 user_mode_runtime::program_entry!(start);
 
 /// Entry role 0 is the net server; the NIC handoff roles are servers on other cards, and any other
-/// role runs a socket-contract client in the same binary (nifeos/record:notes/net.md, "One binary, one archive
+/// role runs a socket-contract client in the same binary (partsfoundry/record:notes/net.md, "One binary, one archive
 /// entry").
 ///
 /// `a2` is the server's **grant word**, both port authorities in one spawn argument: the TCP
@@ -110,7 +110,7 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
 
     // No multicast group is joined. A group is interface state rather than socket state, so a
     // multicast client puts its join here, after DHCP so the IGMP report carries a real source
-    // address, and smoltcp's `multicast` feature back in components/Cargo.toml (nifeos/record:notes/mdns.md).
+    // address, and smoltcp's `multicast` feature back in components/Cargo.toml (partsfoundry/record:notes/mdns.md).
 
     // --- Serve the socket contract. One synchronous exchange per request. ---
     let mut table = Table::new();

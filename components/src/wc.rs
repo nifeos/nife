@@ -1,7 +1,7 @@
 //! **`wc`: the consumer** (milestone 50, notes/pipes.md).
 //!
 //! It counts lines, words and bytes on its input and writes the three numbers to its output. Both
-//! ends are the sink contract (`nifeos/byte_sink_contract`), the same sixteen-byte framing that
+//! ends are the sink contract (`partsfoundry/byte_sink_contract`), the same sixteen-byte framing that
 //! `date` and every `println!` write. Sink messages arrive on slot 1 until
 //! [`byte_sink_contract::OPERATION_END_OF_STREAM`]. Behind it is another program (`date | wc`), a file the
 //! shell opened and streamed (`wc < report.txt`, or `wc report.txt`, the same bytes), or the shell
@@ -168,7 +168,7 @@ fn count() -> (u64, u64, u64) {
 /// The end-of-stream message is not politeness. A reader downstream (the shell draining the answer,
 /// or another `wc`) blocks until something tells it the producer is finished, and "the producer
 /// exited" is a fact about process supervision that a reader of a stream should not have to know
-/// how to find out. See nifeos/record:notes/sink-protocol.md.
+/// how to find out. See partsfoundry/record:notes/sink-protocol.md.
 fn report(lines: u64, words: u64, bytes: u64) {
     let mut out = [0u8; 64];
     let mut n = 0usize;

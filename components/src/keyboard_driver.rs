@@ -7,14 +7,14 @@
 //! memory, not messages)): the doorbell it rings is content-free, and focus is the compositor's
 //! decision. In [`MODE_DIRECT`], for a boot with one terminal, it holds one fixed `CALL` capability
 //! to `line_editor` and sends the UART driver's [`terminal_contract::OPERATION_BYTES`] framing:
-//! narrower authority, not looser. See notes/line-discipline.md and nifeos/record:notes/glyphs.md.
+//! narrower authority, not looser. See notes/line-discipline.md and partsfoundry/record:notes/glyphs.md.
 
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
 //! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
 //! `virtio-drivers` assumes a driver lays out its own virtqueues, and nife's confinement does not
 //! allow that: the kernel builds every ring itself, eight entries at fixed offsets, Kani-proved in
 //! `direct_memory_access_validator`, so no driver can aim device DMA. See
-//! nifeos/record:design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
+//! partsfoundry/record:design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
 //!
 //! Name: ratified 2026-08-27 (calef), renamed from `kbd` (never ratified) to match the
 //! `<device>_driver` shape of `block_driver` and `gpu_driver`.
@@ -184,7 +184,7 @@ fn ring_publish(tail: u32) {
     // matching `fence(SeqCst)`; `drain_input` in components/src/compositor.rs is the half milestone 43's
     // audit found missing (finding 7). The `call(OUT, ...)` this program makes immediately
     // after `ring_publish` orders it against the compositor anyway, because the compositor is
-    // blocked in `receive_capability` on that doorbell. See nifeos/record:notes/memory-ordering.md.
+    // blocked in `receive_capability` on that doorbell. See partsfoundry/record:notes/memory-ordering.md.
     core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
     RING.write_volatile::<u32>(ring::TAIL, tail);
 }
@@ -356,7 +356,7 @@ impl Events {
             let slot = (self.seen % QSIZE) as u64;
             // used-ring element: { u32 id; u32 len }.
             let id = r32(EQ_USED + 4 + slot * 8) as usize;
-            // `id` is a 32-bit value the device wrote (nifeos/record:notes/shared-page-audit.md, finding 6): the
+            // `id` is a 32-bit value the device wrote (partsfoundry/record:notes/shared-page-audit.md, finding 6): the
             // IOMMU confines where the device may touch, not what it may say, and unchecked
             // `event_buf(id)` leaves the page at `id = 462`. Every buffer below `EVENTS` is always
             // posted, so anything else names a buffer this driver never posted: the device is lying

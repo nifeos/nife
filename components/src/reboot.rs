@@ -7,7 +7,7 @@
 //! the next thing on the console is the firmware. The sync
 //! is this program's own act, through a capability the file server binds sync-only, and the
 //! end-of-stream after the report is the barrier that keeps the reset from beating the report to
-//! the terminal (nifeos/record:notes/board-reboot.md, "The `reboot` program", has both arguments).
+//! the terminal (partsfoundry/record:notes/board-reboot.md, "The `reboot` program", has both arguments).
 
 //! # Capability contract
 //!
@@ -23,7 +23,7 @@
 //!
 //! - A firmware that accepts the reset and hangs cannot be told from a slow one, from inside.
 //! - On radon (the VisionFive 2) the reboot object's SBI SRST hangs in the firmware's own PMIC
-//!   read, so a boot without the PMIC route cannot restart that board (nifeos/record:notes/board-reboot.md).
+//!   read, so a boot without the PMIC route cannot restart that board (partsfoundry/record:notes/board-reboot.md).
 //! - The call to the PMIC route has no timeout of its own: the route bounds its wait for the board
 //!   to go, and a route that stops answering leaves this program blocked.
 //! - A refusal does not exit non-zero: no program in this system reports an exit status.
@@ -32,7 +32,7 @@
 //! - Devices are not quiesced: a DMA transfer in flight is cut off.
 //!
 //! Name: ratified 2026-10-17 (calef, a program-naming session). Kept: it is the Unix word, a verb
-//! that nifeos/record:design/naming.md passes as a term of art. His answer to keeping it was "Yes".
+//! that partsfoundry/record:design/naming.md passes as a term of art. His answer to keeping it was "Yes".
 
 #![no_std]
 #![allow(missing_docs)]

@@ -1,4 +1,4 @@
-//! The secrets service: hold the key, expose the operation, never the key (nifeos/record:notes/credentials.md).
+//! The secrets service: hold the key, expose the operation, never the key (partsfoundry/record:notes/credentials.md).
 //!
 //! The one process that holds secrets. A client holds only the verify endpoint, so it cannot
 //! enumerate identities, obtain a salt or tag, or write a record. Provisioning is a phase that
@@ -62,7 +62,7 @@ const VERIFY_WINDOW: MappedWindow = unsafe { MappedWindow::new(VERIFY_VA, proto:
 /// How many secrets the store holds. **Six: three logins and three shares.**
 ///
 /// A secret is scoped to a resource, and each of three family members has a login and a Time
-/// Machine share (nifeos/record:notes/credentials.md, BUGS). Sizing the store to the requirement lets the tests
+/// Machine share (partsfoundry/record:notes/credentials.md, BUGS). Sizing the store to the requirement lets the tests
 /// show the seventh refused rather than leave that branch unreached.
 const CAPACITY: usize = 6;
 
@@ -175,7 +175,7 @@ fn provision(store: &mut Store<CAPACITY>, scratch: &mut [Block]) {
 
 /// One `PUT`, with its salt drawn fresh. Split out so the wipe above covers every exit.
 ///
-/// `w1` is not read: a `PUT` is the page and `w0` alone (nifeos/record:notes/smb.md has the opcode it served).
+/// `w1` is not read: a `PUT` is the page and `w0` alone (partsfoundry/record:notes/smb.md has the opcode it served).
 fn put(store: &mut Store<CAPACITY>, scratch: &mut [Block], w0: u64, _w1: u64) -> u64 {
     // SAFETY: forwarded from PROV_WINDOW's own contract.
     let page = unsafe { PROV_WINDOW.as_slice() };

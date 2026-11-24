@@ -1,10 +1,10 @@
-//! **`uuid`**: print a version-4 UUID drawn from the entropy service (nifeos/record:notes/entropy.md). Ask the
+//! **`uuid`**: print a version-4 UUID drawn from the entropy service (partsfoundry/record:notes/entropy.md). Ask the
 //! service for sixteen bytes, stamp the six bits RFC 9562 reserves
 //! (`uuid::Builder::from_random_bytes`), print the canonical form in RFC order, uppercase.
 //! It is `disk_partitioner`'s draw with the disk taken away, and `date`'s shape one manifest field
 //! over ([`grant_contract::Manifest::entropy`] rather than `Manifest::clock`): the part of randomness a
 //! person at the prompt can reach. It takes no arguments; there is no argv on this ABI
-//! (nifeos/record:notes/abi.md).
+//! (partsfoundry/record:notes/abi.md).
 
 //! # Capability contract
 //!

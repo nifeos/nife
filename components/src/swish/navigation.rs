@@ -1,7 +1,7 @@
 //! **Where the shell stands, and the builtins that move it** (milestone 47 (navigation and
 //! naming)): [`Nav`], its position inside the directory capability it holds, the builtins `cd`,
 //! `ls`, `mkdir`, `bind` and `touch`, and pattern expansion, the one place a pattern becomes a
-//! set. See nifeos/record:notes/shell-navigation.md.
+//! set. See partsfoundry/record:notes/shell-navigation.md.
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
@@ -25,7 +25,7 @@ pub(super) struct Nav {
     /// It is told rather than asking, and that is a gap in the contract rather than a shortcut:
     /// `file_system_contract` has no verb that reports what a handle carries. It matters because `OPENDIR`
     /// refuses (`EPERM`) when the intersection is smaller than the request, so a shell that asked
-    /// for `directory::rights::ALL` from a narrower capability could not `cd` at all. See nifeos/record:notes/shell-navigation.md.
+    /// for `directory::rights::ALL` from a narrower capability could not `cd` at all. See partsfoundry/record:notes/shell-navigation.md.
     pub(super) rights: u64,
     /// **What this shell holds, as the planner sees it**: where it stands (`holds.cwd`, a path in
     /// the one tree it presents), the names it has bound (`holds.binds`, values rather than
@@ -78,7 +78,7 @@ pub(super) struct Batching {
     ///
     /// **Cleared once a pattern has been expanded**, so only the *first* pattern on a line is
     /// batched. That is not a new limitation: only the first pattern on a line is expanded at all
-    /// (nifeos/record:notes/glob-grant.md), because no manifest declares a second name slot.
+    /// (partsfoundry/record:notes/glob-grant.md), because no manifest declares a second name slot.
     pub(super) resume: Option<Resume>,
     /// Which batch this is, counting from one, for the header printed before it runs.
     pub(super) index: u64,
@@ -232,7 +232,7 @@ impl Nav {
     /// [`grant_plan::ShellHoldings::serving_tree`] says which tree serves the result. The walk opens it one
     /// `OPENDIR` at a time from that tree's root, since the FS contract takes one component per
     /// request. So `..` from a mount point is its parent in the first tree, and a bound name can
-    /// misdirect a path but not manufacture a boundary (milestone 154; nifeos/record:notes/shell/the-program.md).
+    /// misdirect a path but not manufacture a boundary (milestone 154; partsfoundry/record:notes/shell/the-program.md).
     pub(super) fn walk_steps(&mut self, from_root: bool, steps: &[Step<'_>]) -> Result<Walk, Say> {
         let mut start = DirectoryPath::root();
         let rest = self.holds.steps_after_start(from_root, steps, &mut start);
@@ -496,7 +496,7 @@ impl Nav {
     ///
     /// **Milestone 47 built the create half first and the mtime half here**, in that order, because
     /// the mtime half needed a decided rights question (DECISIONS §112) and the create half did
-    /// not. See nifeos/record:notes/touch.md.
+    /// not. See partsfoundry/record:notes/touch.md.
     pub(super) fn touch(&mut self, args: TouchOperands) -> Say {
         // `-t`'s text is parsed before anything is named, so a malformed instant is refused before
         // the create half runs: a caller should not see a file appear and then learn its `-t` text
@@ -664,7 +664,7 @@ impl Nav {
 }
 
 /// **`-t`'s operand as Unix seconds**, or `None` for text that is not an RFC 3339 instant at or
-/// after the epoch (nifeos/record:notes/touch.md).
+/// after the epoch (partsfoundry/record:notes/touch.md).
 ///
 /// The grammar is RFC 3339's `date-time` with the three relaxations RFC 3339 itself allows: a
 /// lowercase `t` or `z`, a space in place of `T`, and a fraction of a second, which is read and

@@ -2,9 +2,9 @@
 //! DECISIONS §41).
 //!
 //! An unprivileged process: the kernel has no notion of a component or a swap, and what it does
-//! supply is listed in nifeos/record:notes/live-replacement/the-operator.md with each role's design. The entry
+//! supply is listed in partsfoundry/record:notes/live-replacement/the-operator.md with each role's design. The entry
 //! role picks the system (`hot_swap_contract`'s `ROLE_*`). The swap's five steps and their order
-//! are in nifeos/record:notes/live-replacement.md.
+//! are in partsfoundry/record:notes/live-replacement.md.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46), replacing `swapd`.
 //! Refused `swapd` (the `-d` claim).
@@ -442,7 +442,7 @@ fn report_dependents(
 /// instance and never read here, replacements on a `control` endpoint distinct from the
 /// incumbent's, and a commit only on a replacement's `NOTE_ABSORBED`. A replacement that refuses
 /// exits and is collected, which returns its region, and the incumbent resumes with the state it
-/// never lost. See nifeos/record:notes/live-replacement/the-operator.md.
+/// never lost. See partsfoundry/record:notes/live-replacement/the-operator.md.
 fn handoff(fs: &nifefs::Fs, w: &Wiring) -> ! {
     let v1 = image(fs, "rust_swappable", 2);
     let v2 = image(fs, "c_swappable", 3);
@@ -935,7 +935,7 @@ fn plan_queued(w: &Wiring, front: u64) -> QueuedPlans {
 // The third residual: a component that stops answering **without dying**. It holds its endpoint
 // and its device, sits `Blocked` like a healthy server waiting for work, and sends no death
 // message. The operator notices by its quiesce going unanswered within a bound, then restores the
-// service and destroys the hung incumbent's region. See nifeos/record:notes/hung-component.md.
+// service and destroys the hung incumbent's region. See partsfoundry/record:notes/hung-component.md.
 // ===============================================================================================
 
 /// **How long the operator waits for `OPERATION_QUIESCE` to be answered before it treats the
@@ -945,7 +945,7 @@ fn plan_queued(w: &Wiring, front: u64) -> QueuedPlans {
 /// [`quiesce_within`] times it; the deadline fires at the first 10 ms tick at or after it, so the
 /// real wait is 250 to 260 ms. Wall time under TCG, and this fixture's bound only: too short
 /// destroys a healthy component mid-work, too long costs only a longer down window. The
-/// measurement is in nifeos/record:notes/hung-component/what-counts-as-hung.md.
+/// measurement is in partsfoundry/record:notes/hung-component/what-counts-as-hung.md.
 const QUIESCE_BOUND_MILLISECONDS: u64 = 250;
 
 /// What a bounded quiesce found.

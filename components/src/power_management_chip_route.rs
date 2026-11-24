@@ -9,7 +9,7 @@
 //! One request, `RESET`: read the reset register, write it back with the reset bit set, then wait
 //! [`WAIT_NANOSECONDS`] for the board to go. A board that resets never answers; every other outcome
 //! is a `Status` the caller prints before it asks the kernel's reboot object instead. See
-//! nifeos/record:notes/board-reboot.md.
+//! partsfoundry/record:notes/board-reboot.md.
 //!
 //! # BUGS
 //!

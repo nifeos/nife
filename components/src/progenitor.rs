@@ -5,7 +5,7 @@
 //! budget (the console server, the input driver, the line discipline, the shell, the terminal's
 //! sink adapter and the job undertaker), then stays alive as the spawn service. All of that is
 //! `crates/system_initializer` (milestone 96 (one init)); this file is the boot entry, one program
-//! with one `GRANTS` table and no `cfg` on every architecture (nifeos/record:notes/progenitor-and-loading.md,
+//! with one `GRANTS` table and no `cfg` on every architecture (partsfoundry/record:notes/progenitor-and-loading.md,
 //! "One program and one grant table on every architecture").
 //!
 //! Name: ratified 2026-09-08 (calef, milestone 266). `progenitor` replaces `init` as the archive
@@ -139,7 +139,7 @@ fn start(uart_shape: u64, initial_ramdisk_len: u64, fs_rights: u64) -> ! {
     // **The second mounted tree is the disk tree** (milestone 834 (ioping on nife and Linux)): the
     // whole NVMe namespace as one read-only, uncached file at `/disk`. DECISIONS §126 (a real,
     // single, moving `cwd`) left the second subtree to an architect, and calef ruled it on
-    // nifeos/nife#2371, 2026-10-18 21:36 UTC: "Yes, read-only at prompt". The kernel grants slots
+    // partsfoundry/nife#2371, 2026-10-18 21:36 UTC: "Yes, read-only at prompt". The kernel grants slots
     // 32 and 33 only on a machine with an NVMe disk, and `boot` probes them.
     system_initializer::boot(
         &GRANTS,

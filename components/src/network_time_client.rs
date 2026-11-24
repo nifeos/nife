@@ -1,4 +1,4 @@
-//! **The network time client** (§43 (reading the clock is a page), nifeos/record:notes/ntp.md): turns
+//! **The network time client** (§43 (reading the clock is a page), partsfoundry/record:notes/ntp.md): turns
 //! `network_time_protocol`'s wire format into a clock correction. It holds a network capability and
 //! a capability to propose a time, and does not hold the clock: with no clock page, setting the
 //! time is not an operation it can express, so a compromised client can lie inside the service's

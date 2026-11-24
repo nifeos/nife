@@ -5,7 +5,7 @@
 //! output slot holds this process writes to the screen and cannot tell. It keeps the endpoint back
 //! because it also carries `OPERATION_READLINE`, and a sink capability that can read the keyboard
 //! is not a sink capability. `OPERATION_PRINT` carries the bytes in the request's own words, so it
-//! maps no page. See nifeos/record:notes/sink-protocol.md, "The terminal's sink adapter", for why it is a process
+//! maps no page. See partsfoundry/record:notes/sink-protocol.md, "The terminal's sink adapter", for why it is a process
 //! and why it needed that opcode.
 
 //! # BUGS

@@ -1,12 +1,12 @@
-//! The JH7110 TRNG driver (nifeos/record:notes/entropy.md): a backend for `entropy_contract` beside
+//! The JH7110 TRNG driver (partsfoundry/record:notes/entropy.md): a backend for `entropy_contract` beside
 //! `entropy.rs`'s virtio-rng one, with no virtqueue and no DMA page, just a register window.
 //! `kernel/src/user/entropy_service.rs` spawns it on the riscv64 boot tour; QEMU has no JH7110, so
 //! CI resolves that to a skip. The register decode, the device-tree query and the byte buffer are
-//! in the `jh7110_entropy` crate (`nifeos/jh7110_entropy`), host-tested and Kani-reachable. It holds
+//! in the `jh7110_entropy` crate (`partsfoundry/jh7110_entropy`), host-tested and Kani-reachable. It holds
 //! [`REQ`], [`READY`] and one device page at [`TRNG_VA`], and no interrupt, so its authority is
 //! smaller than virtio-rng's by construction. It polls `ISTAT` rather than taking PLIC line 30: a
 //! wrong interrupt binding fails silently as a hang, a wrong poll bound loudly as `NO_ENTROPY`. See
-//! nifeos/record:notes/entropy/jh7110-trng.md.
+//! partsfoundry/record:notes/entropy/jh7110-trng.md.
 
 //! # BUGS
 //!
@@ -16,7 +16,7 @@
 //! - [`POLL_TRIES`] and [`LOCKUP_RETRIES`] are unmeasured guesses; [`POLL_TRIES`] counts undelayed
 //!   loop iterations, so it guards against a hang and is not a timeout in microseconds.
 //! - `MODE.R256` has never been read back. If radon's `STAT.R256` reads clear, only 16 bytes of
-//!   each generation are device output (nifeos/record:notes/entropy/jh7110-trng.md).
+//!   each generation are device output (partsfoundry/record:notes/entropy/jh7110-trng.md).
 //!
 //! Name: ratified 2026-09-13 (calef), replacing `jh7110_entropy_source`. It shares the crate's
 //! name as the crate-and-program pair; `jh7110_entropy_driver` was refused for hiding that pair.
@@ -147,7 +147,7 @@ fn ack(bits: u32) {
 /// entropy source: the JH7110's TRNG)): zero `AUTO_AGE` and `AUTO_RQSTS`, disabling the reseed alarms; clear every `ISTAT` bit, since a `RAND_RDY`
 /// latched under U-Boot would satisfy the first poll; set `MODE.R256`, since the width after reset
 /// is a build-time parameter of the silicon; and leave `IE` at zero to poll. The order and the
-/// reasons are in nifeos/record:notes/entropy/jh7110-trng.md.
+/// reasons are in partsfoundry/record:notes/entropy/jh7110-trng.md.
 ///
 /// Returns `STAT` as read afterwards, the bench diagnostic: `STAT.R256` says whether `MODE.R256`
 /// took, and `STAT.SEEDED` whether the reseed the caller runs next is still needed.

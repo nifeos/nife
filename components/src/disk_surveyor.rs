@@ -1,5 +1,5 @@
 //! `disk_surveyor`: what drives are attached, and how the one we hold is divided up
-//! (milestone 57, nifeos/record:notes/block-devices.md).
+//! (milestone 57, partsfoundry/record:notes/block-devices.md).
 //!
 //! It holds a `READ`-only `PageFrame` capability on the roster page (`block_roster_contract`), so no
 //! writable mapping of the listing can be obtained (see [`probe`]), and a block-service endpoint
@@ -193,7 +193,7 @@ fn start(role: u64, _a1: u64, _a2: u64) -> ! {
 /// Maps the frame, reports its first word, waits for a go-ahead, and reads again. Between the two
 /// reads the kernel revokes the frame, and a page mapped from a revoked capability goes away, so
 /// the second read faults. A page wired in at spawn is in no mapping record and `PageFrame::REVOKE`
-/// cannot reach it, which is why the roster is mapped from a capability (nifeos/record:notes/frames.md).
+/// cannot reach it, which is why the roster is mapped from a capability (partsfoundry/record:notes/frames.md).
 fn holder() -> ! {
     if !user_mode_runtime::map_page_frame(ROSTER_PAGE_FRAME, ROSTER_VA, false, BUDGET) {
         user_mode_runtime::exit()

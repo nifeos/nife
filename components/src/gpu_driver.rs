@@ -7,14 +7,14 @@
 //! the control buffers, pages 1.. the surface the client also maps. The kernel registers the whole
 //! run, so the shadow-ring validator and the IOMMU domain bound every device access to it. Fonts,
 //! VT state, scrollback and input arrive as clients of the contract, never as code in here. See
-//! nifeos/record:notes/framebuffer-contract.md and nifeos/record:notes/frames.md.
+//! partsfoundry/record:notes/framebuffer-contract.md and partsfoundry/record:notes/frames.md.
 
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
 //! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
 //! `virtio-drivers` assumes a driver lays out its own virtqueues, and nife's confinement does not
 //! allow that: the kernel builds every ring itself, eight entries at fixed offsets, Kani-proved in
 //! `direct_memory_access_validator`, so no driver can aim device DMA. See
-//! nifeos/record:design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
+//! partsfoundry/record:design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
 //!
 //! Name: ratified 2026-08-27 (calef). Renamed from `display` to `gpu_driver`, matching the
 //! `<device>_driver` shape given to `block_driver` and `keyboard_driver` in the same pass. This
@@ -47,7 +47,7 @@ const REPORT: u64 = 0;
 const INTERRUPT: u64 = 1;
 /// Slot 2, a `VirtualIo`: the confined transport. The device's registers are not mapped here, so this
 /// process cannot program a queue address or ring a doorbell; the kernel does both, and validates
-/// every descriptor first (nifeos/record:notes/dma.md).
+/// every descriptor first (partsfoundry/record:notes/dma.md).
 const VIRTUAL_IO: u64 = 2;
 /// Slot 3, the display endpoint this driver receives on: where clients ask for a flush.
 const DISPLAY: u64 = 3;
@@ -198,7 +198,7 @@ fn direct_memory_access_read<T: WindowInteger>(off: u64) -> T {
 fn die(code: u64) -> ! {
     send(REPORT, 0xDEAD_0000_0000_0000 | code, 0, 0);
     // Exit so the kernel reaps this thread instead of leaving it on a run queue forever; a leaked
-    // spinner starves later tests (nifeos/record:notes/supervision.md).
+    // spinner starves later tests (partsfoundry/record:notes/supervision.md).
     exit();
 }
 
@@ -274,7 +274,7 @@ fn submit(direct_memory_access_phys: u64, req_len: u32) -> u32 {
 
     // **The completion is the used ring advancing, not the wakeup.** The device's interrupt line is
     // shared across every driver that ever holds this device, and a wakeup can be spurious,
-    // coalesced, or a previous operator's leftover, so the used index is what decides (nifeos/record:notes/dma.md,
+    // coalesced, or a previous operator's leftover, so the used index is what decides (partsfoundry/record:notes/dma.md,
     // the kill-mid-write section). The bound counts wake-ups, not time: a device that keeps raising
     // its line without completing ends in a legible failure, and a device that never raises it
     // leaves this process blocked in `interrupt_wait`, a hang only the watchdog catches.
@@ -369,7 +369,7 @@ fn bring_up_surface(direct_memory_access_phys: u64) {
     // because the surface is a contiguous run of frames inside our DMA region, which is what makes
     // the IOMMU domain cover it: the domain is exactly this region plus the kernel's shadow page, so
     // an entry pointing anywhere else would fail to translate and the device would refuse the
-    // command. See nifeos/record:notes/framebuffer-contract.md.
+    // command. See partsfoundry/record:notes/framebuffer-contract.md.
     write_hdr(CMD_RESOURCE_ATTACH_BACKING);
     direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN, RESOURCE_ID);
     direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 4, 1); // nr_entries
@@ -443,7 +443,7 @@ fn surface_pixel(i: usize) -> u32 {
 /// IOMMU is the barrier, checked by the kernel test from its fault queue: QEMU answers a translation
 /// failure with a bounce buffer, so the response code is not the evidence. `victim` comes from the
 /// kernel because the test must know the exact address to look for. See
-/// nifeos/record:notes/framebuffer-contract/iommu-escape-test.md.
+/// partsfoundry/record:notes/framebuffer-contract/iommu-escape-test.md.
 fn run_backing_escape(direct_memory_access_phys: u64, victim: u64) -> ! {
     initialize(direct_memory_access_phys);
 
@@ -459,7 +459,7 @@ fn run_backing_escape(direct_memory_access_phys: u64, victim: u64) -> ! {
     // Attaching is itself the access the IOMMU must refuse: the device maps the backing here. Four
     // bytes, not a frame: the RISC-V IOMMU's 128-record fault queue latches its overflow bit and
     // then records nothing, so one translation and one fault ask the same question without a flood
-    // (nifeos/record:notes/framebuffer-contract/iommu-escape-test.md).
+    // (partsfoundry/record:notes/framebuffer-contract/iommu-escape-test.md).
     write_hdr(CMD_RESOURCE_ATTACH_BACKING);
     direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN, RESOURCE_ID);
     direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 4, 1); // nr_entries
@@ -553,7 +553,7 @@ fn start(role: u64, _arg1: u64, arg2: u64) -> ! {
         }
 
         // The driver-side witness, once, after the first successful flush; see
-        // nifeos/record:notes/framebuffer-contract.md. This `send` blocks until received and nothing receives on
+        // partsfoundry/record:notes/framebuffer-contract.md. This `send` blocks until received and nothing receives on
         // `DISPLAY` meanwhile, so a spawner that never takes it stops every flush after the first
         // (milestone 177 (wire the graphical terminal stack into the real interactive boot)'s hang).
         if !reported_flush && gfx::operation(w0) == gfx::display::FLUSH && r0 == 0 {

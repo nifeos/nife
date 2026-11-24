@@ -1,4 +1,4 @@
-//! **`pmap`: what is mapped, and who is allowed to ask** (milestone 126 (the `procps` package, now `process-tools`), nifeos/record:notes/process-view.md,
+//! **`pmap`: what is mapped, and who is allowed to ask** (milestone 126 (the `procps` package, now `process-tools`), partsfoundry/record:notes/process-view.md,
 //! DECISIONS §114).
 //!
 //! Walk one address space with `moho_abi::address_space::LIST`, then say what it found on one stream
@@ -20,11 +20,11 @@
 //!
 //! - **Nothing at the interactive prompt can grant this program an address space**: the wiring
 //!   and the design for a narrowed third-party view are missing (`crates/pmap`'s `BUGS`;
-//!   nifeos/record:notes/process-view/pmap.md, "At the prompt, once it can be reached").
+//!   partsfoundry/record:notes/process-view/pmap.md, "At the prompt, once it can be reached").
 //!   `kernel::user::pmap_tests` proves the program end to end against a real space.
 //!
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist), on milestone 126 and
-//! nifeos/record:design/naming.md: the name every reader knows from outside, shared with `crates/pmap` as `ps`
+//! partsfoundry/record:design/naming.md: the name every reader knows from outside, shared with `crates/pmap` as `ps`
 //! and `crates/ps` share theirs.
 
 #![no_std]

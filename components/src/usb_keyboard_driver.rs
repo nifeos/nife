@@ -1,5 +1,5 @@
 //! **The USB keyboard driver** (milestone 242 (USB host and HID, because on commodity hardware the
-//! keyboard is not a UART); nifeos/record:notes/usb.md): a confined userspace xHCI driver that finds a boot
+//! keyboard is not a UART); partsfoundry/record:notes/usb.md): a confined userspace xHCI driver that finds a boot
 //! keyboard on a root port and turns its reports into the bytes a terminal understands.
 //! ```text
 //!   a USB keyboard ──xHCI (PCIe, behind the IOMMU)──► usb_keyboard_driver ──OPERATION_BYTES, CALL──► line_editor
@@ -7,7 +7,7 @@
 //! It is milestone 192 (a keyboard on real silicon)'s option B: a third keystroke source beside
 //! `input` (the UART) and `keyboard_driver` (virtio-input), in the same `OPERATION_BYTES` framing
 //! to the same terminal endpoint, so nothing downstream can tell which source a key came from.
-//! What it does, in order, is nifeos/record:notes/usb.md, "What the driver does, in order".
+//! What it does, in order, is partsfoundry/record:notes/usb.md, "What the driver does, in order".
 
 //! # Its whole authority
 //!
@@ -25,9 +25,9 @@
 //! - **Root ports only.** A keyboard behind a hub, or with one inside it, is not found; the hub
 //!   is refused as not a keyboard.
 //! - **One keyboard.** The first found is served; a second is ignored until the first is unplugged.
-//! - **No key repeat, no lock keys, no LEDs** (`nifeos/universal_serial_bus`'s BUGS): holding a key types it once.
-//! - **Bring-up polls the event ring**, with bounds from the specification (nifeos/record:notes/usb.md).
-//! - **Only port changes survive a command wait**; a key pressed meanwhile is lost (nifeos/record:notes/usb.md).
+//! - **No key repeat, no lock keys, no LEDs** (`partsfoundry/universal_serial_bus`'s BUGS): holding a key types it once.
+//! - **Bring-up polls the event ring**, with bounds from the specification (partsfoundry/record:notes/usb.md).
+//! - **Only port changes survive a command wait**; a key pressed meanwhile is lost (partsfoundry/record:notes/usb.md).
 //! - **A lying controller can silence the keyboard.** A transfer event naming a TRB or a buffer
 //!   this driver never queued is dropped without queuing a report buffer again, so a few of them
 //!   use up the queue. It could do that anyway by staying silent.

@@ -6,7 +6,7 @@
 //! driver, the block server, the net driver, the write path, and the two attackers the
 //! DMA-confinement tests spawn (a descriptor aimed at kernel memory, and the indirect-descriptor
 //! escape). The attackers share this binary on purpose: they differ from the honest driver by one
-//! descriptor, so the attack is a fair test. See nifeos/record:notes/virtual-io.md and nifeos/record:notes/dma/shadow-ring.md.
+//! descriptor, so the attack is a fair test. See partsfoundry/record:notes/virtual-io.md and partsfoundry/record:notes/dma/shadow-ring.md.
 //!
 //! Name: ratified 2026-08-27 (calef). Renamed from `blk` to `block_driver`, matching the
 //! `<device>_driver` shape given to `gpu_driver` and `keyboard_driver` in the same pass. Not

@@ -1,4 +1,4 @@
-//! The display terminal: the terminal contract's IPC half (nifeos/record:notes/terminal-contract.md) served
+//! The display terminal: the terminal contract's IPC half (partsfoundry/record:notes/terminal-contract.md) served
 //! against a grid and a font, on a screen it does not own (milestone 29 (a display terminal)).
 //!
 //! One binary, two wirings chosen by `arg0`, neither holding a device: [`MODE_DISPLAY`] holds rung
@@ -17,7 +17,7 @@
 //! a keystroke into its own terminal and gains nothing. In [`MODE_WINDOW`] the compositor delivers
 //! a keystroke by `CALL`ing this process, so ringing the doorbell in answer would deadlock; the
 //! input source's own `COMMIT` shows it. `OPERATION_WRITE` does ring, since its blocked caller is
-//! the application. See nifeos/record:notes/glyphs/terminal-and-proof.md.
+//! the application. See partsfoundry/record:notes/glyphs/terminal-and-proof.md.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `vterm`. Refused `vterm` (an
 //! abbreviation), `text_console` (`console` is already a program) and `video_terminal` for the
@@ -163,7 +163,7 @@ fn paint(
 ///
 /// Re-rendering unchanged rows through `Vt::pixel` (a divide, a cell fetch, a glyph lookup and a
 /// blend for each of the 1120x624 scanout's 698,880 pixels, at ~3.5x per store under TCG) would be
-/// most of the `x86_64` swish leg's time (`nifeos/record:notes/benchmarks/icount-tick-scales.md`). So this moves
+/// most of the `x86_64` swish leg's time (`partsfoundry/record:notes/benchmarks/icount-tick-scales.md`). So this moves
 /// the bytes with one bounds-checked [`MappedWindow::copy_within`], not a checked access per word
 /// (about 250 ms a scroll on riscv64 at opt-level 0). Packed rows (`w * 4 == stride`) move as one
 /// block; a window narrower than its stride moves row by row.
@@ -304,7 +304,7 @@ impl Wiring {
         // process is about to send to the compositor that `CALL`ed it. That reply does order it. The
         // case the reader's fence is genuinely load-bearing for is a *second* window committing
         // while `serve_frame` rescans every client's page; see the note in fixtures/src/window.rs and
-        // nifeos/record:notes/memory-ordering.md.
+        // partsfoundry/record:notes/memory-ordering.md.
         core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
         wr32(CTL_VA + ctl::SEQ, self.seq);
         if ring {
@@ -634,7 +634,7 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
             // `line_editor` in front of this and prints its echo through `OPERATION_WRITE`, which needs no new
             // protocol because `line_editor`'s echo is exactly a byte stream this engine parses (the
             // `video_terminal` crate's interoperability test proves that on the host). Recorded as a limit in
-            // nifeos/record:notes/glyphs.md rather than half-implemented.
+            // partsfoundry/record:notes/glyphs.md rather than half-implemented.
             _ => r0 = proto::BAD_REQUEST,
         }
         if let Some(to) = reply_slot {

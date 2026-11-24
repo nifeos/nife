@@ -18,7 +18,7 @@
 //! - A finished background job is reported when `jobs`, `wait` or `fg` next looks, not before the
 //!   prompt, since the shell is blocked reading the line.
 //! - Background jobs finishing out of order leave a hole in this shell's budget until the later
-//!   ones go (nifeos/record:notes/object-revocation.md, LIFO return of pages).
+//!   ones go (partsfoundry/record:notes/object-revocation.md, LIFO return of pages).
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
@@ -414,7 +414,7 @@ fn forcible(job_ut: u64) {
 
 /// How long [`reclaim`] keeps retrying before it reports a refusal: a hundred of the kernel's 10 ms
 /// timeslices. A force-killed thread is converted to a corpse at its own core's next preemption
-/// (nifeos/record:notes/object-revocation.md, "DESTROY force-kills a runaway"), so the wait that matters is one
+/// (partsfoundry/record:notes/object-revocation.md, "DESTROY force-kills a runaway"), so the wait that matters is one
 /// timeslice, and a bound on time says that where a bound on attempts cannot.
 const RECLAIM_PATIENCE_NANOSECONDS: u64 = 1_000_000_000;
 

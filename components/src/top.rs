@@ -6,7 +6,7 @@
 //! line that is what became of `tload`, §225 (`free` sees the machine and your share)), so it can
 //! name no process outside its domain. No clock: uptime is the ambient monotonic counter. CPU time
 //! is continuous, so two runs show another thread's work between them; §150 accepted that, because
-//! `ENUMERATE` is already the right to learn what exists. See nifeos/record:notes/process-view/top.md.
+//! `ENUMERATE` is already the right to learn what exists. See partsfoundry/record:notes/process-view/top.md.
 
 //! # BUGS
 //!

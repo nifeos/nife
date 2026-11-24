@@ -1,4 +1,4 @@
-//! **The entropy service** (§44 (entropy is a capability), nifeos/record:notes/entropy.md): the one process that
+//! **The entropy service** (§44 (entropy is a capability), partsfoundry/record:notes/entropy.md): the one process that
 //! reaches the entropy source. Clients hold an endpoint meaning "you may obtain randomness", a
 //! strictly smaller authority than the device: no queue, no DMA region, no request it did not make
 //! for them. Owning it is worth exactly an attacker choosing random numbers, no more.
@@ -15,7 +15,7 @@
 //!   with probability 2^-2048 (virtio) or 2^-64 (instruction), as `entropy_contract`'s `BUGS` says.
 //! - A condemned backend does not recover short of restarting the service.
 //! - Nothing checks a byte after bring-up; continuous health testing is
-//!   `nifeos/record:design/decisions/0137-trng-health-tests.md`, proposed.
+//!   `partsfoundry/record:design/decisions/0137-trng-health-tests.md`, proposed.
 //!
 //! Name: ratified 2026-09-14 (calef): the resource name, like `clock`, because this service does
 //! hand you entropy. It pairs with `jh7110_entropy`, ratified the day before.

@@ -4,7 +4,7 @@
 //! pages and the DMA region: the YT8531 PHY, the controller reset, the coherence probe, both
 //! rings, the link and the start. It reports what it saw to its spawner and exits; the spawner
 //! then starts `net_stack` over the data-plane pages. The clocks and resets are already up, through
-//! the clock and reset server. See nifeos/record:notes/designware-ethernet.md.
+//! the clock and reset server. See partsfoundry/record:notes/designware-ethernet.md.
 //!
 //! # Capability contract
 //!

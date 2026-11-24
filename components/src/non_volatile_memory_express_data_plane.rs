@@ -2,7 +2,7 @@
 //! a real DMA device with no authority to reset the controller, move a queue, or reach memory
 //! outside the run an IOMMU already confined the controller to, including the block-range check
 //! [`non_volatile_memory_express::Namespace::transfer_command`] applies. A `#[path]` module of the
-//! one program. See nifeos/record:notes/non-volatile-memory-express.md.
+//! one program. See partsfoundry/record:notes/non-volatile-memory-express.md.
 
 //! # Capability contract
 //!
@@ -297,7 +297,7 @@ pub(crate) fn run(data_address: u64, doorbell_address: u64) -> ! {
     // `kernel/src/user/non_volatile_memory_express_service.rs` writes `[ESCAPE_MAGIC, victim_phys]`
     // into the transfer buffer's first two `u64`s before either process runs; a real boot's is
     // zeroed. Read before the readiness transfer, which reuses transfer page 0. See
-    // nifeos/record:notes/non-volatile-memory-express/the-direct-memory-access-escape-test.md.
+    // partsfoundry/record:notes/non-volatile-memory-express/the-direct-memory-access-escape-test.md.
     #[cfg(feature = "confinement_attackers")]
     if plane.data.read_volatile::<u64>(TRANSFER_OFF)
         == driver_process_contract::non_volatile_memory_express::ESCAPE_MAGIC

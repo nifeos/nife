@@ -1,4 +1,4 @@
-//! **`ps`: who else is running, and who is allowed to ask** (nifeos/record:notes/process-view.md). Walk one
+//! **`ps`: who else is running, and who is allowed to ask** (partsfoundry/record:notes/process-view.md). Walk one
 //! supervision domain with `moho_abi::rendezvous::SURVEY`, say what it found on one stream and what went
 //! wrong on the other. The listing is `crates/ps`, host-tested; this is the system call and two sinks.
 //!

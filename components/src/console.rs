@@ -17,7 +17,7 @@
 //! does (`kernel/src/console.rs`, "both, not either"). It holds no device for the screen. A batcher
 //! that paints at most once per [`SCREEN_BATCH_NANOSECONDS`] is built but off
 //! ([`SCREEN_BATCHING_ENABLED`]), so each write paints before its ack, as it does after a refused
-//! `Timer::ARM`. See nifeos/record:notes/uart.md, "The console server".
+//! `Timer::ARM`. See partsfoundry/record:notes/uart.md, "The console server".
 
 //! # Kernel lines (milestone 342 (the kernel and the `console` server drive one UART from two
 //! address spaces))
@@ -200,7 +200,7 @@ fn start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
             _ => {}
         }
 
-        // **Clamp to the page, because the length is the CLIENT's** (nifeos/record:notes/shared-page-audit.md
+        // **Clamp to the page, because the length is the CLIENT's** (partsfoundry/record:notes/shared-page-audit.md
         // finding 3): any holder of WRITE on the request endpoint picks it, and an unclamped
         // `u64::MAX` kills a server every client of this console shares.
         let len = len.min(PAGE);
@@ -352,7 +352,7 @@ fn paint_screen(b: &mut ScreenBatch) {
     // PAIR: no acquire fence, and none is needed. `display_terminal` is blocked in `receive_capability` and
     // the `call` below is what wakes it, so the kernel's IPC lock (released here, acquired on its
     // side) is the pair. Redundant, kept, for the reason `kernel::user::term_print` keeps the same
-    // fence for the same contract. See nifeos/record:notes/memory-ordering.md.
+    // fence for the same contract. See partsfoundry/record:notes/memory-ordering.md.
     core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
     let _ = call(SCREEN, proto::req(proto::OPERATION_WRITE, pending), 0);
 }

@@ -7,7 +7,7 @@
 //! keeps the session alive once the client leaves: DECISIONS §16 (object revocation) refuses
 //! `MemoryRegion::DESTROY` on a parent with a live child, as
 //! `kernel::user::login_tests::a_login_session_with_pending_work_refuses_logout_until_the_work_is_gone`
-//! proves on a login budget. Its steps: nifeos/record:notes/durable-delegation/user-timetable-keeper.md.
+//! proves on a login budget. Its steps: partsfoundry/record:notes/durable-delegation/user-timetable-keeper.md.
 
 //! # Capability contract (`login_contract::user_timetable_keeper`)
 //!
