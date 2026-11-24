@@ -18,6 +18,7 @@ The answer has two cases:
   reader cannot change what the next one reads.
 
     python3 helpers/record_root.py               # the directory, one line, for a shell reader
+    python3 helpers/record_root.py --top DIR     # the same, for the tree at DIR
     python3 helpers/record_root.py --commit      # the record commit basalt pins
     python3 helpers/record_root.py --check       # what script/lint runs: the pin resolves and holds the record
     python3 helpers/record_root.py --selftest    # fixtures in a temporary directory, no network
@@ -276,6 +277,9 @@ def main(argv):
         tree = root()
         print(f"record_root: the record is read from nifeos/record at {commit()[:12]}, the commit "
               f"basalt's main pins ({tree})")
+        return 0
+    if len(argv) == 2 and argv[0] == "--top":
+        print(root(argv[1]))
         return 0
     if argv:
         print(__doc__.split("\n\n")[4], file=sys.stderr)
