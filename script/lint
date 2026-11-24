@@ -1565,9 +1565,8 @@ fi
 # upgradable) is "if a newer version exists, does anything here ever tell us?". Dependabot reads
 # only the directories .github/dependabot.yml names, so a workspace added without an entry there
 # has no watcher, and nothing else would notice. The set is the one `script/supply-chain` runs
-# cargo-deny over, with the same two exclusions for the same reasons (vendor/ carries upstream's
-# lockfiles, which `script/vendor-watch` covers; the measurement harness has no Cargo.toml). A
-# change to one exclusion list belongs in both.
+# cargo-deny over, with the same exclusion for the same reason (vendor/ carries upstream's
+# lockfiles, which `script/vendor-watch` covers). A change to one exclusion list belongs in both.
 echo "==> every committed Cargo.lock has an update watcher"
 # lint-scope: code
 python3 - "$(dirname "$0")/.." <<'PY'
@@ -1579,7 +1578,7 @@ locks = subprocess.run(['git', '-C', root, 'ls-files', '*Cargo.lock'], check=Tru
 want = set()
 for lock in locks:
     d = os.path.dirname(lock)
-    if (d + '/').startswith('vendor/') or d == 'notes/packages/container-format-measurements/fuzz':
+    if (d + '/').startswith('vendor/'):
         continue
     want.add('/' + d if d else '/')
 

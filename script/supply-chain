@@ -20,15 +20,13 @@
 # graph at a time and the tree keeps growing workspaces of its own. It runs once per manifest
 # against the one shared deny.toml. One policy everywhere is the point: a licence we would refuse in
 # the kernel is not acceptable in the host tooling either. `script/audits` counts the same lockfiles
-# for its external-packages trigger, so the two read one set. Two are skipped for a stated reason,
-# and a lockfile beside no Cargo.toml that is not one of them fails the run:
+# for its external-packages trigger, so the two read one set. One is skipped for a stated reason,
+# and a lockfile beside no Cargo.toml that is not it fails the run:
 #
 #   - **vendor/** is somebody else's graph. vendor/redoxfs enters our builds only through
 #     redoxfs_server and tools/redoxfs_host, at the feature sets we actually build; checking it
 #     standalone would evaluate its default features (`fuse`, which wants macFUSE) and report on
 #     code nothing here ever compiles.
-#   - **nifeos/record:notes/packages/container-format-measurements/fuzz/** is a measuring harness for that note,
-#     kept as `Cargo.toml.in` so no cargo command treats it as a crate. Nothing builds or ships it.
 #
 # See notes/scripts.md.
 #
@@ -75,7 +73,7 @@ manifests=""
 for lock in $(git ls-files '*Cargo.lock'); do
     dir="$(dirname "$lock")"
     case "$dir/" in
-        vendor/* | notes/packages/container-format-measurements/fuzz/) continue ;;
+        vendor/*) continue ;;
     esac
     if [ ! -f "$dir/Cargo.toml" ]; then
         echo "supply-chain: $lock has no Cargo.toml beside it, so cargo-deny cannot read its graph;" >&2
