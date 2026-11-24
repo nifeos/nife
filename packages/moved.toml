@@ -1,0 +1,76 @@
+# What has left this repository, and where it went: §201 (one roadmap until a citation has to
+# cross) section 4's moved-things registry, the FreeBSD ports form (old, new, date, reason), one
+# [[moved]] table per departure. Append-only: a departure is never edited or removed.
+#
+# `anchor` is the last nifeos/nife commit before the design record left. A bare code path in a
+# record written before the move means that path at the anchor; text written after it names a path
+# as `nifeos/<repo>:<path>`, resolved at basalt's pin.
+#
+# `old` is read the way `git filter-repo` reads a path: a directory names the files under it whose
+# home in `packages/homes.toml` at the anchor was the record. The baselines under `design/`, the
+# tool data under `notes/` and the notes about one crate alone stayed, as `packages/homes.toml`
+# says. `record_commit` is the commit of nifeos/record whose files hold the same bytes as every
+# moving path here at the anchor, which the removal pull request checked file by file.
+
+anchor = "00f4046ebf615e579540998870606fd72821c0f0"
+record_commit = "109298893d62b1a5fc2f3aa5a9805066214023dc"
+
+[[moved]]
+old = "design/"
+new = "nifeos/record:design/"
+date = "2026-11-24"
+reason = "milestone 1018: the design record moves to nifeos/record and is published as a website"
+
+[[moved]]
+old = "notes/"
+new = "nifeos/record:notes/"
+date = "2026-11-24"
+reason = "milestone 1018: the design record moves to nifeos/record and is published as a website"
+
+[[moved]]
+old = "script/roadmap"
+new = "nifeos/record:script/roadmap"
+date = "2026-11-24"
+reason = "milestone 1018: the record's own tooling leaves with it"
+
+[[moved]]
+old = "script/decisions"
+new = "nifeos/record:script/decisions"
+date = "2026-11-24"
+reason = "milestone 1018: the record's own tooling leaves with it"
+
+[[moved]]
+old = "script/journeys"
+new = "nifeos/record:script/journeys"
+date = "2026-11-24"
+reason = "milestone 1018: the record's own tooling leaves with it"
+
+[[moved]]
+old = "script/citations"
+new = "nifeos/record:script/citations"
+date = "2026-11-24"
+reason = "milestone 1018: the record's own tooling leaves with it"
+
+[[moved]]
+old = "helpers/roadmap_block.py"
+new = "nifeos/record:helpers/roadmap_block.py"
+date = "2026-11-24"
+reason = "milestone 1018: the record's own tooling leaves with it"
+
+[[moved]]
+old = "helpers/roadmap_proposals.py"
+new = "nifeos/record:helpers/roadmap_proposals.py"
+date = "2026-11-24"
+reason = "milestone 1018: the record's own tooling leaves with it"
+
+[[moved]]
+old = "helpers/coe_actions.py"
+new = "nifeos/record:helpers/coe_actions.py"
+date = "2026-11-24"
+reason = "milestone 1018: the record's own tooling leaves with it"
+
+[[moved]]
+old = "helpers/roadmap_migrate.py"
+new = "nifeos/record:helpers/roadmap_migrate.py"
+date = "2026-11-24"
+reason = "milestone 1018: the record's own tooling leaves with it"

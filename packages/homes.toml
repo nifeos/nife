@@ -32,6 +32,7 @@ paths = [
     "README.md",
     "art/",
     "packages/homes.toml",
+    "packages/moved.toml",
     "packages/base-image.toml",
     "packages/base-image.approval.toml",
 ]

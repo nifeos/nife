@@ -1,8 +1,0 @@
-# Stranger test: the appendices
-
-[`notes/stranger-test.md`](../stranger-test.md) is the page to read; it is written so a reader can
-act without opening anything here, and its appendix table is the index. These files hold each run's
-record and the history.
-
-*Name: provisional, for the directory and every stem in it. Naming is an architect's; `script/names --unratified` lists each
-stem.*
