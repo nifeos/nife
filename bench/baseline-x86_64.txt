@@ -1,4 +1,4 @@
-# toolchain: nightly-2026-11-23
+# toolchain: nightly-2026-11-24
 # qemu: 11.1.2
 # date: 2026-11-18
 # why: nightly-2026-11-18: every row fell, none rose. Measured on one machine by running the same tree at both pins: the compiler alone moved yield_switch -16.04%, tss_iomap_switch -13.12%, tss_iomap_lazy_switch -15.71%, tss_iomap_lazy_nop -15.83%, ipc_rtt -16.61%, relay_rtt -16.61%, call_reply -16.08%, broker_rtt -16.08%, spawn_reap -15.86%, map_new -12.54%, coremark -14.05%. Both nightlies carry LLVM 23.1.5 and the bench kernel builds at -O0; coremark touches no OS primitive and moved with the rest, so this is code generation, not a kernel path. Which rustc change did it is not identified. This save also absorbs drift already on main at the old pin, from -4.19% (relay_rtt) to +0.14% (map_new) against the 2026-10-22 floor.
@@ -7,6 +7,7 @@
 # why: 2026-11-21: restamped from nightly-2026-11-20 to nightly-2026-11-21 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
 # why: 2026-11-22: restamped from nightly-2026-11-21 to nightly-2026-11-22 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
 # why: 2026-11-23: restamped from nightly-2026-11-22 to nightly-2026-11-23 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
+# why: 2026-11-24: restamped from nightly-2026-11-23 to nightly-2026-11-24 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: spawn_reap +0.093%, broker_rtt +0.082%, call_reply +0.082% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: spawn_reap +0.093%, broker_rtt +0.082%, call_reply +0.082%, relay_rtt +0.073%, ipc_rtt +0.073%, yield_switch +0.054%, tss_iomap_lazy_nop +0.052%, tss_iomap_lazy_switch +0.042%, tss_iomap_switch +0.041%, map_new +0.040%
 # bench/baseline-x86_64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check fails when the QEMU on
