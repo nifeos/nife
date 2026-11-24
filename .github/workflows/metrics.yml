@@ -7,8 +7,11 @@ name: project metrics
 #   loud) is labelling its suppressions. See notes/observed-failing.md.
 
 # **Append this week's row; never change what a past week said.** The dashboard is
-# notes/project-metrics.md and the data behind it is one CSV per measure in
-# notes/project-metrics/, in the tree, versioned with the code it describes.
+# notes/project-metrics.md in nifeos/record, and the data behind it is one CSV per measure in
+# notes/project-metrics/ here, in the tree, versioned with the code it describes. The page left with
+# the design record (milestone 1018 (the design record moves to nifeos/record and is published as a
+# website)), so a run opens up to two pull requests: the data and charts here, and the page's
+# generated lines in nifeos/record. The page draws each chart from this repository's main branch.
 #
 # The same three-step split `toolchain-bump.yml` uses, and for the same reason:
 #
@@ -110,6 +113,12 @@ jobs:
           # workflow; notes/session-identity.md.
           permission-contents: write
           permission-pull-requests: write
+          # This repository and the record, whose page this job writes (milestone 1018 (the design
+          # record moves to nifeos/record and is published as a website)).
+          owner: nifeos
+          repositories: |
+            nife
+            record
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         id: checkout_first_1
@@ -126,6 +135,27 @@ jobs:
         timeout-minutes: 3
         if: steps.checkout_first_1.outcome != 'success'
         with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      # The record, in full: a week whose nife commit no longer holds it reads the record's commit
+      # of that week (`script/metrics --record`), and the page lives here.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_record_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          repository: nifeos/record
+          path: record
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_record_1.outcome != 'success'
+        with:
+          repository: nifeos/record
+          path: record
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
 
@@ -268,11 +298,11 @@ jobs:
             # gives the minimum per file, which is the number that can actually fail this build.
             # Only `script/coverage` can produce the second, because the exemptions that decide
             # which files the floor acts on live there.
-            script/metrics --update --coverage-from target/llvm-cov/lcov.info \
+            script/metrics --record record --update --coverage-from target/llvm-cov/lcov.info \
               --coverage-min-from target/llvm-cov/floor.txt
           else
             echo "No lcov file; recording every column but coverage, which leaves the cell as it was."
-            script/metrics --update
+            script/metrics --record record --update
           fi
 
       # `script/metrics --update` is idempotent by construction (the CSV is rewritten from a dict
@@ -283,11 +313,9 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -e
-          # The page too, not only the directory: `script/metrics` writes generated lines onto
-          # notes/project-metrics.md (the table of contents, the drift line), and the pathspec
-          # `notes/project-metrics` does not match that file. Until 2026-09-26 those lines were
-          # rewritten here and then dropped.
-          if git diff --quiet -- notes/project-metrics notes/project-metrics.md; then
+          # The data and charts only. The page's generated lines are written into the record's
+          # checkout and go to nifeos/record in the step after this one.
+          if git diff --quiet -- notes/project-metrics; then
             echo "Nothing moved this week; no pull request."
             exit 0
           fi
@@ -296,14 +324,14 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$branch"
-          git add notes/project-metrics notes/project-metrics.md
+          git add notes/project-metrics
           git commit -m "metrics: record $week
 
           Recomputed by the scheduled workflow. Every column but coverage is a restatement: the row
           applies today's definitions to this week's tree, which is what makes the series comparable
           and is not what any of these numbers were reported as at the time.
 
-          notes/project-metrics.md says so on its face; this commit changes only its generated lines."
+          The page in nifeos/record says so on its face."
           git push --force origin "$branch"
           # Milestone 623 (provisional): the week flag and its digest. The flag output is machine
           # facing (week, series, move, note state) and the digest is log archaeology by a helper
@@ -327,7 +355,8 @@ jobs:
 
           Adds or refreshes the \`$week\` row in each measure's CSV under
           \`notes/project-metrics/\` and redraws the SVGs beside them. The page is
-          [\`notes/project-metrics.md\`](../blob/main/notes/project-metrics.md).
+          [\`notes/project-metrics.md\`](https://github.com/nifeos/record/blob/main/notes/project-metrics.md)
+          in nifeos/record, and its generated lines go there in a pull request of their own.
 
           **Read the diff, not just the charts.** Every column is a restatement under today's
           definitions, and this project found three of its own instruments wrong in a single day
@@ -367,6 +396,46 @@ jobs:
           # arms nothing, and a lane arms in the same command as `gh pr ready`. This workflow is the
           # lane here. If arming fails the pull request is labelled needs-maintainer after 30 minutes.
           gh pr merge "$branch" --auto --merge || echo "::warning::could not arm the metrics pull request"
+
+      # The page's generated lines (the drift line, the interface line, the week-note bullets and
+      # the chart embeds), written by the step above into the record's checkout. Its own branch and
+      # pull request in nifeos/record, armed the same way, and silent on a day nothing moved.
+      - name: Open or update the record's pull request
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        working-directory: record
+        run: |
+          set -e
+          if git diff --quiet -- notes/project-metrics.md; then
+            echo "The page's generated lines did not move; no pull request in nifeos/record."
+            exit 0
+          fi
+          branch="metrics/weekly"
+          week="$(date -u +%GW%V)"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add notes/project-metrics.md
+          git commit -m "metrics: the page's generated lines for $week
+
+          Written by nifeos/nife's scheduled metrics workflow. Only the generated lines move; the
+          data and charts are in nifeos/nife under notes/project-metrics/."
+          git push --force origin "$branch"
+          title="metrics: the page's generated lines for $week"
+          body="**Lane:** $branch, opened by nifeos/nife's scheduled metrics workflow.
+
+          Rewrites the generated lines of \`notes/project-metrics.md\` for \`$week\`: the drift line,
+          the interface line, the week-note bullets and the chart embeds. The data and charts they
+          describe are in [nifeos/nife](https://github.com/nifeos/nife/tree/main/notes/project-metrics)."
+          existing="$(gh pr list --repo nifeos/record --head "$branch" --state open --json number --jq '.[].number')"
+          if [ -z "$existing" ]; then
+            gh pr create --repo nifeos/record --head "$branch" --base main --title "$title" --body "$body"
+          else
+            gh pr edit "$existing" --repo nifeos/record --title "$title" --body "$body"
+            echo "Updated nifeos/record PR #$existing in place."
+          fi
+          gh pr merge "$branch" --repo nifeos/record --auto --merge \
+            || echo "::warning::could not arm the record's metrics pull request"
 
       # **Where the instruments above go red** (milestone 641 (a mechanism that reports clean says
       # over how many units, and zero is loud), provisional). Each swallows its own failure so that
