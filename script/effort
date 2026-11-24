@@ -48,7 +48,7 @@
 # after each week closes. That is rung four, it is said to be rung four, and the two mechanisms
 # above exist so that missing it is a delay rather than a loss. A scheduled job that runs it and
 # opens the pull request is
-# milestone 934 (a closed week's effort row is captured after the week closes; nifeos/record:design/roadmap/0934-a-closed-week-is-captured-after-it-closes.md) and not built.
+# milestone 934 (a closed week's effort row is captured after the week closes), nifeos/record:design/roadmap/0934-a-closed-week-is-captured-after-it-closes.md, and not built.
 #
 # # What is counted
 #
