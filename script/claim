@@ -254,7 +254,8 @@ fi
 # unblocked and is listed, never dropped: it is some lane's work.
 (cd "$repo_root" && helpers/stash-block.sh) || true
 
-# While the record freeze holds (milestone 1018, step 6), every new lane reads where a record edit
+# While the record freeze holds (milestone 1018 (the design record moves to `nifeos/record` and is
+# published as a website), step 6), every new lane reads where a record edit
 # goes before it writes one. The notice is the helper's, read from the new worktree's own tree, so
 # it disappears with the helper when the removal pull request lifts the freeze.
 if [ -f "$worktree/helpers/record_freeze.py" ]; then
