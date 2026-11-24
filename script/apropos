@@ -30,10 +30,10 @@
 # **Why it exists**, and it is a finding rather than a nicety. Milestone 117 has run three strangers
 # at this tree with no help. What none of them could do is on the record in nifeos/record:notes/stranger-test.md:
 # reach nifeos/record:notes/net.md, notes/capabilities.md or ANY nifeos/record:design/decisions/ file by following the tree
-# while doing ordinary work, or find crates/moho_abi/src/lib.rs, which is four system call numbers and the
-# whole design on one screen. None of those is hidden; nothing a person would type led to them.
-# This is the thing to type. It is also why the crate and program headers are indexed: the document
-# a reader wants about `moho_abi` *is* that file's header, and no markdown page was ever going to fix it.
+# while doing ordinary work, or find the system call numbers in `moho_abi`'s own header. None of
+# those was hidden; nothing a person would type led to them. This is the thing to type. It is also
+# why the crate and program headers are indexed: the document a reader wants about a crate *is* its
+# header, and no markdown page was ever going to fix it.
 #
 # It is the same index and the same reader as the guest's, on purpose (`documentation::index::build` and
 # `documentation::index::search`), so a defect in the layout shows up in both places and a fix lands in
