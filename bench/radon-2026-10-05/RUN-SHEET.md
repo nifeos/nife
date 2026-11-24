@@ -2,9 +2,9 @@
 
 *Uncommitted run sheet, written before any boot. One evening answers two outstanding radon runs:
 milestone 761 (capability lookup off the global lock), against
-[`notes/job-mix/null-system-call-under-load.md`](../../notes/job-mix/null-system-call-under-load.md#the-radon-run-that-decides-it),
+[`notes/job-mix/null-system-call-under-load.md`](https://github.com/nifeos/record/blob/main/notes/job-mix/null-system-call-under-load.md#the-radon-run-that-decides-it),
 and milestone 766 (each core's PerCpu on its own cache line), against
-[its roadmap block](../../design/roadmap/0766-each-cores-percpu-on-its-own-cache-line.md).*
+[its roadmap block](https://github.com/nifeos/record/blob/main/design/roadmap/0766-each-cores-percpu-on-its-own-cache-line.md).*
 
 ## The payloads
 

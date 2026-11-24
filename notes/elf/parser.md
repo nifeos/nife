@@ -1,6 +1,6 @@
 # The ELF parser: what `crates/static_elf` accepts, and why
 
-[`notes/elf.md`](../elf.md) carries the format and how the kernel loads a program. This page
+[`notes/elf.md`](https://github.com/nifeos/record/blob/main/notes/elf.md) carries the format and how the kernel loads a program. This page
 carries the design of the parser crate itself, `crates/static_elf`, which reads untrusted images: what it
 refuses, how it decides which machine a file may be for, and how it finds a note.
 
@@ -31,7 +31,7 @@ The per-segment arithmetic a hostile header can weaponize, `p_offset + p_filesz`
 `p_vaddr + p_memsz` without overflow, is factored into `check_segment_bounds`. It is pure and
 loopless, so Kani proves it panic-free and its result in bounds for every field combination. A proof
 that the whole of `parse` is total did not finish:
-[`notes/verification/elf-parser-wall.md`](../verification/elf-parser-wall.md) says why. In short,
+[`notes/verification/elf-parser-wall.md`](https://github.com/nifeos/record/blob/main/notes/verification/elf-parser-wall.md) says why. In short,
 the overlap check is a loop over up to `MAXIMUM_PHNUM` (64) headers inside a loop over the same, and
 Kani unrolls it by the linear 64 bound it can see. On top of that, `phoff` and `p_offset` place
 reads at symbolic offsets in a symbolic array. The solver did not return in minutes even with the

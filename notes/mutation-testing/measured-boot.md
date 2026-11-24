@@ -2,7 +2,7 @@
 
 *Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
-This appendix of [notes/mutation-testing.md](../mutation-testing.md) holds the 2026-09-03 re-run of
+This appendix of [notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md) holds the 2026-09-03 re-run of
 `measured_boot`, and the algebra proving its five survivors equivalent.
 
 ## 2026-09-03: `measured_boot` re-run, and its five survivors proved equivalent rather than argued
@@ -26,7 +26,7 @@ mutated: **an unviable mutant is a hole in the measurement, not a pass.**
 
 This moves the crate's row in [the baseline ledger](baseline-ledger.md) from "argued" to proved. An
 equivalence verdict reached by reading is wrong about ten percent of the time (see
-[scope and honest caveats](../mutation-testing.md#scope-and-honest-caveats)). These five are
+[scope and honest caveats](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md#scope-and-honest-caveats)). These five are
 algebraic identities, not readings:
 
 - `Sha256::compress`, `ch = (e & f) ^ ((!e) & g)`, `^` to `|`. The two operands are disjoint by

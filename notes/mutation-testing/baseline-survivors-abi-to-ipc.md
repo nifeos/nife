@@ -1,8 +1,8 @@
 # The baseline survivors, crate by crate: `abi` to `ipc`
 
 How each survivor of [the 2026-08-03 baseline](baseline-2026-08-03.md) was closed, for the crates
-from `abi` to `ipc`, under [the triage rule](../mutation-testing.md#the-triage-rule) of
-[notes/mutation-testing.md](../mutation-testing.md). The rest are in
+from `abi` to `ipc`, under [the triage rule](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md#the-triage-rule) of
+[notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md). The rest are in
 [grant_plan to swish](baseline-survivors-grant-plan-to-swish.md), and
 [the ledger](baseline-ledger.md) totals them. "As above" refers to
 [the patterns named once](baseline-2026-08-03.md#patterns-that-recur-named-once).

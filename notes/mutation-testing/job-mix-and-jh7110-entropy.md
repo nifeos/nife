@@ -4,7 +4,7 @@
 
 This appendix holds the `job_mix` and `jh7110_entropy` rows of the 2026-09-20 new-crate backlog
 triage, whose table and method are in [new-crate-backlog](new-crate-backlog.md). The summary is in
-[notes/mutation-testing.md](../mutation-testing.md).
+[notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md).
 
 ### `job_mix`: 10 survivors, 6 killed, 3 equivalent, 1 recorded gap
 

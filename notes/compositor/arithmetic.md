@@ -2,7 +2,7 @@
 
 *Name: provisional.*
 
-This appendix to [`notes/compositor.md`](../compositor.md) carries the reasoning behind
+This appendix to [`notes/compositor.md`](https://github.com/nifeos/record/blob/main/notes/compositor.md) carries the reasoning behind
 `crates/compositor`'s arithmetic. The crate's doc comments state what each item does and link here.
 
 ## The scene is fixed
@@ -52,7 +52,7 @@ than a screen of somebody's uninitialized frames.
 
 Every pixel outside the damage is left exactly as it was, which is the point of a damage rectangle.
 The host tests and the kernel test both check it by poisoning the rest of the screen and finding the
-poison intact afterwards ([proofs.md](proofs.md)).
+poison intact afterwards ([proofs.md](https://github.com/nifeos/record/blob/main/notes/compositor/proofs.md)).
 
 `expected_screen_pixel` is the independent definition of the composed screen. `composite` paints up
 the stack and it looks down the stack, so the two agree only if both are right.

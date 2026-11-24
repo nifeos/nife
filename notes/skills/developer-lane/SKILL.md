@@ -45,7 +45,7 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
 - `script/claim <branch> --debt-paydown` or `script/claim <branch> --new-work` makes that claim in
   one command, and refuses a lane that passes neither or both (calef's ruling R1 on #1894,
   2026-10-10 UTC). `--debt-paydown` is for work that meets the definition in
-  [notes/debt-paydown.md](../../debt-paydown.md), and it puts the `debt-paydown` label on the draft.
+  [notes/debt-paydown.md](https://github.com/nifeos/record/blob/main/notes/debt-paydown.md), and it puts the `debt-paydown` label on the draft.
   Everything else is `--new-work`. A brief says which one, so the lane doesn't have to guess.
 - **Push the real commits, confirm the remote head, and only then mark the pull request ready.**
   Push with `script/push`, which reads the branch back from origin. Then confirm the head is the
@@ -82,10 +82,10 @@ replaced and why go in its commit messages and pull request body, never in the d
 document states what is in force now).
 
 A lane that writes a note reads it against the code it describes, [§310 (read a note against its
-code)](../../../design/decisions/0310-read-a-note-against-its-code.md): the note names the item and
+code)](https://github.com/nifeos/record/blob/main/design/decisions/0310-read-a-note-against-its-code.md): the note names the item and
 keeps the reason, and what is about one crate alone goes into that crate. An agreement between two
 programs is code both sides use, never prose alone, [§311 (a contract is code, not
-prose)](../../../design/decisions/0311-a-contract-is-code-not-prose.md). A lane that finds one held
+prose)](https://github.com/nifeos/record/blob/main/design/decisions/0311-a-contract-is-code-not-prose.md). A lane that finds one held
 only in prose proposes a milestone with a sketch of that code, and does not write it.
 
 ## A fix lane for a held finding
@@ -97,8 +97,8 @@ its advisory, as §90 (the claim is a draft pull request) allows, and a person r
 Only then does the reviewed fix land on main, as an ordinary pull request through the merge queue.
 The reason is exposure: a draft pull request and its pushed branch are public from the first
 commit, so the bug is public only while the reviewed fix waits in the queue.
-The rulings are in [the proposal](../../../design/roadmap/1015-fuzz-findings-without-a-person.md),
-and [fix lanes read the advisory](../../../design/roadmap/1014-fix-lanes-read-the-advisory.md)
+The rulings are in [the proposal](https://github.com/nifeos/record/blob/main/design/roadmap/1015-fuzz-findings-without-a-person.md),
+and [fix lanes read the advisory](https://github.com/nifeos/record/blob/main/design/roadmap/1014-fix-lanes-read-the-advisory.md)
 built the reading side. A finding the architect judges low severity is the exception: its brief
 says so, and the lane follows the regular workflow with a public draft pull request, keeping the
 rules below on reading the advisory and naming no reproducer.
@@ -153,7 +153,7 @@ someday" is neither. Either a proposed milestone (provisional; the integrator mi
 merge like every other global name), or a recorded limitation written where a reader meets the
 feature, in the `BUGS` section beside it. A finding with no home is the integrator's cue to hold the
 merge until it has one. Why a lane report and a pull request body do not count as records is in
-[design/tenets/routing-work-and-decisions.md](../../../design/tenets/routing-work-and-decisions.md).
+[design/tenets/routing-work-and-decisions.md](https://github.com/nifeos/record/blob/main/design/tenets/routing-work-and-decisions.md).
 
 The merge checklist grows one line: every piece of identified work in the lane's report has a home.
 [`briefs/merge-and-cleanup.md`](../../../briefs/merge-and-cleanup.md) has that checklist whole, with the
@@ -170,14 +170,14 @@ its driver, not a failure, because a program that waits for its users is not was
 field for it and no lint check. `helpers/consumer_census.py` counts delivered work nothing uses,
 report-only, and the maintainer runs it monthly; its counts cannot tell work not yet consumed from
 work built with no reason, so a person asks. The reasoning is in
-[the proposal](../../../design/roadmap/0996-delivered-work-names-its-consumer.md).
+[the proposal](https://github.com/nifeos/record/blob/main/design/roadmap/0996-delivered-work-names-its-consumer.md).
 
 ## Shared state: the tree's, and the machine's
 
 Anything global to the tree is assigned by the integrator at merge, never claimed by a lane.
 Concurrent lanes cannot see each other, so a lane that reaches for a shared resource is guessing.
 The collisions that produced this rule are in
-[design/tenets/shared-state.md](../../../design/tenets/shared-state.md).
+[design/tenets/shared-state.md](https://github.com/nifeos/record/blob/main/design/tenets/shared-state.md).
 
 - `nifeos/record:design/decisions/` section numbers. Preferred: a lane does not touch `nifeos/record:design/decisions/` beyond
   recording a ruling it was given, puts the reasoning in `notes/` and in its report, and the
@@ -201,7 +201,7 @@ gated took it from the others. Each worktree now links its own, `nife-dev-<direc
 lane takes nothing, reports nothing and relinks nothing. Leave the bare `nife-dev` alone: lanes cut
 before that date still write it, and the maintainer removes it once they are gone
 ([`briefs/merge-and-cleanup.md`](../../../briefs/merge-and-cleanup.md) step 4). The mechanism is in
-[`notes/std.md`](../../../notes/std.md).
+[`notes/std.md`](https://github.com/nifeos/record/blob/main/notes/std.md).
 
 An unmerged branch is either abandoned or it is holding knowledge that is not on `main`, and the
 second case is a bug in where the knowledge lives. Nobody reads branches. If a branch holds a

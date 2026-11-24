@@ -1,7 +1,7 @@
 # The 2026-09-21 census's 771 survivors, classified
 
 Milestone 326 (nobody has been assigned to turn a mutation score upward), 2026-09-24. This appendix
-of [notes/mutation-testing.md](../mutation-testing.md) sorts every missed mutant of the scheduled
+of [notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md) sorts every missed mutant of the scheduled
 census of 2026-09-21 ([run 35589550926](https://github.com/nifeos/nife/actions/runs/35589550926))
 by what it is, then closes the largest class that can be closed with a test. Its per-mutant list is
 the union of the eight shards' `missed.txt` from that run's artifacts, which expire around

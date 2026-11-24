@@ -2,7 +2,7 @@
 
 The second half of milestone 326 (nobody has been assigned to turn a mutation score upward)'s
 triage of the crates that regressed at the 2026-09-14 census. It verifies three of the per-crate
-figures that [notes/mutation-testing.md](../mutation-testing.md) summarizes. The first half, with
+figures that [notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md) summarizes. The first half, with
 the method and the loom exclusion, is
 [regressions-2026-09-14-capability-to-device-tree-blob](regressions-2026-09-14-capability-to-device-tree-blob.md).
 

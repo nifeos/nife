@@ -2,7 +2,7 @@
 
 *Name: provisional, minted 2026-10-19 (UTC) by lane/names-chart-w43-note. calef names things.*
 
-The `BUGS` section of [notes/project-metrics.md](../project-metrics.md): what its series and charts get wrong or cannot see.
+The `BUGS` section of [notes/project-metrics.md](https://github.com/nifeos/record/blob/main/notes/project-metrics.md): what its series and charts get wrong or cannot see.
 
 ## BUGS
 
@@ -61,7 +61,7 @@ The `BUGS` section of [notes/project-metrics.md](../project-metrics.md): what it
   when 2026W30 left. The legend is redrawn with it, so no band carries the wrong label, but a color moves between screenshots.
 - The cost and context columns carry seven limitations of their own, from a capture that can
   stop silently to a price [ledger](ledger.md) that re-prices history. They appear on the page that argues
-  those columns: [what this project costs, *Known limitations*](../register-of-measures/project-cost.md#known-limitations).
+  those columns: [what this project costs, *Known limitations*](https://github.com/nifeos/record/blob/main/notes/register-of-measures/project-cost.md#known-limitations).
 - The restatement on 2026-09-24 changed four series, and an older screenshot disagrees with each.
   Opus 5.5 got its own column (`opus_5_5`), so this week's commits left *other models*, and Opus 4.8
   now draws inside that band because the palette has eight hues. The fatal-risks chart (since removed in favor of the colors chart, which now stores the total itself) gained

@@ -204,7 +204,7 @@ tries each against every name of length 0..=3: 2,657,200 comparisons in 0.3 seco
 match. The Kani cost harness checks the accounting, not the blowup.
 
 How each of these was reached, with the timings and the counterexample, is in
-[`glob/proofs.md`](glob/proofs.md).
+[`glob/proofs.md`](https://github.com/nifeos/record/blob/main/notes/glob/proofs.md).
 
 ## Corners, and where implementations differ
 
@@ -233,7 +233,7 @@ The unit tests exist for these. Every one is a place a real glob implementation 
 - **No grant.** The attenuated-to-a-name-set work, the shell's expansion, `program_table::plan` seeing the
   expanded set rather than the pattern, and `ARG_MAX` as a capability limit are milestone 47
   (navigation and naming)'s globbing lane, built on top of this crate and written up in
-  [glob-grant.md](glob-grant.md). This crate is the part with no authority in it, which is why it
+  [glob-grant.md](https://github.com/nifeos/record/blob/main/notes/glob-grant.md). This crate is the part with no authority in it, which is why it
   could be finished and proved on its own, and it did not change by one line when the granting
   arrived. It did not change by one line when batching arrived either: `xargs`, milestone 109
   (batching a grant too large to hand over). That is the same claim made a second time:

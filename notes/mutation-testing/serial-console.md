@@ -2,7 +2,7 @@
 
 This appendix holds the 2026-09-20 triage of `serial_console`'s 43 survivors, module by module,
 taken while the crate was named `board_console`, the name the account below keeps. The summary and
-the current figures are in [notes/mutation-testing.md](../mutation-testing.md).
+the current figures are in [notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md).
 
 ## 2026-09-20: `board_console`, milestone 326 (turn a mutation score upward) part 3
 
@@ -34,7 +34,7 @@ comparison point for the `after` beside it.
 The 6 timeouts are not in the 43. All six are in `screen::parse_pixmap`'s header-token loop: `+=`
 becoming `*=` or `-=`, or a comparison flipped so the whitespace-and-comment skip never reaches a
 byte that ends it. The standing reading in
-[how to read the numbers](../mutation-testing.md#how-to-read-the-numbers) applies unchanged: they
+[how to read the numbers](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md#how-to-read-the-numbers) applies unchanged: they
 are the tests noticing by hanging rather than by failing. `cargo-mutants`' own 20-second per-mutant
 bound is the deadline. Nothing here converts them, and nothing needed to. No test in this crate
 calls the parser through a doctest, or any other path a deadline-wrapped test could not also reach.

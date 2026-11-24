@@ -4,7 +4,7 @@
 
 The `machine_discovery` part of milestone 326 (nobody has been assigned to turn a mutation score
 upward)'s triage, on 2026-09-19, and its re-derivation on 2026-09-20. It verifies the crate's
-figures that [notes/mutation-testing.md](../mutation-testing.md) summarizes. The method is set out
+figures that [notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md) summarizes. The method is set out
 in [regressions-2026-09-14-capability-to-device-tree-blob](regressions-2026-09-14-capability-to-device-tree-blob.md).
 
 ### `machine_discovery`: 77 survivors, 58 killed, 11 equivalent, 8 recorded gaps
@@ -177,7 +177,7 @@ The 9 timeouts are hangs and are unchanged by any of this. Four are `+=` under `
 cursor (`Isa::implementer_name`, `Sbi::impl_name`, `lookup`). Five are the MADT and DMAR entry
 walks' `len < 2` and `len < 4` under `==` and `>`, and their `||` under `&&`. A length of zero that
 the walk accepts never advances. That is the tests noticing rather than missing, which is how
-[the main note](../mutation-testing.md) reads a timeout whose mutant can hang.
+[the main note](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md) reads a timeout whose mutant can hang.
 
 #### 2026-09-20 re-derivation: two more pull requests touched this crate, and neither left a survivor
 

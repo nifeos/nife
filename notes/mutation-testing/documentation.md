@@ -2,7 +2,7 @@
 
 *Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
-This appendix of [notes/mutation-testing.md](../mutation-testing.md) holds the 2026-09-13 finding
+This appendix of [notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md) holds the 2026-09-13 finding
 that `documentation`'s 52% was measured with a third of its tests compiled away, the fix and its
 gate, and the crate's full survivor ledger.
 
@@ -97,7 +97,7 @@ whole function with `()`.
 
 Forty-nine tests were added across four passes (the crate had 32 and has 81). Each was written
 against a named survivor rather than against a feature list. The dispositions of what the final run
-still reports, in [the triage rule's](../mutation-testing.md#the-triage-rule) vocabulary:
+still reports, in [the triage rule's](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md#the-triage-rule) vocabulary:
 
 | | count | what they are |
 |---|---|---|
@@ -176,5 +176,5 @@ whole function whose return value is the loop's step: `char_len -> 0` and
 `closer -> Some(0)`/`Some(1)`. Each leaves the caller advancing by nothing.
 
 A mutant that makes a loop stop advancing hangs rather than lying, which is the tests noticing.
-[Scope and honest caveats](../mutation-testing.md#scope-and-honest-caveats) says a timeout on a
+[Scope and honest caveats](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md#scope-and-honest-caveats) says a timeout on a
 mutant that could not hang would be triaged as a survivor instead, and none of these is that.

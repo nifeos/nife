@@ -1,6 +1,6 @@
 # The capability_plan crate, item by item
 
-An appendix to [notes/component-manifest.md](../component-manifest.md), which keeps the design: what a
+An appendix to [notes/component-manifest.md](https://github.com/nifeos/record/blob/main/notes/component-manifest.md), which keeps the design: what a
 manifest is, why it differs from `grant_contract::Manifest`, and its limits. This file holds the reasons
 behind each item of `crates/capability_plan`, which its doc comments link here for.
 

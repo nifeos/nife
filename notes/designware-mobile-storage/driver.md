@@ -1,6 +1,6 @@
 # The DesignWare Mobile Storage driver, source by source
 
-An appendix to [notes/designware-mobile-storage.md](../designware-mobile-storage.md), which keeps
+An appendix to [notes/designware-mobile-storage.md](https://github.com/nifeos/record/blob/main/notes/designware-mobile-storage.md), which keeps
 the part, the reuse, the data paths and the bench step. This file holds the evidence and sequences
 that `crates/designware_mobile_storage`'s module docs summarize: the device-tree evidence for the
 part, the card identification steps, and what the host simulation models.

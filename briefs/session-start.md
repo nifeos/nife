@@ -21,7 +21,7 @@ before its first `gh` or `git push`:
 
 Silent means it is on the `nife-smelter` App. A warning means it opted in but never applied the
 environment, so `gh` and `git` act as the personal login; prefix each command with
-`eval "$(helpers/smelter-token env)";` ([the note](../notes/session-identity.md)).
+`eval "$(helpers/smelter-token env)";` ([the note](https://github.com/nifeos/record/blob/main/notes/session-identity.md)).
 
 ## 0. Is the week's budget burning faster than the week
 
@@ -36,7 +36,7 @@ Claude Code warns on its own, within a five-hour window and as the weekly limit 
 warnings come when most of the week is spent. This line exists to be earlier than they are. It is a
 rung-4 exception, and a foot gun: the meter is outside the tree, and nothing fails when the line is
 skipped. On 2026-09-28 the week's allowance ran out two and a half days in, and the merge rate fell
-for five days ([the correction](../notes/coes/2026-10-03-the-merge-rate.md)).
+for five days ([the correction](https://github.com/nifeos/record/blob/main/notes/coes/2026-10-03-the-merge-rate.md)).
 
 ## 1. Are the watchers alive
 

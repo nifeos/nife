@@ -20,8 +20,8 @@ Bought for this project, in the order it was bought.
 
 | date | item | price (USD) | source |
 |---|---|---|---|
-| 2026-08-15 | **argon**, NVIDIA Jetson TX1 developer kit, used | 89.99 | milestone 127 (the seL4 machine: a Jetson TX1, so identical silicon referees the comparison), which records [the purchase and the delivery window](../../design/roadmap/0127-the-sel4-machine.md) |
-| 2026-08-15 | **xenon**, Dell OptiPlex 7050 Micro (i5-7500T, 16 GB, 256 GB NVMe) with AC adapter | 139.00 | milestone 87 (the x86_64 bare-metal machine), whose [block](../../design/roadmap/0087-x86-machine.md) records the purchase |
+| 2026-08-15 | **argon**, NVIDIA Jetson TX1 developer kit, used | 89.99 | milestone 127 (the seL4 machine: a Jetson TX1, so identical silicon referees the comparison), which records [the purchase and the delivery window](https://github.com/nifeos/record/blob/main/design/roadmap/0127-the-sel4-machine.md) |
+| 2026-08-15 | **xenon**, Dell OptiPlex 7050 Micro (i5-7500T, 16 GB, 256 GB NVMe) with AC adapter | 139.00 | milestone 87 (the x86_64 bare-metal machine), whose [block](https://github.com/nifeos/record/blob/main/design/roadmap/0087-x86-machine.md) records the purchase |
 | 2026-08-15 | xenon's Dell C4PDJ serial module, with cable | 18.88 | milestone 87 (the x86_64 bare-metal machine) |
 | 2026-08-15 | FTDI USB-to-RS-232 adapter, 0.46 m, for xenon's dev side | 15.96 | milestone 87 (the x86_64 bare-metal machine) |
 | 2026-08-15 | StarTech NM9FF null-modem barrel | 7.98 | milestone 87 (the x86_64 bare-metal machine) |

@@ -12,7 +12,7 @@ One table per group. Each links to an appendix holding the full row: flags, gate
 
 ### Build, test and gate
 
-Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
+Full rows: [build-test-and-gate.md](https://github.com/nifeos/record/blob/main/notes/scripts/build-test-and-gate.md).
 
 | script | what it does |
 |---|---|
@@ -40,7 +40,7 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 
 ### The tree's records and indexes
 
-Full rows: [records-and-indexes.md](scripts/records-and-indexes.md).
+Full rows: [records-and-indexes.md](https://github.com/nifeos/record/blob/main/notes/scripts/records-and-indexes.md).
 
 | script | what it does |
 |---|---|
@@ -57,7 +57,7 @@ Full rows: [records-and-indexes.md](scripts/records-and-indexes.md).
 
 ### How the project measures itself
 
-Full rows: [process-measures.md](scripts/process-measures.md).
+Full rows: [process-measures.md](https://github.com/nifeos/record/blob/main/notes/scripts/process-measures.md).
 
 | script | what it does |
 |---|---|
@@ -68,7 +68,7 @@ Full rows: [process-measures.md](scripts/process-measures.md).
 
 ### Boards and boot checks
 
-Full rows: [boards-and-boot-checks.md](scripts/boards-and-boot-checks.md).
+Full rows: [boards-and-boot-checks.md](https://github.com/nifeos/record/blob/main/notes/scripts/boards-and-boot-checks.md).
 
 | script | what it does |
 |---|---|
@@ -82,7 +82,7 @@ Full rows: [boards-and-boot-checks.md](scripts/boards-and-boot-checks.md).
 
 ### Load, concurrency and reliability
 
-Full rows: [load-and-reliability.md](scripts/load-and-reliability.md).
+Full rows: [load-and-reliability.md](https://github.com/nifeos/record/blob/main/notes/scripts/load-and-reliability.md).
 
 | script | what it does |
 |---|---|
@@ -97,7 +97,7 @@ Full rows: [load-and-reliability.md](scripts/load-and-reliability.md).
 
 ### Analysis, proofs and the supply chain
 
-Full rows: [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md).
+Full rows: [analysis-and-supply-chain.md](https://github.com/nifeos/record/blob/main/notes/scripts/analysis-and-supply-chain.md).
 
 | script | what it does |
 |---|---|
@@ -139,15 +139,15 @@ Full rows: the appendices above.
 |---|---|
 | `script/lint-fleet` | The fleet tooling's checks, apart from `script/lint`; CI runs both. |
 | `script/read-advisory <id>` | A fix lane reads an advisory. |
-| `script/claim <branch-name>` | Cut a lane's branch, worktree and draft pull request; sets `nife.fleet`. Push with `script/push`. `--debt-paydown` or `--new-work` ([debt-paydown.md](debt-paydown.md)). |
+| `script/claim <branch-name>` | Cut a lane's branch, worktree and draft pull request; sets `nife.fleet`. Push with `script/push`. `--debt-paydown` or `--new-work` ([debt-paydown.md](https://github.com/nifeos/record/blob/main/notes/debt-paydown.md)). |
 | `script/grant-org-secrets <repo>...` | Grant a repository the selected organization secrets. |
 | `script/preflight-queue`, `script/queue-conflicts` | Replay the merge queue locally; check for conflicts. |
 | `script/architect-queue`, `script/record-ruling` | The architect's queue; rulings. |
 | `script/nanny` | Work the merge queue. |
 | `script/redo-rate` | How often delegated work is redone. |
 | `script/effort` | Machine effort per ISO week, from session records. |
-| `script/launch-pass --reviewer glm\|fable --commit <sha>` | Start an outsider pass at a commit and model; `--complete` sends its one completion round ([outsider-passes.md](scripts/outsider-passes.md)). |
-| `script/booted-rows` | An outsider pass's booted rows against the brief's floor; `--short-only` for the completion round ([outsider-passes.md](scripts/outsider-passes.md)). |
+| `script/launch-pass --reviewer glm\|fable --commit <sha>` | Start an outsider pass at a commit and model; `--complete` sends its one completion round ([outsider-passes.md](https://github.com/nifeos/record/blob/main/notes/scripts/outsider-passes.md)). |
+| `script/booted-rows` | An outsider pass's booted rows against the brief's floor; `--short-only` for the completion round ([outsider-passes.md](https://github.com/nifeos/record/blob/main/notes/scripts/outsider-passes.md)). |
 
 ## They are thin wrappers, on purpose
 
@@ -160,7 +160,7 @@ The scripts add a normalized interface on top, and `cargo xtask …` still works
 
 `script/` is the front door. `helpers/` is the drawer behind it: cargo runners, `qemu-bounded.sh`,
 and modules the scripts import. You do not run those by hand. `bootstrap` installs system packages,
-and `ci-qemu` builds the pinned QEMU. [helpers-and-bootstrap.md](scripts/helpers-and-bootstrap.md)
+and `ci-qemu` builds the pinned QEMU. [helpers-and-bootstrap.md](https://github.com/nifeos/record/blob/main/notes/scripts/helpers-and-bootstrap.md)
 has the reasons, the exceptions and the 2026-09-23 rename from `scripts/`.
 
 ## A piped gate reports the pipe's status, not the gate's
@@ -173,7 +173,7 @@ $ script/lint > /tmp/lint.txt 2>&1; echo "exit=$?"
 ```
 
 `set -o pipefail` also fixes it, and `script/` entry points use it. Nothing can gate this.
-[piped-gate.md](scripts/piped-gate.md) has the redirect to use instead, and why it stays rung
+[piped-gate.md](https://github.com/nifeos/record/blob/main/notes/scripts/piped-gate.md) has the redirect to use instead, and why it stays rung
 four.
 
 ## CI leverages them
@@ -187,7 +187,7 @@ across jobs with its own scope predicate, and the table does not claim it.
 
 The lint job is named `lint` (calef, 2026-10-08 UTC). It runs every check in `script/lint`, then
 `script/lint-fleet`. The ruleset requires `lint` directly; the rename steps are in
-[lint-job-rename.md](scripts/lint-job-rename.md).
+[lint-job-rename.md](https://github.com/nifeos/record/blob/main/notes/scripts/lint-job-rename.md).
 
 ## The versioned hooks
 
@@ -203,7 +203,7 @@ covers every worktree at once, the case that motivated the first hook.
   the queue rather than a rule about what may exist on a branch.
 - It then runs `script/lint --no-cargo` (every check that does not invoke cargo; clippy stays in
   CI). A push that changes no files, a claim, skips both. See
-  [queue-ejection.md](queue-ejection.md).
+  [queue-ejection.md](https://github.com/nifeos/record/blob/main/notes/queue-ejection.md).
 - With `nife.fleet` set (by `script/claim`) it runs `helpers/pre-push-fleet.sh`. Without it, no
   `gh` or network.
 
@@ -230,7 +230,7 @@ display, compositor and network tests live. The kernel crate links no service or
 2026-09-27). A test that does goes in `system_tests/src/user/`, and its doc comment says which
 internals it observes and why no system call could show them. Existing tests that observe nothing
 internal move to userspace over time; the backlog is in
-[system-tests-and-the-kernel-crate.md](system-tests-and-the-kernel-crate.md).
+[system-tests-and-the-kernel-crate.md](https://github.com/nifeos/record/blob/main/notes/system-tests-and-the-kernel-crate.md).
 
 ## Running one kernel test (`script/test --test`)
 
@@ -262,7 +262,7 @@ So the boot is about 1% of the QEMU leg. What
 is left in the 8.6 s is the fixture work `test` does before
 any leg (the userspace archive, the `std` exerciser, and five disk images), not the boot.
 
-[one-kernel-test.md](scripts/one-kernel-test.md) has how the filter reaches the kernel, what it
+[one-kernel-test.md](https://github.com/nifeos/record/blob/main/notes/scripts/one-kernel-test.md) has how the filter reaches the kernel, what it
 switches off, and `--repeat N`.
 
 ### EXAMPLES
@@ -318,19 +318,19 @@ nothing is counting across images for it.
 
 ## Appendices
 
-The directory and stems are provisional names; [the directory's README](scripts/README.md) says so.
+The directory and stems are provisional names; [the directory's README](https://github.com/nifeos/record/blob/main/notes/scripts/README.md) says so.
 
 | Appendix | What it holds |
 |---|---|
-| [build-test-and-gate.md](scripts/build-test-and-gate.md) | full rows for build, test and gate; what the rows cite; Counted claims, one of `script/lint`'s checks |
-| [records-and-indexes.md](scripts/records-and-indexes.md) | full rows for the record and index commands |
-| [process-measures.md](scripts/process-measures.md) | full rows for the process measures |
-| [boards-and-boot-checks.md](scripts/boards-and-boot-checks.md) | full rows for the board and boot commands |
-| [load-and-reliability.md](scripts/load-and-reliability.md) | full rows for the load and reliability commands |
-| [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md) | full rows for analysis, proofs and the supply chain |
-| [helpers-and-bootstrap.md](scripts/helpers-and-bootstrap.md) | Two things that are deliberately the way they are |
-| [one-kernel-test.md](scripts/one-kernel-test.md) | How the filter reaches the kernel; What the flag turns off |
-| [piped-gate.md](scripts/piped-gate.md) | a piped gate's exit status, and the fix |
-| [heavy-job-slots.md](scripts/heavy-job-slots.md) | how many heavy jobs run at once, and nesting |
-| [lint-job-rename.md](scripts/lint-job-rename.md) | the lint job, and the three steps that rename a required check |
-| [outsider-passes.md](scripts/outsider-passes.md) | `script/launch-pass` and `script/booted-rows`: full rows, EXAMPLES and BUGS |
+| [build-test-and-gate.md](https://github.com/nifeos/record/blob/main/notes/scripts/build-test-and-gate.md) | full rows for build, test and gate; what the rows cite; Counted claims, one of `script/lint`'s checks |
+| [records-and-indexes.md](https://github.com/nifeos/record/blob/main/notes/scripts/records-and-indexes.md) | full rows for the record and index commands |
+| [process-measures.md](https://github.com/nifeos/record/blob/main/notes/scripts/process-measures.md) | full rows for the process measures |
+| [boards-and-boot-checks.md](https://github.com/nifeos/record/blob/main/notes/scripts/boards-and-boot-checks.md) | full rows for the board and boot commands |
+| [load-and-reliability.md](https://github.com/nifeos/record/blob/main/notes/scripts/load-and-reliability.md) | full rows for the load and reliability commands |
+| [analysis-and-supply-chain.md](https://github.com/nifeos/record/blob/main/notes/scripts/analysis-and-supply-chain.md) | full rows for analysis, proofs and the supply chain |
+| [helpers-and-bootstrap.md](https://github.com/nifeos/record/blob/main/notes/scripts/helpers-and-bootstrap.md) | Two things that are deliberately the way they are |
+| [one-kernel-test.md](https://github.com/nifeos/record/blob/main/notes/scripts/one-kernel-test.md) | How the filter reaches the kernel; What the flag turns off |
+| [piped-gate.md](https://github.com/nifeos/record/blob/main/notes/scripts/piped-gate.md) | a piped gate's exit status, and the fix |
+| [heavy-job-slots.md](https://github.com/nifeos/record/blob/main/notes/scripts/heavy-job-slots.md) | how many heavy jobs run at once, and nesting |
+| [lint-job-rename.md](https://github.com/nifeos/record/blob/main/notes/scripts/lint-job-rename.md) | the lint job, and the three steps that rename a required check |
+| [outsider-passes.md](https://github.com/nifeos/record/blob/main/notes/scripts/outsider-passes.md) | `script/launch-pass` and `script/booted-rows`: full rows, EXAMPLES and BUGS |

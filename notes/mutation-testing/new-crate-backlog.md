@@ -4,7 +4,7 @@
 
 This appendix holds the triage of the seven worst new crates at the 2026-09-14 census, and the
 `tests::` exclusion that part of the work added. The summary and the current figures are in
-[notes/mutation-testing.md](../mutation-testing.md).
+[notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md).
 
 ## 2026-09-20: milestone 326 part 3, the new-crate backlog
 
@@ -58,7 +58,7 @@ accept, and a function that gathers is broken by making it never advance. Neithe
 return value, because neither returns. The suite hangs, and `cargo mutants` can only report a suite
 that did not finish as a timeout. It cannot tell that from a slow suite.
 
-The standing reading, in [how to read the numbers](../mutation-testing.md#how-to-read-the-numbers),
+The standing reading, in [how to read the numbers](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md#how-to-read-the-numbers),
 is that such a timeout is the tests noticing rather than missing, and that stays true. What part 3
 adds is that noticing by hanging is worth converting into noticing by failing, where the crate
 allows it. The difference matters to the person who runs `cargo test` and gets no output at all.
