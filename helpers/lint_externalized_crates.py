@@ -95,8 +95,9 @@ def compile_rules(consumers):
     return nife, nifeos, cons
 
 
-# A manifest dependency taken from a repository of the organization.
-GIT_DEPENDENCY = re.compile(r'git\s*=\s*"https://github\.com/nifeos/[A-Za-z0-9_.-]+"')
+# A manifest dependency taken from a repository of our organizations: the crate repositories in
+# partsfoundry, or nifeos.
+GIT_DEPENDENCY = re.compile(r'git\s*=\s*"https://github\.com/(?:partsfoundry|nifeos)/[A-Za-z0-9_.-]+"')
 
 # The marker ends the line, as the last comment on it.
 WIRE_LITERAL = re.compile(r"(?://|#|/\*)\s*wire literal(?:\s*\*/)?\s*$")
@@ -172,6 +173,7 @@ def selftest():
     assert t("a/Cargo.toml", 'description = "for nifeos"') == ["nifeos-word"]
     assert t("a/README.md", "see github.com/nifeos/x") == ["nifeos-word"]
     assert t("a/Cargo.toml", 'y = { version = "0.1.0", git = "https://github.com/nifeos/y", rev = "abc" }') == []
+    assert t("a/Cargo.toml", 'y = { version = "0.1.0", git = "https://github.com/partsfoundry/y", rev = "abc" }') == []
     assert t("a/Cargo.toml", 'y = { git = "https://example.com/nifeos/y" }') == ["nifeos-word"]
     assert t("a/README.md", "[![check](https://github.com/nifeos/x/actions/workflows/ci.yml/badge.svg)](https://github.com/nifeos/x)") == []
     # A marked line is exempt; an unmarked one, or a marker that is not last, is not.

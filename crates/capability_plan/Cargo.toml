@@ -12,4 +12,4 @@ workspace = true
 # The rights bits and the mapping modes, and nothing else. They are here rather than at the
 # operator's call site on purpose: a supervisor that never spells `READ` cannot spell it wrong, and
 # a declared direction is the only thing this crate will turn into a right.
-moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
+moho_abi = { version = "0.1.0", git = "https://github.com/partsfoundry/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }

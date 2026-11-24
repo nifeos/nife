@@ -25,7 +25,7 @@
 //! - **Root ports only.** A keyboard behind a hub, or with one inside it, is not found; the hub
 //!   is refused as not a keyboard.
 //! - **One keyboard.** The first found is served; a second is ignored until the first is unplugged.
-//! - **No key repeat, no lock keys, no LEDs** (`nifeos/universal_serial_bus`'s BUGS): holding a key types it once.
+//! - **No key repeat, no lock keys, no LEDs** (`partsfoundry/universal_serial_bus`'s BUGS): holding a key types it once.
 //! - **Bring-up polls the event ring**, with bounds from the specification (nifeos/record:notes/usb.md).
 //! - **Only port changes survive a command wait**; a key pressed meanwhile is lost (nifeos/record:notes/usb.md).
 //! - **A lying controller can silence the keyboard.** A transfer event naming a TRB or a buffer

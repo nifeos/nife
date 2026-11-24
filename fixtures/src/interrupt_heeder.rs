@@ -31,7 +31,7 @@ use user_mode_runtime::exit;
 use user_mode_runtime::mapped_window::{self, MappedWindow};
 
 /// Where init maps the shared job frame in the child's address space. Must match the shell/init
-/// wiring. A pair page on the address-space map (`nifeos/address_space_layout`).
+/// wiring. A pair page on the address-space map (`partsfoundry/address_space_layout`).
 const JOB_PAGE_FRAME_VA: usize = 0x0030_0000;
 
 // SAFETY: init mapped one page read/write at JOB_PAGE_FRAME_VA before this program runs (milestone 139

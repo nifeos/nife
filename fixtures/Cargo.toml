@@ -622,8 +622,8 @@ packaged_only = ["greeting", "noteless", "greeting_v2", "alto", "tenor", "dialer
 
 [dependencies]
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
-address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
-moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
+moho_abi = { version = "0.1.0", git = "https://github.com/partsfoundry/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
 # The words the milestone 7-19 capability demonstrations agree on, now that each is its own
 # binary (milestone 291). AGENTS.md rule 7: what two binaries must agree on is a crate.
 capability_witness_contract = { version = "0.1.0", path = "../crates/capability_witness_contract" }
@@ -648,8 +648,8 @@ capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
 # The serving loop both swappable programs run; the wire format stays in `hot_swap_contract`.
 hot_swap_server = { version = "0.1.0", path = "../crates/hot_swap_server" }
-grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
-grant_plan = { version = "0.1.0", git = "https://github.com/nifeos/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
+grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
+grant_plan = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The soak workload's shared page (milestone 219). The kernel reads what the soaker writes, so the
 # layout and the reply transform live in one crate rather than in two copies.
@@ -670,11 +670,11 @@ static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 # note), provisional): `greeting`, and the unvouched witness whose note asks for what it will not be
 # given.
 capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
-file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
-file_system_fixture = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+file_system_fixture = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
-terminal_contract = { version = "0.1.0", git = "https://github.com/nifeos/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
-byte_sink_contract = { version = "0.1.0", git = "https://github.com/nifeos/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }
+terminal_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
+byte_sink_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }
 byte_sink_fixture = { version = "0.1.0", path = "../crates/byte_sink_fixture" }
 primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_benchmark_contract" }
 # The durable schedule store's shared names (milestone 152, DECISIONS §122 (the on-disk schedule
@@ -697,8 +697,8 @@ socket_fixture = { version = "0.1.0", path = "../crates/socket_fixture" }
 # kernel's test must agree on (milestone 384, provisional names).
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }
 domain_name_resolution_fixture = { version = "0.1.0", path = "../crates/domain_name_resolution_fixture" }
-clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
+clock_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
 # `unreachable_network_witness`'s entropy probe (milestone 202's unvouched-child claim, DECISIONS
 # §219 (how the shell names an installed program to the spawner) gate D2): a real `GET`, so a child wrongly handed the service gets an answer rather than a
 # request the service would not recognise. Already in the shipping graph through `components`.
-entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
+entropy_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }

@@ -18,7 +18,7 @@
 #
 # **What it does**, in order:
 #
-# 1. Fetches the template, `nifeos/crate-workflows`, at its newest `v*` release (or
+# 1. Fetches the template, `partsfoundry/crate-workflows`, at its newest `v*` release (or
 #    `--template-rev`), by a fresh clone into a temporary directory, or from `--template`, a local
 #    checkout it only reads (`git archive`).
 # 2. Copies the crate's tracked files into `--into`, which must be empty or absent.
@@ -81,7 +81,7 @@
 #
 #     $ script/crate-move --dry-run --into "$TMPDIR/fat" --no-build file_allocation_table
 #     crate-move: file_allocation_table, a dry run into /tmp/fat
-#       ok   template: https://github.com/nifeos/crate-workflows at v7 (ce603f5...)
+#       ok   template: https://github.com/partsfoundry/crate-workflows at v7 (ce603f5...)
 #       ok   copy: 116 tracked files of crates/file_allocation_table
 #       ...
 #

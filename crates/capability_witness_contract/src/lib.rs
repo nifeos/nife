@@ -12,7 +12,7 @@
 //! is, since a sentinel recognised by a second program is a witness value. Refused
 //! `capability_demo_protocol` (`demo` says why the code exists, not what it is), `demo_words` (the
 //! representation, not the agreement), `capability_demo` (reads as the demo itself), and folding
-//! these into `nifeos/moho_abi` (fixture constants have no business widening the system call surface).
+//! these into `partsfoundry/moho_abi` (fixture constants have no business widening the system call surface).
 
 #![no_std]
 

@@ -44,7 +44,7 @@
 #
 # - **It does not reach the design record**, which holds every page the paragraph above names as the
 #   reason this exists: the decisions, nifeos/record:notes/net.md and the stranger-test notes. The
-#   system call numbers are in nifeos/moho_abi, outside this tree too. Until a search reaches the
+#   system call numbers are in partsfoundry/moho_abi, outside this tree too. Until a search reaches the
 #   record, a reader looks there on GitHub. A milestone that builds one is proposed in nifeos/record.
 # - **Whole words only, and no stemming.** `system_call` and `system_calls` are two terms, so a search for
 #   one does not find the other. `documentation::index::normalize` is what decides that and it is the

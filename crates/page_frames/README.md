@@ -1,9 +1,9 @@
 # page_frames
 
-[![check](https://github.com/nifeos/page_frames/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nifeos/page_frames/actions/workflows/ci.yml?query=branch%3Amain)
-[![proofs](https://github.com/nifeos/page_frames/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/nifeos/page_frames/actions/workflows/proofs.yml?query=branch%3Amain)
-[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/page_frames#license)
-[![minimum Rust version](https://img.shields.io/badge/rust-1.87%2B-blue.svg)](https://github.com/nifeos/page_frames/blob/main/Cargo.toml)
+[![check](https://github.com/partsfoundry/page_frames/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/partsfoundry/page_frames/actions/workflows/ci.yml?query=branch%3Amain)
+[![proofs](https://github.com/partsfoundry/page_frames/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/partsfoundry/page_frames/actions/workflows/proofs.yml?query=branch%3Amain)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/partsfoundry/page_frames#license)
+[![minimum Rust version](https://img.shields.io/badge/rust-1.87%2B-blue.svg)](https://github.com/partsfoundry/page_frames/blob/main/Cargo.toml)
 
 A physical page frame allocator over a borrowed bitmap, where every frame stays used until it is
 declared RAM.

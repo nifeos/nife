@@ -53,7 +53,7 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
 - **Capability forgery or widening.** Minting a capability that was never granted, widening rights
   across `derive`, `Send`, or delegation, naming another process's CapabilityTable or endpoints, or reusing a
   generational name after revocation (DECISIONS §10 (the process model), §13 (capability revocation
-  and untyped reclamation), §16 (object revocation); `nifeos/capability_table`).
+  and untyped reclamation), §16 (object revocation); `partsfoundry/capability_table`).
 - **MMU escape.** EL0 reading, writing, or executing kernel memory or another address space;
   breaking W^X; a stale TLB entry exposing a dead owner's data; anything reachable from userspace
   that maps physical memory outside the process's own untyped budget (`crates/page_tables`,

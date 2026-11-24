@@ -5,7 +5,7 @@ version = 4
 [[package]]
 name = "address_space_layout"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/address_space_layout?rev=02d497b62915c1fb133ef1de6e76598fa51e67fe#02d497b62915c1fb133ef1de6e76598fa51e67fe"
+source = "git+https://github.com/partsfoundry/address_space_layout?rev=02d497b62915c1fb133ef1de6e76598fa51e67fe#02d497b62915c1fb133ef1de6e76598fa51e67fe"
 
 [[package]]
 name = "aes"
@@ -82,7 +82,7 @@ dependencies = [
 [[package]]
 name = "byte_sink_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/byte_sink_contract?rev=8a6c4599882e505d219829fd106d9e572d56f6e9#8a6c4599882e505d219829fd106d9e572d56f6e9"
+source = "git+https://github.com/partsfoundry/byte_sink_contract?rev=8a6c4599882e505d219829fd106d9e572d56f6e9#8a6c4599882e505d219829fd106d9e572d56f6e9"
 
 [[package]]
 name = "byteorder"
@@ -129,7 +129,7 @@ dependencies = [
 [[package]]
 name = "clock_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
+source = "git+https://github.com/partsfoundry/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
 dependencies = [
  "loom",
 ]
@@ -144,7 +144,7 @@ dependencies = [
 [[package]]
 name = "counter_frequency_contract"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
+source = "git+https://github.com/partsfoundry/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
 
 [[package]]
 name = "cpufeatures"
@@ -175,12 +175,12 @@ dependencies = [
 [[package]]
 name = "designware_ethernet"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/designware_ethernet?rev=d6730d2218edead38fac3fe96703eaa1e5e92ee2#d6730d2218edead38fac3fe96703eaa1e5e92ee2"
+source = "git+https://github.com/partsfoundry/designware_ethernet?rev=d6730d2218edead38fac3fe96703eaa1e5e92ee2#d6730d2218edead38fac3fe96703eaa1e5e92ee2"
 
 [[package]]
 name = "device_tree_blob"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/device_tree_blob?rev=96ad52af96e38e38577f91a787f53b789dbdda4f#96ad52af96e38e38577f91a787f53b789dbdda4f"
+source = "git+https://github.com/partsfoundry/device_tree_blob?rev=96ad52af96e38e38577f91a787f53b789dbdda4f#96ad52af96e38e38577f91a787f53b789dbdda4f"
 
 [[package]]
 name = "device_tree_patch"
@@ -210,7 +210,7 @@ dependencies = [
 [[package]]
 name = "domain_name_system"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/domain_name_system?rev=c656cdd9206149dd147d6550c339f1cc520aadd0#c656cdd9206149dd147d6550c339f1cc520aadd0"
+source = "git+https://github.com/partsfoundry/domain_name_system?rev=c656cdd9206149dd147d6550c339f1cc520aadd0#c656cdd9206149dd147d6550c339f1cc520aadd0"
 
 [[package]]
 name = "endian-num"
@@ -221,7 +221,7 @@ checksum = "f8f59926911ef34d1efb9ea1ee8ca78385df62ce700ccf2bcb149011bd226888"
 [[package]]
 name = "entropy_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
+source = "git+https://github.com/partsfoundry/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
 
 [[package]]
 name = "env_filter"
@@ -246,12 +246,12 @@ dependencies = [
 [[package]]
 name = "file_system_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
+source = "git+https://github.com/partsfoundry/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
 
 [[package]]
 name = "file_system_fixture"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
+source = "git+https://github.com/partsfoundry/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
 dependencies = [
  "file_system_contract",
 ]
@@ -339,7 +339,7 @@ version = "0.1.0"
 [[package]]
 name = "grant_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/grant_contract?rev=d4e9ca29d51bc71d678aadaa00411eba953202b3#d4e9ca29d51bc71d678aadaa00411eba953202b3"
+source = "git+https://github.com/partsfoundry/grant_contract?rev=d4e9ca29d51bc71d678aadaa00411eba953202b3#d4e9ca29d51bc71d678aadaa00411eba953202b3"
 dependencies = [
  "program_argument_contract",
 ]
@@ -386,7 +386,7 @@ version = "0.1.0"
 [[package]]
 name = "jh7110_entropy"
 version = "0.3.0-pre.1"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=df37dc91383c4226b0266499c48de7e5e92ecb99#df37dc91383c4226b0266499c48de7e5e92ecb99"
+source = "git+https://github.com/partsfoundry/jh7110_entropy?rev=df37dc91383c4226b0266499c48de7e5e92ecb99#df37dc91383c4226b0266499c48de7e5e92ecb99"
 
 [[package]]
 name = "jh7110_pci_express"
@@ -530,7 +530,7 @@ dependencies = [
 [[package]]
 name = "moho_abi"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/moho_abi?rev=c8d556ec5ca7e567df529368c7dd24943423ab74#c8d556ec5ca7e567df529368c7dd24943423ab74"
+source = "git+https://github.com/partsfoundry/moho_abi?rev=c8d556ec5ca7e567df529368c7dd24943423ab74#c8d556ec5ca7e567df529368c7dd24943423ab74"
 
 [[package]]
 name = "nife_partition_types"
@@ -614,7 +614,7 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
+source = "git+https://github.com/partsfoundry/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
 
 [[package]]
 name = "quote"

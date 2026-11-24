@@ -368,7 +368,7 @@ def load(root):
 # empties.
 _DEVICE_OWNERS = ("the owner's spelling: QEMU device names, the devicetree's `virtio,mmio`, Linux "
                   "module names and captured device output")
-_BLOCK_ROSTER = ("nifeos/block_roster_contract defines these constants, and its own repository "
+_BLOCK_ROSTER = ("partsfoundry/block_roster_contract defines these constants, and its own repository "
                  "renames them first; nife follows when its pin moves")
 _TRANSPORTS = frozenset({"TRANSPORT_VIRTIO_MEMORY_MAPPED_IO", "TRANSPORT_VIRTIO_PCI"})
 VIRTIO_BOUNDARY = {

@@ -41,7 +41,7 @@
 
 /// Where the kernel maps the page in every worker's address space.
 ///
-/// A pair page on the address-space map (`nifeos/address_space_layout`), the same neighbourhood
+/// A pair page on the address-space map (`partsfoundry/address_space_layout`), the same neighbourhood
 /// `program_table::job_channel_page`'s window uses.
 pub const VA: u64 = address_space_layout::pair_page(0x0020_0000);
 

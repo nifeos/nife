@@ -19,7 +19,7 @@ publish = false
 # The implementation under test. Ruled 2026-11-16 (UTC) on pull request #3639: a host-only
 # dependency of this tool, pinned exactly, in a workspace of its own, never in a nife image,
 # kernel, program or shipping lockfile. That ruling is not the §46 (thin primitives or whole
-# subsystems) ruling on whether nife ships `rsext4`, which stays open. Taken from nifeos/rsext4,
+# subsystems) ruling on whether nife ships `rsext4`, which stays open. Taken from partsfoundry/rsext4,
 # the fork that carries nife's fixes until upstream releases them (ruled 2026-11-23 UTC), pinned
 # by `rev` under §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed
 # commit), because `expected.txt` and `write-expected.txt` describe what that commit reads and
@@ -27,4 +27,4 @@ publish = false
 # Default features off: the reader needs no `std` integration from the crate, and the defaults
 # would add nothing the oracle reads.
 [dependencies]
-rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/nifeos/rsext4", rev = "33cb5ed9ab1ef6538e831c0c068010a305a0fb58", default-features = false }
+rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/partsfoundry/rsext4", rev = "33cb5ed9ab1ef6538e831c0c068010a305a0fb58", default-features = false }
