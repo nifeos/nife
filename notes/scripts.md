@@ -51,7 +51,6 @@ Full rows: [records-and-indexes.md](scripts/records-and-indexes.md).
 | `script/fatal-risks` | Does `nifeos/record:design/fatal-risks/README.md` agree with the records it cites? |
 | `script/catch-up` | What changed since you last looked. |
 | `script/apropos <word>` | Search every document in the repository. |
-| `script/site` | Build the design record as a website and report its broken links. |
 | `script/names` | Who named this, when, and what was refused. |
 | `script/review-status` | Crate review findings, by state. |
 | `script/metrics` | The weekly measures behind `nifeos/record:notes/project-metrics.md`. |

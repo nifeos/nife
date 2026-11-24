@@ -76,14 +76,6 @@ reason = "documentation; the site, a package or the records is an open question"
 paths = ["vendor/README.md", "vendor/upstream-status.md"]
 
 [[home]]
-# The site build, milestone 1018 (the design record moves to `nifeos/record` and is published as a
-# website) step 3. The website repository pulls the record, each crate's page and the tutorial at
-# build time, and builds and deploys the site.
-status = "provisional"
-repo = "nifeos.org"
-paths = ["site/"]
-
-[[home]]
 status = "undecided"
 reason = "the build and gates follow the integrating repository, not yet named"
 # vendor/crate-workflows is the template's naming gates, which helpers/ runs.
