@@ -57,7 +57,7 @@ confined component drives them at boot, so they are exempt and graded `host`. Wh
 grows, the floor is every row a boot can reach.
 
 `script/booted-rows` reads the lines below and counts the rows of the claims table in
-[`notes/confinement-claims.md`](https://github.com/nifeos/record/blob/main/notes/confinement-claims.md); the floor is every row there that is not exempt.
+[`notes/confinement-claims.md`](https://github.com/partsfoundry/record/blob/main/notes/confinement-claims.md); the floor is every row there that is not exempt.
 
     exempt: 12 to 18
     carried from pass 7: 1 to 3
@@ -114,7 +114,7 @@ attacks, and why that is enough>`, one per row.
 
 ### Mechanics
 
-Read `notes/scripts.md` and [`notes/qemu.md`](https://github.com/nifeos/record/blob/main/notes/qemu.md). The two test files above are a working harness to copy:
+Read `notes/scripts.md` and [`notes/qemu.md`](https://github.com/partsfoundry/record/blob/main/notes/qemu.md). The two test files above are a working harness to copy:
 
 - Layout: one module per attack family under `system_tests/src/user/`, declared in
   `system_tests/src/user.rs` under `#[cfg(test)]` with a doc comment saying which claims it

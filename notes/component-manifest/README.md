@@ -1,7 +1,7 @@
 # The component manifest: the appendices to notes/component-manifest.md
 
-The rest of this directory, its parent note and its full index are in nifeos/record, at
-[`notes/component-manifest/`](https://github.com/nifeos/record/tree/main/notes/component-manifest).
+The rest of this directory, its parent note and its full index are in partsfoundry/record, at
+[`notes/component-manifest/`](https://github.com/partsfoundry/record/tree/main/notes/component-manifest).
 The file here documents one crate alone, so it stays with the code.
 
 - [`capability-plan.md`](capability-plan.md): the reason behind each item of

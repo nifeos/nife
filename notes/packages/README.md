@@ -1,7 +1,7 @@
 # Packages: the appendices to notes/packages.md
 
-The rest of this directory, its parent note and its full index are in nifeos/record, at
-[`notes/packages/`](https://github.com/nifeos/record/tree/main/notes/packages). The files here
+The rest of this directory, its parent note and its full index are in partsfoundry/record, at
+[`notes/packages/`](https://github.com/partsfoundry/record/tree/main/notes/packages). The files here
 document one crate alone, so they stay with the code.
 
 - [`installed-programs.md`](installed-programs.md): the installed-programs table's line format,

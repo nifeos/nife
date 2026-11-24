@@ -101,7 +101,7 @@ already holds the worker's commits. The worktree and its work stay for this step
 
 There is no relink. Each worktree links its farm under its own name,
 `nife-dev-<directory>-<hash>`, and the next `cargo xtask std-src` anywhere on the machine removes
-the link a pruned worktree left ([notes/std.md](https://github.com/nifeos/record/blob/main/notes/std.md)). The bare `nife-dev` link is written only by lanes
+the link a pruned worktree left ([notes/std.md](https://github.com/partsfoundry/record/blob/main/notes/std.md)). The bare `nife-dev` link is written only by lanes
 cut before 2026-10-10. Once `gh pr list --draft` shows none of
 them still open, remove it once, and this paragraph with it:
 
@@ -118,7 +118,7 @@ It keeps every worktree's `rust-toolchain.toml` pin, Kani's pin (read from the i
 anything not a dated nightly, so `stable` and the `nife-dev-*` links are never touched. It runs
 after the prune, because a removed worktree releases its pin. It cannot run in the CI
 toolchain-bump workflow, whose runner has its own throwaway `~/.rustup` and never sees this Mac's.
-[`notes/std.md`](https://github.com/nifeos/record/blob/main/notes/std.md) has the mechanism and the history of the shared link this replaced.
+[`notes/std.md`](https://github.com/partsfoundry/record/blob/main/notes/std.md) has the mechanism and the history of the shared link this replaced.
 
 ## EXAMPLES
 
@@ -180,7 +180,7 @@ Three things are outside this brief. Stop and hand them back rather than guessin
   different hat. So the homeless-finding check is a human reading a report, and it has already
   failed once at scale. Milestone 94 (the untracked-work sweep, and the convention that ends the
   category) left its own inventory in a pull request body for twelve days. By then the item-level
-  list was gone and had to be re-derived ([`notes/untracked-work-sweep.md`](https://github.com/nifeos/record/blob/main/notes/untracked-work-sweep.md)).
+  list was gone and had to be re-derived ([`notes/untracked-work-sweep.md`](https://github.com/partsfoundry/record/blob/main/notes/untracked-work-sweep.md)).
 - **A pruned worktree's toolchain link lingers until some worktree next runs `std-src`.** It is
   dangling and breaks nothing, since no other worktree resolves through it.
 - The example paths are invented. The main checkout is whatever your clone is, and lanes live in

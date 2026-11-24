@@ -4,8 +4,8 @@
 
 This note carries the design that `crates/video_terminal`'s doc comments link to. The crate is the
 grid a display terminal keeps: bytes in, a character grid out, plus the rectangle that changed. Its
-font and its limits are in [glyphs.md](https://github.com/nifeos/record/blob/main/notes/glyphs.md), and the line discipline it displays is in
-[terminal-contract.md](https://github.com/nifeos/record/blob/main/notes/terminal-contract.md). The stem `video-terminal` is a provisional name.
+font and its limits are in [glyphs.md](https://github.com/partsfoundry/record/blob/main/notes/glyphs.md), and the line discipline it displays is in
+[terminal-contract.md](https://github.com/partsfoundry/record/blob/main/notes/terminal-contract.md). The stem `video-terminal` is a provisional name.
 
 Two appendices hold the rest: [the handoff blob and the
 component](video-terminal/handoff-and-component.md), and [the palette, the keymap and the test
@@ -173,7 +173,7 @@ catches a violation.
 A scroll is not a change to any cell; it changes where the cells are. Reporting it as a whole-grid
 rectangle forces every consumer to re-render a screen whose pixels it already holds. On the
 `x86_64` swish leg that re-render, per scrolled line, was most of 321 s
-([benchmarks/icount-tick-scales.md](https://github.com/nifeos/record/blob/main/notes/benchmarks/icount-tick-scales.md), the swish-check row). So
+([benchmarks/icount-tick-scales.md](https://github.com/partsfoundry/record/blob/main/notes/benchmarks/icount-tick-scales.md), the swish-check row). So
 `Damage` has two fields and one invariant: move the picture up `scrolled` cell rows, then render
 `rect`, and the result is the grid. A consumer that cannot move pixels uses `repaint_rect`, which
 folds the scroll into a whole-grid box.

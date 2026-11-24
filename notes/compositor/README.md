@@ -1,7 +1,7 @@
 # The compositor: the appendices to notes/compositor.md
 
-The rest of this directory, its parent note and its full index are in nifeos/record, at
-[`notes/compositor/`](https://github.com/nifeos/record/tree/main/notes/compositor). The file here
+The rest of this directory, its parent note and its full index are in partsfoundry/record, at
+[`notes/compositor/`](https://github.com/partsfoundry/record/tree/main/notes/compositor). The file here
 documents one crate alone, so it stays with the code.
 
 - [`arithmetic.md`](arithmetic.md): why the scene is fixed and shaped as it is, the two clips, and

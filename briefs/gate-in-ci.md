@@ -66,8 +66,8 @@ one line:
     WAITING <ci-run-id> <verify-run-id> on ci.yml + verify.yml for <branch>
 
 A run in another repository (basalt, crate-workflows, crate-workflows-test) is written
-`<owner>/<repo>:<run_id>`, for example `WAITING nifeos/basalt:<run_id> on build.yml for <branch>`;
-a bare id means nifeos/nife. The maintainer adds those ids to the watch list; a watcher wakes the maintainer when both finish,
+`<owner>/<repo>:<run_id>`, for example `WAITING partsfoundry/basalt:<run_id> on build.yml for <branch>`;
+a bare id means partsfoundry/nife. The maintainer adds those ids to the watch list; a watcher wakes the maintainer when both finish,
 or when either fails, and resumes you with the result. If a run looks stuck, that is the
 maintainer's call on resumption, not a reason to re-run it yourself.
 
@@ -104,7 +104,7 @@ Arming means you have stopped editing. If a check goes red after arming, the pul
 reaches the queue; fix it the same way, then confirm that auto-merge survived the push with `gh pr
 view <N> --json autoMergeRequest`, and arm again if it is null. Once the pull request is queued,
 push nothing. A push to a queued branch removes it from the queue, throws away its group build and
-cancels its auto-merge. The pre-push hook refuses it; see [`notes/merge-queue.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue.md), "A push to a
+cancels its auto-merge. The pre-push hook refuses it; see [`notes/merge-queue.md`](https://github.com/partsfoundry/record/blob/main/notes/merge-queue.md), "A push to a
 queued branch".
 
 An armed pull request whose checks are green can still sit outside the queue with GitHub reporting
@@ -114,7 +114,7 @@ first BUGS entry below). Turn auto-merge off and on, which enqueues it again:
     gh pr merge <N> --disable-auto && helpers/arm.sh <N>
 
 If it stays `BLOCKED`, look for a cancelled run that is the newest of its workflow on the head
-commit. That is the duplicate `synchronize` in [`notes/merge-queue/limitations.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue/limitations.md), and the merge
+commit. That is the duplicate `synchronize` in [`notes/merge-queue/limitations.md`](https://github.com/partsfoundry/record/blob/main/notes/merge-queue/limitations.md), and the merge
 drain reruns it.
 
 A ready pull request left unarmed for 30 minutes is labeled `needs-maintainer` for a maintainer
@@ -152,8 +152,8 @@ settles. That is not a `WAITING` line, and CI is not what will unblock it.
 
 Say so where a machine can act on it instead: add `Blocked-by: #N[, #M ...]` to this draft's own
 body before ending the turn. `helpers/merge-drain.sh` labels the draft `unblocked` and comments once
-every listed pull request has merged or closed. [`notes/blocked-by-drafts.md`](https://github.com/nifeos/record/blob/main/notes/blocked-by-drafts.md) has the mechanism;
-[`notes/merge-queue.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue.md)'s `Blocked-by:` section has why a plain "held" label was refused, and what
+every listed pull request has merged or closed. [`notes/blocked-by-drafts.md`](https://github.com/partsfoundry/record/blob/main/notes/blocked-by-drafts.md) has the mechanism;
+[`notes/merge-queue.md`](https://github.com/partsfoundry/record/blob/main/notes/merge-queue.md)'s `Blocked-by:` section has why a plain "held" label was refused, and what
 the line does on a ready pull request. A listed pull request closed without merging is
 called out as such rather than silently released, because it usually means the plan changed. The
 label clears itself the moment you push a new commit or mark the draft ready, so resuming needs

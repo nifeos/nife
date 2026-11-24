@@ -1,6 +1,6 @@
 # The bitmap font crate, its table and its specimen sheet
 
-An appendix to [notes/glyphs.md](https://github.com/nifeos/record/blob/main/notes/glyphs.md), which keeps the font's geometry and provenance.
+An appendix to [notes/glyphs.md](https://github.com/partsfoundry/record/blob/main/notes/glyphs.md), which keeps the font's geometry and provenance.
 This file holds how `crates/bitmap_font` is built and tested, and how `examples/specimen.rs` reads
 candidate fonts.
 
@@ -76,7 +76,7 @@ one half block is about square. That is the mode for "does this look good". `--d
 character per pixel, the mode for "what exactly is in this glyph". Some terminals antialias U+2580
 and U+2584, which makes strokes look softer than the font is, and `--dots` is then the tie-breaker.
 
-`--metrics` prints the font's row for the table in nifeos/record:notes/glyphs.md. Every candidate so far draws all
+`--metrics` prints the font's row for the table in partsfoundry/record:notes/glyphs.md. Every candidate so far draws all
 94 printable positions, and a font that does not is already disqualified by the `printable_drawn`
 column, so a missing `x` or `g` gives a nonsense baseline rather than a refusal.
 

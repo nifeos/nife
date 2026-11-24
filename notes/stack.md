@@ -46,7 +46,7 @@ And **the stack is not a data structure the CPU knows about. It's just a region 
 The only thing that makes it a stack is that everyone agrees to treat it like one: `sp`
 points at the current top, and the region grows downward into lower addresses.
 
-Which is why the [linker script](https://github.com/nifeos/record/blob/main/notes/linker-scripts.md) has to reserve a chunk of memory and
+Which is why the [linker script](https://github.com/partsfoundry/record/blob/main/notes/linker-scripts.md) has to reserve a chunk of memory and
 export `__stack_top`. There is nothing magic to allocate. We are picking a stretch of RAM
 and declaring "this is the stack now."
 
@@ -80,7 +80,7 @@ nothing below it but more of our own kernel, so blowing the stack silently overw
 
 We have it now. Milestone 4 put an unmapped page below the boot stack once the MMU was on;
 milestone 90 finished the job, so today the boot stack, every per-CPU secondary stack and every
-kernel thread stack has one. See ["The overflows of 2026-08-14"](https://github.com/nifeos/record/blob/main/notes/stack/kernel-stack-overflows-2026-08-14.md) for what that
+kernel thread stack has one. See ["The overflows of 2026-08-14"](https://github.com/partsfoundry/record/blob/main/notes/stack/kernel-stack-overflows-2026-08-14.md) for what that
 buys, what it does not, and the two real overflows that tested it.
 
 ---
@@ -152,7 +152,7 @@ bit of information was worth more than all the theorizing, and it took two minut
 **Why exit codes and not prints:** the failing kernel had corrupted `.text`, and
 `println!` runs through `core::fmt`, which lives in `.text`. Using the broken thing to
 diagnose the broken thing is circular. A semihosting exit is a single `hlt` instruction and
-two register writes ([semihosting.md](https://github.com/nifeos/record/blob/main/notes/semihosting.md)). It works when almost nothing else
+two register writes ([semihosting.md](https://github.com/partsfoundry/record/blob/main/notes/semihosting.md)). It works when almost nothing else
 does.
 
 ## What we added
@@ -217,7 +217,7 @@ a classic source of mysterious early-boot crashes.
 ## One stack pointer per exception level
 
 aarch64 does not have one stack pointer. It has **`SP_EL0`, `SP_EL1`, `SP_EL2`,
-`SP_EL3`** (see [exception levels](https://github.com/nifeos/record/blob/main/notes/aarch64.md)).
+`SP_EL3`** (see [exception levels](https://github.com/partsfoundry/record/blob/main/notes/aarch64.md)).
 
 Consider what that buys us. A userspace program at EL0 uses `SP_EL0` and can set it to
 any garbage it likes, because it's the program's own stack and its own problem. When an
@@ -253,7 +253,7 @@ while the stack pointer, or the per-CPU pointer, still holds a value the kernel 
   with the user's GS base (and, at entry, the user's `rsp`). The NMI, double fault and machine
   check switch to per-core IST stacks and set the GS base without trusting the saved `CS`
   (milestone 915 (NMI, double fault and machine check run on their own stacks), provisional;
-  [ring 3](https://github.com/nifeos/record/blob/main/notes/x86-port/ring-3.md) and `kernel/src/arch/x86_64/ist.rs`).
+  [ring 3](https://github.com/partsfoundry/record/blob/main/notes/x86-port/ring-3.md) and `kernel/src/arch/x86_64/ist.rs`).
 
 A kernel stack overflow whose first fault is the vector's own frame store is a different, synchronous
 case. On aarch64 and riscv64 it still cascades, as the BUGS below record; on x86_64 it becomes a
@@ -268,7 +268,7 @@ running concurrently means two independent chains of nested function calls in pr
 which means two separate stacks. There is no way around it.
 
 This is why the async-vs-preemptive decision mattered so much (see
-[DECISIONS](https://github.com/nifeos/record/blob/main/design/decisions/0005-preemptive-threads.md) §5 (preemptive threads with real stacks)). Async tasks are state machines the compiler builds on
+[DECISIONS](https://github.com/partsfoundry/record/blob/main/design/decisions/0005-preemptive-threads.md) §5 (preemptive threads with real stacks)). Async tasks are state machines the compiler builds on
 the heap, which is why they don't each need a stack, which is why async looked cheaper.
 But a real user program is not a state machine we built. It is arbitrary machine code with
 an arbitrary call depth, and it needs a real stack.
@@ -283,18 +283,18 @@ switched.
 # The incidents since, and where each is recorded
 
 Milestone 3 (hand out physical memory, and detect a smashed stack) was the first overflow, not the
-last. Each later incident has its own appendix, and [the directory's README](https://github.com/nifeos/record/blob/main/notes/stack/README.md) marks
+last. Each later incident has its own appendix, and [the directory's README](https://github.com/partsfoundry/record/blob/main/notes/stack/README.md) marks
 the names provisional. Two rules came out of them and hold today. A frame larger than the guard page
 defeats the guard page, so `script/stack-frame-check` gates every frame at 4096 bytes and growing
 the stack is not the fix. And nothing on an interrupt stack may context-switch away from it.
 
 | date | what it was | appendix |
 |---|---|---|
-| 2026-08-14 | Two real overflows, one per architecture, found by CI. A frame over the guard page stepped past it. | [kernel-stack-overflows-2026-08-14.md](https://github.com/nifeos/record/blob/main/notes/stack/kernel-stack-overflows-2026-08-14.md) |
-| 2026-08-15 | A different shape: one preemption landing at a thread's deepest point. `STACK_PAGES` went 4 to 6. | [kernel-stack-overflow-2026-08-15.md](https://github.com/nifeos/record/blob/main/notes/stack/kernel-stack-overflow-2026-08-15.md) |
-| 2026-08-16 | Guard-page faults that were not overflows, though the kernel's own report said they were. | [guard-page-faults-2026-08-16.md](https://github.com/nifeos/record/blob/main/notes/stack/guard-page-faults-2026-08-16.md) |
-| 2026-08-16 | The per-CPU interrupt stack of milestone 124 (a thread is born where it lives), which stopped billing an interrupt to whoever it interrupted. | [interrupt-stack.md](https://github.com/nifeos/record/blob/main/notes/stack/interrupt-stack.md) |
-| 2026-08-17 | The answer to the 2026-08-16 faults: a reaper freed a dead thread's stack while the thread still stood on it. | [kernel-stack-freed-under-its-owner.md](https://github.com/nifeos/record/blob/main/notes/stack/kernel-stack-freed-under-its-owner.md) |
+| 2026-08-14 | Two real overflows, one per architecture, found by CI. A frame over the guard page stepped past it. | [kernel-stack-overflows-2026-08-14.md](https://github.com/partsfoundry/record/blob/main/notes/stack/kernel-stack-overflows-2026-08-14.md) |
+| 2026-08-15 | A different shape: one preemption landing at a thread's deepest point. `STACK_PAGES` went 4 to 6. | [kernel-stack-overflow-2026-08-15.md](https://github.com/partsfoundry/record/blob/main/notes/stack/kernel-stack-overflow-2026-08-15.md) |
+| 2026-08-16 | Guard-page faults that were not overflows, though the kernel's own report said they were. | [guard-page-faults-2026-08-16.md](https://github.com/partsfoundry/record/blob/main/notes/stack/guard-page-faults-2026-08-16.md) |
+| 2026-08-16 | The per-CPU interrupt stack of milestone 124 (a thread is born where it lives), which stopped billing an interrupt to whoever it interrupted. | [interrupt-stack.md](https://github.com/partsfoundry/record/blob/main/notes/stack/interrupt-stack.md) |
+| 2026-08-17 | The answer to the 2026-08-16 faults: a reaper freed a dead thread's stack while the thread still stood on it. | [kernel-stack-freed-under-its-owner.md](https://github.com/partsfoundry/record/blob/main/notes/stack/kernel-stack-freed-under-its-owner.md) |
 
 ---
 
@@ -308,7 +308,7 @@ The two incident write-ups that carried a `BUGS` section keep it here, beside th
 - An overflow whose first fault is the vector's own frame store still cascades. The vector saves
   before any Rust can decide to switch, so this does not rescue a stack that is already past its
   guard; it makes reaching that state much less likely. The cascade is described under the
-  [2026-08-15 section](https://github.com/nifeos/record/blob/main/notes/stack/kernel-stack-overflow-2026-08-15.md) and is unchanged.
+  [2026-08-15 section](https://github.com/partsfoundry/record/blob/main/notes/stack/kernel-stack-overflow-2026-08-15.md) and is unchanged.
 - The static bound is a lower bound, for the reasons `script/stack-depth-check`'s own BUGS
   section gives: indirect calls and assembly frames are invisible to a call-graph walker. The
   trampoline's own 32 bytes (aarch64) and 16 (riscv64) are exactly such a frame, uncounted.
@@ -332,7 +332,7 @@ The two incident write-ups that carried a `BUGS` section keep it here, beside th
   is a condition in one function, which is rung two of AGENTS.md's ladder. Rung one would be a type
   that cannot name a still-standing thread, and this tree does not have one.
 - The riscv64 dumps have no symbolized `sepc`, so the vector-walk confirmation in
-  [kernel-stack-freed-under-its-owner.md](https://github.com/nifeos/record/blob/main/notes/stack/kernel-stack-freed-under-its-owner.md) is aarch64's
+  [kernel-stack-freed-under-its-owner.md](https://github.com/partsfoundry/record/blob/main/notes/stack/kernel-stack-freed-under-its-owner.md) is aarch64's
   three dumps plus riscv64's address arithmetic. The mechanism is architecture-independent (it is in
   `sched.rs`) and the `on_cpu` guard is too, so parity holds by construction rather than by a second
   set of dumps.

@@ -29,7 +29,7 @@ via semihosting (which only the test build does). Two consequences:
 
 After any session that ran QEMU, check `pgrep -l qemu` and clean up (`-l` rather than `-x
 qemu-system-aarch64`, because it matches every architecture's binary). Three rules for that cleanup, and
-[`notes/qemu.md`](https://github.com/nifeos/record/blob/main/notes/qemu.md) has the four attempts it took to learn them:
+[`notes/qemu.md`](https://github.com/partsfoundry/record/blob/main/notes/qemu.md) has the four attempts it took to learn them:
 
 - Killing a harness does not kill its children, so a `pgrep` that reports nothing can still be
   followed by a QEMU holding `target/nifefs.img`. Kill the tree at its root: walk `ps -o

@@ -3,7 +3,7 @@ This is read-only and its whole output is your final message.
 
     git fetch origin
     gh pr list --json number,isDraft,mergeStateStatus,title,statusCheckRollup,labels
-    gh api --paginate 'repos/nifeos/nife/issues?labels=needs-maintainer&state=all' \
+    gh api --paginate 'repos/partsfoundry/nife/issues?labels=needs-maintainer&state=all' \
         --jq '.[] | [.number, (if .pull_request then "pr" else "issue" end), .state, .title] | @tsv'
 
 ## What to work out for each open pull request
@@ -38,7 +38,7 @@ This is read-only and its whole output is your final message.
 - A lane log that ends in a connection error or a permission rejection is a dead dispatch, not
   a running lane. The dispatch looked successful and produced nothing. Redispatch it and count
   the death, or hand it to whoever owns the dispatch
-  ([notes/coes/2026-09-30-lane-follow-through.md](https://github.com/nifeos/record/blob/main/notes/coes/2026-09-30-lane-follow-through.md)).
+  ([notes/coes/2026-09-30-lane-follow-through.md](https://github.com/partsfoundry/record/blob/main/notes/coes/2026-09-30-lane-follow-through.md)).
 
 ## What to report
 

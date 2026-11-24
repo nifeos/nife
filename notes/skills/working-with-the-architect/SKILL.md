@@ -54,9 +54,9 @@ finished. AGENTS.md's "Correct yourself loudly" applies to reports too, and the
 Agent review is enough to approve and merge a pull request through the merge queue (2026-10-24
 UTC). Do not ask an architect to approve each one.
 
-Escalate what the standing rules say to escalate: an edit to a `nifeos/record:design/decisions/` section, the
+Escalate what the standing rules say to escalate: an edit to a `partsfoundry/record:design/decisions/` section, the
 system call surface, a new dependency, a name, a departure from a brief. [§88
-(`needs-architect` as a required check)](https://github.com/nifeos/record/blob/main/design/decisions/0088-needs-architect-as-a-check.md)
+(`needs-architect` as a required check)](https://github.com/partsfoundry/record/blob/main/design/decisions/0088-needs-architect-as-a-check.md)
 is the gate, and the [decisions skill](../decisions/SKILL.md) holds the label, the hold and the ask.
 
 ## Words

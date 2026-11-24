@@ -3,7 +3,7 @@
 nife is a capability microkernel built as a **demonstrator**, which is DECISIONS §14 (the project's
 direction): a small machine-checked core that confines unverified workloads. Nobody runs it in
 production, including us. It boots under QEMU, under HVF on an Apple Silicon laptop, and **on real
-silicon**: a StarFive VisionFive 2 has been running it since 2026-08-14 ([notes/visionfive2.md](https://github.com/nifeos/record/blob/main/notes/visionfive2.md)
+silicon**: a StarFive VisionFive 2 has been running it since 2026-08-14 ([notes/visionfive2.md](https://github.com/partsfoundry/record/blob/main/notes/visionfive2.md)
 carries every bench boot, including the ones that failed and why).
 
 That shapes what a security report means here. A bug that lets a confined process escape is
@@ -22,7 +22,7 @@ did not hold.
 ## Reporting
 
 **Use GitHub's private vulnerability reporting**: the [Security
-tab](https://github.com/nifeos/nife/security) of this repository, "Report a vulnerability".
+tab](https://github.com/partsfoundry/nife/security) of this repository, "Report a vulnerability".
 That opens a private advisory only you and the maintainer can see, with a place to attach a fix.
 
 If that is unavailable, email **chris@crickertech.com** with `nife security` in the subject.
@@ -53,23 +53,23 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
 - **Capability forgery or widening.** Minting a capability that was never granted, widening rights
   across `derive`, `Send`, or delegation, naming another process's CapabilityTable or endpoints, or reusing a
   generational name after revocation (DECISIONS §10 (the process model), §13 (capability revocation
-  and untyped reclamation), §16 (object revocation); `nifeos/capability_table`).
+  and untyped reclamation), §16 (object revocation); `partsfoundry/capability_table`).
 - **MMU escape.** EL0 reading, writing, or executing kernel memory or another address space;
   breaking W^X; a stale TLB entry exposing a dead owner's data; anything reachable from userspace
   that maps physical memory outside the process's own untyped budget (`crates/page_tables`,
-  [notes/mmu.md](https://github.com/nifeos/record/blob/main/notes/mmu.md)).
+  [notes/mmu.md](https://github.com/partsfoundry/record/blob/main/notes/mmu.md)).
 - **DMA escape.** A device programmed by a userspace driver to read or write memory outside the
   grant it was given, through the software descriptor validator or past the IOMMU domain (DECISIONS
   §20 (IOMMU-backed DMA isolation), §23 (multi-queue DMA confinement), §30 (the DMA boundary is
-  proved for descriptors); `crates/direct_memory_access_validator`, [notes/iommu.md](https://github.com/nifeos/record/blob/main/notes/iommu.md)).
+  proved for descriptors); `crates/direct_memory_access_validator`, [notes/iommu.md](https://github.com/partsfoundry/record/blob/main/notes/iommu.md)).
 
   **On the VisionFive 2 there is no IOMMU at all**, so on that board the confinement for virtio is
   the software validator and nothing else. That is a property of the silicon rather than a defect,
-  and it is recorded in [notes/dma.md](https://github.com/nifeos/record/blob/main/notes/dma.md) and [notes/framebuffer-contract.md](https://github.com/nifeos/record/blob/main/notes/framebuffer-contract.md), but it makes the validator
+  and it is recorded in [notes/dma.md](https://github.com/partsfoundry/record/blob/main/notes/dma.md) and [notes/framebuffer-contract.md](https://github.com/partsfoundry/record/blob/main/notes/framebuffer-contract.md), but it makes the validator
   the single point of failure there rather than the first of two. A validator bypass is the
   highest-value finding in this file. The board's own SD/MMC and Ethernet servers are outside the
   validator: each holds a register page that names DMA addresses, so each is confined by its own
-  code ([notes/designware-mobile-storage.md](https://github.com/nifeos/record/blob/main/notes/designware-mobile-storage.md), [notes/designware-ethernet.md](https://github.com/nifeos/record/blob/main/notes/designware-ethernet.md)). The booted system
+  code ([notes/designware-mobile-storage.md](https://github.com/partsfoundry/record/blob/main/notes/designware-mobile-storage.md), [notes/designware-ethernet.md](https://github.com/partsfoundry/record/blob/main/notes/designware-ethernet.md)). The booted system
   starts neither: the Ethernet processes wait for a bench boot to prove them, and the SD/MMC server,
   which a bench boot has proved, has no caller there.
 
@@ -77,10 +77,10 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
   and each is confined by its own code alone. The clock and reset server holds the one page of
   each of three clock and reset domains, which also holds the CPU cores' resets, the DRAM
   controller's, the watchdog's, the real-time clock's and the power management unit's; the kernel
-  is its only client ([notes/jh7110-clock-and-reset.md](https://github.com/nifeos/record/blob/main/notes/jh7110-clock-and-reset.md)). The PMIC route holds the I2C controller
+  is its only client ([notes/jh7110-clock-and-reset.md](https://github.com/partsfoundry/record/blob/main/notes/jh7110-clock-and-reset.md)). The PMIC route holds the I2C controller
   of the bus the board's power controller sits on, so it could write any register of any chip on
   that bus; the program that declares `reboot` can ask it for one thing, the reset
-  ([notes/board-reboot.md](https://github.com/nifeos/record/blob/main/notes/board-reboot.md)).
+  ([notes/board-reboot.md](https://github.com/partsfoundry/record/blob/main/notes/board-reboot.md)).
 - **IPC.** Anything that lets a message reach an endpoint the sender cannot name, a reply
   capability be used twice or by the wrong thread, or a server be confused about which client it is
   answering (DECISIONS §12 (Call/Reply IPC), §26 (the fault endpoint);
@@ -91,7 +91,7 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
   §16 (object revocation)).
 - **Time-of-check to time-of-use on shared pages.** Every service contract moves bulk data through a
   page shared with the client, so a value validated by one party and then re-read by another is a
-  live double-fetch. [notes/shared-page-audit.md](https://github.com/nifeos/record/blob/main/notes/shared-page-audit.md) is the sweep for this and says what it found, what
+  live double-fetch. [notes/shared-page-audit.md](https://github.com/partsfoundry/record/blob/main/notes/shared-page-audit.md) is the sweep for this and says what it found, what
   it cleared, and what it deliberately did not look at. Two things it left open are the best places
   to start: the FS service memoises **one** frame for every client a boot wires (so the property
   keeping them apart is who happens to be blocked, not a mapping), and no test in this tree can make
@@ -99,10 +99,10 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
 - **The foreign-language and vendored seams.** The C component holds no capabilities and makes no
   system calls; the vendored RedoxFS engine runs as a confined EL0 server. A way for either to reach
   authority it was not given is exactly the claim under test (DECISIONS §27 (the filesystem
-  service), §31 (the foreign-language seam); [notes/c-seam.md](https://github.com/nifeos/record/blob/main/notes/c-seam.md),
-  [notes/redoxfs-audit.md](https://github.com/nifeos/record/blob/main/notes/redoxfs-audit.md)).
+  service), §31 (the foreign-language seam); [notes/c-seam.md](https://github.com/partsfoundry/record/blob/main/notes/c-seam.md),
+  [notes/redoxfs-audit.md](https://github.com/partsfoundry/record/blob/main/notes/redoxfs-audit.md)).
 - **The boot trust root.** Anything that lets an unmeasured or altered progenitor run as though it were
-  measured (`crates/measured_boot`, [notes/trusted-init.md](https://github.com/nifeos/record/blob/main/notes/trusted-init.md)). This one has been exercised on real
+  measured (`crates/measured_boot`, [notes/trusted-init.md](https://github.com/partsfoundry/record/blob/main/notes/trusted-init.md)). This one has been exercised on real
   hardware in the failing direction, which is the useful direction: bench boot 12 was **refused at
   the trust boundary** because the image on the card vouched for the previous archive, and the
   kernel halted rather than hand it to the progenitor. A way to get past that refusal is a report.
@@ -111,7 +111,7 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
   a finding.
 - **The install path.** A package becomes authority on the target only when the image's catalog or
   the index copy `jig update` writes vouches for its digest, and it is then endowed with what its
-  note asks ([notes/packages.md](https://github.com/nifeos/record/blob/main/notes/packages.md), [notes/packages/jig.md](https://github.com/nifeos/record/blob/main/notes/packages/jig.md)). A way to get bytes
+  note asks ([notes/packages.md](https://github.com/partsfoundry/record/blob/main/notes/packages.md), [notes/packages/jig.md](https://github.com/partsfoundry/record/blob/main/notes/packages/jig.md)). A way to get bytes
   installed as vouched, or endowed past that, is a finding. Until the index is signed, `jig` is
   inside the trusted base for installs, which its `BUGS` says.
 
@@ -122,10 +122,10 @@ down, which makes them roadmap items rather than reports.
 
 - **"It is not production-ready."** Correct. There is no user authentication, no ASLR, no secure
   boot chain to firmware, no network security beyond a TLS client that trusts one pinned root
-  ([notes/packages/over-the-internet.md](https://github.com/nifeos/record/blob/main/notes/packages/over-the-internet.md)), and the shell is a demo. See
-  [notes/why-not-general-purpose.md](https://github.com/nifeos/record/blob/main/notes/why-not-general-purpose.md).
-- **A hardening feature that is on the roadmap.** [design/roadmap/](https://github.com/nifeos/record/tree/main/design/roadmap) is what is missing and in what
-  order, one file per milestone in nifeos/record (that repository's `script/roadmap` reads it). A missing feature that has a block
+  ([notes/packages/over-the-internet.md](https://github.com/partsfoundry/record/blob/main/notes/packages/over-the-internet.md)), and the shell is a demo. See
+  [notes/why-not-general-purpose.md](https://github.com/partsfoundry/record/blob/main/notes/why-not-general-purpose.md).
+- **A hardening feature that is on the roadmap.** [design/roadmap/](https://github.com/partsfoundry/record/tree/main/design/roadmap) is what is missing and in what
+  order, one file per milestone in partsfoundry/record (that repository's `script/roadmap` reads it). A missing feature that has a block
   there is a roadmap item; a *defence that is claimed to exist and does not work* is a
   vulnerability, and that distinction is the whole test.
 - **Anything that requires already being the progenitor.** The progenitor is privileged and unverified, and DECISIONS
@@ -135,7 +135,7 @@ down, which makes them roadmap items rather than reports.
   not this kernel's boundary.
 - **Board bring-up that has not happened yet.** The VisionFive 2 boots and runs the tour; its
   storage and network drivers exist and the booted system does not start them yet
-  ([design/roadmap/0053-board-peripherals.md](https://github.com/nifeos/record/blob/main/design/roadmap/0053-board-peripherals.md)), the UART
+  ([design/roadmap/0053-board-peripherals.md](https://github.com/partsfoundry/record/blob/main/design/roadmap/0053-board-peripherals.md)), the UART
   interrupt number is wrong for that board and known, and the ratified-spec IOMMU has no silicon to
   run on. Missing hardware support is a roadmap item. A *driver that is present and confines
   nothing* is a report, and the distinction is the same one the line above draws.
@@ -155,8 +155,8 @@ down, which makes them roadmap items rather than reports.
 - **Acknowledgement within about a week.** This is a side project; there is no on-call.
 - **No fixed remediation timeline, and no bounty.** What there is instead: a real answer about
   whether the boundary you found is one the project claims to hold, and if it is, a fix with a test
-  that would have caught it, plus a [`design/decisions/`](https://github.com/nifeos/record/tree/main/design/decisions) or [`notes/`](https://github.com/nifeos/record/tree/main/notes) entry in nifeos/record recording what was wrong. That
-  is how every previous security finding here was handled ([notes/security.md](https://github.com/nifeos/record/blob/main/notes/security.md), [notes/arch-audit.md](https://github.com/nifeos/record/blob/main/notes/arch-audit.md)).
+  that would have caught it, plus a [`design/decisions/`](https://github.com/partsfoundry/record/tree/main/design/decisions) or [`notes/`](https://github.com/partsfoundry/record/tree/main/notes) entry in partsfoundry/record recording what was wrong. That
+  is how every previous security finding here was handled ([notes/security.md](https://github.com/partsfoundry/record/blob/main/notes/security.md), [notes/arch-audit.md](https://github.com/partsfoundry/record/blob/main/notes/arch-audit.md)).
 - **Credit however you want it**, in the fix commit and in the note. Say if you would rather not be
   named.
 - **Coordinated disclosure, preferred and not demanded.** If you want to publish, publishing after
@@ -171,9 +171,9 @@ backport to. If a fix matters to you, it is a commit on `main`.
 ## What has already been looked at
 
 **Audits here are routine rather than occasional**, and the index is
-[design/audit-reports/README.md](https://github.com/nifeos/record/blob/main/design/audit-reports/README.md): every audit's date, the lens it
+[design/audit-reports/README.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/README.md): every audit's date, the lens it
 took, its findings by disposition, and a link to the report. The record's `script/audits` says when the next one
-is due, from the triggers [`design/decisions/0074-audit-cadence.md`](https://github.com/nifeos/record/blob/main/design/decisions/0074-audit-cadence.md) decided, and a weekly workflow asks
+is due, from the triggers [`design/decisions/0074-audit-cadence.md`](https://github.com/partsfoundry/record/blob/main/design/decisions/0074-audit-cadence.md) decided, and a weekly workflow asks
 the same question so that auditing does not depend on anyone remembering to.
 
 **Sixteen** <!--count:security-audits--> security audits are on the record, and reading them first will
@@ -182,35 +182,35 @@ is the lens the last one lacked. (Documentation audits are in the same index and
 they read the tree for claims that had gone false, which is worth knowing if you find prose and code
 disagreeing.)
 
-- **[notes/security.md](https://github.com/nifeos/record/blob/main/notes/security.md)**: a four-part review after milestone 11 (untyped memory), with the threat
+- **[notes/security.md](https://github.com/partsfoundry/record/blob/main/notes/security.md)**: a four-part review after milestone 11 (untyped memory), with the threat
   model, what held
   up, and four real bugs (a crafted ELF that could panic the kernel, a spawn flood that could, a
   wasted-budget path, and documentation describing defences that had been deleted).
-- **[notes/arch-audit.md](https://github.com/nifeos/record/blob/main/notes/arch-audit.md)**: a pass over the assembly and architecture layer that found three:
+- **[notes/arch-audit.md](https://github.com/partsfoundry/record/blob/main/notes/arch-audit.md)**: a pass over the assembly and architecture layer that found three:
   an `eret`/`sret` privilege-escalation staging race, a stale `tp` corrupting cross-hart per-CPU
   data on RISC-V, and a lock-free read-modify-write in the PLIC driver.
-- **[notes/shared-page-audit.md](https://github.com/nifeos/record/blob/main/notes/shared-page-audit.md)**: every page shared between two address spaces, asked whether a
+- **[notes/shared-page-audit.md](https://github.com/partsfoundry/record/blob/main/notes/shared-page-audit.md)**: every page shared between two address spaces, asked whether a
   value checked by one party is re-read by another. Seven findings, five fixed. It also records the
   reason there were not more, which is a real property of the design rather than luck: **no contract
   in this tree carries a length in the shared page**, so the classic form of the bug is absent by
   construction. Its scope note says what it did not read, and that list is where an outside reviewer
   has the most room.
-- **[notes/untrusted-input-audit.md](https://github.com/nifeos/record/blob/main/notes/untrusted-input-audit.md)**: the parsers and drivers that read bytes a hostile counterparty
+- **[notes/untrusted-input-audit.md](https://github.com/partsfoundry/record/blob/main/notes/untrusted-input-audit.md)**: the parsers and drivers that read bytes a hostile counterparty
   supplies in a single message or completion, which is the surface that arrived with `crates/non_volatile_memory_express`
   and `crates/multicast_dns_protocol` after the pass above was written. The second was retired on
-  2026-09-15 (milestone 298 (retire the multicast DNS responder), [notes/mdns.md](https://github.com/nifeos/record/blob/main/notes/mdns.md)), so that audit's
+  2026-09-15 (milestone 298 (retire the multicast DNS responder), [notes/mdns.md](https://github.com/partsfoundry/record/blob/main/notes/mdns.md)), so that audit's
   DNS clearance describes nothing on
   `main` today; its NVMe finding still stands. One finding, recorded and accepted: the
   NVMe driver panics on two completion fields the device writes, and the rule it hands forward is
   that **an IOMMU confines placement, not values**, so a confined device's accounting is as
   untrusted as its reach.
-- **[design/audit-reports/2026-08-17-newly-minted-authority.md](https://github.com/nifeos/record/blob/main/design/audit-reports/2026-08-17-newly-minted-authority.md)**: the seven ABI constants and the one
+- **[design/audit-reports/2026-08-17-newly-minted-authority.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/2026-08-17-newly-minted-authority.md)**: the seven ABI constants and the one
   new right that landed in a single night, read adversarially, on the reasoning that a right can be
   correct in isolation and wrong in combination with what was already there. Nothing exploitable;
   the finding to carry off is a **counting channel**, where a viewer holding the narrowest capability
   this system can express learns how many threads exist outside its own domain, though it can never
   name one.
-- **[design/audit-reports/2026-09-17-userspace-confinement.md](https://github.com/nifeos/record/blob/main/design/audit-reports/2026-09-17-userspace-confinement.md)**: the device and port authority minted
+- **[design/audit-reports/2026-09-17-userspace-confinement.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/2026-09-17-userspace-confinement.md)**: the device and port authority minted
   since the previous audit, the confinement claims a sweep had marked unreachable, and the two boards
   that booted real silicon, read for claims that are true only by accident. **One was false as
   stated and is fixed**: on `x86_64` a thread that deleted its own port capability kept the ports,
@@ -218,7 +218,7 @@ disagreeing.)
   capability table. Also: ring 0 could execute a user page on `x86_64` until `CR4.SMEP` was set,
   and two existing port tests could not go red for the defects they exist to catch because a wrongly
   permitted `out` hung the run instead of failing it.
-- **[design/audit-reports/2026-09-24-new-trust-boundaries.md](https://github.com/nifeos/record/blob/main/design/audit-reports/2026-09-24-new-trust-boundaries.md)**: what the tree began trusting in one
+- **[design/audit-reports/2026-09-24-new-trust-boundaries.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/2026-09-24-new-trust-boundaries.md)**: what the tree began trusting in one
   week, read where the change concentrated: the automation that merges, the bytes a file supplies,
   and the state a core carries for a thread. **The finding to carry off is not in the kernel**: the
   merge drain armed auto-merge on any green pull request from anyone, the ruleset requires no
@@ -226,11 +226,11 @@ disagreeing.)
   secrets. Closed in the script; the ruleset is a proposal. In the kernel, a port take-back on
   `x86_64` reset the invoker's own bitmap (fails closed, fixed), the SVE/SME and V enables are now
   closed beside the FP one, and a device tree's `totalsize` is bounded before it becomes a slice.
-- **[design/audit-reports/2026-09-29-system-call-surface-whole.md](https://github.com/nifeos/record/blob/main/design/audit-reports/2026-09-29-system-call-surface-whole.md)**: the `invoke` surface entire, read
+- **[design/audit-reports/2026-09-29-system-call-surface-whole.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/2026-09-29-system-call-surface-whole.md)**: the `invoke` surface entire, read
   from inside a confined process: the two object types, the rendezvous method and the wake tag the
   window added, beside the older seams. Nothing lets a confined process take authority it was not
   granted; three recorded risks confirmed where they are stated.
-- **[design/audit-reports/2026-10-03-eight-constants-and-thirteen-components.md](https://github.com/nifeos/record/blob/main/design/audit-reports/2026-10-03-eight-constants-and-thirteen-components.md)**: the window's
+- **[design/audit-reports/2026-10-03-eight-constants-and-thirteen-components.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/2026-10-03-eight-constants-and-thirteen-components.md)**: the window's
   eight new ABI constants (`MemoryRegion::USAGE` and its seven selectors), the one that changed
   (the capability table grew to 32) and the thirteen components, each read for what it holds
   against what it uses. **The finding to carry off is a grant, not a kernel defect**: a graphical
@@ -243,29 +243,29 @@ disagreeing.)
   and a real capability delegated to a `CALL` server passes the `NO_CAPABILITY` guard, so any client can
   park `net_stack` or the compositor in `SEND` forever (recorded and proposed; an architect's
   call).
-- **[design/audit-reports/2026-10-19-supply-chain-read-from-the-package-inward.md](https://github.com/nifeos/record/blob/main/design/audit-reports/2026-10-19-supply-chain-read-from-the-package-inward.md)**: the nine
+- **[design/audit-reports/2026-10-19-supply-chain-read-from-the-package-inward.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/2026-10-19-supply-chain-read-from-the-package-inward.md)**: the nine
   external packages the window added, the gate that should see every graph they enter, and the path
   by which bytes this tree did not build become authority on the target. **The finding to carry off
   is a gate that read a typed list**: cargo-deny never ran over `jig`, the package manager, or
   `c_library`, which failed it. Fixed by discovering every lockfile. Also: on `main` a vouch still
   endows a native package with the network its note asks for, and the index copy is a vouch, so the
   index's host decides; milestone 892 (a std program at the prompt holds the network and a name resolver) refuses it.
-- **[design/audit-reports/2026-10-20-the-window-the-supply-chain-audit-left-unread.md](https://github.com/nifeos/record/blob/main/design/audit-reports/2026-10-20-the-window-the-supply-chain-audit-left-unread.md)**: the device
+- **[design/audit-reports/2026-10-20-the-window-the-supply-chain-audit-left-unread.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/2026-10-20-the-window-the-supply-chain-audit-left-unread.md)**: the device
   servers and ABI names since 2026-10-03. `Virtio::READ_REGISTER` read any physical address; fixed.
   Two capability-table races are proposed.
-- **[design/audit-reports/2026-10-26-the-compiler.md](https://github.com/nifeos/record/blob/main/design/audit-reports/2026-10-26-the-compiler.md)**: the nightly pin, its bump workflow and the
+- **[design/audit-reports/2026-10-26-the-compiler.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/2026-10-26-the-compiler.md)**: the nightly pin, its bump workflow and the
   std overlay. The bump builds a new nightly where the App's write token is readable; proposed. A
   long path overran the page `std::fs` shares; fixed.
-- **[design/audit-reports/2026-11-03-from-the-package-to-the-grant.md](https://github.com/nifeos/record/blob/main/design/audit-reports/2026-11-03-from-the-package-to-the-grant.md)**: the path from a package's
+- **[design/audit-reports/2026-11-03-from-the-package-to-the-grant.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/2026-11-03-from-the-package-to-the-grant.md)**: the path from a package's
   bytes to a program's grants (the approval file, a program's asks, the `INTERFACES` note, the
   system manifest, the base digest page) and the runtime crates split out beside it. No input
   reaches a grant wider than the owner approved. A delegated install writes the package's bytes
   before the approval check refuses it; proposed.
-- **[design/audit-reports/2026-11-17-the-verifier.md](https://github.com/nifeos/record/blob/main/design/audit-reports/2026-11-17-the-verifier.md)**: the stock Kani pin, the bundle `cargo kani
+- **[design/audit-reports/2026-11-17-the-verifier.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/2026-11-17-the-verifier.md)**: the stock Kani pin, the bundle `cargo kani
   setup` fetches behind it, the bump job and the patched riscv64 Kani. The prover's bytes run with
   no digest check, from a mutable release; proposed. Five architecture-specific falsification
   records carry no patch, so nothing replays them; proposed.
-- **[design/audit-reports/2026-11-17-radon-device-authority.md](https://github.com/nifeos/record/blob/main/design/audit-reports/2026-11-17-radon-device-authority.md)**: the clock and reset server, the
+- **[design/audit-reports/2026-11-17-radon-device-authority.md](https://github.com/partsfoundry/record/blob/main/design/audit-reports/2026-11-17-radon-device-authority.md)**: the clock and reset server, the
   GMAC's control process and the PMIC route on radon, read as hostile holders. The server's page
   holds every clock and reset of three domains, CPU cores and DRAM included; accepted, with its
   only client the kernel. The narrowing is checked for bring up alone; proposed.
@@ -277,6 +277,6 @@ disagreeing.)
   Three sites hold a Rust reference over memory a peer can write; proposed.
 
 The machine-checked half is `script/verify` (Kani harnesses over the capability model, IPC, the MMU
-invariants, the DMA validator). [notes/verification.md](https://github.com/nifeos/record/blob/main/notes/verification.md) states what each proof covers and, more
+invariants, the DMA validator). [notes/verification.md](https://github.com/partsfoundry/record/blob/main/notes/verification.md) states what each proof covers and, more
 usefully here, what it does not: a proof holds inside chosen bounds, and DECISIONS §35 spells out
 one gap the tools cannot close.

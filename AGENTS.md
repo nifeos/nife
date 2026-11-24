@@ -1,8 +1,8 @@
 # Working on nife
 
 *Two renames and one pivot sit behind the old names a reader will meet in older records:
-[design/tenets/project-history.md](https://github.com/nifeos/record/blob/main/design/tenets/project-history.md). Every reason, measurement and
-anecdote behind a rule here lives in [design/tenets/](https://github.com/nifeos/record/tree/main/design/tenets), linked from the rule it
+[design/tenets/project-history.md](https://github.com/partsfoundry/record/blob/main/design/tenets/project-history.md). Every reason, measurement and
+anecdote behind a rule here lives in [design/tenets/](https://github.com/partsfoundry/record/tree/main/design/tenets), linked from the rule it
 explains.*
 
 ## What this project is
@@ -54,12 +54,12 @@ needs.
 
 Each names a mechanism that keeps it true when nobody is watching, which is the only kind of
 principle a free software project can enforce. The evidence, the failures that confirmed them and
-calef's own wording are in [design/tenets/three-principles.md](https://github.com/nifeos/record/blob/main/design/tenets/three-principles.md).
+calef's own wording are in [design/tenets/three-principles.md](https://github.com/partsfoundry/record/blob/main/design/tenets/three-principles.md).
 
 ### 1. The ranking function is the shortest path to a system a customer runs
 
 When two milestones are both ready, the one on the customer path goes first. As of 2026-08-30 that
-path is vacant, so the tie breaks toward [design/fatal-risks/README.md](https://github.com/nifeos/record/blob/main/design/fatal-risks/README.md), nine claims
+path is vacant, so the tie breaks toward [design/fatal-risks/README.md](https://github.com/partsfoundry/record/blob/main/design/fatal-risks/README.md), nine claims
 that, if false, mean the project should stop. A real workload with a real user outranks everything
 on that list the moment one exists. A first customer must be something nife can plausibly be
 adequate at within a milestone or two. Do not expose nife to a second customer before there is a
@@ -102,7 +102,7 @@ is marketing:
 
 Documentation is task-oriented and in-tree, with real `EXAMPLES` and an honest `BUGS` section beside
 the feature rather than in a tracker (see
-[design/tenets/documentation-standard.md](https://github.com/nifeos/record/blob/main/design/tenets/documentation-standard.md)). Every decision
+[design/tenets/documentation-standard.md](https://github.com/partsfoundry/record/blob/main/design/tenets/documentation-standard.md)). Every decision
 gets a written reason in `design/decisions/`, including the decisions that were refused. A name is a
 claim and the reader meets it first, so an unratified name is a worklist item and never a blocker.
 Anything that only works because someone knows it is a defect.
@@ -116,7 +116,7 @@ tree and not in the stranger.
 Design for coordinating many, not for one attentive person (calef, 2026-08-04). Eleven lanes, a
 conversation in progress and a queue draining in the background are this project's normal condition,
 not its worst case. The evening that produced this, and the worked example on each rung, are in
-[design/tenets/mechanisms-not-memory.md](https://github.com/nifeos/record/blob/main/design/tenets/mechanisms-not-memory.md).
+[design/tenets/mechanisms-not-memory.md](https://github.com/partsfoundry/record/blob/main/design/tenets/mechanisms-not-memory.md).
 
 The ladder, strongest first. When something must not go wrong, reach for the highest rung that fits:
 
@@ -153,7 +153,7 @@ action.
 
 When the problem is not understood, measuring is the action: name the question the data will
 answer, and decide the remediation separately, with the data in hand
-([design/tenets/measure-first.md](https://github.com/nifeos/record/blob/main/design/tenets/measure-first.md)).
+([design/tenets/measure-first.md](https://github.com/partsfoundry/record/blob/main/design/tenets/measure-first.md)).
 
 ## Pull requests and comments an agent writes
 
@@ -178,12 +178,12 @@ does, fix the record on purpose rather than quietly patching over it.
 Explain on request, however basic. Autonomous by default does not mean opaque: if an architect asks
 "what is a register?" or "why does `destroy` avoid `SCHED`?", answer properly, from the ground up,
 and write it down. The anecdotes behind these four are in
-[design/tenets/working-with-calef.md](https://github.com/nifeos/record/blob/main/design/tenets/working-with-calef.md).
+[design/tenets/working-with-calef.md](https://github.com/partsfoundry/record/blob/main/design/tenets/working-with-calef.md).
 
 ## The rules that hold the codebase together
 
 These come from `design/decisions/`. They are cheap to follow and expensive to retrofit. What each
-one buys is in [design/tenets/codebase-rules.md](https://github.com/nifeos/record/blob/main/design/tenets/codebase-rules.md).
+one buys is in [design/tenets/codebase-rules.md](https://github.com/partsfoundry/record/blob/main/design/tenets/codebase-rules.md).
 
 1. All architecture-specific code lives under `kernel/src/arch/`. Assembly, `asm!`, system
    registers, CPU-specific behaviour. If you're writing `asm!` outside `arch/`, that is the bug.
@@ -249,7 +249,7 @@ the hour is near midnight, put the time in the record too, because a reader cann
 ## Comments
 
 Comments follow Linux's convention in all first-party Rust (calef, 2026-10-22 UTC: "Consider 929
-ruled."). [§267 (a comment states the constraint as it is now)](https://github.com/nifeos/record/blob/main/design/decisions/0267-a-comment-states-the-constraint-as-it-is-now.md)
+ruled."). [§267 (a comment states the constraint as it is now)](https://github.com/partsfoundry/record/blob/main/design/decisions/0267-a-comment-states-the-constraint-as-it-is-now.md)
 holds the rule and its stages.
 
 - An item's doc comment opens with a summary sentence, then its arguments, what it holds and what
@@ -260,7 +260,7 @@ holds the rule and its stages.
   Narrative and worked examples go in the doc comment or the note.
 - "The caller must..." becomes an assertion or a type where one fits.
 - History goes in the commit message. Do not write comments that restate the next line.
-- A `Name:` provenance block stays where it is, as [design/naming.md](https://github.com/nifeos/record/blob/main/design/naming.md) ("Where a
+- A `Name:` provenance block stays where it is, as [design/naming.md](https://github.com/partsfoundry/record/blob/main/design/naming.md) ("Where a
   name's provenance lives") shapes it, refusals and dates included. It is neither history nor
   narrative (calef, 2026-10-22 UTC).
 
@@ -275,15 +275,15 @@ These rules bind every note, which is prose an architect rereads for months:
 - State what is in force now. How it got that way (a replaced ruling, a status timeline, "was X,
   now Y", "moved here from", which lane did what when) goes in the commit message and the pull
   request body, where git keeps it (calef, 2026-10-13 UTC).
-  [§298 (a document states what is in force now)](https://github.com/nifeos/record/blob/main/design/decisions/0298-a-document-states-what-is-in-force-now.md) lists what stays, and
+  [§298 (a document states what is in force now)](https://github.com/partsfoundry/record/blob/main/design/decisions/0298-a-document-states-what-is-in-force-now.md) lists what stays, and
   `helpers/history_ratchet.py` holds the phrases to a ratchet.
 - A ruling in force goes on the main page, never only in an appendix. Name an appendix for its
   topic, not by a date, "part N" or an alphabet range, and a split by size alone states its reason.
   When a page reaches its cap, cut or move background out to make room instead of adding a file for
   the new ruling.
 - Write in the active voice. The prose ratchet counts passives and holds new prose to 2 per 1,000
-  words ([§213 (writing standards)](https://github.com/nifeos/record/blob/main/design/decisions/0213-writing-standards.md) rule 6).
-- Plain, direct language. Vary sentence length. Write like a person. The numbers are [§213 (writing standards)](https://github.com/nifeos/record/blob/main/design/decisions/0213-writing-standards.md), and length is [§212 (a prose budget)](https://github.com/nifeos/record/blob/main/design/decisions/0212-a-prose-budget-for-every-document.md). Spelling is American and measurements metric (calef, 2026-10-06).
+  words ([§213 (writing standards)](https://github.com/partsfoundry/record/blob/main/design/decisions/0213-writing-standards.md) rule 6).
+- Plain, direct language. Vary sentence length. Write like a person. The numbers are [§213 (writing standards)](https://github.com/partsfoundry/record/blob/main/design/decisions/0213-writing-standards.md), and length is [§212 (a prose budget)](https://github.com/partsfoundry/record/blob/main/design/decisions/0212-a-prose-budget-for-every-document.md). Spelling is American and measurements metric (calef, 2026-10-06).
 
 ## Environment
 

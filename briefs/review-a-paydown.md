@@ -48,7 +48,7 @@ Beyond the six, check the house rules any paydown can break:
 
 - §267 (a comment states the constraint as it is now): no history in a comment.
 - A `// SAFETY:` comment is kept whole.
-- A `Name:` block is left as [`design/naming.md`](https://github.com/nifeos/record/blob/main/design/naming.md) shapes it.
+- A `Name:` block is left as [`design/naming.md`](https://github.com/partsfoundry/record/blob/main/design/naming.md) shapes it.
 - The diff changes no token outside comments.
 
 ## The verdict
@@ -64,7 +64,7 @@ End with one line, then the findings:
   code. Say which.
 
 A finding the lane will not fix in this pull request gets a home before the merge: a proposal under
-[`design/roadmap/proposals/`](https://github.com/nifeos/record/tree/main/design/roadmap/proposals) or a `BUGS` entry, as the developer-lane skill requires.
+[`design/roadmap/proposals/`](https://github.com/partsfoundry/record/tree/main/design/roadmap/proposals) or a `BUGS` entry, as the developer-lane skill requires.
 
 ## BUGS
 

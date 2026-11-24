@@ -24,7 +24,7 @@ read that too. Forks and work held for an architect are in [decisions](../decisi
 ## The three roles, and the one rule that keeps work moving
 
 Why each role holds the authority it holds, and the night that named them, are in
-[design/tenets/roles-and-the-queue.md](https://github.com/nifeos/record/blob/main/design/tenets/roles-and-the-queue.md). Above all three is the
+[design/tenets/roles-and-the-queue.md](https://github.com/partsfoundry/record/blob/main/design/tenets/roles-and-the-queue.md). Above all three is the
 architect: see [ARCHITECTS.md](../../../ARCHITECTS.md).
 
 - Maintainer. One per session, the session itself, and sessions are plural. The merge queue is the
@@ -34,14 +34,14 @@ architect: see [ARCHITECTS.md](../../../ARCHITECTS.md).
   pushed the moment it is cut, and every session lists remote branches before briefing a lane (`git
   ls-remote --heads`), because the pushed branch is the only lane ledger another session can see.
   Whoever merges prunes what they merged. Briefs
-  developers, gates and merges their work, mints anything global to the tree (`nifeos/record:design/decisions/`
+  developers, gates and merges their work, mints anything global to the tree (`partsfoundry/record:design/decisions/`
   sections, milestone numbers, names an architect has ratified), and keeps hygiene: prune the
   worktree, delete the branch, leave no QEMU. Holds merge authority when an
   architect grants it. This role gates and merges; it does not write the code or resolve the
   conflicts itself, as the next section says.
 - Steward. Runs on an interval and holds a *lent* authority: it merges what has earned it: green on
   every check, from a developer briefed this session, touching no system call surface, no
-  `nifeos/record:design/decisions/` section and no dependency addition. It cleans up behind finished work (delete
+  `partsfoundry/record:design/decisions/` section and no dependency addition. It cleans up behind finished work (delete
   the branch, prune the worktree), reports queue depth against the target, and
   raises what has stalled or gone unanswered. It does not brief developers, because briefing is
   judgment: it says "the queue is at one of three and these are ready" and the maintainer writes the
@@ -60,7 +60,7 @@ does too. "Too small for a lane" is the failure, not an exception. The session i
 conversation: while it works by hand, the architect cannot talk to it and the lanes sit idle. It
 reads, looks things up, writes briefs and records rulings in the conversation.
 
-A lane that carries an architect's ruling may edit `nifeos/record:design/decisions/` to record it, on the terms
+A lane that carries an architect's ruling may edit `partsfoundry/record:design/decisions/` to record it, on the terms
 the [developer lane](../developer-lane/SKILL.md) sets.
 
 Maintainer tooling reads and writes GitHub through GraphQL (`gh pr`, `gh issue`, `gh api graphql`),
@@ -72,7 +72,7 @@ separate. A REST call stays only where GraphQL has no equivalent, such as workfl
 The fuzz host files each held fuzz finding as a private security advisory. The maintainer raises at
 most one lane per open advisory, and writes a note on the advisory naming the lane that holds it,
 because the advisory list is the claim board for this kind of lane: by default such a lane works in
-the advisory's temporary private fork and pushes nothing to nifeos/nife until its fix is approved,
+the advisory's temporary private fork and pushes nothing to partsfoundry/nife until its fix is approved,
 so `gh pr list --draft` shows nothing of it. Check the advisory for a holder before raising a lane. Open the private fork
 from the advisory before launching, and launch the lane on the fix-lane machine. The brief names
 the advisory by its identifier and the fork by its name, says the lane claims with `--no-claim`,
@@ -87,7 +87,7 @@ maintainer's tooling supplies and never writes into a brief, a log or a pull req
 
 ## Dependency bumps
 
-Decided 2026-10-25 (UTC); [notes/dependency-updates.md](https://github.com/nifeos/record/blob/main/notes/dependency-updates.md) has the whole
+Decided 2026-10-25 (UTC); [notes/dependency-updates.md](https://github.com/partsfoundry/record/blob/main/notes/dependency-updates.md) has the whole
 practice.
 
 - A bump merges on green, except for a crate the kernel links: a minor or patch bump of one waits
@@ -109,7 +109,7 @@ own finding rather than letting the silence stand for "nothing to do".
 Lane count is set against the collision surface, not against queue depth. Throughput is measured in
 merged work. The question to ask before launching is not "how deep is the queue" but "what files
 will this lane touch, and who else is in them". The measurement that overturned the old rule, and
-the three ceilings below, are in [design/tenets/lane-count.md](https://github.com/nifeos/record/blob/main/design/tenets/lane-count.md).
+the three ceilings below, are in [design/tenets/lane-count.md](https://github.com/partsfoundry/record/blob/main/design/tenets/lane-count.md).
 
 - Disjoint subsystems: launch freely. Four is a reasonable working number, not a ceiling.
 - Two lanes in the test-wiring hotspot (`system_tests/src/user.rs`, the QEMU runners,

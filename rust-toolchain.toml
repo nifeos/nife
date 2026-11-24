@@ -31,6 +31,6 @@
 channel = "nightly-2026-11-23"
 components = ["rust-src", "llvm-tools", "rustfmt", "clippy"]
 # `aarch64-unknown-uefi` (tier 2, prebuilt `core`) is the stick's aarch64 boot file, `BOOTAA64.EFI`
-# (nifeos/record:notes/boot-stick.md). riscv64 has no UEFI target in rustc at all, which is why its boot file is
+# (partsfoundry/record:notes/boot-stick.md). riscv64 has no UEFI target in rustc at all, which is why its boot file is
 # built for `riscv64imac-unknown-none-elf` and turned into PE/COFF by xtask.
 targets = ["aarch64-unknown-none-softfloat", "aarch64-unknown-uefi", "riscv64imac-unknown-none-elf", "x86_64-unknown-none", "x86_64-unknown-uefi"]

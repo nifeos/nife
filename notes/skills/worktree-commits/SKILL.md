@@ -19,7 +19,7 @@ records a correction or a surprise, say so in the message. The message is also w
 what a document said before, which ruling a new one replaces, which lane did what. The document
 states only what is now true (§298 (a document states what is in force now)). Why these rules read as opposites and are
 not, with the failure behind each, is in
-[design/tenets/git-in-a-worktree.md](https://github.com/nifeos/record/blob/main/design/tenets/git-in-a-worktree.md).
+[design/tenets/git-in-a-worktree.md](https://github.com/partsfoundry/record/blob/main/design/tenets/git-in-a-worktree.md).
 
 Commit early and push. `git blame` is what a commit is for: a reader tracing why a line looks the
 way it does must land on a commit that explains it. Every commit a lane pushes reaches main as

@@ -4,7 +4,7 @@ description: >-
   Who names things in nife: load before minting, choosing or changing the name of a crate, a
   program, a module, a script or a public function, or before ratifying or performing a rename.
   Names are an architect's call: ship a provisional name, say so in the report, and never rename on
-  your own initiative. Points to nifeos/record:design/naming.md for the conventions.
+  your own initiative. Points to partsfoundry/record:design/naming.md for the conventions.
 ---
 
 # Naming authority
@@ -26,16 +26,16 @@ considered. Who minted it and when are in `git blame` (§298 (a document states 
 read the conventions before you start: a provisional name is expected to change, and the maintainer
 surfaces it.
 
-[design/naming.md](https://github.com/nifeos/record/blob/main/design/naming.md) is the rule, §155 (the naming conventions move out of the
+[design/naming.md](https://github.com/partsfoundry/record/blob/main/design/naming.md) is the rule, §155 (the naming conventions move out of the
 constitution). It holds the spelling conventions per domain, the acronym test, nouns over verbs and
 the failure modes. It also holds what `script/lint` can and cannot check, how to perform a ratified
 rename, and the refusals that shaped all of it. Read it before you ratify or rename; a lane
 inventing a provisional name does not have to. Where it and this file disagree, that file is the
 rule for naming conventions and this one is the bug; this file keeps only the authority above.
 
-A new or provisional hardware register, field or bit constant copied from a cited source takes the spelled-out identifier that says what the thing is. The source's spelling (the databook's or the BSD driver's) goes in `#[doc(alias = "...")]` and in the opening of the doc comment, with the source cited. OpenBSD's spelling is the one cited first, then FreeBSD's, and Linux's only when no BSD source names it. Ruled 2026-11-02 (UTC). A name already ratified keeps its spelling until its own name review. This does not cover a program, crate, command or other software name, which says what the thing does and follows the tree's own pattern (`system_installer`). The rule is in [design/naming.md](https://github.com/nifeos/record/blob/main/design/naming.md).
+A new or provisional hardware register, field or bit constant copied from a cited source takes the spelled-out identifier that says what the thing is. The source's spelling (the databook's or the BSD driver's) goes in `#[doc(alias = "...")]` and in the opening of the doc comment, with the source cited. OpenBSD's spelling is the one cited first, then FreeBSD's, and Linux's only when no BSD source names it. Ruled 2026-11-02 (UTC). A name already ratified keeps its spelling until its own name review. This does not cover a program, crate, command or other software name, which says what the thing does and follows the tree's own pattern (`system_installer`). The rule is in [design/naming.md](https://github.com/partsfoundry/record/blob/main/design/naming.md).
 
-The private modules `tests` (host unit tests, declared under `#[cfg(test)]`) and `verification` (Kani proof harnesses, declared under `#[cfg(kani)]`) are ratified for every crate, present and future (ruled 2026-11-20 UTC). `script/names` and `helpers/name_release.py --draft` read them as ratified, so a review package never asks about them. The rule is Rule 4 of [design/naming/convention-rulings.md](https://github.com/nifeos/record/blob/main/design/naming/convention-rulings.md).
+The private modules `tests` (host unit tests, declared under `#[cfg(test)]`) and `verification` (Kani proof harnesses, declared under `#[cfg(kani)]`) are ratified for every crate, present and future (ruled 2026-11-20 UTC). `script/names` and `helpers/name_release.py --draft` read them as ratified, so a review package never asks about them. The rule is Rule 4 of [design/naming/convention-rulings.md](https://github.com/partsfoundry/record/blob/main/design/naming/convention-rulings.md).
 
 A name you mint or rename must pass the mechanical naming checks, which `script/lint` runs as
 "names meet the current naming rules" (`helpers/name_checks.py`). Renaming an unratified name to

@@ -1,6 +1,6 @@
 # The glob matcher
 
-`byte_glob` (the repository `nifeos/byte_glob`), milestone 47's navigation-and-naming lane. A pattern and a name go in, a `bool` comes
+`byte_glob` (the repository `partsfoundry/byte_glob`), milestone 47's navigation-and-naming lane. A pattern and a name go in, a `bool` comes
 out. No IO, no system calls, no directory, no allocation, no capability, and no idea what a file is.
 
 This note is the working reference: what the crate does, the four scope decisions it settled and why,
@@ -114,7 +114,7 @@ directory. In a capability system that is a change to what the command *is*, not
 Recorded-accepted by milestone 94's sweep (2026-08-04): "not built" here is the outcome of a
 decision the roadmap asked for and got, not a gap. The authority argument is the reason, and it
 survives whether or not anybody wants the feature. An audit may pass over it. See
-nifeos/record:notes/untracked-work-sweep.md.
+partsfoundry/record:notes/untracked-work-sweep.md.
 
 If qualifiers ever arrive, they arrive as a separate, visible step over an already-enumerated set,
 with the extra right named at the point it is taken, and the matcher stays a function of two byte
@@ -204,7 +204,7 @@ tries each against every name of length 0..=3: 2,657,200 comparisons in 0.3 seco
 match. The Kani cost harness checks the accounting, not the blowup.
 
 How each of these was reached, with the timings and the counterexample, is in
-[`glob/proofs.md`](https://github.com/nifeos/record/blob/main/notes/glob/proofs.md).
+[`glob/proofs.md`](https://github.com/partsfoundry/record/blob/main/notes/glob/proofs.md).
 
 ## Corners, and where implementations differ
 
@@ -233,7 +233,7 @@ The unit tests exist for these. Every one is a place a real glob implementation 
 - **No grant.** The attenuated-to-a-name-set work, the shell's expansion, `program_table::plan` seeing the
   expanded set rather than the pattern, and `ARG_MAX` as a capability limit are milestone 47
   (navigation and naming)'s globbing lane, built on top of this crate and written up in
-  [glob-grant.md](https://github.com/nifeos/record/blob/main/notes/glob-grant.md). This crate is the part with no authority in it, which is why it
+  [glob-grant.md](https://github.com/partsfoundry/record/blob/main/notes/glob-grant.md). This crate is the part with no authority in it, which is why it
   could be finished and proved on its own, and it did not change by one line when the granting
   arrived. It did not change by one line when batching arrived either: `xargs`, milestone 109
   (batching a grant too large to hand over). That is the same claim made a second time:

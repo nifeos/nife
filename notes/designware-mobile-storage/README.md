@@ -1,7 +1,7 @@
 # The DesignWare Mobile Storage driver: the appendices to its note
 
-The rest of this directory, its parent note and its full index are in nifeos/record, at
-[`notes/designware-mobile-storage/`](https://github.com/nifeos/record/tree/main/notes/designware-mobile-storage).
+The rest of this directory, its parent note and its full index are in partsfoundry/record, at
+[`notes/designware-mobile-storage/`](https://github.com/partsfoundry/record/tree/main/notes/designware-mobile-storage).
 The file here documents one crate alone, so it stays with the code.
 
 - [`driver.md`](driver.md): the device-tree evidence for the part, the card identification steps,

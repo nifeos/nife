@@ -13,7 +13,7 @@ what a brief is for, not a concession to a weaker reader.
 A brief is not reserved for a cheaper model or for work a gate can check. calef, 2026-09-23:
 *"Why are the briefs reserved for just the low powered agents?"*
 
-The evidence is [`notes/effort-levels.md`](https://github.com/nifeos/record/blob/main/notes/effort-levels.md): five
+The evidence is [`notes/effort-levels.md`](https://github.com/partsfoundry/record/blob/main/notes/effort-levels.md): five
 `--effort` levels, twenty runs, one real query against this repository. Correctness was explained
 100% by the wording of the prompt and 0% by the effort level. An ambiguous wording produced the
 identical wrong answer at every level up to and including `max`; a disambiguated wording produced
@@ -103,7 +103,7 @@ new. The rebase brief is the worked example.
 - Nothing here measures the redo rate, which is the number that decides whether any of this
   saves anything. A delegated task that passes its gates and must be redone by hand costs more than
   never having delegated it. One sample so far, and it needed no redo.
-- [`notes/effort-levels.md`](https://github.com/nifeos/record/blob/main/notes/effort-levels.md) measured one task shape, a bounded read-only grep-and-tabulate query,
+- [`notes/effort-levels.md`](https://github.com/partsfoundry/record/blob/main/notes/effort-levels.md) measured one task shape, a bounded read-only grep-and-tabulate query,
   and says nothing yet about whether a brief's payoff holds for a multi-step edit or a genuinely
   ambiguous judgement call rather than an ambiguous instruction. Cited above as the best evidence
   available, not as a settled generalisation.

@@ -1,7 +1,7 @@
 # Verification: the appendices to notes/verification.md
 
-The rest of this directory, its parent note and its full index are in nifeos/record, at
-[`notes/verification/`](https://github.com/nifeos/record/tree/main/notes/verification). The file
+The rest of this directory, its parent note and its full index are in partsfoundry/record, at
+[`notes/verification/`](https://github.com/partsfoundry/record/tree/main/notes/verification). The file
 here documents one crate alone, so it stays with the code.
 
 - [`paging-blocks.md`](paging-blocks.md): 2 MiB and 1 GiB leaves.

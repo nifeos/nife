@@ -2,7 +2,7 @@
 
 *Name: provisional.*
 
-A page beside [`notes/designware-ethernet.md`](https://github.com/nifeos/record/blob/main/notes/designware-ethernet.md). It holds the reference
+A page beside [`notes/designware-ethernet.md`](https://github.com/partsfoundry/record/blob/main/notes/designware-ethernet.md). It holds the reference
 tables that the `designware_ethernet` crate's module comments link to: where the controller's
 registers fall, how the two device trees describe the controller and its PHY, and how the receive
 ring's tail pointer is kept. Each fact here is also the reason for a line of code in that crate.
@@ -30,7 +30,7 @@ carries what follows from that, and so does the header of
 ## Two device trees, and radon serves the vendor's
 
 radon's U-Boot hands the kernel its own control tree, built from StarFive's U-Boot fork, not
-mainline Linux's (nifeos/record:notes/visionfive2.md, and milestone 239 (radon's device tree does not describe the
+mainline Linux's (partsfoundry/record:notes/visionfive2.md, and milestone 239 (radon's device tree does not describe the
 TRNG, so a working driver never runs)'s correction). The two describe the same controller in different words:
 
 | | vendor U-Boot (`JH7110_VisionFive2_devel`) | mainline Linux |

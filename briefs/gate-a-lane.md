@@ -63,7 +63,7 @@ You do not need to gloss every occurrence, only the first.
 
 Gating a lane's work ends in a push, a ready flip and an auto-merge request, and on 2026-09-29
 four of those endings sat unexecuted for one to two hours each because they lived in the session's
-memory (see [notes/coes/2026-09-30-lane-follow-through.md](https://github.com/nifeos/record/blob/main/notes/coes/2026-09-30-lane-follow-through.md)).
+memory (see [notes/coes/2026-09-30-lane-follow-through.md](https://github.com/partsfoundry/record/blob/main/notes/coes/2026-09-30-lane-follow-through.md)).
 The contract, binding from dispatch time:
 
 - Every dispatch writes a PENDING file beside its lane log, named for the lane, holding the
@@ -108,7 +108,7 @@ names the actual holder faster than guessing from process names.
 
 `script/test` (which this brief does not run) and some of the cheap gates link the patched std
 farm as `nife-dev-<your worktree's directory>-<hash>`, a `rustup` name no other worktree computes
-([notes/std.md](https://github.com/nifeos/record/blob/main/notes/std.md)). It takes nothing from another lane and needs no relink afterward. Do not touch the
+([notes/std.md](https://github.com/partsfoundry/record/blob/main/notes/std.md)). It takes nothing from another lane and needs no relink afterward. Do not touch the
 bare `nife-dev` link: lanes cut before 2026-10-10 still write it, and only the maintainer removes it.
 
 ## Scratch files carry a lane-unique prefix
@@ -118,7 +118,7 @@ session scratchpad, since every lane a session launches gets the same one. A pat
 for `git stash`, a pull request body and a gate log all live there. Prefix each with your lane or
 milestone, as in `586-pr-body.md`, never `pr-body.md`. Two lanes that both write
 `/tmp/pr-body.md` push each other's text.
-[design/tenets/git-in-a-worktree.md](https://github.com/nifeos/record/blob/main/design/tenets/git-in-a-worktree.md) has the stash half.
+[design/tenets/git-in-a-worktree.md](https://github.com/partsfoundry/record/blob/main/design/tenets/git-in-a-worktree.md) has the stash half.
 
 ## If you add or change a `script/` command
 
@@ -177,6 +177,6 @@ A lane that hits the commit-first trap, and the fix:
   anticipate. It says nothing about a leaked process on a machine other than the one you are
   running on (a board rig, say).
 - **Nothing here measures whether following this brief actually stops the clause-dropping it was
-  written to fix.** The evidence for writing it down is [`notes/effort-levels.md`](https://github.com/nifeos/record/blob/main/notes/effort-levels.md)'s finding that
+  written to fix.** The evidence for writing it down is [`notes/effort-levels.md`](https://github.com/partsfoundry/record/blob/main/notes/effort-levels.md)'s finding that
   correctness comes from prompt wording rather than from the reader's capability; whether this
   particular brief holds up over many lanes, rather than the one measured task, is unmeasured.

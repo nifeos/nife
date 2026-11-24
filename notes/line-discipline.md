@@ -4,8 +4,8 @@ Milestone 28. The layer Unix builds into the kernel as the tty line discipline i
 `line_editor`, sitting on plain endpoints between the raw input driver and the application, and between
 the application and the console server. This note covers the build-vs-reuse call, the component's
 shape, and the one argument that makes the design correct: it cannot deadlock. The interface it
-presents is written up separately in [terminal-contract.md](https://github.com/nifeos/record/blob/main/notes/terminal-contract.md); the interrupt
-question it raises is [../design/interrupt-routing.md](https://github.com/nifeos/record/blob/main/design/interrupt-routing.md).
+presents is written up separately in [terminal-contract.md](https://github.com/partsfoundry/record/blob/main/notes/terminal-contract.md); the interrupt
+question it raises is [../design/interrupt-routing.md](https://github.com/partsfoundry/record/blob/main/design/interrupt-routing.md).
 
 ## Two pieces: a sans-IO engine and a wiring process
 
@@ -52,7 +52,7 @@ Three things it leaves out on purpose:
   answers Tab with `LineEditor::pending` and `LineEditor::insert_text` (§227 (how Tab reaches the
   shell)).
 - It keeps no output-side state. Newline translation is the free function `expand_output`,
-  because output shares no state with input editing (nifeos/record:notes/thread-control-block.md has the tty
+  because output shares no state with input editing (partsfoundry/record:notes/thread-control-block.md has the tty
   layer).
 
 ## The build-vs-reuse call: built, against the rule's default
@@ -223,9 +223,9 @@ spawner picks one of two wirings in `arg0`:
 ```
 
 `MODE_RING` is DECISIONS §33 (the compositor's authority is memory, not messages) seen from the
-producing side, and [glyphs.md](https://github.com/nifeos/record/blob/main/notes/glyphs.md) has its argument. `MODE_DIRECT` serves a boot with
+producing side, and [glyphs.md](https://github.com/partsfoundry/record/blob/main/notes/glyphs.md) has its argument. `MODE_DIRECT` serves a boot with
 exactly one terminal, where there is no second window to misdirect a keystroke to
-(nifeos/record:design/roadmap/0177-graphical-interactive-boot.md). The driver holds one fixed `CALL` capability to
+(partsfoundry/record:design/roadmap/0177-graphical-interactive-boot.md). The driver holds one fixed `CALL` capability to
 `line_editor`'s served endpoint, granted at spawn, and sends every keystroke there in the same
 `OPERATION_BYTES` framing the UART receive driver uses. A keyboard and a serial line are both one
 input source to the discipline, and neither contract grew to carry the other's bytes. That is

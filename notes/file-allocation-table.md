@@ -2,11 +2,11 @@
 
 *Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-16, for the crate it describes.*
 
-`file_allocation_table`, in the repository `nifeos/file_allocation_table`, reads FAT12, FAT16 and FAT32 volumes through `SectorDevice`, and its
+`file_allocation_table`, in the repository `partsfoundry/file_allocation_table`, reads FAT12, FAT16 and FAT32 volumes through `SectorDevice`, and its
 writer, `VolumeLayout`, lays out one FAT32 volume holding one boot file. Neither half does any I/O.
 The crate's `lib.rs` and `README.md` describe both halves, and milestone 813 (a proven FAT crate,
 released on its own) plans the rest of the crate. Why the installer needs the writer, the cluster
-count that types the volume, and the alignment bug are in [installing.md](https://github.com/nifeos/record/blob/main/notes/installing.md), section
+count that types the volume, and the alignment bug are in [installing.md](https://github.com/partsfoundry/record/blob/main/notes/installing.md), section
 3. This page holds what the crate cannot say about itself: why the writer's volume has this shape,
 and which drivers outside this tree read it back.
 

@@ -1,7 +1,7 @@
 # Glyphs: the appendices to notes/glyphs.md
 
-The rest of this directory, its parent note and its full index are in nifeos/record, at
-[`notes/glyphs/`](https://github.com/nifeos/record/tree/main/notes/glyphs). The files here document
+The rest of this directory, its parent note and its full index are in partsfoundry/record, at
+[`notes/glyphs/`](https://github.com/partsfoundry/record/tree/main/notes/glyphs). The files here document
 one crate alone, so they stay with the code.
 
 - [`bitmap-font.md`](bitmap-font.md): how `crates/bitmap_font` is built and tested, and how its

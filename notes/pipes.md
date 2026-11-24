@@ -3,12 +3,12 @@
 *Milestone 50, the operators lane and its closure. `crates/grant_plan/src/line.rs`,
 `components/src/wc.rs`, `components/src/swish/`, `components/src/date.rs`, `components/src/terminal_sink_caretaker.rs`,
 `components/src/progenitor.rs`, `fixtures/src/hello.rs`, `crates/program_table/src/spawn_protocol.rs`,
-`script/swish-check`. The protocol half is nifeos/record:notes/sink-protocol.md and you should read that first.*
+`script/swish-check`. The protocol half is partsfoundry/record:notes/sink-protocol.md and you should read that first.*
 
 **All five operators run at a real prompt on both ISAs.** `|` landed first; `>` and `<` needed a
 boot in which one shell holds both a filesystem and a spawn channel, and building that turned up a
 reason the file end of a redirection cannot be a separate process. That finding is the section
-["The file behind a `>` is this shell"](https://github.com/nifeos/record/blob/main/notes/pipes/the-file-end.md),
+["The file behind a `>` is this shell"](https://github.com/partsfoundry/record/blob/main/notes/pipes/the-file-end.md),
 and it is the most reusable thing in this note. `>>` is the cheapest of the four,
 which is that finding paying out: the shell already holds the file, so append is one bit about how
 it opens one.
@@ -17,14 +17,14 @@ it opens one.
 something the system already had: it needed a second stream to exist first. It exists per program,
 by declaration (DECISIONS §67 (A program's second stream is a declaration, not)), which is what makes the digit a familiar spelling rather than a
 number everybody has to agree on. See ["`2>`: built as a
-declaration"](https://github.com/nifeos/record/blob/main/notes/pipes/second-stream.md).
+declaration"](https://github.com/partsfoundry/record/blob/main/notes/pipes/second-stream.md).
 
 **The draining lane came after all of them, on 2026-08-04**, and it is the only one that somebody
 trying to *use* this raised. Milestone 40 (documentation as a system service) built a documentation
 viewer, could not show a page at the prompt, and spent three boot-gate failures finding out that all
 three reasons were here. Two were bugs, now fixed; the third is not a bug at all, and naming it
 correctly is the reusable part. See ["One wait point, and what it decides about a
-line"](https://github.com/nifeos/record/blob/main/notes/pipes/one-wait-point.md).
+line"](https://github.com/partsfoundry/record/blob/main/notes/pipes/one-wait-point.md).
 
 ## What this lane had to add, which was less than it looks
 
@@ -86,7 +86,7 @@ A source is the sink contract received rather than sent, so `<` and the right si
 convention. A pipe's ends travel as `WRITE` and `READ`, so the program on the right of a `|` cannot
 write back up its own input. A builtin can lead a pipeline, because the shell itself can be a
 writer. The declarations, the input slot's shape and the spawn wire are in
-[their appendix](https://github.com/nifeos/record/blob/main/notes/pipes/declarations-and-wire.md).
+[their appendix](https://github.com/partsfoundry/record/blob/main/notes/pipes/declarations-and-wire.md).
 
 ## The file behind a `>` is this shell, and that was not the plan
 
@@ -98,7 +98,7 @@ The program still holds one endpoint with `WRITE`, and cannot seek, truncate or 
 
 That made `>>` one bit: append is only where the shell starts its offset when it opens the file.
 `>` truncates before the command runs, so `ls > out.txt` lists `out.txt`. The race, the costs and
-the `>>` design are in [the file-end appendix](https://github.com/nifeos/record/blob/main/notes/pipes/the-file-end.md).
+the `>>` design are in [the file-end appendix](https://github.com/partsfoundry/record/blob/main/notes/pipes/the-file-end.md).
 
 ## `2>`: built as a declaration (DECISIONS §67)
 
@@ -109,8 +109,8 @@ complaint reaches the screen without passing through the shell. `date > when.txt
 writes a complaint into the file. The progenitor inserts the stream at the slot the manifest names,
 not at the next free one.
 
-[The second-stream appendix](https://github.com/nifeos/record/blob/main/notes/pipes/second-stream.md) covers the build and what building it found.
-The analysis written while the fork was open is in [the fork appendix](https://github.com/nifeos/record/blob/main/notes/pipes/second-stream-fork.md).
+[The second-stream appendix](https://github.com/partsfoundry/record/blob/main/notes/pipes/second-stream.md) covers the build and what building it found.
+The analysis written while the fork was open is in [the fork appendix](https://github.com/partsfoundry/record/blob/main/notes/pipes/second-stream-fork.md).
 
 ## One wait point, and what it decides about a line
 
@@ -121,14 +121,14 @@ It also runs if its tail's output goes to the terminal's sink rather than back t
 §106 (the `terminal_sink_caretaker` narrowing). A line with neither is
 `Refusal::NoReaderStage` at the prompt, before any `>` has emptied a file. The draining lane
 of 2026-08-04, its two bugs and the ways out are in [the wait-point
-appendix](https://github.com/nifeos/record/blob/main/notes/pipes/one-wait-point.md).
+appendix](https://github.com/partsfoundry/record/blob/main/notes/pipes/one-wait-point.md).
 
 ## Buffering: measured, and the answer is to build nothing
 
 Measured on 2026-08-03 under HVF, `a | b` costs 1146 ns per sixteen bytes (13.3 MiB/s). A macOS pipe
 at the same write size costs 348 ns. The gap that matters is the sixteen-byte message, not the
 lockstep, and a buffering process would add a second rendezvous per message. So no buffering stage
-exists. The table and its caveats are in [the buffering appendix](https://github.com/nifeos/record/blob/main/notes/pipes/buffering.md).
+exists. The table and its caveats are in [the buffering appendix](https://github.com/partsfoundry/record/blob/main/notes/pipes/buffering.md).
 
 ## SIGPIPE, and why the pipeline gets its own region
 
@@ -149,8 +149,8 @@ FS endpoint into the shell at slot 4. On a machine with no disk the same shell E
 directory. `kernel::user::pipeline_tests` and `redirection_tests` run the real shell with the kernel
 serving the far ends, and assert what a person would see. `script/swish-check` boots the real
 progenitor on both ISAs and types at the prompt. The boot's layout and the four stack overflows are
-in [the boot appendix](https://github.com/nifeos/record/blob/main/notes/pipes/the-boot.md). The tests and the gate are in
-[their appendix](https://github.com/nifeos/record/blob/main/notes/pipes/tests-and-the-boot-gate.md).
+in [the boot appendix](https://github.com/partsfoundry/record/blob/main/notes/pipes/the-boot.md). The tests and the gate are in
+[their appendix](https://github.com/partsfoundry/record/blob/main/notes/pipes/tests-and-the-boot-gate.md).
 
 ## EXAMPLES
 
@@ -346,11 +346,11 @@ One line each.
 
 | appendix | what it holds |
 |---|---|
-| [declarations-and-wire](https://github.com/nifeos/record/blob/main/notes/pipes/declarations-and-wire.md) | `OutputDeclaration`, `InputDeclaration`, the input slot and the spawn wire |
-| [the-file-end](https://github.com/nifeos/record/blob/main/notes/pipes/the-file-end.md) | why the shell backs the file, and `>>` |
-| [second-stream](https://github.com/nifeos/record/blob/main/notes/pipes/second-stream.md) | `2>` as built, and what building it found |
-| [second-stream-fork](https://github.com/nifeos/record/blob/main/notes/pipes/second-stream-fork.md) | `2>` as it stood open |
-| [one-wait-point](https://github.com/nifeos/record/blob/main/notes/pipes/one-wait-point.md) | the rendezvous limit and the barrier declaration |
-| [buffering](https://github.com/nifeos/record/blob/main/notes/pipes/buffering.md) | the throughput measurement and its caveats |
-| [the-boot](https://github.com/nifeos/record/blob/main/notes/pipes/the-boot.md) | the boot's processes, its filesystem, and the stack |
-| [tests-and-the-boot-gate](https://github.com/nifeos/record/blob/main/notes/pipes/tests-and-the-boot-gate.md) | the guest tests and `script/swish-check` |
+| [declarations-and-wire](https://github.com/partsfoundry/record/blob/main/notes/pipes/declarations-and-wire.md) | `OutputDeclaration`, `InputDeclaration`, the input slot and the spawn wire |
+| [the-file-end](https://github.com/partsfoundry/record/blob/main/notes/pipes/the-file-end.md) | why the shell backs the file, and `>>` |
+| [second-stream](https://github.com/partsfoundry/record/blob/main/notes/pipes/second-stream.md) | `2>` as built, and what building it found |
+| [second-stream-fork](https://github.com/partsfoundry/record/blob/main/notes/pipes/second-stream-fork.md) | `2>` as it stood open |
+| [one-wait-point](https://github.com/partsfoundry/record/blob/main/notes/pipes/one-wait-point.md) | the rendezvous limit and the barrier declaration |
+| [buffering](https://github.com/partsfoundry/record/blob/main/notes/pipes/buffering.md) | the throughput measurement and its caveats |
+| [the-boot](https://github.com/partsfoundry/record/blob/main/notes/pipes/the-boot.md) | the boot's processes, its filesystem, and the stack |
+| [tests-and-the-boot-gate](https://github.com/partsfoundry/record/blob/main/notes/pipes/tests-and-the-boot-gate.md) | the guest tests and `script/swish-check` |

@@ -33,9 +33,9 @@ do need these, and each one will otherwise cost you a rewrite:
   a `#[path]` module, because a shared module inside a `no_std` binary is unreachable by host tests
   and by Kani, and this project's whole method is pure logic in host-testable crates plus proofs.
 - **Names are an architect's call.** Ship a provisional one and say so in your pull request; do not
-  wait, and do not rename anything on your own initiative. [`design/naming.md`](https://github.com/nifeos/record/blob/main/design/naming.md)
+  wait, and do not rename anything on your own initiative. [`design/naming.md`](https://github.com/partsfoundry/record/blob/main/design/naming.md)
   has the conventions, and `script/names --unratified` lists what is still waiting on a ruling.
-- **[`design/decisions/`](https://github.com/nifeos/record/tree/main/design/decisions) section numbers are assigned at merge**, never claimed by a branch. Put your
+- **[`design/decisions/`](https://github.com/partsfoundry/record/tree/main/design/decisions) section numbers are assigned at merge**, never claimed by a branch. Put your
   reasoning in `notes/` and in the pull request instead.
 - **The ladder.** When something must not go wrong, prefer making the wrong state unrepresentable
   over a gate that fails loudly, over a written record at the thing itself, over a note. "Somebody
@@ -54,13 +54,13 @@ script/apropos socket      # the socket contract, the network stack and the prog
 It is one word at a time and whole words only, and it reads only the first word it is given;
 `script/apropos`'s own header says what else it cannot do. It does not reach the design record:
 the decisions, the roadmap and most notes are in
-[nifeos/record](https://github.com/nifeos/record), and the system call numbers are in
-[nifeos/moho_abi](https://github.com/nifeos/moho_abi).
+[partsfoundry/record](https://github.com/partsfoundry/record), and the system call numbers are in
+[partsfoundry/moho_abi](https://github.com/partsfoundry/moho_abi).
 
 ## Getting it building
 
 ```sh
-git clone https://github.com/nifeos/nife
+git clone https://github.com/partsfoundry/nife
 cd nife
 script/setup     # installs the pinned Rust toolchain, python3, gh and ruby, the pinned QEMU, then builds
 script/test      # host crates, then the kernel under QEMU on all three ISAs
@@ -103,9 +103,9 @@ Concretely, a change is finished when:
   hits a limitation the docs hid will not trust anything again.
 - Anything measurable is **measured**. `script/bench` runs icount microbenchmarks against a committed
   baseline. An honest tie recorded plainly is worth more than an overclaimed win.
-- Its prose stays within budget. [§212 (a prose budget)](https://github.com/nifeos/record/blob/main/design/decisions/0212-a-prose-budget-for-every-document.md)
+- Its prose stays within budget. [§212 (a prose budget)](https://github.com/partsfoundry/record/blob/main/design/decisions/0212-a-prose-budget-for-every-document.md)
   caps a document's main body at 3,000 words, and
-  [§213 (writing standards)](https://github.com/nifeos/record/blob/main/design/decisions/0213-writing-standards.md) limits sentence length and
+  [§213 (writing standards)](https://github.com/partsfoundry/record/blob/main/design/decisions/0213-writing-standards.md) limits sentence length and
   bold. A new document meets both outright; an edited one may not get worse.
 
 ## What is not yours to decide, and why that saves you time
@@ -115,11 +115,11 @@ about:
 
 | | |
 |---|---|
-| **The system call surface** | A boundary, not a habit. A new method inside the existing capability model is fine and gets its semantics recorded in [`design/decisions/`](https://github.com/nifeos/record/tree/main/design/decisions); a new system call number is a design fork. |
+| **The system call surface** | A boundary, not a habit. A new method inside the existing capability model is fine and gets its semantics recorded in [`design/decisions/`](https://github.com/partsfoundry/record/tree/main/design/decisions); a new system call number is a design fork. |
 | **A new dependency** | Taking one is a decision (DECISIONS §46 (thin primitives or whole subsystems)); a dependency on one of our own `nifeos` crates needs no ruling when its git `rev` is a full commit on that repository's main. The tree is thin architectural primitives or whole subsystems nobody would write, with nothing in between. |
 | **Names** | Crates, programs, modules, public functions and directories are named by an architect. Ship provisional, say so. |
 | **Anything two programs agree on** | A wire format, an opcode number, a packed word. The code is a morning's work; the un-shipping is not. |
-| **[`design/decisions/`](https://github.com/nifeos/record/tree/main/design/decisions) section numbers** | Assigned at merge. |
+| **[`design/decisions/`](https://github.com/partsfoundry/record/tree/main/design/decisions) section numbers** | Assigned at merge. |
 
 Everything else you should simply decide and do. Most decisions here are reversible and deliberating
 them costs more than getting them wrong.
@@ -137,7 +137,7 @@ Claim before you work. §90 (the claim is a draft pull request) makes a draft pu
 claim, so two people cannot silently take the same milestone. `script/claim` makes it in one
 command: it refuses a malformed branch name, cuts a worktree, and pushes an empty commit behind a
 draft. It also refuses a lane that does not say whether it repays debt: pass exactly one of
-`--debt-paydown` or `--new-work` ([notes/debt-paydown.md](https://github.com/nifeos/record/blob/main/notes/debt-paydown.md) has the line between
+`--debt-paydown` or `--new-work` ([notes/debt-paydown.md](https://github.com/partsfoundry/record/blob/main/notes/debt-paydown.md) has the line between
 them). The empty commit matters, because without it GitHub closes the draft as merged when its base
 lands. Any branch prefix is accepted except a near-miss of `milestone/<N>-<slug>`, the one prefix
 with a meaning: `script/lint` reads it to require that milestone's roadmap block be updated.
@@ -151,7 +151,7 @@ one by name: `script/ci-build coverage`. The list lives only in the table at the
 `script/ci-build`, per milestone 286 (one enumeration of the checks that gate a pull request), and
 CI reads the same table. `hvf` runs the aarch64 suite on the physical Apple Silicon core. It is the
 slowest local check and the likeliest to flake on a busy host, and it skips loudly where
-Hypervisor.framework is missing. See [notes/load-sensitive-assertions.md](https://github.com/nifeos/record/blob/main/notes/load-sensitive-assertions.md) if it flakes.
+Hypervisor.framework is missing. See [notes/load-sensitive-assertions.md](https://github.com/partsfoundry/record/blob/main/notes/load-sensitive-assertions.md) if it flakes.
 
 CI does not run on a draft. Both workflows open with a `draft gate` that skips the suite, and a
 skipped check still satisfies a required one. Mark the pull request ready when the work is done, or
@@ -174,25 +174,25 @@ what). If a commit records a correction or a surprise, say so in the message: th
 useful commits in this history. `git blame` is the test. A reader tracing why a line looks the way it
 does has to land on a commit that explains it.
 
-**If your change is a design argument rather than code**, it goes in [`design/decisions/`](https://github.com/nifeos/record/tree/main/design/decisions) as a file
-whose frontmatter says `status: PROPOSED` ([the schema](https://github.com/nifeos/record/blob/main/design/decisions/README.md)). It says what is
+**If your change is a design argument rather than code**, it goes in [`design/decisions/`](https://github.com/partsfoundry/record/tree/main/design/decisions) as a file
+whose frontmatter says `status: PROPOSED` ([the schema](https://github.com/partsfoundry/record/blob/main/design/decisions/README.md)). It says what is
 being decided, the options, the recommendation with its reason, and what is blocked until it is
 answered. Work you found but are not doing goes in
-[`design/roadmap/proposals/`](https://github.com/nifeos/record/blob/main/design/roadmap/proposals/README.md), unnumbered. A decision that lives only in a pull request thread
+[`design/roadmap/proposals/`](https://github.com/partsfoundry/record/blob/main/design/roadmap/proposals/README.md), unnumbered. A decision that lives only in a pull request thread
 is in the medium this project exists to get things out of.
 
 ## Where the arguments are
 
-- [`design/decisions/`](https://github.com/nifeos/record/blob/main/design/decisions/README.md) is what was chosen, what was rejected, and why,
+- [`design/decisions/`](https://github.com/partsfoundry/record/blob/main/design/decisions/README.md) is what was chosen, what was rejected, and why,
   **including the decisions that were refused**. That is on purpose: you can disagree with an
   argument, but not with an authority.
-- [`design/roadmap/`](https://github.com/nifeos/record/blob/main/design/roadmap/README.md) is the only status in the tree: one file per
+- [`design/roadmap/`](https://github.com/partsfoundry/record/blob/main/design/roadmap/README.md) is the only status in the tree: one file per
   milestone, with `script/roadmap` as the index. It has a fixed status vocabulary
-  ([notes/roadmap.md](https://github.com/nifeos/record/blob/main/notes/roadmap.md)) and a checker; anywhere else that claims status is stale by
+  ([notes/roadmap.md](https://github.com/partsfoundry/record/blob/main/notes/roadmap.md)) and a checker; anywhere else that claims status is stale by
   construction.
-- [`notes/`](https://github.com/nifeos/record/blob/main/notes/README.md) is a glossary written while building, one file per question that
+- [`notes/`](https://github.com/partsfoundry/record/blob/main/notes/README.md) is a glossary written while building, one file per question that
   turned out to be load-bearing.
-- [`design/audit-reports/`](https://github.com/nifeos/record/tree/main/design/audit-reports) is every audit, its lens, and when the next is due.
+- [`design/audit-reports/`](https://github.com/partsfoundry/record/tree/main/design/audit-reports) is every audit, its lens, and when the next is due.
 
 ## Conduct
 
@@ -228,7 +228,7 @@ is dual licensed the same way, with no additional terms. There is no CLA.
   file.
 - **The issue templates route more than they invite.** A bug report is a real channel and prompts
   for the commit sha and the ISA. A feature request and a design argument both tell you the outcome
-  is a file in [`design/roadmap/`](https://github.com/nifeos/record/tree/main/design/roadmap) or [`design/decisions/`](https://github.com/nifeos/record/tree/main/design/decisions) rather than a thread, which is honest about
+  is a file in [`design/roadmap/`](https://github.com/partsfoundry/record/tree/main/design/roadmap) or [`design/decisions/`](https://github.com/partsfoundry/record/tree/main/design/decisions) rather than a thread, which is honest about
   where work lives here and is also more work than opening an issue elsewhere would be. Blank issues
   are off, so there is no way to file something that skips the prompts.
 - **The contribution path assumes you can run QEMU on all three ISAs.** A change that only touches the

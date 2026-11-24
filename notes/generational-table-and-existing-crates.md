@@ -2,7 +2,7 @@
 
 *Name: provisional, minted 2026-11-05 (UTC) by lane/generational-table-vs-slotmap.*
 
-The release record for `nifeos/generational_table` owes one answer before publication:
+The release record for `partsfoundry/generational_table` owes one answer before publication:
 whether `slotmap`, or a crate like it, already covers an allocation-free, fixed-capacity generational
 table with what nife needs from one. This note answers from each candidate's source, a host experiment and Kani
 harnesses run against the candidates, and ends with the ruling. The

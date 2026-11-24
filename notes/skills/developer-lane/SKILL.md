@@ -4,7 +4,7 @@ description: >-
   Rules for a developer lane in nife: a subagent executing exactly one milestone in its own worktree
   and branch. Load first, before any work in a lane, and when briefing one. Covers the claim
   (script/claim, an empty commit and a draft pull request before any work), what a developer may
-  never do (merge, mint, edit nifeos/record:design/decisions/, design/ or AGENTS.md except its own roadmap block
+  never do (merge, mint, edit partsfoundry/record:design/decisions/, design/ or AGENTS.md except its own roadmap block
   or a ruling it was given),
   never polling CI (end the turn with `WAITING [<owner>/<repo>:]<run_id>... on <what>`), when a lane stops, the
   report and its handoff, where identified work must go (a proposed milestone or a BUGS entry), and
@@ -20,15 +20,15 @@ Where this says "this file", it means `AGENTS.md`. Its name was ratified by cale
 The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL.md).
 
 - Developer. A subagent executing exactly one milestone. Reports; never merges, never mints, never
-  edits `nifeos/record:design/decisions/`, `design/` or this file, with two exceptions. It edits its own
+  edits `partsfoundry/record:design/decisions/`, `design/` or this file, with two exceptions. It edits its own
   milestone's roadmap block, which `script/lint-fleet` 4b requires. And it may edit
-  `nifeos/record:design/decisions/` to record a ruling it was given, only once `script/record-ruling` has cleared
+  `partsfoundry/record:design/decisions/` to record a ruling it was given, only once `script/record-ruling` has cleared
   `needs-architect` on its pull request (§88 (`needs-architect` as a required check); ruled
   2026-10-25 UTC). Names anything new provisionally and says so. A
   developer never polls CI. It ends its turn with `WAITING [<owner>/<repo>:]<run_id>... on <what>` and the
-  maintainer resumes it once the runs finish. A run in a repository other than nifeos/nife
-  carries it, `WAITING nifeos/basalt:<run_id> on <what>`; a bare id is a nife run. A lane whose pull request is held writes `Held on #N` in the body
-  (nifeos/record:notes/idle-pull-requests.md), and never ends its last turn leaving the pull request a draft and unowned without naming
+  maintainer resumes it once the runs finish. A run in a repository other than partsfoundry/nife
+  carries it, `WAITING partsfoundry/basalt:<run_id> on <what>`; a bare id is a nife run. A lane whose pull request is held writes `Held on #N` in the body
+  (partsfoundry/record:notes/idle-pull-requests.md), and never ends its last turn leaving the pull request a draft and unowned without naming
   the next step in its report. The report comes after the gate, and nothing about a
   gate is finished until you have read its exit. A lane continues until it needs a human or it is
   done (calef, 2026-08-26): finishing one item on a milestone's own list is not a stopping
@@ -45,7 +45,7 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
 - `script/claim <branch> --debt-paydown` or `script/claim <branch> --new-work` makes that claim in
   one command, and refuses a lane that passes neither or both (calef's ruling R1 on #1894,
   2026-10-10 UTC). `--debt-paydown` is for work that meets the definition in
-  [notes/debt-paydown.md](https://github.com/nifeos/record/blob/main/notes/debt-paydown.md), and it puts the `debt-paydown` label on the draft.
+  [notes/debt-paydown.md](https://github.com/partsfoundry/record/blob/main/notes/debt-paydown.md), and it puts the `debt-paydown` label on the draft.
   Everything else is `--new-work`. A brief says which one, so the lane doesn't have to guess.
 - **Push the real commits, confirm the remote head, and only then mark the pull request ready.**
   Push with `script/push`, which reads the branch back from origin. Then confirm the head is the
@@ -82,10 +82,10 @@ replaced and why go in its commit messages and pull request body, never in the d
 document states what is in force now).
 
 A lane that writes a note reads it against the code it describes, [§310 (read a note against its
-code)](https://github.com/nifeos/record/blob/main/design/decisions/0310-read-a-note-against-its-code.md): the note names the item and
+code)](https://github.com/partsfoundry/record/blob/main/design/decisions/0310-read-a-note-against-its-code.md): the note names the item and
 keeps the reason, and what is about one crate alone goes into that crate. An agreement between two
 programs is code both sides use, never prose alone, [§311 (a contract is code, not
-prose)](https://github.com/nifeos/record/blob/main/design/decisions/0311-a-contract-is-code-not-prose.md). A lane that finds one held
+prose)](https://github.com/partsfoundry/record/blob/main/design/decisions/0311-a-contract-is-code-not-prose.md). A lane that finds one held
 only in prose proposes a milestone with a sketch of that code, and does not write it.
 
 ## A fix lane for a held finding
@@ -97,8 +97,8 @@ its advisory, as §90 (the claim is a draft pull request) allows, and a person r
 Only then does the reviewed fix land on main, as an ordinary pull request through the merge queue.
 The reason is exposure: a draft pull request and its pushed branch are public from the first
 commit, so the bug is public only while the reviewed fix waits in the queue.
-The rulings are in [the proposal](https://github.com/nifeos/record/blob/main/design/roadmap/1015-fuzz-findings-without-a-person.md),
-and [fix lanes read the advisory](https://github.com/nifeos/record/blob/main/design/roadmap/1014-fix-lanes-read-the-advisory.md)
+The rulings are in [the proposal](https://github.com/partsfoundry/record/blob/main/design/roadmap/1015-fuzz-findings-without-a-person.md),
+and [fix lanes read the advisory](https://github.com/partsfoundry/record/blob/main/design/roadmap/1014-fix-lanes-read-the-advisory.md)
 built the reading side. A finding the architect judges low severity is the exception: its brief
 says so, and the lane follows the regular workflow with a public draft pull request, keeping the
 rules below on reading the advisory and naming no reproducer.
@@ -112,9 +112,9 @@ rules below on reading the advisory and naming no reproducer.
   repository, and is never committed.
 - **The claim is a note on the advisory.** The maintainer writes it when it launches the lane, and
   the advisory list is the claim board for this kind of lane. Cut the branch and worktree with
-  `script/claim <branch> --new-work --no-claim`, which pushes nothing to nifeos/nife. Push nothing
-  to nifeos/nife, not a branch and not a draft, until a person has approved the fix.
-- **Work in the private fork.** The brief names the fork, `nifeos/nife-ghsa-xxxx-xxxx-xxxx`. Add it
+  `script/claim <branch> --new-work --no-claim`, which pushes nothing to partsfoundry/nife. Push nothing
+  to partsfoundry/nife, not a branch and not a draft, until a person has approved the fix.
+- **Work in the private fork.** The brief names the fork, `partsfoundry/nife-ghsa-xxxx-xxxx-xxxx`. Add it
   as a remote, commit often, and push the branch there, since a pushed commit survives the loss of
   the worktree. `script/push` reads back origin only, so push to the fork with `git push` and
   confirm the head with `git ls-remote`. Open one pull request in the fork against `main`, with a
@@ -125,7 +125,7 @@ rules below on reading the advisory and naming no reproducer.
   the report and the fork's pull request body.
 - **Land the reviewed fix through the queue.** Nobody merges from the private fork: main's ruleset
   has no bypass actor, and the fork's merge button needs one. Once a person approves the fix in the
-  fork, push the same commits to the lane's branch on nifeos/nife with `script/push`, confirm the
+  fork, push the same commits to the lane's branch on partsfoundry/nife with `script/push`, confirm the
   remote head, open the pull request ready (not as a draft) with the same neutral title, and arm
   auto-merge. The merge queue runs every gate on it. A person publishes the advisory when it merges,
   and no lane publishes.
@@ -153,7 +153,7 @@ someday" is neither. Either a proposed milestone (provisional; the integrator mi
 merge like every other global name), or a recorded limitation written where a reader meets the
 feature, in the `BUGS` section beside it. A finding with no home is the integrator's cue to hold the
 merge until it has one. Why a lane report and a pull request body do not count as records is in
-[design/tenets/routing-work-and-decisions.md](https://github.com/nifeos/record/blob/main/design/tenets/routing-work-and-decisions.md).
+[design/tenets/routing-work-and-decisions.md](https://github.com/partsfoundry/record/blob/main/design/tenets/routing-work-and-decisions.md).
 
 The merge checklist grows one line: every piece of identified work in the lane's report has a home.
 [`briefs/merge-and-cleanup.md`](../../../briefs/merge-and-cleanup.md) has that checklist whole, with the
@@ -170,16 +170,16 @@ its driver, not a failure, because a program that waits for its users is not was
 field for it and no lint check. `helpers/consumer_census.py` counts delivered work nothing uses,
 report-only, and the maintainer runs it monthly; its counts cannot tell work not yet consumed from
 work built with no reason, so a person asks. The reasoning is in
-[the proposal](https://github.com/nifeos/record/blob/main/design/roadmap/0996-delivered-work-names-its-consumer.md).
+[the proposal](https://github.com/partsfoundry/record/blob/main/design/roadmap/0996-delivered-work-names-its-consumer.md).
 
 ## Shared state: the tree's, and the machine's
 
 Anything global to the tree is assigned by the integrator at merge, never claimed by a lane.
 Concurrent lanes cannot see each other, so a lane that reaches for a shared resource is guessing.
 The collisions that produced this rule are in
-[design/tenets/shared-state.md](https://github.com/nifeos/record/blob/main/design/tenets/shared-state.md).
+[design/tenets/shared-state.md](https://github.com/partsfoundry/record/blob/main/design/tenets/shared-state.md).
 
-- `nifeos/record:design/decisions/` section numbers. Preferred: a lane does not touch `nifeos/record:design/decisions/` beyond
+- `partsfoundry/record:design/decisions/` section numbers. Preferred: a lane does not touch `partsfoundry/record:design/decisions/` beyond
   recording a ruling it was given, puts the reasoning in `notes/` and in its report, and the
   integrator mints the section at merge.
   If a lane must write the section to make its own gates pass, the number is provisional: say so in
@@ -201,7 +201,7 @@ gated took it from the others. Each worktree now links its own, `nife-dev-<direc
 lane takes nothing, reports nothing and relinks nothing. Leave the bare `nife-dev` alone: lanes cut
 before that date still write it, and the maintainer removes it once they are gone
 ([`briefs/merge-and-cleanup.md`](../../../briefs/merge-and-cleanup.md) step 4). The mechanism is in
-[`notes/std.md`](https://github.com/nifeos/record/blob/main/notes/std.md).
+[`notes/std.md`](https://github.com/partsfoundry/record/blob/main/notes/std.md).
 
 An unmerged branch is either abandoned or it is holding knowledge that is not on `main`, and the
 second case is a bug in where the knowledge lives. Nobody reads branches. If a branch holds a

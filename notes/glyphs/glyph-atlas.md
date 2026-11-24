@@ -1,6 +1,6 @@
 # The glyph atlas: coverage tables, and blending in linear light
 
-An appendix to [notes/glyphs.md](https://github.com/nifeos/record/blob/main/notes/glyphs.md), which keeps the terminal's font and its provenance.
+An appendix to [notes/glyphs.md](https://github.com/partsfoundry/record/blob/main/notes/glyphs.md), which keeps the terminal's font and its provenance.
 This file holds the design of `crates/glyph_atlas`: why its tables are data, and why its blend works
 in linear light.
 

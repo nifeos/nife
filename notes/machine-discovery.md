@@ -3,7 +3,7 @@
 *Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-03.*
 
 `crates/machine_discovery` reads what the machine is rather than what the target triple implies.
-[isa-discovery.md](https://github.com/nifeos/record/blob/main/notes/isa-discovery.md) covers its per-architecture records, the tiers of discovery
+[isa-discovery.md](https://github.com/partsfoundry/record/blob/main/notes/isa-discovery.md) covers its per-architecture records, the tiers of discovery
 and why there is no trait. This note covers the rest: the aarch64 decoder's traps, and
 the readers every architecture shares or that x86 alone needs. Each module's limits are in the
 `BUGS` section of its own doc comment. The note name is provisional.
@@ -44,7 +44,7 @@ The VisionFive 2 tests assert which harts it admits (the four U74s) and which it
 through either tree's lie). An unstated `enable-method` counts as startable on purpose: the RISC-V
 CPU binding has no such property, so demanding it would refuse every RISC-V machine. `supervisor`
 is required because `status` can lie where a hart's own `riscv,isa` does not
-([visionfive2.md](https://github.com/nifeos/record/blob/main/notes/visionfive2.md), the second stop). One decoder reads `status` for both the core
+([visionfive2.md](https://github.com/partsfoundry/record/blob/main/notes/visionfive2.md), the second stop). One decoder reads `status` for both the core
 list and the RISC-V record, so the two walks cannot disagree about what "disabled" means. The
 specification defines `"okay"`, `"disabled"`, `"reserved"`, `"fail"` and `"fail-sss"`, and only the
 first means operational; `"ok"` is a deprecated spelling older firmware still emits.
@@ -53,7 +53,7 @@ first means operational; `"ok"` is a deprecated spelling older firmware still em
 
 A device's interrupt line is a fact the device tree states, not a constant. QEMU `virt`'s NS16550
 raises PLIC line 10. On the JH7110, UART0 raises line 32, and a kernel that armed 10 there enabled
-an unrelated source, so a key press reached nothing ([visionfive2.md](https://github.com/nifeos/record/blob/main/notes/visionfive2.md)).
+an unrelated source, so a key press reached nothing ([visionfive2.md](https://github.com/partsfoundry/record/blob/main/notes/visionfive2.md)).
 
 Decoding the line is not one read, because the property's shape belongs to another node. An
 `interrupts` value is a list of entries, each `#interrupt-cells` wide, and the device's interrupt
@@ -121,7 +121,7 @@ question is whether the registers exist to be touched at all.
 
 The kernel asks this question only on aarch64. On RISC-V a node named `interrupt-controller@...`
 is the PLIC, and each `cpu@` node has a `riscv,cpu-intc` child. How the kernel drives each version
-is in [interrupts.md](https://github.com/nifeos/record/blob/main/notes/interrupts.md). The binding allows several redistributor regions
+is in [interrupts.md](https://github.com/partsfoundry/record/blob/main/notes/interrupts.md). The binding allows several redistributor regions
 (`#redistributor-regions`) for machines whose frames are not contiguous; QEMU `virt` needs a second
 only past 123 cores, and the kernel's `cpu::MAXIMUM_CPUS` is eight, so the decoder refuses more than
 one. The GICv2 binding list holds three strings (`arm,gic-400`, `arm,cortex-a15-gic`,
@@ -133,7 +133,7 @@ carry.
 
 `framebuffer` is arch-neutral, so it sits beside `cpu_list` rather than in `x86_64`: a U-Boot
 framebuffer handoff on aarch64 says the same sentence. Why the description rides PVH's command
-line instead of a new handoff field is in [serial-less-output.md](https://github.com/nifeos/record/blob/main/notes/serial-less-output.md).
+line instead of a new handoff field is in [serial-less-output.md](https://github.com/partsfoundry/record/blob/main/notes/serial-less-output.md).
 
 The token is `screen=` followed by the base in `0x` hex and the width, height and stride in
 decimal, then the pixel order. It is written by hand rather than through `core::fmt`, because the
@@ -158,7 +158,7 @@ not multiboot), which hands over one pointer to a structure carrying the memory 
 pointer, the command line and any loaded modules. The shape is the device-tree handoff's and only
 the format differs. The decoding lives in this crate because a parser proved only inside a booting
 kernel is proved by nothing that runs in milliseconds
-([x86-port/acpi-and-pci.md](https://github.com/nifeos/record/blob/main/notes/x86-port/acpi-and-pci.md)).
+([x86-port/acpi-and-pci.md](https://github.com/partsfoundry/record/blob/main/notes/x86-port/acpi-and-pci.md)).
 
 The structure is Xen's `hvm_start_info`, in `xen/include/public/arch-x86/hvm/start_info.h` of
 `xen-project/xen` at `8803b82ab2c9`, fetched 2026-11-01 (UTC). Offsets and sizes are bytes:
@@ -203,7 +203,7 @@ that does not answer leaf `0x80000001` predates these features.
 `acpi` sits beside the architecture records rather than inside `x86_64`, for the reason `cpu_list`
 does: ACPI is not an x86 standard. Every aarch64 server that is not a device-tree board describes
 itself with the same tables. Why the checksum is the whole defense, and what QEMU's tables hold, is
-in [x86-port/acpi-and-pci.md](https://github.com/nifeos/record/blob/main/notes/x86-port/acpi-and-pci.md).
+in [x86-port/acpi-and-pci.md](https://github.com/partsfoundry/record/blob/main/notes/x86-port/acpi-and-pci.md).
 
 A device tree is one blob with one root. ACPI is a linked structure of independent tables, each
 with its own signature and checksum, reached from a root pointer that is not itself a table:
@@ -231,7 +231,7 @@ are the `arm,armv8-timer` node's `interrupts`, describing the same four timers i
 A GSIV is an absolute INTID, not a bank-relative number: the virtual timer's 27 is the INTID the
 GIC delivers, where the device tree spells it `<1 11 ...>`, PPI 11.
 
-The IVRS is AMD's counterpart of the DMAR, and the driver it feeds is in [amd-vi.md](https://github.com/nifeos/record/blob/main/notes/amd-vi.md).
+The IVRS is AMD's counterpart of the DMAR, and the driver it feeds is in [amd-vi.md](https://github.com/partsfoundry/record/blob/main/notes/amd-vi.md).
 Its shape:
 
 ```text
