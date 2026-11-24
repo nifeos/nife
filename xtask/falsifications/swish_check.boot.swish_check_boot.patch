@@ -45,7 +45,7 @@ index 529530461..32e5c0148 100644
 @@ -330,9 +331,9 @@ impl Wants {
      /// Read each declaration from the program's own manifest, never from the request: a person
      /// designates none of these, so no bit on the wire carries them. See
-     /// notes/system-initializer/the-spawn-service.md, "What a manifest declares that no command line can".
+     /// nifeos/record:notes/system-initializer/the-spawn-service.md, "What a manifest declares that no command line can".
 -    fn of(manifest: Option<grant_contract::Manifest>) -> Wants {
 +    fn of(manifest: Option<grant_contract::Manifest>, unvouched: bool) -> Wants {
          let wants_clock = manifest.is_some_and(|m| m.clock);

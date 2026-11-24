@@ -108,7 +108,7 @@ pub fn create_with_ceilings(pages: u64, ceilings: Ceilings) -> Option<u64> {
 /// (object revocation)); one freed out of order leaves a hole until no child above it is live.
 ///
 /// A refusal moves nothing, a full table included: the parent keeps its watermark and child count
-/// (`RegionTable::split`; notes/region-split-on-a-full-table.md).
+/// (`RegionTable::split`; nifeos/record:notes/region-split-on-a-full-table.md).
 pub fn split(parent: u64, pages: u64) -> Option<u64> {
     // The test kernel's Nth-retype fault (milestone 757 (a test kernel fails a process on its Nth
     // retype), provisional): refused before the lock, so the region is left exactly as an

@@ -269,7 +269,7 @@ impl Wiring {
 
         // The screen (slot 3, `READ` only) and its map budget (slot 4) go only to `ROLE_CAPTURE`, by
         // `grant_at`, since a sequential fill cannot leave slot 2 empty. See
-        // notes/compositor/kernel-wiring.md.
+        // nifeos/record:notes/compositor/kernel-wiring.md.
         let capture_budget = if role & ROLE_CAPTURE != 0 {
             Some(
                 crate::memory_region::create(MAP_BUDGET_PAGES)

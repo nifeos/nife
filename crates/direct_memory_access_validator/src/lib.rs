@@ -34,7 +34,7 @@ pub const F_INDIRECT: u16 = 4;
 /// writes it (receive), the address must be in-region, so one check closes both hazards. Total: a
 /// length that overflows `physical_address`, or a region whose own `base + size` wraps `u64`, returns `false`
 /// (refuse) rather than panicking, and a wrapping region can only over-reject, the safe direction.
-/// See the `in_region_is_sound` proof and notes/dma/validator.md.
+/// See the `in_region_is_sound` proof and nifeos/record:notes/dma/validator.md.
 pub fn is_in_region(base: u64, size: u64, physical_address: u64, len: u64) -> bool {
     match (physical_address.checked_add(len), base.checked_add(size)) {
         (Some(end), Some(limit)) => physical_address >= base && end <= limit,

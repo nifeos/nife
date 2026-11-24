@@ -331,7 +331,7 @@ struct Wants {
 impl Wants {
     /// Read each declaration from the program's own manifest, never from the request: a person
     /// designates none of these, so no bit on the wire carries them. See
-    /// notes/system-initializer/the-spawn-service.md, "What a manifest declares that no command line can".
+    /// nifeos/record:notes/system-initializer/the-spawn-service.md, "What a manifest declares that no command line can".
     fn of(manifest: Option<grant_contract::Manifest>) -> Wants {
         let wants_clock = manifest.is_some_and(|m| m.clock);
         let wants_domain = manifest.is_some_and(|m| m.domain);

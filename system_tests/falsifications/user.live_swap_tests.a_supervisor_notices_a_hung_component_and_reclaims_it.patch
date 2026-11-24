@@ -17,7 +17,7 @@ index 30185504c..4ca472006 100644
 +++ b/kernel/src/sched/region_reaping.rs
 @@ -39,7 +39,7 @@ pub(super) enum RegionReap {
  /// verdict on one resident"), and the stack fault behind `standing` in
- /// notes/stack/kernel-stack-freed-under-its-owner.md.
+ /// nifeos/record:notes/stack/kernel-stack-freed-under-its-owner.md.
  pub(super) fn region_reap_verdict(state: State, standing: bool) -> RegionReap {
 -    if matches!(state, State::Ready | State::Running) {
 +    if matches!(state, State::Ready | State::Running | State::Blocked) {
