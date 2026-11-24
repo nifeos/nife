@@ -3,13 +3,13 @@
 #
 # Name: provisional, coined 2026-09-21 by the lane that absorbed this baseline. `ci-log-baseline`
 # says what it captures (a baseline, one committed snapshot to build future comparisons against, the
-# same word `notes/mutation-census.md`'s record uses) and where it comes from (CI logs), rather than
+# same word `nifeos/record:notes/mutation-census.md`'s record uses) and where it comes from (CI logs), rather than
 # naming the mechanism (a marker grep) or the motivation (expiry). Considered and set aside:
 # `gate-history`, which reads as the still-open gate-firing ledger this is deliberately not, and
 # `ci-attribution`, which is accurate but names a technique rather than a thing calef would ask for
 # by name. calef has not ruled on it.
 #
-# See notes/ci-log-baseline.md for the record's own page and what it does and does not claim.
+# See nifeos/record:notes/ci-log-baseline.md for the record's own page and what it does and does not claim.
 # Milestone 191 (did the proofs catch the bugs?), which built its answer as a hand-assembled
 # eighteen-row corpus, had to answer "has this gate ever fired?" for Kani harnesses by reading git
 # history one commit at a time. This
@@ -19,7 +19,7 @@
 # `/actions/runs/{id}/logs` (a zip of every job in the run). This script tries the job endpoint
 # first, since it is the smaller fetch, and falls back to pulling the matching entry out of the run
 # archive on any failure there, because on 2026-09-21 the two endpoints gave different answers for
-# the SAME job minutes apart (see notes/ci-log-baseline.md, "two clocks, and they disagreed with
+# the SAME job minutes apart (see nifeos/record:notes/ci-log-baseline.md, "two clocks, and they disagreed with
 # each other"). Neither endpoint's expiry date is re-derived here; this script only checks, each
 # time it runs, whether either one still has the log.
 #
@@ -130,7 +130,7 @@ fetch_run_archive() {
     # 29973830663) returned "expired" there, while the run-level zip for the same run did not. This
     # lane's OWN repeated probe of those same three job ids, minutes later, got 200 with the log
     # intact every time (response headers included, `Last-Modified` matching the run's own creation
-    # time) -- see notes/ci-log-baseline.md's "two clocks, and they disagreed with each other" for
+    # time) -- see nifeos/record:notes/ci-log-baseline.md's "two clocks, and they disagreed with each other" for
     # both readings side by side, since neither could be dismissed as wrong. Whatever the mechanism
     # (a staged deletion sweep, a CDN/storage-replica inconsistency, a fleet not yet fully rolled to
     # the same retention policy), a job-level 404/410 and a run-level 200 have both been observed for

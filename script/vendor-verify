@@ -31,7 +31,7 @@
 # **What it would catch:** an edit to vendored source nobody wrote down (the classic "I fixed it
 # locally" that then survives a re-vendor), a file added or deleted, a lockfile silently re-resolved,
 # and a tarball that is not the version we claim. What it does NOT catch: upstream shipping a
-# malicious 0.9.1 in the first place. That is a trust decision, made in notes/redoxfs-audit.md by
+# malicious 0.9.1 in the first place. That is a trust decision, made in nifeos/record:notes/redoxfs-audit.md by
 # reading the code, and no hash can make it for us.
 #
 #   script/vendor-verify                verify every pin (the gate; runs in CI)
@@ -39,7 +39,7 @@
 #
 # Only tracked files are compared, so a stray `target/` from building the vendored crate in place is
 # correctly ignored: the question is what we committed, not what is lying around. See
-# notes/scripts.md and design/roadmap/0042-supply-chain-and-fuzzing.md.
+# notes/scripts.md and nifeos/record:design/roadmap/0042-supply-chain-and-fuzzing.md.
 #
 # Name: recorded (DECISIONS §134, which puts a `script/` entry point that *does* something in the
 # verb half). Introduced 2026-07-30 to prove the RedoxFS pin is upstream plus our patches. It acts

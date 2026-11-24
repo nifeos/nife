@@ -10,13 +10,13 @@
 #
 # Why this exists rather than a green run. A flake that fires one run in six is indistinguishable
 # from a fixed one until you have run it many times, so milestone 62's acceptance evidence is a
-# repeat count under load, not a green run (design/roadmap/0062-time-sensitive-tests.md BUGS). The
-# recipe was already written prose in notes/load-sensitive-assertions.md and had been executed by
+# repeat count under load, not a green run (nifeos/record:design/roadmap/0062-time-sensitive-tests.md BUGS). The
+# recipe was already written prose in nifeos/record:notes/load-sensitive-assertions.md and had been executed by
 # hand three times, each time producing a number nobody could reproduce. This is that recipe with
 # the measurement attached.
 #
 # The load is induced ON PURPOSE and the direction matters. Load causes false failures, not false
-# passes (notes/cpu-models.md BUGS), so a green run under load is conclusive where a quiet one is
+# passes (nifeos/record:notes/cpu-models.md BUGS), so a green run under load is conclusive where a quiet one is
 # not, and a red one is a lead rather than a verdict. Do not widen a bound to make this green;
 # milestone 62 forbids that by name and DECISIONS §61 records three lints dropped for that shape.
 #
@@ -206,7 +206,7 @@ if [ "$failures" -gt 0 ]; then
     echo "repeat-under-load: $failures of $RUNS runs failed. That is a lead, not a verdict." >&2
     echo "Read the failing run's log in $OUT, then re-run that leg on a QUIET machine: load" >&2
     echo "causes false failures, not false passes. Do NOT widen the bound to make it green." >&2
-    echo "See design/roadmap/0062-time-sensitive-tests.md and notes/load-sensitive-assertions.md." >&2
+    echo "See nifeos/record:design/roadmap/0062-time-sensitive-tests.md and nifeos/record:notes/load-sensitive-assertions.md." >&2
     exit 1
 fi
 

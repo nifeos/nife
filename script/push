@@ -15,7 +15,7 @@
 # `held-for-red-trunk` and exits 1 unless GitHub then shows it queued or armed. A pull request that
 # was not armed before the push stays unarmed. Without the flag the pre-push hook keeps refusing a
 # push to a queued branch (helpers/push-queued-check.sh). The two halves are
-# helpers/push-requeue.sh (COE action 7, notes/coes/2026-11-03-merge-queue-backlog.md). The last line it
+# helpers/push-requeue.sh (COE action 7, nifeos/record:notes/coes/2026-11-03-merge-queue-backlog.md). The last line it
 # prints is the verdict, so `script/push | tail -n 3` still shows whether the commit landed.
 #
 # # Why this exists

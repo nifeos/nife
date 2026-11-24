@@ -22,7 +22,7 @@
 # -icount, so the instrument is single-hart and a suite run here would stop proving every cross-core
 # property it exists for; and that a clock-bound wait costs guest instructions rather than host time.
 # This is its own boot for the same reason script/bench is. See
-# design/roadmap/0078-load-sensitive-assertions.md and notes/instruction-clock.md.
+# nifeos/record:design/roadmap/0078-load-sensitive-assertions.md and nifeos/record:notes/instruction-clock.md.
 #
 # Name: ratified 2026-09-14 (calef, working the unratified worklist). Minted by milestone 78's lane
 # on 2026-08-17. It borrows QEMU's own flag, `-icount`, and it is a noun (an instruction count).

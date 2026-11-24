@@ -37,7 +37,7 @@
 # **Parity (DECISIONS §19 (architectural parity is a tenet)), and why this is x86_64 only.**
 # `BOOT_FILE_MAXIMUM` and the slots exist only on x86_64: the device-tree architectures have no
 # installer and no slot (their boot file has nowhere to go;
-# design/roadmap/0568-the-boot-file-has-nowhere-to-go-on-a-device-tree-machine.md). `cargo xtask
+# nifeos/record:design/roadmap/0568-the-boot-file-has-nowhere-to-go-on-a-device-tree-machine.md). `cargo xtask
 # stick` builds BOOTAA64.EFI and BOOTRISCV64.EFI as release too, but nothing bounds them, so there
 # is nothing for a budget to protect. When milestone 568 (the boot file has nowhere to go on a
 # device-tree machine) gives them a slot, the budget belongs beside it and this script grows an

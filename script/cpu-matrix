@@ -3,7 +3,7 @@
 # (milestone 59). The default suite runs against `-cpu rv64`, which is QEMU's MAXIMALIST model; the
 # VisionFive 2's JH7110 is a SiFive U74, which is RV64GC and much smaller. This runs the same suite
 # against the narrow models so "works on the generous emulator" surfaces here rather than on the
-# board. See notes/cpu-models.md.
+# board. See nifeos/record:notes/cpu-models.md.
 #
 # Usage:
 #   script/cpu-matrix                       # every model in the default list
@@ -178,9 +178,9 @@ if [ -n "$failed" ]; then
     echo "wall clock, and a busy host fails them on any model including rv64, so a red run under" >&2
     echo "load proves nothing. Check top(1), not just the load average: a Time Machine backup shows" >&2
     echo "up as load with the CPU idle and it has already produced one false failure here." >&2
-    echo "See the BUGS section of notes/cpu-models.md." >&2
+    echo "See the BUGS section of nifeos/record:notes/cpu-models.md." >&2
     exit 1
 fi
 echo
 echo "cpu-matrix: the suite passes on every model in the matrix."
-echo "A narrower QEMU model is still QEMU: see the BUGS section of notes/cpu-models.md."
+echo "A narrower QEMU model is still QEMU: see the BUGS section of nifeos/record:notes/cpu-models.md."

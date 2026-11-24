@@ -29,8 +29,8 @@
 # crate's and program's own module header.
 #
 # **Why it exists**, and it is a finding rather than a nicety. Milestone 117 has run three strangers
-# at this tree with no help. What none of them could do is on the record in notes/stranger-test.md:
-# reach notes/net.md, notes/capabilities.md or ANY design/decisions/ file by following the tree
+# at this tree with no help. What none of them could do is on the record in nifeos/record:notes/stranger-test.md:
+# reach nifeos/record:notes/net.md, notes/capabilities.md or ANY nifeos/record:design/decisions/ file by following the tree
 # while doing ordinary work, or find crates/moho_abi/src/lib.rs, which is four system call numbers and the
 # whole design on one screen. None of those is hidden; nothing a person would type led to them.
 # This is the thing to type. It is also why the crate and program headers are indexed: the document
@@ -71,11 +71,11 @@
 # - **The first stranger it was built for never ran it, and had the name in front of it three
 #   times.** Milestone 117's run 5 (2026-08-18) listed `script/`, read the guest's `apropos` builtin
 #   in `crates/swish/src/lib.rs` and read `apropos photosynthesis` in `SWISH_CHECK_SCRIPT`, and ran
-#   none of them, so it reached no `design/decisions/` file and never opened `notes/net.md`, the gap
+#   none of them, so it reached no `nifeos/record:design/decisions/` file and never opened `nifeos/record:notes/net.md`, the gap
 #   this was written to close. The reason was placement: the only page that said what this does was
 #   `notes/scripts.md`, which no stranger had opened. **Placed 2026-09-19**, in `README.md`'s
 #   start-here order and in `CONTRIBUTING.md`, each with an example. Whether that is enough is the
-#   next stranger run's measurement rather than this entry's claim; notes/stranger-test.md has the
+#   next stranger run's measurement rather than this entry's claim; nifeos/record:notes/stranger-test.md has the
 #   record.
 #
 # Name: ratified 2026-09-14 (calef, working the unratified worklist). Minted by milestone 40's

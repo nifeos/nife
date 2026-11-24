@@ -4,7 +4,7 @@
 #
 # Flag every open pull request that nobody owns the next step of; exit 1 if any is flagged. The
 # queue sweep runs it. The classifier and its classes are in helpers/idle_pull_requests.py, and
-# notes/idle-pull-requests.md says how a held pull request declares itself.
+# nifeos/record:notes/idle-pull-requests.md says how a held pull request declares itself.
 #
 #     script/idle-pull-requests [<repo> ...] [--all-nifeos]
 #     script/idle-pull-requests --selftest

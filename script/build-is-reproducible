@@ -22,7 +22,7 @@
 # ambient state a program picks up without declaring it. nife has none of those by construction, so
 # "runs on my box" is mostly already answered here. It is only answered, though, if the artifact is
 # the SAME artifact, and until this ran that was an assumption. See `crates/capability_plan`'s
-# `BUGS` and notes/component-manifest.md for the other half, which is a manifest shipped beside the
+# `BUGS` and nifeos/record:notes/component-manifest.md for the other half, which is a manifest shipped beside the
 # build.
 #
 # WHY BOTH BUILDS COME FROM `git archive HEAD` rather than one from the working tree. A dirty tree

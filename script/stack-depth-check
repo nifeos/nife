@@ -6,14 +6,14 @@
 #
 #   - `script/stack-frame-check` measures ONE FRAME, statically, and gates it against the guard
 #     page. It cannot say which frames sit on top of each other, so ten legal frames still stack.
-#   - milestone 84's watermark (notes/stack-high-water.md) measures the DEPTH THE SUITE REACHED,
+#   - milestone 84's watermark (nifeos/record:notes/stack-high-water.md) measures the DEPTH THE SUITE REACHED,
 #     at runtime. It sees only paths the suite exercised, so an unexercised deep chain is invisible.
 #
 # This is the third: **the deepest chain the binary can produce**, from the entry points a kernel
 # thread stack actually starts at, by reading the disassembly for direct calls, hanging
 # `-Z emit-stack-sizes` frames on the resulting graph, and taking the longest path.
 #
-# Both older notes named it as the gap and neither built it. notes/stack-high-water.md's BUGS says
+# Both older notes named it as the gap and neither built it. nifeos/record:notes/stack-high-water.md's BUGS says
 # "a tool that walks the call graph (`cargo-call-stack` and its kin) would close the gap. Nothing in
 # this tree does that today"; milestone 124's block says "if it recurs, the call-graph walker is the
 # next instrument and nothing in the tree has one, which is now the answer to 'why did we not catch
@@ -26,7 +26,7 @@
 # **9536 bytes on aarch64 and 9168 on riscv64**, the graph is acyclic (no recursion), and **no
 # function with a frame over the 4096-byte guard page is reachable from a thread stack entry point
 # at all** on either ISA. So those faults were not stack depth, and milestone 124's fix does cover
-# every path that reaches a thread stack. See notes/stack/guard-page-faults-2026-08-16.md.
+# every path that reaches a thread stack. See nifeos/record:notes/stack/guard-page-faults-2026-08-16.md.
 #
 # **Do not compare the per-root chains against milestone 84's watermark**, which two drafts of this
 # header did and got wrong twice. The watermark measures whatever was on the stack, nested trap
@@ -182,7 +182,7 @@ from collections import defaultdict
 
 # **Two thresholds, because a static bound and a measurement need different kinds of margin.**
 #
-# The watermark in notes/stack-high-water.md gates a *measurement* at 14336 of 16384, and it needs
+# The watermark in nifeos/record:notes/stack-high-water.md gates a *measurement* at 14336 of 16384, and it needs
 # margin because the next run may go deeper than this one did. A worst-case bound does not: it
 # already covers every path the graph can see, so anything under the stack size fits and anything
 # at or over it overflows. Its uncertainty runs the other way (an indirect call it cannot see makes

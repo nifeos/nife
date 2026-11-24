@@ -47,7 +47,7 @@
 # 2026-10-10 UTC). An optional flag counted only the lanes whose briefer remembered it; a required
 # one is asked of every lane at the moment it knows its own purpose best. `--debt-paydown` opens
 # the draft with the `debt-paydown` label on; `--new-work` adds no label, and the draft's body
-# records which was chosen. notes/debt-paydown.md has the definition. The name `debt-paydown`, as
+# records which was chosen. nifeos/record:notes/debt-paydown.md has the definition. The name `debt-paydown`, as
 # label and flag, was ratified by calef on 2026-10-10 (UTC); `--new-work` is provisional.
 # helpers/claim-selftest.sh, run by script/lint-fleet, holds the refusal to that.
 #
@@ -75,7 +75,7 @@ usage: script/claim <branch-name> (--debt-paydown | --new-work) [--worktree <dir
                      commit. Default: the branch name itself; `gh pr edit` renames the pull
                      request later if a better title turns up mid-work.
   --debt-paydown    the work repairs, cleans up, fixes a record or brings the tree up to a
-                     standard it already has (notes/debt-paydown.md); the draft gets the
+                     standard it already has (nifeos/record:notes/debt-paydown.md); the draft gets the
                      debt-paydown label. Exactly one of this or --new-work is required.
   --new-work        anything else: a capability, a milestone's first build, a proposal, a
                      measurement. No label. Exactly one of this or --debt-paydown is required.
@@ -140,7 +140,7 @@ fi
 # one retyped command here.
 if [ -z "$kind" ]; then
     echo "claim: say whether this lane repays debt: add --debt-paydown or --new-work" >&2
-    echo "  (definition in notes/debt-paydown.md; calef's ruling R1 on #1894)" >&2
+    echo "  (definition in nifeos/record:notes/debt-paydown.md; calef's ruling R1 on #1894)" >&2
     exit 2
 fi
 [ "$kind" = --debt-paydown ] && label=debt-paydown
@@ -187,7 +187,7 @@ esac
 
 # A lane's first act is the right moment to say which identity it is about to act as. A session
 # that opted in to the App (NIFE_SMELTER=1; milestone 128 (the automation gets its own identity),
-# notes/session-identity.md) but never applied `smelter-token env` would claim under the personal
+# nifeos/record:notes/session-identity.md) but never applied `smelter-token env` would claim under the personal
 # login; this says so, loudly, and carries on. A session that did not opt in sees nothing.
 "$repo_root/helpers/smelter-token" check || true
 

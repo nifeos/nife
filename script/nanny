@@ -27,7 +27,7 @@
 #
 # # BUGS
 #
-# - **It needs the gateway up** (notes/open-model-lanes.md) and `OPEN_LANE_BASE_URL`
+# - **It needs the gateway up** (nifeos/record:notes/open-model-lanes.md) and `OPEN_LANE_BASE_URL`
 #   and `OPEN_LANE_MODEL` set. Without them it says so and does nothing, rather than falling back to
 #   doing the work in the expensive session, because a silent fallback would restore exactly the
 #   habit this exists to replace.
@@ -41,8 +41,8 @@ set -eu
 here=$(cd "$(dirname "$0")/.." && pwd)
 survey_only=${1:-}
 
-: "${OPEN_LANE_BASE_URL:?set OPEN_LANE_BASE_URL; see notes/open-model-lanes.md}"
-: "${OPEN_LANE_MODEL:?set OPEN_LANE_MODEL; see notes/open-model-lanes.md}"
+: "${OPEN_LANE_BASE_URL:?set OPEN_LANE_BASE_URL; see nifeos/record:notes/open-model-lanes.md}"
+: "${OPEN_LANE_MODEL:?set OPEN_LANE_MODEL; see nifeos/record:notes/open-model-lanes.md}"
 
 echo "==> surveying the queue (delegated, read-only)"
 "$here/helpers/open-lane.sh" "$here" "$here/briefs/survey-the-queue.md" 1 || true
