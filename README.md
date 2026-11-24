@@ -97,7 +97,7 @@ When something faults, you get this instead of a silent death:
 
 ## The numbers, weekly
 
-[![Milestones by status](notes/project-metrics/milestones.svg)](notes/project-metrics.md)
+[![Milestones by status](notes/project-metrics/milestones.svg)](https://github.com/nifeos/record/blob/main/notes/project-metrics.md)
 
 [notes/project-metrics.md](https://github.com/nifeos/record/blob/main/notes/project-metrics.md) has one row per ISO week, regenerated from git
 history by `script/metrics`. Read its first section before you quote a bar: every row applies
