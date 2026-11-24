@@ -1437,12 +1437,14 @@ if [ -n "$todo_bad" ]; then
 fi
 # Every milestone a compliant marker cites has to have a block. Cheap, and it is the check that
 # survives a renumber.
+# The blocks are in nifeos/record, read at the commit basalt pins (helpers/record_root.py).
+todo_record="$(python3 "$(dirname "$0")/../helpers/record_root.py")"
 todo_dangling=""
 for n in $(git grep -hoE '(TODO|FIXME|XXX|HACK)[[:blank:]]*\(milestone [0-9]+\)' -- \
            ':!vendor' ':!patches' ':!*.md' ':!script/lint' 2>/dev/null |
            grep -oE '[0-9]+' | sort -un); do
     # Block filenames carry the number zero-padded to four digits (calef, 2026-10-07 UTC).
-    ls "$(dirname "$0")/../design/roadmap/$(printf '%04d' "$(expr "$n" + 0)")-"*.md >/dev/null 2>&1 ||
+    ls "$todo_record/design/roadmap/$(printf '%04d' "$(expr "$n" + 0)")-"*.md >/dev/null 2>&1 ||
         todo_dangling="$todo_dangling $n"
 done
 if [ -n "$todo_dangling" ]; then
@@ -1453,30 +1455,6 @@ todo_count=$(git grep -hoE '(TODO|FIXME|XXX|HACK)[[:blank:]]*\(milestone [0-9]+\
     ':!vendor' ':!patches' ':!*.md' ':!script/lint' 2>/dev/null | wc -l | tr -d ' ')
 echo "TODO markers: $todo_count in code, each naming a milestone that has a block"
 
-# The milestone blocks, validated (see nifeos/record:notes/roadmap.md's status vocabulary and script/roadmap).
-# Catches a status token nobody defined, a block missing the `## Index row` section that carries its
-# Built date and its precis, and a milestone referenced in prose that has no block, which is exactly
-# how milestone 34 (gPU acceleration via virtio-gpu 3D (the display ladder's rung four)) went missing. Documentation is part of this project's deliverable, so the record
-# gets a gate.
-#
-# **The check that used to sit under this one went with the index it guarded.** Milestone 443 (lanes
-# wait on each other for three reasons, and none of them is the work) added a grep forbidding any
-# script but the generator and the two history readers from opening
-# `design/roadmap/README.md`, because that file lagged its blocks and four pull requests jammed on
-# scripts reading the lag as a fact. calef retired the file on 2026-09-21, so the failure it
-# guarded cannot happen: a script that opens it now gets `FileNotFoundError`, which is louder than
-# the grep was and needs nobody to maintain a list of exceptions. `script/metrics` and
-# `script/catch-up` still read it at historical revisions, where it exists and is what that
-# revision said.
-echo "==> roadmap status"
-# lint-scope: both
-# lint-quick
-"$(dirname "$0")/roadmap" --check
-# The ready-time half (milestone 630): `--ready-branch` runs on `pull_request` from
-# .github/workflows/ready-status.yml and from the pre-push hook, never from here, because lint
-# cannot know whether the pull request is a draft. Its fixtures can still prove it fails.
-"$(dirname "$0")/roadmap" --selftest >/dev/null
-
 # Every crate review's `## Finding status` keeps one closed set of states, so that
 # script/review-status can derive the inventory and no document carries a total that goes stale
 # (ruled 2026-11-03 UTC). A Done line cites its pull request, a Will not fix line its ruling date,
@@ -1485,8 +1463,9 @@ echo "==> crate reviews keep one closed set of finding states"
 # lint-scope: both
 # lint-quick
 # lint-id: review-status
+# The reviews are roadmap blocks, so --check runs in nifeos/record, on its own files; this tree
+# keeps the parser's fixtures, since script/review-status reads the record at basalt's pin.
 "$(dirname "$0")/review-status" --selftest >/dev/null
-"$(dirname "$0")/review-status" --check
 
 # Intra-doc links, denied when broken. This codebase leans unusually hard on `[`Item`]` links to
 # stitch the code to itself and to the notes, which is deliberate (see CLAUDE.md on commenting) and
@@ -1548,67 +1527,6 @@ RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet --manifest-path redoxfs_ser
 # as of 2026-10-28; the follow-up that closes the gap is denying
 # `rustdoc::private_intra_doc_links` here, so the class fails this section instead of decorating
 # its output. Until then, a rustdoc warning a lane reports by hand has no gate behind it.
-
-# The decisions (one file per decision, milestone 114 (split `DECISIONS.md`, and give a decision a
-# status)): their numbering, each file's frontmatter against the schema milestone 582 (a decision's
-# status becomes a field, and the index becomes generated) gave it, and that every §N cited in the
-# tree resolves. Two concurrent milestones both claimed section number 30 on 2026-07-30 and it was
-# caught only because an agent noticed; ~400 code comments cite a section by number, so a dangling citation is a broken footnote in the one place this project asks a reader to
-# trust prose. See script/decisions, including what it still cannot check.
-echo "==> decisions"
-# lint-scope: both
-# lint-quick
-"$(dirname "$0")/decisions" --check
-
-# The journeys (one file per user story, one directory over): their frontmatter against the schema
-# design/journeys/README.md states, the H1 number against the filename, every cited milestone and
-# decision resolving, and a status that agrees with the milestones its steps name (a `DELIVERED`
-# journey cites only `BUILT` ones, a `PROPOSED` one cites none, and `retired` belongs to `RETIRED`
-# alone). A journey's progress stays a report: a step is an editorial claim about what a story
-# needs, and the rollup can regress when a milestone is re-scoped without that being a defect. The
-# schema is a record, and this gate can read it.
-echo "==> journeys"
-# lint-scope: record
-"$(dirname "$0")/journeys" --check
-
-# A numbered record's file name carries exactly four digits (calef, 2026-10-07 UTC), so a directory
-# listing sorts in numeric order: before it, `100-the-terminal-font.md` sat between `10-` and `11-`.
-# Four rather than three so nothing is renamed again at 1000. Only the path is padded; a `§N` or
-# `milestone N` citation stays as it is in prose, and so does each file's H1.
-#
-# This is rung two, and the case it exists for is a branch cut before the rename that adds
-# `255-foo.md`: it merges clean, because no other file has that name, and the listing is unsorted
-# again. script/decisions accepts either width on purpose, so the width is judged once, here.
-# One check for every directory the ruling covers: design/roadmap/ joins the list rather than
-# getting a near-copy of this block.
-# An appendix directory beside a block is judged like a file, since `listdir` returns both. A
-# lettered roadmap file is not this check's to judge: `script/roadmap --check` refuses it outright.
-echo "==> numbered record files carry four digits"
-# lint-scope: record
-python3 - <<'PY'
-import os, re, sys
-
-DIRS = ['design/decisions', 'design/roadmap']
-NUMBERED = re.compile(r'(\d+)-')
-bad = []
-for d in DIRS:
-    for name in sorted(os.listdir(d)):
-        m = NUMBERED.match(name)
-        if m and len(m.group(1)) != 4:
-            bad.append(f'{d}/{name}')
-if bad:
-    print('lint: numbered record files whose number is not exactly four digits:', file=sys.stderr)
-    for b in bad:
-        n = NUMBERED.match(os.path.basename(b)).group(1)
-        print(f'  {b} (rename it to {os.path.dirname(b)}/{int(n):04d}'
-              f'{os.path.basename(b)[len(n):]}, and its links with it)', file=sys.stderr)
-    print('calef ruled on 2026-10-07 (UTC) that these numbers are zero-padded to four digits so the',
-          file=sys.stderr)
-    print('directory sorts. See nifeos/record:design/decisions/README.md and nifeos/record:design/roadmap/README.md.',
-          file=sys.stderr)
-    sys.exit(1)
-print(f'numbered records: every file in {", ".join(DIRS)} carries a four-digit number')
-PY
 
 # A dependency stays reachable by an upgrade (§81).
 #
@@ -1747,9 +1665,11 @@ if bad:
 print('==> publish allowlist: every crate is false, or on the list and true')
 PYALLOWLIST
 
-# The third citation gate, and the one that reads what a citation points AT (milestone 97). The two
-# above prove a `§N` or a `milestone N` resolves to SOME entry; neither can prove it resolves to the
-# RIGHT one, and both say so in their own headers. Twenty-eight comments credited the two-tier `^C`
+# The citation gate, and the one that reads what a citation points AT (milestone 97). It proves a
+# `§N` or a `milestone N` cited in this tree resolves to a file in nifeos/record at the commit
+# basalt pins, which `script/decisions --check` and `script/roadmap --check` proved before the
+# record left (they run in the record now, on the record's text), and then that it resolves to the
+# RIGHT one. Twenty-eight comments credited the two-tier `^C`
 # work to "milestone 24" (a second aarch64 board) rather than to §24, wrong from the day it was
 # written, and both gates reported clean throughout because both numbers exist.
 #
@@ -1757,12 +1677,10 @@ PYALLOWLIST
 # that an attributed block quote still exists in the file it names. See nifeos/record:notes/citations.md for the
 # tolerance rule and for the honest list of what it still cannot see.
 #
-# The selftest runs first and costs nothing (fixtures, no subprocesses, no tree), for the reason
-# `script/fatal-risks --selftest` runs first a few checks above: a green `--check` looks identical
-# whether the scanner works or has quietly stopped seeing a shape. It had stopped seeing two, a
-# citation split by a line break and a lettered milestone, and neither failed anything until
-# milestone 583 (a citation a line break split, or a lettered milestone).
-# The metrics page's table of contents is generated (script/metrics --charts writes it between two
+# The selftest runs first and costs nothing (fixtures, no subprocesses, no tree): a green `--check`
+# looks identical whether the scanner works or has quietly stopped seeing a shape. It had stopped
+# seeing two, a citation split by a line break and a lettered milestone, and neither failed anything
+# until milestone 583 (a citation a line break split, or a lettered milestone).
 echo "==> citations"
 # lint-scope: both
 # lint-quick
@@ -1796,49 +1714,6 @@ echo "==> new citations say what they cite"
 # lint-scope: both
 # lint-quick
 "$(dirname "$0")/citations" --ratchet
-
-# Milestone 385 (when a milestone's status flips, tell the lane which notes cite it), and the only
-# thing in this script that **cannot fail**. Every other check here says a build is wrong. This one
-# says somebody's prose might be, and cannot tell which, so it prints and returns zero.
-#
-# It is here rather than beside the gates because of when it has to fire: the lane flipping a
-# milestone to BUILT is the one person in the project who knows what that milestone now makes true,
-# and it is holding that knowledge only while it is in the file. A sweep a week later is read by
-# somebody who has to reconstruct it. That is the whole argument for the position, and it is why a
-# report earns a line in a gate script.
-#
-# `|| true` because a report that can take the build down is a gate, whatever its output says, and a
-# failure here would be a failure about prose nobody can prove wrong. This is the one place in
-# script/lint where a non-zero exit is the bug rather than the finding.
-echo "==> notes citing a milestone this branch moved"
-# lint-scope: both
-# lint-quick
-"$(dirname "$0")/citations" --moved || true
-
-# The fourth citation gate, and the only one that reads what a citation CLAIMS (milestone 275). The
-# three above prove a `milestone N` or `§N` resolves, and that its gloss names the right record;
-# none of them asks whether what `design/fatal-risks.md` SAYS about what it resolved to is still
-# true. That file is the falsification list, nine claims that would stop the project, and its own
-# BUGS section said from the day it was written that nothing gated it. On 2026-09-10 a maintainer
-# reading it against the tree found that warning firing four ways at once, including risk 2 carrying
-# `RUN, 2026-08-30. AMBER` for twelve days while milestone 191's own block read `NOT-STARTED`.
-#
-# It is here rather than on a cadence, which milestone 275's block left open, because drift in this
-# file is always CAUSED by an in-tree edit: a milestone's status moved, or the file was written
-# against a tree that has since changed. `script/cadence-check`'s header draws the line this sits on
-# the far side of ("a dead cadence is not a defect in the commit that happens to trip it"); here the
-# commit that trips it is the commit that caused it, and the lane holding it can fix it in the same
-# breath. About a second, most of it the two report subprocesses it reuses rather than reimplements.
-#
-# The selftest runs first and costs nothing (fixtures, no subprocesses). It is here because a green
-# `--check` on a clean tree looks identical whether the checks work or have quietly stopped firing,
-# which is exactly how `script/roadmap`'s merged-branch check "spent a day passing in CI while being
-# unable to fail". Eleven fixtures, eight that must come back red and three near-misses that must
-# stay quiet.
-echo "==> fatal risks"
-# lint-scope: both
-"$(dirname "$0")/fatal-risks" --selftest >/dev/null
-"$(dirname "$0")/fatal-risks" --check
 
 # The script/ front door is documented in exactly one comprehensive place, and the README's list is a
 # deliberate SUBSET of it. Two checks, because they fail in opposite directions: a script nobody
@@ -2595,7 +2470,7 @@ def _loom_hits():
 def _security_audits():
     """Security audits on the record, counted from the index every one of them is filed in.
 
-    A row in design/audit-reports/README.md's findings table that carries a **link to a report**,
+    A row in nifeos/record:design/audit-reports/README.md's findings table that carries a **link to a report**,
     which is one per audit and is what distinguishes that table from the scale table below it: the
     two carry the same (date, kind) pairs, so counting those would double, and deduplicating them
     would silently merge two audits of one kind on one day. 2026-08-17 has two audits already.
@@ -2605,7 +2480,9 @@ def _security_audits():
     person we most want to have read the fifth one first, and the stale number sent them to look
     for a lens that had already been taken.
     """
-    text = pathlib.Path('design/audit-reports/README.md').read_text(errors='replace')
+    # The index is in nifeos/record, read at the commit basalt pins (helpers/record_root.py).
+    import record_root
+    text = pathlib.Path(record_root.path('design', 'audit-reports', 'README.md', top='.')).read_text(errors='replace')
     return len(re.findall(r'^\| \d{4}-\d\d-\d\d \| security \|.*\]\(', text, re.M))
 
 
@@ -2744,7 +2621,7 @@ REGISTRY = {
         lambda: len(_loom_hits()),
     ),
     'security-audits': (
-        'how many security audits are on the record in design/audit-reports/README.md',
+        'how many security audits are on the record in nifeos/record:design/audit-reports/README.md',
         _security_audits,
     ),
     rust_source.UNSAFE_DENSITY_MARKER: (
@@ -3280,16 +3157,6 @@ echo "==> every Kani harness carries a falsification record"
 "$(dirname "$0")/falsifications" --selftest
 "$(dirname "$0")/falsifications" --check
 
-echo "==> the audit index's selftest (fixture indexes: duplicates, triples, missing rows)"
-# lint-scope: record
-# Fixtures first, for the reason `falsifications --selftest` runs first: a green `--check` looks the
-# same whether the check works or accepts everything.
-"$(dirname "$0")/audits" --selftest
-
-echo "==> the audit index"
-# lint-scope: record
-"$(dirname "$0")/audits" --check
-
 #    **And the stranger test's run record, for the same reason and with the same split**
 #    (milestone 117, 2026-08-18). `script/stranger-test --due` is the tripwire and lives in its own
 #    weekly workflow; this is the structural half. The cadence sentence in notes/stranger-test.md
@@ -3602,10 +3469,11 @@ python3 "$(dirname "$0")/../helpers/system_call_asm.py" --selftest
 python3 "$(dirname "$0")/../helpers/system_call_asm.py"
 
 
-echo "==> markdown links and the notes index"
+echo "==> markdown links"
 # lint-scope: both
 # lint-quick
-# Two checks, and deliberately NOT a markdown linter. A survey of all 95 markdown files found zero
+# The first of two checks, and deliberately NOT a markdown linter; the second, the notes index, runs
+# in nifeos/record, where the index and the notes it lists now live. A survey of all 95 markdown files found zero
 # broken relative links and exactly one unindexed note, so generic style rules (heading case, line
 # length, list markers) would fire constantly on prose that is deliberate and catch nothing. These
 # two are the parts that rot silently:
@@ -3646,33 +3514,17 @@ for f in md:
         if not os.path.exists(os.path.normpath(os.path.join(base, target))):
             bad.append(f'{f} -> {target}')
 
-# The index is notes/README.md plus its area pages under notes/README/, which is where its lines
-# moved when it reached §212's 3,000-word cap on 2026-09-26 (UTC). A note's line may be on either.
-index_pages = ['notes/README.md'] + sorted(glob.glob('notes/README/*.md'))
-index = ''.join(open(p, errors='replace').read() for p in index_pages)
-notes = sorted(glob.glob('notes/*.md'))
-if not md or not notes:
-    sys.exit('lint: the markdown sweep selected nothing (no **/*.md, or no notes/*.md), so the '
-             'link and index checks judged nothing. See milestone 401.')
-missing = [n for n in notes
-           if os.path.basename(n) != 'README.md' and os.path.basename(n) not in index]
+if not md:
+    sys.exit('lint: the markdown sweep selected nothing (no **/*.md), so the link check judged '
+             'nothing. See milestone 401.')
 
 if bad:
     print('lint: broken relative markdown links:', file=sys.stderr)
     for b in bad:
         print(f'  {b}', file=sys.stderr)
-if missing:
-    print('lint: notes/ files missing from notes/README.md and its area pages in notes/README/:',
-          file=sys.stderr)
-    for m in missing:
-        print(f'  {m}', file=sys.stderr)
-    print('Every note is indexed there (CLAUDE.md); an unindexed note is one nobody finds.',
-          file=sys.stderr)
-    print('Add a line to the notes/README/<area>.md page that fits; notes/README.md says how.',
-          file=sys.stderr)
-if bad or missing:
+if bad:
     sys.exit(1)
-print(f'markdown: {len(md)} files, every relative link resolves, every note indexed')
+print(f'markdown: {len(md)} files, every relative link resolves')
 PY
 
 echo "==> the prose ratchet (§212 words, §213 sentences, bold and passives)"
