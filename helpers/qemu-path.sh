@@ -30,7 +30,7 @@
 # cds, so a rule spelled "be at the root" would have had exactly one exception on the day it was
 # written. The pin is found by walking up instead, which costs four lines and removes the exception
 # rather than documenting it. `script/lint`'s "the project's QEMU is on PATH" check enforces that the
-# source line is present; `BUGS` in design/roadmap/0287-bootstrap-installs-a-working-qemu.md records
+# source line is present; `BUGS` in nifeos/record:design/roadmap/0287-bootstrap-installs-a-working-qemu.md records
 # what it cannot check.
 #
 # Name: provisional, minted by milestone 287's lane on 2026-09-13. Hyphenated because AGENTS.md's

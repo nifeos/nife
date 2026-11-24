@@ -7,7 +7,7 @@
 #
 # Why. The stash stack is one ref, `refs/stash`, shared by every worktree on the machine, so one
 # lane's `git stash pop` can pop another lane's entry (notes/skills/worktree-commits/SKILL.md; the
-# incident is in design/tenets/git-in-a-worktree.md). Saying so did not stop it, so this takes the
+# incident is in nifeos/record:design/tenets/git-in-a-worktree.md). Saying so did not stop it, so this takes the
 # state away instead of warning about it.
 #
 # How. Git refuses a ref whose name is a directory of other refs. With `refs/stash/<BLOCK>` present,

@@ -31,12 +31,12 @@
 # rather than something somebody has to have read. That is rung three of AGENTS.md's ladder (a
 # written record at the thing itself), and rungs one and two are deliberately not attempted: no gate
 # can tell a pull request that should be held from one that should not, and a watcher that acted on
-# its own would be resolving without judgement, which notes/merge-queue.md argues against on purpose.
+# its own would be resolving without judgement, which nifeos/record:notes/merge-queue.md argues against on purpose.
 #
 # **Nothing else is remembered, and that is a design choice rather than an omission.** The obvious
 # alternative is to record each pull request's auto-merge state at hold time and restore exactly
 # that. It cannot be done: GitHub clears `autoMergeRequest` the moment a pull request enters the
-# queue (notes/merge-queue.md records that trap under #965), so "armed and queued" and "never armed"
+# queue (nifeos/record:notes/merge-queue.md records that trap under #965), so "armed and queued" and "never armed"
 # read identically. Release therefore re-arms every held pull request under helpers/queue-eligible.jq
 # and not `needs-architect`, which is what the drain applied every five minutes until it stopped
 # arming on 2026-10-03. That is why `needs-architect` pull requests are skipped by `hold` as well as
@@ -96,7 +96,7 @@
 # tool, not a front door a contributor types, so it carries no notes/scripts.md row (`script/lint`'s
 # script-docs check only walks `script/`). The label `held-for-red-trunk` is provisional too, and
 # says `trunk` rather than `main` for `trunk-health.sh`'s reason: the branch could be renamed and the
-# concept could not. See notes/main-is-red.md.
+# concept could not. See nifeos/record:notes/main-is-red.md.
 
 set -e
 cd "$(dirname "$0")/.."
@@ -104,7 +104,7 @@ cd "$(dirname "$0")/.."
 # Overridable for one reason, and it is the reason a drill exists: the mutating path cannot be
 # rehearsed against this repository without touching real pull requests and real group builds.
 # `QUEUE_HOLD_REPO=<scratch repo> helpers/queue-hold.sh hold 1` runs the whole thing end to end
-# somewhere nothing is lost. Not a knob for ordinary use; see notes/main-is-red.md for the rehearsal.
+# somewhere nothing is lost. Not a knob for ordinary use; see nifeos/record:notes/main-is-red.md for the rehearsal.
 REPO="${QUEUE_HOLD_REPO:-nifeos/nife}"
 HELD_LABEL="held-for-red-trunk"
 ARCHITECT_LABEL="needs-architect"

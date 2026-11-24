@@ -1,6 +1,6 @@
 """Check every noise-shape survivor's site against its code, at the census's own commit.
 
-Part 1 of the proposal design/roadmap/0954-a-survivor-accepted-once-is-not-accepted-forever.md,
+Part 1 of the proposal nifeos/record:design/roadmap/0954-a-survivor-accepted-once-is-not-accepted-forever.md,
 alongside helpers/mutation_real_holes.py. The classes there come from the mutation text and the
 triage row, and the proposal is explicit that shape is evidence, not proof: `replace | with ^` over
 operands that share no bit is no test's kill, but text alone cannot say whether the operands share

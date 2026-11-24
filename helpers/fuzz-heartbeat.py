@@ -19,7 +19,7 @@ yesterday, so one late or skipped run is tolerated) and checks:
 
 On a failure it opens one issue carrying ISSUE_LABEL that names the check and the day, unless an issue
 with that label is already open. On success it does nothing. It repairs nothing: a person turns the
-issue into an action (notes/fuzzing/continuous-host.md).
+issue into an action (nifeos/record:notes/fuzzing/continuous-host.md).
 
 **Parked causes notify a person.** The filer parks budget and hang causes and never files them; each
 waits for a person to write a `file` or `suppress` rule in fuzz-host `etc/fuzz-filer/rules.tsv`. So,
@@ -254,7 +254,7 @@ def run(today, backend):
             "Day: %s (UTC)\nCheck failed: %s\n\n"
             "This issue repairs nothing. A lane fixes anything in the tree; a repair of the fuzz host "
             "is a written spec the architect hands to the homelab agent. See "
-            "notes/fuzzing/continuous-host.md. Close this issue when the loop is healthy again."
+            "nifeos/record:notes/fuzzing/continuous-host.md. Close this issue when the loop is healthy again."
             % (day, message))
     backend.open_issue(ISSUE_LABEL, title, body)
     print("fuzz-heartbeat: opened an issue for %s" % day)

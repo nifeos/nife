@@ -30,7 +30,7 @@
 # **`OPEN_LANE_EFFORT`** is passed straight through as `claude --effort <level>`. The CLI accepts
 # `low`, `medium`, `high`, `xhigh` or `max` (`claude --help`); this script does not second-guess that
 # list, so a typo here is the CLI's error to report, not this script's to pre-validate. Default is
-# `low`, and the reason is a measured null result rather than a guess: notes/effort-levels.md ran a
+# `low`, and the reason is a measured null result rather than a guess: nifeos/record:notes/effort-levels.md ran a
 # real, checkable repository query at all five levels, twice each, and every level answered
 # identically, including the ambiguous first version of the task where all five made the same wrong
 # call and the correct second version where all five got it exactly right. Higher effort bought more
@@ -41,7 +41,7 @@
 # unmeasured. Override per run (`OPEN_LANE_EFFORT=max helpers/open-lane.sh ...`) for a lane worth
 # spending more on, and re-measure against the real backend before trusting this default there.
 #
-# The gateway has no password of its own (notes/open-model-lanes.md), but Claude Code under
+# The gateway has no password of its own (nifeos/record:notes/open-model-lanes.md), but Claude Code under
 # `--bare` still insists on *some* credential, so this sends a placeholder. It is not a secret and
 # the gateway ignores it.
 #
@@ -84,7 +84,7 @@
 #    files a brief named.
 #
 # A lane can still commit a wrong fix to a named target and pass with it. That is why a named
-# target is rare and a reviewer reads it; see notes/open-model-lanes.md.
+# target is rare and a reviewer reads it; see nifeos/record:notes/open-model-lanes.md.
 set -eu
 
 [ $# -ge 2 ] || { echo >&2 "usage: $0 <worktree> <brief-file> [max-rounds]"; exit 2; }

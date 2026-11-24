@@ -7,7 +7,7 @@
 #
 # Why. A pushed commit is never rewritten (calef, 2026-10-18 UTC; notes/skills/worktree-commits/SKILL.md):
 # no reset, rebase, amend or force-push on a commit the remote has. The reasons are in
-# design/tenets/git-in-a-worktree.md. Locally a rewrite is invisible until it is pushed, so the push
+# nifeos/record:design/tenets/git-in-a-worktree.md. Locally a rewrite is invisible until it is pushed, so the push
 # is the one place it can be refused, and only a forced push can carry one.
 #
 # The rule. For each ref, the remote's sha must be an ancestor of the sha being pushed. A new ref

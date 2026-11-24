@@ -8,13 +8,13 @@ weekly metrics page draws from it.
 
     python3 helpers/packages.py --check      # what script/lint runs
     python3 helpers/packages.py --selftest   # planted violations, no tree, no git
-    python3 helpers/packages.py --table        # the table notes/package-boundaries.md carries
+    python3 helpers/packages.py --table        # the table nifeos/record:notes/package-boundaries.md carries
     python3 helpers/packages.py --write-table  # write it there, between the markers
     python3 helpers/packages.py --summary    # one line of counts
 
 Name: provisional, minted by milestone 611's lane on 2026-09-27. So are the key names below, every
 package name and every home. calef names things and rules formats; the note
-notes/package-boundaries.md lists the questions.
+nifeos/record:notes/package-boundaries.md lists the questions.
 
 **A package's kind says where it ends up** (calef ratified the rule and the four kinds at
 2026-09-27T07:23Z, UTC). `base`: every image. `optional`: a running nife that installs it. `sdk`: a

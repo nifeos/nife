@@ -21,7 +21,7 @@ version that ran on hardware) and ends `PASS` or `FAIL, N problem(s)`, exiting 0
 
 The tag's commit comes from `git ls-remote` against the crate's repository, so `judge` needs the
 network; `--tag-commit` gives it instead, for a reader offline. The steps that produce the logs are in
-design/roadmap/1035-a-crate-names-the-version-that-ran-on-hardware/bench-steps.md.
+nifeos/record:design/roadmap/1035-a-crate-names-the-version-that-ran-on-hardware/bench-steps.md.
 
 Name: provisional.
 """

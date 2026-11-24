@@ -7,7 +7,7 @@
 # TLS graph enters the gated build): `cargo xtask test` runs this for the legs it boots, so
 # system_tests/src/user/pinned_tls_tests.rs and milestone 801's package_index_tests.rs run in
 # `script/test` and CI. `cargo xtask std-src` first, because it builds the `std` farm `-Zbuild-std`
-# compiles against, linked as this checkout's own toolchain name (notes/std.md).
+# compiles against, linked as this checkout's own toolchain name (nifeos/record:notes/std.md).
 #
 #     helpers/build-pinned-tls-exerciser.sh
 #     NIFE_CRYPTO_TRIPLES=x86_64-unknown-nife helpers/build-pinned-tls-exerciser.sh

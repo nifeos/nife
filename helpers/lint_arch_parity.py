@@ -59,17 +59,17 @@ ALLOWED = {
     # A real gap, not a design. The padding sled of milestone 134 (the register of measures) exists
     # for aarch64 and riscv64 only, so `--features fastpath_pad` does not compile for x86_64
     # (script/lint's x86_64 clippy note). Its scope note, with why and the plan, is in
-    # notes/x86-port.md's BUGS.
-    ("fastpath_pad_body", "x86_64"): "GAP: no x86_64 sled; scope note in notes/x86-port.md BUGS",
+    # nifeos/record:notes/x86-port.md's BUGS.
+    ("fastpath_pad_body", "x86_64"): "GAP: no x86_64 sled; scope note in nifeos/record:notes/x86-port.md BUGS",
     # A real gap, not a design. The icount boot mode's timer half (a calibration loop, a deadline,
     # the missed-tick count and two bounds) was never written for x86_64, so `--features icount`
     # does not compile there (script/lint's x86_64 clippy note). Its scope note, with why and the
-    # plan, is in notes/x86-port.md's BUGS.
-    ("timer::ARRIVAL_BOUND", "x86_64"): "GAP: icount timer half not on x86_64; scope note in notes/x86-port.md BUGS",
-    ("timer::HANDLER_BOUND", "x86_64"): "GAP: icount timer half not on x86_64; scope note in notes/x86-port.md BUGS",
-    ("timer::calibration_loop", "x86_64"): "GAP: icount timer half not on x86_64; scope note in notes/x86-port.md BUGS",
-    ("timer::deadline", "x86_64"): "GAP: icount timer half not on x86_64; scope note in notes/x86-port.md BUGS",
-    ("timer::missed_ticks", "x86_64"): "GAP: icount timer half not on x86_64; scope note in notes/x86-port.md BUGS",
+    # plan, is in nifeos/record:notes/x86-port.md's BUGS.
+    ("timer::ARRIVAL_BOUND", "x86_64"): "GAP: icount timer half not on x86_64; scope note in nifeos/record:notes/x86-port.md BUGS",
+    ("timer::HANDLER_BOUND", "x86_64"): "GAP: icount timer half not on x86_64; scope note in nifeos/record:notes/x86-port.md BUGS",
+    ("timer::calibration_loop", "x86_64"): "GAP: icount timer half not on x86_64; scope note in nifeos/record:notes/x86-port.md BUGS",
+    ("timer::deadline", "x86_64"): "GAP: icount timer half not on x86_64; scope note in nifeos/record:notes/x86-port.md BUGS",
+    ("timer::missed_ticks", "x86_64"): "GAP: icount timer half not on x86_64; scope note in nifeos/record:notes/x86-port.md BUGS",
 }
 
 # --- text preparation -------------------------------------------------------------------------

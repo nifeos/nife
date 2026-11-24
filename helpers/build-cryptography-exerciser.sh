@@ -19,7 +19,7 @@
 # Usage: helpers/build-cryptography-exerciser.sh
 #        NIFE_CRYPTO_TRIPLES="x86_64-unknown-nife" helpers/build-cryptography-exerciser.sh
 #
-# See notes/cryptography-provider.md for the measurement that chose these crates and what is still open.
+# See nifeos/record:notes/cryptography-provider.md for the measurement that chose these crates and what is still open.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

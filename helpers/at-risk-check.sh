@@ -51,7 +51,7 @@
 # **It does not use `git stash`.** The stash stack is per-`.git`, not per-worktree, so it is shared
 # machine-wide across every worktree of this repository: one worktree's `git stash` can be popped by
 # a session working in a different worktree entirely, which is exactly the kind of action-at-a-
-# distance this script exists to protect people from, not commit. See notes/merge-queue.md and
+# distance this script exists to protect people from, not commit. See nifeos/record:notes/merge-queue.md and
 # AGENTS.md's own note on the same hazard. Nothing here ever calls it.
 #
 # # The clock

@@ -9,7 +9,7 @@ with each error path marked reached or not, then a count of the error paths in c
 reaches (the kernel, the services, the boot-time crates; a report from `script/coverage --kernel`
 moves the kernel into the first table). Writes one JSON record per path to
 target/error-paths/. Milestone 745 (count the error paths no test reaches), provisional number;
-notes/untested-error-paths.md is what the numbers mean.
+nifeos/record:notes/untested-error-paths.md is what the numbers mean.
 
 Name: provisional, minted by milestone 745's lane on 2026-10-04 (UTC). A helper under `helpers/`,
 which `script/names` puts out of its own scope, so its provenance is this paragraph. calef names

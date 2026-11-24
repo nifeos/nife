@@ -7,7 +7,7 @@
 
 Prints one line per flagged pull request (class, repository and number, title, the next step it
 needs) and exits 1 if any line printed, else 0 (2 if a repository could not be read). The queue
-sweep runs it; notes/idle-pull-requests.md says how a held pull request declares itself.
+sweep runs it; nifeos/record:notes/idle-pull-requests.md says how a held pull request declares itself.
 
 Name: provisional, minted 2026-11-18 (UTC) by lane/idle-prs-check.
 

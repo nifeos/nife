@@ -122,7 +122,7 @@ if kill -0 "$perlpid" 2>/dev/null; then
     pass "a 3s alarm did not stop it after 8s; QEMU still swallows SIGALRM"
     kill -TERM "$perlpid" 2>/dev/null || true
 else
-    fail "the alarm worked, which contradicts this script's whole premise; re-read notes/qemu.md"
+    fail "the alarm worked, which contradicts this script's whole premise; re-read nifeos/record:notes/qemu.md"
 fi
 sleep 1
 pkill -f "$mark" 2>/dev/null || true

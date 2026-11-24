@@ -28,7 +28,7 @@
 # label step gives in full: no correction of error, and by extension no diff finding, should ever
 # be blocked from existing because an API call to post a comment failed.
 #
-# Name: provisional, minted by this lane, 2026-09-27. Hyphenated per design/naming.md's `helpers/`
+# Name: provisional, minted by this lane, 2026-09-27. Hyphenated per nifeos/record:design/naming.md's `helpers/`
 # entry-point rule; calef has not ratified it.
 
 set -eu

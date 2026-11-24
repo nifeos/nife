@@ -4,7 +4,7 @@
 # needs no tree and no network. Each case is a merge commit made with --no-ff, the shape the merge
 # queue produces, checked as BASE=first parent, TIP=merge. The failing cases are the point: a green
 # run of the check alone looks the same as a check that cannot fire (milestone 627 (a pull request that changes nothing does not merge); see
-# design/roadmap/0640-a-gate-is-not-evidence-until-it-has-failed.md).
+# nifeos/record:design/roadmap/0640-a-gate-is-not-evidence-until-it-has-failed.md).
 
 set -eu
 check="$(cd "$(dirname "$0")" && pwd)/empty-diff-check.sh"

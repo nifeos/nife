@@ -9,14 +9,14 @@
 
 Milestone 640 (a gate is not evidence until somebody has watched it fail), provisional number. The
 helper's name, the `Observed failing:` spelling and the cutoff below are provisional too. See
-notes/observed-failing.md for the rule, the backfill, and EXAMPLES.
+nifeos/record:notes/observed-failing.md for the rule, the backfill, and EXAMPLES.
 
 # WHY
 
 A new gate ships against a tree where its defect is absent, so its first result is green, and green
 is also what it reports if it cannot fire at all. `falsifications.yml` replayed nothing for three
 weeks and reported success; `coe-architect-label.yml` applied no label and reported pass. Neither
-had been run once before it was trusted (notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md).
+had been run once before it was trusted (nifeos/record:notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md).
 DECISIONS §134 (a harness carries a machine-replayable falsification record, or it is not
 evidence) already makes a Kani harness carry the patch that turns it red. This is the same
 demand made of a workflow, in a weaker form on purpose: a cited run, not a replayable patch.
@@ -128,7 +128,7 @@ def judge(name, text, predates):
     if not (observed or never or errors):
         out.append(
             f"{name}: no `# Observed failing:` record. Cite a run where this workflow went red (or "
-            "fired) for the reason it exists; see notes/observed-failing.md."
+            "fired) for the reason it exists; see nifeos/record:notes/observed-failing.md."
         )
     if observed and never:
         out.append(f"{name}: says both that it was watched failing and that it never was")

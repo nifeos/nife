@@ -18,9 +18,9 @@
 # range, then starts one QEMU process through the PVH runner (`helpers/qemu-runner-x86_64.sh`) with
 # `-accel kvm` and sweeps in that one guest. It does not call `cargo xtask test`: that clears
 # `NIFE_ACCEL` and boots the OVMF legs as well, which are TCG, so a window sweeping that way ran two
-# machines at about a tenth of the KVM rate (notes/fuzzing/rates-on-x86-64-under-kvm.md). A seed
+# machines at about a tenth of the KVM rate (nifeos/record:notes/fuzzing/rates-on-x86-64-under-kvm.md). A seed
 # replays the same calls every time, so a clean range is its own corpus: the record of which ranges
-# ran clean is what the daily job publishes. See notes/fuzzing/continuous-host.md.
+# ran clean is what the daily job publishes. See nifeos/record:notes/fuzzing/continuous-host.md.
 #
 # **KVM is checked, never assumed.** Before a window starts, `require_kvm` confirms that the device
 # exists and that this user may open it, and asks QEMU to start a machine on it. If any of that
@@ -59,7 +59,7 @@
 # slots wait without logging. Each slot's `target/` is cleared before its first build with a newer
 # pinned toolchain, and before a window whenever it has grown past `NIFE_FUZZ_TARGET_CAP_GIGABYTES`
 # (default 10), since cargo keeps the artifacts of every commit a slot built and removes none
-# (`bound_target`). See notes/fuzzing/continuous-host.md.
+# (`bound_target`). See nifeos/record:notes/fuzzing/continuous-host.md.
 #
 # **One CI shard (`--ci SHARD`).** A pull request's merge-queue entry runs four shards, two per
 # driver (even shards `kernel-thread`, odd shards `confined`), each one window on the checkout it
@@ -71,7 +71,7 @@
 # an exit trap removes, and a finding prints only a count, the shard, the commit and the line
 # `the fuzz host replays this shard`. A clean shard prints its seed range, which the host publishes
 # anyway. Exit codes: 0 clean, 1 a finding, 3 infrastructure (no KVM, a failed build, a guest that
-# ended with no sign of a finding). See notes/fuzzing/continuous-host.md.
+# ended with no sign of a finding). See nifeos/record:notes/fuzzing/continuous-host.md.
 #
 # **A red CI shard is replayed here (`--replay`).** At most every `NIFE_FUZZ_REPLAY_EVERY` seconds
 # (default 900; 0 turns it off) the supervisor runs `helpers/fuzz-red-shards.py look`, which reads

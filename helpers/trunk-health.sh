@@ -62,7 +62,7 @@
 # for sat on somebody's laptop unwatched, which is worse than not having it.
 #
 # So the at-risk watch is per developer, one per machine, under its own `launchd` job, and it needs
-# no GitHub credential at all. notes/merge-queue.md has the plist and the retirement commands for
+# no GitHub credential at all. nifeos/record:notes/merge-queue.md has the plist and the retirement commands for
 # the two jobs this replaces. `--once` here still reports it, because a person running this by hand
 # on their own machine is exactly the case where both halves are true at once.
 #
@@ -103,9 +103,9 @@
 #   - **It reports and never resolves**, deliberately, which was the whole gap calef named on
 #     2026-09-23. The response now exists as `helpers/queue-hold.sh` and briefs/main-is-red.md, and
 #     a person still has to run it: this script does not, because holding the queue needs the
-#     judgement notes/merge-queue.md argues a watcher must not exercise.
+#     judgement nifeos/record:notes/merge-queue.md argues a watcher must not exercise.
 #   - **It does not report its own death.** Shared with `helpers/merge-drain.sh`, accepted rather
-#     than solved; notes/merge-queue.md has the reasoning and the `launchd` plists.
+#     than solved; nifeos/record:notes/merge-queue.md has the reasoning and the `launchd` plists.
 #   - **"Transition" means newly observed, not newly due.** The red/green, cadence and DUE memories
 #     (`prev`, `prev_cadence`, `prev_due`) live in the watching shell and die with it, so a restart
 #     announces the current state on its first pass as if it were new: a cadence that has stood due
@@ -131,7 +131,7 @@
 #
 # Name: unrecorded. Provisional, minted 2026-08-04 and not yet put to calef. `trunk` rather than
 # `main` because the branch could be renamed and the concept could not, and because "trunk health"
-# is the term the field already uses. See notes/merge-queue.md.
+# is the term the field already uses. See nifeos/record:notes/merge-queue.md.
 
 set -e
 cd "$(dirname "$0")/.."

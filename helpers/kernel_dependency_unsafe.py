@@ -2,7 +2,7 @@
 
 §46 (thin primitives or whole subsystems; we write everything in between), in its kernel bar of
 2026-10-25, asks each third-party crate the kernel links to list its hand-written `unsafe` and what
-checks it. `notes/kernel-dependency-unsafe.md` is that listing's prose: what each site does, which
+checks it. `nifeos/record:notes/kernel-dependency-unsafe.md` is that listing's prose: what each site does, which
 the kernel reaches, and what checks it upstream. This file keeps the counts and locations under it
 current, so a bump that moves a crate's `unsafe` changes a checked-in table in the same pull request.
 
@@ -17,7 +17,7 @@ what the kernel links. Each crate is read where `cargo metadata` says its manife
 registry's extracted copy of the exact version `Cargo.lock` pins. The downloaded source is only read.
 
 **What counts as a site.** In the shipped source (every `.rs` outside `tests/`, `benches/`,
-`examples/`, `fuzz/` and `build.rs`, the scope of `notes/dependency-standards-census/`), with comments
+`examples/`, `fuzz/` and `build.rs`, the scope of `nifeos/record:notes/dependency-standards-census/`), with comments
 and literals blanked by `rust_source.strip_non_code`, each `unsafe` token is classified by what
 follows it: a block, an `unsafe fn`, an `unsafe impl` (of `Send` or `Sync`, or of another unsafe
 trait), an `unsafe trait`, or an `unsafe extern` block. Each `asm!`, `global_asm!` and `naked_asm!`
@@ -81,7 +81,7 @@ crate\tversion\ttargets\tpath\tline\tkind\tfunction\tmacro\ttest
 # Facts about a pinned crate's source that a claim in nife rests on, checked on every `--check` and
 # `--write`. Each is (crate, file, pattern, how many times it must match, the claim). A bump that
 # changes one fails here even after the table is regenerated, because rereading the claim is the
-# point. notes/kernel-dependency-unsafe.md lists them with the claims.
+# point. nifeos/record:notes/kernel-dependency-unsafe.md lists them with the claims.
 PINS = []
 
 _UNSAFE = re.compile(r'\bunsafe\b')
@@ -323,7 +323,7 @@ def main():
         elif not TABLE.exists() or TABLE.read_text() != text:
             sys.exit(f'kernel_dependency_unsafe: {TABLE} is stale. A crate the kernel links changed '
                      'version or set; run `python3 helpers/kernel_dependency_unsafe.py --write`, then '
-                     're-read each changed site against notes/kernel-dependency-unsafe.md')
+                     're-read each changed site against nifeos/record:notes/kernel-dependency-unsafe.md')
     else:
         sys.exit(__doc__.split('\n\n')[1])
 

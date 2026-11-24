@@ -3,8 +3,8 @@
 # and fails the lint when it stops doing so. No network, no KVM, no toolchain.
 #
 # A scratch repository stands in for the host's clone, and stubs stand in for cargo, QEMU, rustup and
-# the public API (curl). Each check fails without milestone 1038
-# (design/roadmap/1038-the-fuzz-host-replays-a-red-ci-shard.md):
+# the public API (curl). Each check fails without milestone 1038 (the fuzz host replays a red CI
+# shard), nifeos/record:design/roadmap/1038-the-fuzz-host-replays-a-red-ci-shard.md:
 #
 #   1. A replay against a stand-in guest that prints a `replay:` line and a panic leaves one held
 #      log, named as the filer reads it, and one held row in windows.tsv, and prints one line: a

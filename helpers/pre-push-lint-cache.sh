@@ -2,7 +2,7 @@
 #
 # helpers/pre-push-lint-cache.sh: the machine-local pass marker .githooks/pre-push consults before
 # it runs `script/lint --no-cargo`, so a push that follows a passing lint on the same tree does not
-# pay for the run again (fix 3 in notes/lint-cost-2026-10-18.md, section 5).
+# pay for the run again (fix 3 in nifeos/record:notes/lint-cost-2026-10-18.md, section 5).
 #
 # Usage (from the hook):
 #

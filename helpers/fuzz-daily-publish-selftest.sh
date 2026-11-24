@@ -204,7 +204,7 @@ case "$(head -1 "$work/gh-args")" in
     *) fail "the first gh call is not 'release view fuzz-$today --repo nifeos/nife': $(head -1 "$work/gh-args")" ;;
 esac
 
-# The create is the ruled release (design/roadmap/1026): `gh release create fuzz-<utc date>` on
+# The create is the ruled release (nifeos/record:design/roadmap/1026): `gh release create fuzz-<utc date>` on
 # nifeos/nife, with report.md and clean-ranges.tsv as its only assets, and the script never pushes.
 args="$(tail -1 "$work/gh-args")"
 case "$args" in

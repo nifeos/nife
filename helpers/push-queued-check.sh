@@ -7,7 +7,7 @@
 # `RemovedFromMergeQueueEvent`, reason `manual`) and takes its auto-merge with it. The group build
 # is thrown away and every group behind it rebuilds. Measured 2026-10-05: 20 of 40 non-merge
 # removals in about 28 hours were "manual", and two pull requests lost three entries each in two
-# minutes to repeated pushes. See notes/merge-queue.md, "A push to a queued branch".
+# minutes to repeated pushes. See nifeos/record:notes/merge-queue.md, "A push to a queued branch".
 #
 # Usage: the pre-push hook feeds git's ref lines on stdin
 # (`<local ref> <local sha> <remote ref> <remote sha>`). Exit 0 lets the push go, exit 1 refuses it.

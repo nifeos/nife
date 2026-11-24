@@ -1,7 +1,7 @@
 # helpers/cancelled-duplicate.jq: the CI run a concurrency group cancelled as a duplicate of its
 # own same-second sibling, and which GitHub then reads as the pull request's newest, empty suite.
 #
-# The cause is in notes/merge-queue.md's BUGS (#1203, 2026-09-24): one push raised two
+# The cause is in nifeos/record:notes/merge-queue.md's BUGS (#1203, 2026-09-24): one push raised two
 # `synchronize` events, the group cancelled the newer copy before any job existed, and the merge
 # queue read the newest run per workflow and answered "11 of 13 required status checks are
 # expected". No workflow-level fix is sound (the note says why), so the detection is the drain's,
