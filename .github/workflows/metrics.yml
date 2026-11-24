@@ -287,16 +287,6 @@ jobs:
           # notes/project-metrics.md (the table of contents, the drift line), and the pathspec
           # `notes/project-metrics` does not match that file. Until 2026-09-26 those lines were
           # rewritten here and then dropped.
-          #
-          # **While the record freeze holds, the page stays out.** notes/project-metrics.md moves
-          # with the record, and script/lint refuses a pull request that changes it
-          # (helpers/record_freeze.py, whose BUGS say what stands still). The data under
-          # notes/project-metrics/ stays in nife, so it is still recorded. script/lint fails if this
-          # step stops asking.
-          if python3 helpers/record_freeze.py --moves notes/project-metrics.md; then
-            git checkout -- notes/project-metrics.md
-            echo "::notice::the record freeze holds, so notes/project-metrics.md is left out; the data is still recorded"
-          fi
           if git diff --quiet -- notes/project-metrics notes/project-metrics.md; then
             echo "Nothing moved this week; no pull request."
             exit 0
