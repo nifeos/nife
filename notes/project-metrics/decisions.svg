@@ -11,7 +11,7 @@
 </style>
 <rect class="bg" width="860" height="380"/>
 <text class="fg" x="20" y="26" font-size="16" font-weight="600">Architecture decisions by status</text>
-<text class="mut" x="20" y="44" font-size="11">design/decisions/; before milestone 114 (split `DECISIONS.md`, and give a decision a status), a decision carried no status</text>
+<text class="mut" x="20" y="44" font-size="11">nifeos/record:design/decisions/; before milestone 114 (split `DECISIONS.md`, and give a decision a status), a decision carried no status</text>
 <line class="grid" x1="64" y1="324.0" x2="650.0" y2="324.0" stroke-width="1"/>
 <text class="mut" x="56" y="327.0" font-size="10" text-anchor="end">0</text>
 <line class="grid" x1="64" y1="257.5" x2="650.0" y2="257.5" stroke-width="1"/>
