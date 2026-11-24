@@ -46,12 +46,16 @@ Every other command, including `script/verify` (the Kani proofs) and `script/ben
 
 ## Start here
 
+The design record, which holds the roadmap, the decisions and most of the notes, is its own
+repository, [nifeos/record](https://github.com/nifeos/record). This one holds the code, the notes
+that document one crate alone, and the tools that check both.
+
 Read in this order, and stop when you have what you came for.
 
 1. [CONTRIBUTING.md](CONTRIBUTING.md): what the project wants from a change, and what to ask about instead of building.
 2. [AGENTS.md](AGENTS.md): the rules, for whoever does the work, human or agent. `CLAUDE.md` is a symlink to it.
 3. [notes/capabilities.md](notes/capabilities.md): the one idea every design choice here follows from.
-4. [design/roadmap/](https://github.com/nifeos/record/blob/main/design/roadmap/README.md): the only status in the tree. `script/roadmap --ready` lists what can start.
+4. [design/roadmap/](https://github.com/nifeos/record/blob/main/design/roadmap/README.md): the only status, kept in nifeos/record. Its roadmap script, run with `--ready`, lists what can start.
 5. [design/decisions/](https://github.com/nifeos/record/blob/main/design/decisions/README.md): each choice and its argument, refusals included. Cited as `§N`.
 6. [notes/adding-a-program.md](https://github.com/nifeos/record/blob/main/notes/adding-a-program.md): the first thing to do with your hands.
 

@@ -40,15 +40,12 @@ Full rows: [build-test-and-gate.md](https://github.com/nifeos/record/blob/main/n
 
 ### The tree's records and indexes
 
-Full rows: [records-and-indexes.md](https://github.com/nifeos/record/blob/main/notes/scripts/records-and-indexes.md).
+The roadmap, decision, journey, fatal-risk and audit scripts live in `nifeos/record` with the
+record they index. Full rows: [records-and-indexes.md](https://github.com/nifeos/record/blob/main/notes/scripts/records-and-indexes.md).
 
 | script | what it does |
 |---|---|
-| `script/decisions` | Index `nifeos/record:design/decisions/`; `--check` is gated in `lint`; `--renumber-from <n>` shifts a collided run up by `--by <k>`, keyed on the filename. |
-| `script/roadmap` | Index the milestones; `--ready`, `--unclaimed`, `--outstanding`, `--proposed`. |
-| `script/journeys` | Progress against the end-to-end user journeys. |
-| `script/citations` | Does each `§N` or `milestone N` gloss match what it cites? `--ratchet` gates added lines. |
-| `script/fatal-risks` | Does `nifeos/record:design/fatal-risks/README.md` agree with the records it cites? |
+| `script/citations` | Does each `§N` or `milestone N` cited here name a file in `nifeos/record` at basalt's pin, and does its gloss match? `--ratchet` gates added lines. |
 | `script/catch-up` | What changed since you last looked. |
 | `script/apropos <word>` | Search every document in the repository. |
 | `script/names` | Who named this, when, and what was refused. |
@@ -62,7 +59,6 @@ Full rows: [process-measures.md](https://github.com/nifeos/record/blob/main/note
 | script | what it does |
 |---|---|
 | `script/rule-violations` | Total the strikes against each documented rule. |
-| `script/audits` | Is an audit due? |
 | `script/cadence-check` | Which scheduled workflows have stopped producing a result? |
 | `script/stranger-test` | Hand the repository to a fresh process and record what it could not work out. |
 
