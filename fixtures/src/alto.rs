@@ -6,7 +6,7 @@
 //! program and not one for the package. `fixtures` lists both in `packaged_only`, so no archive
 //! packs them. `solo` (`packages/solo.recipe.toml`) carries the same bytes as `bin/alto`: it is
 //! refused whole while `duet` is installed, naming `alto` and `duet`, and installs once
-//! `jig remove duet` has run. nifeos/record:notes/packages/several-programs.md has the transcript.
+//! `jig remove duet` has run. partsfoundry/record:notes/packages/several-programs.md has the transcript.
 
 //! # What this program holds
 //!

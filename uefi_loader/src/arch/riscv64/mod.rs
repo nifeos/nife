@@ -7,7 +7,7 @@
 //! tree's `/chosen/boot-hartid`, which U-Boot writes. rustc has no `riscv64` UEFI target, so this
 //! is built for `riscv64imac-unknown-none-elf` as a position-independent executable and `cargo
 //! xtask` turns the ELF into a PE/COFF image (`xtask/src/portable_executable.rs`); see
-//! nifeos/record:notes/boot-stick.md and nifeos/record:notes/x86-uefi-boot/loader-design.md.
+//! partsfoundry/record:notes/boot-stick.md and partsfoundry/record:notes/x86-uefi-boot/loader-design.md.
 
 //! # BUGS
 //!

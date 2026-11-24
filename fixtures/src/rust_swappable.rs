@@ -6,7 +6,7 @@
 //! The serving loop in `swap.rs` is shared byte for byte with
 //! [`c_swappable`](../c_swappable/index.html), the replacement; only the function that computes an
 //! answer differs (Rust here, C there), which makes the milestone's claim about the component
-//! rather than the harness. See nifeos/record:notes/live-replacement.md.
+//! rather than the harness. See partsfoundry/record:notes/live-replacement.md.
 
 //! # What it holds
 //!
@@ -41,7 +41,7 @@ user_mode_runtime::program_entry!(start);
 ///
 /// `a2` is the sequence number to stop answering at, or zero to serve honestly, which is what the
 /// two healthy channels pass. It is a start argument rather than a manifest field for the reason
-/// nifeos/record:notes/component-manifest.md gives: a manifest declares authority, and this carries none. A
+/// partsfoundry/record:notes/component-manifest.md gives: a manifest declares authority, and this carries none. A
 /// component lied to about it misbehaves rather than escaping, which is precisely what the hung
 /// channel wants it to do.
 fn start(a0: u64, log_base: u64, a2: u64) -> ! {

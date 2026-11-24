@@ -25,7 +25,7 @@ use crate::channel::{
 /// kernel test asserts the exact set per configuration, so three runs of this code are each other's
 /// controls. `motd` (the parent) and `other/secret` (a sibling) are real and one entry from the
 /// caretaker. It never writes `sub/inner` or outside `sub`, so the post-run host check can pin those
-/// bytes. See nifeos/record:notes/fs-server/the-test-client.md.
+/// bytes. See partsfoundry/record:notes/fs-server/the-test-client.md.
 pub(crate) fn dir_attacker(run: u64) -> ! {
     let mut v = 0u64;
     let mut buf = [0u8; 256];

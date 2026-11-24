@@ -9,7 +9,7 @@
 //! as amended by §265). The crate is `no_std` so the seeded files keep relibc's `core::` and
 //! `alloc::` paths, and links `std` for the platform layer. `c_library/README.md` is the guide.
 
-//! Name: provisional 2026-10-10 (UTC), milestone 835's lane, after `nifeos/record:notes/c-library.md`. calef has
+//! Name: provisional 2026-10-10 (UTC), milestone 835's lane, after `partsfoundry/record:notes/c-library.md`. calef has
 //! not ruled; §265 leaves the crate's name to him.
 
 #![no_std]

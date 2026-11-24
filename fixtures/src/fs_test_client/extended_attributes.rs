@@ -78,7 +78,7 @@ fn xattr_remove(handle: u64, name: &[u8]) -> i64 {
 /// A bitmap names which claim broke: dropped type codes, a store keyed on a path rather than a
 /// node, and a purge that never ran each fail a different bit. It removes its attribute from
 /// `scratch` and unlinks the two files it makes, so the image differs only by the store directory,
-/// which the host tool is expected to show (nifeos/record:notes/host-recovery.md). See nifeos/record:notes/xattr.md.
+/// which the host tool is expected to show (partsfoundry/record:notes/host-recovery.md). See partsfoundry/record:notes/xattr.md.
 pub(crate) fn attr_witness(scratch: u64) -> u64 {
     let mut v = 0u64;
     let mut buf = [0u8; 512];

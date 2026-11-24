@@ -14,7 +14,7 @@ sorted. Extents are the leaf extents as `logical+length@physical`, `u` marking a
 equal line for line.
 
 See tools/ext4_oracle/corpus/make-corpus.sh, which builds the images, and
-nifeos/record:design/roadmap/0190-ext4-read-write.md.
+partsfoundry/record:design/roadmap/0190-ext4-read-write.md.
 
 Name: provisional. calef names files.
 """

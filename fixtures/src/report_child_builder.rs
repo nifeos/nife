@@ -12,7 +12,7 @@
 
 //! # BUGS
 //!
-//! The child is loaded unmeasured (nifeos/record:notes/trusted-init.md).
+//! The child is loaded unmeasured (partsfoundry/record:notes/trusted-init.md).
 //!
 //! Name: ratified 2026-10-18 (calef), as `REPORT_CHILD_BUILDER`, written here in program form.
 

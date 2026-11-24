@@ -5,7 +5,7 @@
 //! The firmware hands aarch64 and riscv64 a bare pointer in its configuration table, and the only
 //! length is the one the tree states for itself. This is the one place the loader turns that
 //! pointer into bytes, and it does it with the kernel's own reader, `DeviceTreeBlob::from_pointer`, so
-//! the loader believes no tree the kernel would refuse. See nifeos/record:notes/device-tree.md ("The parser's
+//! the loader believes no tree the kernel would refuse. See partsfoundry/record:notes/device-tree.md ("The parser's
 //! bounds").
 //!
 //! Name: provisional, minted 2026-11-11 (UTC) by lane maintainer/device-tree-copy-checks, after

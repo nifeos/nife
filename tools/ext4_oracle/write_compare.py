@@ -44,7 +44,7 @@ The operation language, one per line, paths absolute, words separated by single 
 
 Needs e2fsprogs 1.47 or later and Linux; see corpus/make-corpus.sh.
 
-See nifeos/record:design/roadmap/0190-ext4-read-write/write-oracle.md.
+See partsfoundry/record:design/roadmap/0190-ext4-read-write/write-oracle.md.
 
 Name: provisional. calef names files.
 """

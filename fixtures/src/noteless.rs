@@ -21,7 +21,7 @@
 
 //! # What this program holds
 //!
-//! Slot 0, its output: the sink contract (`nifeos/byte_sink_contract`). Nothing else, which is the
+//! Slot 0, its output: the sink contract (`partsfoundry/byte_sink_contract`). Nothing else, which is the
 //! no-note default and the thing the gate's `caps` line checks.
 
 //! # BUGS

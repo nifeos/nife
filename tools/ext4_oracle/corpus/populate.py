@@ -12,7 +12,7 @@ extended attributes that fit in the inode and one that needs its own block, a FI
 non-ASCII names, and three files whose times `make-corpus.sh` sets to nanoseconds, a time before
 1970 and one past 2106.
 
-See tools/ext4_oracle/corpus/make-corpus.sh, which runs it, and nifeos/record:design/roadmap/0190-ext4-read-write.md.
+See tools/ext4_oracle/corpus/make-corpus.sh, which runs it, and partsfoundry/record:design/roadmap/0190-ext4-read-write.md.
 
 Name: provisional. calef names files.
 """

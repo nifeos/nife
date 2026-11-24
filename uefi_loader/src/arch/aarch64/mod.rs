@@ -7,7 +7,7 @@
 //! the firmware's device tree adding `/chosen/linux,initrd-*` (`device_tree_patch`);
 //! exits boot services; cleans and invalidates the data cache to the point of coherency over all
 //! the kernel reads with its caches off; and turns the MMU and data cache off at its exception
-//! level and branches (`leave_uefi.s`). See nifeos/record:notes/x86-uefi-boot/loader-design.md.
+//! level and branches (`leave_uefi.s`). See partsfoundry/record:notes/x86-uefi-boot/loader-design.md.
 
 //! # BUGS
 //!
@@ -55,7 +55,7 @@ pub struct Found {
 /// richer description first. A device tree names the PCI bus with its BAR windows and interrupt
 /// map, the virtio-mmio transports and `fw_cfg`, none of which exist outside AML, so a tree written
 /// from ACPI ([`uefi_loader::device_tree_from_acpi`]) is strictly a subset of one the firmware
-/// hands over. See nifeos/record:notes/x86-uefi-boot/loader-design.md.
+/// hands over. See partsfoundry/record:notes/x86-uefi-boot/loader-design.md.
 pub fn discover(table: &SystemTable, services: &BootServices) -> Result<Found, &'static str> {
     if let Some(entry) = configuration_table(table)
         .iter()

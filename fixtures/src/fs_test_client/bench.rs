@@ -16,7 +16,7 @@ use crate::channel::{REPORT, open, read};
 /// `os_primitives_benchmarker`'s primitives. Warmup pays the `OPEN`; the timed loop rereads one
 /// block. `motd` is 69 bytes inline in its node, so each read rides the tree walk that
 /// `redoxfs_server::CachedDisk` answers from memory: the report is the FS-server contract's cost
-/// above a raw endpoint call, warm. nifeos/record:notes/fs-server/throughput.md has the measurement.
+/// above a raw endpoint call, warm. partsfoundry/record:notes/fs-server/throughput.md has the measurement.
 const BENCH_ITERS: u64 = 2000;
 const BENCH_WARMUP: u64 = 64;
 
@@ -25,7 +25,7 @@ const BENCH_WARMUP: u64 = 64;
 /// `os_primitives_benchmarker` shape. The kernel's bench boot prints it as `fs_read`; against the bare `ipc_rtt_el0`
 /// round trip, the difference is what the FS-server contract costs above a raw endpoint call. It is a
 /// `--real`-only magnitude (the mount is device-driven, not deterministic under icount); see
-/// nifeos/record:notes/benchmarks.md and kernel/src/bench.rs.
+/// partsfoundry/record:notes/benchmarks.md and kernel/src/bench.rs.
 pub(crate) fn bench() -> ! {
     let handle = open(fixture::MOTD_NAME);
     let block = fixture::MOTD.len();

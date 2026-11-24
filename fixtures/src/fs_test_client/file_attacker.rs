@@ -22,7 +22,7 @@ use crate::channel::{FILE, REPORT, get_page, put_page, put_page_at};
 /// `WROTE` and `TRUNCATED` must be set and the rest clear. `writable` also picks the file: the
 /// writable run gets `scratch`, which the post-run host check pins and which it restores as its
 /// last write, never `motd`, which two other tests compare byte for byte. Each attempt targets
-/// something real that the caretaker could open. See nifeos/record:notes/fs-server/the-test-client.md.
+/// something real that the caretaker could open. See partsfoundry/record:notes/fs-server/the-test-client.md.
 pub(crate) fn attacker(writable: bool) -> ! {
     let mut verdict = 0u64;
     let mut buf = [0u8; 128];

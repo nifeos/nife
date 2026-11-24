@@ -1,5 +1,5 @@
 //! A file in front of a byte source (milestone 50, split out of the `sink` binary by milestone
-//! 292; nifeos/record:notes/sink-protocol.md): it opens the name `file_sink` wrote and streams the contents out
+//! 292; partsfoundry/record:notes/sink-protocol.md): it opens the name `file_sink` wrote and streams the contents out
 //! over the sink contract, the same sixteen-byte framing that carries a program's `println!`.
 //!
 //! That makes `<` the same shape as `|`: the reader (`wc`, in
@@ -30,7 +30,7 @@
 //! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). `source` is this tree's own word
 //! for the reading end of the sink contract (`program_table::spawn_protocol::Wiring` carries `sink` and
 //! `source`), so `file_sink` and `file_source` are one pair; see
-//! nifeos/record:design/roadmap/0292-the-sink-contract-ends-are-three-programs.md and nifeos/record:notes/sink-protocol.md.
+//! partsfoundry/record:design/roadmap/0292-the-sink-contract-ends-are-three-programs.md and partsfoundry/record:notes/sink-protocol.md.
 //! Refused `sink_verifier` (names the test it serves; it verifies nothing). Refused `file_reader`
 //! (generic). Refused `cat` (a reader would expect a name argument and a general program).
 

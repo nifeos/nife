@@ -4,7 +4,7 @@
 //! itself, over a host page source, grown incrementally and capped as `redoxfs_server.rs` caps it, and mounts a used image again and again in one process: create the fixture, mount and
 //! write, drop the mount without unmounting, then mount again and write. The image lives in a
 //! `static`, off the heap, as a disk reached over blk IPC is. A write that fails at the device's
-//! 8 MiB cap and succeeds at 64 is heap exhaustion; nifeos/record:notes/fs-server/write-path-history.md records
+//! 8 MiB cap and succeeds at 64 is heap exhaustion; partsfoundry/record:notes/fs-server/write-path-history.md records
 //! what it measured.
 
 //! # EXAMPLES

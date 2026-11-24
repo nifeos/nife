@@ -6,7 +6,7 @@
 //! an `hvm_start_info` rather than inventing a UEFI handoff, and the kernel cannot tell which
 //! loader started it: one structure, one decoder, one set of tests, and no second boot path to
 //! diverge on hardware nobody can attach a debugger to (milestone 87 (the x86_64 bare-metal
-//! machine); nifeos/record:notes/x86-uefi-boot.md).
+//! machine); partsfoundry/record:notes/x86-uefi-boot.md).
 
 //! # This module is the *writer* for `machine_discovery::x86_64`'s *reader*
 //!
@@ -20,7 +20,7 @@
 //!   boot path) did not reclaim it): it holds the `hvm_start_info`, its memory map, the module
 //!   list, the archive and the kernel image, so reclaiming it would let the allocator hand out the
 //!   map it is reading. The cost is each one's page padding, measured at two memory sizes in
-//!   nifeos/record:notes/x86-uefi-boot.md.
+//!   partsfoundry/record:notes/x86-uefi-boot.md.
 //! - **The map is passed through in firmware order, neither sorted nor coalesced.** UEFI promises
 //!   neither, and `machine_discovery::x86_64`'s own `BUGS` records that its consumer is where such
 //!   a check belongs.
@@ -187,7 +187,7 @@ pub const CMDLINE_LEN: usize = machine_discovery::framebuffer::Framebuffer::MAXI
 /// `screen_hold` feature; and `loader_digests`, the two digest words the build embedded beside the
 /// archive (`measured_boot::loader_digests`, milestone 695 (the kernel trusts two digests handed to
 /// it by the loader)), empty with no archive. Written here so a host test reads it back with the
-/// kernel's own parsers; nifeos/record:notes/x86-uefi-boot/loader-design.md has each word's contract.
+/// kernel's own parsers; partsfoundry/record:notes/x86-uefi-boot/loader-design.md has each word's contract.
 ///
 /// # Panics
 /// If `out` is shorter than [`CMDLINE_LEN`], or `loader_digests` is longer than the two words.

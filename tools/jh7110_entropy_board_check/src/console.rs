@@ -3,7 +3,7 @@
 //! A record is `board-check: <payload> *<crc32>`, where the checksum is the IEEE CRC-32 (zlib's) of
 //! the payload bytes, as eight lower-case hex digits. The serial link to a VisionFive 2 runs at
 //! 115200 baud with no flow control and has been seen to damage bytes under sustained output
-//! (nifeos/record:notes/bench-runbook.md, BUGS), so the checker keeps only lines whose checksum matches.
+//! (partsfoundry/record:notes/bench-runbook.md, BUGS), so the checker keeps only lines whose checksum matches.
 //!
 //! The UART is an 8250-compatible block whose register stride is the device tree's `reg-shift`:
 //! 2 on the VisionFive 2's `snps,dw-apb-uart`, 0 on QEMU `virt`'s `ns16550a`. U-Boot leaves it

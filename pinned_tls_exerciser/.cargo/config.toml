@@ -2,7 +2,7 @@
 # this program links the same provider and every line there is load-bearing on at least one
 # architecture: `getrandom_backend="custom"` selects `entropy_backend`'s hook, and the six
 # portable-backend cfgs keep x86_64-unknown-nife from compiling (or, for `chacha20`, executing) SIMD it
-# has no state for. That file carries the reasons; nifeos/record:notes/cryptography-provider.md the finding.
+# has no state for. That file carries the reasons; partsfoundry/record:notes/cryptography-provider.md the finding.
 #
 # Two copies of one list is a foot gun, said here where the second copy is: a cfg added to the
 # provider's graph has to be added to both. A `.cargo/config.toml` cannot include another, and

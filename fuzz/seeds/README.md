@@ -1,6 +1,6 @@
 # Fuzz seeds
 
-Inputs a fuzz target starts from, committed on purpose. See [notes/fuzzing.md](https://github.com/nifeos/record/blob/main/notes/fuzzing.md)
+Inputs a fuzz target starts from, committed on purpose. See [notes/fuzzing.md](https://github.com/partsfoundry/record/blob/main/notes/fuzzing.md)
 for the whole discipline; this file is the part a reader meets when they open the directory and find
 almost nothing in it.
 

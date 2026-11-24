@@ -7,7 +7,7 @@
 //! is gone, and hands over in the state QEMU's `-kernel` or U-Boot's `booti` would have: **the
 //! kernel is not modified and cannot tell which loader started it**. One source, three
 //! architectures; how each kernel is told about the machine lives under `src/arch/`. **Read
-//! nifeos/record:notes/x86-uefi-boot.md and nifeos/record:notes/boot-stick.md before changing anything here.**
+//! partsfoundry/record:notes/x86-uefi-boot.md and partsfoundry/record:notes/boot-stick.md before changing anything here.**
 
 //! | Architecture | The kernel's entry contract | Told about the machine by |
 //! |---|---|---|
@@ -22,9 +22,9 @@
 //! `ExitBootServices` there is no console**: a failure past that point can only halt, so everything
 //! checkable is checked while there is still something to report it on.
 
-//! # BUGS (each one's full account is in nifeos/record:notes/x86-uefi-boot/limitations.md)
+//! # BUGS (each one's full account is in partsfoundry/record:notes/x86-uefi-boot/limitations.md)
 //!
-//! - **Secure Boot must be off**: nothing signs this image (nifeos/record:notes/turning-secure-boot-off.md).
+//! - **Secure Boot must be off**: nothing signs this image (partsfoundry/record:notes/turning-secure-boot-off.md).
 //! - **The kernel is embedded rather than loaded from the filesystem**, so it rebuilds with it.
 //! - **Nothing checks the UEFI table CRCs or what it hands over**: firmware and build are trusted.
 //! - **AP bring-up under UEFI is proved on OVMF only** (milestone 195 (finish the UEFI boot path)).

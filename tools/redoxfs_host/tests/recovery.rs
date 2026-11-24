@@ -6,7 +6,7 @@
 //! (37.5 of the 8 KiB records milestone 138 (close the read gap) moved to), a three-deep chain, an
 //! empty file and directory, a symlink and an executable. The write side is upstream's archiver
 //! (`import`), so a misunderstanding our reader shares with our writer cannot pass. See
-//! nifeos/record:notes/host-recovery.md.
+//! partsfoundry/record:notes/host-recovery.md.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

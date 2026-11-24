@@ -6,7 +6,7 @@
 //! the index's fallback address (Q2), a private listed location passed over (Q1), the digest's
 //! refusals, the rebinding twin (milestone 871 (a sixth outsider pass attacks the confinement
 //! claim)) and the redirect probes (calef's C2 on #2048), which go through `listed::fetch` as `jig`
-//! does. It installs nothing. nifeos/record:notes/packages/pinned-tls.md has the line-by-line table.
+//! does. It installs nothing. partsfoundry/record:notes/packages/pinned-tls.md has the line-by-line table.
 //!
 //! Name: provisional 2026-10-09 (UTC), milestone 801's lane, `pinned_tls_exerciser`'s shape.
 

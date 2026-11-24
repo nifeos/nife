@@ -7,7 +7,7 @@
 //! [`PartitionDisk`] the engine is handed. Reads write nothing: `read_node_inner`, never
 //! `read_node`, whose atime update dirties the header ring. No key handling: the volume is not
 //! encrypted (milestone 57 (partitioning and formatting a real drive, and extended attributes),
-//! decided 2026-07-30). Engine errors become `String` here (nifeos/record:notes/host-recovery/the-library.md).
+//! decided 2026-07-30). Engine errors become `String` here (partsfoundry/record:notes/host-recovery/the-library.md).
 
 use std::fs::File;
 use std::path::Path;

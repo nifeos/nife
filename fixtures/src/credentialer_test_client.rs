@@ -1,4 +1,4 @@
-//! The credential service's clients (milestone 56 (secrets, credentials), the credential half; nifeos/record:notes/credentials.md).
+//! The credential service's clients (milestone 56 (secrets, credentials), the credential half; partsfoundry/record:notes/credentials.md).
 //!
 //! One binary, three roles, because a program that shares the honest path is a fairer test of a
 //! boundary than a different program failing for its own reasons. Every role holds exactly the
@@ -25,7 +25,7 @@
 //! both ends, so `PUT` is not a request that gets refused, it is a word with no object behind it.
 //! The serve loop it reaches implements one opcode. See components/src/credentialer.rs.
 
-//! # Capability contract (nifeos/record:notes/abi.md §4)
+//! # Capability contract (partsfoundry/record:notes/abi.md §4)
 //!
 //! - slot 0: the credential service's endpoint (WRITE). **Which one is the whole story**: the
 //!   provision endpoint for [`ROLE_PROVISIONER`], the verify endpoint for the other two.
@@ -91,12 +91,12 @@ type Share = (&'static [u8], &'static [u8], &'static [u8], &'static [u8]);
 
 /// **Three shares, one per family member**, each with its own account name and password, which is
 /// what "a secret is scoped to a resource rather than to an identity" means in practice
-/// (nifeos/record:design/roadmap/0065-secrets-service.md). A leaked key here authenticates to one share and to
+/// (partsfoundry/record:design/roadmap/0065-secrets-service.md). A leaked key here authenticates to one share and to
 /// nothing else, because there is nothing else it is the credential for.
 ///
 /// The **first** uses [MS-NLMP] §4.2.1's account (`Domain\User`, password `Password`), which is
 /// where it came from: milestone 65 stored it under that account because Microsoft publishes every
-/// intermediate NTLMv2 value for it. That path was removed on 2026-08-30 (nifeos/record:notes/smb.md) and these
+/// intermediate NTLMv2 value for it. That path was removed on 2026-08-30 (partsfoundry/record:notes/smb.md) and these
 /// are now three ordinary password records; the values are kept because nothing is served by
 /// changing them and `credential_contract::fixture` is still where they live.
 const SHARES: [Share; 3] = [
@@ -152,7 +152,7 @@ fn provisioner() -> ! {
     // Then the three shares. A share's secret is scoped to the resource, so these are six
     // independent secrets in one store rather than three people with two credentials each. The
     // account name and domain each share carries stay in the table because they are what a share
-    // is *for*; nothing stores them (nifeos/record:notes/smb.md).
+    // is *for*; nothing stores them (partsfoundry/record:notes/smb.md).
     for (resource, password, _user, _domain) in SHARES {
         codes.push(request(
             PROV_WINDOW,
@@ -224,7 +224,7 @@ fn attacker() -> ! {
     ));
     // Re-seal it, in case a service that had not sealed would accept one. `SEAL` is 2, and this
     // endpoint implements no opcode 2, so the answer is MALFORMED: a number's meaning is the
-    // endpoint's rather than its own (`credential_contract`'s module docs, nifeos/record:notes/smb.md).
+    // endpoint's rather than its own (`credential_contract`'s module docs, partsfoundry/record:notes/smb.md).
     codes.push(request(
         PAGE_WINDOW,
         IMPOSTOR,
@@ -248,7 +248,7 @@ fn attacker() -> ! {
     });
     // Opcode 3, which no serve loop here implements, so it is MALFORMED rather than a refusal:
     // there is still nothing to refuse. The probe is "an opcode from the other space", the case it
-    // exercises (nifeos/record:notes/smb.md).
+    // exercises (partsfoundry/record:notes/smb.md).
     codes.push(request(PAGE_WINDOW, IMPOSTOR, IMPOSTOR_SECRET, 3));
     // And now the question that matters: did any of that install a credential?
     codes.push(request(
@@ -311,7 +311,7 @@ impl Codes {
 
 /// Report: who spoke, the packed reply codes, and a **flag word**. Bit 0 is "the shared page came
 /// back empty", which every role sets. The NTLM role set two more bits until 2026-08-30
-/// (nifeos/record:notes/smb.md). A flag word rather than a bool because the third report word is the only one
+/// (partsfoundry/record:notes/smb.md). A flag word rather than a bool because the third report word is the only one
 /// left and a role that learns two things has to say both.
 fn done(codes: Codes, flags: u64) -> ! {
     send(REPORT, RPT_DONE, codes.packed, flags);

@@ -5,7 +5,7 @@
 //! travel as an image yet; `script/swish-check` runs it unvouched by path, so it can open only what
 //! a word designated. With no path it is granted nothing and fails loudly (calef's N1 ruling,
 //! 2026-09-27T06:27Z). Exit status is `grep`'s: 0 a match, 1 none, 2 an error. See
-//! nifeos/record:notes/std/the-proof.md. Name: provisional (2026-09-27).
+//! partsfoundry/record:notes/std/the-proof.md. Name: provisional (2026-09-27).
 
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};

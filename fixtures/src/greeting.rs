@@ -4,15 +4,15 @@
 //! (`script/swish-check` reads the archive to make sure), and the only way onto a machine is the
 //! package `packages/greeting.recipe.toml` builds. So when it runs at the prompt, the image's
 //! catalogue, the fetch, the digest check and the installed-programs table are the only things that
-//! could have put it there. nifeos/record:notes/packages/fetching.md has the transcript.
+//! could have put it there. partsfoundry/record:notes/packages/fetching.md has the transcript.
 
 //! # What this program holds
 //!
-//! Slot 0, its output: the sink contract (`nifeos/byte_sink_contract`). Slot 1, the clock page,
+//! Slot 0, its output: the sink contract (`partsfoundry/byte_sink_contract`). Slot 1, the clock page,
 //! because [`MANIFEST`] asks for one, carried as an ELF note (milestone 597 (a program carries its
 //! manifest in an ELF note), provisional; DECISIONS §197 (a package is one archive file) option
 //! M2). No boot image has a row for this program, so a vouched copy holding slot 1, the second line
-//! it prints, proves the note was read. nifeos/record:notes/packages/the-test-programs.md has the transcript.
+//! it prints, proves the note was read. partsfoundry/record:notes/packages/the-test-programs.md has the transcript.
 
 //! # BUGS
 //!

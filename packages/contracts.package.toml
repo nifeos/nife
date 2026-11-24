@@ -2,7 +2,7 @@
 #
 # Milestone 611 (every program and crate belongs to a package). The package's name, kind, home
 # and membership are provisional, the lane's proposal for calef to ratify; the format is
-# helpers/packages.py's header, and nifeos/record:notes/package-boundaries.md has the table and the reasons.
+# helpers/packages.py's header, and partsfoundry/record:notes/package-boundaries.md has the table and the reasons.
 
 name = "contracts"
 kind = "sdk"
@@ -41,9 +41,9 @@ interfaces = [
     "initial_ramdisk_writer",
     "globally_unique_identifier_partition_table",
     "nife_partition_types",
-    # `file_allocation_table` lives in the repository `nifeos/file_allocation_table` and is not
+    # `file_allocation_table` lives in the repository `partsfoundry/file_allocation_table` and is not
     # listed here; the system installer and xtask link it by revision.
-    # `grant_plan` lives in the repository `nifeos/grant_plan` and is not listed here.
+    # `grant_plan` lives in the repository `partsfoundry/grant_plan` and is not listed here.
     # The vocabulary a program and its spawner share, and nife's catalog with the spawn protocol
     # the shell and the progenitor speak (milestone 1094 (an outside review of `grant_plan`)).
     "program_table",

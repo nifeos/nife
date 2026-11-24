@@ -6,11 +6,11 @@
 //! Rows key on the digest (ruling 2), so a second version carrying the same bytes would be the same
 //! row relabelled. This one's line differs, so `script/swish-check` can tell which copy ran, and
 //! its digest differs, so the table holds two rows for `greeting`.
-//! nifeos/record:notes/packages/the-test-programs.md has the transcript.
+//! partsfoundry/record:notes/packages/the-test-programs.md has the transcript.
 
 //! # What this program holds
 //!
-//! Slot 0, its output: the sink contract (`nifeos/byte_sink_contract`). No manifest note, so a
+//! Slot 0, its output: the sink contract (`partsfoundry/byte_sink_contract`). No manifest note, so a
 //! vouched copy is endowed as `program_table::NO_NOTE_MANIFEST`, its output alone.
 //!
 //! # BUGS

@@ -1,5 +1,5 @@
 //! The confiner of a C component (milestone 36 (a foreign-language component, seam first),
-//! DECISIONS §31 (the foreign-language seam)): three roles, fused on purpose; see nifeos/record:notes/c-seam.md.
+//! DECISIONS §31 (the foreign-language seam)): three roles, fused on purpose; see partsfoundry/record:notes/c-seam.md.
 //!
 //! 1. Builder: splits a region off its budget per instance and lays `c_shim` out in it, so a single
 //!    `MemoryRegion::DESTROY` reaps a whole instance (§16 (object revocation)).

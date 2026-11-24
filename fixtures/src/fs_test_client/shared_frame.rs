@@ -31,7 +31,7 @@ const SHARE_OVERWROTE: u64 = 0x0599_09E2;
 /// [`fixture::SHARED_ISOLATED`] (its own, what milestone 599's fix makes true) or
 /// [`fixture::SHARED_UNEXPECTED`]. `window` (`a1`) is its channel window: it mints its own badged
 /// endpoint with `moho_abi::rendezvous::BADGE` and calls through it, while the attacker's comes
-/// pre-badged from the wiring. See nifeos/record:notes/fs-server/the-test-client.md.
+/// pre-badged from the wiring. See partsfoundry/record:notes/fs-server/the-test-client.md.
 pub(crate) fn share_victim(window: u64) -> ! {
     let victim = fixture::SHARED_VICTIM_NAME.as_bytes();
     // Mint a badged view of the FS endpoint naming our window, and call through it from here on.

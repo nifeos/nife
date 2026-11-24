@@ -11,7 +11,7 @@
 //! `initial_ramdisk` reports exactly the start and end it was given (an empty or reversed range
 //! reads back as no archive, which is what the reader defines). Also: a tree `output_len` refuses
 //! is refused by the rewrite, the rewrite never writes more than `output_len`, and a buffer one byte
-//! short of what it wrote is refused rather than overrun. nifeos/record:notes/fuzzing/targets.md has the rest.
+//! short of what it wrote is refused rather than overrun. partsfoundry/record:notes/fuzzing/targets.md has the rest.
 
 #![no_main]
 

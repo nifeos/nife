@@ -5,7 +5,7 @@
 //! an EL0 process because DECISIONS §96 (process kernel or event kernel) asks what a process kernel
 //! costs a workload: every job crosses the trap boundary as a real program does, and the two that
 //! do not ([`job_mix::COMPUTE`], [`job_mix::TOUCH`]) are the application time that displaces the
-//! cache a returning thread wanted. See nifeos/record:notes/job-mix.md.
+//! cache a returning thread wanted. See partsfoundry/record:notes/job-mix.md.
 
 //! # The two roles
 //!

@@ -11,7 +11,7 @@
 #
 # Crash artifacts are not committed either, and that is a discipline rather than an omission: when a
 # target finds a crash, the input becomes a host test in the crate that owns the bug, where it runs in
-# milliseconds on every `script/test` forever. See nifeos/record:notes/fuzzing.md.
+# milliseconds on every `script/test` forever. See partsfoundry/record:notes/fuzzing.md.
 corpus/
 artifacts/
 coverage/

@@ -6,7 +6,7 @@
 //! `crates/globally_unique_identifier_partition_table/tests/fixtures/*.head` seed it directly. The
 //! crate's Kani harnesses and mutation tests explore one field at a time; this reaches tables whose
 //! `entry_bytes`, `entry_count`, `entry_array_logical_block_address`, `first_usable_logical_block_address` and `alternate_logical_block_address` are
-//! hostile together and survive the CRC (nifeos/record:notes/fuzzing/targets.md).
+//! hostile together and survive the CRC (partsfoundry/record:notes/fuzzing/targets.md).
 
 #![no_main]
 

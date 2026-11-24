@@ -2,14 +2,14 @@
 #
 # Milestone 611 (every program and crate belongs to a package). The package's name, kind, home
 # and membership are provisional, the lane's proposal for calef to ratify; the format is
-# helpers/packages.py's header, and nifeos/record:notes/package-boundaries.md has the table and the reasons.
+# helpers/packages.py's header, and partsfoundry/record:notes/package-boundaries.md has the table and the reasons.
 
 name = "kernel"
 kind = "base"
 home = { repo = "kernel", status = "provisional" }
 crates = [
     "kernel",
-    # `capability_table` lives in the repository `nifeos/capability_table` and is not listed here;
+    # `capability_table` lives in the repository `partsfoundry/capability_table` and is not listed here;
     # the kernel links it by revision.
     "page_tables",
     "page_frames",

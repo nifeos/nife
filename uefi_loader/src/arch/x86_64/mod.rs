@@ -5,7 +5,7 @@
 //! `eax` = `0x336EC578`, `ebx` = the physical address of an `hvm_start_info`. Everything here
 //! produces that state from the one UEFI hands over. This is the code that was `main.rs` until the
 //! loader learned a second and third architecture; it moved here unchanged in behaviour, and
-//! nifeos/record:notes/x86-uefi-boot.md is still the account of it.
+//! partsfoundry/record:notes/x86-uefi-boot.md is still the account of it.
 
 use core::ptr;
 
@@ -430,7 +430,7 @@ fn paint_last_word(screen: Option<Framebuffer>) {
     // no serial port, and a fault in between is a silent triple fault. The window cannot be
     // narrated (its code is 32-bit and knows no screen), but it can be bounded: the screen is
     // cleared and given one sentence, so the five things a person at a monitor can be looking at
-    // are told apart (`uefi_loader::screen` has the ladder, as does nifeos/record:notes/serial-less-output.md).
+    // are told apart (`uefi_loader::screen` has the ladder, as does partsfoundry/record:notes/serial-less-output.md).
     // Painted AFTER `ExitBootServices`: before it the screen is the firmware's console and writing
     // underneath would race its scrolling, and the aperture survives the call (milestone 243 (a
     // machine with no serial port)): what ends is the firmware's *console*, not the *display*.

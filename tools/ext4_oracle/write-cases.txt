@@ -4,7 +4,7 @@
 # /empty-directory are the corpus's own, written by mke2fs, so a case that touches one changes a
 # file Linux wrote.
 #
-# See nifeos/record:design/roadmap/0190-ext4-read-write/write-oracle.md.
+# See partsfoundry/record:design/roadmap/0190-ext4-read-write/write-oracle.md.
 #
 # Name: provisional. calef names files.
 

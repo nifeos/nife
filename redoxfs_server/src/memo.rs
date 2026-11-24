@@ -14,7 +14,7 @@
 //! Every verb that changes the image goes through [`crate::Server`]'s `change` (which forgets
 //! everything) or `change_file` (which forgets one file's bytes), and read-only verbs go through
 //! `look`; a verb added later has to say which it is. The one exception is `close`, whose comment
-//! says why. See nifeos/record:notes/fs-server/caches-and-io.md and nifeos/record:notes/walk-cost.md.
+//! says why. See partsfoundry/record:notes/fs-server/caches-and-io.md and partsfoundry/record:notes/walk-cost.md.
 
 //! # BUGS
 //!

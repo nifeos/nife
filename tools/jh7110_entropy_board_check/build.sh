@@ -12,7 +12,7 @@
 # transfers succeed. The payload ignores the placeholder. Serve the directory with
 # `script/board-netboot --root target/jh7110-entropy-board-check/serve`.
 #
-# --crate-commit clones nifeos/jh7110_entropy at that commit under target/ and builds against the
+# --crate-commit clones partsfoundry/jh7110_entropy at that commit under target/ and builds against the
 # clone through a one-build `[patch]`. Cargo rewrites Cargo.lock during that build (it drops the
 # crate's `source` line once the patch resolves it to the clone), so the script saves the lock
 # first and restores it on every exit, and the tracked tree stays as it was. The payload prints the
@@ -20,7 +20,7 @@
 #
 # --rehearse boots the model build under QEMU virt for at most ten minutes and runs
 # `results.py summarize` and `results.py check --allow-model` on its log. It needs
-# qemu-system-riscv64 on PATH. See nifeos/record:notes/jh7110-entropy-board-check.md.
+# qemu-system-riscv64 on PATH. See partsfoundry/record:notes/jh7110-entropy-board-check.md.
 #
 # Name: provisional.
 set -eu
@@ -59,10 +59,10 @@ set --
 if [ -n "$COMMIT" ]; then
     CLONE="$PWD/$OUT/crate"
     rm -rf "$CLONE"
-    git clone --quiet https://github.com/nifeos/jh7110_entropy "$CLONE"
+    git clone --quiet https://github.com/partsfoundry/jh7110_entropy "$CLONE"
     git -C "$CLONE" checkout --quiet --detach "$COMMIT"
     RESOLVED="$(git -C "$CLONE" rev-parse HEAD)"
-    set -- --config "patch.'https://github.com/nifeos/jh7110_entropy'.jh7110_entropy.path=\"$CLONE\""
+    set -- --config "patch.'https://github.com/partsfoundry/jh7110_entropy'.jh7110_entropy.path=\"$CLONE\""
 else
     RESOLVED="$(sed -n 's/^jh7110_entropy = .*rev = "\([0-9a-f]*\)".*/\1/p' "$TOOL/Cargo.toml")"
 fi

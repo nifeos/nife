@@ -24,7 +24,7 @@
 //! go to the report endpoint, where the kernel test compares them against a value it computed itself
 //! from the contract. So a pass means the pattern this process wrote is the pattern that was in the
 //! frames the device read, byte for byte, and the driver agreed about it from its own address space.
-//! See nifeos/record:notes/framebuffer-contract.md for what that does and does not prove about the screen.
+//! See partsfoundry/record:notes/framebuffer-contract.md for what that does and does not prove about the screen.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39), among the names recorded there as always
 //! right.

@@ -6,7 +6,7 @@
 //! to this tool's output byte for byte. §166 (the rasteriser dependency, and whether the glyph
 //! atlas ships one face or four) and the determinism appendix fix three choices, not to be
 //! re-litigated here: `skrifa` plus `ab_glyph_rasterizer` 0.1.10; grayscale coverage, never
-//! subpixel; and `u8` coverage at the boundary ([`quantize`]), never `f32`. See nifeos/record:notes/glyphs.md.
+//! subpixel; and `u8` coverage at the boundary ([`quantize`]), never `f32`. See partsfoundry/record:notes/glyphs.md.
 //!
 //! Name: provisional, for the crate and every item in it. calef names things.
 

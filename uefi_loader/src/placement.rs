@@ -88,7 +88,7 @@ pub(crate) fn place_archive(services: &BootServices) -> Result<Option<(u64, u64)
 /// **The removable-media path the firmware found this image at**, which is the path its own file is
 /// still at.
 ///
-/// One constant rather than a decoded device path; nifeos/record:notes/x86-uefi-boot/loader-design.md records the
+/// One constant rather than a decoded device path; partsfoundry/record:notes/x86-uefi-boot/loader-design.md records the
 /// trade.
 #[cfg(target_arch = "x86_64")]
 pub(crate) const BOOT_FILE_PATH: &str = "\\EFI\\BOOT\\BOOTX64.EFI";
@@ -113,7 +113,7 @@ const FILE_POSITION_END: u64 = u64::MAX;
 /// (milestone 198 (a package manager), rung 2a): the running system has no other copy, and the
 /// archive cannot carry the file that contains it. So kernel and archive travel as the one file
 /// that seals them (`build.rs`'s `refuse_an_unsealed_pair`). A failure costs the ability to
-/// install, not the boot: a `None` says so and carries on (nifeos/record:notes/x86-uefi-boot/loader-design.md).
+/// install, not the boot: a `None` says so and carries on (partsfoundry/record:notes/x86-uefi-boot/loader-design.md).
 ///
 /// # BUGS
 /// - **The path is a constant**, not `loaded_image::Protocol::file_path`: the fallback path only.

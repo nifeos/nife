@@ -74,7 +74,7 @@ fn host_holds_attributes(dir: &Path) -> bool {
 }
 
 /// A 'CSTR' type code, BFS's spelling of a string, which is the kind of thing the `u32` exists to
-/// carry (nifeos/record:notes/xattr.md). Nothing in the layer interprets it; the point here is that it round-trips
+/// carry (partsfoundry/record:notes/xattr.md). Nothing in the layer interprets it; the point here is that it round-trips
 /// through the image and that the host cannot hold it, both of which the tool has to be honest about.
 const CSTR: u32 = 0x4353_5452;
 

@@ -1,14 +1,14 @@
 # redoxfs: the RedoxFS server, its host tool and the vendored library it serves.
 #
 # Name: ratified 2026-10-28 (calef, relayed by the maintainer). The package leaves this tree under
-# the upstream name, whole: as `nifeos/redoxfs`, keeping `redoxfs` for the vendored library and the
+# the upstream name, whole: as `partsfoundry/redoxfs`, keeping `redoxfs` for the vendored library and the
 # `redoxfs_` prefix for the first-party server and host tool. This is the attribution reading: the
 # package is Redox's filesystem, ported; the server, the host tool and the divergence patch are
 # ours. Whether the port goes upstream is still open, and it is a separate question from the name.
 #
 # Milestone 611 (every program and crate belongs to a package). The package's kind, home and
 # membership are provisional, the lane's proposal for calef to ratify; the format is
-# helpers/packages.py's header, and nifeos/record:notes/package-boundaries.md has the table and the reasons.
+# helpers/packages.py's header, and partsfoundry/record:notes/package-boundaries.md has the table and the reasons.
 
 name = "redoxfs"
 kind = "optional"
@@ -17,7 +17,7 @@ crates = ["redoxfs_server", "redoxfs_host", "redoxfs"]
 # The two programs the server's workspace builds, named because a builder that packs this package
 # from its definition (rather than from a recipe) takes the `programs` line as the members
 # (milestone 909 (basalt composes the bootable image from its packages)). The format leaves the
-# line out when a crate's binaries all land in its own crate's package (nifeos/record:notes/package-boundaries.md),
+# line out when a crate's binaries all land in its own crate's package (partsfoundry/record:notes/package-boundaries.md),
 # so it changes no placement: these two are already here. `second_mount` is the `hosttest` binary
 # and stays out.
 programs = ["redoxfs_server", "mkfs"]

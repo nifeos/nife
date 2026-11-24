@@ -20,8 +20,8 @@
 //! once, by attempt number. So the name borrowed recognition it then contradicted, and a reader
 //! who knew the word arrived with the wrong model. That borrowing also means the word appears
 //! across this tree in its ordinary sense, in prose that must not move: `script/lint`,
-//! `.github/workflows/verify.yml`, `nifeos/record:design/fatal-risks/README.md`, and a quotation in
-//! `nifeos/record:notes/proof-retrospective.md` that is protected twice over. Enumerate before sweeping.
+//! `.github/workflows/verify.yml`, `partsfoundry/record:design/fatal-risks/README.md`, and a quotation in
+//! `partsfoundry/record:notes/proof-retrospective.md` that is protected twice over. Enumerate before sweeping.
 //!
 //! Refused `dies_once`, which this header used to propose and which is the clearest description
 //! in the file, because it is a verb phrase where the noun rule wants a thing. Refused `crasher`

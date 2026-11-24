@@ -9,7 +9,7 @@
 //!
 //! Beyond "no panic and no hang" it asserts the counts each result reports stay inside the arrays
 //! behind them. Seeds are the `.dtb` fixtures of `device_tree_blob` and `machine_discovery`
-//! (`script/fuzz` passes both directories). nifeos/record:notes/fuzzing.md has the rest.
+//! (`script/fuzz` passes both directories). partsfoundry/record:notes/fuzzing.md has the rest.
 
 #![no_main]
 

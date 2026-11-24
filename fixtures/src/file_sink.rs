@@ -1,4 +1,4 @@
-//! A file behind a byte sink (nifeos/record:notes/sink-protocol.md). It holds a directory capability on the FS
+//! A file behind a byte sink (partsfoundry/record:notes/sink-protocol.md). It holds a directory capability on the FS
 //! service, which can open, read, write anywhere, truncate and stat; its client holds an endpoint
 //! over which the only expressible request is *here are up to sixteen bytes, append them*. So
 //! `> report.txt` grants strictly less than a Unix fd 1, structurally: no message seeks,
@@ -36,7 +36,7 @@
 //! - [`PAGE_VA`] is copied in every program that maps the FS server's shared frame.
 //!
 //! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). The name the kernel side spells
-//! (`fs_service::FileSink`); see nifeos/record:design/roadmap/0292-the-sink-contract-ends-are-three-programs.md.
+//! (`fs_service::FileSink`); see partsfoundry/record:design/roadmap/0292-the-sink-contract-ends-are-three-programs.md.
 //! Refused `file_sink_caretaker` (collides with `fs_file_caretaker`) and `sink_file_writer` (this
 //! *is* the sink). What `caretaker` means for a translating adapter is milestone 413 (what a
 //! `caretaker` is).

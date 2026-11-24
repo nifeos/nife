@@ -60,7 +60,7 @@ const OWN: u64 = 2;
 const BUILDS: u64 = 40;
 
 /// Pages of image per child: `ripgrep`'s span on aarch64, `0x40_0000..0x69C_000` in
-/// nifeos/record:notes/ripgrep-on-nife.md. One executable page and the rest writable, zero-filled.
+/// partsfoundry/record:notes/ripgrep-on-nife.md. One executable page and the rest writable, zero-filled.
 const IMAGE_PAGES: u64 = 668;
 
 /// One child's region: the image, a four-page stack, its tables, address space and thread, with

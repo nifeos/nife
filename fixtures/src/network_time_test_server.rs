@@ -1,5 +1,5 @@
 //! **An NTP server and the network under it, in one process** (milestone 51, split out of the
-//! client's binary by milestone 290; nifeos/record:notes/ntp.md).
+//! client's binary by milestone 290; partsfoundry/record:notes/ntp.md).
 //!
 //! The peer `components/src/network_time_client.rs` is tested against. It holds `READ` on the
 //! endpoint the client holds `WRITE` on and speaks the socket contract
@@ -7,7 +7,7 @@
 //! real stack and runs its real, unmodified code: the client's network path is one endpoint
 //! capability. What the pair proves (the socket glue, a well-formed NTPv4 packet, an unpredictable
 //! nonce, a rejected reply moving nothing, a sample becoming a proposal) and does not (smoltcp, the
-//! NIC, a real time server) is in nifeos/record:notes/ntp/the-client-tests.md.
+//! NIC, a real time server) is in partsfoundry/record:notes/ntp/the-client-tests.md.
 
 //! # The wiring, and the one report
 //!

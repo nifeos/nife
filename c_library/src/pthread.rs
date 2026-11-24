@@ -6,7 +6,7 @@
 //! `header/pthread` calls these functions by the names relibc's own module gives them. A thread's
 //! record is an `Arc` freed by whichever of the thread and its `pthread_t` ends last, and
 //! `pthread_exit` `longjmp`s back to `c/thread_start.c`; `c_library/README.md` ("How a thread
-//! starts and ends") and nifeos/record:notes/c-library.md ("The platform layer's own constraints") have both.
+//! starts and ends") and partsfoundry/record:notes/c-library.md ("The platform layer's own constraints") have both.
 
 //! # BUGS
 //!

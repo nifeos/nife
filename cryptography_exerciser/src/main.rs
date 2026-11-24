@@ -7,7 +7,7 @@
 //! draw is the end-to-end exercise of `entropy_backend`'s `getrandom` 0.4 hook. Every expected
 //! value is transcribed from the specification named beside it. **If a vector fails, do not adjust
 //! the vector**: check the transcription, or the implementation is wrong on this target.
-//! nifeos/record:notes/cryptography-provider.md ("What runs, as opposed to what builds") has the table.
+//! partsfoundry/record:notes/cryptography-provider.md ("What runs, as opposed to what builds") has the table.
 
 //! # BUGS
 //! - **No TLS handshake, no network, no ECDSA or RSA vector**: only the two pinned chains verify.

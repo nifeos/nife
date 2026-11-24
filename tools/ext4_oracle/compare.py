@@ -20,7 +20,7 @@ the expected file moves with it. `--write-expected` rewrites the file from this 
 
 Needs e2fsprogs 1.47 or later and Linux; see corpus/make-corpus.sh.
 
-See nifeos/record:design/roadmap/0190-ext4-read-write/read-oracle.md.
+See partsfoundry/record:design/roadmap/0190-ext4-read-write/read-oracle.md.
 
 Name: provisional. calef names files.
 """

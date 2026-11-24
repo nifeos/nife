@@ -10,7 +10,7 @@
 //! `MOUNT-ERROR` line with the error and exits 2. An error on one entry is printed in that entry's
 //! line rather than ending the walk.
 //!
-//! See nifeos/record:design/roadmap/0190-ext4-read-write/read-oracle.md.
+//! See partsfoundry/record:design/roadmap/0190-ext4-read-write/read-oracle.md.
 //!
 //! Name: provisional. calef names files.
 use std::fs::File;

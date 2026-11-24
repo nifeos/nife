@@ -1,6 +1,6 @@
-//! The soaker: the workload that does not stop. The fifth entry of `nifeos/record:design/fatal-risks/README.md`
+//! The soaker: the workload that does not stop. The fifth entry of `partsfoundry/record:design/fatal-risks/README.md`
 //! names sustained multi-core stress with the load-sensitive assertions live as its experiment;
-//! `kernel/src/soak.rs` spawns and watches this. See nifeos/record:notes/soak.md.
+//! `kernel/src/soak.rs` spawns and watches this. See partsfoundry/record:notes/soak.md.
 //!
 //! **It stresses cross-core IPC rendezvous at the highest rate the machine will do them**, through
 //! the real system call boundary, because that is where the one defect this risk has produced lived (a

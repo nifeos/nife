@@ -7,7 +7,7 @@
 //! uses the detached form (`encrypt_in_place_detached`, on a plain `&mut [u8]`) because `rustls`'
 //! buffers implement no `aead::Buffer`, so the record is not copied twice. The nonce and additional
 //! data are `rustls`' own (`Nonce::new`, `make_tls13_aad`), used rather than rewritten.
-//! nifeos/record:notes/cryptography-provider/the-glue.md has the reasons.
+//! partsfoundry/record:notes/cryptography-provider/the-glue.md has the reasons.
 
 use alloc::boxed::Box;
 

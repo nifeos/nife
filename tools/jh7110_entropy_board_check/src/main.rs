@@ -8,7 +8,7 @@
 //! checker (`results.py`) can drop a line the serial link damaged rather than misread it. When the
 //! run ends it parks the hart; the board needs a power cycle before the next run.
 //!
-//! See nifeos/record:notes/jh7110-entropy-board-check.md for the runbook, the record format and what each check
+//! See partsfoundry/record:notes/jh7110-entropy-board-check.md for the runbook, the record format and what each check
 //! decides.
 //!
 //! Name: provisional.

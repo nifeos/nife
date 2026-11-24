@@ -6,7 +6,7 @@
 //!
 //! An honest window cannot name another client, another surface, or the screen. No request takes a
 //! window id (the protocol has none), so there is nothing to forge, and its neighbours' pixels are
-//! not in its address space, so there is nothing to reach. See nifeos/record:notes/compositor.md.
+//! not in its address space, so there is nothing to reach. See partsfoundry/record:notes/compositor.md.
 
 //! # What an honest window holds
 //!
@@ -144,7 +144,7 @@ fn wr32(va: u64, v: u32) {
 /// `spawn_client` time to exactly `SCENE[i].frames()` pages (`kernel/src/user/compositor_service.rs`),
 /// which differs per client and is not knowable at this program's compile time. The bound this
 /// process itself can trust is `bytes`, the `w * h * 4` computed and checked against
-/// `compositor::MAXIMUM_SURFACE_BYTES` in `_start` below (milestone 43, nifeos/record:notes/shared-page-audit.md
+/// `compositor::MAXIMUM_SURFACE_BYTES` in `_start` below (milestone 43, partsfoundry/record:notes/shared-page-audit.md
 /// finding 4) before any pixel is painted, so the window is constructed there, once, right after
 /// that check passes, and threaded to every `px_write`/`px_read` call rather than declared as a
 /// file-level constant (milestone 139 round 4).
@@ -218,7 +218,7 @@ fn commit(seq: &mut u32, damage: compositor::Rect) {
     // the one publish in the subsystem the IPC rendezvous does not cover**: the doorbell is shared,
     // so `serve_frame` rescans *every* client's control page on any client's `COMMIT`, and only the
     // caller is blocked. A second window mid-`commit` on another core is read with nothing ordering
-    // the compositor's own loads. See nifeos/record:notes/memory-ordering.md.
+    // the compositor's own loads. See partsfoundry/record:notes/memory-ordering.md.
     core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
     wr32(CTL_VA + ctl::SEQ, *seq);
     if ring(compositor::proto::COMMIT) != 0 {
@@ -400,7 +400,7 @@ fn read_validated_geometry() -> (u32, u32, u32, u32) {
     // largest surface the contract allows, since a larger claim describes memory we were not
     // granted. Checked arithmetic: `w * h * 4` in `u32` wraps, and `w = h = 0x10000` multiplies to
     // exactly 0, which would pass the bound and let the paint loop write 2^32 pixels past a
-    // two-frame surface (milestone 43 (a second security audit), nifeos/record:notes/shared-page-audit.md finding
+    // two-frame surface (milestone 43 (a second security audit), partsfoundry/record:notes/shared-page-audit.md finding
     // 4). `display_terminal.rs` validates the same geometry by division.
     let bytes = w
         .checked_mul(h)
@@ -428,7 +428,7 @@ fn report_every_keystroke() -> ! {
         // Clamp to the eight bytes one word carries. `proto::len` is a full 32-bit field, so
         // an unclamped count shifts past 63 at `k == 8` and spins up to 2^32 times.
         // `display_terminal.rs` and `line_editor.rs` both clamp here; this was the one that
-        // did not (milestone 43, nifeos/record:notes/shared-page-audit.md finding 4).
+        // did not (milestone 43, partsfoundry/record:notes/shared-page-audit.md finding 4).
         let n = terminal_contract::len(w0).min(8);
         for k in 0..n {
             count += 1;

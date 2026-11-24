@@ -50,7 +50,7 @@ use crate::out::Out;
 /// The answer to every user and group question: `nobody`. See the module comment.
 const NOBODY: u32 = 65534;
 
-/// nife's page size on all three architectures (nifeos/record:notes/abi.md).
+/// nife's page size on all three architectures (partsfoundry/record:notes/abi.md).
 const PAGE: usize = 4096;
 
 /// What one descriptor names.
@@ -306,7 +306,7 @@ impl Pal for Sys {
     }
 
     fn chdir(_path: CStr) -> Result<()> {
-        // `std::env::set_current_dir` refuses on nife (nifeos/record:notes/std.md): a process's root is what it
+        // `std::env::set_current_dir` refuses on nife (partsfoundry/record:notes/std.md): a process's root is what it
         // was granted, and it has nowhere else to stand.
         Err(Errno(ENOSYS))
     }
@@ -383,7 +383,7 @@ impl Pal for Sys {
 
     fn exit(status: c_int) -> ! {
         // `std::process::exit` runs `std`'s own cleanup, which flushes `std`'s stdout and closes
-        // the output stream (nifeos/record:notes/sink-protocol.md). The C streams were flushed by `exit()`.
+        // the output stream (partsfoundry/record:notes/sink-protocol.md). The C streams were flushed by `exit()`.
         std::process::exit(status)
     }
 
@@ -661,7 +661,7 @@ impl Pal for Sys {
     }
 
     fn getrandom(_buf: &mut [u8], _flags: c_uint) -> Result<usize> {
-        // `std::random` panics on nife when the entropy service was not granted (nifeos/record:notes/std.md),
+        // `std::random` panics on nife when the entropy service was not granted (partsfoundry/record:notes/std.md),
         // and a C program must get an error instead. Until `std` can say whether slot 6 is held
         // without panicking, the answer is "not here" (BUGS).
         Err(Errno(ENOSYS))

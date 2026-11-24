@@ -2,7 +2,7 @@
 #
 # Milestone 611 (every program and crate belongs to a package). The package's kind, home and
 # membership are provisional, the lane's proposal for calef to ratify; the format is
-# helpers/packages.py's header, and nifeos/record:notes/package-boundaries.md has the table and the reasons.
+# helpers/packages.py's header, and partsfoundry/record:notes/package-boundaries.md has the table and the reasons.
 #
 # Name: ratified 2026-10-06 (calef, relayed to lane/disk-tools-rename). "util-linux is a horrible
 # package name for a nife package." Then: "Yes rename util-linux to disk-tools and move uuid to
@@ -12,7 +12,7 @@
 # seem right." Debian's grouping of uuidgen (util-linux, uuid-runtime) was refused as wrong for a
 # general tool. `coreutils` became `core-tools` the same day, so uuid is in
 # packages/core-tools.package.toml. Ratified 2026-10-28 as the repository's name too (calef,
-# relayed by the maintainer on the naming review, pull request #2870): `nifeos/disk-tools`, the
+# relayed by the maintainer on the naming review, pull request #2870): `partsfoundry/disk-tools`, the
 # repository the package leaves as, holding its programs and the crates only it uses
 # (§316 (a program package leaves as one repository, with the crates only it uses)). The `home`
 # line stays provisional until the repository exists (§316).

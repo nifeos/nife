@@ -3,14 +3,14 @@
 #
 # Milestone 611 (every program and crate belongs to a package). The package's kind, home and
 # membership are provisional, the lane's proposal for calef to ratify; the format is
-# helpers/packages.py's header, and nifeos/record:notes/package-boundaries.md has the table and the reasons.
+# helpers/packages.py's header, and partsfoundry/record:notes/package-boundaries.md has the table and the reasons.
 #
 # Name: ratified 2026-10-06 (calef, relayed to lane/disk-tools-rename). He answered
 # "process-tools". Refused `procps` (the GNU/Linux term of art, given up on purpose so package
 # names follow one rule, spelled out, with `core-tools` and `disk-tools`). The programs and crates
 # inside keep their names: `ps`, `pgrep`, `top`, `free` and the rest. Ratified 2026-10-28 as the
 # repository's name too (calef, relayed by the maintainer on the naming review, pull request
-# #2870): `nifeos/process-tools`, the
+# #2870): `partsfoundry/process-tools`, the
 # repository the package leaves as, holding its programs and the crates only it uses
 # (§316 (a program package leaves as one repository, with the crates only it uses)). The `home`
 # line stays provisional until the repository exists (§316).

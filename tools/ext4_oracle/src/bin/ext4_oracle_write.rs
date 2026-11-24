@@ -15,7 +15,7 @@
 //! The bytes a `write` puts down are `stream(seed)`, the xorshift64 generator below, which the
 //! driver computes the same way, so the model never asks `rsext4` what it wrote.
 //!
-//! See nifeos/record:design/roadmap/0190-ext4-read-write/write-oracle.md.
+//! See partsfoundry/record:design/roadmap/0190-ext4-read-write/write-oracle.md.
 //!
 //! Name: provisional. calef names files.
 use std::fs::{File, OpenOptions};

@@ -1,5 +1,5 @@
 //! **A `rustls` crypto provider assembled in this tree, over primitives chosen deliberately**
-//! (nifeos/record:notes/cryptography-provider.md).
+//! (partsfoundry/record:notes/cryptography-provider.md).
 //!
 //! Every cryptographic operation is taken from audited crates (§46 (thin primitives or whole
 //! subsystems)). This crate is the glue: it selects, names and plumbs the five fields of a
@@ -7,7 +7,7 @@
 //! a consuming binary also needs `use entropy_backend as _;` and
 //! `cryptography_exerciser/.cargo/config.toml`'s build configuration, or the random source has no
 //! backend and, on `x86_64-unknown-nife`, a primitive can execute an instruction the target lacks.
-//! nifeos/record:notes/cryptography-provider/the-glue.md has why it is built this way.
+//! partsfoundry/record:notes/cryptography-provider/the-glue.md has why it is built this way.
 
 //! # The five fields
 //!

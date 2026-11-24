@@ -53,11 +53,11 @@ paths = ["notes/documentation.md", "notes/pipes.md", "notes/line-discipline.md",
          "notes/stack.md", "notes/capabilities.md", "notes/glob.md"]
 
 [[home]]
-# The README of a notes/ directory whose other files went to nifeos/record: it points there and
-# lists the files that stayed (milestone 1018 (the design record moves to nifeos/record and is
+# The README of a notes/ directory whose other files went to partsfoundry/record: it points there and
+# lists the files that stayed (milestone 1018 (the design record moves to partsfoundry/record and is
 # published as a website)).
 status = "undecided"
-reason = "a pointer to nifeos/record; it leaves with the last file beside it"
+reason = "a pointer to partsfoundry/record; it leaves with the last file beside it"
 paths = [
     "notes/component-manifest/README.md",
     "notes/compositor/README.md",
@@ -132,7 +132,7 @@ reason = "the externalization list the lint reads; it leaves with the last crate
 paths = ["crates/externalization-list.txt"]
 
 # ---- What stays: a note about one crate alone -----------------------------------------------
-# Milestone 1018 (the design record moves to `nifeos/record` and is published as a website), step
+# Milestone 1018 (the design record moves to `partsfoundry/record` and is published as a website), step
 # 4, under §315 (a crate's documentation leaves with it): a note about one crate alone leaves with
 # the crate, into its README, rustdoc or `docs/` folder, and every other note moves with the
 # record. One table per crate. Each home is undecided because the crate's own repository is: a

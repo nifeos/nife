@@ -5,7 +5,7 @@
 //! moved (`compositor::commit_damage`: four untrusted control-page words in, screen damage and a
 //! status word out), the union of those, and `compositor::composite` into a host screen. In each
 //! frame of a session any client may scribble on its own surface, write any four words as its
-//! damage rectangle, and ring or not. nifeos/record:notes/fuzzing-the-services.md covers the session targets.
+//! damage rectangle, and ring or not. partsfoundry/record:notes/fuzzing-the-services.md covers the session targets.
 
 //! # The rules it checks after every frame, beyond "no panic"
 //!

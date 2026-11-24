@@ -2,7 +2,7 @@
 #
 # Milestone 611 (every program and crate belongs to a package). The package's name, kind, home
 # and membership are provisional, the lane's proposal for calef to ratify; the format is
-# helpers/packages.py's header, and nifeos/record:notes/package-boundaries.md has the table and the reasons.
+# helpers/packages.py's header, and partsfoundry/record:notes/package-boundaries.md has the table and the reasons.
 
 name = "drivers"
 kind = "base"
@@ -11,23 +11,23 @@ crates = [
     # The JH7110 clock and reset server's device table; only that server links it.
     "jh7110_clock_and_reset_devices",
 ]
-# The crate `e1000e` lives in the repository `nifeos/e1000e` and is not listed here. The kernel
+# The crate `e1000e` lives in the repository `partsfoundry/e1000e` and is not listed here. The kernel
 # resets the NIC and programs the rings' bases through it, and `net_stack` in the network package
 # drives the rings (milestone 494 (a driver for the network card a PC actually has)). Both link it,
 # so it is an interface rather than an internal crate.
-# The crate `designware_ethernet` lives in the repository `nifeos/designware_ethernet` and is not
+# The crate `designware_ethernet` lives in the repository `partsfoundry/designware_ethernet` and is not
 # listed here. It is the same contract for the JH7110's Ethernet controller (milestone 53 (the
 # board's own peripherals: network and storage on real silicon)), for the same reason.
-# The crate `designware_mobile_storage` lives in the repository `nifeos/designware_mobile_storage`
+# The crate `designware_mobile_storage` lives in the repository `partsfoundry/designware_mobile_storage`
 # and is not listed here. It is the JH7110's SD/MMC driver (milestone 53 (the board's own
 # peripherals: network and storage on real silicon)): the kernel links it for the bench boot, and
 # the EL0 block server `designware_mobile_storage` links the same crate.
 # The crate `non_volatile_memory_express` lives in the repository
-# `nifeos/non_volatile_memory_express` and is not listed here. The kernel links it to bring the
+# `partsfoundry/non_volatile_memory_express` and is not listed here. The kernel links it to bring the
 # controller up (the admin queue and IDENTIFY), and the EL0 server of the same name links it to
 # drive the I/O rings. What each pair agrees on, the windows and the spawn handoff, is
 # `driver_process_contract`'s, in `contracts`.
-# The crate `jh7110_entropy` lives in the repository `nifeos/jh7110_entropy` and is not listed here;
+# The crate `jh7110_entropy` lives in the repository `partsfoundry/jh7110_entropy` and is not listed here;
 # the EL0 server of the same name drives the device and stays a program below.
 interfaces = [
     # The DesignWare I2C master: the PMIC route drives it, and `driver_process_contract` carries

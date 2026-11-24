@@ -5,7 +5,7 @@
 //! [`Server`] over a [`Counting`] disk. It answers what the on-target figure cannot separate: how
 //! many device reads a walk costs, exactly (`tests/walk_cost.rs`: a warm walk reads nothing from
 //! the device), and what the server's own work costs (`examples/walk_replay.rs`). See
-//! nifeos/record:notes/walk-cost.md.
+//! partsfoundry/record:notes/walk-cost.md.
 
 //! # BUGS
 //!

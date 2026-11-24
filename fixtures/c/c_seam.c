@@ -22,7 +22,7 @@
  * The five libc symbols below are this component's whole libc. Two of them are defined
  * in Rust in c_shim.rs, and the other three the Rust bare-metal runtime already supplies;
  * there is no libc on this target, and nothing behind these needs POSIX semantics. See
- * nifeos/record:notes/c-seam.md for how that list was discovered (by letting the build fail and reading
+ * partsfoundry/record:notes/c-seam.md for how that list was discovered (by letting the build fail and reading
  * the error, not by guessing) and for why shimming `memcpy` in Rust is a trap.
  */
 

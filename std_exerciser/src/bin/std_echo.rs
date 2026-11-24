@@ -3,7 +3,7 @@
 //! whose manifest note says it hears words; `std_exerciser` is too big to travel as an image (256
 //! KiB, `spawn_protocol::IMAGE_MAXIMUM_PAGES`). `script/swish-check` runs it unvouched by path, so its
 //! one line, `words [...]` in `{:?}` form, proves the shell sent the argv, the progenitor built the
-//! `std` layout for an image, and `std::env::args_os()` read the page. See nifeos/record:notes/std/the-proof.md.
+//! `std` layout for an image, and `std::env::args_os()` read the page. See partsfoundry/record:notes/std/the-proof.md.
 //!
 //! Name: provisional (2026-09-27).
 

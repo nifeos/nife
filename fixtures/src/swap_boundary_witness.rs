@@ -5,7 +5,7 @@
 //! the client and the attacker below: `ROLE_PRODUCER`, the same conversation one rung up the
 //! latency ladder on the queued channel; `ROLE_CONFUSED` and `ROLE_PLANT`, a second attacker and
 //! the instrument that lets the first one fail rather than hang; and `ROLE_QUIESCER`, the
-//! operator's stand-in for the one `CALL` it has to bound. See nifeos/record:notes/live-replacement.md.
+//! operator's stand-in for the one `CALL` it has to bound. See partsfoundry/record:notes/live-replacement.md.
 
 //! # The client (`ROLE_CLIENT`)
 //!

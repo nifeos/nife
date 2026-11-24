@@ -5,7 +5,7 @@
 //! per connection) and prints five lines: a handshake, an index body, 256 KiB of bulk, and two
 //! refusals, a chain from another root and the pinned root's chain for another name. Only a client
 //! that does what the pin says prints all five. The `cost` lines are milestone 501's measurement,
-//! printed rather than asserted because they vary with the host. See nifeos/record:notes/packages/pinned-tls.md.
+//! printed rather than asserted because they vary with the host. See partsfoundry/record:notes/packages/pinned-tls.md.
 
 //! # BUGS
 //!

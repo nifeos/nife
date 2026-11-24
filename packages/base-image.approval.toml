@@ -19,7 +19,7 @@
 # The check catches a package that asks for more than its entry allows. It cannot catch an entry
 # that allows more than any package asks, so over-allowance is the review's to remove. Add a zone or
 # a directory only when a base package's note asks for it, in the words
-# `nifeos/record:design/roadmap/0911-scripted-installs-grant-only-what-an-approval-file-allows/an-example-file.md`
+# `partsfoundry/record:design/roadmap/0911-scripted-installs-grant-only-what-an-approval-file-allows/an-example-file.md`
 # spells.
 #
 # Name: provisional, minted 2026-10-30 (UTC) by lane

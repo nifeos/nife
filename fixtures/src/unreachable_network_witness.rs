@@ -46,7 +46,7 @@
 
 //! # What it holds
 //!
-//! Slot 0, its output (`nifeos/byte_sink_contract`), and, only when run unvouched, slots 1 and 2,
+//! Slot 0, its output (`partsfoundry/byte_sink_contract`), and, only when run unvouched, slots 1 and 2,
 //! the clock and configuration pages, which it does not read.
 
 //! # BUGS

@@ -3,7 +3,7 @@
 //! The sans-IO filesystem logic, with no IPC and no device in it, so it is host-tested in
 //! milliseconds against a real RedoxFS image and only the wiring needs QEMU. The EL0 binary wraps a
 //! [`Server`] in the block-IPC [`redoxfs::Disk`] and the file-service serve loop. See
-//! nifeos/record:notes/fs-server.md, nifeos/record:notes/fs-server/the-core.md and nifeos/record:notes/fs-server/caches-and-io.md.
+//! partsfoundry/record:notes/fs-server.md, partsfoundry/record:notes/fs-server/the-core.md and partsfoundry/record:notes/fs-server/caches-and-io.md.
 
 //! # The contract, capability-shaped from birth
 //!
@@ -20,7 +20,7 @@
 //! gives a child the parent's rights intersected with the request. That intersection is the only
 //! constructor for a non-root rights set, so no descendant carries a right its ancestor lacked. A
 //! file handle inherits its directory's read and write bits. The table is per server, not per
-//! client, so the endpoint is the boundary. See nifeos/record:notes/dir-capability.md.
+//! client, so the endpoint is the boundary. See partsfoundry/record:notes/dir-capability.md.
 
 //! # The error boundary
 //!
@@ -80,7 +80,7 @@ use crate::memo::Memo;
 /// - Written for an upstream defect whose root fix is a pin divergence (#1606, level 4's `12` to
 ///   `8` in `vendor/redoxfs/src/node.rs`); kept so the boundary answers `EFBIG`, not `ERANGE`. Every
 ///   file this build creates has 8 KiB records, which could address twice it, and no image comes
-///   within a factor of a million. See nifeos/record:notes/fs-server/the-core.md.
+///   within a factor of a million. See partsfoundry/record:notes/fs-server/the-core.md.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_FILE_END: u64 =

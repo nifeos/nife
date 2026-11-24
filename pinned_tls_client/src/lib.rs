@@ -6,13 +6,13 @@
 //! `cryptography_provider`. The shape is §196 (nife carries TLS) clause 4's, one root for the one
 //! source, and the pair is §250 (an image names its distribution's package index)'s: ISRG Root X1
 //! for `basalt.nifeos.org`. A package's integrity is its digest's under §195 (a reviewed recipe
-//! vouches for a package), not TLS's. See nifeos/record:notes/packages/pinned-tls.md for each check and who
+//! vouches for a package), not TLS's. See partsfoundry/record:notes/packages/pinned-tls.md for each check and who
 //! makes it.
 
 //! # BUGS
 //!
 //! - Certificate expiry is checked against `std`'s clock, which nobody can vouch for; a clock
-//!   held back accepts an expired chain (nifeos/record:notes/packages/pinned-tls.md).
+//!   held back accepts an expired chain (partsfoundry/record:notes/packages/pinned-tls.md).
 //! - No rotation story: when the pinned root is retired, every image carrying it loses its index.
 //!   See `PinnedPeer::basalt_index`.
 //! - One request per connection, HTTP/1.0, `Content-Length` required; only [`listed`] follows a
@@ -43,7 +43,7 @@ pub const ISRG_ROOT_X1_SHA256: [u8; 32] = [
 
 /// **Sectigo Public Server Authentication Root E46**, as DER: the root `github.com` chains to, and
 /// so the root a GitHub Release asset's download URL needs before it redirects to an X1 host.
-/// calef ruled on 2026-10-12 (UTC) on #2048 (*"a"*, option C2 of `nifeos/record:notes/packages/the-index-format.md`)
+/// calef ruled on 2026-10-12 (UTC) on #2048 (*"a"*, option C2 of `partsfoundry/record:notes/packages/the-index-format.md`)
 /// that the signed index may name it for a listed location; it is never a root for an index host.
 ///
 /// Read 2026-10-13 (UTC) from macOS's `SystemRootCertificates.keychain` and compared byte for byte
@@ -102,7 +102,7 @@ impl PinnedPeer {
     /// Measured 2026-10-06 (UTC), and it changes what pinning X1 means. Let's Encrypt now issues
     /// from its newer roots: `letsencrypt.org` presented leaf, `YE2`, `Root YE`, then `ISRG Root X2`
     /// cross-signed by X1; a GitHub Pages host (`*.github.io`, the host §250 names for
-    /// `nifeos/basalt`) presented leaf, `YR1`, then `Root YR` cross-signed by X1. Both reach X1,
+    /// `partsfoundry/basalt`) presented leaf, `YR1`, then `Root YR` cross-signed by X1. Both reach X1,
     /// so the pin works today, but only because the server sends the cross-signatures, and both
     /// cross-signatures say they end on 2032-09-02. Past that, or on a host that stops sending
     /// them, this pin refuses a correct server. Recorded in milestone 501's `BUGS`.
@@ -175,7 +175,7 @@ pub struct Session<S: Read + Write> {
 
 impl<S: Read + Write> Session<S> {
     /// Run the handshake to completion over `stream`, refusing any peer the pin does not admit;
-    /// not lazily, so a caller can time it apart from the transfer (nifeos/record:notes/packages/pinned-tls.md).
+    /// not lazily, so a caller can time it apart from the transfer (partsfoundry/record:notes/packages/pinned-tls.md).
     ///
     /// # Examples
     ///
@@ -287,14 +287,14 @@ pub struct Reply {
 // Inline rather than a child file, so this file stays one module and not a split parent (§282
 // (when a file is split, the parent becomes an index)).
 /// **A package's bytes from a location the index listed, through at most one redirect** (calef's
-/// C2, ruled *"a"* on #2048, 2026-10-12 UTC; `nifeos/record:notes/packages/the-index-format.md`, question C).
+/// C2, ruled *"a"* on #2048, 2026-10-12 UTC; `partsfoundry/record:notes/packages/the-index-format.md`, question C).
 ///
 /// The listed hop is pinned to the root the signed index named for it, among those the image
 /// carries (`package_index::Sources::root_for`). The one redirect, an absolute `https://` URL
 /// (`package_index::Location::redirect`), is pinned to the index's own root (X1 in production),
 /// whatever the first hop's was; a second is refused. Every hop dials only what Q1's check passed.
 /// The caller judges the bytes by the index's digest. `jig` and `package_fetch_exerciser` both use
-/// `listed::fetch`, so the boot test proves `jig`'s path (nifeos/record:notes/packages/pinned-tls.md).
+/// `listed::fetch`, so the boot test proves `jig`'s path (partsfoundry/record:notes/packages/pinned-tls.md).
 ///
 /// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`, with
 /// everything in it.

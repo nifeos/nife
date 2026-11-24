@@ -22,7 +22,7 @@
 //!
 //! - A child that never answers hangs this program, which has no deadline and does not supervise
 //!   it (that would cost a third capability); the kernel's test waits with one.
-//! - The child is loaded unmeasured (nifeos/record:notes/trusted-init.md).
+//! - The child is loaded unmeasured (partsfoundry/record:notes/trusted-init.md).
 //!
 //! Name: ratified 2026-10-05 (calef, §185): a fixture is named for what it proves, not what it does.
 //! Refused `address_space_builder` (an action) and `builder` (a generic word that could name almost

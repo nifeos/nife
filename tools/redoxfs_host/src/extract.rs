@@ -35,7 +35,7 @@ pub struct ExtractStats {
 /// **Extended attributes come back with the files** where the host will take them (milestone 57).
 /// Anything it refuses is counted and named on stderr rather than dropped, and the raw store is
 /// copied out beside the tree either way, so a refusal costs presentation and not data. See
-/// nifeos/record:notes/host-recovery.md.
+/// partsfoundry/record:notes/host-recovery.md.
 pub fn extract(volume: Volume, path: &str, dest: &Path) -> Result<ExtractStats, String> {
     let comps = components(path)?;
     let mut fs = open_ro(volume)?;

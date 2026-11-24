@@ -6,7 +6,7 @@
 //! carries a unique id, and the vendored RedoxFS has no `no_std` randomness, so the engine takes
 //! the uuid as an argument (`vendor/README.md` divergence 4,
 //! `patches/redoxfs-no-std-create-uuid.patch`). The kernel-side test runs it with both, with the
-//! disk alone (it writes nothing) and with entropy alone. See nifeos/record:notes/fs-server/mkfs-on-target.md.
+//! disk alone (it writes nothing) and with entropy alone. See partsfoundry/record:notes/fs-server/mkfs-on-target.md.
 
 //! # What it does
 //!

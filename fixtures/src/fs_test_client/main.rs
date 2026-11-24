@@ -7,9 +7,9 @@
 //! The proof role reads `motd`, writes a pattern to `scratch` and reads it back, and reports the
 //! `motd` head and a sentinel; any failed check traps. The other roles are benchmarks, attackers and
 //! witnesses, one module each, with shared requests in `channel` and the role numbers and `_start`
-//! in `role` (module names provisional). See nifeos/record:notes/fs-server/the-test-client.md.
+//! in `role` (module names provisional). See partsfoundry/record:notes/fs-server/the-test-client.md.
 
-//! # Capability contract (nifeos/record:notes/fs-server.md, nifeos/record:notes/abi.md section 4)
+//! # Capability contract (partsfoundry/record:notes/fs-server.md, partsfoundry/record:notes/abi.md section 4)
 //! - **slot 0**: the file-service endpoint, `WRITE` (this is the directory capability; the client
 //!   `CALL`s here).
 //! - **slot 1**: the report endpoint, `WRITE`.

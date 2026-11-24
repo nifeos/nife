@@ -7,7 +7,7 @@
 #   both     that, and the lock's compare-exchanges are Relaxed instead of Acquire on success
 #
 # It edits crates/test_and_set_lock/src/lib.rs in place; it is for a throwaway checkout (a CI job), never a
-# lane worktree's committed state. See nifeos/record:notes/benchmarks/host-reordering-under-tcg.md.
+# lane worktree's committed state. See partsfoundry/record:notes/benchmarks/host-reordering-under-tcg.md.
 set -eu
 cd "$(dirname "$0")/../.."
 variant="${1:?usage: weaken-spin.sh release|both}"

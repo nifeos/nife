@@ -11,7 +11,7 @@
 
 //! # BUGS
 //!
-//! The child is loaded unmeasured (nifeos/record:notes/trusted-init.md). Only aarch64's kernel test runs this
+//! The child is loaded unmeasured (partsfoundry/record:notes/trusted-init.md). Only aarch64's kernel test runs this
 //! program, because the identification constant is a PL011's and the other two machines have none.
 //!
 //! Name: ratified 2026-10-18 (calef), as `DEVICE_CHILD_BUILDER`, written here in program form.
