@@ -40,11 +40,11 @@ BUGS
 - The fetch needs the network the first time a pin moves: one `git ls-remote` of basalt, and a
   shallow fetch of the record at its pin. A fetch that fails stops the reader, with the reason,
   rather than letting it read nothing and pass.
-- `helpers/name_census.py` and `helpers/name_release.py` do not ask here. The census takes one
-  path list and one `read` callback over a single tree, and reads `name_rules.RULES_DOC` and the
-  documents' own blocks through it. `script/names` hands it a callback that reads `RULES_DOC`
-  here. `script/metrics` hands it each week's commit, and a commit after the removal holds no
-  copy, so that census needs a second reader for the record's paths.
+- `helpers/name_census.py` takes one path list and one `read` callback over a single tree, and
+  reads `name_rules.RULES_DOC` and the documents' own blocks through it. A census of the working
+  tree wraps its callback in `name_census.rules_at_pin`, which reads `RULES_DOC` here;
+  `script/names` does the same by hand. `script/metrics` hands it each week's commit, with the
+  record's paths overlaid from a checkout of nifeos/record.
 """
 
 import os

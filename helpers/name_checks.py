@@ -345,6 +345,7 @@ def load(root):
             return open(os.path.join(root, rel), errors="replace").read()
         except (FileNotFoundError, IsADirectoryError):
             return None
+    read = name_census.rules_at_pin(read, root)
     records, _problems, _missing, unblocked = name_census.census(files, read)
     manifests = {os.path.dirname(p): read(p) for p in files
                  if p.endswith("Cargo.toml") and not p.startswith("vendor/")}

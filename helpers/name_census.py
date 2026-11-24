@@ -346,6 +346,26 @@ def _document_records(markdown, pathset, read, problems):
     return out, missing, unblocked
 
 
+def rules_at_pin(read, top):
+    """`read`, except that `name_rules.RULES_DOC` is read from the record at the commit basalt pins.
+
+    The rules are a record document, and the record left this tree (milestone 1018 (the design
+    record moves to nifeos/record and is published as a website)), so a census of the working tree
+    reads them where `record_root` finds them. A caller with a tree of its own (a fixture, a past
+    commit) passes its own `read` and does not use this.
+    """
+    import record_root
+
+    def wrapped(rel):
+        if rel != name_rules.RULES_DOC:
+            return read(rel)
+        try:
+            return open(record_root.path(rel, top=top), encoding="utf-8", errors="replace").read()
+        except OSError:
+            return None
+    return wrapped
+
+
 def census(paths, read, british=None):
     """`(records, problems, missing, unblocked)` for one tree. See this module's docstring.
 

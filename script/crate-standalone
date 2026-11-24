@@ -179,7 +179,8 @@ def check_blocks(crate, fail):
             return open(os.path.join(root, rel), errors="replace").read()
         except OSError:
             return None
-    records, _problems, _missing, unblocked = name_census.census(paths, read)
+    records, _problems, _missing, unblocked = name_census.census(
+        paths, name_census.rules_at_pin(read, root))
     prefix = f"crates/{crate}/"
     waiting = [f"{r['name']} ({r['status']})" for r in records
                if r["path"].startswith(prefix) and r["status"] != "ratified"]
