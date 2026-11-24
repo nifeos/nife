@@ -4,6 +4,8 @@
 #
 #     helpers/trunk-health.sh             # watch until stopped
 #     helpers/trunk-health.sh --once      # print the current state and exit
+#     helpers/trunk-health.sh --repeat [--repo <owner>/<name>]
+#                                         # print the repeat rows alone, for nifeos/nife or <repo>
 #
 # PROVISIONAL NAME. Minted 2026-08-04; not put to calef. See the `Name:` block below.
 #
@@ -136,9 +138,37 @@
 set -e
 cd "$(dirname "$0")/.."
 
+# `--repeat` is the repeat half alone, and `--repo` names the repository it reads and is allowed
+# only with it. The two exist for a repository that borrows this script rather than copying it:
+# nifeos/record links nife's tree into its own checkout (its helpers/nife_tree.py) and runs
+# `--repeat --repo nifeos/record` from a weekly workflow of its own. The repeat half needs only `gh`
+# and the workflow files of the tree it runs in, so it is the one half that means the same thing
+# in another repository; the rest of `--once` reads nife's own scripts and nife's trunk.
 REPO="nifeos/nife"
 once=""
-[ "$1" = "--once" ] && once=1
+repeat_only=""
+repo_given=""
+usage() {
+	echo "usage: $(basename "$0") [--once | --repeat [--repo <owner>/<name>]]" >&2
+	exit 2
+}
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--once) once=1 ;;
+	--repeat) once=1; repeat_only=1 ;;
+	--repo)
+		[ $# -ge 2 ] || usage
+		case "$2" in
+		*/*) REPO="$2"; repo_given=1 ;;
+		*) usage ;;
+		esac
+		shift
+		;;
+	*) usage ;;
+	esac
+	shift
+done
+[ -n "$repo_given" ] && [ -z "$repeat_only" ] && usage
 
 # A watcher must run from the MAIN checkout, never from a lane worktree, and this refuses rather
 # than trusting anyone to remember. Measured cause, twice: `/bin/sh` reads a script LAZILY, so
@@ -375,7 +405,8 @@ due() {
 # nothing either.
 #
 # Names here are provisional (milestone 422): `repeat`, `repeat_line`, and the REPEAT and CHURN
-# row labels.
+# row labels. So are the `--repeat` and `--repo` flags, minted 2026-11-24 (UTC) for
+# nifeos/record#6, which runs this half for the record's own scheduled workflows.
 repeat_line() {
 	# Capture first, then parse: `gh` announces its own failures (a truncated download prints
 	# "Error: ...") on stdout, and a pipeline would feed that announcement to the awk below as if
@@ -403,11 +434,18 @@ repeat_line() {
 }
 
 repeat() {
-	# The workflows that claim a schedule, read from the tree the way `script/cadence-check` reads
-	# them, leaving out the same two watcher files: `helpers/watcher_watch.py` watches those two,
-	# and a watcher restarted five minutes ago must not become its own finding.
-	scheduled=$(grep -l '^  schedule:$' .github/workflows/*.yml 2>/dev/null |
-		grep -v -e '/merge-drain\.yml$' -e '/trunk-health\.yml$' | sort) || true
+	# The workflows that claim a schedule, leaving out the same two watcher files
+	# `script/cadence-check` leaves out: `helpers/watcher_watch.py` watches those two, and a watcher
+	# restarted five minutes ago must not become its own finding. Only files git tracks count,
+	# because only a committed workflow has runs: in nifeos/record's checkout, nife's workflows sit
+	# beside the record's as untracked links (helpers/nife_tree.py there), and asking the record's
+	# runs for one of them would be a `cannot ask` row on every pass.
+	scheduled=$(git ls-files -- .github/workflows 2>/dev/null |
+		grep -E '^\.github/workflows/[^/]+\.yml$' |
+		grep -v -e '/merge-drain\.yml$' -e '/trunk-health\.yml$' |
+		while read -r file; do
+			grep -q '^  schedule:$' "$file" 2>/dev/null && printf '%s\n' "$file"
+		done | sort) || true
 	[ -n "$scheduled" ] || return 0
 	rows=""
 	unasked=""
@@ -505,6 +543,12 @@ $row"
 at_risk() {
 	helpers/at-risk-check.sh 2>/dev/null || true
 }
+
+if [ -n "$repeat_only" ]; then
+	r=$(repeat)
+	[ -n "$r" ] && printf '%s\n' "$r"
+	exit 0
+fi
 
 if [ -n "$once" ]; then
 	s=$(state)
