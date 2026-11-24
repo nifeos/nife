@@ -27,4 +27,4 @@ publish = false
 # Default features off: the reader needs no `std` integration from the crate, and the defaults
 # would add nothing the oracle reads.
 [dependencies]
-rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/nifeos/rsext4", rev = "8bba0ace4d5fbca61a44e6e4e420f15f983cc278", default-features = false }
+rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/nifeos/rsext4", rev = "33cb5ed9ab1ef6538e831c0c068010a305a0fb58", default-features = false }
