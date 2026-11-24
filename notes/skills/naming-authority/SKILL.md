@@ -4,7 +4,7 @@ description: >-
   Who names things in nife: load before minting, choosing or changing the name of a crate, a
   program, a module, a script or a public function, or before ratifying or performing a rename.
   Names are an architect's call: ship a provisional name, say so in the report, and never rename on
-  your own initiative. Points to design/naming.md for the conventions.
+  your own initiative. Points to nifeos/record:design/naming.md for the conventions.
 ---
 
 # Naming authority

@@ -184,7 +184,7 @@ has the table of harnesses, their times, and the reasoning in full.
 Stated plainly, because a demonstrator's docs are part of the deliverable:
 
 - **No I/O, by design.** Somebody still has to read LBA 1. That is the block-device lane of
-  milestone 57, and it is separate on purpose. Built 2026-08-03 (notes/block-devices.md):
+  milestone 57, and it is separate on purpose. Built 2026-08-03 (nifeos/record:notes/block-devices.md):
   `disk_surveyor` reads the table off a virtio-blk device, backup half included, on both ISAs. The
   crate gained one module for it, `globally_unique_identifier_partition_table::span`, which computes *where* to read when the disk's
   logical block (512) and the block service's transfer unit (4096) are different numbers. That is
@@ -196,7 +196,7 @@ Stated plainly, because a demonstrator's docs are part of the deliverable:
   make them safe) is where a caller gets one.
 
   This turns out to be the same wall `mkfs` on the target hits, and that is worth knowing
-  (measured 2026-08-01, design/roadmap/0057-partitioning-and-xattrs.md). RedoxFS stamps a v4 UUID into a
+  (measured 2026-08-01, nifeos/record:design/roadmap/0057-partitioning-and-xattrs.md). RedoxFS stamps a v4 UUID into a
   fresh header with `uuid::Uuid::new_v4()`, so `FileSystem::create` is `std`-gated. The reason is
   the one this crate has for refusing to invent a GUID: an identifier that has to be unique needs
   randomness, and neither a `no_std` engine nor a pure-computation crate has any. Partitioning a real drive from

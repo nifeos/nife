@@ -102,14 +102,14 @@ It became milestone 244, and the answer was not the expected one. The lane measu
 mutants by function before moving anything. 33 sit in pure logic and 157 in the system call sequence,
 about sixty lines of a 2,632-line file, so nothing was lifted and the block records why. What did
 change the tree is the exclusion above and the gate behind it. See
-`design/roadmap/0244-the-largest-crate-in-the-tree-is-proved-by-nothing.md`. Its most reusable line
+`nifeos/record:design/roadmap/0244-the-largest-crate-in-the-tree-is-proved-by-nothing.md`. Its most reusable line
 is the method: **`cargo mutants --list -p <crate>` attributes every mutant to its enclosing
 function.** So "where are this crate's mutants" is one command, worth running before any lane
 proposes to restructure code for testability.
 
 ### What the sample does not say
 
-It does not re-read `design/fatal-risks/README.md`'s third risk, which is an architect's. It is a sample,
+It does not re-read `nifeos/record:design/fatal-risks/README.md`'s third risk, which is an architect's. It is a sample,
 not a census: the memory failure above killed seven of eight shards, so 8,700 of the 9,857 mutants
 were still unrun since 2026-08-03. What it removes is the reason the stale number was acceptable,
 the clause saying a refresh arrives on its own. A refresh had arrived, once, and it was lower.
@@ -123,7 +123,7 @@ unviable. That is **91.7% of viable mutants killed**. Milestone 277 (bound what 
 allocate, so a runaway kills the mutant and not the machine) is what made it finish. The runaway
 that had taken seven of eight shards every week did not take one.
 
-This is the re-run `design/fatal-risks/README.md`'s third risk had been waiting for since 2026-08-03, and it
+This is the re-run `nifeos/record:design/fatal-risks/README.md`'s third risk had been waiting for since 2026-08-03, and it
 is a census rather than a sample.
 
 ### The like-for-like number is up, not down
@@ -187,7 +187,7 @@ And the eight worst crates in the tree are all new, none of them in the baseline
 | `schedule_store` | 78.4% | 8 of 37 |
 
 Read `timetable` first, and not because of its rate. It holds `next_after`, the property
-`design/fatal-risks/README.md`'s risk 2 names as its strongest counterfactual. That is the milestone 6
+`nifeos/record:design/fatal-risks/README.md`'s risk 2 names as its strongest counterfactual. That is the milestone 6
 (threads, the context switch, and preemption) timer drift, proved in this tree over code the timer
 does not call. 48 survivors in a crate carrying a proof is the shape risk 2 is about.
 
@@ -210,7 +210,7 @@ run wants, and choosing when a new census becomes the baseline is not a records 
 
 ### What the census does not say
 
-It does not re-read `design/fatal-risks/README.md`'s third risk. That is an architect's, and
+It does not re-read `nifeos/record:design/fatal-risks/README.md`'s third risk. That is an architect's, and
 `design/roadmap/proposals/fatal-risk-3-against-the-new-number.md` has been holding it since
 2026-09-03. The census gives that proposal the number it was written to be read against, and the
 number is not the one anyone expected.

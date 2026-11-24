@@ -30,7 +30,7 @@ carries what follows from that, and so does the header of
 ## Two device trees, and radon serves the vendor's
 
 radon's U-Boot hands the kernel its own control tree, built from StarFive's U-Boot fork, not
-mainline Linux's (notes/visionfive2.md, and milestone 239 (radon's device tree does not describe the
+mainline Linux's (nifeos/record:notes/visionfive2.md, and milestone 239 (radon's device tree does not describe the
 TRNG, so a working driver never runs)'s correction). The two describe the same controller in different words:
 
 | | vendor U-Boot (`JH7110_VisionFive2_devel`) | mainline Linux |

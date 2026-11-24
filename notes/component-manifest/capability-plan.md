@@ -151,13 +151,13 @@ that could pass its own authority on is not confined, and no declaration can ask
 
 ## BUGS
 
-The crate's `BUGS` section keeps one line per entry; notes/component-manifest.md has the long
+The crate's `BUGS` section keeps one line per entry; nifeos/record:notes/component-manifest.md has the long
 account of most of them. Two have theirs here.
 
 - `plan` does not refuse two roles routed to one supervisor slot. The child then holds one object
   twice, each copy with the rights its own role declared, so nothing is widened past the
   declaration. It is a provisioning mistake that should be a `Refusal`. The eighth outsider pass
-  found it (notes/confinement-outsider-pass-8.md, near miss 3).
+  found it (nifeos/record:notes/confinement-outsider-pass-8.md, near miss 3).
 - `dependents` returns direct dependents only. A transitive version would need each decoupling
   mechanism to say whether it absorbs its dependency's downtime, which a contract name cannot
   carry, so it is not built.

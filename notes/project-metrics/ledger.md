@@ -30,7 +30,7 @@ Bought for this project, in the order it was bought.
 ### What is missing, named rather than estimated
 
 - radon, the StarFive VisionFive 2, is the second ISA's board and no purchase record exists in
-  this tree. `notes/riscv-port.md` says "a ~$70 StarFive VisionFive 2", which is a sentence about
+  this tree. `nifeos/record:notes/riscv-port.md` says "a ~$70 StarFive VisionFive 2", which is a sentence about
   the market written before the board was chosen, not a receipt. The order date is not recorded
   either; the board arrived around 2026-08-21. This row is left out rather than filled with the $70,
   because a ledger that guesses is worth less than one with a hole in it. calef can close it in one
@@ -180,7 +180,7 @@ a rate derived from three quarters of a week's tokens is not that week's rate.
   charged, they do not include any discount, batch rate or tier, and they will drift. A rate change
   is a new row; until somebody adds one, `script/metrics` prices every week at the newest row it has,
   so a rate that changed silently would restate old weeks at the new price. That is the same
-  restatement hazard `notes/project-metrics.md` opens with, and it is worse here because a dollar
+  restatement hazard `nifeos/record:notes/project-metrics.md` opens with, and it is worse here because a dollar
   figure reads as a measurement.
 - **Hardware is not amortized and not depreciated.** A board bought in 2026W33 lands entirely in
   2026W33. Over a project this short that is the honest shape; over a longer one it would make a

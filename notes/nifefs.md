@@ -117,7 +117,7 @@ worth stating where a reader meets it (the crate's `# Names` and `# BUGS` sectio
 in a constant.
 
 The same failure had a second half, and it took a fuzzer to find it (2026-08-02, milestone 42,
-notes/fuzzing.md). A name is NUL-padded on disk and every reader stops at the first NUL, so a name
+nifeos/record:notes/fuzzing.md). A name is NUL-padded on disk and every reader stops at the first NUL, so a name
 with a NUL *inside* it is unrepresentable in exactly the way a name over `NAME_LEN` is. `"a\0b"` was
 accepted, written, and decoded back as `"a"`, and `read("a\0b")` answered `None`. Data written and
 not readable, with nothing panicking and no test noticing. It survived the truncation fix because

@@ -67,7 +67,7 @@ reported figure:
 `tasks=16` and `tasks=32` already sat at 2.7 to 6.7% with three. 21 brings the worst point into the
 band the stable points were in, and it is odd so the median is a sample rather than an average of
 two. The method is in milestone 168 (a multi-tasking workload benchmark)'s appendix,
-`design/roadmap/0168-multitasking-benchmark/holes-closed-2026-09-19.md`.
+`nifeos/record:design/roadmap/0168-multitasking-benchmark/holes-closed-2026-09-19.md`.
 
 One count serves every point; a table varying it by point was refused. The whole sweep's timed
 windows at 21 repeats come to about eleven seconds on radon, against a boot that takes minutes. A

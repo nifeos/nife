@@ -111,7 +111,7 @@ packing, and most mutants a tool can make there cannot change a value.
 #### The nineteen real gaps, four of them witness bits that report nothing
 
 - `fixture::twodir` had no distinctness test at all (5). Five of its six bits could each become
-  zero. Two of them are the structural finding `notes/dir-capability.md` records: the endpoint is
+  zero. Two of them are the structural finding `nifeos/record:notes/dir-capability.md` records: the endpoint is
   the boundary, witnessed with two live caretakers. A witness bit of zero is a probe that reports
   nothing while its boot passes. Closed by `the_two_grant_bits_are_distinct`, in the shape the
   escape, directory and navigation fixtures already use.

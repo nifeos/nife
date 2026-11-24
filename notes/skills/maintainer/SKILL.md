@@ -34,14 +34,14 @@ architect: see [ARCHITECTS.md](../../../ARCHITECTS.md).
   pushed the moment it is cut, and every session lists remote branches before briefing a lane (`git
   ls-remote --heads`), because the pushed branch is the only lane ledger another session can see.
   Whoever merges prunes what they merged. Briefs
-  developers, gates and merges their work, mints anything global to the tree (`design/decisions/`
+  developers, gates and merges their work, mints anything global to the tree (`nifeos/record:design/decisions/`
   sections, milestone numbers, names an architect has ratified), and keeps hygiene: prune the
   worktree, delete the branch, leave no QEMU. Holds merge authority when an
   architect grants it. This role gates and merges; it does not write the code or resolve the
   conflicts itself, as the next section says.
 - Steward. Runs on an interval and holds a *lent* authority: it merges what has earned it: green on
   every check, from a developer briefed this session, touching no system call surface, no
-  `design/decisions/` section and no dependency addition. It cleans up behind finished work (delete
+  `nifeos/record:design/decisions/` section and no dependency addition. It cleans up behind finished work (delete
   the branch, prune the worktree), reports queue depth against the target, and
   raises what has stalled or gone unanswered. It does not brief developers, because briefing is
   judgment: it says "the queue is at one of three and these are ready" and the maintainer writes the
@@ -60,7 +60,7 @@ does too. "Too small for a lane" is the failure, not an exception. The session i
 conversation: while it works by hand, the architect cannot talk to it and the lanes sit idle. It
 reads, looks things up, writes briefs and records rulings in the conversation.
 
-A lane that carries an architect's ruling may edit `design/decisions/` to record it, on the terms
+A lane that carries an architect's ruling may edit `nifeos/record:design/decisions/` to record it, on the terms
 the [developer lane](../developer-lane/SKILL.md) sets.
 
 Maintainer tooling reads and writes GitHub through GraphQL (`gh pr`, `gh issue`, `gh api graphql`),

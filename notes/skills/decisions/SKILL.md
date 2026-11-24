@@ -4,7 +4,7 @@ description: >-
   How nife decides, recommends, and takes a question to an architect. Load before choosing between
   options, recommending one, or deciding how much care a choice deserves; and when something may
   be an architect's call (a design fork, a wire format, a name, the system call surface, a new
-  dependency, a design/decisions/ section, a published number), when holding work for an
+  dependency, a nifeos/record:design/decisions/ section, a published number), when holding work for an
   architect, adding the needs-architect label, writing a "## What I need from you" comment or a
   PROPOSED decision file. Holds: move fast on what can be undone and be methodical on what cannot
   (the test is who else has acted on it; delay costs; bet once risk is weighed); elegance and
@@ -82,7 +82,7 @@ prettier structure owes numbers, not adjectives.
 ## Open decisions, and work waiting on an architect
 
 Open decisions live in a file, not in a conversation. One waiting on an architect goes in
-`design/decisions/` marked [`status: PROPOSED`](../../../design/decisions/README.md), one file each: what is
+`nifeos/record:design/decisions/` marked [`status: PROPOSED`](../../../design/decisions/README.md), one file each: what is
 being decided, the options, the recommendation with its reason, and what is blocked until it is
 answered.
 
@@ -92,7 +92,7 @@ the moment the decision to hold is made and not later:
 - The `needs-architect` label, so the queue is `gh pr list --label needs-architect` rather than a
   paragraph somebody has to have read. It names the role, not the person. A thing lands there when
   it is outside standing merge authority: the system call surface, a new dependency, or a
-  `design/decisions/` section owed. It means waiting on calef and nothing else, so the list is his
+  `nifeos/record:design/decisions/` section owed. It means waiting on calef and nothing else, so the list is his
   worklist. An edit to a decision is his to approve unless it is bookkeeping: a link retargeted, a
   backticked path moved, a paragraph rewrapped (calef, 2026-10-11 UTC; §88 (`needs-architect` as a
   required check)'s amendment). A changed word still asks, a renamed identifier included.

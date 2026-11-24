@@ -41,7 +41,7 @@ standing for "a subsystem nobody tests" when it stood for a measurement bug.
 `cargo xtask uefi-boot` under OVMF, on `script/test`'s own leg. `load`, `say_conflict` and
 `find_screen` carry logic (66, 28 and 9 mutants) that a host test could reach if lifted the way
 `handoff` and `image` were. Whether that is worth doing is
-`design/roadmap/0381-the-uefi-loaders-firmware-half-is-proved-by-one-boot.md`. Excluding the file
+`nifeos/record:design/roadmap/0381-the-uefi-loaders-firmware-half-is-proved-by-one-boot.md`. Excluding the file
 makes the number honest, not the file proved.
 
 ### The two real survivors, and the hole beside them

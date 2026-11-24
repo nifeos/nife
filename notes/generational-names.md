@@ -2,7 +2,7 @@
 
 *(Milestone 14 (kernel objects from untyped) phase A. The mechanism behind
 `nifeos/generational_table`, the scheduler's thread table since the `BTreeMap` was retired. See
-design/kernel-objects-from-untyped.md, decision D2.)*
+nifeos/record:design/kernel-objects-from-untyped.md, decision D2.)*
 
 ## The problem it solves
 
@@ -79,9 +79,9 @@ the table at the end is exactly this validity check.
 Recorded-accepted by milestone 94's sweep (2026-08-04): "we deferred the CDT" reads like an
 unpaid debt and is not one. A derivation tree and generational names are two answers to the same
 safety question, and this tree took the second, on purpose, for the reason in the paragraph above.
-notes/live-replacement.md still says the real tree is wanted; that is the same object, blessed here
-rather than twice. notes/security.md carries the other half (no revocation, and what it costs). An
-audit may pass over it; §71 says what would promote it. See notes/untracked-work-sweep.md.
+nifeos/record:notes/live-replacement.md still says the real tree is wanted; that is the same object, blessed here
+rather than twice. nifeos/record:notes/security.md carries the other half (no revocation, and what it costs). An
+audit may pass over it; §71 says what would promote it. See nifeos/record:notes/untracked-work-sweep.md.
 
 ## The details that matter
 
@@ -215,7 +215,7 @@ visited every slot to filter them. `sched::delete_page_frame_capabilities_where`
 capability table on every `MemoryRegion::DESTROY`, so it got dearer whenever
 `sched::MAXIMUM_THREADS` rose, with no more live threads. On the `spawn_el0` icount benchmark,
 raising that ceiling from 128 to 256 cost 141,359 ticks through this path alone
-(notes/benchmarks.md). Every later raise would have paid again.
+(nifeos/record:notes/benchmarks.md). Every later raise would have paid again.
 
 `top` shrinks as well as grows, so it tracks live occupancy rather than peak occupancy. Removing the
 top entry walks down over empty slots and stops at the first live one. That is amortized O(1),
