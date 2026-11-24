@@ -15,7 +15,7 @@ rustc compiles only the files reachable through `mod` declarations from a crate 
 declares is silently dead: no error, no warning, no test run. Commit d0b1ff821 dropped `mod proofs;`
 and the timetable Kani proofs and their falsification records went stale with every gate green
 (repaired by #1554). A test or proof file nothing compiles is a test that cannot fail, which is
-fatal risk 3's whole subject (nifeos/record:design/fatal-risks/README.md).
+fatal risk 3's whole subject (partsfoundry/record:design/fatal-risks/README.md).
 
 # WHAT IT CHECKS
 

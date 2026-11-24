@@ -2,7 +2,7 @@ name: toolchain bump
 
 # Observed failing: 2026-10-02, run 37019399265: the restamp job went red because a floor could not
 #   be proven unmoved on the new nightly and needs a person (`script/bench --save --why`). See
-#   nifeos/record:notes/observed-failing.md.
+#   partsfoundry/record:notes/observed-failing.md.
 
 # **Propose a toolchain bump daily; never apply one.** The three steps that want to stay separate:
 #
@@ -226,8 +226,8 @@ jobs:
     # branches are `main` only. A merge-group build runs on a `gh-readonly-queue/main/...` ref, which
     # is not `main`, so it cannot read them even if a pull request edits this workflow to name the
     # environment. Adopted by calef 2026-09-24 (options 2 and 3 of
-    # nifeos/record:design/roadmap/0588-a-merge-needs-a-review-no-fork-can-supply.md; the finding is 1 in
-    # nifeos/record:design/audit-reports/2026-09-24-new-trust-boundaries.md). The protection holds
+    # partsfoundry/record:design/roadmap/0588-a-merge-needs-a-review-no-fork-can-supply.md; the finding is 1 in
+    # partsfoundry/record:design/audit-reports/2026-09-24-new-trust-boundaries.md). The protection holds
     # since calef deleted the organisation-level copies of the two secrets on 2026-10-03 (UTC); an
     # org secret would have been visible to every job whatever its environment. Only jobs that mint the App token name it,
     # because each run of a job that does records a deployment.
@@ -297,7 +297,7 @@ jobs:
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
           # Exactly the set the App held before milestone 128 (the automation gets its own identity)
           # widened it for sessions, Administration among them. Named here so the widening reaches no
-          # workflow; nifeos/record:notes/session-identity.md.
+          # workflow; partsfoundry/record:notes/session-identity.md.
           permission-contents: write
           permission-pull-requests: write
 
@@ -711,7 +711,7 @@ jobs:
           (a red \`verify\` or \`falsifications\`), and record any harness whose result or time moved.
 
           The riscv64 row is not on this pin: it builds a patched 0.67.0 until upstream kani#4913
-          ships (nifeos/record:notes/kernel-proofs/riscv64-with-a-patched-kani.md).
+          ships (partsfoundry/record:notes/kernel-proofs/riscv64-with-a-patched-kani.md).
 
           This branch is force-pushed daily, so it always proposes the newest stable release."
           git push --force origin "$branch"

@@ -7,8 +7,8 @@
 # since. Dependabot cannot cover the gap either: `vendor/redoxfs` is deliberately its own workspace
 # (divergence 2 in vendor/README.md), so it is outside the Cargo graph dependabot walks. So until
 # this script existed, **nothing in the tree would ever report that RedoxFS had moved**, and
-# nifeos/record:design/decisions/0081-dependency-upgrades.md's rule that a dependency stays upgradable had
-# `vendor/` as its blind spot. See nifeos/record:design/roadmap/0203-vendored-engine-upgrades.md.
+# partsfoundry/record:design/decisions/0081-dependency-upgrades.md's rule that a dependency stays upgradable had
+# `vendor/` as its blind spot. See partsfoundry/record:design/roadmap/0203-vendored-engine-upgrades.md.
 #
 # **Both pins are checked, and that is the point rather than thoroughness for its own sake.** A pin
 # names a crates.io version AND the upstream git sha that produced it. Releases here are months
@@ -47,7 +47,7 @@
 #
 # **It reports; it cannot decide.** A newer version is not automatically a better one and this tree
 # pinned deliberately. Nothing here bumps anything on `main`, and `--write` only ever prepares a
-# branch for a human to judge, the same posture nifeos/record:notes/merge-queue.md's watchers hold.
+# branch for a human to judge, the same posture partsfoundry/record:notes/merge-queue.md's watchers hold.
 #
 # Name: provisional, minted by milestone 203's lane 2026-08-31. Pairs with `script/vendor-verify`,
 # which owns the same pins; "watch" is what the tree already calls a thing that runs on a cron and
@@ -79,7 +79,7 @@ STATUS_PATH = os.path.join(root, "vendor", "upstream-status.md")
 
 # A courtesy rather than a requirement: crates.io asks that automated clients identify themselves,
 # and an anonymous poller is the kind of thing a registry blocks first when it needs to.
-AGENT = "nife-vendor-watch (https://github.com/nifeos/nife)"
+AGENT = "nife-vendor-watch (https://github.com/partsfoundry/nife)"
 
 TRANSIENT, PERMANENT = "transient", "permanent"
 

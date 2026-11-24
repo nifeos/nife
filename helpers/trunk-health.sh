@@ -5,7 +5,7 @@
 #     helpers/trunk-health.sh             # watch until stopped
 #     helpers/trunk-health.sh --once      # print the current state and exit
 #     helpers/trunk-health.sh --repeat [--repo <owner>/<name>]
-#                                         # print the repeat rows alone, for nifeos/nife or <repo>
+#                                         # print the repeat rows alone, for partsfoundry/nife or <repo>
 #
 # PROVISIONAL NAME. Minted 2026-08-04; not put to calef. See the `Name:` block below.
 #
@@ -64,7 +64,7 @@
 # for sat on somebody's laptop unwatched, which is worse than not having it.
 #
 # So the at-risk watch is per developer, one per machine, under its own `launchd` job, and it needs
-# no GitHub credential at all. nifeos/record:notes/merge-queue.md has the plist and the retirement commands for
+# no GitHub credential at all. partsfoundry/record:notes/merge-queue.md has the plist and the retirement commands for
 # the two jobs this replaces. `--once` here still reports it, because a person running this by hand
 # on their own machine is exactly the case where both halves are true at once.
 #
@@ -105,9 +105,9 @@
 #   - **It reports and never resolves**, deliberately, which was the whole gap calef named on
 #     2026-09-23. The response now exists as `helpers/queue-hold.sh` and briefs/main-is-red.md, and
 #     a person still has to run it: this script does not, because holding the queue needs the
-#     judgement nifeos/record:notes/merge-queue.md argues a watcher must not exercise.
+#     judgement partsfoundry/record:notes/merge-queue.md argues a watcher must not exercise.
 #   - **It does not report its own death.** Shared with `helpers/merge-drain.sh`, accepted rather
-#     than solved; nifeos/record:notes/merge-queue.md has the reasoning and the `launchd` plists.
+#     than solved; partsfoundry/record:notes/merge-queue.md has the reasoning and the `launchd` plists.
 #   - **"Transition" means newly observed, not newly due.** The red/green, cadence and DUE memories
 #     (`prev`, `prev_cadence`, `prev_due`) live in the watching shell and die with it, so a restart
 #     announces the current state on its first pass as if it were new: a cadence that has stood due
@@ -133,18 +133,18 @@
 #
 # Name: unrecorded. Provisional, minted 2026-08-04 and not yet put to calef. `trunk` rather than
 # `main` because the branch could be renamed and the concept could not, and because "trunk health"
-# is the term the field already uses. See nifeos/record:notes/merge-queue.md.
+# is the term the field already uses. See partsfoundry/record:notes/merge-queue.md.
 
 set -e
 cd "$(dirname "$0")/.."
 
 # `--repeat` is the repeat half alone, and `--repo` names the repository it reads and is allowed
 # only with it. The two exist for a repository that borrows this script rather than copying it:
-# nifeos/record links nife's tree into its own checkout (its helpers/nife_tree.py) and runs
-# `--repeat --repo nifeos/record` from a weekly workflow of its own. The repeat half needs only `gh`
+# partsfoundry/record links nife's tree into its own checkout (its helpers/nife_tree.py) and runs
+# `--repeat --repo partsfoundry/record` from a weekly workflow of its own. The repeat half needs only `gh`
 # and the workflow files of the tree it runs in, so it is the one half that means the same thing
 # in another repository; the rest of `--once` reads nife's own scripts and nife's trunk.
-REPO="nifeos/nife"
+REPO="partsfoundry/nife"
 once=""
 repeat_only=""
 repo_given=""
@@ -301,7 +301,7 @@ cadence() {
 # as the second thing** (milestone 495 (a cadence that says "due" reaches nobody, and the watcher
 # cannot tell due from dead)). The stranger cadence (`script/stranger-test --due`) exists to say "a
 # person must now do something", and so did the audit cadence until it left with the design record
-# for nifeos/record, whose own workflow runs it. Red in the Actions
+# for partsfoundry/record, whose own workflow runs it. Red in the Actions
 # tab is their correct output, not their failure. `script/cadence-check` answers only whether a
 # scheduled workflow has stopped *succeeding*, so a job correctly reporting due and a job that is
 # broken arrive as the same verdict, DEAD, a fortnight after the fact. The audits sat that way for
@@ -406,7 +406,7 @@ due() {
 #
 # Names here are provisional (milestone 422): `repeat`, `repeat_line`, and the REPEAT and CHURN
 # row labels. So are the `--repeat` and `--repo` flags, minted 2026-11-24 (UTC) for
-# nifeos/record#6, which runs this half for the record's own scheduled workflows.
+# partsfoundry/record#6, which runs this half for the record's own scheduled workflows.
 repeat_line() {
 	# Capture first, then parse: `gh` announces its own failures (a truncated download prints
 	# "Error: ...") on stdout, and a pipeline would feed that announcement to the awk below as if
@@ -437,7 +437,7 @@ repeat() {
 	# The workflows that claim a schedule, leaving out the same two watcher files
 	# `script/cadence-check` leaves out: `helpers/watcher_watch.py` watches those two, and a watcher
 	# restarted five minutes ago must not become its own finding. Only files git tracks count,
-	# because only a committed workflow has runs: in nifeos/record's checkout, nife's workflows sit
+	# because only a committed workflow has runs: in partsfoundry/record's checkout, nife's workflows sit
 	# beside the record's as untracked links (helpers/nife_tree.py there), and asking the record's
 	# runs for one of them would be a `cannot ask` row on every pass.
 	scheduled=$(git ls-files -- .github/workflows 2>/dev/null |

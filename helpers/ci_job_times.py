@@ -145,7 +145,7 @@ import sys
 import time
 import zipfile
 
-REPO = "nifeos/nife"
+REPO = "partsfoundry/nife"
 CSV = "notes/project-metrics/ci-job-times.csv"
 COLUMNS = ["date", "workflow", "job", "variant", "kind", "name", "runs", "median_seconds", "max_seconds"]
 WEEK_NOTES = "notes/project-metrics/week-notes.csv"

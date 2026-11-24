@@ -14,7 +14,7 @@ fresh `gh-readonly-queue/main/pr-N-<sha>` ref, so an entry saved there can never
 later run. On 2026-10-07 the repository held 10.7 GB of caches against GitHub's 10 GB limit; 163
 entries (3.8 GB) were rust-cache saves from merge groups, and 111 merge-group jobs sampled that day
 restored none. Those entries pushed out the pull request entries that do hit. The measurement is in
-nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
 
 # THE RULE
 

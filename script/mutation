@@ -1,5 +1,5 @@
 #!/bin/sh
-# script/mutation: mutation testing over the host crates (milestone 85). See nifeos/record:notes/mutation-testing.md.
+# script/mutation: mutation testing over the host crates (milestone 85). See partsfoundry/record:notes/mutation-testing.md.
 #
 # Coverage answers "did this line run under a test"; this answers the question coverage cannot,
 # "would any test NOTICE if this line were wrong". cargo-mutants rewrites one function at a time

@@ -80,15 +80,15 @@ fi
 stub="$(mktemp -d)"
 trap 'rm -rf "$stub"' EXIT
 jq -nc '[range(0; 10000) | {id: ., name: "check \(. % 50)", status: "completed", conclusion: "success",
-	html_url: ("https://github.com/nifeos/nife/actions/runs/1/job/" + ("x" * 60))}]
+	html_url: ("https://github.com/partsfoundry/nife/actions/runs/1/job/" + ("x" * 60))}]
 	+ [{id: 9999, name: "clippy", status: "completed", conclusion: "failure", html_url: "https://x/9"}]' |
 	jq -c '.[]' >"$stub/runs"
 [ "$(wc -c <"$stub/runs")" -gt 1200000 ] || { echo "$me: the large fixture is not large" >&2; exit 1; }
 cat >"$stub/gh" <<STUB
 #!/bin/sh
 case "\$*" in
-"api repos/nifeos/nife/rulesets --jq"*) echo 1 ;;
-"api repos/nifeos/nife/rulesets/1 --jq"*) echo '["clippy"]' ;;
+"api repos/partsfoundry/nife/rulesets --jq"*) echo 1 ;;
+"api repos/partsfoundry/nife/rulesets/1 --jq"*) echo '["clippy"]' ;;
 "pr list"*) echo '[{"number":7,"isDraft":false,"headRefOid":"aaaaaaaaaaaa","labels":[],"title":"big"}]' ;;
 *check-runs*) cat "$stub/runs" ;;
 *comments*) : ;;

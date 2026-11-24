@@ -47,7 +47,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import record_root  # noqa: E402
 
-# The reviews are roadmap blocks, in the design record: nifeos/record at the commit basalt pins
+# The reviews are roadmap blocks, in the design record: partsfoundry/record at the commit basalt pins
 # (helpers/record_root.py).
 ROADMAP = "design/roadmap"
 
@@ -299,7 +299,7 @@ def selftest():
             "- Item 4: At the move.\n"
             "- Item 5: At the release, the manifest.\n"
             "- Decision 1: Will not fix, ruled 2026-11-14 (UTC): the reason.\n"
-            "- Item 6: Done in nifeos/other#3.\n"
+            "- Item 6: Done in partsfoundry/other#3.\n"
             "- P1-7, an id: Open.\n")
     cases = [
         ("the closed set parses", block("PARTIAL", good), 0),

@@ -110,13 +110,13 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$branch"
           git add xtask/basalt-pin
-          git commit -m "Bump basalt pin to nifeos/basalt@$short ($release)
+          git commit -m "Bump basalt pin to partsfoundry/basalt@$short ($release)
 
           Moves xtask/basalt-pin to basalt's newest Release whose packages are all
           uploaded and whose commit is on basalt's main (helpers/basalt_pin.py),
           proposed by the scheduled pin-basalt workflow."
           git push --force origin "$branch"
-          title="Bump basalt pin to nifeos/basalt@$short ($release)"
+          title="Bump basalt pin to partsfoundry/basalt@$short ($release)"
           body="**Lane:** $branch, opened by a scheduled workflow; $PR_AUTHOR is the author GitHub shows.
 
           Moves \`xtask/basalt-pin\` to \`$release\` (basalt commit \`$commit\`), the newest published

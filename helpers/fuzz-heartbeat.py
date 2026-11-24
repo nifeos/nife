@@ -19,7 +19,7 @@ yesterday, so one late or skipped run is tolerated) and checks:
 
 On a failure it opens one issue carrying ISSUE_LABEL that names the check and the day, unless an issue
 with that label is already open. On success it does nothing. It repairs nothing: a person turns the
-issue into an action (nifeos/record:notes/fuzzing/continuous-host.md).
+issue into an action (partsfoundry/record:notes/fuzzing/continuous-host.md).
 
 **Parked causes notify a person.** The filer parks budget and hang causes and never files them; each
 waits for a person to write a `file` or `suppress` rule in fuzz-host `etc/fuzz-filer/rules.tsv`. So,
@@ -57,7 +57,7 @@ import re
 import subprocess
 import sys
 
-REPO = "nifeos/nife"
+REPO = "partsfoundry/nife"
 # Failing share: infrastructure windows divided by all windows. The check passes below the bound.
 INFRASTRUCTURE_SHARE_BOUND = 0.5
 ISSUE_LABEL = "fuzz-loop-broken"
@@ -65,7 +65,7 @@ ISSUE_LABEL = "fuzz-loop-broken"
 PARKED_LABEL = "fuzz-findings-parked"
 PARKED_MARKER = "fuzz-heartbeat parked="
 PARKED_MARKER_RE = re.compile(r"<!-- fuzz-heartbeat parked=(\d+) -->")
-RULES_LINK = "https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-filer.md#rules"
+RULES_LINK = "https://github.com/partsfoundry/fuzz-host/blob/main/docs/fuzz-filer.md#rules"
 WINDOW_DAYS = 2
 # The filer must have run within this many UTC days of the report's day.
 FILER_QUIET_DAYS = 2
@@ -194,7 +194,7 @@ def parked_body(day, parked):
             "The fuzz filer parks budget and hang causes and never files them on its own. Each needs a "
             "person to decide it:\n\n"
             "1. Read the day's report on the fuzz host.\n"
-            "2. For each parked cause, write a `file` or `suppress` rule in nifeos/fuzz-host "
+            "2. For each parked cause, write a `file` or `suppress` rule in partsfoundry/fuzz-host "
             "`etc/fuzz-filer/rules.tsv` through a pull request. See %s.\n"
             "3. Close this issue once every parked cause has a rule.\n\n"
             "This issue names no cause on purpose: it is public, and the findings stay private on the "
@@ -254,7 +254,7 @@ def run(today, backend):
             "Day: %s (UTC)\nCheck failed: %s\n\n"
             "This issue repairs nothing. A lane fixes anything in the tree; a repair of the fuzz host "
             "is a written spec the architect hands to the homelab agent. See "
-            "nifeos/record:notes/fuzzing/continuous-host.md. Close this issue when the loop is healthy again."
+            "partsfoundry/record:notes/fuzzing/continuous-host.md. Close this issue when the loop is healthy again."
             % (day, message))
     backend.open_issue(ISSUE_LABEL, title, body)
     print("fuzz-heartbeat: opened an issue for %s" % day)

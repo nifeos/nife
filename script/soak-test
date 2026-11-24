@@ -33,14 +33,14 @@
 # second timeout reset the machine. `--watchdog` builds `--features watchdog_soak_test` and passes
 # when the watchdog armed, was seen counting, and nothing reset the machine for `--for` (default
 # 180s) after it armed. Exit statuses as `--reboot`'s. See kernel/src/arch/x86_64/tco.rs and
-# nifeos/record:design/roadmap/0593-a-wedged-kernel-resets-itself.md (number provisional).
+# partsfoundry/record:design/roadmap/0593-a-wedged-kernel-resets-itself.md (number provisional).
 #
 # `design/fatal-risks.md`'s fifth entry ("it cannot be made reliable on multicore, and the bugs
 # appear only on silicon") names its decisive experiment as sustained multi-core stress with the
 # load-sensitive assertions live. This is that experiment's rehearsal: the same kernel feature, the
 # same workload and the same judgement as a bench run, on a machine that cannot show the defects.
 # The real runs happen on radon, argon and xenon; this is what proves the mechanism before anyone
-# carries a board to a desk. See nifeos/record:notes/soak.md.
+# carries a board to a desk. See partsfoundry/record:notes/soak.md.
 #
 # What it boots is `--features soak_test`, where the boot tour does not end in `arch::halt()` but in a
 # pool of user-mode IPC workers and a supervisor that prints a heartbeat every five seconds. See
@@ -49,7 +49,7 @@
 # Milestone 221 added the tick route: the kernel signals a rendezvous from `sched::on_tick` and one
 # worker per group blocks on it through `Interrupt::WAIT`, which is what makes the run cross cores
 # at all.
-# Before it, `crossings` froze inside the first second and stayed frozen; see nifeos/record:notes/soak.md.
+# Before it, `crossings` froze inside the first second and stayed frozen; see partsfoundry/record:notes/soak.md.
 #
 # Exit statuses are `script/board-console`'s, because the judging is literally the same code:
 #
@@ -71,11 +71,11 @@
 #   `--features soak_test`, and they are not free: `ipc_fastpath` measures 1.05 to 1.06x its production
 #   size with them in. So these round-trip rates are soak-build rates, comparable with other soak
 #   runs and with nothing else. `script/bench` is the instrument for IPC cost. Milestone 221 added
-#   nothing to that figure, which was measured rather than assumed (nifeos/record:notes/soak.md).
+#   nothing to that figure, which was measured rather than assumed (partsfoundry/record:notes/soak.md).
 # - **The crossings are tick waiters, not the IPC pairs.** The summary says so on every run that has
 #   any, because the flattering reading (that the workload itself is migrating) is available and
 #   wrong: rendezvous wakes stay local whatever else is happening. Only a periodic rebalancer would
-#   move the pairs, and nifeos/record:design/decisions/0138-cross-core-handoff-under-load.md declines one.
+#   move the pairs, and partsfoundry/record:design/decisions/0138-cross-core-handoff-under-load.md declines one.
 # - **`wakes` is not part of `rounds`** and the two rates are not comparable with each other. A wake
 #   is not a round trip, and `wakerate` is a property of the machine (TICK_HERTZ times the online
 #   cores) rather than of the workload.
@@ -108,7 +108,7 @@
 #
 # **What deliberately did NOT move**, because these name the *workload* rather than the command, and
 # the workload is still a soak: the crate `soak_page` (ratified 2026-09-13 in its own right), the
-# program `soaker`, the kernel module `kernel/src/soak.rs`, `nifeos/record:notes/soak.md`, `serial_console`'s
+# program `soaker`, the kernel module `kernel/src/soak.rs`, `partsfoundry/record:notes/soak.md`, `serial_console`'s
 # `Stage::Soak` and its `--until soak` token, `BootProgress::soak`, and `script/board-image --soak`.
 # Each of those is calef's own call and none of them was put to him; milestone 297's report proposes
 # the sweep as its own piece of work rather than taking it here.

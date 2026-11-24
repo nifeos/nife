@@ -391,7 +391,7 @@ def main():
         print(f'format values: {message}', file=sys.stderr)
     if bad:
         print('format values: a magic or a public ABI number moved without its version constant. '
-              'Bump it in the same change, with the dated ledger entry (nifeos/record:design/roadmap/0979).',
+              'Bump it in the same change, with the dated ledger entry (partsfoundry/record:design/roadmap/0979).',
               file=sys.stderr)
         return 1
     print('format values: every moved magic or ABI number moved with its version constant')

@@ -26,7 +26,7 @@ Name: provisional, minted by milestone 276's lane on 2026-09-11. It is a shared 
 own and this paragraph is the record instead. `provenance` alone was considered and reads as the
 mechanism rather than the subject, which is the same objection `script/names`' own header records
 against `provenance` as a command name; `naming` names the whole topic, including the conventions in
-nifeos/record:design/naming.md that this file knows nothing about. An architect names modules, and none has
+partsfoundry/record:design/naming.md that this file knows nothing about. An architect names modules, and none has
 ratified it.
 """
 
@@ -42,7 +42,7 @@ _HEAD = re.compile(r"(ratified|recorded|unrecorded|provisional)\b")
 _DATE = re.compile(r"ratified (\d{4}-\d{2}-\d{2})\b")
 
 # `recorded` claims the reasoning is somewhere else, so it has to point: `recorded (milestone 46)`,
-# `recorded (nifeos/record:design/naming.md)`. Same shape of check as the date on `ratified`, and the same limit,
+# `recorded (partsfoundry/record:design/naming.md)`. Same shape of check as the date on `ratified`, and the same limit,
 # since nothing here follows the citation to see whether it says what the block claims.
 CITED = re.compile(r"^recorded \([^()]+\)")
 
@@ -487,7 +487,7 @@ def document_block(text):
     """A document's own block: its first paragraph opening `Name:`, emphasis allowed, or None.
 
     The same parse as a README's directory block, because a document's block is written the same
-    way (`*Name: provisional, minted <date> (UTC) by <lane>.*` under its title, nifeos/record:design/naming.md).
+    way (`*Name: provisional, minted <date> (UTC) by <lane>.*` under its title, partsfoundry/record:design/naming.md).
     """
     return markdown_blocks(text)[0]
 

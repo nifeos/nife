@@ -14,7 +14,7 @@ number. Name provisional.
 The merge drain sat `disabled_manually` from about 21:40 UTC on 2026-09-30 to the morning of
 2026-10-03. `script/cadence-check` called a workflow dead only when its last success was 15 days
 old, so on 10-03 it still called the drain live, 62 hours after its last run. The drain is what
-lands green work, so a stopped drain is a stopped merge rate (nifeos/record:notes/coes/2026-10-03-the-merge-rate.md,
+lands green work, so a stopped drain is a stopped merge rate (partsfoundry/record:notes/coes/2026-10-03-the-merge-rate.md,
 on PR #1513's branch until it lands). Since 2026-10-03 it no longer arms anything (milestone 727 (a queue eviction goes to a maintainer session),
 provisional), and a stopped drain is a stopped detector instead: an ejected or conflicting pull
 request waits unlabelled.
@@ -96,7 +96,7 @@ import re
 import subprocess
 import sys
 
-REPO = "nifeos/nife"
+REPO = "partsfoundry/nife"
 WORKFLOWS = ".github/workflows"
 WATCHERS = ["merge-drain", "trunk-health"]
 SILENT_INTERVALS = 3

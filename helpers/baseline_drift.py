@@ -23,13 +23,13 @@ an unexplained cost. Above 5% is a lane to open.
     python3 helpers/baseline_drift.py --update     # fetch each week's reading on main; metrics.yml
 
 `script/metrics` imports it for the weekly series (`unexplained-drift.csv`), the status line on
-nifeos/record:notes/project-metrics.md, and the generated appendix notes/project-metrics/baseline-drift.md.
+partsfoundry/record:notes/project-metrics.md, and the generated appendix notes/project-metrics/baseline-drift.md.
 
 Name: provisional, minted by milestone 415's lane on 2026-09-26. A shared python module under
 `helpers/`, outside `script/names`' scope, so its provenance is this paragraph. Refused
 `drift_report`, which names the output and not the thing measured.
 
-The anchor is the 2026-09-15 audit's (nifeos/record:notes/benchmarks/baseline-save-audit.md), one commit per
+The anchor is the 2026-09-15 audit's (partsfoundry/record:notes/benchmarks/baseline-save-audit.md), one commit per
 architecture, pinned in ANCHORS below. aarch64 starts at `74431429`, the first save after the
 one-hart fix and the QEMU pin, because every earlier number means something else. riscv64 and
 x86_64 start at their birth. Refused: anchoring at the first save that carries `# why:` lines
@@ -98,7 +98,7 @@ ARCHES = tuple(ANCHORS)
 TRIPWIRE_PCT = 10.0      # `cargo xtask bench --check`'s bound against the last floor
 WATCH_PCT = 5.0          # half the tripwire: unexplained drift past it is a lane to open
 # What explains a step, and what `main` measured each week. The second is the one input to
-# nifeos/record:notes/project-metrics.md that git cannot restate: GitHub keeps a run's artifacts 90 days, so
+# partsfoundry/record:notes/project-metrics.md that git cannot restate: GitHub keeps a run's artifacts 90 days, so
 # `--update` commits each week's reading once and `script/metrics` restates everything else from it.
 # Both are read from the working tree, because metrics.yml runs `--update` and then `script/metrics`
 # before either is committed. Names provisional, minted 2026-10-22 (UTC) by
@@ -106,7 +106,7 @@ WATCH_PCT = 5.0          # half the tripwire: unexplained drift past it is a lan
 ATTRIBUTIONS = 'bench/attributions.tsv'
 READINGS = 'notes/project-metrics/bench-on-main.csv'
 READING_FIELDS = ('week', 'commit', 'arch', 'row', 'ticks', 'iters')
-REPO = 'nifeos/nife'
+REPO = 'partsfoundry/nife'
 ARTIFACT = 'bench-readings'    # ci.yml's bench job uploads it; the file inside is the same name
 # Must match CUMULATIVE_MARKER in xtask/src/restamp.rs.
 RESTAMP_MARKER = 'cumulative since the last --save:'
@@ -866,7 +866,7 @@ def selftest():
     return 0
 
 
-# The 2026-09-15 audit's five cumulative figures (nifeos/record:notes/benchmarks/baseline-save-audit.md), at the
+# The 2026-09-15 audit's five cumulative figures (partsfoundry/record:notes/benchmarks/baseline-save-audit.md), at the
 # merge that carried the last save it walked. Reproducing them from the same anchors is the check
 # that this module and the audit mean the same arithmetic. It needs full history, so it is a mode
 # of its own rather than part of `--selftest`, which script/lint runs on whatever clone CI has.

@@ -72,7 +72,7 @@ jobs:
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
           # Exactly the set the App held before milestone 128 (the automation gets its own identity)
           # widened it for sessions, Administration among them. Named here so the widening reaches no
-          # workflow; nifeos/record:notes/session-identity.md.
+          # workflow; partsfoundry/record:notes/session-identity.md.
           permission-contents: write
           permission-pull-requests: write
 

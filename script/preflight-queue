@@ -26,7 +26,7 @@
 # # What it does
 #
 # 1. **The HVF leg on `main`'s tip, first and separately** (`script/ci-build hvf`). Reported and never
-#    blocking: it is the one check GitHub's runners cannot run (nifeos/record:notes/hvf-leg.md), so this is a
+#    blocking: it is the one check GitHub's runners cannot run (partsfoundry/record:notes/hvf-leg.md), so this is a
 #    convenient place for it, but a red there is about `main`, not about any queue entry.
 # 2. **A baseline on `main`'s tip**, the same ladder as below with the aarch64 suite forced on. If
 #    `main` is red, every entry would inherit its failure and none could be blamed for its own, so
@@ -58,7 +58,7 @@
 #
 # Logs go under `$TMPDIR/preflight-queue/<run>/`, never into a checkout: a transcript written into
 # the tree it is testing is how the weekly falsification sweep swept nothing for three weeks
-# (nifeos/record:notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md, once that record lands).
+# (partsfoundry/record:notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md, once that record lands).
 #
 # # What it skips, and why
 #
@@ -84,7 +84,7 @@
 #   tested as though it had been removed, which is what `--act` does and what a failed group does.
 #   Until someone acts, the real queue will build them with it.
 # - **It leaves one toolchain link behind**: the scratch worktree's own (`nife-dev-<dir>-<hash>`,
-#   nifeos/record:notes/std.md), which `script/test` makes there and reuses on the next walk. Until 2026-10-10
+#   partsfoundry/record:notes/std.md), which `script/test` makes there and reuses on the next walk. Until 2026-10-10
 #   every worktree shared one `nife-dev` link and this script saved and restored it; the stack is
 #   always merged onto `main`, so it never runs the code that took that link.
 # - **A red is attributed to the entry, not to the pair.** "Fails on top of the entries ahead" can
@@ -316,7 +316,7 @@ for a in sys.argv[1:]:
 # **Resolved, not as spelled.** Two checks below match WT against paths the kernel reports: `pgrep -f`
 # against QEMU's command line, which xtask builds from cargo's workspace root, and `lsof`'s cwd list.
 # Both name the physical directory. If the worktree root is a symlink to another volume
-# (nifeos/record:notes/dev-machine-disk.md moves it to one), the spelled path never matches either, and the
+# (partsfoundry/record:notes/dev-machine-disk.md moves it to one), the spelled path never matches either, and the
 # "somebody is using it" refusal and the QEMU sweep go silent. `/tmp` on macOS is the same case.
 # The default is derived, not spelled: `nife-worktrees` beside the main checkout, which is the
 # parent of the shared `.git`.

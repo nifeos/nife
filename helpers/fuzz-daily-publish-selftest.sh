@@ -30,7 +30,7 @@ fail() { echo "fuzz-daily-publish-selftest: $1" >&2; exit 1; }
     || fail "dry run on an empty home exited non-zero: $(cat "$work/stderr")"
 
 today="$(date -u +%Y-%m-%d)"
-grep -q "release fuzz-$today on nifeos/nife" "$work/stdout" || fail "the dry run did not print the tag"
+grep -q "release fuzz-$today on partsfoundry/nife" "$work/stdout" || fail "the dry run did not print the tag"
 grep -q "$NIFE_FUZZ_HOME/out/$today/report.md" "$work/stdout" || fail "the dry run did not list report.md"
 grep -q "$NIFE_FUZZ_HOME/out/$today/clean-ranges.tsv" "$work/stdout" || fail "the dry run did not list clean-ranges.tsv"
 [ -f "$NIFE_FUZZ_HOME/state/windows.tsv" ] || fail "state/windows.tsv was not created"
@@ -200,16 +200,16 @@ PATH="$work/bin:$PATH" NIFE_FUZZ_PUBLISH=1 GH_TOKEN="$secret" GH_TOKEN_EXPIRES_A
     || fail "a fresh token was refused: $(cat "$work/stderr")"
 [ "$(wc -l < "$work/gh-calls" | tr -d ' ')" = 2 ] || fail "a fresh token did not reach gh exactly twice"
 case "$(head -1 "$work/gh-args")" in
-    "release view fuzz-$today --repo nifeos/nife "*) ;;
-    *) fail "the first gh call is not 'release view fuzz-$today --repo nifeos/nife': $(head -1 "$work/gh-args")" ;;
+    "release view fuzz-$today --repo partsfoundry/nife "*) ;;
+    *) fail "the first gh call is not 'release view fuzz-$today --repo partsfoundry/nife': $(head -1 "$work/gh-args")" ;;
 esac
 
-# The create is the ruled release (nifeos/record:design/roadmap/1026): `gh release create fuzz-<utc date>` on
-# nifeos/nife, with report.md and clean-ranges.tsv as its only assets, and the script never pushes.
+# The create is the ruled release (partsfoundry/record:design/roadmap/1026): `gh release create fuzz-<utc date>` on
+# partsfoundry/nife, with report.md and clean-ranges.tsv as its only assets, and the script never pushes.
 args="$(tail -1 "$work/gh-args")"
 case "$args" in
-    "release create fuzz-$today --repo nifeos/nife "*) ;;
-    *) fail "gh was not called as 'release create fuzz-$today --repo nifeos/nife': $args" ;;
+    "release create fuzz-$today --repo partsfoundry/nife "*) ;;
+    *) fail "gh was not called as 'release create fuzz-$today --repo partsfoundry/nife': $args" ;;
 esac
 assets="$(printf '%s\n' "$args" | tr ' ' '\n' | grep '^/' | sed 's|.*/||' | sort -u | tr '\n' ' ')"
 [ "$assets" = "clean-ranges.tsv report.md " ] || fail "release assets are '$assets', want report.md and clean-ranges.tsv"
@@ -231,7 +231,7 @@ second_run() { # name, want status (0 or 1), want (text in stdout or stderr), GH
     ! grep -q -E 'release (delete|upload|edit)' "$work/gh-args" || fail "$name: the existing release was changed"
     ! grep -q "$secret" "$work/stdout" "$work/stderr" || fail "$name: the token was printed"
 }
-second_run "release complete" 0 "already exists on nifeos/nife with report.md and clean-ranges.tsv" same
+second_run "release complete" 0 "already exists on partsfoundry/nife with report.md and clean-ranges.tsv" same
 [ ! -s "$work/stderr" ] || fail "release complete: wrote to stderr: $(cat "$work/stderr")"
 second_run "release missing an asset" 1 "assets 'report.md', want 'clean-ranges.tsv report.md'" partial
 second_run "release with an extra asset" 1 "assets 'clean-ranges.tsv notes.txt report.md'" extra

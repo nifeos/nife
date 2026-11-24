@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         **If you believe a confined process can escape, do not open this.** That goes through
-        [`SECURITY.md`](https://github.com/nifeos/nife/blob/main/SECURITY.md) privately, because
+        [`SECURITY.md`](https://github.com/partsfoundry/nife/blob/main/SECURITY.md) privately, because
         escaping is the exact thing this project claims cannot happen and it is the most valuable
         report it can receive.
 

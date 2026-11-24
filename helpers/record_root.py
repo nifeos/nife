@@ -1,6 +1,6 @@
 """Where the design record is, for the readers that stay in this repository when the record leaves.
 
-Milestone 1018 (the design record moves to `nifeos/record` and is published as a website), step 6.
+Milestone 1018 (the design record moves to `partsfoundry/record` and is published as a website), step 6.
 A reader that stays in nife and reads a record file, such as a roadmap block, a tenet or the naming
 rules, asks here for the directory that holds the record and joins the record path onto it. The
 move then changes this file and none of the readers.
@@ -9,9 +9,9 @@ The answer has two cases:
 
 - While the record lives in this tree, it is the work tree itself, the directory above `helpers/`
   or the `top` a caller passes. The record lives here while `MARKER` is a file under that top.
-- Once the record has left, it is a checkout of `nifeos/record` at the commit that the `[record]`
+- Once the record has left, it is a checkout of `partsfoundry/record` at the commit that the `[record]`
   table of basalt's `pins.toml`, on basalt's `main`, names: the rule `helpers/qualified_paths.py`
-  follows for every `nifeos/<repo>:<path>` citation, so a reader and a citation see one record.
+  follows for every `partsfoundry/<repo>:<path>` citation, so a reader and a citation see one record.
   `$RECORD_TREE` names a checkout at that commit instead (CI checks the record out there), and one
   at another commit is refused. Otherwise the checkout is kept under `$NIFE_PINNED_TREES` (default
   `~/.cache/nife/pinned-trees`), fetched once per pinned commit, with its write bits taken off so a
@@ -44,7 +44,7 @@ BUGS
   reads `name_rules.RULES_DOC` and the documents' own blocks through it. A census of the working
   tree wraps its callback in `name_census.rules_at_pin`, which reads `RULES_DOC` here;
   `script/names` does the same by hand. `script/metrics` hands it each week's commit, with the
-  record's paths overlaid from a checkout of nifeos/record.
+  record's paths overlaid from a checkout of partsfoundry/record.
 """
 
 import os
@@ -92,7 +92,7 @@ def commit():
         raise RecordNotHere(f"record_root: cannot read basalt's pins.toml: {e}")
     if qualified_paths.RECORD not in pins:
         raise RecordNotHere("record_root: basalt's pins.toml on main has no [record] table, so "
-                            "no commit of nifeos/record goes with this tree")
+                            "no commit of partsfoundry/record goes with this tree")
     return pins[qualified_paths.RECORD]
 
 
@@ -110,7 +110,7 @@ def _read_only(tree):
 
 
 def fetched(top):
-    """A checkout of `nifeos/record` at its pin, for a `top` the record has left."""
+    """A checkout of `partsfoundry/record` at its pin, for a `top` the record has left."""
     want = commit()
     tree = os.environ.get("RECORD_TREE")
     if tree:
@@ -137,7 +137,7 @@ def fetched(top):
         subprocess.run(["chmod", "-R", "u+w", partial])
         subprocess.run(["rm", "-rf", partial])
     if not here(tree):
-        raise RecordNotHere(f"record_root: nifeos/record at {want[:12]} has no {MARKER}")
+        raise RecordNotHere(f"record_root: partsfoundry/record at {want[:12]} has no {MARKER}")
     return tree
 
 
@@ -275,7 +275,7 @@ def main(argv):
             print(f"record_root: the record lives in this work tree ({MARKER} is here)")
             return 0
         tree = root()
-        print(f"record_root: the record is read from nifeos/record at {commit()[:12]}, the commit "
+        print(f"record_root: the record is read from partsfoundry/record at {commit()[:12]}, the commit "
               f"basalt's main pins ({tree})")
         return 0
     if len(argv) == 2 and argv[0] == "--top":

@@ -6,7 +6,7 @@
 //! proof.** It covers the eight items the harnesses use ([`any`], [`assume`], `cover!`, `proof`,
 //! `should_panic`, `solver`, `stub`, `unwind`) with the semantics deleted, and its `any` takes any `T` where Kani's
 //! requires `T: Arbitrary`, because a lint gate must never reject code the model checker accepts.
-//! nifeos/record:notes/unsafe-obligations/kani-gate.md has the measurement and the reasons.
+//! partsfoundry/record:notes/unsafe-obligations/kani-gate.md has the measurement and the reasons.
 
 //! # BUGS
 //!

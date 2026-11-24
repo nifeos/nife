@@ -12,7 +12,7 @@
 #
 # - **Its output does not belong in the tree loose.** Model output carries the characters this
 #   tree's style gates forbid, and calef refused an exception per corpus on 2026-09-22, so a run's
-#   transcripts are archived rather than committed as files. nifeos/record:notes/delegated-review.md has
+#   transcripts are archived rather than committed as files. partsfoundry/record:notes/delegated-review.md has
 #   the reason and the extract command; the directory this writes is the input to that archive.
 # - **It retries a timeout twice and then gives up**, leaving that cell's file absent. Scoring must
 #   treat an absent file as missing, not as a reviewer with nothing to say.

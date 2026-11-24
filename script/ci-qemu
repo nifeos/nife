@@ -47,7 +47,7 @@
 set -e
 
 # `sudo` only when not already root: a container often runs as root with no `sudo` binary at all,
-# which is the cloud-session case (nifeos/record:notes/working-from-a-cloud-session.md).
+# which is the cloud-session case (partsfoundry/record:notes/working-from-a-cloud-session.md).
 if [ "$(id -u)" -eq 0 ]; then SUDO=; else SUDO=sudo; fi
 cd "$(dirname "$0")/.."
 
@@ -136,7 +136,7 @@ tar -xJf "$work/qemu.tar.xz" -C "$work"
     # cold-cache cost for targets nothing here runs. Docs and the GUI front ends are off for the same
     # reason; slirp is ON because the net tests depend on it. `make install` also puts QEMU's own
     # edk2 firmware under `$prefix/share/qemu`, where helpers/qemu-uefi-x86_64.sh looks first.
-    # On macOS three flags more (nifeos/record:notes/qemu.md, BUGS): `hw/display/apple-gfx.m` does not link on the
+    # On macOS three flags more (partsfoundry/record:notes/qemu.md, BUGS): `hw/display/apple-gfx.m` does not link on the
     # SDK without the Cocoa display and the paravirtualized graphics device off, and the suite runs
     # headless anyway; and configure stops in `mkvenv` under Apple's python3 (3.9), so Homebrew's
     # is named.

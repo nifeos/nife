@@ -6,7 +6,7 @@
 #     script/crate-move --dry-run --into <dir> --template <checkout> --template-rev v7 <crate>
 #
 # Name: provisional, minted 2026-11-05 (UTC) for milestone 1034 (a runbook for moving a crate out
-# of nife), a maintainer decision. Named for the step of nifeos/record:notes/crate-move.md it stands in for.
+# of nife), a maintainer decision. Named for the step of partsfoundry/record:notes/crate-move.md it stands in for.
 #
 # **Why this exists.** `script/crate-standalone` asks whether a crate would stand alone and builds
 # a throwaway copy. A move needs more than that answer: the crate repository's first tree, with the
@@ -18,7 +18,7 @@
 #
 # **What it does**, in order:
 #
-# 1. Fetches the template, `nifeos/crate-workflows`, at its newest `v*` release (or
+# 1. Fetches the template, `partsfoundry/crate-workflows`, at its newest `v*` release (or
 #    `--template-rev`), by a fresh clone into a temporary directory, or from `--template`, a local
 #    checkout it only reads (`git archive`).
 # 2. Copies the crate's tracked files into `--into`, which must be empty or absent.
@@ -72,7 +72,7 @@
 #    first and the scaffold's under `(template scaffold)`, so the scaffold's lines never come first.
 # 8. Prints the nife-side follow-up: each consumer manifest's replacement line, every other
 #    tracked file outside `design/` and `notes/` that names the crate, and the removals the fuzz
-#    targets' move makes in `fuzz/`, `script/fuzz` and `nifeos/record:notes/fuzzing/targets.md`.
+#    targets' move makes in `fuzz/`, `script/fuzz` and `partsfoundry/record:notes/fuzzing/targets.md`.
 #
 # It never creates a repository, pushes, tags, publishes or edits this tree. Exit 0 when every check
 # passed, 1 when the staged tree has findings (the tree is kept either way), 2 on a usage error.
@@ -81,7 +81,7 @@
 #
 #     $ script/crate-move --dry-run --into "$TMPDIR/fat" --no-build file_allocation_table
 #     crate-move: file_allocation_table, a dry run into /tmp/fat
-#       ok   template: https://github.com/nifeos/crate-workflows at v7 (ce603f5...)
+#       ok   template: https://github.com/partsfoundry/crate-workflows at v7 (ce603f5...)
 #       ok   copy: 116 tracked files of crates/file_allocation_table
 #       ...
 #

@@ -25,8 +25,8 @@
 #      commit, §90 (the claim is a draft pull request)). That push used to be refused for "milestone N has no roadmap
 #      block", five false refusals on 2026-10-03, because the block comes after the claim.
 #
-# The marker (2026-10-28, fix 3 in nifeos/record:notes/lint-cost-2026-10-18.md): a `--no-cargo` run costs one to
-# four minutes on this machine (nifeos/record:notes/lint-cost-2026-10-18.md section 1), and a push that follows a
+# The marker (2026-10-28, fix 3 in partsfoundry/record:notes/lint-cost-2026-10-18.md): a `--no-cargo` run costs one to
+# four minutes on this machine (partsfoundry/record:notes/lint-cost-2026-10-18.md section 1), and a push that follows a
 # passing lint on an unchanged tree paid for it again on every retry of the push. Skipping repeats
 # is also a safety change: GitHub closes an idle push connection somewhere between 300 and 480 s
 # (milestone 729's header; #2478), so every second the hook runs is time an approved push can die
@@ -45,7 +45,7 @@
 # "Not cargo" is a rule and not a list: `script/lint --no-cargo` reads the partition out of
 # script/lint's own sections (helpers/lint-no-cargo.awk), so a new check is in a bucket the moment
 # it is written. `script/lint --no-cargo --list` prints which sections run. The design record is
-# the COE for 2026-10-03, nifeos/record:notes/coes/2026-10-03-the-queue-judged-one-pull-request-at-a-time.md.
+# the COE for 2026-10-03, partsfoundry/record:notes/coes/2026-10-03-the-queue-judged-one-pull-request-at-a-time.md.
 #
 # Installed by `script/setup` via core.hooksPath, so it covers every worktree sharing this .git
 # (which is how lanes work) rather than needing per-worktree installation.

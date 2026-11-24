@@ -328,7 +328,7 @@ EOF
 
 # `use entropy_backend as _;` is not tidiness: an rlib nothing references is not linked, so without
 # it any probe whose graph reaches `getrandom` stops at `undefined symbol:
-# __getrandom_v03_custom`. nifeos/record:notes/crates-io-on-nife.md records the hour that cost.
+# __getrandom_v03_custom`. partsfoundry/record:notes/crates-io-on-nife.md records the hour that cost.
 write_probe() {
     name=$1
     dir=$2
@@ -348,7 +348,7 @@ write_probe() {
         echo "entropy_backend = { path = \"$BACKEND\" }"
         echo '[profile.release]'
         echo 'panic = "abort"'
-        # Overflow checks as the shipped build carries them (nifeos/record:notes/overflow-checks.md).
+        # Overflow checks as the shipped build carries them (partsfoundry/record:notes/overflow-checks.md).
         echo 'overflow-checks = true'
     } >"$dir/Cargo.toml"
     {

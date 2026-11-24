@@ -20,7 +20,7 @@ cd "$(dirname "$0")/.."
 old="$(tr -d '[:space:]' <.kani-version)"
 new="${1:-}"
 if [ -z "$new" ]; then
-	new="$(curl -fsS -A 'nifeos-kani-bump (https://github.com/nifeos/nife)' \
+	new="$(curl -fsS -A 'nifeos-kani-bump (https://github.com/partsfoundry/nife)' \
 		https://crates.io/api/v1/crates/kani-verifier |
 		python3 -c 'import json,sys; print(json.load(sys.stdin)["crate"]["max_stable_version"])')"
 fi

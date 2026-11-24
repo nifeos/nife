@@ -28,7 +28,7 @@ fi
 
 # The stub `cargo`: a version line for the pin check, one log line per call, and a failure on
 # demand. `script/kani-install` reads that version, finds the pin, and exits 0, so the parent's
-# install is a no-op and so is each child's, which is what nifeos/nife#2882 makes of them.
+# install is a no-op and so is each child's, which is what partsfoundry/nife#2882 makes of them.
 mkdir -p "$tmp/bin"
 cat >"$tmp/bin/cargo" <<'STUB'
 #!/bin/sh

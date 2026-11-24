@@ -18,11 +18,11 @@ the row is not a gate, no empty pull request carries a label, and no audit-lane 
 
 # THE RULE
 
-Issues are read and written in nifeos/nife, or in the repository `--repo` names. That is the
+Issues are read and written in partsfoundry/nife, or in the repository `--repo` names. That is the
 repository whose runs the rows were read from (`helpers/trunk-health.sh --repeat --repo`), so an
-issue lands beside the workflow it is about: nifeos/record runs both from its own weekly workflow,
+issue lands beside the workflow it is about: partsfoundry/record runs both from its own weekly workflow,
 through its link tree of nife (its helpers/nife_tree.py). `--repo` is provisional, minted
-2026-11-24 (UTC) for nifeos/record#6.
+2026-11-24 (UTC) for partsfoundry/record#6.
 
 sync reads REPEAT rows, one per workflow, in the format `helpers/trunk-health.sh` prints. CHURN
 rows and everything else are ignored: a workflow whose failures disagree with each other gets no
@@ -64,7 +64,7 @@ import re
 import subprocess
 import sys
 
-REPO = "nifeos/nife"
+REPO = "partsfoundry/nife"
 TITLE_PREFIX = "scheduled failure repeats: "
 
 # One row as helpers/trunk-health.sh prints it: name, qualifier, then REPEAT: with the line and
@@ -280,7 +280,7 @@ def selftest():
     expect("close read past an App token without issues: nothing opens",
            ["issue", "create"] in calls, False)
 
-    # `--repo` reaches every call, reads and the write alike, and nifeos/nife is never asked.
+    # `--repo` reaches every call, reads and the write alike, and partsfoundry/nife is never asked.
     asked = []
 
     def repo_stub(args, token=None):

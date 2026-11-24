@@ -5,7 +5,7 @@
 one minute, and each removal cost the pull request its place and a full run of checks. GitHub had
 kept 13 entries it already knew were UNMERGEABLE until a merge moved `main`. The conflicts were
 knowable before any arm: `git merge-tree` answers in milliseconds, and the queue lists what is
-ahead. See nifeos/record:notes/coes/2026-11-03-merge-queue-backlog.md, action 6, and nifeos/record:notes/merge-queue.md.
+ahead. See partsfoundry/record:notes/coes/2026-11-03-merge-queue-backlog.md, action 6, and partsfoundry/record:notes/merge-queue.md.
 
 Two commands, both reached through `script/queue-conflicts`:
 
@@ -38,7 +38,7 @@ import subprocess
 import sys
 import tempfile
 
-REPO_DEFAULT = "nifeos/nife"
+REPO_DEFAULT = "partsfoundry/nife"
 
 QUERY = """query($owner: String!, $name: String!) {
   repository(owner: $owner, name: $name) {

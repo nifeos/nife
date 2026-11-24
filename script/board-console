@@ -15,7 +15,7 @@
 #
 # `script/console` is QEMU. This is the other one: an actual serial port on an actual board, at
 # 115200 8N1, with the log written to a file whatever happens. It recognises the boot sequence
-# nifeos/record:notes/visionfive2.md's bench runbook records (SPL, OpenSBI, U-Boot, `Starting kernel ...`, ours)
+# partsfoundry/record:notes/visionfive2.md's bench runbook records (SPL, OpenSBI, U-Boot, `Starting kernel ...`, ours)
 # and returns a different exit status for each way a session can end, so a bench script can tell
 # them apart:
 #
@@ -56,8 +56,8 @@
 # gone quiet. A stop mode adds no status either: an escape that was sent and never acknowledged is
 # 3, the time running out with the requested thing unreached.
 #
-# See nifeos/record:notes/board-console.md for the runbook and for what the recognition can and cannot tell
-# apart, and nifeos/record:notes/soak.md for the rebooting soak the tally is written for.
+# See partsfoundry/record:notes/board-console.md for the runbook and for what the recognition can and cannot tell
+# apart, and partsfoundry/record:notes/soak.md for the rebooting soak the tally is written for.
 #
 # Name: provisional, this lane's coinage (2026-09-01, milestone 216). Hyphens because script/
 # entry points are hyphenated (AGENTS.md's naming table), and the `board-` prefix to sit beside

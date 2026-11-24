@@ -9,7 +9,7 @@ nothing, and never uses sudo. It prints counts, ages and check names, and never 
 crash input or the contents of any held file. Exit status: 1 when any check FAILS, else 0 (an UNKNOWN
 means the check could not be made, and is not a failure); 2 is a usage error.
 
-Default mode (`gh` logged in to read nifeos/nife):
+Default mode (`gh` logged in to read partsfoundry/nife):
   heartbeat runs        the newest completed run of the fuzz heartbeat workflow succeeded and is recent
   fuzz release exists   at least one fuzz-YYYY-MM-DD release exists
   daily publish is on   the newest fuzz-* release is from today or yesterday (UTC)
@@ -36,7 +36,7 @@ Default mode (`gh` logged in to read nifeos/nife):
   disk free             the filesystem under the fuzz home has at least --disk-floor-gib free
 
 Options:
-  --repo OWNER/NAME        default nifeos/nife
+  --repo OWNER/NAME        default partsfoundry/nife
   --max-age-minutes N      slot iteration freshness, default 30 (a cold build can take that long)
   --max-behind N           follow-main tolerance in commits, default 25
   --guests N               configured slots, default $NIFE_FUZZ_GUESTS or 4
@@ -392,7 +392,7 @@ HOST_CHECKS = [
 def parse(argv):
     class Opt:
         host = False
-        repo = "nifeos/nife"
+        repo = "partsfoundry/nife"
         max_age_minutes = 30
         max_behind = 25
         guests = int(os.environ.get("NIFE_FUZZ_GUESTS") or 4)

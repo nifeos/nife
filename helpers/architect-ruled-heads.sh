@@ -13,7 +13,7 @@
 # out because a send-back means the lane still owes a change to what was ruled. A failed listing
 # prints nothing, which leaves every finding standing: the safe side.
 #
-# Name: provisional. Hyphenated per nifeos/record:design/naming.md's `helpers/` entry-point rule; calef has not
+# Name: provisional. Hyphenated per partsfoundry/record:design/naming.md's `helpers/` entry-point rule; calef has not
 # ratified it.
 
 set -eu

@@ -375,7 +375,7 @@ def check_tree(root):
     names = sorted(f for f in os.listdir(os.path.join(root, d)) if f.endswith((".yml", ".yaml")))
     forms = [f for f in names if f != CONFIG]
     # A gate that examined nothing must not report clean
-    # (nifeos/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md).
+    # (partsfoundry/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md).
     if not forms:
         print("issue forms: %s holds no issue form, so this examined nothing" % d, file=sys.stderr)
         return 1

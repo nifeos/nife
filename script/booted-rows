@@ -10,7 +10,7 @@
 # It prints one line per row with its grade, or the reason it does not count (`row 10: host only`),
 # and ends `booted N of 27, floor met` or `floor short by K`; the exit status says the same. The
 # rules are the floor's in briefs/confinement-outsider-pass.md, the row total is the claims table in
-# nifeos/record:notes/confinement-claims.md, and helpers/booted_rows.py's header is the manual. The reviewer runs
+# partsfoundry/record:notes/confinement-claims.md, and helpers/booted_rows.py's header is the manual. The reviewer runs
 # it before it reports, and the lane runs it on its own reproduction logs before it records.
 #
 # Name: provisional, minted by milestone 920 (an outsider pass is launched pinned and floor-checked)'s

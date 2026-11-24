@@ -86,10 +86,10 @@
 #   script/citations --moved     this branch flipped a milestone's status: who cites it. Reporting
 #                                only, and it can never fail (milestone 385, when a milestone's
 #                                status flips, tell the lane which notes cite it). A status flips in
-#                                nifeos/record now, so this mode runs there; here it finds nothing.
+#                                partsfoundry/record now, so this mode runs there; here it finds nothing.
 #
-# **This is the code half** (milestone 1018 (the design record moves to `nifeos/record` and is
-# published as a website)). The decisions and the roadmap blocks are in nifeos/record, read at the
+# **This is the code half** (milestone 1018 (the design record moves to `partsfoundry/record` and is
+# published as a website)). The decisions and the roadmap blocks are in partsfoundry/record, read at the
 # commit basalt's main pins through helpers/record_root.py; the text judged is this tree's. So
 # `--check` also does what `script/decisions --check` and `script/roadmap --check` did for this tree
 # before the record left: every `§N` and every `milestone N` cited here resolves to a file at the
@@ -1459,7 +1459,7 @@ if mode == "--check":
             elif n not in MILESTONES:
                 unresolved.setdefault(f"milestone {n}", loc)
     for label, loc in sorted(unresolved.items()):
-        problems.append(f"{loc}: cites {label}, which nifeos/record has no file for at "
+        problems.append(f"{loc}: cites {label}, which partsfoundry/record has no file for at "
                         f"{record_root.commit()[:12]}, the commit basalt pins")
 
 # ---- report ------------------------------------------------------------------

@@ -2,7 +2,7 @@
 #
 # helpers/push-requeue.sh: the two halves of `script/push --requeue`, kept out of script/push so the
 # push itself stays small. Provisional name (lane/push-requeue, 2026-11-04 UTC); COE action 7
-# (nifeos/record:notes/coes/2026-11-03-merge-queue-backlog.md).
+# (partsfoundry/record:notes/coes/2026-11-03-merge-queue-backlog.md).
 #
 #     helpers/push-requeue.sh before <branch>   # dequeue if queued; print "<number> <armed 0|1>"
 #     helpers/push-requeue.sh after <number>    # arm it again, through helpers/arm.sh

@@ -2,7 +2,7 @@
 
 `script/lint` checks every marker against the tree; `script/metrics` reads one back as the line a
 chart draws (the unsafe chart's ceiling is `unsafe-density-outside-arch`'s). Both read it here, so
-a chart cannot draw a ceiling the gate is not holding. nifeos/record:notes/counted-claims.md is the convention.
+a chart cannot draw a ceiling the gate is not holding. partsfoundry/record:notes/counted-claims.md is the convention.
 
 Name: provisional, minted by metrics/unsafe-chart-matches-lint on 2026-10-19 (UTC), after the
 document it reads for. A shared python module under `helpers/`, which `script/names` puts out of
@@ -60,12 +60,12 @@ CODE_SPAN = re.compile(r'`[^`]*`')
 # The number a marker vouches for is the LAST number on the line before the marker, commas allowed
 # so that `1,303 commits` works. Last rather than first, because a sentence usually reaches its
 # number at the end ("across 21 crates") and because a line with two counts wants each marker to
-# bind to the number just before it -- nifeos/record:notes/unsafe-obligations.md is the live case, and it says
+# bind to the number just before it -- partsfoundry/record:notes/unsafe-obligations.md is the live case, and it says
 # crates before harnesses, the opposite order to everywhere else.
 #
 # **A count spelled in words counts too**, added by the 2026-08-17 documentation sweep, which
 # needed it: the claim it went to gate was "the surface is three calls", and small counts in prose
-# about a design are written as words far more often than as digits. nifeos/record:notes/counted-claims.md
+# about a design are written as words far more often than as digits. partsfoundry/record:notes/counted-claims.md
 # recorded "digits or nothing" as a limitation, and this is that limitation closed rather than a
 # second mechanism -- one regex and the same opt-in marker.
 #
@@ -109,9 +109,9 @@ def claimed_value(text):
 
 
 # Markdown fences: a marker inside ``` is an EXAMPLE of the convention, not a claim
-# about the tree: the roadmap block and nifeos/record:notes/counted-claims.md both show one, and both would
+# about the tree: the roadmap block and partsfoundry/record:notes/counted-claims.md both show one, and both would
 # otherwise be checked against numbers they were never asserting. Fenced blocks only; an indented
-# code block is not recognised, which is a limitation nifeos/record:notes/counted-claims.md records rather than
+# code block is not recognised, which is a limitation partsfoundry/record:notes/counted-claims.md records rather than
 # hides. Markdown only, because a fence means nothing in any other file.
 def claims(path, text):
     """(line number, relation, name, number) for each marker `text` asserts, in order.

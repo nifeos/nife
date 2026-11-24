@@ -54,7 +54,7 @@
 set -e
 cd "$(dirname "$0")/.."
 
-REPO="nifeos/nife"
+REPO="partsfoundry/nife"
 # The three hold labels (HELD_LABEL, LANE_HELD_LABEL, RED_TRUNK_LABEL) are defined once, in
 # helpers/hold-labels.sh, which helpers/arm.sh also reads to refuse arming a held pull request.
 . "$(dirname "$0")/hold-labels.sh"

@@ -10,7 +10,7 @@ ruled before, and the tree had drifted British: on the ruling's day this counted
 forms (2,134 in Markdown, 1,812 in code and configuration) and 5 imperial quantities. A sweep in
 batches drives the counts to zero (the batch plan is in the pull request that landed this, #1735);
 this gate makes sure nothing new arrives while it does. It is rung 2 of the AGENTS.md ladder. The
-rule's record is a dated amendment to §213 (writing standards) and nifeos/record:design/naming.md's spelling
+rule's record is a dated amendment to §213 (writing standards) and partsfoundry/record:design/naming.md's spelling
 section.
 
     python3 helpers/house_style.py --check      # what script/lint runs

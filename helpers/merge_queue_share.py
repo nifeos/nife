@@ -77,7 +77,7 @@ import statistics
 import subprocess
 import sys
 
-REPO = "nifeos/nife"
+REPO = "partsfoundry/nife"
 CSV_PATH = "notes/project-metrics/merge-queue-daily.csv"
 COLUMNS = ["day", "entries", "ejected", "ejection_pct", "merged", "median_hours_to_merge"]
 THRESHOLD_PCT = 20.0
@@ -88,7 +88,7 @@ DEFAULT_WINDOW_DAYS = 8
 
 QUERY = """
 query($cursor: String) {
-  repository(owner: "nifeos", name: "nife") {
+  repository(owner: "partsfoundry", name: "nife") {
     pullRequests(first: %d, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {

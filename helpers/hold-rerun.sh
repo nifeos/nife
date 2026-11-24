@@ -26,7 +26,7 @@
 # HOLD_RERUN_SLEEP seconds), because a run started by the label that was just removed can still
 # be running and would land red after this pass. The labels are read after that wait.
 #
-# Same-second duplicates (nifeos/record:notes/merge-queue.md BUGS, #1203): the drain reruns a cancelled
+# Same-second duplicates (partsfoundry/record:notes/merge-queue.md BUGS, #1203): the drain reruns a cancelled
 # duplicate once. This rerun can race it on the same run id; the loser's `gh run rerun` errors
 # and is logged, not fatal. Selftest: helpers/hold-rerun-selftest.sh. Name: provisional, 2026-10-06.
 

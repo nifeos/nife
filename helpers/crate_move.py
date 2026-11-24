@@ -22,8 +22,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import crate_release  # noqa: E402
 import record_root  # noqa: E402
 
-TEMPLATE_URL = 'https://github.com/nifeos/crate-workflows'
-REPOSITORY_URL = 'https://github.com/nifeos/{crate}'
+TEMPLATE_URL = 'https://github.com/partsfoundry/crate-workflows'
+REPOSITORY_URL = 'https://github.com/partsfoundry/{crate}'
 BARE_METAL = ('aarch64-unknown-none-softfloat', 'riscv64imac-unknown-none-elf', 'x86_64-unknown-none')
 DEP_TABLES = ('dependencies', 'dev-dependencies', 'build-dependencies')
 # The word, not a longer one: `nifeos` in a repository URL is allowed.
@@ -1258,11 +1258,11 @@ def selftest():
     assert falsification_first(harness).startswith('/// Falsification: replayable'), harness
     assert falsification_first(falsification_first(harness)) == falsification_first(harness)
     m = '[package]\nname = "x"\nlicense = "MIT OR Apache-2.0"\n'
-    assert 'repository = "https://github.com/nifeos/x"' in add_repository(m, 'x')
+    assert 'repository = "https://github.com/partsfoundry/x"' in add_repository(m, 'x')
     assert add_repository(add_repository(m, 'x'), 'x').count('repository') == 1
     inherited = '[package]\nname = "x"\nlicense.workspace = true\n\n[lints]\nworkspace = true\n'
     assert add_repository(inherited, 'x') == \
-        '[package]\nname = "x"\nlicense.workspace = true\nrepository = "https://github.com/nifeos/x"\n' \
+        '[package]\nname = "x"\nlicense.workspace = true\nrepository = "https://github.com/partsfoundry/x"\n' \
         '\n[lints]\nworkspace = true\n', add_repository(inherited, 'x')
     try:
         add_repository('[package]\nname = "x"\n', 'x')
@@ -1276,7 +1276,7 @@ def selftest():
     cron_wf = "    - cron: '@MUTATION_CRON@'\n"
     assert caller_workflow(cron_wf, 'abc', [], '1 2 * * 3') == "    - cron: '1 2 * * 3'\n"
     assert caller_workflow(cron_wf, 'abc', []) == cron_wf, 'no cron leaves the placeholder'
-    assert NIFE_WORD.search('used by nife') and not NIFE_WORD.search('github.com/nifeos/x')
+    assert NIFE_WORD.search('used by nife') and not NIFE_WORD.search('github.com/partsfoundry/x')
     with tempfile.TemporaryDirectory() as tmp:
         os.makedirs(os.path.join(tmp, '.cargo'))
         open(os.path.join(tmp, BASELINE), 'w').write('# c\nxy 5 1 0 2\nx 54 3 1 4\nx_y 1 1 1 1\n')

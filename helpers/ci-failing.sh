@@ -7,7 +7,7 @@
 #     helpers/ci-failing.sh --dry-run    # one pass, printing every write instead of making it
 #
 # PROVISIONAL NAMES: this script, `.github/workflows/ci-failing.yml`, helpers/ci-failing.jq and the
-# label `ci-failing`. A rename is calef's call. See nifeos/record:notes/merge-queue.md.
+# label `ci-failing`. A rename is calef's call. See partsfoundry/record:notes/merge-queue.md.
 #
 # # Why
 #
@@ -41,7 +41,7 @@
 set -e
 cd "$(dirname "$0")/.."
 
-REPO="nifeos/nife"
+REPO="partsfoundry/nife"
 LABEL="ci-failing"
 INSTANCE="${CI_FAILING_INSTANCE:-$(hostname -s 2>/dev/null || echo unknown)}"
 ME="ci-failing[$INSTANCE]"

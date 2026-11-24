@@ -155,7 +155,7 @@ def problems(counts, rows, base_counts=None, base_rows=None, renames=()):
     """
     if not counts:
         return ['the check judged no Rust file at all. A selector that matches nothing passes by '
-                'checking nothing (nifeos/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md)']
+                'checking nothing (partsfoundry/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md)']
     was_called = {new: old for old, new in renames}
     bad = []
 
@@ -251,7 +251,7 @@ def run_check():
         for b in bad:
             print(f'  {b}', file=sys.stderr)
         print('\nSplit the file along a seam, bank the shrink with --bank, or amend §266 with an '
-              'architect. See milestone 841\'s block, nifeos/record:design/roadmap/'
+              'architect. See milestone 841\'s block, partsfoundry/record:design/roadmap/'
               '0841-a-ratchet-on-rust-file-length-and-its-dashboard-row.md.', file=sys.stderr)
         return 1
     over = sum(1 for n in counts.values() if n > CEILING)
@@ -371,7 +371,7 @@ def main(argv):
     if not argv or argv[0] == '--check':
         return run_check()
     # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
-    # The difference is deliberate (nifeos/record:design/naming/command-line-names.md, "The command line
+    # The difference is deliberate (partsfoundry/record:design/naming/command-line-names.md, "The command line
     # abbreviates, and the code behind it does not").
     if argv[0] in ('--bank', '--init'):
         return bank(initialize=argv[0] == '--init')

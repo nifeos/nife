@@ -231,7 +231,7 @@ def crate_interfaces(crate, src):
     return out
 
 
-NIFEOS_GIT = 'git+https://github.com/nifeos/'
+NIFEOS_GIT = 'git+https://github.com/partsfoundry/'
 
 
 def metadata():

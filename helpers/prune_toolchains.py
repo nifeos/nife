@@ -18,15 +18,15 @@ What counts as pinned, and so is never touched:
 
   - the `channel` in every worktree's `rust-toolchain.toml`, the main checkout included, read from
     `git worktree list` so a lane cut yesterday on an older pin keeps it;
-  - Kani's own toolchain. nifeos/record:notes/kernel-proofs.md records that Kani bundles its own rustc
+  - Kani's own toolchain. partsfoundry/record:notes/kernel-proofs.md records that Kani bundles its own rustc
     (`kani-0.67.0` pins `nightly-2025-11-21`), and an installed Kani writes that pin to
     `~/.kani/kani-<version>/rust-toolchain-version`. The patched riscv64 Kani
-    (nifeos/record:notes/kernel-proofs/riscv64-with-a-patched-kani.md) builds from a source tree under
+    (partsfoundry/record:notes/kernel-proofs/riscv64-with-a-patched-kani.md) builds from a source tree under
     `~/.cache/nife-kani-riscv64/kani-<version>/src`, whose `rust-toolchain.toml` names its pin. Both
     are read, never hard-coded, so a Kani upgrade moves the pin with it
     (helpers/kani-install-selftest.sh holds the prune to keeping it);
   - anything that is not a dated `nightly-*`: `stable`, a numbered release such as `1.98.1`, and
-    the `nife-dev-*` links, which are each worktree's std farm (nifeos/record:notes/std.md) and not installs.
+    the `nife-dev-*` links, which are each worktree's std farm (partsfoundry/record:notes/std.md) and not installs.
 
 It runs on this Mac, at prune time (briefs/merge-and-cleanup.md). It cannot live in the CI
 toolchain-bump workflow: that runs on a GitHub runner, whose `~/.rustup` is thrown away after every

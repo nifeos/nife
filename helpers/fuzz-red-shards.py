@@ -10,7 +10,7 @@ host replays this shard". The supervisor (helpers/continuous-fuzz.sh) runs `look
 minutes (`NIFE_FUZZ_REPLAY_EVERY`). `look` appends one line per red shard to
 `$NIFE_FUZZ_HOME/state/replay-queue`, and the supervisor replays each queued shard with
 `helpers/continuous-fuzz.sh --replay` while no slot runs. The design is in
-nifeos/record:design/roadmap/1038-the-fuzz-host-replays-a-red-ci-shard.md.
+partsfoundry/record:design/roadmap/1038-the-fuzz-host-replays-a-red-ci-shard.md.
 
 How it reads GitHub. A poll, with no credential, of public data only:
 

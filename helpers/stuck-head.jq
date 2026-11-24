@@ -11,7 +11,7 @@
 # The latest `updated_at` of a completed run is when it completed, to the second, which is the
 # clock the threshold runs from. The group's start is the wrong clock: a healthy group takes 5 to
 # 29 minutes to finish, but GitHub merges or ejects it within 0.2 to 0.6 minutes of the last run
-# completing (four merges measured 2026-10-07, see nifeos/record:notes/queue-ejection.md).
+# completing (four merges measured 2026-10-07, see partsfoundry/record:notes/queue-ejection.md).
 
 .workflow_runs
 | select(length > 0 and all(.status == "completed"))

@@ -12,7 +12,7 @@
 #     LANE_HELD_LABEL   held-by-lane: calef has ruled and the lane owes a change. Its own label, so
 #                       `needs-architect` stays calef's worklist; architect-hold.yml fails on it.
 #     RED_TRUNK_LABEL   held-for-red-trunk: a hold on the whole queue while `main` is broken, placed
-#                       by helpers/queue-hold.sh (nifeos/record:notes/main-is-red.md).
+#                       by helpers/queue-hold.sh (partsfoundry/record:notes/main-is-red.md).
 #
 # `hold_label_of` reads label names on stdin, one per line, and prints the first hold among them (in
 # the order above) or nothing. Exit 0 when it printed one.

@@ -7,11 +7,11 @@ name: project metrics
 #   loud) is labelling its suppressions. See notes/observed-failing.md.
 
 # **Append this week's row; never change what a past week said.** The dashboard is
-# notes/project-metrics.md in nifeos/record, and the data behind it is one CSV per measure in
+# notes/project-metrics.md in partsfoundry/record, and the data behind it is one CSV per measure in
 # notes/project-metrics/ here, in the tree, versioned with the code it describes. The page left with
-# the design record (milestone 1018 (the design record moves to nifeos/record and is published as a
+# the design record (milestone 1018 (the design record moves to partsfoundry/record and is published as a
 # website)), so a run opens up to two pull requests: the data and charts here, and the page's
-# generated lines in nifeos/record. The page draws each chart from this repository's main branch.
+# generated lines in partsfoundry/record. The page draws each chart from this repository's main branch.
 #
 # The same three-step split `toolchain-bump.yml` uses, and for the same reason:
 #
@@ -114,8 +114,8 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
           # This repository and the record, whose page this job writes (milestone 1018 (the design
-          # record moves to nifeos/record and is published as a website)).
-          owner: nifeos
+          # record moves to partsfoundry/record and is published as a website)).
+          owner: partsfoundry
           repositories: |
             nife
             record
@@ -145,7 +145,7 @@ jobs:
         timeout-minutes: 2
         continue-on-error: true  # outcome: re-raised
         with:
-          repository: nifeos/record
+          repository: partsfoundry/record
           path: record
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
@@ -154,7 +154,7 @@ jobs:
         timeout-minutes: 3
         if: steps.checkout_record_1.outcome != 'success'
         with:
-          repository: nifeos/record
+          repository: partsfoundry/record
           path: record
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
@@ -267,10 +267,10 @@ jobs:
           # One crate per word is the point: crate names carry no spaces (script/names refuses them).
           # shellcheck disable=SC2013
           for crate in $(grep -v '^#' crates/publish-allowlist.txt | grep -v '^[[:space:]]*$'); do
-            if python3 helpers/ci_job_times.py update --repo "nifeos/$crate"; then
-              echo "crate repository nifeos/$crate: recorded"
+            if python3 helpers/ci_job_times.py update --repo "partsfoundry/$crate"; then
+              echo "crate repository partsfoundry/$crate: recorded"
             else
-              echo "crate repository nifeos/$crate: no record yet (does the repository exist?)"
+              echo "crate repository partsfoundry/$crate: no record yet (does the repository exist?)"
             fi
           done
 
@@ -314,7 +314,7 @@ jobs:
         run: |
           set -e
           # The data and charts only. The page's generated lines are written into the record's
-          # checkout and go to nifeos/record in the step after this one.
+          # checkout and go to partsfoundry/record in the step after this one.
           if git diff --quiet -- notes/project-metrics; then
             echo "Nothing moved this week; no pull request."
             exit 0
@@ -331,7 +331,7 @@ jobs:
           applies today's definitions to this week's tree, which is what makes the series comparable
           and is not what any of these numbers were reported as at the time.
 
-          The page in nifeos/record says so on its face."
+          The page in partsfoundry/record says so on its face."
           git push --force origin "$branch"
           # Milestone 623 (provisional): the week flag and its digest. The flag output is machine
           # facing (week, series, move, note state) and the digest is log archaeology by a helper
@@ -355,8 +355,8 @@ jobs:
 
           Adds or refreshes the \`$week\` row in each measure's CSV under
           \`notes/project-metrics/\` and redraws the SVGs beside them. The page is
-          [\`notes/project-metrics.md\`](https://github.com/nifeos/record/blob/main/notes/project-metrics.md)
-          in nifeos/record, and its generated lines go there in a pull request of their own.
+          [\`notes/project-metrics.md\`](https://github.com/partsfoundry/record/blob/main/notes/project-metrics.md)
+          in partsfoundry/record, and its generated lines go there in a pull request of their own.
 
           **Read the diff, not just the charts.** Every column is a restatement under today's
           definitions, and this project found three of its own instruments wrong in a single day
@@ -399,7 +399,7 @@ jobs:
 
       # The page's generated lines (the drift line, the interface line, the week-note bullets and
       # the chart embeds), written by the step above into the record's checkout. Its own branch and
-      # pull request in nifeos/record, armed the same way, and silent on a day nothing moved.
+      # pull request in partsfoundry/record, armed the same way, and silent on a day nothing moved.
       - name: Open or update the record's pull request
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -407,7 +407,7 @@ jobs:
         run: |
           set -e
           if git diff --quiet -- notes/project-metrics.md; then
-            echo "The page's generated lines did not move; no pull request in nifeos/record."
+            echo "The page's generated lines did not move; no pull request in partsfoundry/record."
             exit 0
           fi
           branch="metrics/weekly"
@@ -418,23 +418,23 @@ jobs:
           git add notes/project-metrics.md
           git commit -m "metrics: the page's generated lines for $week
 
-          Written by nifeos/nife's scheduled metrics workflow. Only the generated lines move; the
-          data and charts are in nifeos/nife under notes/project-metrics/."
+          Written by partsfoundry/nife's scheduled metrics workflow. Only the generated lines move; the
+          data and charts are in partsfoundry/nife under notes/project-metrics/."
           git push --force origin "$branch"
           title="metrics: the page's generated lines for $week"
-          body="**Lane:** $branch, opened by nifeos/nife's scheduled metrics workflow.
+          body="**Lane:** $branch, opened by partsfoundry/nife's scheduled metrics workflow.
 
           Rewrites the generated lines of \`notes/project-metrics.md\` for \`$week\`: the drift line,
           the interface line, the week-note bullets and the chart embeds. The data and charts they
-          describe are in [nifeos/nife](https://github.com/nifeos/nife/tree/main/notes/project-metrics)."
-          existing="$(gh pr list --repo nifeos/record --head "$branch" --state open --json number --jq '.[].number')"
+          describe are in [partsfoundry/nife](https://github.com/partsfoundry/nife/tree/main/notes/project-metrics)."
+          existing="$(gh pr list --repo partsfoundry/record --head "$branch" --state open --json number --jq '.[].number')"
           if [ -z "$existing" ]; then
-            gh pr create --repo nifeos/record --head "$branch" --base main --title "$title" --body "$body"
+            gh pr create --repo partsfoundry/record --head "$branch" --base main --title "$title" --body "$body"
           else
-            gh pr edit "$existing" --repo nifeos/record --title "$title" --body "$body"
-            echo "Updated nifeos/record PR #$existing in place."
+            gh pr edit "$existing" --repo partsfoundry/record --title "$title" --body "$body"
+            echo "Updated partsfoundry/record PR #$existing in place."
           fi
-          gh pr merge "$branch" --repo nifeos/record --auto --merge \
+          gh pr merge "$branch" --repo partsfoundry/record --auto --merge \
             || echo "::warning::could not arm the record's metrics pull request"
 
       # **Where the instruments above go red** (milestone 641 (a mechanism that reports clean says

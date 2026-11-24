@@ -34,21 +34,21 @@ file, instead of the macOS keychain), NIFE_SMELTER_APP_ID, NIFE_SMELTER_ORG, NIF
 NIFE_SMELTER_CACHE. The key's default home is the login keychain, generic password service
 `nife-smelter`, account `private-key`, holding the PEM base64-encoded on one line (`security -w`
 prints a value with newlines in it as hex, so the PEM itself cannot go there as is).
-nifeos/record:notes/session-identity.md has the setup steps.
+partsfoundry/record:notes/session-identity.md has the setup steps.
 
-The release workflows in nifeos/crate-workflows read the same App from two organization secrets,
+The release workflows in partsfoundry/crate-workflows read the same App from two organization secrets,
 visible to selected repositories only (ruled 2026-11-01 UTC):
 NIFE_SMELTER_APP_ID: the App id.
 NIFE_SMELTER_PRIVATE_KEY: the App's PEM.
 Nothing in this script reads either; it only names them so the notes that cite them resolve.
 
-Name provisional (milestone 128's lane, 2026-10-07 UTC); `nifeos/record:design/naming.md` is the rule.
+Name provisional (milestone 128's lane, 2026-10-07 UTC); `partsfoundry/record:design/naming.md` is the rule.
 
 EXAMPLES
 
     helpers/smelter-token token >/dev/null && echo minted
-    GH_TOKEN="$(helpers/smelter-token token)" gh api /repos/nifeos/nife --jq .full_name
-    NIFE_SMELTER_SCOPE=maintainer gh api -X PATCH /repos/nifeos/nife -f has_wiki=false
+    GH_TOKEN="$(helpers/smelter-token token)" gh api /repos/partsfoundry/nife --jq .full_name
+    NIFE_SMELTER_SCOPE=maintainer gh api -X PATCH /repos/partsfoundry/nife -f has_wiki=false
     eval "$(NIFE_SMELTER=1 helpers/smelter-token env)"; gh pr list   # one opted-in command
     helpers/smelter-token --selftest
 
@@ -83,7 +83,8 @@ import urllib.request
 from datetime import datetime, timezone
 
 APP_ID = os.environ.get("NIFE_SMELTER_APP_ID", "5053502")
-ORG = os.environ.get("NIFE_SMELTER_ORG", "nifeos")
+ORG = os.environ.get("NIFE_SMELTER_ORG", "partsfoundry")
+FORMER_ORGANIZATION = "nifeos"
 API = os.environ.get("NIFE_SMELTER_API", "https://api.github.com").rstrip("/")
 KEYCHAIN_SERVICE = "nife-smelter"
 KEYCHAIN_ACCOUNT = "private-key"
@@ -134,7 +135,7 @@ def private_key():
         return base64.b64decode(r.stdout.strip(), validate=True)
     except ValueError:
         raise Refusal("the keychain item %s/%s is not base64; store it with "
-                      "`base64 < key.pem | tr -d '\\n'` (nifeos/record:notes/session-identity.md)"
+                      "`base64 < key.pem | tr -d '\\n'` (partsfoundry/record:notes/session-identity.md)"
                       % (KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT))
 
 
@@ -239,7 +240,7 @@ def current():
     key = private_key()
     if key is None:
         raise Refusal("no App key on this machine (keychain item %s/%s, or NIFE_SMELTER_KEY_FILE); "
-                      "nifeos/record:notes/session-identity.md says how calef installs one"
+                      "partsfoundry/record:notes/session-identity.md says how calef installs one"
                       % (KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT))
     token = jwt(key)
     del key
@@ -283,7 +284,7 @@ def session_env():
         return None
     if not key_present():
         raise Refusal("NIFE_SMELTER=1, but this machine has no App key (keychain item %s/%s, or "
-                      "NIFE_SMELTER_KEY_FILE); nifeos/record:notes/session-identity.md" % (KEYCHAIN_SERVICE,
+                      "NIFE_SMELTER_KEY_FILE); partsfoundry/record:notes/session-identity.md" % (KEYCHAIN_SERVICE,
                                                                              KEYCHAIN_ACCOUNT))
     here = os.path.dirname(os.path.realpath(__file__))
     me = os.path.realpath(__file__)
@@ -291,13 +292,18 @@ def session_env():
     # The empty helper first, because git consults every configured helper in order and the
     # system one on macOS is osxkeychain, which could answer with a stored personal credential.
     # insteadOf rewrites only this organization's SSH remotes, so the SSH key is never offered for
-    # nifeos and nothing outside the organization changes.
+    # the organization and nothing outside it changes. A clone made before the organization's rename
+    # still names its former name in its remote, which GitHub redirects, so that name is
+    # rewritten too, to the same HTTPS form.
     config = [
         ("credential.https://github.com.helper", ""),
         ("credential.https://github.com.helper", "!%s git-credential" % me),
-        ("url.https://github.com/%s/.insteadOf" % ORG, "git@github.com:%s/" % ORG),
-        ("url.https://github.com/%s/.insteadOf" % ORG, "ssh://git@github.com/%s/" % ORG),
     ]
+    for name in (ORG, FORMER_ORGANIZATION):
+        config += [
+            ("url.https://github.com/%s/.insteadOf" % name, "git@github.com:%s/" % name),
+            ("url.https://github.com/%s/.insteadOf" % name, "ssh://git@github.com/%s/" % name),
+        ]
     variables = {"NIFE_SMELTER_ACTIVE": "1", "GIT_CONFIG_COUNT": str(base + len(config))}
     for i, (k, v) in enumerate(config, base):
         variables["GIT_CONFIG_KEY_%d" % i] = k
@@ -332,7 +338,7 @@ def check():
         return 0
     print("smelter-token: NIFE_SMELTER=1, but this shell is not on the App, so gh and git act as the "
           "personal login. Prefix the command with `eval \"$(helpers/smelter-token env)\";` "
-          "(nifeos/record:notes/session-identity.md).", file=sys.stderr)
+          "(partsfoundry/record:notes/session-identity.md).", file=sys.stderr)
     return 1
 
 
@@ -437,7 +443,7 @@ def selftest():
                     return
                 if self.path == "/app":
                     self.reply(200, {"slug": "nife-smelter-selftest"})
-                elif self.path == "/orgs/nifeos/installation":
+                elif self.path == "/orgs/partsfoundry/installation":
                     self.reply(200, {"id": 42})
                 else:
                     self.reply(404, {"message": "Not Found"})
@@ -557,7 +563,7 @@ def selftest():
         r = run(["token"], keyed)
         check("cache: hit", r.stdout.strip() == "ghs_selftest1" and state["minted"] == 1,
               r.stdout)
-        cfile = os.path.join(cache, "nifeos-5053502-lane.json")
+        cfile = os.path.join(cache, "partsfoundry-5053502-lane.json")
         check("cache: file is 0600", os.path.exists(cfile) and
               stat.S_IMODE(os.stat(cfile).st_mode) == 0o600)
         check("cache: directory is 0700", stat.S_IMODE(os.stat(cache).st_mode) == 0o700)
@@ -581,7 +587,7 @@ def selftest():
 
         # An App not yet widened refuses the scope loudly: the exit, GitHub's words, no traceback.
         state["deny_admin"] = True
-        os.unlink(os.path.join(cache, "nifeos-5053502-maintainer.json"))
+        os.unlink(os.path.join(cache, "partsfoundry-5053502-maintainer.json"))
         r = run(["token"], dict(keyed, NIFE_SMELTER_SCOPE="maintainer"))
         check("refusal: 422 is loud", r.returncode == 3 and "HTTP 422" in r.stderr
               and "Traceback" not in r.stderr, r.stderr)
@@ -607,10 +613,10 @@ def selftest():
         shim = os.path.join(os.path.dirname(me), "smelter-bin")
         check("env: shim on PATH", 'export PATH="%s:$PATH"' % shim in out, out)
         check("env: helper list reset", "GIT_CONFIG_VALUE_0=''" in out, out)
-        check("env: nifeos only", "insteadOf" in out and "git@github.com:nifeos/" in out
+        check("env: the organization only", "insteadOf" in out and "git@github.com:partsfoundry/" in out
               and "git@github.com:'" not in out, out)
         r = run(["env"], dict(opted, GIT_CONFIG_COUNT="2"))
-        check("env: appends to an existing GIT_CONFIG_COUNT", "GIT_CONFIG_COUNT='6'" in r.stdout
+        check("env: appends to an existing GIT_CONFIG_COUNT", "GIT_CONFIG_COUNT='8'" in r.stdout
               and "GIT_CONFIG_KEY_2=" in r.stdout, r.stdout)
         # A global config standing in for a developer's: a personal helper for github.com that
         # the reset must shadow, since git asks helpers in order and takes the first answer.
@@ -619,7 +625,7 @@ def selftest():
             f.write('[credential "https://github.com"]\n\thelper = !personal-login\n')
         sh = subprocess.run(["sh", "-c", out + "\ngit config --get-all "
                              "credential.https://github.com.helper; "
-                             "git ls-remote --get-url git@github.com:nifeos/nife.git; "
+                             "git ls-remote --get-url git@github.com:partsfoundry/nife.git; "
                              "git ls-remote --get-url git@github.com:calef/dotfiles.git; "
                              "printf 'protocol=https\\nhost=github.com\\n\\n' | "
                              "GIT_TERMINAL_PROMPT=0 git credential fill"],
@@ -630,7 +636,7 @@ def selftest():
               lines[:3] == ["!personal-login", "", "!%s git-credential" % me],
               sh.stdout + sh.stderr)
         check("env: git rewrites nifeos to https and leaves others",
-              lines[3:5] == ["https://github.com/nifeos/nife.git",
+              lines[3:5] == ["https://github.com/partsfoundry/nife.git",
                              "git@github.com:calef/dotfiles.git"], sh.stdout + sh.stderr)
         check("env: git credential fill answers with the App token, not the personal helper",
               "password=ghs_selftest2" in lines[5:] and "personal-login" not in sh.stderr,

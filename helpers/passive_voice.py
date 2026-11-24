@@ -35,7 +35,7 @@ and Vale stays out of the tree and out of CI). The style is itself based on Bria
     DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-What it cannot see, and says so (nifeos/record:design/roadmap/0952-a-passive-voice-ratchet.md, "BUGS"): a word
+What it cannot see, and says so (partsfoundry/record:design/roadmap/0952-a-passive-voice-ratchet.md, "BUGS"): a word
 between the auxiliary and the participle ("is not used", "was then built") hides a passive, and
 an adjective ending in "ed" after "is" ("is unchanged") reads as one. `NOT_PASSIVE` removes the
 false readings that this tree repeats often enough to move a count.

@@ -12,7 +12,7 @@
 #
 # **What it is for.** `inbound check (riscv64)` has gone red on CI three times with nothing anybody
 # could name, at roughly one boot in six, and fifteen boots across three developer lanes on macOS
-# have produced zero failures. nifeos/record:notes/net/the-inbound-check.md draws the conclusion: this is an
+# have produced zero failures. partsfoundry/record:notes/net/the-inbound-check.md draws the conclusion: this is an
 # emulator-timing failure, CI is `ubuntu-26.04-arm`, and **a reproduction attempt that is not on that
 # runner class is not a reproduction attempt.** So the instrument is not another loop on the laptop.
 # It is the runner class, brought to the laptop.

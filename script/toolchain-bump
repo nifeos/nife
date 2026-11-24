@@ -50,7 +50,7 @@ rustup toolchain install "$new" --profile minimal \
 # `targets` array to yet, so the omission of `x86_64-unknown-none` was not covered the way it was
 # everywhere else, and the first x86_64 build after a bump was the thing that discovered it. Read
 # before the pin is raised, so it is the outgoing array; that is correct, because a bump does not
-# change which architectures the tree supports. See nifeos/record:notes/architecture-list-sweep.md, option A.
+# change which architectures the tree supports. See partsfoundry/record:notes/architecture-list-sweep.md, option A.
 all_targets="$(awk -F'"' '/^targets *=/ {for (i = 2; i < NF; i += 2) printf "%s ", $i}' rust-toolchain.toml)"
 # shellcheck disable=SC2086  # word splitting is the point: one flag per target
 rustup target add --toolchain "$new" $all_targets

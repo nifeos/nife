@@ -15,7 +15,7 @@
 #     helpers/owned-image-probe.sh kvm          /dev/kvm can create a VM (KVM_GET_API_VERSION is 12, KVM_CREATE_VM returns a descriptor)
 #
 # Run from the repository root. The owned canary (strict checks) and its dry run call this, so the
-# image is judged by one definition; nifeos/record:notes/owned-runners.md says which job runs which. The probe
+# image is judged by one definition; partsfoundry/record:notes/owned-runners.md says which job runs which. The probe
 # changes nothing outside its own temporary directory.
 #
 # Name: provisional, minted by lane/owned-canary-strict-dry-run.

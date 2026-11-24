@@ -182,6 +182,15 @@ RENAME_PAIRS = (
     ("repos/crickertech", "repos/nifeos"),
     ("orgs/crickertech", "orgs/nifeos"),
     ("organizations/crickertech", "organizations/nifeos"),
+    # The organization rename to partsfoundry, the same kind of change:
+    # every slug, qualified path, link and `gh` argument. The bare name is again not a pair.
+    ("github.com/nifeos", "github.com/partsfoundry"),
+    ("nifeos/", "partsfoundry/"),
+    ("orgs/nifeos", "orgs/partsfoundry"),
+    ("organizations/nifeos", "organizations/partsfoundry"),
+    ("--owner nifeos", "--owner partsfoundry"),
+    ("--org nifeos", "--org partsfoundry"),
+    ("github:nifeos:", "github:partsfoundry:"),
     # The fixture rename of 2026-10-05 (calef, §185 (what carries the claim that userspace composes
     # a process from an authority you can count on one hand)). A path is navigation and is fixed
     # even in a BUILT block (design/naming.md, performing a ratified rename, step 7); the name in
@@ -494,7 +503,7 @@ def passive_count(texts):
 # `selftest` guards it: no derived marker may match ordinary bold, and a pattern that does must be
 # named in NOT_MARKERS with its reason, or the lint fails.
 PARSER_ROOTS = ('script', 'helpers')
-# The record's parsers count too (milestone 1018 (the design record moves to nifeos/record and is
+# The record's parsers count too (milestone 1018 (the design record moves to partsfoundry/record and is
 # published as a website)). They left with the record, and this tree's readers of record files
 # still load them (`record_root.helper`), so a span they read is still a key here. With no `root`
 # given, `derived_markers` and `opaque_readers` read the Python of the record's `script/` and
@@ -1161,11 +1170,11 @@ def at(rev, path):
 # --- the checks --------------------------------------------------------------------------------
 
 LINK_TARGET = re.compile(r'\]\(([^)#\s]+)')
-# A record file names a file that stays in nife as `nifeos/nife:<path>` (milestone 1018 (the
-# design record moves to `nifeos/record` and is published as a website), step 6), not as a link,
+# A record file names a file that stays in nife as `partsfoundry/nife:<path>` (milestone 1018 (the
+# design record moves to `partsfoundry/record` and is published as a website), step 6), not as a link,
 # since the link breaks when the record moves. The path is from this repository's root, so it
 # reaches the appendix as surely as a link does.
-NIFE_QUALIFIED = re.compile(r'`nifeos/nife:([^`\s<>#]+)(?:#[^`\s]*)?`')
+NIFE_QUALIFIED = re.compile(r'`partsfoundry/nife:([^`\s<>#]+)(?:#[^`\s]*)?`')
 
 
 def links_from(path):
@@ -1621,10 +1630,10 @@ def selftest():
             failed.append('helpers/x.py: the opaque-reader guard missed a concatenated or `[*]{2}` pattern')
         note = os.path.join(tmp, 'n.md')
         with open(note, 'w') as fh:
-            fh.write('See `nifeos/nife:notes/x/y.md#a` and `nifeos/record:notes/x/z.md`.\n')
+            fh.write('See `partsfoundry/nife:notes/x/y.md#a` and `partsfoundry/record:notes/x/z.md`.\n')
         got = links_from(note)
         if 'notes/x/y.md' not in got or 'notes/x/z.md' in got:
-            failed.append('links_from reads `nifeos/nife:<path>` as a link and no other repository')
+            failed.append('links_from reads `partsfoundry/nife:<path>` as a link and no other repository')
     grant = '<!-- prose-budget: exception. 1,234 words against a 3,000-word cap. 2026-09-24. Reason: x -->'
     if granted_words(grant) != 1234 or granted_words('`' + grant + '`') is not None:
         failed.append('the marker\'s granted word count')

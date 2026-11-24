@@ -6,7 +6,7 @@
 # after a release before proposing a version update, and a security update skips the wait. Never
 # close one of these pull requests to block a version, since Dependabot then stops proposing it
 # without any trace in this file; label it `bump-blocked` beside a `BUGS` entry instead.
-# nifeos/record:notes/dependency-updates.md has the whole practice, and who merges which bump.
+# partsfoundry/record:notes/dependency-updates.md has the whole practice, and who merges which bump.
 version: 2
 updates:
   # --- Rust dependencies (the workspace root Cargo.toml / Cargo.lock) --------------------------
@@ -76,7 +76,7 @@ updates:
   #     `script/vendor-verify` fails on any change to it. `script/vendor-watch` watches those
   #     upstreams instead, and the workspaces that build them (redoxfs_server, tools/redoxfs_host
   #     and the rest) resolve their own graphs, which are watched here and in the entry below.
-  #   - nifeos/record:notes/packages/container-format-measurements/fuzz is a measuring harness kept as
+  #   - partsfoundry/record:notes/packages/container-format-measurements/fuzz is a measuring harness kept as
   #     `Cargo.toml.in`, so nothing can parse it, and it pins exact versions because they are what
   #     its note measured.
   #

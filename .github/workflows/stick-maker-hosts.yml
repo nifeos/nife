@@ -2,7 +2,7 @@ name: stick_maker on Linux and Windows
 
 # Observed failing: never. 39 runs, none red. A deliberate break in crates/stick_maker that the
 #   Linux loop-device run rejects, pushed on a scratch branch, would stage it. See
-#   nifeos/record:notes/observed-failing.md.
+#   partsfoundry/record:notes/observed-failing.md.
 
 # **Why this exists: it is the only place the Linux and Windows arms of `stick_maker` run.** The
 # program is developed on a Mac, where its macOS arm is proved against hdiutil-attached files

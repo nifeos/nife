@@ -1,8 +1,8 @@
 # The daily publish: counter totals and clean seed ranges, from the state the fuzz run keeps.
 # Triggered by nife-fuzz-publish.timer. It runs as the same user and never touches the held findings'
-# contents (nifeos/record:notes/fuzzing/continuous-host.md). As shipped it writes the report to its output
+# contents (partsfoundry/record:notes/fuzzing/continuous-host.md). As shipped it writes the report to its output
 # directory and publishes nothing; the drop-in that publishes the daily release is step P5 of
-# nifeos/record:notes/fuzzing/finishing-the-setup.md.
+# partsfoundry/record:notes/fuzzing/finishing-the-setup.md.
 [Unit]
 Description=nife continuous fuzzing, daily report
 

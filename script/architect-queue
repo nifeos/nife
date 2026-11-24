@@ -2,14 +2,14 @@
 #
 # The architect's queue, oldest first, one line per item: what is waiting on calef and what it asks.
 #
-#     script/architect-queue                 # nifeos/nife
+#     script/architect-queue                 # partsfoundry/nife
 #     script/architect-queue --repo o/r
 #
 # Each line: the number, how long the ask has waited, the title, the question's first line, and a
 # link to the comment that asks it.
 #
 #     #1783   3h  805: reboot at the prompt, the reboot object
-#             1. **Rule on the amendment** ...  https://github.com/nifeos/nife/pull/1783#issuecomment-...
+#             1. **Rule on the amendment** ...  https://github.com/partsfoundry/nife/pull/1783#issuecomment-...
 #
 # # Why this exists
 #
@@ -35,7 +35,7 @@
 set -eu
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
-repo="nifeos/nife"
+repo="partsfoundry/nife"
 case "${1:-}" in
 --repo) [ $# -ge 2 ] || { echo "usage: script/architect-queue [--repo owner/repo]" >&2; exit 2; }; repo="$2" ;;
 '') ;;

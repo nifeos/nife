@@ -67,7 +67,7 @@ import subprocess
 import sys
 import time
 
-REPO = "nifeos/nife"
+REPO = "partsfoundry/nife"
 WORKFLOW = "verify.yml"
 VERIFY = "script/verify"
 VERIFY_YML = ".github/workflows/verify.yml"

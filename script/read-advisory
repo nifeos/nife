@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Read one private security advisory of nifeos/nife, for a lane that fixes the held finding it
+# Read one private security advisory of partsfoundry/nife, for a lane that fixes the held finding it
 # describes.
 #
 #     NIFE_ADVISORY_READER_TOKEN=<one-hour token> script/read-advisory GHSA-xxxx-xxxx-xxxx
@@ -11,11 +11,11 @@
 #
 # # What it does
 #
-# `GET /repos/nifeos/nife/security-advisories/<id>` through `gh api`, with the token the channel
+# `GET /repos/partsfoundry/nife/security-advisories/<id>` through `gh api`, with the token the channel
 # below hands it, and prints the advisory to standard output: identifier, state, severity, summary,
 # the affected packages and the description. A fuzz finding's advisory holds the finding class and
 # the reproducer (fuzz-findings-without-a-person, step 1), so what this prints is the one place a
-# lane learns a held finding. The ruling is nifeos/record:design/roadmap/1014-fix-lanes-read-the-advisory.md.
+# lane learns a held finding. The ruling is partsfoundry/record:design/roadmap/1014-fix-lanes-read-the-advisory.md.
 #
 # # What it never does
 #
@@ -33,16 +33,16 @@
 # # The token channel
 #
 # The one-hour `nife-fuzz-reader` installation token comes from `fuzz-token issue reader` in
-# nifeos/fuzz-host, through a sudo rule, and a lane hands it to this script in the variable below:
+# partsfoundry/fuzz-host, through a sudo rule, and a lane hands it to this script in the variable below:
 #
 #     NIFE_ADVISORY_READER_TOKEN="$(sudo -n /usr/local/sbin/fuzz-token issue reader)" script/read-advisory <id>
 #
-# (nifeos/record:notes/fuzzing/finishing-the-setup.md, step P11). The whole channel is the one function below;
+# (partsfoundry/record:notes/fuzzing/finishing-the-setup.md, step P11). The whole channel is the one function below;
 # nothing else in this file knows where the token came from.
 token_channel() { printf '%s' "${NIFE_ADVISORY_READER_TOKEN-}"; }
 channel_name='NIFE_ADVISORY_READER_TOKEN'
 
-repo="${NIFE_ADVISORY_REPO:-nifeos/nife}"
+repo="${NIFE_ADVISORY_REPO:-partsfoundry/nife}"
 
 say() { echo "read-advisory: $*" >&2; }
 

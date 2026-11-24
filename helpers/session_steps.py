@@ -21,7 +21,7 @@ that touched #N for another reason inside the window claims an event it did not 
 gone, on another machine, or not Claude Code. This is the positive half only, which is why
 milestone 642's block refuses a local log as the answer and keeps it as a complement.
 
-Name provisional (milestone 642's lane); `nifeos/record:design/naming.md` is the rule.
+Name provisional (milestone 642's lane); `partsfoundry/record:design/naming.md` is the rule.
 
 EXAMPLES
 
@@ -157,7 +157,7 @@ def selftest():
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--date', help='UTC day, YYYY-MM-DD')
-    ap.add_argument('--repo', default='nifeos/nife')
+    ap.add_argument('--repo', default='partsfoundry/nife')
     ap.add_argument('--actor', default='calef')
     ap.add_argument('--window', type=int, default=300, help='seconds from call to event')
     ap.add_argument('--kinds', default=','.join(KINDS))

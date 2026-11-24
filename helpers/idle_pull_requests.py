@@ -7,7 +7,7 @@
 
 Prints one line per flagged pull request (class, repository and number, title, the next step it
 needs) and exits 1 if any line printed, else 0 (2 if a repository could not be read). The queue
-sweep runs it; nifeos/record:notes/idle-pull-requests.md says how a held pull request declares itself.
+sweep runs it; partsfoundry/record:notes/idle-pull-requests.md says how a held pull request declares itself.
 
 Name: provisional, minted 2026-11-18 (UTC) by lane/idle-prs-check.
 
@@ -175,7 +175,7 @@ def selftest():
         base.update(kw)
         return base
 
-    closed_set = {("nifeos/nife", 7), ("nifeos/basalt", 9)}
+    closed_set = {("partsfoundry/nife", 7), ("partsfoundry/basalt", 9)}
     closed = lambda slug, n: (slug, n) in closed_set
     cases = [
         ("queued, red and old", pr(1, statusCheckRollup=bad), {1}, "QUEUED", None),
@@ -190,8 +190,8 @@ def selftest():
         ("architect hold alone is not red", pr(12, labels=[{"name": "needs-architect"}], statusCheckRollup=hold_check), set(), "HELD", None),
         ("held on a same-repo open pr", pr(13, isDraft=True, body="x\nHeld on #8\n"), set(), "HELD", None),
         ("held on a merged same-repo pr", pr(14, isDraft=True, body="Held on #7"), set(), "HELD", "HELD-UNBLOCKED"),
-        ("held on a closed other-repo pr", pr(15, body="intro\n- Held on nifeos/basalt#9 (pin)\n"), set(), "HELD", "HELD-UNBLOCKED"),
-        ("held on two, one done", pr(16, body="Held on #7\nHeld on nifeos/basalt#10"), set(), "HELD", "HELD-UNBLOCKED"),
+        ("held on a closed other-repo pr", pr(15, body="intro\n- Held on partsfoundry/basalt#9 (pin)\n"), set(), "HELD", "HELD-UNBLOCKED"),
+        ("held on two, one done", pr(16, body="Held on #7\nHeld on partsfoundry/basalt#10"), set(), "HELD", "HELD-UNBLOCKED"),
         ("held label, no line", pr(17, labels=[{"name": "held-by-lane"}], isDraft=True), set(), "HELD", None),
         ("held line is a whole line", pr(18, body="We were Held on #7 once"), set(), "IDLE", "IDLE-GREEN"),
         ("no checks yet", pr(19, statusCheckRollup=[], updatedAt=ago(minutes=50)), set(), "IDLE", None),
@@ -199,7 +199,7 @@ def selftest():
     ]
     failed = 0
     for label, item, queued, want_class, want_flag in cases:
-        cls, flag, step = classify(item, "nifeos/nife", queued, closed, now)
+        cls, flag, step = classify(item, "partsfoundry/nife", queued, closed, now)
         if (cls, flag) != (want_class, want_flag) or (flag and not step):
             print(f"idle-pull-requests selftest: {label}: got {(cls, flag)}, wanted {(want_class, want_flag)}", file=sys.stderr)
             failed += 1
@@ -207,9 +207,9 @@ def selftest():
         print("idle-pull-requests selftest: blockers parse", file=sys.stderr)
         failed += 1
     # The whole sweep: exit status follows flags, and a quiet set exits 0.
-    fixtures = {"nifeos/nife": [pr(3), pr(2, autoMergeRequest={"x": 1})], "nifeos/basalt": [pr(2, autoMergeRequest={"x": 1})]}
+    fixtures = {"partsfoundry/nife": [pr(3), pr(2, autoMergeRequest={"x": 1})], "partsfoundry/basalt": [pr(2, autoMergeRequest={"x": 1})]}
     flagged = [x for x in sweep(list(fixtures), now, fixtures.__getitem__, lambda r: set(), closed) if x[3]]
-    quiet = [x for x in sweep(["nifeos/basalt"], now, fixtures.__getitem__, lambda r: set(), closed) if x[3]]
+    quiet = [x for x in sweep(["partsfoundry/basalt"], now, fixtures.__getitem__, lambda r: set(), closed) if x[3]]
     if len(flagged) != 1 or quiet:
         print("idle-pull-requests selftest: sweep", file=sys.stderr)
         failed += 1
@@ -224,8 +224,8 @@ def main(argv):
         return selftest()
     args = [a for a in argv if not a.startswith("--")]
     if "--all-nifeos" in argv:
-        args = [r["name"] for r in gh_json(["repo", "list", "nifeos", "--limit", "100", "--json", "name"])]
-    repos = [a if "/" in a else f"nifeos/{a}" for a in (args or DEFAULT_REPOS)]
+        args = [r["name"] for r in gh_json(["repo", "list", "partsfoundry", "--limit", "100", "--json", "name"])]
+    repos = [a if "/" in a else f"partsfoundry/{a}" for a in (args or DEFAULT_REPOS)]
     now = datetime.now(timezone.utc)
     flagged, errors = 0, 0
     for repo in repos:

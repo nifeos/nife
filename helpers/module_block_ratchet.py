@@ -74,12 +74,12 @@ def path_of(row):
 def remedy(path):
     if '::' in path:
         return ('write `/// Name: provisional, minted <date> (UTC) by <lane>.` as a paragraph of its '
-                'doc comment (nifeos/record:design/naming.md)')
+                'doc comment (partsfoundry/record:design/naming.md)')
     if path.endswith('.md'):
         return ('write `*Name: provisional, minted <date> (UTC) by <lane>.*` as the paragraph under '
-                'its title (nifeos/record:design/naming.md)')
+                'its title (partsfoundry/record:design/naming.md)')
     return ('write its block, `//! Name: provisional, minted <date> (UTC) by <lane>.`, at the top '
-            'of the file (nifeos/record:design/naming.md)')
+            'of the file (partsfoundry/record:design/naming.md)')
 
 
 # --- the baseline and git -------------------------------------------------------------------------
@@ -144,7 +144,7 @@ def problems(modules, unblocked, rows, base_rows=None, renames=(), before=None, 
     """
     if not modules:
         return ['the check judged no file at all. A selector that matches nothing passes by '
-                'checking nothing (nifeos/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md)']
+                'checking nothing (partsfoundry/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md)']
     bad = []
     for row, n in sorted((unblocked - rows).items()):
         bad.append(f'{row}: no `Name:` block, and {"it is" if n == 1 else f"{n} more are"} not on '
@@ -313,7 +313,7 @@ def selftest():
          [b.split(' was added')[0] for b in problems(files, tree, tree, base, (), was.get, retyped.get)]
          == [f'{BASELINE}: x/src/b.rs::f']),
     ]
-    # A unit-symbol respelling keeps its row (nifeos/record:design/naming.md ("Units")).
+    # A unit-symbol respelling keeps its row (partsfoundry/record:design/naming.md ("Units")).
     respelled_was = {'x/src/a.rs': 'pub fn delay_us() {}\npub fn other() {}\n'}
     respelled_now = {'x/src/a.rs': 'pub fn delay_microseconds() {}\npub fn other() {}\n'}
     respelled_base = i('delay_us', 'other')
@@ -354,7 +354,7 @@ def main(argv):
     if argv[0] == '--bank':
         return bank()
     # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
-    # The difference is deliberate (nifeos/record:design/naming/command-line-names.md, "The command line
+    # The difference is deliberate (partsfoundry/record:design/naming/command-line-names.md, "The command line
     # abbreviates, and the code behind it does not").
     if argv[0] == '--init' and not os.path.exists(BASELINE):
         write_baseline(tree_modules()[1])

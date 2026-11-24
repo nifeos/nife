@@ -123,13 +123,13 @@
 # and `undefined-behavior-check`, which calef ratified on 2026-08-03. Refused `workflow-health`
 # (it names GitHub's noun rather than the function, and this is about whether an answer is still
 # arriving, not about whether a workflow is well) and `schedules` (a plural noun names an
-# inventory, and nifeos/record:notes/check-inventory.md is the inventory; this is the tripwire). calef has not
+# inventory, and partsfoundry/record:notes/check-inventory.md is the inventory; this is the tripwire). calef has not
 # ratified it.
 
 set -e
 cd "$(dirname "$0")/.."
 
-REPO="nifeos/nife"
+REPO="partsfoundry/nife"
 
 # Overridable so the two interesting branches can actually be exercised: at 15 days everything in
 # this tree is either plainly live or plainly dead, and the interesting case (a workflow whose cron

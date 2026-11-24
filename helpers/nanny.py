@@ -20,7 +20,7 @@
 # automatic enqueuer; whether it should report instead is open.
 import json, os, re, subprocess, sys, tempfile, time
 
-REPO = "nifeos/nife"
+REPO = "partsfoundry/nife"
 D = os.environ.get("NIFE_WATCH_DIR") or os.path.join(tempfile.gettempdir(), "nife-watch")
 os.makedirs(D, exist_ok=True)
 p_log = os.path.join(D, "nanny-merged.log")
@@ -28,7 +28,7 @@ STATE = os.path.join(D, "nanny-state.json")
 DRAFTS = os.path.join(D, "nanny-drafts.log")
 SEEN = os.path.join(D, "nanny-seen.txt")
 
-Q = ("""query{repository(owner:"nifeos",name:"nife"){mergeQueue(branch:"main")"""
+Q = ("""query{repository(owner:"partsfoundry",name:"nife"){mergeQueue(branch:"main")"""
      """{entries(first:50){nodes{position state pullRequest{number}}}}}}""")
 
 

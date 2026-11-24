@@ -41,13 +41,13 @@ name: mutation gate
 # answer runs the gate.
 #
 # **Reusable, because the split inherits it.** A repository cut out of this one carries the gate
-# with one `uses:` line and its own ledger: `uses: nifeos/nife/.github/workflows/mutation-gate.yml@main`
+# with one `uses:` line and its own ledger: `uses: partsfoundry/nife/.github/workflows/mutation-gate.yml@main`
 # with `triage` (and, when its tree names them differently, `renames`, `base`, `tip`). The
 # caller's checkout, ledger and `.cargo-mutants-version` are what run; nothing here reads this
 # repository's paths except as defaults.
 #
 # **Required-check status.** The job name below is the required context, and the `main` ruleset
-# lists it (`gh api repos/nifeos/nife/rules/branches/main`), so a survivor on a changed line blocks
+# lists it (`gh api repos/partsfoundry/nife/rules/branches/main`), so a survivor on a changed line blocks
 # the merge.
 #
 # **Jobs run on arm** (the milestone 587 (most CI jobs do not need an arm64 host) split): the weekly mutation shards run there, and

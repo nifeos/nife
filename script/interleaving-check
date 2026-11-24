@@ -1,7 +1,7 @@
 #!/bin/sh
 # script/interleaving-check: the hand-rolled atomic protocols under loom, which explores EVERY
 # thread interleaving and every reordering the C11 memory model permits (milestone 80). See
-# nifeos/record:notes/interleaving.md.
+# partsfoundry/record:notes/interleaving.md.
 #
 # Name: provisional. Minted 2026-08-04 by milestone 80's lane. Named for the question it answers
 # (which interleavings are legal) rather than for the tool that answers it (loom), following
@@ -15,7 +15,7 @@
 # atomics conservatively and explores almost none of the orderings aarch64 and riscv64 permit, so an
 # acquire that should have been an acquire-release passes script/test, the CPU matrix and every CI
 # leg, then fails on real silicon at a rate and a location that will not reproduce under emulation.
-# Kani proves single-threaded properties and says so (nifeos/record:notes/verification.md); Miri checks aliasing,
+# Kani proves single-threaded properties and says so (partsfoundry/record:notes/verification.md); Miri checks aliasing,
 # not orderings; the HVF leg runs real orderings but samples them. Loom searches them.
 #
 # **What it covers**: `crates/work_steal_slot` (renamed from `steal_request` 2026-08-23; the
@@ -51,7 +51,7 @@
 # out of `script/ci-build`'s table because the job calls the script directly. The job is a
 # required status check (calef, 2026-10-04 UTC; ruleset 19596094). Measured 12.4 seconds by milestone
 # 232's audit on 2026-09-03 and 23.8 seconds on 2026-10-03, both cold, for all 26 harnesses. See
-# nifeos/record:notes/check-inventory.md.
+# partsfoundry/record:notes/check-inventory.md.
 # Extra args go to `cargo test`, so `script/interleaving-check a_relaxed_pairing` runs one harness.
 
 set -e

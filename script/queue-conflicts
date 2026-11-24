@@ -12,7 +12,7 @@
 # names each conflicting file and the entries ahead that changed it. Exit 0 when clean, 1 on a
 # conflict, 2 when it could not tell. helpers/arm.sh runs it and refuses on exit 1; a conflict you
 # arm costs the pull request its place and a full run of checks
-# (nifeos/record:notes/coes/2026-11-03-merge-queue-backlog.md).
+# (partsfoundry/record:notes/coes/2026-11-03-merge-queue-backlog.md).
 # It reads your worktrees and branches and writes none of them.
 #
 # `shared` is the launch check of briefs/run-a-milestone-wide.md: one file per planned lane, one path
@@ -23,7 +23,7 @@
 # posts the reason on the pull request. script/push skips its advisory run when
 # NIFE_SKIP_QUEUE_CHECK=1.
 #
-# See nifeos/record:notes/merge-queue/conflict-precheck.md and helpers/queue_conflicts.py.
+# See partsfoundry/record:notes/merge-queue/conflict-precheck.md and helpers/queue_conflicts.py.
 #
 # Name: provisional, 2026-11-04 (UTC), lane/queue-conflict-precheck. Says what it checks; considered
 # `queue-precheck`. calef has not ruled on it.

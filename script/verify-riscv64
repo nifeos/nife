@@ -225,7 +225,7 @@ if [ "$linked" -eq 0 ]; then
 	exit 1
 fi
 if [ "$wrong" -ne 0 ]; then
-	echo "verify-riscv64: $wrong of $linked linked harnesses were checked against a model other than the one Kani wrote for $target (see nifeos/record:notes/kani-upstream.md)" >&2
+	echo "verify-riscv64: $wrong of $linked linked harnesses were checked against a model other than the one Kani wrote for $target (see partsfoundry/record:notes/kani-upstream.md)" >&2
 	exit 1
 fi
 echo "==> all $linked linked harnesses carry the riscv64 machine model Kani wrote"

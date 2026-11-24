@@ -301,7 +301,7 @@ grep -q '^main is green at ' "$tmp/out-empty" ||
 	{ echo "$me: an empty run list from a call that succeeded must read green" >&2; cat "$tmp/out-empty" >&2; exit 1; }
 
 # --- --repeat --repo: another repository's own scheduled workflows, and nothing else -------------
-# nifeos/record runs this half for itself, from its own checkout with nife's tree linked into it,
+# partsfoundry/record runs this half for itself, from its own checkout with nife's tree linked into it,
 # so nife's workflows sit beside the record's as untracked files. A scratch repository stands in:
 # one tracked scheduled workflow, and one untracked one carrying the same failing fixture, which
 # must never be asked about. Every gh call is logged, so the repository the half reads is proved
@@ -331,8 +331,8 @@ grep -F -x -q -f "$tmp/expected" "$tmp/out-other" &&
 grep -q '^api repos/example/watched/actions/workflows/weekly-report\.yml/runs' "$tmp/other-calls.log" &&
 	grep -q '^run view 900000000001 --repo example/watched ' "$tmp/other-calls.log" ||
 	{ echo "$me: --repeat --repo: the named repository was not the one asked:" >&2; cat "$tmp/other-calls.log" >&2; exit 1; }
-if grep -q -e 'linked-in' -e 'nifeos/nife' "$tmp/other-calls.log"; then
-	echo "$me: --repeat --repo asked about an untracked workflow or about nifeos/nife:" >&2
+if grep -q -e 'linked-in' -e 'partsfoundry/nife' "$tmp/other-calls.log"; then
+	echo "$me: --repeat --repo asked about an untracked workflow or about partsfoundry/nife:" >&2
 	cat "$tmp/other-calls.log" >&2
 	exit 1
 fi
@@ -367,7 +367,7 @@ elif args[:2] == ["issue", "create"]:
              "body": args[args.index("--body") + 1]}
     issues.append(issue)
     json.dump(issues, open(path, "w"))
-    print("https://github.com/nifeos/nife/issues/%d" % issue["number"])
+    print("https://github.com/partsfoundry/nife/issues/%d" % issue["number"])
 elif args[:2] == ["issue", "edit"]:
     number, body = int(args[2]), args[args.index("--body") + 1]
     for issue in issues:
@@ -426,13 +426,13 @@ rm -f "$iss/fix/issues.json"
 printf '%s\n' "$audit_row" | sync_rows >/dev/null
 expect_calls '"issue", "create"' 1
 
-# `sync --repo` files in the repository the rows came from, and asks nothing of nifeos/nife.
+# `sync --repo` files in the repository the rows came from, and asks nothing of partsfoundry/nife.
 rm -f "$iss/fix/issues.json"
 : >"$iss/fix/calls.log"
 printf '%s\n' "$audit_row" | REPEAT_ISSUE_FIXTURES="$iss/fix" PATH="$iss/bin:$PATH" \
 	python3 helpers/repeat_issue.py sync --repo example/watched >/dev/null
 expect_calls '"issue", "create", "--repo", "example/watched"' 1
 expect_calls '"--repo", "example/watched"' 3
-expect_calls 'nifeos/nife' 0
+expect_calls 'partsfoundry/nife' 0
 
 echo "$me: repeat rows, thresholds, exclusions, silences, API failures, another repository and the ruled issue home all as expected"

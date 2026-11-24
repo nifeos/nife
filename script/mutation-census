@@ -1,7 +1,7 @@
 #!/bin/sh
 # script/mutation-census: the per-crate mutation record, and the diff between two censuses
-# See nifeos/record:notes/mutation-testing.md for what a mutant and a survivor mean, nifeos/record:notes/mutation-census.md for
-# this record's own page, and nifeos/record:notes/project-metrics.md for the other committed series.
+# See partsfoundry/record:notes/mutation-testing.md for what a mutant and a survivor mean, partsfoundry/record:notes/mutation-census.md for
+# this record's own page, and partsfoundry/record:notes/project-metrics.md for the other committed series.
 # Milestone 518 (a census that cannot be attributed is a number nobody can act on).
 #
 # **A census that cannot be attributed is a number nobody can act on.** `script/mutation --report`
@@ -39,7 +39,7 @@
 # recorded before the column existed; the classification page is the only source for those.
 #
 # **`killed` counts a timeout as a kill and excludes unviable mutants from the denominator**, which
-# is nifeos/record:notes/mutation-testing.md's definition ("`killed%` counts a timeout as a kill, because every
+# is partsfoundry/record:notes/mutation-testing.md's definition ("`killed%` counts a timeout as a kill, because every
 # one of the 96 was checked by hand and every one is a detected hang", and "an unviable mutant does
 # not compile, which says nothing about the tests"). It is stated here rather than assumed because
 # the one time two censuses were compared by hand, the two rows were computed under two different
@@ -99,14 +99,14 @@
 #     ==> wrote 101 crates from the 2026-10-19 census to .cargo/mutants-baseline.txt
 #
 # Name: provisional, coined 2026-09-20 by milestone 518's lane. `census` is the word
-# `design/fatal-risks.md` and `nifeos/record:notes/mutation-testing.md` already use for a whole-corpus run ("it is
+# `design/fatal-risks.md` and `partsfoundry/record:notes/mutation-testing.md` already use for a whole-corpus run ("it is
 # a census rather than a sample"), so this names the function in the tree's own vocabulary, and the
 # `mutation-` prefix is what says which census: this tree also takes an `unsafe` census and a thread
 # census. `mutation-history` and `mutation-trend` were both refused for saying what the file is used
 # for rather than what it holds; a census is the thing recorded, and a trend is one question asked of
 # several. Folding it into `script/mutation` as `--census` was refused for a different reason: that
 # script installs a pinned tool and runs it for hours, and this one reads a CSV. The two CSV files
-# and `nifeos/record:notes/mutation-census.md` carry the same provisional name and stand or fall with it.
+# and `partsfoundry/record:notes/mutation-census.md` carry the same provisional name and stand or fall with it.
 #
 # BUGS
 #
@@ -240,7 +240,7 @@ def viable(c):
 
 
 def killed(c):
-    """Caught plus timeout over viable, as nifeos/record:notes/mutation-testing.md defines it."""
+    """Caught plus timeout over viable, as partsfoundry/record:notes/mutation-testing.md defines it."""
     v = viable(c)
     return 100.0 * (c["caught"] + c["timeout"]) / v if v else 0.0
 
@@ -412,7 +412,7 @@ def save_baseline(census):
     with BASELINE.open("w") as fh:
         fh.write("# Written by script/mutation-census --save-baseline: crate caught missed timeout unviable.\n")
         fh.write(f"# census={census} run={runs.pop()}\n")
-        fh.write("# The prose baseline, and what each survivor means, is nifeos/record:notes/mutation-testing.md.\n")
+        fh.write("# The prose baseline, and what each survivor means, is partsfoundry/record:notes/mutation-testing.md.\n")
         for name in sorted(rows):
             c = rows[name].counts
             fh.write(f"{name} {c['caught']} {c['missed']} {c['timeout']} {c['unviable']}\n")

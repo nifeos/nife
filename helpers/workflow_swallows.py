@@ -7,13 +7,13 @@
 Milestone 641 (a mechanism that reports clean says over how many units, and zero is loud),
 provisional number. The file name and the label vocabulary below are provisional too; naming is an
 architect's. A python module under `helpers/`, outside `script/names`' scope, so its provenance is
-this paragraph. The reasoning and the per-site labels are in nifeos/record:notes/denominators.md.
+this paragraph. The reasoning and the per-site labels are in partsfoundry/record:notes/denominators.md.
 
 # WHY
 
 From outside, a check that examined nothing looks exactly like a check that found nothing. The
 weekly falsification sweep replayed zero patches on three Mondays and reported success each time
-(nifeos/record:notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md), because `continue-on-error: true`
+(partsfoundry/record:notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md), because `continue-on-error: true`
 discarded the exit status of a script that had refused to run. A step's exit status is one channel
 carrying two claims: the VERDICT ("it ran and found something for a human") and the OUTCOME ("it did
 not run"). Suppressing a verdict can be right. Suppressing an outcome never is, unless somebody
@@ -43,7 +43,7 @@ again in exactly two ways, and this checks both:
 # WHAT IT CANNOT SEE (recorded where a reader meets it)
 
 - `|| true`, `2>/dev/null`, `if: always()` and a selector inside a `run:` block that can select
-  nothing. nifeos/record:notes/denominators.md labels the first three by family; most `|| true` sites feed an
+  nothing. partsfoundry/record:notes/denominators.md labels the first three by family; most `|| true` sites feed an
   empty string into a test that fails toward doing more, which is the safe direction, and no parse
   can tell that from the other kind.
 - A job-level `defaults: run: shell:` is not read; a step in such a job that pipes into `tee` names
@@ -234,7 +234,7 @@ def check_text(path, text):
 
 def check_tree(root):
     d = os.path.join(root, ".github", "workflows")
-    # `os.listdir` raises when the directory moves, which is the loud failure nifeos/record:notes/empty-selectors.md
+    # `os.listdir` raises when the directory moves, which is the loud failure partsfoundry/record:notes/empty-selectors.md
     # relies on; the count below is the other half, for a directory that exists and is empty.
     names = sorted(f for f in os.listdir(d) if f.endswith((".yml", ".yaml")))
     if not names:
@@ -252,7 +252,7 @@ def check_tree(root):
         print("  " + p, file=sys.stderr)
     if problems:
         print("workflow swallows: %d problem(s); see helpers/workflow_swallows.py and "
-              "nifeos/record:notes/denominators.md" % len(problems), file=sys.stderr)
+              "partsfoundry/record:notes/denominators.md" % len(problems), file=sys.stderr)
         return 1
     print("workflow swallows: %d workflows, %d continue-on-error step(s) each labelled with where "
           "its failure goes, %d pipeline(s) into tee with pipefail" % (len(names), swallows, tees))

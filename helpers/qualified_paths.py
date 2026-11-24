@@ -1,26 +1,26 @@
-"""Resolve a record's `nifeos/<repo>:<path>` citations at the commit basalt's manifest pins.
+"""Resolve a record's `partsfoundry/<repo>:<path>` citations at the commit basalt's manifest pins.
 
-A record cites a path in another repository as `nifeos/<repo>:<path>`, the form milestone 1018 (the
-design record moves to `nifeos/record` and is published as a website) adds beside §201 (one
-roadmap until a citation has to cross)'s `nifeos/<repo>@<sha>`. The path means that file at the
+A record cites a path in another repository as `partsfoundry/<repo>:<path>`, the form milestone 1018 (the
+design record moves to `partsfoundry/record` and is published as a website) adds beside §201 (one
+roadmap until a citation has to cross)'s `partsfoundry/<repo>@<sha>`. The path means that file at the
 commit basalt builds, so the record keeps no second list of commits. `script/roadmap --check`
 calls `problems()` on every tracked Markdown file under `design/` and `notes/` and fails a
 citation that names no file.
 
 Which commit a repository resolves at:
 
-- `nifeos/record` is the record itself: the path is read in the tree that runs the check. That is
-  this repository until the record moves, and `nifeos/record` after it.
+- `partsfoundry/record` is the record itself: the path is read in the tree that runs the check. That is
+  this repository until the record moves, and `partsfoundry/record` after it.
 - A repository that `pins.toml` on basalt's `main` names is read at the commit it pins.
-- Any other `nifeos` repository is read at every revision a pinned component's `Cargo.lock` files
-  name for it, at that component's pinned commit. A crate such as `nifeos/jh7110_entropy` is no
+- Any other repository of the organization is read at every revision a pinned component's `Cargo.lock` files
+  name for it, at that component's pinned commit. A crate such as `partsfoundry/jh7110_entropy` is no
   basalt component, but the nife commit basalt pins locks it at one revision, and that revision is
   what the image builds. The path has to exist at each revision named, so a crate locked at two
   revisions cannot hide a path that one of them lacks.
 - A repository that nothing pins is a problem: there is no commit to read the path at.
 
 A span is a citation only when its path holds no `<`, `>` or whitespace and is not all digits, so
-the placeholder `nifeos/record:<path>` and a run id such as `nifeos/basalt:123` are prose.
+the placeholder `partsfoundry/record:<path>` and a run id such as `partsfoundry/basalt:123` are prose.
 
 This needs the network: one `git ls-remote` of basalt, then a blobless shallow fetch of each
 pinned commit it has not seen before. A commit's file list never changes, so each one is cached
@@ -30,7 +30,7 @@ path exists.
 
 Name: provisional, minted by the lane for milestone 1018's step 2 on 2026-11-11 (UTC). A shared
 python module under `helpers/`, which `script/names` puts out of its own scope, so this paragraph
-is the record. "Qualified" is milestone 1018's own word for the `nifeos/<repo>:<path>` form.
+is the record. "Qualified" is milestone 1018's own word for the `partsfoundry/<repo>:<path>` form.
 
 BUGS
 
@@ -45,17 +45,23 @@ import subprocess
 import tempfile
 import tomllib
 
-ORGANIZATION = "nifeos"
+ORGANIZATION = "partsfoundry"
+# The organization's former name. A citation, a pin or a locked source under it still resolves,
+# through GitHub's redirect, while some repository still says it, so both names are read. Once no
+# tracked file outside history names it, this goes.
+FORMER_ORGANIZATION = "nifeos"
+_EITHER = "(?:" + ORGANIZATION + "|" + FORMER_ORGANIZATION + ")"
 BASALT = f"https://github.com/{ORGANIZATION}/basalt"
-QUALIFIED = re.compile(r"`" + ORGANIZATION + r"/([A-Za-z0-9_.-]+):([^`\s<>]+)`")
+QUALIFIED = re.compile(r"`" + _EITHER + r"/([A-Za-z0-9_.-]+):([^`\s<>]+)`")
 LOCKED_SOURCE = re.compile(
-    r'^source = "git\+https://github\.com/' + ORGANIZATION
+    r'^source = "git\+https://github\.com/' + _EITHER
     + r'/([A-Za-z0-9_.-]+?)(?:\.git)?\?[^#"]*#([0-9a-f]{40})"', re.M)
+PINNED_REPOSITORY = re.compile(r"https://github\.com/" + _EITHER + r"/(.+?)(?:\.git)?$")
 RECORD = "record"
 
 
 def citations(text):
-    """Every `nifeos/<repo>:<path>` citation in `text`, as (line number, repo, path)."""
+    """Every `partsfoundry/<repo>:<path>` citation in `text`, as (line number, repo, path)."""
     out = []
     for n, line in enumerate(text.split("\n"), start=1):
         for m in QUALIFIED.finditer(line):
@@ -138,10 +144,10 @@ def _pins():
             _git("init", "-q", "--bare", tmp)
             _git("--git-dir", tmp, "fetch", "-q", "--depth=1", BASALT, head[0])
             manifest = tomllib.loads(_git("--git-dir", tmp, "show", f"{head[0]}:pins.toml"))
-        prefix = f"https://github.com/{ORGANIZATION}/"
-        return {t["repository"][len(prefix):].removesuffix(".git"): t["commit"]
+        return {m.group(1): t["commit"]
                 for t in manifest.values()
-                if isinstance(t, dict) and t.get("repository", "").startswith(prefix)}
+                if isinstance(t, dict)
+                and (m := PINNED_REPOSITORY.match(t.get("repository", "")))}
 
     return _cached(f"basalt-pins-{head[0]}", compute)
 
@@ -199,12 +205,12 @@ def problems(cited, root):
 def selftest():
     """The parse and the existence rule, with no network; returns the failures as strings."""
     failed = []
-    text = ("`nifeos/jh7110_entropy:src/lib.rs` and `nifeos/record:<path>`\n"
-            "`nifeos/basalt:123`, `nifeos/record:design/naming.md#a-heading`, `crates/x`")
+    text = ("`partsfoundry/jh7110_entropy:src/lib.rs` and `partsfoundry/record:<path>`\n"
+            "`partsfoundry/basalt:123`, `partsfoundry/record:design/naming.md#a-heading`, `crates/x`")
     want = [(1, "jh7110_entropy", "src/lib.rs"), (2, "record", "design/naming.md")]
     if citations(text) != want:
         failed.append(f"citations read {citations(text)}, expected {want}")
-    lock = ('source = "git+https://github.com/nifeos/jh7110_entropy?rev=ab#' + "a" * 40 + '"\n'
+    lock = ('source = "git+https://github.com/partsfoundry/jh7110_entropy?rev=ab#' + "a" * 40 + '"\n'
             'source = "git+https://github.com/other/x?rev=ab#' + "b" * 40 + '"\n')
     if LOCKED_SOURCE.findall(lock) != [("jh7110_entropy", "a" * 40)]:
         failed.append(f"LOCKED_SOURCE read {LOCKED_SOURCE.findall(lock)}")

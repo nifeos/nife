@@ -7,7 +7,7 @@
 #
 # The convention: a pull request body carries one line naming what it is sequenced behind,
 # `Blocked-by: #N` or `Blocked-by: #N, #M, ...`. Two consumers read it. `helpers/merge-drain.sh`'s
-# admission hold (nifeos/record:notes/merge-queue.md, "`Blocked-by: #N`: a hold that releases itself",
+# admission hold (partsfoundry/record:notes/merge-queue.md, "`Blocked-by: #N`: a hold that releases itself",
 # 2026-08-18) holds a non-draft pull request out of the queue until every listed number merges or
 # is reported closed. The draft-unblock pass (2026-09-27, calef's fix for #1289: it was paused
 # waiting on #1288, #1288 merged an hour later, and nobody resumed #1289 for two days because a
@@ -15,7 +15,7 @@
 # comments once the same condition holds.
 #
 # Both need every number on the line, not only the first: a pull request sequenced behind two
-# others could previously say so only once (nifeos/record:notes/merge-queue.md's BUGS section recorded this as an
+# others could previously say so only once (partsfoundry/record:notes/merge-queue.md's BUGS section recorded this as an
 # accepted limitation). Pulling the parser into its own file, sourced by both consumers and by a
 # selftest that touches no `gh` call, is what makes fixing that a one-place change instead of two.
 #

@@ -6,7 +6,7 @@
 # (the first falsification of this file, run without the stubs, opened draft #1898 and pushed its
 # branch, 2026-10-10 UTC). The refusals are the point: a claim that
 # accepts an unclassified lane looks the same as one that cannot (calef's ruling R1 on #1894,
-# 2026-10-10 UTC: exactly one of --debt-paydown or --new-work; nifeos/record:notes/debt-paydown.md).
+# 2026-10-10 UTC: exactly one of --debt-paydown or --new-work; partsfoundry/record:notes/debt-paydown.md).
 #
 # Name: provisional, 2026-10-10 (UTC), after the other helpers/*-selftest.sh.
 

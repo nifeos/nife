@@ -10,7 +10,7 @@ module-block baseline cleared rows on the same or adjacent lines.
 
     python3 helpers/baseline_layout.py --selftest      # the rules, as fixtures, and git's own merge
 
-COE action item: nifeos/record:notes/coes/2026-11-03-merge-queue-backlog.md, action 2.
+COE action item: partsfoundry/record:notes/coes/2026-11-03-merge-queue-backlog.md, action 2.
 
 **The layout.**
 

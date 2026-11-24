@@ -11,7 +11,7 @@
 # which 4096 was one `[u64; MAX_ENDPOINTS]` scratch array, against a measured thread-stack high-water
 # that left 4712 bytes of headroom. **One frame wanted 2104 bytes more than all the headroom there
 # was**, and it was found only because a milestone's CI faulted one run in five and somebody went
-# looking. It compiled without a warning. See nifeos/record:notes/stack-high-water.md.
+# looking. It compiled without a warning. See partsfoundry/record:notes/stack-high-water.md.
 #
 # The rule this encodes: **a `[T; MAX]` local sized to a table maximum is a stack allocation wearing
 # the clothes of a bound.** `MAX_ENDPOINTS` is 512 because that is a sensible ceiling on live
@@ -147,7 +147,7 @@ GUARD_PAGE = 4096
 CEILING = GUARD_PAGE
 
 # Test bodies run on the BOOT stack, which is 64 KiB, because `test_main` runs on the boot context
-# (nifeos/record:notes/stack-high-water.md: "the boot stack carries the deepest call chain of the entire suite").
+# (partsfoundry/record:notes/stack-high-water.md: "the boot stack carries the deepest call chain of the entire suite").
 # They are reported and not gated. If a test body ever moved onto a thread stack this would have to
 # change, and so would a great deal else.
 TEST_MARKERS = ("_tests::", "::tests::", "kernel::testing::")

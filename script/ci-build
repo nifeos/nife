@@ -36,7 +36,7 @@
 #
 # **The tier tags and the no-argument meaning are PROVISIONAL** pending calef:
 # milestone 440 (what `script/ci-build` with no arguments should mean),
-# `nifeos/record:design/roadmap/0440-what-no-arguments-means.md`, states the options and their costs.
+# `partsfoundry/record:design/roadmap/0440-what-no-arguments-means.md`, states the options and their costs.
 #
 # **Order is cheapest first, and it is the table's order.** That is the whole value of the
 # no-argument path to a developer: a formatting slip costs twenty seconds rather than ten minutes.
@@ -74,11 +74,11 @@
 #
 # This script never writes. `script/fmt` with no argument is the one that formats.
 #
-# See notes/scripts.md, nifeos/record:notes/check-inventory.md and .github/workflows/ci.yml.
+# See notes/scripts.md, partsfoundry/record:notes/check-inventory.md and .github/workflows/ci.yml.
 #
 # Name: ratified 2026-07-22 by adopting Scripts to Rule Them All. The canonical set keeps its
 # standard names even where a more descriptive word exists, because the entire value is that the
-# command is the same in every repository that follows the pattern (nifeos/record:design/naming.md). Respelled from
+# command is the same in every repository that follows the pattern (partsfoundry/record:design/naming.md). Respelled from
 # `cibuild` on 2026-08-01 (milestone 63) under the rule that shell entry points are hyphenated,
 # because an underscore or a squash in a command name reads as a mistake next to `apt-get` and
 # `pkg-config`. Milestone 286 widened what it does without touching the name, and the widening is
@@ -121,7 +121,7 @@ cd "$(dirname "$0")/.."
 # ordered host is why they stay there, and the x86_64 leg on an x86_64 runner, where it boots under
 # KVM. Together they are exactly the `local` row, which is what a developer runs. ci.yml's
 # `swish-check-x86_64` and `swish-check-shard` jobs have the measurements. The `local` row and the aarch64 row end with the
-# `--input-race` boot, the input driver's red test (nifeos/record:notes/swish-check-flake-2026w42.md). It comes
+# `--input-race` boot, the input driver's red test (partsfoundry/record:notes/swish-check-flake-2026w42.md). It comes
 # last because its program feature rebuilds `components`, which the plain legs must not boot.
 #
 # **CI runs `test` as the two `ci` rows after it** (lane maintainer/split-test-job, 2026-10-12 UTC,
@@ -178,7 +178,7 @@ TABLE
 
 # Why `rule-violations` is `local` (milestone 341 (give the three instruments nothing runs a caller),
 # §174 (a caller for each of the three uncalled instruments), ruled 2026-10-27 UTC): it reads
-# `nifeos/record:notes/rule-violations.md` and totals strikes, which takes 0.07 seconds (three runs, 2026-10-27
+# `partsfoundry/record:notes/rule-violations.md` and totals strikes, which takes 0.07 seconds (three runs, 2026-10-27
 # UTC), so nothing about it is a build a developer would wait for. It is first because it is the
 # cheapest row. It fails when an open rule reaches three strikes, so the fix is the ledger's own: move
 # the rule up the ladder or mark it resolved, an architect's or the maintainer's call and never a
@@ -264,7 +264,7 @@ TABLE
 # `script/verify` (Kani, ~47 minutes) and the re-falsification sweep are deliberately absent: they
 # are `verify.yml`, a different workflow with its own sharding, and this table's claim is about the
 # checks `ci.yml` runs. Naming them here without running them would be a fourth kind of prose that
-# nothing keeps true. See nifeos/record:notes/check-inventory.md for the whole surface.
+# nothing keeps true. See partsfoundry/record:notes/check-inventory.md for the whole surface.
 
 # The silicon leg (milestone 81), a check rather than a line because everything else here is a row.
 #
@@ -299,7 +299,7 @@ hvf_leg() {
         # testing a QEMU version keeps the machine string in one place; see the probe in
         # helpers/qemu-runner-aarch64.sh.
         if ! hvf_refusal="$(NIFE_PROBE=1 NIFE_ACCEL=hvf helpers/qemu-runner-aarch64.sh 2>/dev/null)"; then
-            hvf_missing="QEMU will not start the machine this leg needs. It said: $hvf_refusal. The kernel drives GICv2 and GICv3 and the runner asks HVF for a GICv3, so this refusal is about something else; nifeos/record:notes/hvf-leg.md has the history"
+            hvf_missing="QEMU will not start the machine this leg needs. It said: $hvf_refusal. The kernel drives GICv2 and GICv3 and the runner asks HVF for a GICv3, so this refusal is about something else; partsfoundry/record:notes/hvf-leg.md has the history"
         fi
     fi
 

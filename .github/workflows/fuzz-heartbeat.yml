@@ -13,7 +13,7 @@ name: fuzz heartbeat
 # switch: it looks at the releases of the last two UTC days and opens one issue, labeled
 # fuzz-loop-broken, when none exists, when the report shows no ok window, or when infrastructure
 # windows are too large a share. The checks and their bound are in helpers/fuzz-heartbeat.py. It
-# repairs nothing; a person turns the issue into an action (nifeos/record:notes/fuzzing/continuous-host.md).
+# repairs nothing; a person turns the issue into an action (partsfoundry/record:notes/fuzzing/continuous-host.md).
 #
 # Ruled 2026-11-01 (UTC): a scheduled workflow on a GitHub-hosted runner, never a self-hosted one.
 # While no fuzz-* release has ever existed it passes quietly, so it switches on by itself at the first
@@ -22,7 +22,7 @@ name: fuzz heartbeat
 #
 # **A parked fuzz finding notifies a person** (ruled 2026-11-22 UTC). The fuzz filer parks budget and
 # hang causes and never files them; each waits for a person to write a `file` or `suppress` rule in
-# nifeos/fuzz-host etc/fuzz-filer/rules.tsv. When the report's Filer line shows more parked causes
+# partsfoundry/fuzz-host etc/fuzz-filer/rules.tsv. When the report's Filer line shows more parked causes
 # than the count already noticed, the heartbeat opens one issue labeled fuzz-findings-parked (label
 # provisional), or comments on the one already open; it never opens a second. The count already
 # noticed is read back from a marker in that issue's body, so the workflow keeps no state and takes

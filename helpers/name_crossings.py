@@ -10,7 +10,7 @@ JSON, rust-analyzer) means building eight workspaces, minutes per run, and `scri
 for a single name. `Reach` below reads text: a name crosses when another package that depends on
 its own reaches it through the defining crate's path, and `helpers/name_checks.py` reports reach
 by the same measure. A bare word never counts: matched that way, every crate's `Error` reached 38
-packages. What it still misses is in `Reach`'s docstring and nifeos/record:design/naming/rules-a-script-can-check.md.
+packages. What it still misses is in `Reach`'s docstring and partsfoundry/record:design/naming/rules-a-script-can-check.md.
 
 **A program is a `[[bin]]`** (calef's tiering, 2026-10-17). A file in `components/src/` that another
 program includes through `mod` or `#[path]` and that has no `[[bin]]` entry is a module of the

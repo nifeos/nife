@@ -93,7 +93,7 @@ want "infrastructure" "$(verdict 'booting' 125 100)" "infrastructure 0 101"
 
 # Each driver's held log names its own seed variable and no other. The supervisor sets one variable
 # per window (`driver_test`), the driver reads it with `option_env!` and prints it on its replay
-# line, and the filer refuses a log whose replay line names another driver's variable (nifeos/nife
+# line, and the filer refuses a log whose replay line names another driver's variable (partsfoundry/nife
 # issue 3921). For each driver in `driver_test`, find the source file that defines its test, and
 # check that the file reads that variable, prints a replay line with it, and names no other
 # `NIFE_*_FUZZ_SEEDS` variable in either place.

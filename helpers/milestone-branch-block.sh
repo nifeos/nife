@@ -8,10 +8,10 @@
 # Exits 1 when the branch names a milestone that has no block and the lane was not renumbered.
 # Exits 0 otherwise.
 #
-# **The record is in nifeos/record** (milestone 1018 (the design record moves to nifeos/record and
+# **The record is in partsfoundry/record** (milestone 1018 (the design record moves to partsfoundry/record and
 # is published as a website)). The blocks are read through helpers/record_root.py: this tree's own
 # while it holds the record, else the record at the commit basalt pins. A lane's status flip lands
-# in its pull request in nifeos/record, which this tree's diff cannot see, so the warning for a
+# in its pull request in partsfoundry/record, which this tree's diff cannot see, so the warning for a
 # branch that changes nothing in its block is that repository's to give. A block raised after the
 # pin is not seen here until basalt's pin moves past it. script/lint-fleet has the history of the check; this file holds the logic so that
 # helpers/milestone-branch-block-selftest.sh can plant cases against it.

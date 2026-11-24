@@ -12,8 +12,8 @@ compile the name is a placeholder, and rustc validates it against the object for
 codegens the item. A Mach-O host therefore refuses an ELF name outright (`invalid Mach-O section
 specifier`), which is how a `script/verify` run died at the kernel compile on a macOS host. The
 `target_os = "none"` gate keeps the exact ELF name for the linker scripts and drops the attribute
-on a host compile, where the placement does not matter. `nifeos/record:notes/kernel-proofs.md` stub-list item 5
-and `nifeos/record:notes/linker-scripts.md` carry the design.
+on a host compile, where the placement does not matter. `partsfoundry/record:notes/kernel-proofs.md` stub-list item 5
+and `partsfoundry/record:notes/linker-scripts.md` carry the design.
 
 Scope: `kernel/src` alone. The kernel is the crate compiled both for bare metal and for a host
 the prover drives, so it is where an ungated custom section breaks a host build. The
@@ -173,7 +173,7 @@ def check(root, out, err):
             "with `invalid Mach-O section specifier`. Gate the attribute so the host drops it and\n"
             "the bare-metal build keeps the exact name:\n\n"
             "    #[cfg_attr(target_os = \"none\", unsafe(link_section = \"...\"))]\n\n"
-            "See nifeos/record:notes/kernel-proofs.md and nifeos/record:notes/linker-scripts.md.\n")
+            "See partsfoundry/record:notes/kernel-proofs.md and partsfoundry/record:notes/linker-scripts.md.\n")
         return 1
     out.write(f'link_section: {judged} custom section(s) under kernel/src, each gated to '
               f'target_os = "none"\n')

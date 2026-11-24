@@ -19,12 +19,12 @@ Three bounds decide the count, and each is a fact another file owns:
 - CI's shard count, read by the caller from `.github/workflows/verify.yml` through
   `helpers/verify_times.py shards`. More children than CI runs prove smaller slices of the same
   table and buy nothing: `glob` is atomic at crate granularity and it is the floor, so a fifth shard
-  is idle time (nifeos/record:design/roadmap/0957-local-parallel-prove.md has the measurement).
+  is idle time (partsfoundry/record:design/roadmap/0957-local-parallel-prove.md has the measurement).
 - The machine's heavy-job slots (`helpers/heavy_slot.py`, one per 8 GiB of memory). The parent holds
   one slot and the children run inside it, so the slot count is what the machine is willing to carry
   and the default count must not exceed it.
 - Memory. Each child runs VERIFY_JOBS harnesses at once (4 by default) and one harness has been
-  measured at 3.5 GiB (`nifeos/record:notes/verification/glob-proofs.md`). That figure is a peak of the largest
+  measured at 3.5 GiB (`partsfoundry/record:notes/verification/glob-proofs.md`). That figure is a peak of the largest
   harness, not a typical, so budgeting on it errs high, which is the direction a memory guard
   should err. It is read in GiB, so the budget is larger than the recorded 3.5 GB.
 

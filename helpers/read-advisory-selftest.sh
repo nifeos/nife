@@ -102,7 +102,7 @@ run NIFE_ADVISORY_READER_TOKEN=$secret -- "$id" GHSA-dddd-eeee-ffff
 # 3. a read
 run NIFE_ADVISORY_READER_TOKEN=$secret GITHUB_TOKEN=ghp_another -- "$id"
 [ "$rc" -eq 0 ] || fail "read: wanted success, got $rc: $(cat "$dir/err")"
-grep -q "/repos/nifeos/nife/security-advisories/$id" "$STUB_LOG" || fail "read: wrong path"
+grep -q "/repos/partsfoundry/nife/security-advisories/$id" "$STUB_LOG" || fail "read: wrong path"
 grep -q "^GH_TOKEN=$secret\$" "$STUB_LOG" || fail "read: the token did not reach gh as GH_TOKEN"
 grep -q '^GITHUB_TOKEN=unset$' "$STUB_LOG" || fail "read: GITHUB_TOKEN was left set for gh"
 grep -q 'FIXTURE-DESCRIPTION' "$dir/out" || fail "read: the description was not printed"

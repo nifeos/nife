@@ -85,7 +85,7 @@ def non_blank(text):
 #
 # Raised by calef on 2026-08-18 as one question: "how much unsafe code is there in a code base, and
 # is that something we should be monitoring and driving in a particular direction over time?" See
-# nifeos/record:notes/register-of-measures.md and nifeos/record:notes/unsafe-obligations.md.
+# partsfoundry/record:notes/register-of-measures.md and partsfoundry/record:notes/unsafe-obligations.md.
 #
 # Shapes assumed, each checked against the real tree rather than against expectation:
 #   - a block is `unsafe` then optional whitespace then `{`, MINUS the `unsafe extern "C" {` form,
@@ -117,7 +117,7 @@ UNSAFE_IMPL = re.compile(r'\bunsafe\s+impl\b')
 # 52.
 STATIC_MUT = re.compile(r"(?<!')\bstatic\s+mut\b")
 # Test code is out of this one population and only this one, matching the census the milestone was
-# raised from (nifeos/record:notes/lint-census-2026-10-09.md). The system tests and the fixtures are harnesses
+# raised from (partsfoundry/record:notes/lint-census-2026-10-09.md). The system tests and the fixtures are harnesses
 # whose single-threaded shape is the test's own premise, and the block's scope left them out. The
 # `#[cfg(test)]` items elsewhere are not stripped: none declares a `static mut` today, and one that
 # did would count, which is the loud direction.
@@ -138,7 +138,7 @@ STATIC_MUT_TEST_CODE = ('system_tests/', 'fixtures/')
 # to hold fewer unsafe blocks without diverging further from the crate we are trying to track. It
 # also matches the `unsafe fn contracts` check's scope, so there is one answer to "which Rust is
 # ours" instead of two. The 37 blocks it leaves uncounted are recorded in
-# nifeos/record:notes/register-of-measures.md's BUGS, where a reader meets them.
+# partsfoundry/record:notes/register-of-measures.md's BUGS, where a reader meets them.
 #
 # The list is exclusions rather than inclusions on purpose: a new subsystem directory is counted by
 # default, and being left out has to be somebody's decision.
@@ -198,14 +198,14 @@ def unsafe_census(files):
 # mixes two things that mean opposite things in a capability microkernel: an `unsafe` block inside
 # `kernel/src` runs with no confinement over it at all, and an `unsafe` block in a userspace program
 # is confined by the same MMU-plus-capability-table mechanism that confines every other program.
-# `nifeos/record:notes/trusted-base.md` (the `maintainer/redleaf-comparison` lane, 2026-09-20, landing alongside
+# `partsfoundry/record:notes/trusted-base.md` (the `maintainer/redleaf-comparison` lane, 2026-09-20, landing alongside
 # this one) hand-computed a first split -- kernel/src/** total 577, "everything else that runs on
 # nife" 561 -- and flagged in its own BUGS that nothing keeps it computed. This is that mechanism.
 #
 # **The split that hand computation did NOT make, and the one this file exists to make**: crates/
 # is not one population. `crates/page_tables` and `crates/direct_memory_access_validator` were lifted out
 # of `kernel/src` on purpose so a model checker could reach them (see the BUGS in
-# nifeos/record:notes/trusted-base.md, which names exactly this risk: "a tree can shrink [the kernel line count]
+# partsfoundry/record:notes/trusted-base.md, which names exactly this risk: "a tree can shrink [the kernel line count]
 # by moving code out of `kernel/src` without reducing what anyone has to trust"). A crate that ships
 # ONLY in the kernel binary is the trusted base wherever it lives on disk; a crate that ships ONLY
 # in a userspace program is confined wherever it lives; and roughly half of `crates/` ships in BOTH,
@@ -267,7 +267,7 @@ USERSPACE_ONLY_DIRS = ('redoxfs_server/', 'std_exerciser/', 'entropy_backend/',
                        'fs_server/', 'fs-server/')
 
 # `uefi_loader` is neither side: it runs once, before the kernel starts, with the full privilege of
-# the pre-OS environment, to decide WHICH kernel image gets control. `nifeos/record:notes/trusted-base.md` draws
+# the pre-OS environment, to decide WHICH kernel image gets control. `partsfoundry/record:notes/trusted-base.md` draws
 # the trusted base at "the kernel plus the hardware" and means the isolation boundary the kernel
 # enforces at runtime; `uefi_loader` has come and gone (its memory reclaimed) before that boundary
 # exists, so it is a boot-chain-of-trust question rather than a runtime-isolation one, and folding it

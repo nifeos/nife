@@ -51,7 +51,7 @@
 #             build it on top of the entries ahead of it, usually because it conflicts with one of
 #             them rather than with `main`, so `conflict` never fires. The queue does not eject such
 #             an entry; it leaves it waiting. #1795 sat like that behind #1745 on 2026-10-07 (UTC),
-#             conflicting in nifeos/record:notes/package-boundaries.md, until calef found it on the queue page.
+#             conflicting in partsfoundry/record:notes/package-boundaries.md, until calef found it on the queue page.
 #             Keyed on the pull request's head, so one comment per head and a new one after a push
 #             that does not fix it.
 #   orphan   a branch holding work that no open pull request carries, for `nm_orphan_hours` (2,

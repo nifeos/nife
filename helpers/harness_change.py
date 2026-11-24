@@ -12,7 +12,7 @@ provenance is this paragraph.
 # THE RULE
 
 The Kani proofs run on a pull request whose diff adds or changes a harness (ruled 2026-11-16 UTC;
-nifeos/record:notes/merge-queue.md has the rule beside the queue-only set). The answer is `harness=true` when
+partsfoundry/record:notes/merge-queue.md has the rule beside the queue-only set). The answer is `harness=true` when
 any of these holds between the pull request's merge base and its head:
 
 - a `#[kani::proof]` or `#[kani::proof_for_contract]` function is added, removed or edited. A

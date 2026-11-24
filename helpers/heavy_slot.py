@@ -61,7 +61,7 @@ orphaned, the shape a lint left by a pruned worktree takes.
 The Kani pool. A heavy slot is one equal share, and a Kani run is not one share: `script/verify`
 runs VERIFY_JOBS harnesses at once, and a harness is large and uneven. The 2026-11 host out-of-memory
 dumps found three or four cbmc processes alive together at 22.2, 20.7, 7.5 and 3.4 GiB resident, so
-one proof reaches 20 GiB and more, far past the 3.5 GiB that nifeos/record:notes/verification/glob-proofs.md
+one proof reaches 20 GiB and more, far past the 3.5 GiB that partsfoundry/record:notes/verification/glob-proofs.md
 records for glob. So Kani memory has its own pool beside the slots, in units of UNIT_GIB (2 GiB). The
 pool is physical memory less KANI_RESERVE_GIB (12 GiB, for builds, QEMU and the system). A harness
 weighs HARNESS_GIB (10 GiB by default, conservative: two of the largest proofs fit in the 44 GiB
@@ -75,7 +75,7 @@ A run that names its rows (`--weight <row>...`) weighs a harness by measurement 
 helpers/kani_peaks.py reads each row's measured peak from helpers/kani-peaks.tsv, rounded up to whole
 units, and the run takes the largest of its rows. A row that was never measured, or whose crate or
 Kani version changed since, weighs HARNESS_GIB, so an edited harness is reserved conservatively.
-`--table` names every row of script/verify's crate table. nifeos/record:notes/verification/kani-memory.md has the
+`--table` names every row of script/verify's crate table. partsfoundry/record:notes/verification/kani-memory.md has the
 measurements.
 
   NIFE_KANI_HARNESS_GIB   the weight of one harness, over any measurement

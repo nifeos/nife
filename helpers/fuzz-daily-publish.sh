@@ -19,11 +19,11 @@
 # slot's next window one seed past the held seed, so that window's first seed would locate it. The
 # table therefore leaves out every range of a slot from that slot's first held window onward, read
 # from windows.tsv alone; ranges of other slots, and of the same slot before it, are published
-# (nifeos/record:design/roadmap/1016-the-clean-range-table-does-not-locate-a-held-seed.md). A held window is
+# (partsfoundry/record:design/roadmap/1016-the-clean-range-table-does-not-locate-a-held-seed.md). A held window is
 # any window whose status is neither `ok` nor `infrastructure`, so a status this script does not
 # know withholds its slot too. The seed totals in report.md still count every clean window.
 #
-# **The Filer line.** The filer (`fuzz-filer` in nifeos/fuzz-host) is a separate service, and a
+# **The Filer line.** The filer (`fuzz-filer` in partsfoundry/fuzz-host) is a separate service, and a
 # disabled timer once left every other check green. The line gives host-local counts and times only:
 # held logs, causes, filed, parked, unfiled (causes that are not parked budget or hang causes and
 # have no advisory yet), the filer ledger's newest timestamp, whether fuzz-filer.timer is enabled and
@@ -34,17 +34,17 @@
 # for the selftest.
 #
 # BUGS: nothing brings a withheld slot's ranges back. A person publishes a finding's advisory and the
-# host is not told (nifeos/record:design/roadmap/1010-a-held-finding-turns-public-after-its-fix-reruns-clean.md,
+# host is not told (partsfoundry/record:design/roadmap/1010-a-held-finding-turns-public-after-its-fix-reruns-clean.md,
 # refused 2026-11-04), so a slot that ever held a finding publishes no further ranges. That fails safe.
 #
-# **Where it goes.** Ruled 2026-11-01 (UTC): one GitHub release per day on nifeos/nife, tagged
+# **Where it goes.** Ruled 2026-11-01 (UTC): one GitHub release per day on partsfoundry/nife, tagged
 # `fuzz-YYYY-MM-DD`, with report.md and clean-ranges.tsv as assets
-# (nifeos/record:design/roadmap/1026-where-the-daily-fuzz-output-goes.md). Without a flag the script stops at
+# (partsfoundry/record:design/roadmap/1026-where-the-daily-fuzz-output-goes.md). Without a flag the script stops at
 # the local files. `--dry-run` also prints the tag and the asset list. `--publish` runs
 # `gh release create` and refuses unless NIFE_FUZZ_PUBLISH=1 is set. It also refuses, by name and
 # before any `gh` call, a missing GH_TOKEN, a missing or unparseable GH_TOKEN_EXPIRES_AT (UTC,
 # `YYYY-MM-DDTHH:MM:SSZ`), and a token that has expired or expires within `safety_margin_seconds`.
-# The mint helper's token file supplies both variables (nifeos/fuzz-host, docs/fuzz-token.md).
+# The mint helper's token file supplies both variables (partsfoundry/fuzz-host, docs/fuzz-token.md).
 #
 # **A second run on the same day.** Before creating the release, `--publish` reads it with
 # `gh release view`. If the day's release already holds exactly report.md and clean-ranges.tsv, the
@@ -56,10 +56,10 @@
 # too, since it cannot tell whether the release exists. A
 # refusal never prints the token. The credential is a one-hour
 # installation token of the `nife-fuzz` App, minted from the App's root-only key (Contents write and
-# Repository security advisories write on nifeos/nife alone; nifeos/record:notes/fuzzing/the-fuzz-app.md). Main's
+# Repository security advisories write on partsfoundry/nife alone; partsfoundry/record:notes/fuzzing/the-fuzz-app.md). Main's
 # ruleset refuses a push without a pull request, and this script never calls `git push`. Findings
 # start as private security advisories, filed by a service on the host, not by this script
-# (nifeos/record:design/roadmap/1015-fuzz-findings-without-a-person.md).
+# (partsfoundry/record:design/roadmap/1015-fuzz-findings-without-a-person.md).
 #
 # Name: provisional, minted 2026-11-01 (UTC) by lane/continuous-fuzzing-host. calef has not ruled on it.
 
@@ -164,7 +164,7 @@ esac
 echo "fuzz-daily-publish: wrote $out"
 
 tag="fuzz-$today"
-repo=nifeos/nife
+repo=partsfoundry/nife
 
 # A token with less than this left is refused: the mint helper renews every 20 minutes, so a token
 # this close to its end means the renewal has stopped.

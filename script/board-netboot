@@ -100,7 +100,7 @@ class Cancelled(Exception):
     the one that mattered: the retries held the server long enough that the client's real request
     timed out and had to be sent again, and the log said a healthy netboot had failed.
 
-    Milestone 257 (boot radon over the network) wrote down the shape of that (`nifeos/record:design/roadmap/0257-network-boot-radon.md`): a
+    Milestone 257 (boot radon over the network) wrote down the shape of that (`partsfoundry/record:design/roadmap/0257-network-boot-radon.md`): a
     network boot can fail in a way that looks like success. This is the same coin's other face.
     """
 

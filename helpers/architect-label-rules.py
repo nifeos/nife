@@ -50,7 +50,7 @@ yields it, and drops one in a file that an open pull request carrying `architect
    `--base-rev REV`; without it nothing is known and every changed dependency fires. See BUGS for
    what "external" cannot see: a multi-line inline table. Since calef's ruling of 2026-11-09
    (UTC), a dependency on one of our own crates is approved in advance and does not fire when it is
-   a git dependency whose URL is `https://github.com/nifeos/<repository>` (a trailing `.git` is
+   a git dependency whose URL is `https://github.com/partsfoundry/<repository>` (a trailing `.git` is
    allowed) with `rev` a full 40-hexadecimal-digit commit and no `branch` or `tag`. A branch, a tag,
    a short rev, no rev, another organization, or a look-alike such as `nifeos-fork` still fires.
    Third-party dependencies are unchanged (§46). Known gaps, both deliberate: (a) a crates.io
@@ -78,7 +78,7 @@ yields it, and drops one in a file that an open pull request carrying `architect
    provenance, not the decision's substance, and does not fire. Nor, since calef's ruling of
    2026-10-11 (UTC), does a bookkeeping edit: the body reads the same once link targets, backticked
    repository paths, wrapping and whitespace are normalized away, and a relative link rewritten as
-   the qualified path `nifeos/<repository>:<the same target>` reads as the link (`rule_decisions`
+   the qualified path `partsfoundry/<repository>:<the same target>` reads as the link (`rule_decisions`
    has the exact terms). A changed word, number, quotation, heading, list item or table cell fires, and so does
    a link added or removed rather than retargeted.
 6. **system-call-error**: a changed code line in `kernel/src/system_call.rs` (or a future
@@ -135,7 +135,7 @@ but a path or a link target. The 2026-10-04 list, plus #1953:
                           reaches the progenitor) and §229 new; §21 (the terminal is a userspace
                           component) amended (true)
     #1510  fires   fires  6 of 9 files quiet (links retargeted); 3 still fire on `crickertech/nife`
-                          renamed `nifeos/nife`, an identifier rename sweep (false)
+                          renamed `partsfoundry/nife`, an identifier rename sweep (false)
     #1527  fires   quiet  9 of 9 files quiet: proposal paths renumbered into the roadmap
     #1289  fires   fires  §212 (a prose budget) and §213 (writing standards) each gained a
                           rule on renames (true)
@@ -216,7 +216,7 @@ by design: #2416's handoff crosses a live swap and #2512's page is read by publi
 # BUGS
 
 - **abi-surface reads a path the crate has left.** The binary interface lives in its own
-  repository, `nifeos/moho_abi`, and reaches this tree as a bump of a pinned `rev`, which rule 2
+  repository, `partsfoundry/moho_abi`, and reaches this tree as a bump of a pinned `rev`, which rule 2
   exempts as a pinned first-party git dependency. A pull request that moves the pin to a commit that
   changed a system call number therefore fires nothing here, and `helpers/format_values_check.py`'s
   second case reads the same path. The crate's own counting test and its repository's review are
@@ -232,7 +232,7 @@ by design: #2416's handoff crosses a live swap and #2512's page is read by publi
   whose text is a lone backticked path reads as that path, so turning `` `notes/a.md` `` into a link
   to `notes/a/b.md` is quiet (#1953); linking plain words still fires.
 - **decisions reads a qualified path only at its resolved target.** A link rewritten to
-  `nifeos/<repository>:P` is quiet when P is the link's own target resolved against the file. A
+  `partsfoundry/<repository>:P` is quiet when P is the link's own target resolved against the file. A
   target that has left for a crate's repository takes that repository's path, which differs, so it
   fires; so does a block that both qualifies one link and retargets another. Both are the safe
   direction.
@@ -639,14 +639,15 @@ DEP_KEY_RE = re.compile(r'^([A-Za-z0-9_.-]+)\s*=\s*(.*)$')
 
 GIT_URL_RE = re.compile(r'\bgit\s*=\s*"([^"]*)"')
 REV_RE = re.compile(r'\brev\s*=\s*"([^"]*)"')
-FIRST_PARTY_GIT_RE = re.compile(r'https://github\.com/nifeos/[A-Za-z0-9_.-]+')
+# partsfoundry, or nifeos, its former name, which a pin may still say while the rename lands.
+FIRST_PARTY_GIT_RE = re.compile(r'https://github\.com/(?:partsfoundry|nifeos)/[A-Za-z0-9_.-]+')
 FULL_COMMIT_RE = re.compile(r'[0-9a-fA-F]{40}')
 
 
 def is_pinned_first_party_git(rest):
-    """True for a git dependency on a crate of the `nifeos` organization at a full commit.
+    """True for a git dependency on a crate of the organization at a full commit.
 
-    The URL must be `https://github.com/nifeos/<repository>` (optionally ending `.git`) and `rev`
+    The URL must be `https://github.com/partsfoundry/<repository>` (optionally ending `.git`) and `rev`
     must be 40 hexadecimal digits. A `branch`, a `tag`, a short or missing `rev` is not pinned, so
     it is not exempt. Whether the commit is on that repository's main is NOT checked here (see the
     module docstring's follow-up note).
@@ -1002,11 +1003,11 @@ def rule_spawnproto(fd, out, ctx):
 #       whitespace collapsed, so a reflow pairs off and a block boundary still counts.
 #
 # A block that differs under those three gets one more reading, (d), since a link retargeted into
-# the record's qualified-path form (milestone 1018 (the design record moves to `nifeos/record`
+# the record's qualified-path form (milestone 1018 (the design record moves to `partsfoundry/record`
 # and is published as a website), step 6) is the same bookkeeping in another spelling: a Markdown link `[text](relative/target#anchor)` whose target, resolved against the
-# file, is a repository path P reads the same as `` `nifeos/<repository>:P` `` when its text is
+# file, is a repository path P reads the same as `` `partsfoundry/<repository>:P` `` when its text is
 # P, P's file name or P's stem (backticks around the text allowed), and as
-# ``text (`nifeos/<repository>:P`)`` otherwise. Both sides of the block are read this way, then
+# ``text (`partsfoundry/<repository>:P`)`` otherwise. Both sides of the block are read this way, then
 # normalized by (a) to (c), and the pair is quiet when they then agree. The path must be the
 # resolved target exactly; an anchor drops, and so does a name of P written just before the
 # parenthesis. Every other word on either side is compared as written. A block that also
@@ -1061,7 +1062,7 @@ def normalize_bookkeeping(text):
 
 
 # (d)'s two spellings of a qualified path, and a relative Markdown link it may replace.
-QUALIFIED_PATH = r'`nifeos/[\w.\-]+:([\w.\-/]+)(?:#[\w.\-]*)?`'
+QUALIFIED_PATH = r'`(?:partsfoundry|nifeos)/[\w.\-]+:([\w.\-/]+)(?:#[\w.\-]*)?`'
 QUALIFIED_PAREN_RE = re.compile(r'(?:(\S+)\s+)?\(' + QUALIFIED_PATH + r'\)')
 QUALIFIED_RE = re.compile(QUALIFIED_PATH)
 RELATIVE_LINK_RE = re.compile(r'(?<!!)\[([^\[\]]*)\]\(([\w.\-/]+)(?:#[\w.\-]*)?\)')
@@ -1605,7 +1606,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
++e1000e = { version = "0.1.0", git = "https://github.com/partsfoundry/e1000e", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 """, None),
 
     ("dependency: a nifeos git dependency with a .git suffix at a full commit stays quiet", """\
@@ -1614,7 +1615,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { git = "https://github.com/nifeos/e1000e.git", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
++e1000e = { git = "https://github.com/partsfoundry/e1000e.git", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 """, None),
 
     ("dependency: a nifeos git dependency on a branch fires", """\
@@ -1623,7 +1624,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { git = "https://github.com/nifeos/e1000e", branch = "main" }
++e1000e = { git = "https://github.com/partsfoundry/e1000e", branch = "main" }
 """, 'dependency'),
 
     ("dependency: a nifeos git dependency on a tag fires", """\
@@ -1632,7 +1633,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { git = "https://github.com/nifeos/e1000e", tag = "v0.1.0" }
++e1000e = { git = "https://github.com/partsfoundry/e1000e", tag = "v0.1.0" }
 """, 'dependency'),
 
     ("dependency: a nifeos git dependency with no rev fires", """\
@@ -1641,7 +1642,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e" }
++e1000e = { version = "0.1.0", git = "https://github.com/partsfoundry/e1000e" }
 """, 'dependency'),
 
     ("dependency: a nifeos git dependency with a short rev fires", """\
@@ -1650,7 +1651,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { git = "https://github.com/nifeos/e1000e", rev = "8ac75a6" }
++e1000e = { git = "https://github.com/partsfoundry/e1000e", rev = "8ac75a6" }
 """, 'dependency'),
 
     ("dependency: a nifeos git dependency with a rev and a branch fires", """\
@@ -1659,7 +1660,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { git = "https://github.com/nifeos/e1000e", branch = "main", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
++e1000e = { git = "https://github.com/partsfoundry/e1000e", branch = "main", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 """, 'dependency'),
 
     ("dependency: a git dependency on another organization at a full commit fires", """\
@@ -1677,7 +1678,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+thing = { git = "https://github.com/nifeos-fork/thing", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
++thing = { git = "https://github.com/partsfoundry-fork/thing", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 """, 'dependency'),
 
     ("dependency: a crates.io dependency named like a first-party crate still fires", """\
@@ -2260,7 +2261,7 @@ diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0
  status: DECIDED
  ---
 -The full accounting is in [`notes/line-discipline.md`](../../notes/line-discipline.md#costs).
-+The full accounting is in `nifeos/nife:notes/line-discipline.md`.
++The full accounting is in `partsfoundry/nife:notes/line-discipline.md`.
 """, None),
 
     ("decisions: a link whose text is its stem, made a qualified path, stays quiet", """\
@@ -2272,7 +2273,7 @@ diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0
  status: DECIDED
  ---
 -The full accounting is in [line-discipline](../../notes/line-discipline.md).
-+The full accounting is in `nifeos/nife:notes/line-discipline.md`.
++The full accounting is in `partsfoundry/nife:notes/line-discipline.md`.
 """, None),
 
     ("decisions: a link's words kept beside its qualified path, rewrapped, stays quiet (#4049)", """\
@@ -2286,7 +2287,7 @@ diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0
 -Every module name ships marked `Name: provisional`, as the [naming
 -authority](../../notes/skills/naming-authority/SKILL.md) has a lane do.
 +Every module name ships marked `Name: provisional`, as the naming
-+authority (`nifeos/nife:notes/skills/naming-authority/SKILL.md`) has a lane do.
++authority (`partsfoundry/nife:notes/skills/naming-authority/SKILL.md`) has a lane do.
 """, None),
 
     ("decisions: a qualified path that is not the link's resolved target fires", """\
@@ -2298,7 +2299,7 @@ diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0
  status: DECIDED
  ---
 -The full accounting is in [`notes/line-discipline.md`](../../notes/line-discipline.md).
-+The full accounting is in `nifeos/nife:design/notes/line-discipline.md`.
++The full accounting is in `partsfoundry/nife:design/notes/line-discipline.md`.
 """, 'decisions'),
 
     ("decisions: a qualified path whose sentence also changed a word fires", """\
@@ -2312,7 +2313,7 @@ diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0
 -Every module name ships marked `Name: provisional`, as the [naming
 -authority](../../notes/skills/naming-authority/SKILL.md) has a lane do.
 +Every module name ships marked `Name: ratified`, as the naming
-+authority (`nifeos/nife:notes/skills/naming-authority/SKILL.md`) has a lane do.
++authority (`partsfoundry/nife:notes/skills/naming-authority/SKILL.md`) has a lane do.
 """, 'decisions'),
 
     ("decisions: link words dropped for a bare qualified path fire", """\
@@ -2324,7 +2325,7 @@ diff --git a/design/decisions/0021-terminal-in-userspace.md b/design/decisions/0
  status: DECIDED
  ---
 -As the [naming authority](../../notes/skills/naming-authority/SKILL.md) has a lane do.
-+As the `nifeos/nife:notes/skills/naming-authority/SKILL.md` has a lane do.
++As the `partsfoundry/nife:notes/skills/naming-authority/SKILL.md` has a lane do.
 """, 'decisions'),
 
     ("decisions: a CLAUDE.md link retarget still fires (the ruling covered decisions only)", """\

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Which basalt Release `xtask/basalt-pin` should name, and the file that says so.
 
-    python3 helpers/basalt_pin.py resolve [--repository nifeos/basalt] [--current FILE]
+    python3 helpers/basalt_pin.py resolve [--repository partsfoundry/basalt] [--current FILE]
     python3 helpers/basalt_pin.py --selftest
 
 Name: provisional, minted 2026-11-15 (UTC) by milestone/1116-basalt-pin-follows-release. A python
@@ -256,7 +256,7 @@ def main(argv):
     if argv == ["--selftest"]:
         return selftest()
     if argv and argv[0] == "resolve":
-        repository, current = "nifeos/basalt", "xtask/basalt-pin"
+        repository, current = "partsfoundry/basalt", "xtask/basalt-pin"
         rest = argv[1:]
         while rest:
             flag = rest.pop(0)

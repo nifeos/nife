@@ -6,7 +6,7 @@
 #
 # Name: ratified 2026-07-22 by adopting Scripts to Rule Them All. The canonical set keeps its
 # standard names even where a more descriptive word exists, because the entire value is that the
-# command is the same in every repository that follows the pattern (nifeos/record:design/naming.md).
+# command is the same in every repository that follows the pattern (partsfoundry/record:design/naming.md).
 
 set -e
 cd "$(dirname "$0")/.."

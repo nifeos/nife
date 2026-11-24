@@ -96,7 +96,7 @@ def compile_rules(consumers):
 
 
 # A manifest dependency taken from a repository of the organization.
-GIT_DEPENDENCY = re.compile(r'git\s*=\s*"https://github\.com/nifeos/[A-Za-z0-9_.-]+"')
+GIT_DEPENDENCY = re.compile(r'git\s*=\s*"https://github\.com/(?:partsfoundry|nifeos)/[A-Za-z0-9_.-]+"')
 
 # The marker ends the line, as the last comment on it.
 WIRE_LITERAL = re.compile(r"(?://|#|/\*)\s*wire literal(?:\s*\*/)?\s*$")
@@ -167,13 +167,14 @@ def selftest():
     assert t("a/src/lib.rs", "// the disk_surveyor_x") == []
     assert t("a/src/lib.rs", "// part of core-tools") == ["consumer-name"]
     assert t("a/src/lib.rs", "// console and input") == []
-    assert t("a/Cargo.toml", 'repository = "https://github.com/nifeos/x"') == []
-    assert t("a/Cargo.toml", 'homepage = "https://github.com/nifeos/x"') == []
+    assert t("a/Cargo.toml", 'repository = "https://github.com/partsfoundry/x"') == []
+    assert t("a/Cargo.toml", 'homepage = "https://github.com/partsfoundry/x"') == []
     assert t("a/Cargo.toml", 'description = "for nifeos"') == ["nifeos-word"]
-    assert t("a/README.md", "see github.com/nifeos/x") == ["nifeos-word"]
-    assert t("a/Cargo.toml", 'y = { version = "0.1.0", git = "https://github.com/nifeos/y", rev = "abc" }') == []
+    assert t("a/README.md", "see the nifeos project") == ["nifeos-word"]
+    assert t("a/README.md", "see github.com/partsfoundry/x") == []
+    assert t("a/Cargo.toml", 'y = { version = "0.1.0", git = "https://github.com/partsfoundry/y", rev = "abc" }') == []
     assert t("a/Cargo.toml", 'y = { git = "https://example.com/nifeos/y" }') == ["nifeos-word"]
-    assert t("a/README.md", "[![check](https://github.com/nifeos/x/actions/workflows/ci.yml/badge.svg)](https://github.com/nifeos/x)") == []
+    assert t("a/README.md", "[![check](https://github.com/partsfoundry/x/actions/workflows/ci.yml/badge.svg)](https://github.com/partsfoundry/x)") == []
     # A marked line is exempt; an unmarked one, or a marker that is not last, is not.
     assert t("a/src/lib.rs", 'const OWNER: &[u8] = b"nife"; // wire literal') == []
     assert t("a/src/lib.rs", "KEEP(*(.note.nife.*)) /* wire literal */") == []
@@ -193,7 +194,7 @@ def selftest():
         files = {
             "crates/externalization-list.txt": "# c\ngood\nbad\ndisk_surveyor\n",
             "components/Cargo.toml": '[[bin]]\nname = "disk_surveyor"\n',
-            "crates/good/Cargo.toml": '[package]\nrepository = "https://github.com/nifeos/good"\n',
+            "crates/good/Cargo.toml": '[package]\nrepository = "https://github.com/partsfoundry/good"\n',
             "crates/good/README.md": "A standalone crate.\n",
             "crates/good/src/lib.rs": "//! Fine.\n",
             "crates/bad/Cargo.toml": '[package]\ndescription = "x"\n',

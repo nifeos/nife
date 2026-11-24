@@ -17,13 +17,13 @@
 #
 #   helpers/qemu-uefi-x86_64.sh <esp-directory> [extra qemu args...]
 #
-# `cargo xtask uefi-image` populates the directory; see nifeos/record:notes/x86-uefi-boot.md for the whole picture
+# `cargo xtask uefi-image` populates the directory; see partsfoundry/record:notes/x86-uefi-boot.md for the whole picture
 # and for the bench procedure on the real machine.
 #
 # THE FAT FILESYSTEM IS QEMU'S OWN, and that is what makes this need no new host tooling. `file=fat:`
 # is QEMU's vvfat block driver: it synthesises a FAT filesystem out of a host DIRECTORY, live, so
 # there is no image to build and no `mtools`/`mformat` to install (neither is available on this
-# machine, and `grub-mkrescue` is not installable at all here; see nifeos/record:notes/x86-uefi-boot.md's fork).
+# machine, and `grub-mkrescue` is not installable at all here; see partsfoundry/record:notes/x86-uefi-boot.md's fork).
 # `fat:rw:` rather than read-only because OVMF writes its own boot-order bookkeeping.
 #
 # BOUNDED, ALWAYS. The kernel halts with `hlt` rather than exiting, so QEMU never exits on its own.
@@ -132,7 +132,7 @@ fi
 # `arch::x86_64::machine`'s BOOT_DIRECT_MAP_LIMIT was wrong by 4x for exactly as long as this
 # script matched its sibling, and that bug cost the APICs, the timer, PCI and VT-d on any machine
 # with real RAM. NIFE_MEM sets it back to 256M for a like-for-like memory-map comparison against
-# the PVH runner (nifeos/record:notes/x86-uefi-boot.md's table was measured that way).
+# the PVH runner (partsfoundry/record:notes/x86-uefi-boot.md's table was measured that way).
 # A QEMU monitor on a unix socket, when NIFE_SCREEN_MON names one (milestone 243). This is what
 # lets a GATE read a screen: `screendump` writes a PPM of the scanout and works with `-display none`
 # (the aarch64 runner has relied on that since milestone 29 (a display terminal)), and
@@ -253,7 +253,7 @@ if [ -n "$NIFE_NVME" ]; then
         exit 1
     fi
     # **Two knobs for fatal risk 6's rehearsal** (milestone 261 (the NVMe driver leaves the kernel); `cargo xtask disk-throughput`,
-    # nifeos/record:notes/risk-6-bench-evening.md). Names provisional. NIFE_NVME_ROOT_PORT=1 puts the controller
+    # partsfoundry/record:notes/risk-6-bench-evening.md). Names provisional. NIFE_NVME_ROOT_PORT=1 puts the controller
     # behind a PCIe root port, which is where xenon's Micron is (bus 1, not bus 0), so the bridge
     # walk and the DMAR scope resolution both run against the shape the bench has.
     # NIFE_NVME_DEVICE_OPTS is appended to `-device nvme` verbatim, for the namespace's block size
@@ -267,7 +267,7 @@ if [ -n "$NIFE_NVME" ]; then
 fi
 
 # **NIFE_ACCEL=kvm runs the guest on the host's own cores** (milestone 628 (provisional), which
-# measured what it buys; nifeos/record:notes/benchmarks/swish-check-x86-leg.md). Only on an x86_64 Linux host with
+# measured what it buys; partsfoundry/record:notes/benchmarks/swish-check-x86-leg.md). Only on an x86_64 Linux host with
 # a usable /dev/kvm, which `swish-check` checks before setting it; anything else is QEMU's default,
 # TCG, exactly as before. Unlike the aarch64 runner's `hvf` there is nothing to probe: KVM runs the
 # guest's own ISA, and the machine below needs no change for it. Two facts that change underneath:

@@ -2,7 +2,7 @@
 # script/undefined-behavior-check: the host-logic tests again, under Miri's interpreter (milestone 79). Miri checks
 # the rules no other gate here checks: aliasing (tree borrows), pointer provenance, uninitialized
 # reads, and leaks. Kani proves the properties it is asked about, the fuzzers see crashes, clippy
-# sees shapes; none of them sees a `&mut` that aliases. See nifeos/record:notes/undefined-behavior.md.
+# sees shapes; none of them sees a `&mut` that aliases. See partsfoundry/record:notes/undefined-behavior.md.
 #
 # **"Miri-clean" means the sampled paths.** The interpreter is roughly a thousand times slower
 # than native, so the exhaustive suites gate themselves down under `cfg(miri)`: network_time_protocol strides

@@ -24,12 +24,12 @@
 # the six pages the filesystem image installs, because a guest can only search what it holds. A
 # person with a checkout has no such limit, so this points the same code at all of it: every note
 # and repository-root document this repository keeps, plus every crate's and program's own module
-# header. The design record (the decisions, the roadmap and most notes) is in nifeos/record, and
+# header. The design record (the decisions, the roadmap and most notes) is in partsfoundry/record, and
 # this does not search it.
 #
 # **Why it exists**, and it is a finding rather than a nicety. Milestone 117 has run three strangers
-# at this tree with no help. What none of them could do is on the record in nifeos/record:notes/stranger-test.md:
-# reach nifeos/record:notes/net.md, notes/capabilities.md or ANY nifeos/record:design/decisions/ file by following the tree
+# at this tree with no help. What none of them could do is on the record in partsfoundry/record:notes/stranger-test.md:
+# reach partsfoundry/record:notes/net.md, notes/capabilities.md or ANY partsfoundry/record:design/decisions/ file by following the tree
 # while doing ordinary work, or find the system call numbers in `moho_abi`'s own header. None of
 # those was hidden; nothing a person would type led to them. This is the thing to type. It is also
 # why the crate and program headers are indexed: the document a reader wants about a crate *is* its
@@ -43,9 +43,9 @@
 # BUGS
 #
 # - **It does not reach the design record**, which holds every page the paragraph above names as the
-#   reason this exists: the decisions, nifeos/record:notes/net.md and the stranger-test notes. The
-#   system call numbers are in nifeos/moho_abi, outside this tree too. Until a search reaches the
-#   record, a reader looks there on GitHub. A milestone that builds one is proposed in nifeos/record.
+#   reason this exists: the decisions, partsfoundry/record:notes/net.md and the stranger-test notes. The
+#   system call numbers are in partsfoundry/moho_abi, outside this tree too. Until a search reaches the
+#   record, a reader looks there on GitHub. A milestone that builds one is proposed in partsfoundry/record.
 # - **Whole words only, and no stemming.** `system_call` and `system_calls` are two terms, so a search for
 #   one does not find the other. `documentation::index::normalize` is what decides that and it is the
 #   guest's tokeniser, which has to run with no allocator.
@@ -74,11 +74,11 @@
 # - **The first stranger it was built for never ran it, and had the name in front of it three
 #   times.** Milestone 117's run 5 (2026-08-18) listed `script/`, read the guest's `apropos` builtin
 #   in `crates/swish/src/lib.rs` and read `apropos photosynthesis` in `SWISH_CHECK_SCRIPT`, and ran
-#   none of them, so it reached no `nifeos/record:design/decisions/` file and never opened `nifeos/record:notes/net.md`, the gap
+#   none of them, so it reached no `partsfoundry/record:design/decisions/` file and never opened `partsfoundry/record:notes/net.md`, the gap
 #   this was written to close. The reason was placement: the only page that said what this does was
 #   `notes/scripts.md`, which no stranger had opened. **Placed 2026-09-19**, in `README.md`'s
 #   start-here order and in `CONTRIBUTING.md`, each with an example. Whether that is enough is the
-#   next stranger run's measurement rather than this entry's claim; nifeos/record:notes/stranger-test.md has the
+#   next stranger run's measurement rather than this entry's claim; partsfoundry/record:notes/stranger-test.md has the
 #   record.
 #
 # Name: ratified 2026-09-14 (calef, working the unratified worklist). Minted by milestone 40's

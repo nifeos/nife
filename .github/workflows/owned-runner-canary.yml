@@ -7,7 +7,7 @@ name: owned runner canary
 #   first run after merge is the first observation of the canary itself. The isolation jobs
 #   (canary-owned-write, -check, -isolation) follow the same rule: a leak needs a dirty owned slot,
 #   which a branch cannot stage, and the selftest also requires an unguarded matrix job to fail.
-#   nifeos/record:notes/owned-runners.md.
+#   partsfoundry/record:notes/owned-runners.md.
 
 # **Monitoring of the owned runners beside their hosted twin.** It gates nothing, but the flip to
 # owned runners waits for it: canary-owned (strict image checks) and canary-owned-dry-run must be
@@ -17,7 +17,7 @@ name: owned runner canary
 # only, so a queue entry does not hold seven owned slots for a reading aid. `canary-owned` also checks the container's walls (no direct egress past the proxy,
 # no container-engine socket) and prints a FINDING for each one that is open. `canary-owned` is strict and
 # fails on any FINDING; none of the canary jobs is a required check, so none can fail the queue. Names are provisional.
-# nifeos/record:notes/owned-runners.md is the runbook.
+# partsfoundry/record:notes/owned-runners.md is the runbook.
 
 on:
   merge_group:
@@ -72,7 +72,7 @@ jobs:
           test -w /dev/kvm && command -v qemu-system-x86_64 >/dev/null
       # The image, from inside: the stage 1 jobs need a Rust toolchain, an apt that uses the proxy
       # and a pip that reaches its index. A FINDING here fails this job, which cannot fail the
-      # queue; it is what a maintainer reads before flipping NIFE_RUNNER_OWNED (nifeos/record:notes/owned-runners.md).
+      # queue; it is what a maintainer reads before flipping NIFE_RUNNER_OWNED (partsfoundry/record:notes/owned-runners.md).
       # checkout-retry: exempt, this job measures the owned runner's own checkout, and a retry would hide a stall it exists to show
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install the pinned toolchain

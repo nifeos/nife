@@ -4,7 +4,7 @@
 # in one step.
 #
 #     script/record-ruling 1783 --text '"Send it back to build the flush-only capability."' --held-by-lane
-#     script/record-ruling 1786 --link https://github.com/nifeos/nife/pull/1786#issuecomment-123
+#     script/record-ruling 1786 --link https://github.com/partsfoundry/nife/pull/1786#issuecomment-123
 #     script/record-ruling 1786 --partial --text 'Fork 1: "Yes."'
 #
 # # Why this exists
@@ -47,7 +47,7 @@ usage: script/record-ruling <number> (--text <ruling> | --file <path> | --link <
   --partial         rules on some of the asks only: post it, change no label, leave the question open
   --lane <name>     who is relaying, for the comment's first line (default: $NIFE_LANE, else
                     "maintainer session")
-  --repo <o/r>      default: nifeos/nife
+  --repo <o/r>      default: partsfoundry/nife
   --dry-run         print the comment and the label change, post nothing
 EOF
 	exit 2
@@ -60,7 +60,7 @@ case "$num" in '' | *[!0-9]*) usage ;; esac
 
 text="" link="" held="" partial="" dry=""
 lane="${NIFE_LANE:-maintainer session}"
-repo="nifeos/nife"
+repo="partsfoundry/nife"
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--text) [ $# -ge 2 ] || usage; text="$2"; shift 2 ;;

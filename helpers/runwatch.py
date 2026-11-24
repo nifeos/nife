@@ -5,8 +5,8 @@
 # instead of a lane nobody is watching for.
 #
 # Usage: the maintainer appends one line per run to runs.txt, "<run> <lane_agent_id> <label>", where
-# <run> is the WAITING token copied verbatim: a bare `<run_id>` means nifeos/nife, and
-# `<owner>/<repo>:<run_id>` (nifeos/basalt:123, nifeos/crate-workflows:456) names another
+# <run> is the WAITING token copied verbatim: a bare `<run_id>` means partsfoundry/nife, and
+# `<owner>/<repo>:<run_id>` (partsfoundry/basalt:123, partsfoundry/crate-workflows:456) names another
 # repository. The repository rides in the first field, not a trailing `repo=` key, because <label>
 # is free text with spaces and a trailing key would be ambiguous with it. Then starts (or leaves running, with run_in_background) `python3 helpers/runwatch.py [timeout]`.
 # It polls every two minutes and exits (so the maintainer wakes) the moment a lane's runs are ALL
@@ -31,7 +31,7 @@ DONE = os.path.join(D, "runs-done.txt")
 deadline = time.time() + float(sys.argv[1] if len(sys.argv) > 1 else 7200)
 
 
-DEFAULT_REPO = "nifeos/nife"
+DEFAULT_REPO = "partsfoundry/nife"
 
 
 def split_run(token):

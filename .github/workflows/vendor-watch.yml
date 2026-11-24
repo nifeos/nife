@@ -2,7 +2,7 @@ name: vendor watch
 
 # Observed failing: never. Four runs, all green: nothing upstream has moved or vanished, and
 #   neither `exit 1` arm (transient, 404) has run. Dispatching it on a branch with one pin's
-#   coordinates broken would stage the 404 arm. See nifeos/record:notes/observed-failing.md.
+#   coordinates broken would stage the 404 arm. See partsfoundry/record:notes/observed-failing.md.
 
 # **Has RedoxFS moved?** Asked monthly, answered before somebody has to remember to ask.
 #
@@ -10,7 +10,7 @@ name: vendor watch
 # patches, which is a claim about the past; it never asks what upstream has published since.
 # Dependabot cannot cover the gap either, because `vendor/redoxfs` is deliberately its own
 # workspace and so sits outside the Cargo graph dependabot walks. Milestone 203 is that gap, and
-# nifeos/record:design/decisions/0081-dependency-upgrades.md's rule that a dependency stays upgradable had
+# partsfoundry/record:design/decisions/0081-dependency-upgrades.md's rule that a dependency stays upgradable had
 # `vendor/` as its blind spot until this ran.
 #
 # **This is toolchain-bump.yml's shape, on purpose.** One PR, updated in place on a fixed branch,
@@ -101,7 +101,7 @@ jobs:
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
           # Exactly the set the App held before milestone 128 (the automation gets its own identity)
           # widened it for sessions, Administration among them. Named here so the widening reaches no
-          # workflow; nifeos/record:notes/session-identity.md.
+          # workflow; partsfoundry/record:notes/session-identity.md.
           permission-contents: write
           permission-pull-requests: write
 

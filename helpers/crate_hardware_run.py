@@ -10,7 +10,7 @@ line. It prints one row per condition of the definition in milestone 1035 (a cra
 version that ran on hardware) and ends `PASS` or `FAIL, N problem(s)`, exiting 0 or 1:
 
 1. Every boot names the same crate version V and commit C, and C is the commit of the tag `vV` on
-   nifeos/jh7110_entropy. The version string alone does not settle it: the crate's `Cargo.toml`
+   partsfoundry/jh7110_entropy. The version string alone does not settle it: the crate's `Cargo.toml`
    can carry a version whose tag points at another commit. With `--nife-commit`, that nife commit
    is on `origin/main` and its `Cargo.lock` resolves the crate to the same V and C.
 2. At least two boots carry the line.
@@ -21,7 +21,7 @@ version that ran on hardware) and ends `PASS` or `FAIL, N problem(s)`, exiting 0
 
 The tag's commit comes from `git ls-remote` against the crate's repository, so `judge` needs the
 network; `--tag-commit` gives it instead, for a reader offline. The steps that produce the logs are in
-nifeos/record:design/roadmap/1035-a-crate-names-the-version-that-ran-on-hardware/bench-steps.md.
+partsfoundry/record:design/roadmap/1035-a-crate-names-the-version-that-ran-on-hardware/bench-steps.md.
 
 Name: provisional.
 """
@@ -33,7 +33,7 @@ import tempfile
 import os
 
 CRATE = "jh7110_entropy"
-CRATE_REPOSITORY = "https://github.com/nifeos/jh7110_entropy"
+CRATE_REPOSITORY = "https://github.com/partsfoundry/jh7110_entropy"
 # boot-line-head: copy, Python cannot link boot_ladder; matches the banner head
 BANNER = re.compile(r"^nife on ")
 TRNG = re.compile(r"self-test\s+: true_random_number_generator\s+(ok|FAILED|absent)\s+(.*)$")

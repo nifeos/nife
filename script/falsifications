@@ -7,7 +7,7 @@
 # and the patch path `<package>/falsifications/<module.path>.<harness_fn_name>.patch`. Every other
 # spelling here (the flags, the column headings) is this lane's and an architect names things.
 #
-# Why this exists. nifeos/record:notes/verification.md has said "falsify a property before believing it" since
+# Why this exists. partsfoundry/record:notes/verification.md has said "falsify a property before believing it" since
 # milestone 35, and milestone 191 measured what that produced: 141 harnesses and **not one of them
 # recording what was done to falsify it**. The rule was rung four, honoured by whoever remembered,
 # and the reverse pass found the predictable result. `capability_table::subset_is_reflexive` proves
@@ -30,7 +30,7 @@
 # to CaDiCaL, and a bounded proof has no induction step to take a core from. `cargo kani --coverage`
 # is source-based REACHABILITY coverage (which regions symbolic execution touched), which catches
 # some vacuity and no tautology at all; `cbmc --slice-formula` drops assignments unrelated to the
-# property as a solver optimisation and reports nothing. See nifeos/record:notes/verification.md.
+# property as a solver optimisation and reports nothing. See partsfoundry/record:notes/verification.md.
 #
 # The states, and the unknown one is first-class. This is `script/names`' lesson taken whole,
 # and for the same reason: inventing evidence to fill a row puts a false claim in the one record
@@ -55,7 +55,7 @@
 # a test that boots under QEMU rather than a Kani harness, and nothing could replay it: this script
 # keyed on `#[kani::proof]`, and the only replay verb it had was `cargo kani --harness`. **Milestone
 # 210 built the missing half** (`cargo xtask test --test <substring>` filters the kernel suite), and
-# six kernel confinement claims in nifeos/record:notes/confinement-claims.md had sat at "no mechanism" waiting for
+# six kernel confinement claims in partsfoundry/record:notes/confinement-claims.md had sat at "no mechanism" waiting for
 # it. So the three states, the `Falsification:` block and §134's patch path are all unchanged; what
 # is new is a second replay verb and a second thing to read the block above.
 #
@@ -94,17 +94,17 @@
 # **A swish-check record is the third thing a block can sit above** (milestone 742 (every test is
 # falsified as routine), provisional). Milestone 673 (the confinement table lists the unvouched
 # child) recorded `xtask/falsifications/swish_check.boot.swish_check_boot.patch` against row 31 of
-# nifeos/record:notes/confinement-claims.md and could only replay it by hand. Now a block above a function in
+# partsfoundry/record:notes/confinement-claims.md and could only replay it by hand. Now a block above a function in
 # the harness (`xtask/src/swish_check/` today) is swept with `script/swish-check --arch <a>`,
 # opt-in like a kernel test, and the patch must name the typed line it breaks (`Line:`, provisional) because red counts
 # only when swish-check's own FAILED report names that line. **Only one such record can exist
 # today**: the path is keyed on a function and every line is typed by `swish_check_boot`, so a
 # second line's record has no name to take. That is a §134 (a harness carries a machine-replayable falsification record) spelling question and an architect's;
-# nifeos/record:design/roadmap/0775-a-swish-check-line-has-a-falsification-path.md carries it.
+# partsfoundry/record:design/roadmap/0775-a-swish-check-line-has-a-falsification-path.md carries it.
 #
 # The block, which is all the lint checks:
 #
-#   /// Falsification: replayable `falsifications/verification.subset_is_transitive.patch` in `nifeos/capability_table`
+#   /// Falsification: replayable `falsifications/verification.subset_is_transitive.patch` in `partsfoundry/capability_table`
 #   /// Falsification: attested 2026-08-30. Flipped the mask; the subset assertion failed.
 #   /// Falsification: unfalsified. Nobody has proposed a defect this would catch.
 #   /// Falsification: unfalsifiable. <at least 200 characters: what the operation can and cannot
@@ -230,7 +230,7 @@
 #   kernel maps its own memory user-readable" cannot be booted there at all, and the record for that
 #   claim names two legs and not three. DECISIONS §19 (architectural parity is a tenet) makes parity
 #   a gate for the *capability*; a record naming fewer legs than the test runs on is a gap in the
-#   *evidence*, and nifeos/record:notes/confinement-claims.md names which rows it affects.
+#   *evidence*, and partsfoundry/record:notes/confinement-claims.md names which rows it affects.
 # - **A kernel record can name the machine as well as the architecture** (lane `amd-vi`; the line's
 #   name is PROVISIONAL). `Environment: NIFE_IOMMU=amd` in the patch head sets runner variables for
 #   the replay, because some claims hold on a machine the default runner does not build: AMD-Vi
@@ -275,7 +275,7 @@
 #   riscv64's `iommu.rs`, replayable on an aarch64 host like aarch64's own. The timer re-arm
 #   drift, the reason this entry exists, is still on the far side of the `asm!` boundary and
 #   outside this record entirely. (This entry used to pair the timer drift with
-#   "the VisionFive 2's undelivered-wake defect." That reading is retracted, nifeos/record:notes/visionfive2.md's
+#   "the VisionFive 2's undelivered-wake defect." That reading is retracted, partsfoundry/record:notes/visionfive2.md's
 #   fifth bench stop, 2026-08-15: it was a completed tour's terminal state, not a stranded receiver,
 #   and never happened. Found still repeating it here 2026-09-23.)
 # - **A file's module path is derived from the Cargo target it belongs to, and one shape defeats
@@ -514,7 +514,7 @@ def packages():
         # package list in this file is the defect milestone 212 exists to remove. Kani refuses a
         # crate containing `global_asm!` outright unless told to ignore it, and `script/verify`
         # carries the same exception for the same reason; see its `kernel)` case and
-        # nifeos/record:notes/kernel-proofs.md for what the resulting stubs do and do not cover.
+        # partsfoundry/record:notes/kernel-proofs.md for what the resulting stubs do and do not cover.
         asm = subprocess.run(["git", "-C", root, "grep", "-l", "global_asm!", "--", rel + "/*.rs"],
                              capture_output=True, text=True).returncode == 0
         out.append(Package(p["name"], rel, targets, asm))
@@ -1596,7 +1596,7 @@ def table(hs, pkgs, kts=()):
     # in it, so this ratio says how much of what is proved carries evidence, never how much of the
     # code is proved: milestone 524 (the three x86_64 boot gates: NX, SYSTEM_CALL, and the invariant
     # TSC) added 338 unharnessed lines to one crate and it did not move.
-    print("The denominator is harnesses, not code: code no harness covers is outside it (nifeos/record:notes/denominators.md).")
+    print("The denominator is harnesses, not code: code no harness covers is outside it (partsfoundry/record:notes/denominators.md).")
     # Records that exist, that a person performed, and that no sweep can replay, printed rather
     # than folded into either number above. Milestone 212 decided this explicitly: a denominator
     # that quietly excludes them is what it was written to end, and so is a numerator that quietly
@@ -2131,7 +2131,7 @@ def sweep(hs, only=None, empty_is_clean=False, attested=False):
     is wrong: a renamed state, a moved directory, a mistyped package. Only `--affected-since` may
     find nothing, because a diff that reaches no replayable record is an ordinary diff. The weekly
     job reported three empty sweeps as success before this existed, by another route
-    (nifeos/record:notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md).
+    (partsfoundry/record:notes/corrections/2026-09-23-the-sweep-that-swept-nothing.md).
     """
     d = dirty()
     if d:
@@ -2470,7 +2470,7 @@ def record_times(logs):
 
 
 # **Mutants under QEMU, part 1 of "the kernel and its programs are mutated under QEMU"**
-# (nifeos/record:design/roadmap/0955-the-kernel-and-its-programs-are-mutated-under-qemu.md). Provisional
+# (partsfoundry/record:design/roadmap/0955-the-kernel-and-its-programs-are-mutated-under-qemu.md). Provisional
 # flags; an architect names things.
 #
 #   script/falsifications --mutants --file <path.rs> [--arch aarch64] [--limit N] [--offset K]

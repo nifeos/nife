@@ -3,7 +3,7 @@
 # Selftest for the host following main (helpers/fuzz-follow-main.py and its use in
 # helpers/continuous-fuzz.sh), run by script/lint. No network, no KVM, no toolchain.
 #
-# A scratch upstream repository stands in for nifeos/nife, and a clone of it stands in for the host's
+# A scratch upstream repository stands in for partsfoundry/nife, and a clone of it stands in for the host's
 # clone. Stubs first on PATH (the supervisor puts `$HOME/.cargo/bin` there) replace four programs: a
 # `git` that records each fetch and points the one upstream address at the scratch repository, a
 # `curl` that serves fixture API answers, and `rustup`, `cargo` and `qemu-system-x86_64` stubs that
@@ -47,7 +47,7 @@ case " $* " in
     printf '%s\n' "$*" >> "$STUB_FETCHES"
     for a; do
         shift
-        if [ "$a" = https://github.com/nifeos/nife.git ]; then set -- "$@" "$STUB_UPSTREAM"; else set -- "$@" "$a"; fi
+        if [ "$a" = https://github.com/partsfoundry/nife.git ]; then set -- "$@" "$STUB_UPSTREAM"; else set -- "$@" "$a"; fi
     done
     exec "$STUB_REAL_GIT" -c protocol.file.allow=always "$@"
     ;;
@@ -146,7 +146,7 @@ git -C "$up" update-ref refs/heads/main "$a"
 look
 [ "$rc" -eq 1 ] || fail "main at the clone's commit: exit $rc ($out)"
 [ "$curls" -eq 0 ] || fail "main at the clone's commit: $curls API requests, wanted none"
-grep -q ' fetch .* https://github.com/nifeos/nife.git +refs/heads/main:refs/fuzz-follow/main$' "$STUB_FETCHES" \
+grep -q ' fetch .* https://github.com/partsfoundry/nife.git +refs/heads/main:refs/fuzz-follow/main$' "$STUB_FETCHES" \
     || fail "the fetch did not name main of the public address alone: $(cat "$STUB_FETCHES")"
 grep -q 'protocol.allow=never' "$STUB_FETCHES" || fail "the fetch does not refuse other protocols"
 

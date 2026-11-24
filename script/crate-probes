@@ -10,7 +10,7 @@
 # `crates-io-probes` matches the note's filename and loses on length for no gain, since nothing here
 # probes anything but crates.io.
 #
-# This is milestone 64's measurement, which nifeos/record:notes/crates-io-on-nife.md consumes and which milestones
+# This is milestone 64's measurement, which partsfoundry/record:notes/crates-io-on-nife.md consumes and which milestones
 # 99 and 66 consume from there. It existed as a prose recipe in that note and was re-derived by hand
 # twice; the second re-derivation found the headline had been wrong for thirteen days. A measurement
 # a reader cannot re-run is a claim, so this is the mechanism.
@@ -130,11 +130,11 @@ EOF
 # here does not fail the script (milestone 341 (give the three instruments nothing runs a caller), §174 (a caller for each of the three uncalled
 # instruments)). Every other probe is a gate: one that stops building, or whose own `main` stops
 # building on the host, fails the run. The crates stay in `probe_names`, so the table above and
-# nifeos/record:notes/crates-io-on-nife.md keep measuring them; they are not deleted from the list because their
+# partsfoundry/record:notes/crates-io-on-nife.md keep measuring them; they are not deleted from the list because their
 # dependencies are real and nife is the party that lacks the feature, not the crate that is wrong.
 #
-# The classes are nifeos/record:notes/crates-io-on-nife.md's. A fix is not a probe change: class B waits on
-# `std::os::unix`, which is absent and declined; class C waits on the C seam (nifeos/record:notes/c-seam.md);
+# The classes are partsfoundry/record:notes/crates-io-on-nife.md's. A fix is not a probe change: class B waits on
+# `std::os::unix`, which is absent and declined; class C waits on the C seam (partsfoundry/record:notes/c-seam.md);
 # class D waits on a socket and fd model. Each is an architect's call, not this table's.
 #
 # A listed crate that starts to build prints `NOW BUILDS` beside its row. Delete its entry here when
@@ -155,7 +155,7 @@ known_failure() {
 
 # The dependency line each probe's Cargo.toml gets. Where a crate has a pure-Rust option the probe
 # takes it (`flate2`'s `rust_backend`), and where a feature is the point of the probe it is named
-# (`tokio`'s `rt`, `diesel`'s `sqlite`); nifeos/record:notes/crates-io-on-nife.md records that this is a choice
+# (`tokio`'s `rt`, `diesel`'s `sqlite`); partsfoundry/record:notes/crates-io-on-nife.md records that this is a choice
 # the measurement makes on the reader's behalf and that a different feature set gives a different
 # answer.
 probe_dep() {
@@ -506,7 +506,7 @@ write_probe() {
         if [ "$BACKEND_ON" -eq 1 ]; then echo "entropy_backend = { path = \"$BACKEND\" }"; fi
         echo '[profile.release]'
         echo 'panic = "abort"'
-        # Overflow checks as the shipped build carries them (nifeos/record:notes/overflow-checks.md).
+        # Overflow checks as the shipped build carries them (partsfoundry/record:notes/overflow-checks.md).
         echo 'overflow-checks = true'
     } >"$dir/Cargo.toml"
     # Without the backend the cfg must go too, or `getrandom` selects a custom backend whose symbol

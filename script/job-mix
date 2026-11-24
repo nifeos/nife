@@ -10,19 +10,19 @@
 #   script/job-mix --lock-wait              # ...and count contended kernel locks per point (2026-10-04)
 #   script/job-mix --quiet-after 0          # a host so slow a subrun outlasts the wedge timer
 #
-# `nifeos/record:design/decisions/0096-process-kernel-or-event-kernel.md` asks whether this kernel should keep a
+# `partsfoundry/record:design/decisions/0096-process-kernel-or-event-kernel.md` asks whether this kernel should keep a
 # kernel stack per thread. Three of its four inputs are settled; the fourth is performance, and the
 # retrospective it rests on found event kernels within 1% of process kernels on micro-benchmarks and
 # 20% ahead on a multi-tasking workload. Every instrument this project owns is a micro-benchmark.
 # This is the one that is not: a pool of EL0 tasks running a heterogeneous job mix, swept over task
-# count, reported as jobs per minute. See crates/job_mix for the mix and nifeos/record:notes/job-mix.md for what a
+# count, reported as jobs per minute. See crates/job_mix for the mix and partsfoundry/record:notes/job-mix.md for what a
 # result means.
 #
 # **This is the rehearsal, not the measurement.** The milestone's gate is HARDWARE, and it means it:
 # under TCG the magnitudes are fiction (no cache is modelled) and under HVF a host scheduler sits
 # under every guest thread. What this proves is that the workload runs, that the sweep completes,
 # and that the output is the shape a bench evening will read. The number is taken on radon, by
-# nifeos/record:notes/job-mix.md's procedure.
+# partsfoundry/record:notes/job-mix.md's procedure.
 #
 # What it boots is `--features job_mix`, where the boot tour ends in the sweep instead of a halt.
 # See kernel/src/job_mix.rs and fixtures/src/job_mix_task.rs.
@@ -55,10 +55,10 @@
 #   about that change was near this default; a number quoted from a capture is only as current as
 #   the capture.
 #
-# - **A jobs-per-minute figure from one boot is a draw, not a result.** nifeos/record:notes/soak.md records four
+# - **A jobs-per-minute figure from one boot is a draw, not a result.** partsfoundry/record:notes/soak.md records four
 #   runs on radon whose rates span fifteenfold, and milestone 240's census explains them: the
 #   boot-time thread-placement lottery decides. The kernel prints its census before the sweep for
-#   exactly that reason, and nifeos/record:notes/job-mix.md's procedure asks for repeated boots.
+#   exactly that reason, and partsfoundry/record:notes/job-mix.md's procedure asks for repeated boots.
 # - **There is no `--check` and no committed baseline.** `script/bench` gates against
 #   bench/baseline-*.txt because its icount counts are deterministic; a sweep whose whole subject is
 #   scheduling under contention is not, on any accelerator this tree has. Gating it would be
@@ -70,18 +70,18 @@
 #   boot replaces the handoff the way a soak boot does and the `allow` named only `soak`) and fixed
 #   that one line. Nothing keeps it fixed. Not added to the loop here: that is two more clippy
 #   builds on every pull request, and the shape of the answer is
-#   `nifeos/record:design/roadmap/0373-board-only-features-nothing-compiles.md`, which covers `reboot_soak_test`
+#   `partsfoundry/record:design/roadmap/0373-board-only-features-nothing-compiles.md`, which covers `reboot_soak_test`
 #   and `single_hart` too. **This entry said "CI builds neither this feature nor `--features soak_test`"
 #   until 2026-09-14 and the second half was false**: `soak` has been in that loop since it was
 #   written. A BUGS section that overstates is the failure mode AGENTS.md names, so it is corrected
 #   rather than quietly narrowed.
 # - ~~**`--hvf` does not run on this project's QEMU (11.1.1) today.**~~ Milestone 227 (a GICv3
 #   driver) made it boot, and since 2026-10-05 the sweep completes there, about 16 seconds on an
-#   Apple host (notes/job-mix/spawn-destroy-gone.md). The 2026-09-19 refusal is in nifeos/record:notes/job-mix.md.
+#   Apple host (notes/job-mix/spawn-destroy-gone.md). The 2026-09-19 refusal is in partsfoundry/record:notes/job-mix.md.
 # - **The output changed on 2026-09-19**: each point is the median of 21 repeats, printed as
 #   `ticks_median=` and `jpm_median=` beside the ends, and a `job-mix-kind:` line per job kind
 #   follows each point. A transcript from before then says `ticks=` and `jpm=`, is the best of 3 of
-#   a five-job mix, and is not comparable. nifeos/record:notes/job-mix.md has the table.
+#   a five-job mix, and is not comparable. partsfoundry/record:notes/job-mix.md has the table.
 # - **This sweep and `script/soak-test` are alternatives, not a stack.** Both replace the end of the boot
 #   tour, and a build carrying both features would run this one and never soak. `serial_console`'s
 #   `Stage` orders `Sweep` above `Soak` for that reason and for no other: the enum has to order them

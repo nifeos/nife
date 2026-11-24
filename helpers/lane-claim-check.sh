@@ -107,7 +107,7 @@
 set -e
 cd "$(dirname "$0")/.."
 
-REPO="nifeos/nife"
+REPO="partsfoundry/nife"
 GRACE_MINUTES=${GRACE_MINUTES:-15}
 GRACE_HOURS=${GRACE_HOURS:-24}
 

@@ -6,9 +6,9 @@ name: ci failing
 #   but not this record's sense of failing: the arm that carries the claim (label and comment a ready
 #   pull request whose required check is red) never ran, and a crash looks the same whatever the
 #   checks say. The 17 runs after #1627, to 21:02 UTC that day, are green and no pull request has
-#   carried the `ci-failing` label. nifeos/record:notes/ci-failing.md's stubbed `gh` exercised that arm outside
+#   carried the `ci-failing` label. partsfoundry/record:notes/ci-failing.md's stubbed `gh` exercised that arm outside
 #   Actions. A ready pull request with a red required check would stage it. See
-#   nifeos/record:notes/observed-failing.md.
+#   partsfoundry/record:notes/observed-failing.md.
 
 # **Flags a ready pull request whose head fails a required check** (calef approved 2026-10-04 UTC).
 # calef twice spotted failing pull request CI (#1611, #1597) before any session did, and a session
@@ -17,14 +17,14 @@ name: ci failing
 # helpers/ci-failing.sh. Names (this file, the script, the `ci-failing` label) are provisional.
 #
 # It labels and comments and does nothing else: no dequeue, no disabling auto-merge, no rerun.
-# nifeos/record:notes/merge-queue.md has the BUGS. Like every scheduled workflow it runs only from `main`, so
+# partsfoundry/record:notes/merge-queue.md has the BUGS. Like every scheduled workflow it runs only from `main`, so
 # `helpers/ci-failing.sh --dry-run` from a checkout is how a change is tried first.
 
 on:
   schedule:
     - cron: "*/10 * * * *"
   workflow_dispatch:
-  # The schedule alone is nearly silent here (see nifeos/record:notes/ci-failing.md BUGS), so a pass also runs
+  # The schedule alone is nearly silent here (see partsfoundry/record:notes/ci-failing.md BUGS), so a pass also runs
   # whenever CI completes, as merge-drain.yml does, which is when a head can have just turned red.
   workflow_run:
     workflows: [ci]
@@ -53,7 +53,7 @@ jobs:
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
           # Exactly the set the App held before milestone 128 (the automation gets its own identity)
           # widened it for sessions, Administration among them. Named here so the widening reaches no
-          # workflow; nifeos/record:notes/session-identity.md.
+          # workflow; partsfoundry/record:notes/session-identity.md.
           permission-contents: write
           permission-pull-requests: write
 

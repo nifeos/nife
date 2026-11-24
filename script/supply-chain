@@ -8,7 +8,7 @@
 #   2. Is the vendored tree actually the upstream release we say it is? That is script/vendor-verify.
 #
 # **Why this is a gate and not a report.** The thesis is that this kernel confines code it did not
-# write (DECISIONS §14 (the project's direction), §27 (the filesystem service), §31 (the foreign-language seam), nifeos/record:notes/redoxfs-audit.md). Not knowing when that code has a published
+# write (DECISIONS §14 (the project's direction), §27 (the filesystem service), §31 (the foreign-language seam), partsfoundry/record:notes/redoxfs-audit.md). Not knowing when that code has a published
 # advisory was an odd blind spot for a project making that claim, and it stays a blind spot unless
 # something red-lights.
 #

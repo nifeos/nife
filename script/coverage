@@ -13,7 +13,7 @@
 #
 # `--kernel` is `cargo xtask coverage`: it builds the image with `-C instrument-coverage`, boots it
 # bounded, and reads the counters the kernel wrote to the host through semihosting. It needs QEMU
-# and clang, not cargo-llvm-cov. nifeos/record:notes/kernel-coverage.md has the method and the numbers.
+# and clang, not cargo-llvm-cov. partsfoundry/record:notes/kernel-coverage.md has the method and the numbers.
 #
 # Name: ratified 2026-08-03 (calef), retroactively and as a pattern rather than as a rename. When he
 # renamed `script/miri` and `script/mutants`, the argument was that `script/verify` runs Kani,

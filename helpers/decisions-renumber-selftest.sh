@@ -22,9 +22,9 @@ trap 'rm -rf "$work"' EXIT
 fail() { echo "decisions-renumber-selftest: $*" >&2; exit 1; }
 
 mkdir -p "$work/script" "$work/design/decisions/0004-fourth" "$work/notes"
-# script/decisions left with the record (milestone 1018 (the design record moves to nifeos/record
+# script/decisions left with the record (milestone 1018 (the design record moves to partsfoundry/record
 # and is published as a website)), so the copy under test is the record's, at the commit basalt
-# pins, until nifeos/record carries this selftest itself.
+# pins, until partsfoundry/record carries this selftest itself.
 record="$(python3 "$root/helpers/record_root.py" --top "$root")"
 cp "$record/script/decisions" "$work/script/decisions"
 

@@ -8,13 +8,13 @@ weekly metrics page draws from it.
 
     python3 helpers/packages.py --check      # what script/lint runs
     python3 helpers/packages.py --selftest   # planted violations, no tree, no git
-    python3 helpers/packages.py --table        # the table nifeos/record:notes/package-boundaries.md carries
-    python3 helpers/packages.py --write-table <record>  # write it into a checkout of nifeos/record
+    python3 helpers/packages.py --table        # the table partsfoundry/record:notes/package-boundaries.md carries
+    python3 helpers/packages.py --write-table <record>  # write it into a checkout of partsfoundry/record
     python3 helpers/packages.py --summary    # one line of counts
 
 Name: provisional, minted by milestone 611's lane on 2026-09-27. So are the key names below, every
 package name and every home. calef names things and rules formats; the note
-nifeos/record:notes/package-boundaries.md lists the questions.
+partsfoundry/record:notes/package-boundaries.md lists the questions.
 
 **A package's kind says where it ends up** (calef ratified the rule and the four kinds at
 2026-09-27T07:23Z, UTC). `base`: every image. `optional`: a running nife that installs it. `sdk`: a
@@ -563,7 +563,7 @@ NOTE = 'notes/package-boundaries.md'
 def check(root='.'):
     """Every rule over the tree at `root`, and the package table the record's note carries.
 
-    The note is in nifeos/record, read at the commit basalt pins (helpers/record_root.py). The
+    The note is in partsfoundry/record, read at the commit basalt pins (helpers/record_root.py). The
     table follows this tree a pin bump behind: a change here lands first, and the record's pull
     request that writes the new table lands after basalt pins it. So a stale table is a warning
     here, never a failure; a missing note or missing markers still fail.
@@ -581,14 +581,14 @@ def check(root='.'):
         if TABLE_BEGIN in text and TABLE_END in text:
             current = text.split(TABLE_BEGIN, 1)[1].split(TABLE_END, 1)[0].strip()
             if current != table(result).strip():
-                print(f'packages: warning: nifeos/record:{NOTE}: the package table differs from '
+                print(f'packages: warning: partsfoundry/record:{NOTE}: the package table differs from '
                       'this tree; once basalt pins this change, write it there with '
-                      'python3 helpers/packages.py --write-table <a checkout of nifeos/record>',
+                      'python3 helpers/packages.py --write-table <a checkout of partsfoundry/record>',
                       file=sys.stderr)
         else:
-            errors.append(f'nifeos/record:{NOTE}: the package table markers are missing')
+            errors.append(f'partsfoundry/record:{NOTE}: the package table markers are missing')
     else:
-        errors.append(f'nifeos/record:{NOTE} is missing; it carries the table calef ratifies')
+        errors.append(f'partsfoundry/record:{NOTE} is missing; it carries the table calef ratifies')
     for e in errors:
         print(f'packages: {e}', file=sys.stderr)
     c = counts(result)

@@ -9,12 +9,12 @@ The supervisor (helpers/continuous-fuzz.sh) runs `look` at most every 5 minutes.
 commit, the supervisor lets every slot finish its current window, runs `apply`, and re-executes
 itself from the moved clone; the new supervisor moves each slot worktree to the clone's commit before
 any slot starts. An architect ruled the four limits on 2026-11-01 (UTC) in
-nifeos/record:design/roadmap/1015-fuzz-findings-without-a-person.md ("What is in force: the host follows
+partsfoundry/record:design/roadmap/1015-fuzz-findings-without-a-person.md ("What is in force: the host follows
 main"), and each is enforced here:
 
   1. Fast-forward only. `look` and `apply` both refuse a commit whose history does not contain the
      commit the clone is at (`git merge-base --is-ancestor`).
-  2. Only the main branch of the public nifeos/nife repository, over https. The address and the ref
+  2. Only the main branch of the public partsfoundry/nife repository, over https. The address and the ref
      are constants below, not settings. The fetch allows the https protocol alone and asks no
      credential helper, and `apply` moves only to the commit that fetch wrote.
   3. Only a commit whose checks on main are green, read from the public API with no credential.
@@ -51,8 +51,8 @@ import re
 import subprocess
 import sys
 
-UPSTREAM = "https://github.com/nifeos/nife.git"
-API = "https://api.github.com/repos/nifeos/nife"
+UPSTREAM = "https://github.com/partsfoundry/nife.git"
+API = "https://api.github.com/repos/partsfoundry/nife"
 FOLLOW_REF = "refs/fuzz-follow/main"
 UNIT_DIR = "helpers/systemd/"
 PER_PAGE = 100
@@ -206,7 +206,7 @@ def apply(sha):
     print(f"fuzz-follow-main: moved the clone from {current[:12]} to {sha[:12]}")
     if units:
         print(f"fuzz-follow-main: the unit files changed ({', '.join(units)}); nothing was installed, "
-              f"and a person with root must install them (nifeos/record:notes/fuzzing/continuous-host.md)")
+              f"and a person with root must install them (partsfoundry/record:notes/fuzzing/continuous-host.md)")
 
 
 def selftest():

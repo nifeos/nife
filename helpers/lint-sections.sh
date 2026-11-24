@@ -13,7 +13,7 @@
 #
 # Why not stop at the first failure. On 2026-10-18 (UTC) 16 lanes ran lint 178 times and 74 runs
 # failed. 25 of those failures were already in the tree at the run before, so a lane learned one
-# problem per run. nifeos/record:notes/lint-cost-2026-10-18.md has the counts.
+# problem per run. partsfoundry/record:notes/lint-cost-2026-10-18.md has the counts.
 #
 # **The verdict is the fail-fast verdict.** A run passes exactly when every section passes, which
 # is when the old single `set -e` script passed: a section that would have been skipped after an
@@ -103,7 +103,7 @@
 # sections must still log its section times. A directory that cannot be created, or a write that
 # fails, is skipped silently: these rows are a measurement, and writing one must never change the
 # verdict. helpers/lint-sections-selftest.sh holds all of this, including the unwritable case. The
-# rows carry the per-section wall time that nifeos/record:notes/lint-cost-2026-10-18.md does not; what they mean
+# rows carry the per-section wall time that partsfoundry/record:notes/lint-cost-2026-10-18.md does not; what they mean
 # and where they should land once a week of them exists is that note's maintainer call, not this
 # script's.
 #

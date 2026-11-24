@@ -11,7 +11,7 @@
 # The same stick boots on all three because UEFI fixes a removable-media file name per architecture
 # (`\EFI\BOOT\BOOTX64.EFI`, `BOOTAA64.EFI`, `BOOTRISCV64.EFI`) and each firmware looks only for its
 # own. That is the whole of the universal stick, and this script is how it is proved: point all three
-# at the same directory or image. See nifeos/record:notes/boot-stick.md.
+# at the same directory or image. See partsfoundry/record:notes/boot-stick.md.
 #
 # The stick is attached through an emulated xHCI controller as USB mass storage, which is what a real
 # stick is, rather than as a virtio disk. That also keeps it out of the kernel's way: nife drives
@@ -71,7 +71,7 @@ aarch64)
     cp "$SHARE/edk2-arm-vars.fd" "$VARS"
     # acpi=off by default, because EDK2 withholds the device tree when it presents ACPI and the
     # device tree is the richer of the two descriptions this kernel can read (measured 2026-09-19;
-    # nifeos/record:notes/boot-stick.md). NIFE_ACPI=on is how the other description is exercised: it is the state
+    # partsfoundry/record:notes/boot-stick.md). NIFE_ACPI=on is how the other description is exercised: it is the state
     # every aarch64 cloud machine is in, where SBBR forbids a device tree, and it exists so that
     # path is bootable here for free rather than only on somebody's rented instance. NIFE_GIC=3 is
     # the GIC a cloud machine has, and under TCG the only `virt` with an ITS; unset keeps QEMU's own

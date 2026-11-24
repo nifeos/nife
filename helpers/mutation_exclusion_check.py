@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """lint: every `exclude_re` entry in `.cargo/mutants.toml` names code that exists.
 
-Part 2 of nifeos/record:design/roadmap/0954-a-survivor-accepted-once-is-not-accepted-forever.md says
+Part 2 of partsfoundry/record:design/roadmap/0954-a-survivor-accepted-once-is-not-accepted-forever.md says
 `script/lint` "checks each scoped exclusion" and fails "an entry whose function no longer exists
 or whose named assertion is gone". Nothing in the tree read `exclude_re` before
 lane/954-exclusion-check built this helper, so the record claimed a gate that did not exist: a
@@ -36,7 +36,7 @@ WHAT IS CHECKED.
 
 - Every entry compiles as a regex and matches one of the two shapes above. Anything else fails: an
   entry this check cannot read must not pass by reading nothing
-  (nifeos/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md).
+  (partsfoundry/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md).
 - A scoped entry's file exists; and where it names a function, that function is declared in the
   file: the last `::` segment as a `fn`, and, on the two-segment `Type::fn` form, the type
   declared or implemented in the same file. That is the roadmap's claim: the entry's function

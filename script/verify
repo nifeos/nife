@@ -8,7 +8,7 @@
 # Kani is not part of script/bootstrap because it pulls its own nightly toolchain and a CBMC backend
 # (~a minute of download) that the kernel build does not need. This script installs it on first run,
 # the same self-install pattern script/coverage uses. Not one of the canonical scripts. See
-# nifeos/record:notes/verification.md.
+# partsfoundry/record:notes/verification.md.
 #
 # Name: ratified 2026-08-03 (calef), retroactively and as a pattern: it runs Kani and does not say
 # so, which is why swapping Kani for Verus someday would cost nothing. Introduced 2026-07-23 with
@@ -250,7 +250,7 @@ fi
 # `.github/workflows/verify.yml`'s `prove-kernel-aarch64` job (the `prove-kernel-x86_64` job until
 # milestone 587 (most CI jobs do not need an arm64 host) moved the shards to x86_64 and the second
 # host became aarch64) and
-# nifeos/record:design/roadmap/0304-prover-one-architecture.md.
+# partsfoundry/record:design/roadmap/0304-prover-one-architecture.md.
 #
 # It refuses a crate that is not in the table, rather than passing the name to `cargo kani` and
 # proving nothing while reporting success: a typo here would be the same invisible green the
@@ -281,7 +281,7 @@ fi
 # utilization was 9.4% and the 1-minute load peaked at 12.0 on 80 vCPUs, so the win is the shard
 # balance CI already computes, not spare capacity, and the ceiling is `glob` (10 to 12 min) rather
 # than cores: a fifth shard proves a smaller slice of the same table and buys nothing.
-# nifeos/record:design/roadmap/0957-local-parallel-prove.md records the measurement and the two alternatives
+# partsfoundry/record:design/roadmap/0957-local-parallel-prove.md records the measurement and the two alternatives
 # refused.
 #
 # The shape, in five pieces:
@@ -297,7 +297,7 @@ fi
 #    and helpers/verify-parallel-selftest.sh proves that against a one-slot fixture.
 #  - **The parent runs script/kani-install once, before forking**, so one process orders the
 #    install. Each child calls it too and finds the pinned version, because it reads the version
-#    Kani actually reports (nifeos/nife#2882). A tree without that fix reinstalls in every child:
+#    Kani actually reports (partsfoundry/nife#2882). A tree without that fix reinstalls in every child:
 #    the run still proves, and it pays for N installs.
 #  - **The children are this file with --shard k/N**, in this worktree, so they share one target
 #    directory and one packer. Each writes its own log under target/verify-parallel/<stamp>/ and the
@@ -336,7 +336,7 @@ fi
 # VERIFY_JOBS harnesses at once, and one proof has been seen past 20 GiB resident, so a few runs at
 # once passed a 56 GiB host's memory. A run therefore also takes the Kani units of every harness it
 # runs at once, all together or none, waiting until they are free. A harness weighs the measured peak
-# of its row (helpers/kani-peaks.tsv; nifeos/record:notes/verification/kani-memory.md), and 10 GiB for a row never
+# of its row (helpers/kani-peaks.tsv; partsfoundry/record:notes/verification/kani-memory.md), and 10 GiB for a row never
 # measured or changed since, so `--only` weighs that row and every other run the largest row of the
 # table. NIFE_KANI_HARNESS_GIB sets the weight outright. A pool that fits fewer harnesses than VERIFY_JOBS lowers
 # VERIFY_JOBS to what fits, out loud. The pool is off in
@@ -399,7 +399,7 @@ fi
 # formula handed to one single-threaded SAT solver, so wall time never drops below the longest
 # harness (glob's, minutes on its own).
 #
-# Four jobs, not "all cores", because the bound is memory: nifeos/record:notes/verification/glob-proofs.md
+# Four jobs, not "all cores", because the bound is memory: partsfoundry/record:notes/verification/glob-proofs.md
 # records one harness that reached 3.5 GB before it was killed, DECISIONS §203 (capacity is rented
 # rather than bought) budgets "about 3.5 GB a harness", and concurrent harnesses multiply the peak.
 # That figure is the largest harness seen, not a typical, so budgeting on it errs high. Four fits the
@@ -460,7 +460,7 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # comment below warns about, arriving through the crate list instead of through the packer. Found on
 # 2026-08-16 by milestone 125, whose `harness-crates` count is derived from the tree and so could not
 # agree with a list that was one crate short. The crate and its row were retired on 2026-09-15
-# (milestone 298 (retire the multicast DNS responder), nifeos/record:notes/mdns.md); this paragraph is kept as the account of the failure.
+# (milestone 298 (retire the multicast DNS responder), partsfoundry/record:notes/mdns.md); this paragraph is kept as the account of the failure.
 #
 # **It happened a second time, and the fix is a gate rather than another paragraph** (milestone 193,
 # 2026-08-30). `jh7110_entropy` had carried three harnesses since the board work and appeared nowhere in
@@ -685,7 +685,7 @@ fi
 # shard." Then on #1979 (2026-10-12 UTC): "A", prove goes from three shards to four, once
 # re-falsify's two-worker replay left three prove shards (17.4 minutes slowest) as the build's long
 # pole. So CI runs four, at `glob`'s floor: two probe runs took 13.2 and 12.9 minutes slowest, for
-# no more runner-minutes than three. nifeos/record:notes/verification.md has the earlier numbers.
+# no more runner-minutes than three. partsfoundry/record:notes/verification.md has the earlier numbers.
 #
 # The packer, and the assertion that its shards partition this table, live in
 # helpers/verify_times.py so that this run, the daily refresh and the drift warning all plan with
@@ -711,13 +711,13 @@ fi
 # architectures. None of them is reachable from any harness, and none is reachable from any harness
 # that could ever be written, because the same restriction applies to `asm!` one level down. So this
 # flag does not weaken a proof that would otherwise hold; it converts a refusal to compile into a
-# stub whose boundary is written down. **Read `nifeos/record:notes/kernel-proofs.md` before adding a harness to
+# stub whose boundary is written down. **Read `partsfoundry/record:notes/kernel-proofs.md` before adding a harness to
 # `kernel/src`**: it enumerates every stub, and the whole hazard of proving a crate like this one is
 # that a stub reads as coverage.
 #
 # `-Z stubbing` (2026-09-25) lets a harness replace a one-instruction wrapper under `arch/` with a
 # model (`#[kani::stub]`), which is how logic around an `asm!` site becomes reachable at all. Each
-# such model is an assumption about the hardware; nifeos/record:notes/kernel-proofs/stubbing-an-instruction.md
+# such model is an assumption about the hardware; partsfoundry/record:notes/kernel-proofs/stubbing-an-instruction.md
 # is the pattern and the caveat, and every harness using one lists what it assumes.
 for c in $crates; do
     desc="$(printf '%s\n' "$CRATES" | awk -F'\t' -v c="$c" '$1 == c { print $3 }')"
@@ -752,7 +752,7 @@ for c in $crates; do
         # is the direction that is safe to leave alone.
         #
         # **`fixtures` is deliberately not a row above**, because it carries no harness today and a
-        # row with none fails the way this comment describes. See nifeos/record:notes/user-proofs.md's BUGS for
+        # row with none fails the way this comment describes. See partsfoundry/record:notes/user-proofs.md's BUGS for
         # what that costs: a harness added to a fixture runs nowhere until somebody adds the row.
         components)
                 # The package's one library target (`components/src/lib.rs`, with its modules) is

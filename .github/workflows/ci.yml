@@ -3,7 +3,7 @@ name: CI
 # Observed failing: 2026-10-04, run 37219588901: the `clippy` job's `script/lint` went red on
 #   `roadmap status` for lane/split-order-proposal (a `promoted_from` proposal the branch never
 #   held). That is one job of many, and the others carry no record of their own
-#   (nifeos/record:notes/observed-failing.md, BUGS). See nifeos/record:notes/observed-failing.md.
+#   (partsfoundry/record:notes/observed-failing.md, BUGS). See partsfoundry/record:notes/observed-failing.md.
 #
 # Observed failing: 2026-10-28, run 40640221952: the `swish-check` job's aarch64 leg failed
 #   because the kernel's capability-slot gauge wrote the UART over `std_exerciser beside six`'s
@@ -184,7 +184,7 @@ concurrency:
 # place CI puts kernel code in front of a weakly ordered machine, which is the discipline DECISIONS
 # §4 (kernel shape) rule 4 commits us to. Measured on
 # 2026-10-24, the host half holds and the suite half does not
-# (nifeos/record:notes/benchmarks/host-reordering-under-tcg.md): an aarch64 host shows these guests
+# (partsfoundry/record:notes/benchmarks/host-reordering-under-tcg.md): an aarch64 host shows these guests
 # message-passing reorderings and an x86_64 host shows none, but with every kernel spinlock
 # weakened to order nothing these legs passed on both hosts. The placement buys exposure that no
 # test here turns into a failure for a weakened lock. The split took the build jobs' draw on that
@@ -464,7 +464,7 @@ jobs:
   # serves `test`, `swish-check`, `boot-check`, `cpu-matrix-shard` and `watchdog`. The patched Kani
   # on ARM64 only, the one runner `prove-kernel-riscv64` uses. Not covered: `supply-chain`'s vendor
   # tarballs (a miss costs one HTTP request) and rust-cache (calef's ruling (a) on #1814 dropped it
-  # from every job but three; nifeos/record:notes/actions-cache-budget-2026-10-07.md).
+  # from every job but three; partsfoundry/record:notes/actions-cache-budget-2026-10-07.md).
   #
   # BUGS: when the suite also runs on a push to `main` with a cold key, this job and the suite's
   # QEMU jobs build at once and one save wins; the others log "another job may be creating this
@@ -602,7 +602,7 @@ jobs:
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # QEMU, built from source and cached. Ubuntu 24.04 shipped 8.2 and `-device riscv-iommu-pci`
       # (milestone 16b) arrived later, so the runner's packaged QEMU cannot boot the riscv leg at all.
       # apt cannot fix it: it installs the newest package for the release, and apt's QEMU moves
@@ -669,7 +669,7 @@ jobs:
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
 
   # **The heavy gates run only in the merge queue** (provisional, ruled 2026-11-03 UTC;
-  # nifeos/record:notes/merge-queue.md lists both sides). A pull request runs the cheap set: rustfmt, `lint`
+  # partsfoundry/record:notes/merge-queue.md lists both sides). A pull request runs the cheap set: rustfmt, `lint`
   # (script/lint, whose clippy builds every target), this job's host pass, the mutation gate and
   # the short build checks (fastpath footprint, boot file size, stack frames, image permissions,
   # reproducible build, interleavings, coverage, supply chain). The jobs that boot kernels under
@@ -864,7 +864,7 @@ jobs:
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # QEMU, built from source and cached. Ubuntu 24.04 shipped 8.2 and `-device riscv-iommu-pci`
       # (milestone 16b (real hardware + IOMMU-backed driver isolation)) arrived later, so 24.04's
       # packaged QEMU cannot boot the riscv leg at all (26.04's 10.2 can).
@@ -1016,7 +1016,7 @@ jobs:
   # 628 (provisional); the job id and name are provisional). On the arm64 runner this leg ran the
   # x86_64 guest under TCG and was about 18 of `swish-check`'s 21 minutes (run 37083676625, job
   # 111089436799: 128 lines in 985.3 s, 7.7 s a line, against aarch64's 0.2 s). What made it slow
-  # is the emulator rather than the guest: nifeos/record:notes/benchmarks/swish-check-x86-leg.md has the local
+  # is the emulator rather than the guest: partsfoundry/record:notes/benchmarks/swish-check-x86-leg.md has the local
   # one-change-at-a-time measurements and this job's own numbers. GitHub's x86_64 Linux runners
   # expose /dev/kvm, owned by root, so the step below opens it to the runner user (GitHub's own
   # documented recipe), and `swish-check` uses KVM when, and only when, it can open the device.
@@ -1069,7 +1069,7 @@ jobs:
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # QEMU, built from source and cached. Ubuntu 24.04 shipped 8.2 and `-device riscv-iommu-pci`
       # (milestone 16b (real hardware + IOMMU-backed driver isolation)) arrived later, so 24.04's
       # packaged QEMU cannot boot the riscv leg at all (26.04's 10.2 can).
@@ -1329,7 +1329,7 @@ jobs:
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # QEMU, built from source and cached. Ubuntu 24.04 shipped 8.2 and `-device riscv-iommu-pci`
       # (milestone 16b) arrived later, so the runner's packaged QEMU cannot boot the riscv leg at all.
       # apt cannot fix it: it installs the newest package for the release, and apt's QEMU moves
@@ -1404,7 +1404,7 @@ jobs:
       - if: steps.merge-group-gate.outputs.skip != 'true'
         run: helpers/hang_evidence.py run -- script/ci-build acpi-boot
       # The disk that boot just booted, for a person importing it into a cloud
-      # (nifeos/record:notes/rented-metal/oracle-a1.md). Sparse 302 MiB; about 2.5 MB compressed.
+      # (partsfoundry/record:notes/rented-metal/oracle-a1.md). Sparse 302 MiB; about 2.5 MB compressed.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Upload the cloud boot disk
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -1478,7 +1478,7 @@ jobs:
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # QEMU, built from source and cached, for the reason `boot-check` above spells out.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Cache QEMU
@@ -1613,7 +1613,7 @@ jobs:
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # The same cached QEMU the test and bench jobs use, restored and built before script/bootstrap
       # for the same reason.
       - if: steps.merge-group-gate.outputs.skip != 'true'
@@ -1638,7 +1638,7 @@ jobs:
       # change to kernel/src/arch/riscv64/, which arrives in a pull request, and a nightly would
       # report the failure a day after the merge that caused it.
       #
-      # See nifeos/record:notes/cpu-models.md, including its BUGS section: a narrower QEMU model is still QEMU.
+      # See partsfoundry/record:notes/cpu-models.md, including its BUGS section: a narrower QEMU model is still QEMU.
       # No lint in this job, so no cargo-machete or typos: NIFE_SKIP_LINT_TOOLS=1 skips the two
       # source builds (about 85 s on the arm64 runners, #1778). Only the `lint` job lints, and it
       # installs them itself.
@@ -1778,7 +1778,7 @@ jobs:
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       - name: Cache QEMU
         if: steps.merge-group-gate.outputs.skip != 'true' && (steps.scope.outputs.needed == 'true')
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -1931,7 +1931,7 @@ jobs:
       # Ubuntu's clang carries every LLVM backend, including RISC-V.
       # shellcheck too: script/lint gates over 50 `#!/bin/sh` scripts <!--count-at-least:sh-scripts--> on it.
       # (That number is re-derived from the tree by script/lint's counted-claims check; the marker is
-      # what makes it a claim a machine keeps honest. See nifeos/record:notes/counted-claims.md.) Installed explicitly
+      # what makes it a claim a machine keeps honest. See partsfoundry/record:notes/counted-claims.md.) Installed explicitly
       # rather than relying on the runner image shipping it, so the gate cannot quietly vanish when
       # that image changes.
       # dtc too: script/lint compares every committed .dtb against the .dts beside it
@@ -1952,7 +1952,7 @@ jobs:
       # same `save-if`. Kept only here and on verify's prove and falsify-shard, where a hit saved 2.0
       # to 3.7 minutes; without `shared-key`, because the three build different graphs and a shared
       # entry would only overwrite itself (calef, #1814, 2026-10-07 UTC). See
-      # nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           save-if: ${{ github.event_name != 'merge_group' }}
@@ -1998,7 +1998,7 @@ jobs:
       # **What a prose-only change can still break, run here because this is the one job that a
       # prose-only change does not skip.** The gate's classifier names every package whose Rust
       # walks a directory the change touched (`crates/documentation`'s corpus test walks `notes/`,
-      # `nifeos/record:design/decisions/` and `nifeos/record:design/roadmap/`, and went red on main on 2026-09-23 while the old
+      # `partsfoundry/record:design/decisions/` and `partsfoundry/record:design/roadmap/`, and went red on main on 2026-09-23 while the old
       # step-level skip hid it). On any other change the first `test-shard` runs these tests in the
       # host pass of `script/ci-build test-aarch64-riscv64`, so between the two the corpus is
       # checked on every pull request.
@@ -2183,7 +2183,7 @@ jobs:
         run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # `memory_regions` carries the falsification witness: that harness passes only when loom finds
       # the pre-#316 double free, so a green run also proves the search can still see a bug.
       - if: steps.merge-group-gate.outputs.skip != 'true'
@@ -2365,7 +2365,7 @@ jobs:
         run: helpers/rustup-retry.sh toolchain install
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # Its own job rather than a step in `lint`, for `stack-frame-check`'s reason: it builds three
       # kernels and no other job builds the riscv64 or x86_64 one at all, so there is nothing to
       # share. Jobs run in parallel, so it costs no wall clock against the 30-minute Kani job.
@@ -2422,7 +2422,7 @@ jobs:
         run: helpers/rustup-retry.sh toolchain install
       # No rust-cache here (calef, #1814, 2026-10-07 UTC). This job was measured without it first:
       # 115.7 s against a median 112.8 s with it (range 79.9 to 120.0, 20 runs), because the first
-      # build absorbed the time the step had spent. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # build absorbed the time the step had spent. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # Its own job rather than a step in `lint`: it builds the kernel test binary twice (the flag
       # changes the build, so CI's existing kernel artifacts cannot be reused), and jobs run in
       # parallel so a separate one costs no wall clock against the 30-minute Kani job. **Why it is
@@ -2550,7 +2550,7 @@ jobs:
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # Milestone 21's stated requirement is to catch "the *introduction* of performance problems
       # proximate to the changes that introduce them", and a tripwire that only fires on a
       # developer's laptop cannot do that. icount was chosen for determinism precisely so this is
@@ -2603,7 +2603,7 @@ jobs:
       # on the first push. That is the same defect the `icount` step below records in its own last
       # paragraph, arriving twice in one file: a claim about what a script does, kept beside the
       # step rather than in the script, and drifting the moment the script changed.
-      # See nifeos/record:notes/benchmarks.md, 2026-09-21.
+      # See partsfoundry/record:notes/benchmarks.md, 2026-09-21.
 
       # What `main` measured, kept for the weekly unexplained-drift chart (calef's ruling on #2554,
       # 2026-10-22 UTC): `helpers/baseline_drift.py --update` reads the newest of these per week.
@@ -2623,7 +2623,7 @@ jobs:
       # a prose-only change (the gate's), which cannot move an instruction count. It costs about seven seconds
       # for both ISAs, against this job's forty-five minute budget.
       #
-      # It is not in `script/test`, and nifeos/record:notes/instruction-clock.md carries the reason: `-icount`
+      # It is not in `script/test`, and partsfoundry/record:notes/instruction-clock.md carries the reason: `-icount`
       # gives every vCPU one shared virtual clock, so the instrument is single-hart, and a suite run
       # there would silently stop proving every cross-core property it exists for. That argument is
       # about a boot mode rather than about a command, which is why it IS in the tier a developer
@@ -2695,7 +2695,7 @@ jobs:
           key: nife-vendor-${{ hashFiles('vendor/*.pin') }}
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         run: helpers/hang_evidence.py run -- script/ci-build supply-chain
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
@@ -2771,7 +2771,7 @@ jobs:
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # No install step: `script/fuzz` installs the version pinned in `.cargo-fuzz-version` when the
       # one on PATH does not match, exactly as it does on a developer's machine. That is the opposite
       # trade from the supply-chain and coverage jobs, which take a prebuilt binary because they
@@ -2860,7 +2860,7 @@ jobs:
           fi
 
   # **The in-guest fuzz drivers, a short pass on the queue entry** (proposal
-  # nifeos/record:design/roadmap/1012-a-short-sharded-fuzz-pass-in-ci.md; the job id and name are
+  # partsfoundry/record:design/roadmap/1012-a-short-sharded-fuzz-pass-in-ci.md; the job id and name are
   # provisional). Four shards, two per driver, each one window of the harness the continuous fuzz host
   # runs (`helpers/continuous-fuzz.sh --ci`): a build with a baked seed range, then one KVM guest that
   # sweeps for 60 seconds of guest time. The seed range derives from the commit and the shard, so the
@@ -2990,7 +2990,7 @@ jobs:
           tool: cargo-llvm-cov
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
-      # growing. See nifeos/record:notes/actions-cache-budget-2026-10-07.md.
+      # growing. See partsfoundry/record:notes/actions-cache-budget-2026-10-07.md.
       # Measures the pure-logic host crates only; the kernel/user crates run under QEMU, out of
       # reach of host instrumentation. Gates on the 80%-per-file line-coverage floor (the floor
       # lives in script/coverage, next to the check itself); the report is still published below.
