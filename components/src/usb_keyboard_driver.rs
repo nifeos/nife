@@ -555,7 +555,11 @@ impl Host {
                     + u64::from(i) * direct_memory_access::REPORT_SLOT,
             );
         }
+        // A new keyboard starts with nothing held. `last` and `keys` reset together: the release
+        // events that would have cleared a held Shift or Control went to a keyboard that is gone,
+        // and without this the next one types as if they were still down.
         self.last = BootReport::RELEASED;
+        self.keys = Keyboard::new();
         self.found = Some((device.vendor, device.product, speed));
         Ok(attached)
     }
