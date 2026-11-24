@@ -144,7 +144,7 @@ Each lands alone with green checks. Until the removal pull request, every record
 in nife and every lane works as today.
 
 1. basalt: done. Its nife pin, `edcbb2209`, holds every cut link target.
-2. nife: re-sort in `homes.toml` the seven bundled notes, `notes/project-metrics.md`,
+2. nife: re-sort in `homes.toml` the seven bundled notes,
    `notes/skills/` and `briefs/` to stay, and add `helpers/record_paths.py`, which writes `keep` and `drop` from `homes.toml` and checks
    that they cover the record exactly.
 3. nife: rewrite 319 of the 351 cut links (section 4), and extend the qualified-path check from
