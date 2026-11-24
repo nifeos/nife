@@ -2751,8 +2751,9 @@ PASSIVE_LIMIT = prose_ratchet.PASSIVE_PER_1000
 
 CHARTS = [
     ('milestones.svg', 'Milestones by status, and proposals waiting for a number',
-     'the blocks in design/roadmap/ (design/roadmap.md before the one-file-per-milestone split); '
-     'unnumbered proposals from design/roadmap/proposals/ stacked on top',
+     'the blocks in nifeos/record:design/roadmap/ (nifeos/record:design/roadmap.md before the '
+     'one-file-per-milestone split); unnumbered proposals from '
+     'nifeos/record:design/roadmap/proposals/ stacked on top',
      [('Closed (removed, superseded or refused)', 'milestones_closed'),
       ('Built', 'milestones_built'), ('Partial', 'milestones_partial'),
       ('In progress', 'milestones_in_progress'), ('Not started', 'milestones_not_started'),
@@ -2760,7 +2761,7 @@ CHARTS = [
       ('Recorded (retired 2026-10-20)', 'milestones_recorded'),
       ('Proposal, no number yet', 'proposals_unnumbered')], 1.0, None, None),
     ('decisions.svg', 'Architecture decisions by status',
-     'design/decisions/; before milestone 114 (split `DECISIONS.md`, and give a decision a status), '
+     'nifeos/record:design/decisions/; before milestone 114 (split `DECISIONS.md`, and give a decision a status), '
      'a decision carried no status',
      [('Decided', 'decisions_decided'), ('Amended', 'decisions_amended'),
       ('Superseded', 'decisions_superseded'), ('Proposed', 'decisions_proposed'),
@@ -2792,8 +2793,8 @@ CHARTS = [
      'script/lint\'s own census; the direction is down, and the line is the week\'s own ceiling',
      [('blocks per 10,000 lines', 'unsafe_density')], 1.0, 'unsafe_density_ceiling', None),
     ('unsafe-trust.svg', 'The same unsafe blocks, by trust boundary',
-     'kernel: no confinement over it. userspace: confined like any other program. see notes/'
-     'project-metrics.md for shared/boot chain/unclassified and why this is not the chart above',
+     'kernel: no confinement over it. userspace: confined like any other program. see '
+     'nifeos/record:notes/project-metrics.md for shared/boot chain/unclassified and why this is not the chart above',
      [('kernel (trusted base)', 'unsafe_trust_kernel'),
       ('userspace (confined)', 'unsafe_trust_userspace'),
       ('shared (both, unresolved)', 'unsafe_trust_shared'),
@@ -2927,7 +2928,7 @@ CHARTS = [
     # Last, by calef's rule (2026-10-06 UTC): a measure at its goal state sits below the ones still
     # being driven. The page's own order is hand-written (see PAGE); this list only mirrors it.
     ('coe-actions.svg', 'Action items the corrections of error still owe',
-     'notes/coes/, resolved by helpers/coe_actions.py: open while the milestone, proposal or '
+     'nifeos/record:notes/coes/, resolved by helpers/coe_actions.py: open while the milestone, proposal or '
      'decision an item names is not done; the direction is down',
      [('open', 'coe_actions_open'), ('closed', 'coe_actions_closed')], 1.0, None,
      'coe_actions_open'),
