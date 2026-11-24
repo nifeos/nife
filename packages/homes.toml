@@ -53,6 +53,24 @@ paths = ["notes/documentation.md", "notes/pipes.md", "notes/line-discipline.md",
          "notes/stack.md", "notes/capabilities.md", "notes/glob.md"]
 
 [[home]]
+# The README of a notes/ directory whose other files went to nifeos/record: it points there and
+# lists the files that stayed (milestone 1018 (the design record moves to nifeos/record and is
+# published as a website)).
+status = "undecided"
+reason = "a pointer to nifeos/record; it leaves with the last file beside it"
+paths = [
+    "notes/component-manifest/README.md",
+    "notes/compositor/README.md",
+    "notes/designware-ethernet/README.md",
+    "notes/designware-mobile-storage/README.md",
+    "notes/elf/README.md",
+    "notes/glyphs/README.md",
+    "notes/job-mix/README.md",
+    "notes/packages/README.md",
+    "notes/verification/README.md",
+]
+
+[[home]]
 # Tool data and the scripts' own documentation under notes/, which stay with the code whose tools
 # read or describe them (milestone 1018, question 4).
 status = "undecided"
