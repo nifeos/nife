@@ -176,7 +176,7 @@ took, its findings by disposition, and a link to the report. The record's `scrip
 is due, from the triggers [`design/decisions/0074-audit-cadence.md`](https://github.com/nifeos/record/blob/main/design/decisions/0074-audit-cadence.md) decided, and a weekly workflow asks
 the same question so that auditing does not depend on anyone remembering to.
 
-**Fifteen** <!--count:security-audits--> security audits are on the record, and reading them first will
+**Sixteen** <!--count:security-audits--> security audits are on the record, and reading them first will
 save you time. Each took a lens the previous one did not, deliberately, because the value of an audit
 is the lens the last one lacked. (Documentation audits are in the same index and are not listed here;
 they read the tree for claims that had gone false, which is worth knowing if you find prose and code
@@ -269,6 +269,12 @@ disagreeing.)
   GMAC's control process and the PMIC route on radon, read as hostile holders. The server's page
   holds every clock and reset of three domains, CPU cores and DRAM included; accepted, with its
   only client the kernel. The narrowing is checked for bring up alone; proposed.
+- **design/audit-reports/2026-11-24-the-graphical-drivers-parsers.md**: the parsers milestone 600
+  (the graphical terminal stack is built in userspace) moved out of the kernel (the terminal engine,
+  `display_terminal`, the compositor, `gpu_driver` and both keyboard drivers), each read as the
+  party on the other side turned hostile. The terminal took a window's stride off the compositor's
+  control page unchecked, so a hostile compositor could send its writes past its surface; fixed.
+  Three sites hold a Rust reference over memory a peer can write; proposed.
 
 The machine-checked half is `script/verify` (Kani harnesses over the capability model, IPC, the MMU
 invariants, the DMA validator). [notes/verification.md](https://github.com/nifeos/record/blob/main/notes/verification.md) states what each proof covers and, more

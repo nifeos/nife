@@ -655,6 +655,30 @@ fn an_unknown_sequence_leaves_nothing_on_the_screen() {
         "an ESC that is not ST stays in the string"
     );
 
+    // CAN and SUB end a string that was never terminated, as the DEC parser does, so a writer
+    // that leaves one open blinds the screen only until one of them arrives.
+    for cancel in [0x18u8, 0x1a] {
+        let mut t = vt(8, 1);
+        t.feed(b"a\x1b]0;never ends");
+        t.feed(&[cancel]);
+        t.feed(b"b");
+        assert_eq!(rows(&t)[0], "ab      ", "{cancel:#04x} inside a string");
+        let mut t = vt(8, 1);
+        t.feed(b"a\x1b]x\x1b");
+        t.feed(&[cancel]);
+        t.feed(b"b");
+        assert_eq!(
+            rows(&t)[0],
+            "ab      ",
+            "{cancel:#04x} after a string's ESC"
+        );
+        let mut t = vt(8, 1);
+        t.feed(b"a\x1b[1;2");
+        t.feed(&[cancel]);
+        t.feed(b"b");
+        assert_eq!(rows(&t)[0], "ab      ", "{cancel:#04x} inside a CSI");
+    }
+
     // Control codes with no meaning here are consumed, not drawn.
     let mut t = vt(8, 1);
     t.feed(b"a\x01\x02\x1f\x7fb");
@@ -1016,6 +1040,28 @@ fn utf8_decodes_every_sequence_length_and_recovers_from_a_bad_one() {
     t.feed(b"\x80A");
     assert_eq!(t.cell(0, 0).ch, '\u{fffd}', "a lone continuation byte");
     assert_eq!(t.cell(1, 0).ch, 'A');
+}
+
+/// **An overlong form draws what `String::from_utf8_lossy` draws**, never the control code it
+/// would encode. `e0 80 9b` is the escape character in three bytes and `f0 80 80 80` is U+0000 in
+/// four; the UTF-8 standard (Request for Comments (RFC) 3629) gives `0xe0` and `0xf0` narrower
+/// second-byte ranges for exactly this.
+#[test]
+fn an_overlong_form_draws_the_standard_library_replacement() {
+    for bytes in [
+        &b"\xe0\x80\x9bZ"[..],
+        &b"\xe0\x9f\xbfZ"[..],
+        &b"\xf0\x80\x80\x80Z"[..],
+        &b"\xf0\x8f\xbf\xbfZ"[..],
+        &b"\xe0\xa0\x80Z"[..],
+        &b"\xf0\x90\x80\x80Z"[..],
+    ] {
+        let mut t = vt(8, 1);
+        t.feed(bytes);
+        let want: Vec<char> = String::from_utf8_lossy(bytes).chars().collect();
+        let got: Vec<char> = (0..want.len() as u32).map(|c| t.cell(c, 0).ch).collect();
+        assert_eq!(got, want, "{bytes:02x?}");
+    }
 }
 
 /// **Scrollback survives the ring's wrap, and `Vt::cell` reads it back in the right order.**

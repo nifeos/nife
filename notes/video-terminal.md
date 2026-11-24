@@ -55,8 +55,15 @@ The string state earns its place. `ESC ]` (OSC), `ESC P` (DCS) and `ESC X`, `ESC
 carry arbitrary text, so a parser without the state prints the window title onto the screen. The
 test feeds a title-setting sequence to hold this. A
 string ends at BEL (xterm's terminator) or at `ESC \` (ST); an `ESC` followed by anything else is
-part of the string. A two-byte escape the engine does not speak consumes its final byte too, so
-it cannot leave a stray letter on the screen.
+part of the string. CAN (`0x18`) and SUB (`0x1a`) end any sequence in progress, a string included,
+and are themselves consumed, as the DEC parser on vt100.net does. Without them, a writer that opens
+a string and never closes it hides everything printed after it. A two-byte escape the engine does
+not speak consumes its final byte too, so it cannot leave a stray letter on the screen.
+
+The parser belongs to the session, not to a writer. Every writer feeds the same `Vt`, so one that
+stops inside a sequence or a string hands that state to the next, which loses its first bytes until
+a terminator, CAN or SUB arrives. A program cannot reach past its session this way, so the engine
+keeps one parser rather than resetting it between writers it cannot tell apart.
 
 A `CSI` sequence carries at most sixteen parameters. One 24-bit color is five (`38;2;r;g;b`), a
 foreground and a background together are ten, and a highlighter often adds a reset and a
@@ -91,7 +98,9 @@ calls, so a sequence split at a buffer boundary still decodes.
 
 A lead byte follows RFC 3629: `0xc2..=0xdf` starts two bytes, `0xe0..=0xef` three, and
 `0xf0..=0xf4` four. `0x80..=0xbf` are continuation bytes only, `0xc0` and `0xc1` could only encode
-an overlong form, and nothing past `0xf4` is assigned, so those draw U+FFFD at once. A sequence cut
+an overlong form, and nothing past `0xf4` is assigned, so those draw U+FFFD at once. After `0xe0`
+the second byte must be at least `0xa0`, and after `0xf0` at least `0x90`; below that the sequence
+is an overlong form (`e0 80 9b` would be ESC), and it draws what `String::from_utf8_lossy` draws. A sequence cut
 short by a byte that is not a continuation draws U+FFFD and reprocesses that byte, so it loses
 exactly the bytes it claimed. U+FFFD is the conventional choice, the one
 `String::from_utf8_lossy` makes.

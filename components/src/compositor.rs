@@ -168,6 +168,13 @@ fn flush(damage: Rect) {
 fn drain_input(focusable: usize, focus: &mut u32) {
     let mut head = rd32(RING_VA + ring::HEAD);
     let tail = rd32(RING_VA + ring::TAIL);
+    // **At most one ring's worth a frame.** Both indices sit on a page the input source writes,
+    // so `tail - head` is whatever it says, up to four billion bytes of `CALL`s into the focused
+    // client before this frame could end. The ring holds `CAPACITY` bytes, so anything older was
+    // overwritten already and only the newest `CAPACITY` can be real.
+    if tail.wrapping_sub(head) > ring::CAPACITY {
+        head = tail.wrapping_sub(ring::CAPACITY);
+    }
     // **The acquire half of `keyboard_driver::ring_publish`'s release** (milestone 43,
     // nifeos/record:notes/shared-page-audit.md finding 7). The producer fences before it stores the tail, with a
     // comment saying the bytes must be visible before the tail that advertises them; that orders
