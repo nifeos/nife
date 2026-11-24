@@ -62,17 +62,17 @@ worktrees and nothing else can:
     launchctl list | grep nife
 
 One entry must be present, `org.nifeos.at-risk`. An install from before 2026-10-12 (UTC) is
-labeled `com.nife.at-risk`, which still works. If it is missing, `notes/merge-queue.md` has the
+labeled `com.nife.at-risk`, which still works. If it is missing, [`notes/merge-queue.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue.md) has the
 plist and the rename; until it is loaded, `helpers/at-risk-check.sh` is one pass you can run by
 hand from the main checkout. Nothing else should be in that list: `com.nife.merge-drain` and
 `com.nife.trunk-health` are retired, and a laptop still running either is a second watcher acting
-beside the workflow, an old enough one still arming pull requests. The retirement commands are in `notes/merge-queue.md`.
+beside the workflow, an old enough one still arming pull requests. The retirement commands are in [`notes/merge-queue.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue.md).
 
 In a cloud session there is no `launchctl` and no lane worktree to watch, so skip this check and
 go to step 2. The risk it covers moves to you: an ephemeral container that ends with uncommitted
 work loses it, and nothing watches for that, so commit and push before every pause.
 
-`notes/merge-queue.md` has the workflows, the plist, the tested premise they rest on, the cadence
+[`notes/merge-queue.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue.md) has the workflows, the plist, the tested premise they rest on, the cadence
 costs calef accepted, and a `BUGS` section honest that nothing reports a watcher's death.
 
 ## 2. Read what they already found, the `needs-maintainer` label first
@@ -93,7 +93,7 @@ The drain labels a pull request that was ejected from the merge queue, conflicts
 still queued after it merged, or has been ready and unarmed for 30 minutes. It comments once with
 the evidence (milestone 727 (a queue eviction goes to a maintainer session), provisional,
 and so is the label's name). It also labels orphan work, a branch holding commits that no open pull
-request carries, and opens a draft for one that never had a pull request; notes/queue-ejection.md
+request carries, and opens a draft for one that never had a pull request; [notes/queue-ejection.md](https://github.com/nifeos/record/blob/main/notes/queue-ejection.md)
 lists every cause. Read the comment, then fix it or hand it to its lane: rebase, re-arm a
 known flake (`helpers/arm.sh N`), dequeue a stale entry with the command the comment gives,
 or make an unfinished one a draft again. The label comes off by itself on the drain's next pass
@@ -132,7 +132,7 @@ workflow's `inflow` job is what checks it. Read its last scheduled conclusion:
 If the latest scheduled run failed, open its `inflow` job's summary. The untriaged survivors it
 lists (crate, function, mutation, pull request) are the next triage lane's input: that lane writes
 a row per survivor into `notes/project-metrics/mutation-triage.csv` and a test or a reason for each
-(notes/mutation-testing.md, the ledger). A red `mutants` job is a different finding (a broken census,
+([notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md), the ledger). A red `mutants` job is a different finding (a broken census,
 not untriaged survivors). Nothing here blocks a merge. It is rung 2 only for the job and rung 4 for
 whoever reads it, which is why it is in this brief.
 
@@ -176,8 +176,8 @@ stacked branch, a shared file, a decision only that other pull request settles).
 pause lives only in prose, and prose is not a mechanism. Draft #1289 was paused on 2026-09-25
 waiting on #1288, #1288 merged an hour later, and nobody resumed #1289 for two days because nothing
 was watching the pause itself. `helpers/merge-drain.sh` labels a draft `unblocked` and comments once
-every listed pull request has merged or closed (`notes/blocked-by-drafts.md` has the mechanism,
-alongside `notes/merge-queue.md`'s older `Blocked-by:` section for a queued, non-draft pull
+every listed pull request has merged or closed ([`notes/blocked-by-drafts.md`](https://github.com/nifeos/record/blob/main/notes/blocked-by-drafts.md) has the mechanism,
+alongside [`notes/merge-queue.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue.md)'s older `Blocked-by:` section for a queued, non-draft pull
 request). A listed pull request closed without merging is called out rather than silently released,
 because it usually means the plan changed. The label removes itself on the next commit or on
 `ready_for_review`, so it never has to be remembered either.
@@ -233,7 +233,7 @@ A session that finds the retirement half-done:
     -	0	com.nife.merge-drain
 
 That second line is a second drain beside the workflow, acting as `calef` where the workflow acts
-as `nife-smelter[bot]`, and one from before 2026-10-03 still arms pull requests. Retire it with the commands in `notes/merge-queue.md`; do not
+as `nife-smelter[bot]`, and one from before 2026-10-03 still arms pull requests. Retire it with the commands in [`notes/merge-queue.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue.md); do not
 leave it because it looks harmless.
 
 ## Stop, do not improvise

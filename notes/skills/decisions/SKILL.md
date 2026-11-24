@@ -4,7 +4,7 @@ description: >-
   How nife decides, recommends, and takes a question to an architect. Load before choosing between
   options, recommending one, or deciding how much care a choice deserves; and when something may
   be an architect's call (a design fork, a wire format, a name, the system call surface, a new
-  dependency, a design/decisions/ section, a published number), when holding work for an
+  dependency, a [design/decisions/](https://github.com/nifeos/record/tree/main/design/decisions) section, a published number), when holding work for an
   architect, adding the needs-architect label, writing a "## What I need from you" comment or a
   PROPOSED decision file. Holds: move fast on what can be undone and be methodical on what cannot
   (the test is who else has acted on it; delay costs; bet once risk is weighed); elegance and

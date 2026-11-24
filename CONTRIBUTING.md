@@ -35,7 +35,7 @@ do need these, and each one will otherwise cost you a rewrite:
 - **Names are an architect's call.** Ship a provisional one and say so in your pull request; do not
   wait, and do not rename anything on your own initiative. [`design/naming.md`](https://github.com/nifeos/record/blob/main/design/naming.md)
   has the conventions, and `script/names --unratified` lists what is still waiting on a ruling.
-- **`design/decisions/` section numbers are assigned at merge**, never claimed by a branch. Put your
+- **[`design/decisions/`](https://github.com/nifeos/record/tree/main/design/decisions) section numbers are assigned at merge**, never claimed by a branch. Put your
   reasoning in `notes/` and in the pull request instead.
 - **The ladder.** When something must not go wrong, prefer making the wrong state unrepresentable
   over a gate that fails loudly, over a written record at the thing itself, over a note. "Somebody
@@ -44,16 +44,18 @@ do need these, and each one will otherwise cost you a rewrite:
 The reading order for everything else is at the top of [`README.md`](README.md#start-here).
 
 **When you need a specific answer rather than an order, search for it.** `script/apropos <word>`
-searches every note, decision and roadmap block, and every crate's and program's module header, and
-prints the path of each page that says the word:
+searches this repository's notes and root documents, and every crate's and program's module header,
+and prints the path of each page that says the word:
 
 ```sh
-script/apropos socket      # notes/net.md, the socket decisions, and the program that serves them
-script/apropos system call     # the system call decisions; the numbers themselves are in nifeos/moho_abi
+script/apropos socket      # the socket contract, the network stack and the programs that use them
 ```
 
-It is one word at a time and whole words only; `script/apropos`'s own header says what else it
-cannot do.
+It is one word at a time and whole words only, and it reads only the first word it is given;
+`script/apropos`'s own header says what else it cannot do. It does not reach the design record:
+the decisions, the roadmap and most notes are in
+[nifeos/record](https://github.com/nifeos/record), and the system call numbers are in
+[nifeos/moho_abi](https://github.com/nifeos/moho_abi).
 
 ## Getting it building
 
@@ -113,11 +115,11 @@ about:
 
 | | |
 |---|---|
-| **The system call surface** | A boundary, not a habit. A new method inside the existing capability model is fine and gets its semantics recorded in `design/decisions/`; a new system call number is a design fork. |
+| **The system call surface** | A boundary, not a habit. A new method inside the existing capability model is fine and gets its semantics recorded in [`design/decisions/`](https://github.com/nifeos/record/tree/main/design/decisions); a new system call number is a design fork. |
 | **A new dependency** | Taking one is a decision (DECISIONS §46 (thin primitives or whole subsystems)); a dependency on one of our own `nifeos` crates needs no ruling when its git `rev` is a full commit on that repository's main. The tree is thin architectural primitives or whole subsystems nobody would write, with nothing in between. |
 | **Names** | Crates, programs, modules, public functions and directories are named by an architect. Ship provisional, say so. |
 | **Anything two programs agree on** | A wire format, an opcode number, a packed word. The code is a morning's work; the un-shipping is not. |
-| **`design/decisions/` section numbers** | Assigned at merge. |
+| **[`design/decisions/`](https://github.com/nifeos/record/tree/main/design/decisions) section numbers** | Assigned at merge. |
 
 Everything else you should simply decide and do. Most decisions here are reversible and deliberating
 them costs more than getting them wrong.
@@ -149,7 +151,7 @@ one by name: `script/ci-build coverage`. The list lives only in the table at the
 `script/ci-build`, per milestone 286 (one enumeration of the checks that gate a pull request), and
 CI reads the same table. `hvf` runs the aarch64 suite on the physical Apple Silicon core. It is the
 slowest local check and the likeliest to flake on a busy host, and it skips loudly where
-Hypervisor.framework is missing. See notes/load-sensitive-assertions.md if it flakes.
+Hypervisor.framework is missing. See [notes/load-sensitive-assertions.md](https://github.com/nifeos/record/blob/main/notes/load-sensitive-assertions.md) if it flakes.
 
 CI does not run on a draft. Both workflows open with a `draft gate` that skips the suite, and a
 skipped check still satisfies a required one. Mark the pull request ready when the work is done, or
@@ -172,7 +174,7 @@ what). If a commit records a correction or a surprise, say so in the message: th
 useful commits in this history. `git blame` is the test. A reader tracing why a line looks the way it
 does has to land on a commit that explains it.
 
-**If your change is a design argument rather than code**, it goes in `design/decisions/` as a file
+**If your change is a design argument rather than code**, it goes in [`design/decisions/`](https://github.com/nifeos/record/tree/main/design/decisions) as a file
 whose frontmatter says `status: PROPOSED` ([the schema](https://github.com/nifeos/record/blob/main/design/decisions/README.md)). It says what is
 being decided, the options, the recommendation with its reason, and what is blocked until it is
 answered. Work you found but are not doing goes in
@@ -226,7 +228,7 @@ is dual licensed the same way, with no additional terms. There is no CLA.
   file.
 - **The issue templates route more than they invite.** A bug report is a real channel and prompts
   for the commit sha and the ISA. A feature request and a design argument both tell you the outcome
-  is a file in `design/roadmap/` or `design/decisions/` rather than a thread, which is honest about
+  is a file in [`design/roadmap/`](https://github.com/nifeos/record/tree/main/design/roadmap) or [`design/decisions/`](https://github.com/nifeos/record/tree/main/design/decisions) rather than a thread, which is honest about
   where work lives here and is also more work than opening an issue elsewhere would be. Blank issues
   are off, so there is no way to file something that skips the prompts.
 - **The contribution path assumes you can run QEMU on all three ISAs.** A change that only touches the

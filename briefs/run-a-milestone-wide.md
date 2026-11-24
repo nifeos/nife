@@ -110,9 +110,9 @@ per pull request.
 
 ### 4. Lanes write their own records
 
-The records half is in force (the developer-lane skill and `notes/roadmap.md`'s "Anybody may add to
+The records half is in force (the developer-lane skill and [`notes/roadmap.md`](https://github.com/nifeos/record/blob/main/notes/roadmap.md)'s "Anybody may add to
 the roadmap"). A lane appends each finding to its tracked home itself: a proposal under
-`design/roadmap/proposals/`, or a `BUGS` entry beside the feature. The maintainer then checks that a
+[`design/roadmap/proposals/`](https://github.com/nifeos/record/tree/main/design/roadmap/proposals), or a `BUGS` entry beside the feature. The maintainer then checks that a
 home exists instead of writing one.
 
 The status half is a proposal. A lane ends with a short structured status, not prose:
