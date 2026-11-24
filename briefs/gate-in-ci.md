@@ -20,7 +20,6 @@ lane, so the wall-clock a CI round costs is free and the memory it saves is not.
 These take seconds, need no emulator, and catch most of what fails:
 
     script/lint
-    script/roadmap --check
     script/fmt
     script/citations --ratchet
 
@@ -29,7 +28,7 @@ exits 1 at `cargo-machete not found`. Read each gate's own exit status, never on
 `tail`: a cloud lane reported a failed lint as green that way on 2026-09-18.
 
 `script/citations --ratchet` reads the committed state, so commit before running it. Fix what
-they report and commit again. Do not push until all four are clean.
+they report and commit again. Do not push until all three are clean.
 
 ## Step 2: push, then mark the pull request ready
 
@@ -105,7 +104,7 @@ Arming means you have stopped editing. If a check goes red after arming, the pul
 reaches the queue; fix it the same way, then confirm that auto-merge survived the push with `gh pr
 view <N> --json autoMergeRequest`, and arm again if it is null. Once the pull request is queued,
 push nothing. A push to a queued branch removes it from the queue, throws away its group build and
-cancels its auto-merge. The pre-push hook refuses it; see `notes/merge-queue.md`, "A push to a
+cancels its auto-merge. The pre-push hook refuses it; see [`notes/merge-queue.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue.md), "A push to a
 queued branch".
 
 An armed pull request whose checks are green can still sit outside the queue with GitHub reporting
@@ -115,7 +114,7 @@ first BUGS entry below). Turn auto-merge off and on, which enqueues it again:
     gh pr merge <N> --disable-auto && helpers/arm.sh <N>
 
 If it stays `BLOCKED`, look for a cancelled run that is the newest of its workflow on the head
-commit. That is the duplicate `synchronize` in `notes/merge-queue/limitations.md`, and the merge
+commit. That is the duplicate `synchronize` in [`notes/merge-queue/limitations.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue/limitations.md), and the merge
 drain reruns it.
 
 A ready pull request left unarmed for 30 minutes is labeled `needs-maintainer` for a maintainer
@@ -153,8 +152,8 @@ settles. That is not a `WAITING` line, and CI is not what will unblock it.
 
 Say so where a machine can act on it instead: add `Blocked-by: #N[, #M ...]` to this draft's own
 body before ending the turn. `helpers/merge-drain.sh` labels the draft `unblocked` and comments once
-every listed pull request has merged or closed. `notes/blocked-by-drafts.md` has the mechanism;
-`notes/merge-queue.md`'s `Blocked-by:` section has why a plain "held" label was refused, and what
+every listed pull request has merged or closed. [`notes/blocked-by-drafts.md`](https://github.com/nifeos/record/blob/main/notes/blocked-by-drafts.md) has the mechanism;
+[`notes/merge-queue.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue.md)'s `Blocked-by:` section has why a plain "held" label was refused, and what
 the line does on a ready pull request. A listed pull request closed without merging is
 called out as such rather than silently released, because it usually means the plan changed. The
 label clears itself the moment you push a new commit or mark the draft ready, so resuming needs

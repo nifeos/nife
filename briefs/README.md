@@ -13,7 +13,7 @@ what a brief is for, not a concession to a weaker reader.
 A brief is not reserved for a cheaper model or for work a gate can check. calef, 2026-09-23:
 *"Why are the briefs reserved for just the low powered agents?"*
 
-The evidence is `notes/effort-levels.md`: five
+The evidence is [`notes/effort-levels.md`](https://github.com/nifeos/record/blob/main/notes/effort-levels.md): five
 `--effort` levels, twenty runs, one real query against this repository. Correctness was explained
 100% by the wording of the prompt and 0% by the effort level. An ambiguous wording produced the
 identical wrong answer at every level up to and including `max`; a disambiguated wording produced
@@ -21,7 +21,7 @@ the correct answer at every level down to and including `low`. A brief is exactl
 disambiguation, done once and kept. It is worth as much to the most capable model reading it as to
 the cheapest, because the thing it fixes is not a reasoning gap, it is an instruction gap.
 
-The other half: the four gates, the ratchet reading the committed tip rather than the working tree,
+The other half: the three gates, the ratchet reading the committed tip rather than the working tree,
 the gloss-on-the-same-line rule and the `script/verify` memory ceiling. They get retyped into lane
 brief after lane brief unless they are written down. That holds for lanes on the most capable model
 as much as
@@ -50,9 +50,8 @@ Lanes are asynchronous: nobody sits waiting on one. So a CI round trip of 23 to 
 a resource this project has in abundance and saves the one that actually binds. That trade is only
 available to lanes, which is why it is a brief rather than a rule for everything.
 
-The cheap gates stay local: `script/lint`, `script/roadmap --check`, `script/fmt` and
-`script/citations --ratchet` run in seconds, need no emulator, and catch most failures before a
-half-hour run is spent on them. `briefs/gate-a-lane.md` has the order and the traps for those four.
+The cheap gates stay local: `script/lint`, `script/fmt` and `script/citations --ratchet` run in seconds, need no emulator, and catch most failures before a
+half-hour run is spent on them. `briefs/gate-a-lane.md` has the order and the traps for those three.
 
 ## What belongs here
 
@@ -73,7 +72,7 @@ on today is a cost problem that can change weekly without this directory changin
 | file | what it's for |
 |---|---|
 | `bench-session.md` | Run a bench session on radon, xenon or argon from a lane: what needs a go, what needs calef's hands, and the ranked list of sessions ready to run. Provisional name. |
-| `gate-a-lane.md` | The four cheap gates every lane runs before pushing: order, traps, exit criteria. Provisional name. |
+| `gate-a-lane.md` | The three cheap gates every lane runs before pushing: order, traps, exit criteria. Provisional name. |
 | `gate-in-ci.md` | Push the heavy gates (QEMU, `script/verify`) to GitHub Actions instead of this laptop. |
 | `rebase-onto-main.md` | Rebase a branch onto `origin/main`, with the three known conflict classes named. |
 | `review-a-paydown.md` | Review one paydown pull request from its diff alone: the six recurring error classes, in order of harm, and the verdict line. Provisional name. |
@@ -104,7 +103,7 @@ new. The rebase brief is the worked example.
 - Nothing here measures the redo rate, which is the number that decides whether any of this
   saves anything. A delegated task that passes its gates and must be redone by hand costs more than
   never having delegated it. One sample so far, and it needed no redo.
-- `notes/effort-levels.md` measured one task shape, a bounded read-only grep-and-tabulate query,
+- [`notes/effort-levels.md`](https://github.com/nifeos/record/blob/main/notes/effort-levels.md) measured one task shape, a bounded read-only grep-and-tabulate query,
   and says nothing yet about whether a brief's payoff holds for a multi-step edit or a genuinely
   ambiguous judgement call rather than an ambiguous instruction. Cited above as the best evidence
   available, not as a settled generalisation.

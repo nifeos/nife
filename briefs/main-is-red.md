@@ -98,7 +98,7 @@ The tell that this happened at all: `gh pr list --label held-for-red-trunk` is n
 
 ## What this brief deliberately does not do
 
-**It does not become a watcher.** `notes/merge-queue.md` argues that a queue reports and does not
+**It does not become a watcher.** [`notes/merge-queue.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue.md) argues that a queue reports and does not
 resolve, and deciding that a given failure is a real trunk failure, and which pull request is the
 fix, is exactly the judgement a watcher does not have. Every step above is a person's, and the script
 exists only so that the steps a person gets wrong are typed once.

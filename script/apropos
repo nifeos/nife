@@ -2,21 +2,19 @@
 # script/apropos: search every document in this repository and say where each one lives.
 #
 #   script/apropos capability          what this tree says about capabilities, strongest first
-#   script/apropos system call             ... and where the system call numbers actually are
+#   script/apropos socket              ... and which crates and programs carry sockets
 #
 # EXAMPLES
 #
-#     $ script/apropos system call
-#     844 pages, 11023655 bytes of documentation in this repository
+#     $ script/apropos socket
+#     273 pages, 589916 bytes of documentation in this repository
 #
-#     searching for: system call
+#     searching for: socket
 #
-#          25  design/decisions/0124-x86-64-system-call-abi.md        124. Ratify the x86_64 system call ABI
-#           3  design/decisions/0008-process-model-deferred.md     8. Process model / system call ABI: ...
+#           6  components/src/net_stack.rs                       program net_stack
+#           9  crates/socket_contract/src/lib.rs                 crate socket_contract
 #         ...
-#           5  crates/moho_abi/src/lib.rs                             crate abi
-#         ...
-#       16 of 278 pages, strongest first
+#       16 of 19 pages, strongest first
 #
 # The number is how many times the page says the word; the order is how densely it says it (see
 # BUGS). Open the path it prints: the result is where the page lives, not a copy of it.
@@ -24,17 +22,18 @@
 # Milestone 40 built a documentation service for the *guest*: an inverted index over markdown, a
 # reader that merges shards, and an `apropos` builtin at the nife prompt. That index was pointed at
 # the six pages the filesystem image installs, because a guest can only search what it holds. A
-# person with a checkout has no such limit, so this points the same code at all of it: 512 pages,
-# five megabytes, every note, decision, roadmap block and repository-root document, plus every
-# crate's and program's own module header.
+# person with a checkout has no such limit, so this points the same code at all of it: every note
+# and repository-root document this repository keeps, plus every crate's and program's own module
+# header. The design record (the decisions, the roadmap and most notes) is in nifeos/record, and
+# this does not search it.
 #
 # **Why it exists**, and it is a finding rather than a nicety. Milestone 117 has run three strangers
 # at this tree with no help. What none of them could do is on the record in nifeos/record:notes/stranger-test.md:
 # reach nifeos/record:notes/net.md, notes/capabilities.md or ANY nifeos/record:design/decisions/ file by following the tree
-# while doing ordinary work, or find crates/moho_abi/src/lib.rs, which is four system call numbers and the
-# whole design on one screen. None of those is hidden; nothing a person would type led to them.
-# This is the thing to type. It is also why the crate and program headers are indexed: the document
-# a reader wants about `moho_abi` *is* that file's header, and no markdown page was ever going to fix it.
+# while doing ordinary work, or find the system call numbers in `moho_abi`'s own header. None of
+# those was hidden; nothing a person would type led to them. This is the thing to type. It is also
+# why the crate and program headers are indexed: the document a reader wants about a crate *is* its
+# header, and no markdown page was ever going to fix it.
 #
 # It is the same index and the same reader as the guest's, on purpose (`documentation::index::build` and
 # `documentation::index::search`), so a defect in the layout shows up in both places and a fix lands in
@@ -43,6 +42,10 @@
 #
 # BUGS
 #
+# - **It does not reach the design record**, which holds every page the paragraph above names as the
+#   reason this exists: the decisions, nifeos/record:notes/net.md and the stranger-test notes. The
+#   system call numbers are in nifeos/moho_abi, outside this tree too. Until a search reaches the
+#   record, a reader looks there on GitHub. A milestone that builds one is proposed in nifeos/record.
 # - **Whole words only, and no stemming.** `system_call` and `system_calls` are two terms, so a search for
 #   one does not find the other. `documentation::index::normalize` is what decides that and it is the
 #   guest's tokeniser, which has to run with no allocator.
