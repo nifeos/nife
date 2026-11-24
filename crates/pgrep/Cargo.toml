@@ -8,11 +8,11 @@ license.workspace = true
 # Milestone 126's second view-stratum program, and only the filter: a survey and a selector in, a
 # list of tids out. It walks nothing itself, because `crates/ps` already walks a domain and a second
 # cursor loop would be a second thing to keep correct. No system call, no IO, no allocation. See
-# `nifeos/record:notes/process-view.md`.
+# `partsfoundry/record:notes/process-view.md`.
 
 [dependencies]
-moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
-byte_glob = { version = "0.1.0", git = "https://github.com/nifeos/byte_glob", rev = "f5dae9092130be6d66f176d2e1942a4c36686818" }
+moho_abi = { version = "0.1.0", git = "https://github.com/partsfoundry/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
+byte_glob = { version = "0.1.0", git = "https://github.com/partsfoundry/byte_glob", rev = "f5dae9092130be6d66f176d2e1942a4c36686818" }
 ps = { version = "0.1.0", path = "../ps" }
 
 [lints]

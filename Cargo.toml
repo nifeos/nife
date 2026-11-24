@@ -187,14 +187,14 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)', 'cfg(loom)'] }
 # fiftieth package in the tree, `vendor/redoxfs`, is edition 2021, and an external crate pulled into
 # the workspace arrives at whatever edition its author chose.
 #
-# See nifeos/record:notes/unsafe-obligations.md for the survey, and for the three things neither lint can reach.
+# See partsfoundry/record:notes/unsafe-obligations.md for the survey, and for the three things neither lint can reach.
 unsafe_op_in_unsafe_fn = "warn"
 # Workspace-wide as of DECISIONS §107 (2026-08-22), a deliberate, recorded exception to §61's own
 # rule against adding a lint before every existing violation is fixed: the worklist had shrunk from
 # 32 crates to 7 by the time this landed, so the cost is 7 `#[allow(missing_docs)]` lines, not an
 # open-ended commitment. Those remaining (`machine_discovery`,
 # `globally_unique_identifier_partition_table`, `grant_plan`, `compositor`;
-# `multicast_dns_protocol` was retired on 2026-09-15) carry the allow explicitly, citing their own item count; see nifeos/record:notes/doc-coverage.md
+# `multicast_dns_protocol` was retired on 2026-09-15) carry the allow explicitly, citing their own item count; see partsfoundry/record:notes/doc-coverage.md
 # for the tracked worklist.
 missing_docs = "warn"
 
@@ -345,7 +345,7 @@ opt-level = 2
 # by-value argument, so `plan_against_with_streams` alone took 16 KiB of the shell's stack and the first
 # pipeline of a boot ran off its bottom. Optimised, those copies collapse, as they do in a release
 # build, and that frame is 5.4 KiB. Measured from the debug `swish`'s disassembly; the numbers are in
-# nifeos/record:notes/glob-grant/xargs.md ("The bytes a set carries").
+# partsfoundry/record:notes/glob-grant/xargs.md ("The bytes a set carries").
 [profile.dev.package.grant_plan]
 opt-level = 2
 # The catalog, for the planner's reason: `program_table::plan_stage` returns the planner's
@@ -358,7 +358,7 @@ opt-level = 2
 [profile.dev.package.timetable]
 opt-level = 2
 
-# Overflow checks in release, ruled by calef 2026-10-04 (UTC) (nifeos/record:notes/overflow-checks.md, option A).
+# Overflow checks in release, ruled by calef 2026-10-04 (UTC) (partsfoundry/record:notes/overflow-checks.md, option A).
 # The shipped build now means by `a + b` what every tested build means: an overflow halts rather
 # than wraps into a quiet wrong answer. Where a hot path wants a wrap, it says so at the site with
 # `wrapping_*` and a reason.
@@ -367,7 +367,7 @@ opt-level = 2
 # userspace in board images)), so `net_stack` on radon runs smoltcp unoptimized: a checksum, a
 # segment's trip through the assembler and the ring buffer, per frame, at opt-level 0. On QEMU's
 # `e1000e` with debug programs this alone moved the drain from 22.9 to 70.3 Mbit/s once the copies
-# were bulk (nifeos/record:notes/designware-ethernet/the-receive-rate.md has the table). It is a third-party
+# were bulk (partsfoundry/record:notes/designware-ethernet/the-receive-rate.md has the table). It is a third-party
 # crate nobody here steps through, and no job-mix or soak program links it, so no radon baseline
 # that 797 guards moves.
 [profile.dev.package.smoltcp]

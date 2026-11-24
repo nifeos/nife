@@ -10,7 +10,7 @@ license.workspace = true
 # resistance. Pure computation, so it compiles for the host and its tests run in milliseconds, the
 # same split `file_system_contract` and `graphics_contract` make for their contracts. It owns no socket, no clock and no
 # policy: milestone 51's clock service owns the offset and the authority to set it, and the client
-# that carries these bytes over `net_stack` is a later phase. See `nifeos/record:notes/ntp.md`.
+# that carries these bytes over `net_stack` is a later phase. See `partsfoundry/record:notes/ntp.md`.
 
 [lints]
 workspace = true

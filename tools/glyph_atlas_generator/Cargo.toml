@@ -18,7 +18,7 @@ publish = false
 # (milestone 142 (a text display good enough that people use it instead of a GUI) increment 3). The
 # pair below is §166 (the rasteriser dependency, and whether the glyph atlas ships one face or
 # four)'s ruling, and the block's determinism appendix
-# (nifeos/record:design/roadmap/0142-a-text-display-worth-living-in/determinism.md) is why each pin is what it is.
+# (partsfoundry/record:design/roadmap/0142-a-text-display-worth-living-in/determinism.md) is why each pin is what it is.
 [dependencies]
 # The outline parser: Google's fontations `skrifa` 0.49.0, MIT OR Apache-2.0, ruled by calef on
 # 2026-10-20 (UTC) after `ttf-parser` was flagged unmaintained; §166 (the rasteriser dependency, and

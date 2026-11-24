@@ -30,11 +30,11 @@ workspace = true
 # and its device registers are named offsets in `drivers/`, as on riscv64 and x86_64, so a proof can
 # stub every access (milestone 707 (aarch64 registers spelled the way riscv64 and x86_64
 # spell them), §46).
-moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
+moho_abi = { version = "0.1.0", git = "https://github.com/partsfoundry/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
 address_space_identifier = { version = "0.1.0", path = "../crates/address_space_identifier" }
 # The corruption canary's arm/check/disarm serialization (2026-08-15), lifted out of `sched.rs`
 # after its hand-written two-flag protocol raced: the kernel calls the loom-searched gate rather
-# than keeping a copy of it, the third retrofit of work_steal_slot's move. See nifeos/record:notes/interleaving.md.
+# than keeping a copy of it, the third retrofit of work_steal_slot's move. See partsfoundry/record:notes/interleaving.md.
 #
 # **BUGS: every `--features bench` build warns that this dependency is unused, on every
 # architecture, and that is a deliberate exception and a foot gun** (calef, 2026-10-03 UTC, on PR
@@ -49,7 +49,7 @@ address_space_identifier = { version = "0.1.0", path = "../crates/address_space_
 # warning is expected; any other `unused_dependencies` warning from the kernel is a real finding.
 # Do not add an `allow` for it either, because that would hide a second, real one.
 memory_corruption_canary_gate = { version = "0.1.0", path = "../crates/memory_corruption_canary_gate" }
-capability_table = { version = "0.1.0", git = "https://github.com/nifeos/capability_table", rev = "968a16fed9723d88bf5168ec6604d0bbcaba853b", features = ["peak"] }
+capability_table = { version = "0.1.0", git = "https://github.com/partsfoundry/capability_table", rev = "968a16fed9723d88bf5168ec6604d0bbcaba853b", features = ["peak"] }
 # The timer re-arm's arithmetic (milestone 360 (`crates/timetable`'s proved `next_after` is not what
 # the timer calls), §178 (where the timer re-arm seam goes)). The aarch64 and riscv64 `rearm` call
 # the Kani-proved `next_after` rather than keeping a copy, so the proof binds the code that runs.
@@ -60,18 +60,18 @@ periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 # manifest the prompt checks against rather than from a second copy of an ordering. Same rule as
 # `terminal_contract` and `video_terminal` below: no party has its own copy of a shared definition.
 # The spawn protocol's slots are the program table's.
-grant_plan = { version = "0.1.0", git = "https://github.com/nifeos/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
+grant_plan = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The wall-clock contract (milestone 51, DECISIONS §43). The kernel discovers the RTC by
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
 # through the same publish protocol the service writes with, so no party has its own copy of the
 # layout.
-clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
+clock_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
 # The inert-configuration contract (milestone 47's environment-variable fork, DECISIONS §111). The
 # kernel-side std program wiring assembles the page (`PageBuilder`) and maps it read-only into a
 # std program the same way it does the clock page, so no party has its own copy of the layout or
 # the validated domains.
-environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "4778d5937460ef1e43e39113721422dd573a3306" }
+environment_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/environment_contract", rev = "4778d5937460ef1e43e39113721422dd573a3306" }
 # The base digest page (milestone 695 (the kernel trusts two digests from the loader), part 1): the
 # kernel writes the loader's `nife.base` digest into it and grants it to the progenitor read-only,
 # and the progenitor reads it through the same crate, so the layout has one definition.
@@ -84,17 +84,17 @@ std_runtime_contract = { version = "0.1.0", path = "../crates/std_runtime_contra
 # TSC rate into a frame once, at boot, and `kernel::user::load` maps it read-only into every
 # x86_64 process; `user_mode_runtime::cntfrq` is the reader, through this same crate, so neither side keeps
 # its own copy of the page's layout or its fixed address.
-counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
+counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 # The block-device roster (milestone 57). The kernel writes the page and the surveyor reads it, and
 # the kernel's own tests read it back through this crate rather than by trusting the count the
 # program sent home, so no party has its own copy of the layout.
-block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
+block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
 # The boot ladder's console markers (milestone 268): the exact bytes each rung of the boot prints.
 # The kernel prints them and `serial_console` matches them, so AGENTS.md rule 7 makes them a crate
 # rather than two copies of a literal. That is not hypothetical here: the one marker that existed
 # before this crate WAS two copies of a literal, one inside a single architecture's arm.
-boot_ladder = { version = "0.1.0", git = "https://github.com/nifeos/boot_ladder", rev = "ed235428c6551ddcf673bdb140b972535238fe3b" }
+boot_ladder = { version = "0.1.0", git = "https://github.com/partsfoundry/boot_ladder", rev = "ed235428c6551ddcf673bdb140b972535238fe3b" }
 # The page the kernel hands the self-test program for its half of the boot self-test.
 self_test_contract = { version = "0.1.0", path = "../crates/self_test_contract" }
 # The per-test time record's grammar (milestone 807 (the kernel suite reports what each test cost), §254 (a gate prints what each item cost), Fork 1): the test runner prints it and
@@ -117,7 +117,7 @@ current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contra
 # The user address-space map (milestone 206 (a program image has under 896 KiB), DECISIONS §171 (where a program image starts) option D): where the loader puts a
 # program's image and stack, and the check that refuses an image that does not fit, shared with the
 # userspace loader so the two cannot disagree about either.
-address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
 # Where each device-driver process finds its windows, and the spawn words each one receives: the
 # process layout around the device crates (`e1000e`, `designware_ethernet`,
 # `designware_mobile_storage`, `extensible_host_controller_interface`,
@@ -138,7 +138,7 @@ coremark = { version = "0.1.0", path = "../crates/coremark", optional = true }
 # does on Linux)): the bench reads a std program's transcript through the same framing the PAL packs
 # with. Only `bench` uses it; the system tests have their own copy of the dependency (milestone 609
 # (the system tests leave the kernel crate)).
-byte_sink_contract = { version = "0.1.0", git = "https://github.com/nifeos/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9", optional = true }
+byte_sink_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9", optional = true }
 primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_benchmark_contract", optional = true }
 # The kernel's ring layout and the F3 record (milestone 342 (the kernel and the `console` server
 # drive one UART from two address spaces)): the kernel writes what the log service reads, so both
@@ -146,22 +146,22 @@ primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }
 nifefs = { version = "0.1.0", path = "../crates/nifefs" }
 direct_memory_access_validator = { version = "0.1.0", path = "../crates/direct_memory_access_validator" }
-file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 # Optional, and only for the `bench` feature's filesystem benchmark (see the feature below):
 # the throughput and walk shapes are test data since milestone 886 (the filesystem test fixture
 # moves to its own crate), and nothing that boots links them.
-file_system_fixture = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61", optional = true }
+file_system_fixture = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61", optional = true }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The entropy contract (milestone 56, DECISIONS §44). The kernel wires the entropy service and its
 # tests are its clients, speaking the same request/reply the std PAL does, so no party has its own
 # copy of the wire format.
-entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
+entropy_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
 # The JH7110 TRNG's register logic and DTB discovery (milestone 159), the same
 # pure-logic/volatile-shell split `pci` below already uses. The kernel takes it for one
 # thing only: `discover`, the device-tree query that says whether this machine has a TRNG at all,
 # so `entropy_service` can wire the userspace driver for it (`components/src/jh7110_entropy.rs`) instead of
 # keeping a second copy of the `compatible` string and the `reg` decode.
-jh7110_entropy = { version = "0.3.0-pre.1", git = "https://github.com/nifeos/jh7110_entropy", rev = "df37dc91383c4226b0266499c48de7e5e92ecb99" }
+jh7110_entropy = { version = "0.3.0-pre.1", git = "https://github.com/partsfoundry/jh7110_entropy", rev = "df37dc91383c4226b0266499c48de7e5e92ecb99" }
 
 # The JH7110's clock and reset generator (milestone 220), for `drivers::jh7110_clock_and_reset` and for
 # `memory::initialize`'s discovery of the controller's window. Pure logic; the volatile half is the
@@ -181,24 +181,24 @@ designware_inter_integrated_circuit = { version = "0.1.0", path = "../crates/des
 # The JH7110's SD/MMC controller (milestone 53 (the board's own peripherals: network and storage on
 # real silicon)): the whole driver as pure logic behind one `Registers` trait, which
 # `kernel/src/designware_mobile_storage.rs` implements over a mapped device window.
-designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/designware_mobile_storage", rev = "85c4e1b58bb5d76efbc0b48d3ff51024d3904b12" }
+designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/designware_mobile_storage", rev = "85c4e1b58bb5d76efbc0b48d3ff51024d3904b12" }
 # Sector 0 of a card: the MBR's partition entries and the scratch range before the first partition
 # (`kernel/src/storage_bench_steps.rs`). It left `designware_mobile_storage` for a crate of its own.
 master_boot_record = { version = "0.1.0", path = "../crates/master_boot_record" }
-device_tree_blob = { version = "0.1.0", git = "https://github.com/nifeos/device_tree_blob", rev = "96ad52af96e38e38577f91a787f53b789dbdda4f" }
+device_tree_blob = { version = "0.1.0", git = "https://github.com/partsfoundry/device_tree_blob", rev = "96ad52af96e38e38577f91a787f53b789dbdda4f" }
 pci_configuration_space = { version = "0.1.0", path = "../crates/pci_configuration_space" }
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
 # it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as `pci` above.
-e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
+e1000e = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
 # The xHCI half of the USB keyboard (milestone 242 (USB host and HID)): the register window the
 # driver is mapped and the handoff it is spawned with. The kernel's extensible_host_controller_interface
 # module is its volatile half, the same split as `pci` above. The window, the
 # handoff and the driver's bring-up report are `driver_process_contract`'s.
-extensible_host_controller_interface = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "99daca365beb53961c3d64b01751f8de85a281ac" }
+extensible_host_controller_interface = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/extensible_host_controller_interface", rev = "99daca365beb53961c3d64b01751f8de85a281ac" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
-intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "10d1fa2893c1cab6db3901f79a1ab2bc0029170b" }
+intrusive_queue = { version = "0.1.0", git = "https://github.com/partsfoundry/intrusive_queue", rev = "10d1fa2893c1cab6db3901f79a1ab2bc0029170b" }
 inter_process_communication = { version = "0.1.0", path = "../crates/inter_process_communication" }
 # What machine is this (milestone 60). The kernel reads the device tree and the ID registers; every
 # decoding of what it finds lives in the crate, host-tested against a real device tree and against
@@ -212,7 +212,7 @@ machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 # The terminal contract's IPC framing (DECISIONS §21): the kernel's display-terminal tests play both
 # an application (OPERATION_WRITE) and an input driver (OPERATION_BYTES), so they speak the same protocol the
 # serial terminal's clients and drivers do rather than a second one invented for a test.
-terminal_contract = { version = "0.1.0", git = "https://github.com/nifeos/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
+terminal_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
 # The installed-programs table's names and line format (milestone 198 (a package manager)), which the harness
 # writes when a test installs a program the way an installer would: milestone 152 (durable
@@ -229,17 +229,17 @@ memory_regions = { version = "0.1.0", path = "../crates/memory_regions" }
 # *grants* a net server its listen ports, so it packs the grant with the same `listen_grant` the
 # server checks against rather than open-coding the layout of a word two programs must agree on.
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
-generational_table = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/generational_table", rev = "832836094b1170f0f07275bb2adbb889d949ccc5" }
+generational_table = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/generational_table", rev = "832836094b1170f0f07275bb2adbb889d949ccc5" }
 # The lock under `InterruptSafeMutualExclusionLock`: an Acquire compare-exchange and a Release store, written in
 # the
 # tree so loom can check them, the fourth retrofit of work_steal_slot's move. Its `unsafe` and what
-# checks it: nifeos/record:notes/kernel-dependency-unsafe.md. See nifeos/record:notes/interleaving.md.
+# checks it: partsfoundry/record:notes/kernel-dependency-unsafe.md. See partsfoundry/record:notes/interleaving.md.
 test_and_set_lock = { version = "0.1.0", path = "../crates/test_and_set_lock" }
 # The work-steal handshake (milestone 80): the one lock-free cross-core protocol in the scheduler,
 # lifted out of `cpu.rs` so a model checker can reach it. The kernel calls the checked type rather
 # than keeping a second copy of the compare-exchange, the same move `memory_regions`,
 # `inter_process_communication` and `direct_memory_access_validator` made for Kani. See
-# nifeos/record:notes/interleaving.md.
+# partsfoundry/record:notes/interleaving.md.
 work_steal_slot = { version = "0.1.0", path = "../crates/work_steal_slot" }
 # The VT engine, and through it the font (milestone 29 (a display terminal: framebuffer, virtio-gpu,
 # and a foreign component)'s text increment, milestone 142 (a text display good enough that people
@@ -250,13 +250,13 @@ work_steal_slot = { version = "0.1.0", path = "../crates/work_steal_slot" }
 video_terminal = { version = "0.1.0", path = "../crates/video_terminal" }
 # The scheduler's block/wake handshake, so the kernel calls the loom-searched transitions rather
 # than keeping a copy of them: the second retrofit of work_steal_slot's move, asked for by the
-# fourth bench stop's audit. See nifeos/record:notes/interleaving.md.
+# fourth bench stop's audit. See partsfoundry/record:notes/interleaving.md.
 thread_wake_handshake = { version = "0.1.0", path = "../crates/thread_wake_handshake" }
 
 # **A test-build dependency only** (milestone 781 (measure kernel and service coverage under QEMU),
 # ruled 2026-10-27). `minicov` is the LLVM profiling runtime without a libc: the `.profraw`
 # serializer behind `-C instrument-coverage`. Optional, behind `coverage`, so no shipping build links
-# it. Pinned exactly. Audit and bar: nifeos/record:notes/kernel-coverage.md.
+# it. Pinned exactly. Audit and bar: partsfoundry/record:notes/kernel-coverage.md.
 minicov = { version = "=0.3.9", default-features = false, optional = true }
 
 [build-dependencies]
@@ -288,7 +288,7 @@ system_tests = [
 # The board build (milestone 16a): the kernel targets the VisionFive 2 (JH7110) rather than
 # QEMU's `virt` machine. A property of the target, not the build mode: the board has no
 # sifive_test finisher, so the test exit prints a UART marker and calls SBI SRST shutdown
-# instead of storing to a nonexistent MMIO word. See nifeos/record:notes/visionfive2.md.
+# instead of storing to a nonexistent MMIO word. See partsfoundry/record:notes/visionfive2.md.
 board = []
 # The T-Head TH1520 (milestone 89 (Scaleway EM-RV1)): the board build, for Scaleway's Elastic Metal
 # RV1 rather than radon. It moves the early console to UART0 at 0xff_e701_4000 (arch/riscv64/
@@ -325,7 +325,7 @@ icount = ["bench"]
 # Name provisional.
 xhci_port_probe = []
 # The soak boot (milestone 219): the tour does not halt, it builds a pool of user-mode IPC workers
-# and watches them forever, so `nifeos/record:design/fatal-risks/README.md` risk 5's decisive experiment has something to
+# and watches them forever, so `partsfoundry/record:design/fatal-risks/README.md` risk 5's decisive experiment has something to
 # run. Off by default; every ordinary boot still halts. See kernel/src/soak.rs and script/soak-test.
 #
 # Spelled `soak_test` since milestone 297 (`soak` becomes `soak-test`), calef's ruling of
@@ -334,7 +334,7 @@ xhci_port_probe = []
 soak_test = ["dep:soak_page"]
 # The multi-tasking workload benchmark (milestone 168): the tour does not halt, it sweeps a pool of
 # EL0 tasks through a heterogeneous job mix and prints jobs-per-minute against task count, which is
-# the instrument nifeos/record:design/decisions/0096-process-kernel-or-event-kernel.md says it is missing. Off by
+# the instrument partsfoundry/record:design/decisions/0096-process-kernel-or-event-kernel.md says it is missing. Off by
 # default. A feature rather than a `bench.rs` row because the number has to be taken on a board, and
 # the path a board takes is script/board-image plus script/board-console. See kernel/src/job_mix.rs
 # and script/job-mix. Name provisional.
@@ -343,7 +343,7 @@ job_mix = ["dep:job_mix"]
 # waited, printed as `job-mix-lock:` lines after each sweep point (2026-10-04, for fatal risk 4's
 # `null_system_call` question). Its own feature so the plain job-mix image stays the kernel that ships:
 # this one adds a flag and a counter to every `invoke`. See kernel/src/lock_wait.rs and
-# nifeos/record:notes/job-mix/null-system-call-under-load.md. Name provisional.
+# partsfoundry/record:notes/job-mix/null-system-call-under-load.md. Name provisional.
 lock_wait = ["job_mix"]
 # **Fatal risk 6's bench boot** (milestone 261 (the NVMe driver leaves the kernel)): after the tour, print two preflight verdicts (does
 # the VT-d unit this kernel programs own the NVMe's requester id; does the namespace's LBA size give
@@ -351,13 +351,13 @@ lock_wait = ["job_mix"]
 # one verdict line. **It writes**: a window of blocks from 1 MiB into the namespace is overwritten
 # and read back. Off by default and in no gate; `cargo xtask disk-throughput` rehearses it under
 # OVMF and stages the stick image. See kernel/src/disk_throughput.rs and
-# nifeos/record:notes/risk-6-bench-evening.md. Name provisional.
+# partsfoundry/record:notes/risk-6-bench-evening.md. Name provisional.
 disk_throughput = []
 # **Milestone 494 (a driver for the network card a PC actually has)'s bench boot**: after the tour,
 # bring up the `e1000e` NIC, print which IOMMU unit owns it, take a DHCP lease, drain a TCP stream
 # from the peer named at build time (`NIFE_NETWORK_BENCH_PEER=a.b.c.d:port`) and halt with one
 # verdict. Off by default and in no gate; `cargo xtask network-bench` rehearses it under OVMF and
-# stages the stick. See kernel/src/network_bench.rs and nifeos/record:notes/e1000e.md. Name provisional.
+# stages the stick. See kernel/src/network_bench.rs and partsfoundry/record:notes/e1000e.md. Name provisional.
 network_bench = []
 # **Milestone 53 (the board's own peripherals: network and storage on real silicon)'s storage bench
 # boot**, riscv64 only: after the tour, bring up radon's microSD controller, identify the card,
@@ -365,7 +365,7 @@ network_bench = []
 # socket, and halt with one verdict. **Read-only** unless built with
 # `NIFE_STORAGE_BENCH_WRITE=scratch`, which adds a write test confined to the sectors before the
 # card's first partition and restores what it found there. Off by default and in no gate. See
-# kernel/src/storage_bench.rs and nifeos/record:notes/designware-mobile-storage.md. Name provisional.
+# kernel/src/storage_bench.rs and partsfoundry/record:notes/designware-mobile-storage.md. Name provisional.
 storage_bench = []
 # Milestone 53 (the board's own peripherals)'s multi-block read diagnosis: after the storage bench,
 # read the same blocks at three card clocks, four lengths and two FIFO depths, print how full the
@@ -450,7 +450,7 @@ kernel_log_panic_probe = ["console_flood"]
 self_test_injection = []
 # Adds a test that deliberately livelocks while making IPC progress, to prove the per-test wall-clock
 # ceiling catches what the no-progress heartbeat cannot see (testing.rs). It is EXPECTED TO FAIL the
-# run, so it is not part of the normal suite; see nifeos/record:notes/scheduler.md for the command that runs it.
+# run, so it is not part of the normal suite; see partsfoundry/record:notes/scheduler.md for the command that runs it.
 watchdog_probe = []
 # The cycle-counter instrument (milestone 237): builds milestone 229's per-thread cycle-counter
 # grant, the mechanism DECISIONS 139 decided. Off by default, so a production kernel does not carry
@@ -468,7 +468,7 @@ watchdog_probe = []
 # and ctx_switch +36.0 ticks per switch on aarch64. They are now `#[cfg]`-gated at the switch site
 # (see `sched::install_cycle_counter_grant`) rather than threaded through the switch tuple and trusted
 # to fold, the same fix milestone 299 gave the port grant, so a feature-off boot pays nothing on any
-# build. See nifeos/record:design/roadmap/0237-the-cycle-grant-is-a-measurement-build.md.
+# build. See partsfoundry/record:design/roadmap/0237-the-cycle-grant-is-a-measurement-build.md.
 #
 # **The gate on every piece is `any(test, feature = "cycle_counter_grant")`, not the feature
 # alone**, and that is deliberate. Milestone 229's proofs (the embryo refusal in `sched`, the EL0
@@ -486,7 +486,7 @@ watchdog_probe = []
 # (`Thread::cycle_counter_grant`) rather than a new word for it. Names are an architect's.
 cycle_counter_grant = []
 # E3's footprint-perturbation experiment (milestone 134,
-# nifeos/record:design/roadmap/0134-the-measurements-that-decide.md): adds a large, reachable-but-never-taken
+# partsfoundry/record:design/roadmap/0134-the-measurements-that-decide.md): adds a large, reachable-but-never-taken
 # function to the IPC fastpath's call graph, roughly doubling `ipc_fastpath`'s measured footprint,
 # so `script/fastpath-footprint --features fastpath_pad` and `cargo xtask bench --real
 # --extra-features fastpath_pad` can compare the padded build against the un-padded baseline while
@@ -503,7 +503,7 @@ cycle_counter_grant = []
 # produce identical binaries apart from the sled's own bytes. Not features because a feature's
 # *name* enters cargo's `-C metadata` hash, which reorders codegen units: seven sibling features
 # were built and measured, and each reshuffled up to 11 KB of code ahead of the sled, drowning the
-# shift it was meant to control. nifeos/record:notes/footprint-perturbation.md has the procedure.
+# shift it was meant to control. partsfoundry/record:notes/footprint-perturbation.md has the procedure.
 fastpath_pad = []
 # Milestone 134's per-IPC kernel stack depth (kernel/src/ipc_stack_depth.rs): paints a thread's own
 # kernel stack before each IPC operation and scans it after, so the deepest byte one SEND, RECEIVE,
@@ -512,7 +512,7 @@ fastpath_pad = []
 # shape, so the path cannot rot); this feature exists so the **release** kernel, which is what radon
 # boots and what E1 ran on, can be measured too, by a bench boot that prints the same lines. Off by
 # default and in every build that measures time or footprint: it adds a call at the end of
-# `system_call::dispatch`. See nifeos/record:notes/stack-high-water.md. Name provisional.
+# `system_call::dispatch`. See partsfoundry/record:notes/stack-high-water.md. Name provisional.
 ipc_stack_depth = ["dep:soak_page"]
 # The single-hart boot (milestone 134's E1/E3/E4 on radon): `smp::bring_up_secondaries` marks the
 # boot core online and starts nobody, so the kernel runs on one hart on a machine that seats four.
@@ -531,7 +531,7 @@ ipc_stack_depth = ["dep:soak_page"]
 #
 # Name provisional (2026-09-04): it says what the machine will do, the same test `reboot_soak`'s
 # name was chosen by. (That feature is spelled `reboot_soak_test` since 2026-09-14; the account
-# above keeps the name it was decided under, which is what `nifeos/record:design/naming.md` asks for.) `bench_single_core` was refused as naming the caller rather than the effect.
+# above keeps the name it was decided under, which is what `partsfoundry/record:design/naming.md` asks for.) `bench_single_core` was refused as naming the caller rather than the effect.
 # **Ratified by calef, 2026-09-04.** `one_core` and `no_secondaries` were the alternatives; `hart` is
 # RISC-V's own word and the reader who knows the ISA knows it, which is the same argument that keeps
 # `elf` and `pci` unrenamed. The feature is not riscv64-only and the name is, which is the cost taken.

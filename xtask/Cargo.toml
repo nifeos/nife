@@ -17,7 +17,7 @@ workspace = true
 [dependencies]
 nifefs = { version = "0.1.0", path = "../crates/nifefs" }
 # The address-space map, milestone 206 (a program image has under 896 KiB): every archived program is checked against its image band.
-address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
 # The documentation store (milestone 40). The index is built HERE, on a host with a heap and no
 # constraints, because the guest has neither: there is no directory iteration in this system, so
 # "what pages exist" cannot be discovered at runtime and has to be computed at image time. Only the
@@ -29,7 +29,7 @@ c_program_fixture = { path = "../crates/c_program_fixture" }
 # The FS wire contract's crate stays out: everything xtask read from it was the test fixture,
 # which is crates/file_system_fixture since milestone 886 (the filesystem test fixture moves to
 # its own crate).
-file_system_fixture = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+file_system_fixture = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 # Milestone 121 (`ripgrep` on nife: enumeration as a capability)'s priced tree: the image builder stages it with the same function a host
 # comparison stages it with, so the two cannot be walks over different shapes.
 walk_pricing = { version = "0.1.0", path = "../crates/walk_pricing" }
@@ -43,7 +43,7 @@ uuid = { version = "1.28.0", default-features = false }
 # The FAT32 `mkfs` the installer lays its EFI system partition down with (milestone 578 (an ACPI
 # discovery path for aarch64), item 7): `acpi-boot` writes the cloud boot disk with the same crate,
 # so the disk a person imports into a cloud is the installer's format, booted by EDK2 in the gate.
-file_allocation_table = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/file_allocation_table", rev = "6f8aa1df729d4d437d11b8305fadbafa07c93251" }
+file_allocation_table = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/file_allocation_table", rev = "6f8aa1df729d4d437d11b8305fadbafa07c93251" }
 # **The boot state `cargo xtask rollback-boot` stages an upgrade with** (rung 2b of milestone 198 (a package manager, and the trivial install that makes a second customer possible)).
 # The gate writes a slot's attribute bits through exactly the code the installer writes them with,
 # so what it exercises is the format rather than a host-side second spelling of it.
@@ -74,7 +74,7 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 serial_console = { version = "0.1.0", path = "../crates/serial_console" }
 # The rungs of the boot ladder (milestone 268), for the markers the UEFI boot waits on: the same
 # constants the kernel prints and `serial_console` matches, rather than a third copy of one line.
-boot_ladder = { version = "0.1.0", git = "https://github.com/nifeos/boot_ladder", rev = "ed235428c6551ddcf673bdb140b972535238fe3b" }
+boot_ladder = { version = "0.1.0", git = "https://github.com/partsfoundry/boot_ladder", rev = "ed235428c6551ddcf673bdb140b972535238fe3b" }
 # The per-test time record's grammar (milestone 807 (the kernel suite reports what each test cost), §254 (a gate prints what each item cost), Fork 1): the kernel's test runner prints
 # it and `time_record.rs` parses it, so rule 7 makes it a crate rather than a second copy.
 test_times = { version = "0.1.0", path = "../crates/test_times" }
@@ -96,7 +96,7 @@ screen_console = { version = "0.1.0", path = "../crates/screen_console" }
 # The programs the shell can spawn (milestone 150): the packer refuses to build an archive missing
 # one, because a `Program` whose binary is not packed compiles, passes every host test and cannot be
 # spawned. Both `no_std`, so they cost the host build nothing.
-grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
+grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # To find a program's manifest note on the host and stage a copy of it that cannot be read
 # (milestone 597 (a program carries its manifest in an ELF note), provisional), for

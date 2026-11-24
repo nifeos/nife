@@ -28,10 +28,10 @@ publish = false
 # pages (`std_runtime_contract`), and the system calls a `std` program has no binding for
 # (`user_mode_runtime`, `moho_abi`, `address_space_layout`).
 [dependencies]
-moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
-address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
-file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
-grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
+moho_abi = { version = "0.1.0", git = "https://github.com/partsfoundry/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
 program_table = { path = "../crates/program_table" }
 http_response = { path = "../crates/http_response" }
 capability_manifest_note = { path = "../crates/capability_manifest_note" }
@@ -61,7 +61,7 @@ pinned_tls_client = { path = "../pinned_tls_client" }
 entropy_backend = { path = "../entropy_backend" }
 
 # `std_exerciser`'s profile, for its reasons: overflow checks in release (calef, 2026-10-04 (UTC),
-# nifeos/record:notes/overflow-checks.md), a small deterministic image, no unwinding.
+# partsfoundry/record:notes/overflow-checks.md), a small deterministic image, no unwinding.
 [profile.release]
 overflow-checks = true
 opt-level = "s"

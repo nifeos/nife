@@ -36,7 +36,7 @@ redoxfs = { path = "../../vendor/redoxfs", default-features = false, features = 
 # then a compile error here instead of a recovery that quietly reads garbage. `file_system_contract` is `no_std`
 # with no dependencies of its own, so it costs this build nothing; `redoxfs_server` already takes the same
 # path dependency across the same workspace boundary, which is what shows cargo permits it.
-file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 
 # The partition table, from the crate that already parses it (milestone 110). A real disk has a GPT
 # where an image file has a filesystem, so finding the filesystem means reading the table first, and
@@ -53,7 +53,7 @@ uuid = { version = "1.28.0", default-features = false }
 # read by its errno. Recovery needs exactly one of those. **`ENOENT` is the only error that may be
 # read as "this image has no attribute store"**; treating any other one that way is the false
 # negative that reports a file's attributes as absent when the lookup actually failed, which is the
-# same discipline the FS server's own `find_store` keeps (nifeos/record:notes/fs-server.md).
+# same discipline the FS server's own `find_store` keeps (partsfoundry/record:notes/fs-server.md).
 redox_syscall = { version = "0.9.0", default-features = false, features = ["std"] }
 
 # The host's extended-attribute calls, which `std` does not wrap: `setxattr` on macOS, `lsetxattr` on

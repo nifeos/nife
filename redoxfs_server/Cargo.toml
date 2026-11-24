@@ -8,20 +8,20 @@
 # The crate is host-testable and target-buildable from one source. `cargo test` (default features,
 # `hosttest`) builds the sans-IO Server<D> core against std RedoxFS and a DiskMemory fixture, in
 # milliseconds, no emulator. The EL0 binary (added under `--features el0 --no-default-features` for
-# the bare targets) wraps that core in the IPC Disk and the serve loop. See nifeos/record:notes/fs-server.md.
+# the bare targets) wraps that core in the IPC Disk and the serve loop. See partsfoundry/record:notes/fs-server.md.
 [workspace]
 
 # Milestone 63 renamed the DIRECTORY from `fs-server/` to `fs_server/` to match the package on
 # 2026-08-01. That package name itself was never put to calef and predated the `*_proto`/`*_server`
 # habit being written down; it stood until milestone 140's decision doc pointed out it was wrong for
-# a different reason (nifeos/record:design/roadmap/0140-foreign-filesystems.md, "fs_server is misnamed, and the
+# a different reason (partsfoundry/record:design/roadmap/0140-foreign-filesystems.md, "fs_server is misnamed, and the
 # architecture is what makes it wrong"): this project is moving to one program per filesystem type,
 # so this crate genuinely only ever will serve RedoxFS, and a generic `fs_server` name claims
 # something a second filesystem server (`fat32_server`, when it exists) would contradict.
 #
 # Name: ratified 2026-10-22 (calef, #2562). Refused `fs_server` (generic, where this crate only ever
 # serves RedoxFS). calef, 2026-08-18: "fs_server is misnamed. Its something like redoxfs_server."
-# nifeos/record:design/roadmap/0140-foreign-filesystems.md has the change.
+# partsfoundry/record:design/roadmap/0140-foreign-filesystems.md has the change.
 
 [package]
 name = "redoxfs_server"
@@ -82,7 +82,7 @@ el0 = ["dep:user_mode_runtime", "dep:memory_region_heap", "dep:clock_contract"]
 
 # The initial ramdisk carries this binary's ELF, so keep it small and deterministic (the same knobs
 # std_exerciser uses). Only the target build uses the release profile; host tests use dev and unwind.
-# Overflow checks in release, ruled by calef 2026-10-04 (UTC) (nifeos/record:notes/overflow-checks.md, option A).
+# Overflow checks in release, ruled by calef 2026-10-04 (UTC) (partsfoundry/record:notes/overflow-checks.md, option A).
 # The shipped build now means by `a + b` what every tested build means: an overflow halts rather
 # than wraps into a quiet wrong answer. Where a hot path wants a wrap, it says so at the site with
 # `wrapping_*` and a reason.
@@ -100,7 +100,7 @@ subtree_scope = { version = "0.1.0", path = "../crates/subtree_scope" }
 # itself, carried in the EL0 binary (`carry_subtree_grants!`).
 capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
-address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
 # The vendored engine, no default features: the pure no_std core (creation APIs stay host-side).
 redoxfs = { path = "../vendor/redoxfs", default-features = false }
 # The same redox_syscall (lib name `syscall`) RedoxFS uses, so our Server's `syscall::error::Result`
@@ -111,8 +111,8 @@ redox_syscall = { version = "0.9.0", default-features = false }
 # carries (`file_system_contract::dir`) is the sans-IO core's own vocabulary rather than something the serve loop
 # bolts on at the boundary, which is what makes the attenuation impossible to forget. Pure no_std
 # logic with no dependencies of its own, so it costs the host build nothing.
-file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
-file_system_fixture = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+file_system_fixture = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 
 # The partition table (milestone 57): `mkfs` finds the partition it is to format by reading the
 # GPT off the disk it holds, with the same parser `disk_surveyor` uses. Pure no_std logic with no
@@ -127,7 +127,7 @@ nife_partition_types = { version = "0.1.0", path = "../crates/nife_partition_typ
 user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime", optional = true }
 # EL0-only, optional (behind `el0`): the clock page's layout, so the server stamps modification times from
 # the wall clock (`Server::set_wall_clock`). The same pin `components` reads it at.
-clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166", optional = true }
+clock_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166", optional = true }
 # The heap the EL0 binaries allocate from. The host build takes it too (`hosttest`), for the
 # `second_mount` repro, which runs the engine under this heap over a host page source.
 memory_region_heap = { version = "0.1.0", path = "../crates/memory_region_heap", optional = true }

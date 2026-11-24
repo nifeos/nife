@@ -25,4 +25,4 @@ manual_let_else = "warn"
 doc_markdown = "warn"
 
 [dependencies]
-byte_sink_contract = { version = "0.1.0", git = "https://github.com/nifeos/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }
+byte_sink_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }

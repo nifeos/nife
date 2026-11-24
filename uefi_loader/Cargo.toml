@@ -113,7 +113,7 @@ uuid = { version = "1.28.0", default-features = false }
 # `device_tree_blob::Region` too, in the record `machine_discovery::gic` hands back. Ours, in this
 # workspace, no dependencies of its own; not a §46 (thin primitives or whole subsystems) decision,
 # and not a new edge in the graph either, since `machine_discovery` above already depends on it.
-device_tree_blob = { version = "0.1.0", git = "https://github.com/nifeos/device_tree_blob", rev = "96ad52af96e38e38577f91a787f53b789dbdda4f" }
+device_tree_blob = { version = "0.1.0", git = "https://github.com/partsfoundry/device_tree_blob", rev = "96ad52af96e38e38577f91a787f53b789dbdda4f" }
 
 # **The grammar of the two digests this loader hands the kernel** (`measured_boot::loader_digests`,
 # milestone 695 (the kernel trusts two digests handed to it by the loader)): `handoff::cmdline`

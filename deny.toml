@@ -64,7 +64,7 @@ unmaintained = "all"
 # Keep this list short, and read the entry below as the shape the next one should take: a
 # **bounded claim about a path we do not call**, with what would end it, rather than a dismissal.
 ignore = [
-    { id = "RUSTSEC-2023-0071", reason = "The Marvin attack is a timing side channel in RSA PKCS#1 v1.5 DECRYPTION, which recovers a private key from an oracle that decrypts attacker-chosen ciphertexts. This tree uses `rsa` in exactly one place, `cryptography_provider`'s certificate and handshake signature verification, which performs public-key operations only: it holds no RSA private key, decrypts nothing, and has no oracle to offer. The advisory names a path we do not call. THIS STOPS BEING TRUE the moment anything here decrypts with `rsa`, signs with it, or uses RSA key transport; TLS 1.3 has no RSA key exchange, so the provider being TLS 1.3 only is part of what holds this claim up. Taken on calef's ruling of 2026-09-20 (\"Take rsa\") because `objects.githubusercontent.com` serves RSA 2048 and `ghcr.io` RSA 4096, so a client without RSA verification can reach GitHub and not download from it. See DECISIONS §198 (the glue is ours, the primitives are not) and nifeos/record:notes/cryptography-provider.md." },
+    { id = "RUSTSEC-2023-0071", reason = "The Marvin attack is a timing side channel in RSA PKCS#1 v1.5 DECRYPTION, which recovers a private key from an oracle that decrypts attacker-chosen ciphertexts. This tree uses `rsa` in exactly one place, `cryptography_provider`'s certificate and handshake signature verification, which performs public-key operations only: it holds no RSA private key, decrypts nothing, and has no oracle to offer. The advisory names a path we do not call. THIS STOPS BEING TRUE the moment anything here decrypts with `rsa`, signs with it, or uses RSA key transport; TLS 1.3 has no RSA key exchange, so the provider being TLS 1.3 only is part of what holds this claim up. Taken on calef's ruling of 2026-09-20 (\"Take rsa\") because `objects.githubusercontent.com` serves RSA 2048 and `ghcr.io` RSA 4096, so a client without RSA verification can reach GitHub and not download from it. See DECISIONS §198 (the glue is ours, the primitives are not) and partsfoundry/record:notes/cryptography-provider.md." },
 ]
 
 [licenses]
@@ -220,7 +220,7 @@ deny = [
     # UTC). That is not the §46 ruling on whether nife ships it, so nothing else may take it yet.
     { crate = "rsext4", wrappers = ["ext4_oracle"], reason = "host-only oracle dependency (#3639); not the §46 adoption ruling" },
     # `lamfat` (rust-fatfs's main line, republished) is the test oracle of
-    # `nifeos/file_allocation_table`, a dev-dependency there, ruled 2026-10-25 (UTC) for milestone
+    # `partsfoundry/file_allocation_table`, a dev-dependency there, ruled 2026-10-25 (UTC) for milestone
     # 813 (a proven FAT crate, released on its own). Nothing in this tree takes it, and a git
     # dependency's dev-dependencies never reach this graph, so lamfat here would mean a release
     # of that crate made it a normal dependency.
@@ -244,7 +244,7 @@ skip = [
 # Where code is allowed to come from. This is the check that would notice a dependency quietly
 # repointed at somebody's fork, which is the shape most real supply-chain attacks on a small project
 # would take. Everything here is crates.io, an in-tree path, or a git repository in the nifeos
-# organization pinned by `rev` to a commit that has landed on its main (DECISIONS §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)). A git
+# organization pinned by `rev` to a commit that has landed on its main (DECISIONS §305 (git dependencies are allowed on `partsfoundry/*` only, pinned to a landed commit)). A git
 # dependency anywhere else stays refused.
 unknown-registry = "deny"
 unknown-git = "deny"
@@ -254,4 +254,4 @@ allow-git = []
 # cargo-deny warns "no crate source fell under this organization" until the first git dependency
 # exists; the warning is expected and not a failure.
 [sources.allow-org]
-github = ["nifeos"]
+github = ["partsfoundry"]

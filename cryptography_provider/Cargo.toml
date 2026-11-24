@@ -7,7 +7,7 @@
 # because its correctness includes constant-time behaviour and resistance to attacks no
 # specification states. Every such operation here is inside one of the crates below. What this
 # package does is select, name and plumb: five fields of a `CryptoProvider`. See src/lib.rs for
-# that line drawn out loud, and nifeos/record:notes/cryptography-provider.md for the pricing that preceded it.
+# that line drawn out loud, and partsfoundry/record:notes/cryptography-provider.md for the pricing that preceded it.
 #
 # Not a member of the main workspace, so its crates stay out of this repository's `Cargo.lock`.
 # It was kept out of CI too while the primitive set was calef's; §198 (the glue is ours, the
@@ -49,7 +49,7 @@ pki_types = { package = "rustls-pki-types", version = "1", default-features = fa
 # The record layer. Both carry NCC Group's 2020 audit in their own README, which is the strongest
 # evidence behind any crate in this graph and covers every byte that crosses the wire.
 # Every portable implementation this graph needs on `x86_64-unknown-nife` is selected by a `--cfg`
-# in `cryptography_exerciser/.cargo/config.toml`, `sha2`'s included; nifeos/record:notes/cryptography-provider.md
+# in `cryptography_exerciser/.cargo/config.toml`, `sha2`'s included; partsfoundry/record:notes/cryptography-provider.md
 # has the table.
 aes-gcm = { version = "0.11", default-features = false, features = ["aes", "alloc"] }
 chacha20poly1305 = { version = "0.11", default-features = false, features = ["alloc"] }
@@ -95,6 +95,6 @@ getrandom = { version = "0.4", default-features = false, features = ["sys_rng"] 
 # would keep a second copy of each of eleven crates, `sha2` among them, which `deny.toml`'s
 # `multiple-versions = "deny"` refuses. The `=` keeps a later candidate from arriving by `cargo
 # update` alone, since a candidate may change its interface; `encoding` brings `pkcs1`
-# 0.8.0-rc.5, the other candidate in this graph. BUGS in nifeos/record:notes/cryptography-provider.md has
+# 0.8.0-rc.5, the other candidate in this graph. BUGS in partsfoundry/record:notes/cryptography-provider.md has
 # what ends it.
 rsa = { version = "=0.10.0-rc.19", default-features = false, features = ["sha2", "encoding"] }
