@@ -1,8 +1,8 @@
-**Provisional name.** Run the four cheap gates on a lane's work before pushing it. You are in the
+**Provisional name.** Run the three cheap gates on a lane's work before pushing it. You are in the
 branch's git worktree, your work is written, and you are ready to prove it locally holds together.
 Do the work; do not ask questions.
 
-**Why this brief exists rather than four commands typed from memory.** Every lane brief in this
+**Why this brief exists rather than three commands typed from memory.** Every lane brief in this
 directory ends with some version of this sequence. A maintainer retyped its clauses into lane brief
 after lane brief on 2026-09-22 and 2026-09-23. They are the order, the fact that the citation
 ratchet reads
@@ -11,20 +11,19 @@ ceiling that keeps `script/verify` off this machine. Written from memory each ti
 clauses gets dropped. It is usually the ratchet's commit-first rule, because its failure looks like
 the tool being broken rather than like a missed step.
 
-## The four gates, in this order
+## The three gates, in this order
 
     script/lint
-    script/roadmap --check
     script/fmt
     script/citations --ratchet
 
-Run them in that order because the first three are cheap and independent, and `script/fmt` can fix
+Run them in that order because the first two are cheap and independent, and `script/fmt` can fix
 what `script/lint` only reports. Running it after `lint` means you gate the corrected tree instead
 of gating once, formatting, and having to gate again. `script/citations --ratchet` goes last because
 it reads **committed** state (see below), so it is the one gate a fix-and-rerun loop can silently
 stop trusting.
 
-All four run in seconds on a normal-sized change, need no emulator, and catch most of what would
+All three run in seconds on a normal-sized change, need no emulator, and catch most of what would
 otherwise be discovered thirty minutes into a CI run (`briefs/gate-in-ci.md`).
 
 ## `script/citations --ratchet` reads the committed tip, not your working tree
@@ -109,7 +108,7 @@ names the actual holder faster than guessing from process names.
 
 `script/test` (which this brief does not run) and some of the cheap gates link the patched std
 farm as `nife-dev-<your worktree's directory>-<hash>`, a `rustup` name no other worktree computes
-(notes/std.md). It takes nothing from another lane and needs no relink afterward. Do not touch the
+([notes/std.md](https://github.com/nifeos/record/blob/main/notes/std.md)). It takes nothing from another lane and needs no relink afterward. Do not touch the
 bare `nife-dev` link: lanes cut before 2026-10-10 still write it, and only the maintainer removes it.
 
 ## Scratch files carry a lane-unique prefix
@@ -130,7 +129,7 @@ running `script/lint`, or the first gate in this brief will fail on it.
 
 ## EXAMPLES
 
-`script/lint` and `script/roadmap --check` print a report either way; `script/fmt` and a clean
+`script/lint` prints a report either way; `script/fmt` and a clean
 `script/citations --ratchet` print nothing beyond their one summary line when there is nothing to
 fix. A run against this tree looked like this (trimmed; `script/lint` alone runs to about 2,000
 lines):
@@ -143,13 +142,6 @@ lines):
     ...
     shellcheck: 83 sh scripts, no errors or warnings
     sh -n: every #!/bin/sh script parses under this machine's own /bin/sh
-    $ echo $?
-    0
-
-    $ script/roadmap --check
-    roadmap: 565 milestones, 566 files, status vocabulary clean, every '## Index row' parses, ...
-    roadmap: 89 pieces of work are outstanding on a PARTIAL milestone (script/roadmap --outstanding)
-    ...
     $ echo $?
     0
 
@@ -185,6 +177,6 @@ A lane that hits the commit-first trap, and the fix:
   anticipate. It says nothing about a leaked process on a machine other than the one you are
   running on (a board rig, say).
 - **Nothing here measures whether following this brief actually stops the clause-dropping it was
-  written to fix.** The evidence for writing it down is `notes/effort-levels.md`'s finding that
+  written to fix.** The evidence for writing it down is [`notes/effort-levels.md`](https://github.com/nifeos/record/blob/main/notes/effort-levels.md)'s finding that
   correctness comes from prompt wording rather than from the reader's capability; whether this
   particular brief holds up over many lanes, rather than the one measured task, is unmeasured.
