@@ -29,7 +29,7 @@ Name: provisional, minted by milestone 415's lane on 2026-09-26. A shared python
 `helpers/`, outside `script/names`' scope, so its provenance is this paragraph. Refused
 `drift_report`, which names the output and not the thing measured.
 
-The anchor is the 2026-09-15 audit's (notes/benchmarks/baseline-save-audit.md), one commit per
+The anchor is the 2026-09-15 audit's (nifeos/record:notes/benchmarks/baseline-save-audit.md), one commit per
 architecture, pinned in ANCHORS below. aarch64 starts at `74431429`, the first save after the
 one-hart fix and the QEMU pin, because every earlier number means something else. riscv64 and
 x86_64 start at their birth. Refused: anchoring at the first save that carries `# why:` lines
@@ -866,7 +866,7 @@ def selftest():
     return 0
 
 
-# The 2026-09-15 audit's five cumulative figures (notes/benchmarks/baseline-save-audit.md), at the
+# The 2026-09-15 audit's five cumulative figures (nifeos/record:notes/benchmarks/baseline-save-audit.md), at the
 # merge that carried the last save it walked. Reproducing them from the same anchors is the check
 # that this module and the audit mean the same arithmetic. It needs full history, so it is a mode
 # of its own rather than part of `--selftest`, which script/lint runs on whatever clone CI has.
