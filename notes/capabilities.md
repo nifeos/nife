@@ -127,7 +127,7 @@ want it. It is not the primitive.
 | capabilities to a Unix-shaped API | **additive.** A library. Nothing is thrown away. |
 | Unix to capabilities | **a rewrite**, and it has never once succeeded. |
 
-Which is the same table as [DECISIONS §5](https://github.com/nifeos/record/blob/main/design/decisions/0005-preemptive-threads.md)'s threads-versus-async, and it decides
+Which is the same table as [DECISIONS §5 (preemptive threads with real stacks)](https://github.com/nifeos/record/blob/main/design/decisions/0005-preemptive-threads.md)'s threads-versus-async, and it decides
 this the same way. When one direction is cheap and the other is a rewrite, take the one that
 keeps the option open.
 
@@ -147,7 +147,7 @@ page table. To start a thread you invoke a capability on a TCB.
 
 ## An interrupt is a message
 
-Where [milestone 2's exception model](https://github.com/nifeos/record/blob/main/notes/exceptions.md) meets this one, and it is the prettiest
+Where the exception model of [milestone 2 (exception vectors, and a fault that tells you what it was)](https://github.com/nifeos/record/blob/main/notes/exceptions.md) meets this one, and it is the prettiest
 consequence.
 
 A driver holds an interrupt capability, binds it to a notification, and blocks. The kernel's handler

@@ -268,7 +268,7 @@ running concurrently means two independent chains of nested function calls in pr
 which means two separate stacks. There is no way around it.
 
 This is why the async-vs-preemptive decision mattered so much (see
-[DECISIONS](https://github.com/nifeos/record/blob/main/design/decisions/0005-preemptive-threads.md) §5). Async tasks are state machines the compiler builds on
+[DECISIONS](https://github.com/nifeos/record/blob/main/design/decisions/0005-preemptive-threads.md) §5 (preemptive threads with real stacks)). Async tasks are state machines the compiler builds on
 the heap, which is why they don't each need a stack, which is why async looked cheaper.
 But a real user program is not a state machine we built. It is arbitrary machine code with
 an arbitrary call depth, and it needs a real stack.
