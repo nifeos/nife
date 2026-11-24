@@ -74,3 +74,39 @@ old = "helpers/roadmap_migrate.py"
 new = "nifeos/record:helpers/roadmap_migrate.py"
 date = "2026-11-24"
 reason = "milestone 1018: the record's own tooling leaves with it"
+
+[[moved]]
+old = "script/audits"
+new = "nifeos/record:script/audits"
+date = "2026-11-24"
+reason = "milestone 1018: it serves only the record, whose lint pull request copied it"
+
+[[moved]]
+old = "script/fatal-risks"
+new = "nifeos/record:script/fatal-risks"
+date = "2026-11-24"
+reason = "milestone 1018: it serves only the record, whose lint pull request copied it"
+
+[[moved]]
+old = ".github/workflows/audit-cadence.yml"
+new = "nifeos/record:.github/workflows/audit-cadence.yml"
+date = "2026-11-24"
+reason = "milestone 1018: it serves only the record, whose lint pull request copied it"
+
+[[moved]]
+old = ".github/workflows/coe-architect-label.yml"
+new = "nifeos/record:.github/workflows/coe-architect-label.yml"
+date = "2026-11-24"
+reason = "milestone 1018: it serves only the record, whose lint pull request copied it"
+
+[[moved]]
+old = ".github/ISSUE_TEMPLATE/design-argument.yml"
+new = "nifeos/record:.github/ISSUE_TEMPLATE/design-argument.yml"
+date = "2026-11-24"
+reason = "milestone 1018: it serves only the record, whose lint pull request copied it"
+
+[[moved]]
+old = ".github/ISSUE_TEMPLATE/scope-request.yml"
+new = "nifeos/record:.github/ISSUE_TEMPLATE/scope-request.yml"
+date = "2026-11-24"
+reason = "milestone 1018: it serves only the record, whose lint pull request copied it"
