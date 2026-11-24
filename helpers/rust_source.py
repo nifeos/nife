@@ -376,11 +376,10 @@ NOT_A_PACKAGE = ('helpers/', 'patches/')
 
 # Workspace roots apart from the main one whose harnesses `script/verify` proves, each a row of its
 # crate table run by `--manifest-path`. A workspace of its own keeps a dependency out of every
-# shipping lockfile: `tools/ext4_oracle` holds the harnesses milestone 190 (ext4, read and write)
-# states for `rsext4`, a host-only dependency by the ruling its Cargo.toml cites. The text-only count above already counts
-# them, so `script/lint`'s two harness walks and `script/falsifications` read these packages through
-# `proved_packages` as well, and the three counts keep agreeing. Name: provisional.
-PROVED_WORKSPACES = ('tools/ext4_oracle',)
+# shipping lockfile. None holds harnesses, so the tuple is empty. The text-only count above counts
+# such harnesses, so `script/lint`'s two harness walks and `script/falsifications` read these
+# packages through `proved_packages` as well, and the three counts keep agreeing. Name: provisional.
+PROVED_WORKSPACES = ()
 
 
 def proved_packages(repository_root, main_metadata):

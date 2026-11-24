@@ -27,8 +27,4 @@ publish = false
 # Default features off: the reader needs no `std` integration from the crate, and the defaults
 # would add nothing the oracle reads.
 [dependencies]
-rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/nifeos/rsext4", rev = "9a157a7d8005fb98a1a3aaf0d790c83cabdb14d2", default-features = false }
-
-# `cfg(kani)` gates the harnesses in tests/parser_proofs.rs, which `script/verify` runs.
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/nifeos/rsext4", rev = "2cfaaa11a096ee2a5b49fa99a85461cf5d4daf9a", default-features = false }
