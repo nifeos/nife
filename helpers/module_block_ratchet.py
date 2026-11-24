@@ -129,7 +129,8 @@ def tree_modules():
         except OSError:
             return None
 
-    _records, _problems, _missing, unblocked = name_census.census(paths, read)
+    _records, _problems, _missing, unblocked = name_census.census(
+        paths, name_census.rules_at_pin(read, os.getcwd()))
     judged = {p for p in paths if name_census.is_module_file(p) or name_census.is_top_document(p)}
     return judged, collections.Counter(unblocked)
 

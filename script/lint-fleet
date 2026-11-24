@@ -91,6 +91,14 @@ nife_check_branch_name_shape "$branch" lint || exit 1
 #     finishes a lane, so the status flip belongs in the merge rather than with whoever happens to
 #     notice afterwards.
 #
+#     **The record is in nifeos/record now** (milestone 1018 (the design record moves to
+#     nifeos/record and is published as a website)). The status flip lands in the lane's pull
+#     request there, and that repository checks it. Here the check is the half this tree can see:
+#     the milestone the branch names has a block in the record at the commit basalt pins, or a
+#     block there records the lane's renumbering. Reading the pin needs one fetch the first time a
+#     pin is seen, and the cached tree after that. The history below is the rule as it ran while
+#     the record lived in this tree.
+#
 #     **The lane makes the edit, and this is the one exception to "a developer never edits
 #     design/"** (calef, 2026-08-23; reaffirmed and narrowed 2026-09-01, and now stated in
 #     AGENTS.md's developer role rather than only here). The original intent was the reverse: the

@@ -33,7 +33,7 @@ do need these, and each one will otherwise cost you a rewrite:
   a `#[path]` module, because a shared module inside a `no_std` binary is unreachable by host tests
   and by Kani, and this project's whole method is pure logic in host-testable crates plus proofs.
 - **Names are an architect's call.** Ship a provisional one and say so in your pull request; do not
-  wait, and do not rename anything on your own initiative. [`design/naming.md`](design/naming.md)
+  wait, and do not rename anything on your own initiative. [`design/naming.md`](https://github.com/nifeos/record/blob/main/design/naming.md)
   has the conventions, and `script/names --unratified` lists what is still waiting on a ruling.
 - **`design/decisions/` section numbers are assigned at merge**, never claimed by a branch. Put your
   reasoning in `notes/` and in the pull request instead.
@@ -101,9 +101,9 @@ Concretely, a change is finished when:
   hits a limitation the docs hid will not trust anything again.
 - Anything measurable is **measured**. `script/bench` runs icount microbenchmarks against a committed
   baseline. An honest tie recorded plainly is worth more than an overclaimed win.
-- Its prose stays within budget. [§212 (a prose budget)](design/decisions/0212-a-prose-budget-for-every-document.md)
+- Its prose stays within budget. [§212 (a prose budget)](https://github.com/nifeos/record/blob/main/design/decisions/0212-a-prose-budget-for-every-document.md)
   caps a document's main body at 3,000 words, and
-  [§213 (writing standards)](design/decisions/0213-writing-standards.md) limits sentence length and
+  [§213 (writing standards)](https://github.com/nifeos/record/blob/main/design/decisions/0213-writing-standards.md) limits sentence length and
   bold. A new document meets both outright; an edited one may not get worse.
 
 ## What is not yours to decide, and why that saves you time
@@ -135,7 +135,7 @@ Claim before you work. §90 (the claim is a draft pull request) makes a draft pu
 claim, so two people cannot silently take the same milestone. `script/claim` makes it in one
 command: it refuses a malformed branch name, cuts a worktree, and pushes an empty commit behind a
 draft. It also refuses a lane that does not say whether it repays debt: pass exactly one of
-`--debt-paydown` or `--new-work` ([notes/debt-paydown.md](notes/debt-paydown.md) has the line between
+`--debt-paydown` or `--new-work` ([notes/debt-paydown.md](https://github.com/nifeos/record/blob/main/notes/debt-paydown.md) has the line between
 them). The empty commit matters, because without it GitHub closes the draft as merged when its base
 lands. Any branch prefix is accepted except a near-miss of `milestone/<N>-<slug>`, the one prefix
 with a meaning: `script/lint` reads it to require that milestone's roadmap block be updated.
@@ -173,24 +173,24 @@ useful commits in this history. `git blame` is the test. A reader tracing why a 
 does has to land on a commit that explains it.
 
 **If your change is a design argument rather than code**, it goes in `design/decisions/` as a file
-whose frontmatter says `status: PROPOSED` ([the schema](design/decisions/README.md)). It says what is
+whose frontmatter says `status: PROPOSED` ([the schema](https://github.com/nifeos/record/blob/main/design/decisions/README.md)). It says what is
 being decided, the options, the recommendation with its reason, and what is blocked until it is
 answered. Work you found but are not doing goes in
-[`design/roadmap/proposals/`](design/roadmap/proposals/README.md), unnumbered. A decision that lives only in a pull request thread
+[`design/roadmap/proposals/`](https://github.com/nifeos/record/blob/main/design/roadmap/proposals/README.md), unnumbered. A decision that lives only in a pull request thread
 is in the medium this project exists to get things out of.
 
 ## Where the arguments are
 
-- [`design/decisions/`](design/decisions/README.md) is what was chosen, what was rejected, and why,
+- [`design/decisions/`](https://github.com/nifeos/record/blob/main/design/decisions/README.md) is what was chosen, what was rejected, and why,
   **including the decisions that were refused**. That is on purpose: you can disagree with an
   argument, but not with an authority.
-- [`design/roadmap/`](design/roadmap/README.md) is the only status in the tree: one file per
+- [`design/roadmap/`](https://github.com/nifeos/record/blob/main/design/roadmap/README.md) is the only status in the tree: one file per
   milestone, with `script/roadmap` as the index. It has a fixed status vocabulary
-  ([notes/roadmap.md](notes/roadmap.md)) and a checker; anywhere else that claims status is stale by
+  ([notes/roadmap.md](https://github.com/nifeos/record/blob/main/notes/roadmap.md)) and a checker; anywhere else that claims status is stale by
   construction.
-- [`notes/`](notes/README.md) is a glossary written while building, one file per question that
+- [`notes/`](https://github.com/nifeos/record/blob/main/notes/README.md) is a glossary written while building, one file per question that
   turned out to be load-bearing.
-- [`design/audit-reports/`](design/audit-reports/) is every audit, its lens, and when the next is due.
+- [`design/audit-reports/`](https://github.com/nifeos/record/tree/main/design/audit-reports) is every audit, its lens, and when the next is due.
 
 ## Conduct
 

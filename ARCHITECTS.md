@@ -2,7 +2,7 @@
 
 *calef asked for this file on 2026-09-25 (UTC) so the tree stops assuming it has one architect. It
 is spelled `ARCHITECTS.md` rather than the `architects.md` he wrote because
-[design/naming.md](design/naming.md) spells repo-root markdown in capitals, beside `AGENTS.md` and
+[design/naming.md](https://github.com/nifeos/record/blob/main/design/naming.md) spells repo-root markdown in capitals, beside `AGENTS.md` and
 `CONTRIBUTING.md`.*
 
 ## Who holds the role
@@ -36,6 +36,6 @@ calef, 2026-09-25 (UTC):
 
 So any one listed architect may rule on anything the role covers, with no domain split and no
 quorum.
-[§217 (every architect holds the whole role)](design/decisions/0217-every-architect-holds-the-whole-role.md)
+[§217 (every architect holds the whole role)](https://github.com/nifeos/record/blob/main/design/decisions/0217-every-architect-holds-the-whole-role.md)
 records it. What happens when two architects disagree is not specified by that ruling, and nothing
 here specifies it either.

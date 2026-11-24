@@ -9,7 +9,7 @@ weekly metrics page draws from it.
     python3 helpers/packages.py --check      # what script/lint runs
     python3 helpers/packages.py --selftest   # planted violations, no tree, no git
     python3 helpers/packages.py --table        # the table nifeos/record:notes/package-boundaries.md carries
-    python3 helpers/packages.py --write-table  # write it there, between the markers
+    python3 helpers/packages.py --write-table <record>  # write it into a checkout of nifeos/record
     python3 helpers/packages.py --summary    # one line of counts
 
 Name: provisional, minted by milestone 611's lane on 2026-09-27. So are the key names below, every
@@ -470,12 +470,7 @@ def evaluate(tracked, texts):
             # {prefix: package name, or None for a packages/homes.toml claim}: the longest prefix
             # naming a path is its owner. helpers/interface_stability.py's per-package co-change
             # reads it to place every path a past commit touched.
-            'claims': {prefix: owner for prefix, (owner, _h, _a) in claims.items()},
-            # {prefix: its home}, for helpers/record_paths.py, which writes the record's extraction
-            # path lists from the claims whose home is the record and those nested under them.
-            'claim_homes': {prefix: home for prefix, (_o, home, _a) in claims.items()},
-            # {path: its home}, for helpers/record_links.py, which sorts the record by it.
-            'file_home': {path: home for path, (_o, home, _a) in file_home.items()}}
+            'claims': {prefix: owner for prefix, (owner, _h, _a) in claims.items()}}
 
 
 def _prefixes(path):
@@ -566,22 +561,34 @@ NOTE = 'notes/package-boundaries.md'
 
 
 def check(root='.'):
+    """Every rule over the tree at `root`, and the package table the record's note carries.
+
+    The note is in nifeos/record, read at the commit basalt pins (helpers/record_root.py). The
+    table follows this tree a pin bump behind: a change here lands first, and the record's pull
+    request that writes the new table lands after basalt pins it. So a stale table is a warning
+    here, never a failure; a missing note or missing markers still fail.
+    """
     tracked, texts = working_tree(root)
     result = evaluate(tracked, texts)
     errors = list(result['errors'])
     note = os.path.join(root, NOTE)
+    if not os.path.exists(note):
+        import record_root
+        note = record_root.path(NOTE, top=os.path.abspath(root))
     if os.path.exists(note):
         with open(note, encoding='utf-8') as f:
             text = f.read()
         if TABLE_BEGIN in text and TABLE_END in text:
             current = text.split(TABLE_BEGIN, 1)[1].split(TABLE_END, 1)[0].strip()
             if current != table(result).strip():
-                errors.append(f'{NOTE}: the package table is stale; '
-                              'run python3 helpers/packages.py --write-table')
+                print(f'packages: warning: nifeos/record:{NOTE}: the package table differs from '
+                      'this tree; once basalt pins this change, write it there with '
+                      'python3 helpers/packages.py --write-table <a checkout of nifeos/record>',
+                      file=sys.stderr)
         else:
-            errors.append(f'{NOTE}: the package table markers are missing')
+            errors.append(f'nifeos/record:{NOTE}: the package table markers are missing')
     else:
-        errors.append(f'{NOTE} is missing; it carries the table calef ratifies')
+        errors.append(f'nifeos/record:{NOTE} is missing; it carries the table calef ratifies')
     for e in errors:
         print(f'packages: {e}', file=sys.stderr)
     c = counts(result)
@@ -733,13 +740,14 @@ def main(argv):
         return 0
     if argv == ['--check']:
         return check()
-    if argv == ['--write-table']:
+    if len(argv) == 2 and argv[0] == '--write-table':
         tracked, texts = working_tree()
-        with open(NOTE, encoding='utf-8') as f:
+        note = os.path.join(argv[1], NOTE)
+        with open(note, encoding='utf-8') as f:
             text = f.read()
         head, rest = text.split(TABLE_BEGIN, 1)
         tail = rest.split(TABLE_END, 1)[1]
-        with open(NOTE, 'w', encoding='utf-8') as f:
+        with open(note, 'w', encoding='utf-8') as f:
             f.write(f'{head}{TABLE_BEGIN}\n{table(evaluate(tracked, texts))}\n{TABLE_END}{tail}')
         return 0
     if argv in (['--table'], ['--summary']):

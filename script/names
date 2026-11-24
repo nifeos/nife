@@ -196,8 +196,11 @@ def tracked(*patterns, flags=()):
 
 
 def read(rel):
+    # The naming rules are a record document, so they are read at the commit basalt pins; every
+    # other path the census asks for is this tree's own.
+    where = record_root.path(rel, top=root) if rel == name_rules.RULES_DOC else os.path.join(root, rel)
     try:
-        return open(os.path.join(root, rel), errors="replace").read()
+        return open(where, errors="replace").read()
     except (FileNotFoundError, IsADirectoryError):
         return None
 

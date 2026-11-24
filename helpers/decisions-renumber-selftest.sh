@@ -22,7 +22,11 @@ trap 'rm -rf "$work"' EXIT
 fail() { echo "decisions-renumber-selftest: $*" >&2; exit 1; }
 
 mkdir -p "$work/script" "$work/design/decisions/0004-fourth" "$work/notes"
-cp "$root/script/decisions" "$work/script/decisions"
+# script/decisions left with the record (milestone 1018 (the design record moves to nifeos/record
+# and is published as a website)), so the copy under test is the record's, at the commit basalt
+# pins, until nifeos/record carries this selftest itself.
+record="$(python3 "$root/helpers/record_root.py" --top "$root")"
+cp "$record/script/decisions" "$work/script/decisions"
 
 # The index modes read ARCHITECTS.md on every run; the fixture's ratifier must be listed there.
 cat > "$work/ARCHITECTS.md" <<'EOF'

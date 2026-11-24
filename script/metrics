@@ -186,7 +186,6 @@ from datetime import date, datetime, timedelta, timezone
 sys.dont_write_bytecode = True
 sys.path.insert(0, 'helpers')
 import baseline_drift                                                       # noqa: E402
-import coe_actions                                                          # noqa: E402
 import history_ratchet                                                      # noqa: E402
 import counted_claims                                                       # noqa: E402
 import crate_release                                                        # noqa: E402
@@ -197,12 +196,25 @@ import name_provenance                                                      # no
 import name_ruled                                                           # noqa: E402
 import packages as package_boundaries                                       # noqa: E402
 import prose_ratchet                                                        # noqa: E402
-import roadmap_block                                                        # noqa: E402
-import roadmap_proposals                                                    # noqa: E402
+import record_root                                                          # noqa: E402
+# The record's parsers of its own formats, read at the commit basalt pins.
+roadmap_block = record_root.helper('roadmap_block')
+roadmap_proposals = record_root.helper('roadmap_proposals')
+coe_actions = record_root.helper('coe_actions')
 import rust_source                                                          # noqa: E402
 from rust_source import non_blank, strip_non_code                           # noqa: E402
 
 PAGE = 'notes/project-metrics.md'
+# The page moved to nifeos/record with the design record (milestone 1018 (the design record moves
+# to nifeos/record and is published as a website)); the data under DATA_DIR stayed here. `--record
+# <checkout>` names a full clone of nifeos/record: PAGE is then that checkout's copy, and a week
+# whose nife commit no longer holds the record reads the record's commit of that week from it
+# (`Tree`). Without `--record`, the page's generated lines are not written, and a week that needs
+# the record stops with the reason.
+RECORD_GIT = None
+# The charts stay in nife, so the page in nifeos/record draws each one from nife's main branch. A
+# relative embed from before the move is rewritten to this form the first time the page is written.
+CHART_URL = 'https://raw.githubusercontent.com/nifeos/nife/main/notes/project-metrics/'
 # The page's section order is the page's, written by hand, and nothing here rewrites it: every
 # writer below edits in place, anchored on a chart image or a marker. The rule it follows is
 # calef's (2026-10-06 UTC): a chart whose measure has reached its goal state moves below the charts
@@ -601,11 +613,12 @@ def _wanted(path):
             or (path.startswith('crates/') and path.endswith('.patch')))
 
 
-def _cat(oids):
-    """Each blob's text, in order, from one `git cat-file --batch`."""
+def _cat(oids, repository=None):
+    """Each blob's text, in order, from one `git cat-file --batch` (in `repository`, or here)."""
     if not oids:
         return []
-    blob = subprocess.run(['git', 'cat-file', '--batch'],
+    where = ['-C', repository] if repository else []
+    blob = subprocess.run(['git', *where, 'cat-file', '--batch'],
                           input=('\n'.join(oids) + '\n').encode(),
                           capture_output=True, check=True).stdout
     out, pos = [], 0
@@ -622,6 +635,8 @@ class Tree:
 
     def __init__(self, rev):
         self.rev = rev
+        self.record_oids = set()
+        self.record_paths = set()
         paths, oids = [], []
         # Every tracked path, wanted or not, for the homes measure: it asks whether each one has a
         # home, and the blob filter below is about which texts to read, not which paths exist.
@@ -642,12 +657,53 @@ class Tree:
             paths.append(path)
             oids.append(oid)
         self.text = dict(zip(paths, _cat(oids)))
+        if record_root.MARKER not in self.oid:
+            self._overlay_record()
+
+    def _overlay_record(self):
+        """The record's files at this week, from nifeos/record, for a commit made after it left.
+
+        The record's commit is the last one on its main branch at or before this commit's own
+        time. A path this tree already holds keeps this tree's copy.
+        """
+        if RECORD_GIT is None:
+            raise SystemExit('metrics: %s holds no design record, which left for nifeos/record; '
+                             'pass --record <a full clone of nifeos/record>' % self.rev[:12])
+        when = git('show', '-s', '--format=%cI', self.rev).decode().strip()
+        rrev = subprocess.run(['git', '-C', RECORD_GIT, 'rev-list', '-1', '--first-parent',
+                               '--before=' + when, 'HEAD'],
+                              capture_output=True, check=True).stdout.decode().strip()
+        if not rrev:
+            raise SystemExit('metrics: nifeos/record has no commit at or before %s' % when)
+        listing = subprocess.run(['git', '-C', RECORD_GIT, 'ls-tree', '-r', '-z', rrev],
+                                 capture_output=True, check=True).stdout
+        paths, oids = [], []
+        for entry in listing.decode('utf-8', 'replace').split('\0'):
+            if not entry:
+                continue
+            meta, path = entry.split('\t', 1)
+            mode, kind, oid = meta.split()
+            if kind != 'blob' or path in self.oid:
+                continue
+            self.paths.append(path)
+            self.oid[path] = oid
+            self.record_oids.add(oid)
+            self.record_paths.add(path)
+            if mode == '120000':
+                self.links.add(path)
+            if _wanted(path):
+                paths.append(path)
+                oids.append(oid)
+        self.text.update(zip(paths, _cat(oids, RECORD_GIT)))
 
     def read(self, paths):
         """{path: text} for any of this commit's blobs, `_wanted` or not, in one more batch."""
         missing = [p for p in paths if p not in self.text and p in self.oid]
+        mine = [p for p in missing if self.oid[p] not in self.record_oids]
+        theirs = [p for p in missing if self.oid[p] in self.record_oids]
         return {**{p: self.text[p] for p in paths if p in self.text},
-                **dict(zip(missing, _cat([self.oid[p] for p in missing])))}
+                **dict(zip(mine, _cat([self.oid[p] for p in mine]))),
+                **dict(zip(theirs, _cat([self.oid[p] for p in theirs], RECORD_GIT)))}
 
     def rust(self):
         return [(p, t) for p, t in self.text.items() if p.endswith('.rs')]
@@ -1610,11 +1666,14 @@ _RS_BUGS = re.compile(r'^[ \t]*(?:///|//!)[ \t]*#{1,6} BUGS\b', re.M)
 def homes(tree):
     if not any(p.startswith('packages/') and p.endswith(package_boundaries.PACKAGE_SUFFIX) for p in tree.paths):
         return {}
-    texts = dict(tree.text)
-    for path in tree.paths:
+    # The packages cover this repository's paths, so a record read in from nifeos/record (`Tree`)
+    # is not counted as unclaimed here.
+    paths = [p for p in tree.paths if p not in tree.record_paths]
+    texts = {p: t for p, t in tree.text.items() if p not in tree.record_paths}
+    for path in paths:
         if path not in texts and package_boundaries.wanted(path) and not path.endswith('.rs'):
             texts[path] = git('cat-file', '-p', tree.oid[path]).decode('utf-8', 'replace')
-    cells = package_boundaries.counts(package_boundaries.evaluate(tree.paths, texts))
+    cells = package_boundaries.counts(package_boundaries.evaluate(paths, texts))
     return {k: cells[k] for k in HOMES_COLUMNS}
 
 
@@ -3076,12 +3135,13 @@ def prune_week_notes(keep_from, path=WEEK_NOTES_PATH):
     return dropped
 
 
-_CHART_IMAGE = re.compile(r'^!\[[^\]]*\]\(project-metrics/([a-z0-9-]+\.svg)\)$')
+_CHART_IMAGE = re.compile(r'^!\[([^\]]*)\]\((?:project-metrics/|' + re.escape(CHART_URL)
+                          + r')([a-z0-9-]+\.svg)\)$')
 WEEK_NOTE_BEGIN = '<!-- week-notes: script/metrics writes this -->'
 WEEK_NOTE_END = '<!-- /week-notes -->'
 
 
-def write_week_notes_bullets(notes=None, page=PAGE):
+def write_week_notes_bullets(notes=None, page=None):
     """One bullet per note, under the chart image the note names, in week order, between markers.
 
     The block sits directly after the image (calef ruled bullets under the graph, not markers in
@@ -3095,7 +3155,7 @@ def write_week_notes_bullets(notes=None, page=PAGE):
     for week in sorted(notes):
         for chart, note in notes[week]:
             by_chart.setdefault(chart, []).append('- %s: %s' % (week, note))
-    path = pathlib.Path(page)
+    path = pathlib.Path(page or PAGE)
     text = path.read_text()
     lines = text.split('\n')
     out, i = [], 0
@@ -3106,6 +3166,7 @@ def write_week_notes_bullets(notes=None, page=PAGE):
         image = _CHART_IMAGE.match(line)
         if not image:
             continue
+        out[-1] = '![%s](%s%s)' % (image.group(1), CHART_URL, image.group(2))
         if i < len(lines) and lines[i] == '':
             out.append('')
             i += 1
@@ -3113,7 +3174,7 @@ def write_week_notes_bullets(notes=None, page=PAGE):
             i = lines.index(WEEK_NOTE_END, i) + 1
             if i < len(lines) and lines[i] == '':
                 i += 1
-        block = by_chart.get(image.group(1))
+        block = by_chart.get(image.group(2))
         if block:
             out.extend([WEEK_NOTE_BEGIN] + block + [WEEK_NOTE_END, ''])
     new = '\n'.join(out)
@@ -3387,10 +3448,13 @@ def draw_critical_path(weeks, today=None, path=None):
 def draw_charts(rows, only=None):
     """Every chart and the generated lines on the page, or with `only` (a set of column names)
     just the charts that plot one of them and nothing on the page."""
-    if only is None:
+    if only is None and pathlib.Path(PAGE).exists():
         write_drift_report()
         write_interface_line(rows)
         write_week_notes_bullets()
+    elif only is None:
+        print('metrics: no page at %s (it is in nifeos/record; --record <checkout> writes it), so '
+              'only the charts and data here are written' % PAGE)
     weeks = sorted(rows)[-CHART_WEEKS:]
     check_chart_totals(rows, weeks[-1])
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -3665,11 +3729,11 @@ def selftest():
         original_page = (
             '# page\n'
             '\n'
-            '![Rust](project-metrics/lines.svg)\n'
+            '![Rust](' + CHART_URL + 'lines.svg)\n'
             '\n'
             'caption one\n'
             '\n'
-            '![Bugs](project-metrics/bugs.svg)\n'
+            '![Bugs](' + CHART_URL + 'bugs.svg)\n'
             '\n'
             'caption two\n')
         page_file.write_text(original_page)
@@ -3873,6 +3937,14 @@ def main(argv):
     args = []
     i = 0
     while i < len(argv):
+        if argv[i] == '--record':
+            if i + 1 >= len(argv):
+                raise SystemExit('metrics: --record needs a checkout of nifeos/record')
+            global RECORD_GIT, PAGE
+            RECORD_GIT = str(pathlib.Path(argv[i + 1]).resolve())
+            PAGE = str(pathlib.Path(RECORD_GIT) / PAGE)
+            i += 2
+            continue
         if argv[i] in ('--coverage-from', '--coverage-min-from', '--coverage-for'):
             if i + 1 >= len(argv):
                 raise SystemExit('metrics: %s needs an argument' % argv[i])

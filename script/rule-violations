@@ -10,8 +10,9 @@
 # totaled how many times that had actually happened; the evidence sat in AGENTS.md's own scar
 # paragraphs (the pkill incidents, the reset --hard clobbers) and in lane reports, uncounted.
 #
-# It cannot see a violation happen. It totals what a table in notes/rule-violations.md says somebody
-# reported, honestly, the same way script/audits cannot run an audit and can only say one is due.
+# It cannot see a violation happen. It totals what a table in nifeos/record:notes/rule-violations.md
+# says somebody reported, honestly, the same way script/audits cannot run an audit and can only say
+# one is due.
 #
 #   script/rule-violations           report: every rule, its open strikes, and its status
 #   script/rule-violations --check   fail (non-zero) if any OPEN rule has reached three strikes
@@ -37,10 +38,14 @@ import re
 import sys
 
 root, mode = sys.argv[1], sys.argv[2]
+sys.path.insert(0, f"{root}/helpers")
+import record_root  # noqa: E402
 
 STRIKE_THRESHOLD = 3
 
-LEDGER = f"{root}/notes/rule-violations.md"
+# The ledger is a record document, read where helpers/record_root.py finds the record: this tree
+# while it holds it, else nifeos/record at the commit basalt pins.
+LEDGER = record_root.path("notes/rule-violations.md", top=root)
 
 # The table lives under "## The convention" in notes/rule-violations.md, between the header row and
 # the next blank line. Five columns, pipe-delimited, the header and separator rows skipped by shape
@@ -54,9 +59,10 @@ rows = []
 text = open(LEDGER, errors="replace").read()
 fenced = False
 for line in text.split("\n"):
-    # Skip fenced code blocks: notes/rule-violations.md's own EXAMPLES section shows a row inside a
-    # ```markdown fence, which is the convention being demonstrated, not a claim about the tree. The
-    # same carve-out script/citations and the counted-claims registry make for their own examples.
+    # Skip fenced code blocks: nifeos/record:notes/rule-violations.md's own EXAMPLES section shows
+    # a row inside a ```markdown fence, which is the convention being demonstrated, not a claim
+    # about the tree. The same carve-out script/citations and the counted-claims registry make for
+    # their own examples.
     if line.lstrip().startswith("```"):
         fenced = not fenced
         continue
@@ -76,9 +82,10 @@ if not rows:
           file=sys.stderr)
     sys.exit(1)
 
-# Group by rule text (see notes/rule-violations.md's BUGS: exact text, not meaning). A rule's total
-# is the sum of its OPEN rows only; an escalated or resolved row stops counting toward a strike, on
-# purpose, because a rule that already moved up the ladder should not keep failing --check.
+# Group by rule text (see nifeos/record:notes/rule-violations.md's BUGS: exact text, not
+# meaning). A rule's total is the sum of its OPEN rows only; an escalated or resolved row stops
+# counting toward a strike, on purpose, because a rule that already moved up the ladder should not
+# keep failing --check.
 by_rule = {}
 for r in rows:
     entry = by_rule.setdefault(r["rule"], {"open": 0, "dates": [], "all_status": set()})
@@ -96,11 +103,12 @@ if mode == "--check":
         for rule, v in sorted(struck.items(), key=lambda kv: -kv[1]["open"]):
             dates = ", ".join(v["dates"])
             print(f"rule-violations: {rule!s} has {v['open']} open strikes ({dates}; "
-                  f"see notes/rule-violations.md), which is the promotion threshold "
+                  f"see nifeos/record:notes/rule-violations.md), which is the promotion threshold "
                   f"({STRIKE_THRESHOLD}).", file=sys.stderr)
             print("  Move it up the ladder (a mechanism, in AGENTS.md's ladder sense) or mark its "
-                  "row `resolved` as unenforceable in notes/rule-violations.md; either is an "
-                  "architect's or the integrator's call, never a lane's.", file=sys.stderr)
+                  "row `resolved` as unenforceable in nifeos/record:notes/rule-violations.md; "
+                  "either is an architect's or the integrator's call, never a lane's.",
+                  file=sys.stderr)
         sys.exit(1)
     print(f"rule violations: {total_rows} rows, {total_open} open instances across "
           f"{len(by_rule)} rules, none past {STRIKE_THRESHOLD} strikes")

@@ -842,7 +842,7 @@ fn strip_base_prefix(value: &[u8]) -> &[u8] {
 /// - `None`: neither letter, which is silence, not absence.
 ///
 /// Only the run before the first `_` is scanned, so `_sstc` never reads as a bare `s`. See
-/// `notes/visionfive2/hart-roster-stops.md`.
+/// `nifeos/record:notes/visionfive2/hart-roster-stops.md`.
 pub fn supervisor_mode_claim(value: &[u8]) -> Option<bool> {
     let single_letters = strip_base_prefix(value)
         .split(|&b| b == b'_')

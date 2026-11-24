@@ -1,7 +1,7 @@
 # radon, 2026-11-09 (UTC): milestone 1049's board check
 
 Milestone 1049 (`jh7110_entropy` is ready to publish: the release review's findings), item 4, the
-bench session that [notes/jh7110-entropy-board-check.md](../../notes/jh7110-entropy-board-check.md)
+bench session that [notes/jh7110-entropy-board-check.md](https://github.com/nifeos/record/blob/main/notes/jh7110-entropy-board-check.md)
 drives. The crate commit under test was `nifeos/jh7110_entropy` `ee0bde8feb9f78a67da011c928f9a2a697f3bbc1`.
 The payload (`tools/jh7110_entropy_board_check/`, SHA-256
 `e421000bc0b66d35ac60315cbe618ba1c8e15fb46d9bf8aac44f3a27b82054e8`) was built from nife

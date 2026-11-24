@@ -26,7 +26,7 @@ index 6e4d7b92e..0a3483ac2 100644
 +++ b/kernel/src/arch/riscv64/exceptions.rs
 @@ -86,7 +86,6 @@ impl TrapFrame {
          // has none, never the kernel's per-hart one. Read now, while the frame is a value: once
-         // written at the stack top no call may run (`enter_user`). See notes/riscv-port.md, the
+         // written at the stack top no call may run (`enter_user`). See nifeos/record:notes/riscv-port.md, the
          // per-hart `tp` hazard.
 -        x[4] = crate::sched::current_thread_pointer();
          TrapFrame {

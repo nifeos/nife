@@ -85,7 +85,15 @@
 #   script/citations --selftest  fixtures: prove the scanner still sees each citation shape
 #   script/citations --moved     this branch flipped a milestone's status: who cites it. Reporting
 #                                only, and it can never fail (milestone 385, when a milestone's
-#                                status flips, tell the lane which notes cite it).
+#                                status flips, tell the lane which notes cite it). A status flips in
+#                                nifeos/record now, so this mode runs there; here it finds nothing.
+#
+# **This is the code half** (milestone 1018 (the design record moves to `nifeos/record` and is
+# published as a website)). The decisions and the roadmap blocks are in nifeos/record, read at the
+# commit basalt's main pins through helpers/record_root.py; the text judged is this tree's. So
+# `--check` also does what `script/decisions --check` and `script/roadmap --check` did for this tree
+# before the record left: every `§N` and every `milestone N` cited here resolves to a file at the
+# pin. The record's own copy of this script judges the record's text.
 #
 # Name: recorded (DECISIONS §134, which cites this name as the shape a later report should match).
 # Introduced by milestone 97's lane on 2026-08-04. §134 puts it in the noun half of the `script/`
@@ -112,7 +120,16 @@ root, mode, arg = sys.argv[1], sys.argv[2], sys.argv[3]
 # frontmatter form and the prose form older revisions carry.
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.join(root, "helpers"))
-import roadmap_block                                                        # noqa: E402
+import record_root                                                          # noqa: E402
+# The design record, at the commit basalt pins. Its helpers/roadmap_block.py reads a block's status.
+RECORD = record_root.root(root)
+roadmap_block = record_root.helper("roadmap_block", top=root)
+
+
+def located(target):
+    """A cited path in this tree, or in the record at its pin when this tree has no such path."""
+    here = os.path.join(root, target)
+    return here if os.path.exists(here) else os.path.join(RECORD, target)
 
 # ---- the two records ---------------------------------------------------------
 # Title from the H1 and body from the whole file. Milestone 114 and 76 split both records into one
@@ -123,7 +140,7 @@ import roadmap_block                                                        # no
 # the roadmap refuses lettered block files (calef, 2026-10-18 UTC: "Yes, please"), so its gloss is
 # read against the parent block, which is where the part is described.
 def load(subdir, pattern):
-    d = os.path.join(root, "design", subdir)
+    d = os.path.join(RECORD, "design", subdir)
     out = {}
     for fname in sorted(os.listdir(d)):
         m = re.fullmatch(pattern, fname)
@@ -912,7 +929,7 @@ if mode == "--ratchet":
             if lineno not in added[path]:
                 continue
             target, phrase = m.group(1), m.group(2)
-            full = os.path.join(root, target)
+            full = located(target)
             if not os.path.isfile(full):
                 continue
             body = open(full, errors="replace").read()
@@ -1317,7 +1334,7 @@ for path in candidates:
         target = path_target(gloss)
         if target:
             tally["path"] += 1
-            if not os.path.exists(os.path.join(root, target)):
+            if not os.path.exists(located(target)):
                 problems.append(f"{where}: {label} points at {target!r}, which does not exist")
                 continue
             # A path INTO a numbered record is a second spelling of the citation, so the two must
@@ -1397,7 +1414,7 @@ for rel in md:
         attributed += 1
         lineno, target = attrib
         where = f"{rel}:{lineno}"
-        full = os.path.join(root, target)
+        full = located(target)
         if not os.path.exists(full):
             problems.append(f"{where}: quote attributed to {target!r}, which does not exist")
             continue
@@ -1420,6 +1437,30 @@ for rel in md:
                 f"\n      Either the source was rewritten and the quote is stale (the milestone-74"
                 f"\n      defect: a retracted paragraph still quoted as current), or the"
                 f"\n      attribution names the wrong file.")
+
+# ---- every number resolves -----------------------------------------------------
+# The code halves of `script/decisions --check` and `script/roadmap --check`: a `§N` or a
+# `milestone N` cited anywhere in this tree names a decision or a block that exists in the record at
+# its pin. By file existence, since the record's own lint judges the files. vendor/ and patches/
+# are other people's text, and a lockfile is not prose.
+if mode == "--check":
+    cited = subprocess.run(
+        ["git", "-C", root, "grep", "-I", "-n", "-E", "§[0-9]+|[Mm]ilestone [0-9]+",
+         "--", ":!vendor/", ":!patches/", ":!*.lock"],
+        capture_output=True, text=True).stdout
+    unresolved = {}
+    for line in cited.splitlines():
+        loc = ":".join(line.split(":", 2)[:2])
+        for m in re.finditer(r"(§|(?<![a-zA-Z])[Mm]ilestone )(\d+)", line.split(":", 2)[2]):
+            n = int(m.group(2))
+            if m.group(1) == "§":
+                if n not in DECISIONS:
+                    unresolved.setdefault(f"§{n}", loc)
+            elif n not in MILESTONES:
+                unresolved.setdefault(f"milestone {n}", loc)
+    for label, loc in sorted(unresolved.items()):
+        problems.append(f"{loc}: cites {label}, which nifeos/record has no file for at "
+                        f"{record_root.commit()[:12]}, the commit basalt pins")
 
 # ---- report ------------------------------------------------------------------
 total = sum(tally.values())

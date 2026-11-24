@@ -5,7 +5,7 @@ It clones the pinned commit and builds the one prompt from [the brief](confineme
 and the runner text below, refusing a milestone number or a roadmap block in it. It pins the model,
 and stops a session that reports another model before the brief is sent. This file holds the runner
 text it reads and what it leaves to whoever launches. Its commands are in
-[notes/scripts/outsider-passes.md](../notes/scripts/outsider-passes.md), and
+[notes/scripts/outsider-passes.md](https://github.com/nifeos/record/blob/main/notes/scripts/outsider-passes.md), and
 `helpers/launch_pass.py`'s header is its manual.
 
 ## The rules both launches keep

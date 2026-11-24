@@ -1,6 +1,6 @@
 # The bitmap font crate, its table and its specimen sheet
 
-An appendix to [notes/glyphs.md](../glyphs.md), which keeps the font's geometry and provenance.
+An appendix to [notes/glyphs.md](https://github.com/nifeos/record/blob/main/notes/glyphs.md), which keeps the font's geometry and provenance.
 This file holds how `crates/bitmap_font` is built and tested, and how `examples/specimen.rs` reads
 candidate fonts.
 

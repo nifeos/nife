@@ -54,19 +54,13 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	1	-	code	no [patch] section reaches main
 -	1	-	-	0	-	code	actions are pinned to a commit SHA
 -	1	-	-	1	-	both	TODO markers cite a milestone
--	1	-	-	1	-	both	roadmap status
 review-status	1	-	-	1	-	both	crate reviews keep one closed set of finding states
 -	0	doc	-	0	doc	code	rustdoc (broken intra-doc links)
--	1	-	-	1	-	both	decisions
--	1	-	-	0	-	record	journeys
--	1	-	-	0	-	record	numbered record files carry four digits
 -	1	-	-	0	-	code	dependency upgrades stay reachable
 -	0	main	-	0	-	code	every committed Cargo.lock has an update watcher
 -	1	-	-	0	-	code	the publish allowlist
 -	1	-	-	1	-	both	citations
 -	1	-	-	1	-	both	new citations say what they cite
--	1	-	-	1	-	both	notes citing a milestone this branch moved
--	1	-	-	0	-	both	fatal risks
 -	0	main	-	0	-	both	the host pass excludes exactly the bare-metal crates
 -	1	-	-	0	-	code	every crates/ member has a row in the trust-boundary table
 -	0	main	-	0	-	code	the trust-boundary table matches cargo metadata
@@ -83,8 +77,6 @@ review-status	1	-	-	1	-	both	crate reviews keep one closed set of finding states
 -	1	-	-	0	-	code	a boot-line head is spelled once
 -	1	-	-	0	-	both	names meet the current naming rules
 -	1	-	-	0	-	code	every Kani harness carries a falsification record
--	1	-	-	0	-	record	the audit index's selftest (fixture indexes: duplicates, triples, missing rows)
--	1	-	-	0	-	record	the audit index
 -	1	-	-	0	-	record	the stranger test's run record
 -	1	-	-	0	-	both	environment names in prose
 -	1	-	-	0	-	both	tracked files the tree ignores
@@ -97,7 +89,7 @@ review-status	1	-	-	1	-	both	crate reviews keep one closed set of finding states
 -	0	main	-	0	-	code	the kernel's dependencies: nothing only its tests use
 -	1	-	-	0	-	code	every .rs file under a crate is declared by a module tree
 -	1	-	-	0	-	code	every userspace trap declares the registers the kernel writes
--	1	-	-	1	-	both	markdown links and the notes index
+-	1	-	-	1	-	both	markdown links
 -	1	-	-	1	-	both	the prose ratchet (§212 words, §213 sentences, bold and passives)
 -	1	-	-	1	-	both	the removed-files index (design/removed.tsv: each path absent, each sha real, no retired number returns)
 -	1	-	-	0	-	code	the file-length ratchet (§266's 2,000-line ceiling on Rust files)
@@ -140,7 +132,6 @@ review-status	1	-	-	1	-	both	crate reviews keep one closed set of finding states
 shellcheck	1	-	-	0	-	code	shellcheck
 -	1	-	-	1	-	code	dependency direction
 -	1	-	-	1	-	both	package boundaries
-record-freeze	1	-	-	1	-	code	no pull request changes a path that moves with the record (the freeze)
 -	1	-	-	0	-	code	the region claim protocol has one decision path
 -	0	main	-	0	-	code	unused dependencies
 -	1	-	-	1	-	code	tests the suite cannot see

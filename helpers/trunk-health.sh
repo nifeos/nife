@@ -269,8 +269,9 @@ cadence() {
 #
 # **A due cadence is not a dead one, and the two cadences that mean "due" reached this watcher only
 # as the second thing** (milestone 495 (a cadence that says "due" reaches nobody, and the watcher
-# cannot tell due from dead)). The stranger cadence (`script/stranger-test --due`) and the audit cadence
-# (`script/audits --due`) both exist to say "a person must now do something", and red in the Actions
+# cannot tell due from dead)). The stranger cadence (`script/stranger-test --due`) exists to say "a
+# person must now do something", and so did the audit cadence until it left with the design record
+# for nifeos/record, whose own workflow runs it. Red in the Actions
 # tab is their correct output, not their failure. `script/cadence-check` answers only whether a
 # scheduled workflow has stopped *succeeding*, so a job correctly reporting due and a job that is
 # broken arrive as the same verdict, DEAD, a fortnight after the fact. The audits sat that way for
@@ -310,24 +311,6 @@ due() {
 		else
 			rows="$(printf '%-32s %-24s %s\n' "stranger-test" "cannot ask" \
 				"DUE: unknown; script/stranger-test --check says what is wrong with the run record")"
-		fi
-	fi
-	if au="$(script/audits --due 2>/dev/null)"; then
-		: # exit 0: no audit kind is overdue
-	else
-		kinds="$(printf '%s\n' "$au" | sed -n 's/^audits: [0-9]* on record, DUE: //p')"
-		if [ -n "$kinds" ]; then
-			n="$(printf '%s' "$kinds" | tr ',' ' ' | wc -w | tr -d ' ')"
-			row="$(printf '%-32s %-24s %s\n' "audits" "$n overdue" "DUE: ${kinds}")"
-		else
-			row="$(printf '%-32s %-24s %s\n' "audits" "cannot ask" \
-				"DUE: unknown; script/audits --check says what is wrong with the audit index")"
-		fi
-		if [ -n "$rows" ]; then
-			rows="$rows
-$row"
-		else
-			rows="$row"
 		fi
 	fi
 	if [ -n "$rows" ]; then

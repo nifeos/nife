@@ -345,6 +345,7 @@ def load(root):
             return open(os.path.join(root, rel), errors="replace").read()
         except (FileNotFoundError, IsADirectoryError):
             return None
+    read = name_census.rules_at_pin(read, root)
     records, _problems, _missing, unblocked = name_census.census(files, read)
     manifests = {os.path.dirname(p): read(p) for p in files
                  if p.endswith("Cargo.toml") and not p.startswith("vendor/")}
@@ -373,7 +374,6 @@ _TRANSPORTS = frozenset({"TRANSPORT_VIRTIO_MEMORY_MAPPED_IO", "TRANSPORT_VIRTIO_
 VIRTIO_BOUNDARY = {
     "vendor/": "vendored third-party code keeps its upstream's names",
     "bench/": "bench logs and captured fixtures keep what the device and the host printed, " + _DEVICE_OWNERS,
-    "design/roadmap/": "a milestone's file slug is its record and the branch it was cut on",
     "components/src/disk_surveyor.rs": (_BLOCK_ROSTER, _TRANSPORTS),
     "kernel/src/user/disk_service.rs": (_BLOCK_ROSTER, _TRANSPORTS),
     "system_tests/src/user/disk_tests.rs": (_BLOCK_ROSTER, _TRANSPORTS),

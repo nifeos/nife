@@ -4,7 +4,7 @@
 
 The first half of milestone 326 (nobody has been assigned to turn a mutation score upward)'s
 triage of the crates that regressed at the 2026-09-14 census. It verifies the per-crate figures
-that [notes/mutation-testing.md](../mutation-testing.md) summarizes. The second half is
+that [notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md) summarizes. The second half is
 [regressions-2026-09-14-clock-contract-swish-filesystem-contract](regressions-2026-09-14-clock-contract-swish-filesystem-contract.md).
 
 ## 2026-09-19: milestone 326, triaging the census's regressions
@@ -220,5 +220,5 @@ The 29 timeouts are hangs: the baseline's `dtb` row, grown with the walkers. All
 under `-=`, `at += align4(..)` under `-=`, or `at = value_at + align4(len)` under `-`, spread over
 the nine walks. Every one is the structure-block cursor, and a cursor that stops advancing re-reads
 the same token forever. That is the tests noticing rather than missing, which is how
-[the main page](../mutation-testing.md#how-to-read-the-numbers) reads a timeout whose mutant could
+[the main page](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md#how-to-read-the-numbers) reads a timeout whose mutant could
 hang.

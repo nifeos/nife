@@ -4,7 +4,7 @@
 
 How each survivor of the 2026-08-03 baseline was closed, from `grant_plan` to `swish`, with the test
 that killed it or the argument that it is equivalent. The counts are that run's; the current census
-is on [notes/mutation-testing.md](../mutation-testing.md), and the first half of the alphabet is in
+is on [notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md), and the first half of the alphabet is in
 [abi to ipc](baseline-survivors-abi-to-ipc.md).
 
 "The degenerate shifts" and "disjoint `|` versus `^`" below are the

@@ -3,7 +3,7 @@
 Nineteen boots of the job mix on radon, power-cycled by calef from 09:56 to 10:35 UTC. Boots 1 to 7
 follow [`RUN-SHEET.md`](RUN-SHEET.md), written before any boot and committed unedited. Boots 8 to
 19 were added the same evening to explain why boot 1's one-task guard failed. Read with
-[`notes/job-mix/radon-2026-10-05.md`](../../notes/job-mix/radon-2026-10-05.md).
+[`notes/job-mix/radon-2026-10-05.md`](https://github.com/nifeos/record/blob/main/notes/job-mix/radon-2026-10-05.md).
 
 `bootN-<payload>.log` are console transcripts cleaned by the run sheet's `tr` (non-printing bytes
 dropped); the raw captures are not committed. `bootN-<payload>.netboot.log` is the TFTP server's

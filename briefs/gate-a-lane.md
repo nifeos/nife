@@ -64,7 +64,7 @@ You do not need to gloss every occurrence, only the first.
 
 Gating a lane's work ends in a push, a ready flip and an auto-merge request, and on 2026-09-29
 four of those endings sat unexecuted for one to two hours each because they lived in the session's
-memory (see [notes/coes/2026-09-30-lane-follow-through.md](../notes/coes/2026-09-30-lane-follow-through.md)).
+memory (see [notes/coes/2026-09-30-lane-follow-through.md](https://github.com/nifeos/record/blob/main/notes/coes/2026-09-30-lane-follow-through.md)).
 The contract, binding from dispatch time:
 
 - Every dispatch writes a PENDING file beside its lane log, named for the lane, holding the
@@ -119,7 +119,7 @@ session scratchpad, since every lane a session launches gets the same one. A pat
 for `git stash`, a pull request body and a gate log all live there. Prefix each with your lane or
 milestone, as in `586-pr-body.md`, never `pr-body.md`. Two lanes that both write
 `/tmp/pr-body.md` push each other's text.
-[design/tenets/git-in-a-worktree.md](../design/tenets/git-in-a-worktree.md) has the stash half.
+[design/tenets/git-in-a-worktree.md](https://github.com/nifeos/record/blob/main/design/tenets/git-in-a-worktree.md) has the stash half.
 
 ## If you add or change a `script/` command
 

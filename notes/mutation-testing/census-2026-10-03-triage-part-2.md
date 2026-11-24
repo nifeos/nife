@@ -68,7 +68,7 @@ The `inline` equivalents are one shape, a lookahead guarded only by what follows
 disappear if the scanner takes its lookahead from a slice that stops at the range's end, which makes
 the over-read unrepresentable and not merely harmless. That is the top rung of the ladder in
 `CLAUDE.md`. It is filed as the proposal
-[the-inline-scanner-reads-from-a-slice-that-ends-with-its-range](../../design/roadmap/0771-the-inline-scanner-reads-from-a-slice-that-ends-with-its-range.md)
+[the-inline-scanner-reads-from-a-slice-that-ends-with-its-range](https://github.com/nifeos/record/blob/main/design/roadmap/0771-the-inline-scanner-reads-from-a-slice-that-ends-with-its-range.md)
 and not done here, because it touches every branch of a renderer that 71 tests pin.
 
 ## filesystem_protocol

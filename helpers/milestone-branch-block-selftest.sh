@@ -1,10 +1,10 @@
 #!/bin/sh
 #
 # Selftest for helpers/milestone-branch-block.sh (script/lint-fleet's check 4b), run by script/lint-fleet.
-# Builds a throwaway repository with an `origin/main` ref, so it needs no tree and no network. The
-# cases are #1901's shape (cut as 868, renumbered to 871, branch kept) beside the mismatches the
-# check exists to catch. The warning cases are the point: a check that never warns looks the same as
-# one that cannot (design/roadmap/0640-a-gate-is-not-evidence-until-it-has-failed.md).
+# Builds a throwaway repository that holds a record of its own, so it needs no tree and no network.
+# The cases are #1901's shape (cut with one number, renumbered, branch kept) beside the case the
+# check exists to catch. The failing case is the point: a check that never fails looks the same as
+# one that cannot (milestone 640 (a gate is not evidence until somebody has watched it fail)).
 #
 # Name: provisional, 2026-10-10 (UTC), after the other helpers/*-selftest.sh.
 
@@ -43,49 +43,35 @@ lane() {
 }
 
 g init -q -b main .
+# The scratch tree holds a record of its own (design/roadmap/README.md is the marker
+# helpers/record_root.py looks for), so the check reads these blocks and not the pinned record.
 mkdir -p design/roadmap
+echo "the roadmap" > design/roadmap/README.md
 echo "relibc's seed" > design/roadmap/0868-relibcs-seed.md
 echo "caches" > design/roadmap/0870-caches.md
+echo "a sixth pass" > design/roadmap/0871-a-sixth-pass.md
+printf 'Branch milestone/869-old-title, renumbered from 869.\n' > design/roadmap/0872-new-title.md
 g add -A; g commit -q -m base
 g update-ref refs/remotes/origin/main main
 
-# 1. A lane that moves its own block passes quietly.
+# 1. A branch whose milestone has a block passes quietly.
 lane milestone/870-caches-again
-echo "caches, built" > design/roadmap/0870-caches.md; g commit -q -am work
-expect "own block" 0 "" "changes nothing"
+expect "own block" 0 "" "lint:"
 
-# 2. #1901: cut as 868, renumbered to 871, branch kept, block slug matches the branch.
-lane milestone/868-a-sixth-pass
-echo "a sixth pass" > design/roadmap/0871-a-sixth-pass.md; g add -A; g commit -q -m work
-expect "renumbered, slug" 0 "renumbered; its block is roadmap/0871-a-sixth-pass.md" "changes nothing"
+# 2. #1901: cut as 873, renumbered to 871, branch kept, block slug matches the branch.
+lane milestone/873-a-sixth-pass
+expect "renumbered, slug" 0 "renumbered; its block is roadmap/0871-a-sixth-pass.md"
 
 # 3. Renumbered and retitled: the block names the branch, so it is still found.
-lane milestone/868-old-title
-printf 'Branch milestone/868-old-title, renumbered from 868.\n' > design/roadmap/0872-new-title.md
-g add -A; g commit -q -m work
-expect "renumbered, named" 0 "its block is roadmap/0872-new-title.md" "changes nothing"
+lane milestone/869-old-title
+expect "renumbered, named" 0 "its block is roadmap/0872-new-title.md"
 
-# 4. Renumbered to a number main never had: the old number has no block, and that is not fatal.
-lane milestone/875-a-thing
-echo "a thing" > design/roadmap/0876-a-thing.md; g add -A; g commit -q -m work
-expect "renumbered, old number free" 0 "its block is roadmap/0876-a-thing.md"
-
-# 5. A real mismatch still warns: the branch changes another milestone's block, unrelated by slug or text.
-lane milestone/868-a-sixth-pass-b
-echo "caches, edited" > design/roadmap/0870-caches.md; g commit -q -am work
-expect "unrelated block" 0 "changes nothing in roadmap/0868-relibcs-seed.md"
-
-# 6. A branch that touches no block warns, with the renumbering hint.
-lane milestone/868-forgot
-echo x > other; g add -A; g commit -q -m work
-expect "no block touched" 0 "If this lane was renumbered"
-
-# 7. A number with no block and no renumber record still fails.
+# 4. A number with no block and no renumber record fails, and says where the blocks are read.
 lane milestone/990-nowhere
-echo x > other2; g add -A; g commit -q -m work
 expect "no block at all" 1 "which has no roadmap block"
+expect "no block, the pin" 1 "the commit basalt pins"
 
-# 8. Not a milestone branch: nothing to say.
+# 5. Not a milestone branch: nothing to say.
 lane maintainer/whatever
 expect "not a milestone" 0 "" "lint:"
 

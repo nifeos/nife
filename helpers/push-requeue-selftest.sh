@@ -334,7 +334,9 @@ ARM_KNOWN_FLAKES="$tmp/flakes-scoped" run "killed job that is not a prove shard:
 rm -f "$tmp/jobs" "$tmp/joblog"
 state true false "" false; removal "failed_checks g1 h1"; echo "an assertion failed in vm_test" >"$tmp/runlog"
 ARM_KNOWN_FLAKES="$tmp/flakes" run "requeue that leaves the failed head: not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
-check "every known flake names a record that exists" sh -c "grep '^[^#]' '$here/known-flakes.tsv' | while IFS='	' read -r n s r; do [ -n \"\$s\" ] && [ -e '$root/'\"\$r\" ] || { echo \"known-flakes.tsv: \$n: no signature, or no record at \$r\" >&2; exit 1; }; done"
+# A flake's record is a note: in this tree, or in the design record at the commit basalt pins.
+record="$(python3 "$root/helpers/record_root.py")"
+check "every known flake names a record that exists" sh -c "grep '^[^#]' '$here/known-flakes.tsv' | while IFS='	' read -r n s r; do [ -n \"\$s\" ] && { [ -e '$root/'\"\$r\" ] || [ -e '$record/'\"\$r\" ]; } || { echo \"known-flakes.tsv: \$n: no signature, or no record at \$r\" >&2; exit 1; }; done"
 state false false "" false; removal "manual g1 h1"
 run "removed by hand at this head arms" 0 "armed" -- "$root/helpers/arm.sh" 42
 state false false "" false; removal "failed_checks g1 h1"

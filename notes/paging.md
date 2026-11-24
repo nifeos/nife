@@ -7,8 +7,8 @@ documents.*
 T-Head's memory types, x86's IA-32e, and the two IOMMU formats VT-d and AMD-Vi. Each format
 supplies a few encode and decode operations through `PageFormat`, and the walk is written once in
 `Mapper`. The aarch64 descriptor, the TLB obligation and break-before-make are in
-[page-tables.md](page-tables.md). The format trait's origin is §17 (the second architecture:
-RISC-V, and the page-table format trait), and [riscv-port.md](riscv-port.md) covers Sv39.
+[page-tables.md](https://github.com/nifeos/record/blob/main/notes/page-tables.md). The format trait's origin is §17 (the second architecture:
+RISC-V, and the page-table format trait), and [riscv-port.md](https://github.com/nifeos/record/blob/main/notes/riscv-port.md) covers Sv39.
 
 ## The shape
 
@@ -80,7 +80,7 @@ leaves carry it.
 
 The device table entry lives in this crate rather than in the kernel's driver. Its claims are bit
 positions, so Kani can prove them on any host, where the kernel's x86_64 proofs compile only on an
-x86_64 host ([kernel-proofs.md](kernel-proofs.md)).
+x86_64 host ([kernel-proofs.md](https://github.com/nifeos/record/blob/main/notes/kernel-proofs.md)).
 
 ## Reserved bits are spelled as literals
 
@@ -102,7 +102,7 @@ An IOMMU confines a device by translating every address it emits through tables 
 programs, in the CPU's own format: SMMUv3 walks the aarch64 format, and the RISC-V IOMMU walks
 Sv39. So a domain is a `Mapper` filled with an identity map over the frames the device may reach.
 The design is §20 (IOMMU-backed DMA isolation), and the software validator it backs is in
-[dma.md](dma.md).
+[dma.md](https://github.com/nifeos/record/blob/main/notes/dma.md).
 
 The map is the identity because the userspace virtio driver already puts physical addresses in its
 descriptors (its DMA region's frames, and the kernel's shadow page). Behind an IOMMU the device
@@ -132,7 +132,7 @@ would.
 
 Stated over the built tables, "the domain maps exactly the grant" is a build-and-translate round
 trip over a symbolic IOVA. That is the bounded model checking over real memory that
-[verification.md](verification.md) declined for `Mapper` itself. So the property is decomposed.
+[verification.md](https://github.com/nifeos/record/blob/main/notes/verification.md) declined for `Mapper` itself. So the property is decomposed.
 The page set the builder feeds the mapper is loopless arithmetic, and Kani proves for every region
 and index that it is:
 
@@ -149,7 +149,7 @@ underwrite it, and dma.md states that residual.
 The domain tests choose their own physical addresses in the low half, with host frames behind
 `phys_to_ptr`. A host allocator's addresses need not lie in the low half, and on aarch64 Linux they
 do not. `FramePool` owns every frame and frees them on drop, so Miri's leak check stays meaningful
-([undefined-behavior.md](undefined-behavior.md)).
+([undefined-behavior.md](https://github.com/nifeos/record/blob/main/notes/undefined-behavior.md)).
 
 ## The Nth-allocation sweep
 

@@ -43,6 +43,12 @@ import os
 import re
 import sys
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import record_root  # noqa: E402
+
+# The reviews are roadmap blocks, in the design record: nifeos/record at the commit basalt pins
+# (helpers/record_root.py).
 ROADMAP = "design/roadmap"
 
 TITLE = re.compile(
@@ -367,7 +373,7 @@ def main():
     args = parser.parse_args()
     if args.selftest:
         return selftest()
-    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    root = record_root.root(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
     reviews = read_reviews(root)
     if args.check:
         problems = check(reviews)

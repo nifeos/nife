@@ -1,7 +1,7 @@
 # The package archive's decisions, step by step
 
 `crates/package_archive` reads and writes the one file a nife package is.
-[packages.md](../packages.md), "The format", has the layout's three choices. This page holds the
+[packages.md](https://github.com/nifeos/record/blob/main/notes/packages.md), "The format", has the layout's three choices. This page holds the
 reasons behind the crate's installer decision and its catalog lookup, which its doc comments link.
 
 ## The installer's order

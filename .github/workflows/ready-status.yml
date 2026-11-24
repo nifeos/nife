@@ -3,6 +3,15 @@ name: ready status
 # Observed failing: 2026-10-03, run 37159344697: red on milestone/637-survivor-triage-4, a ready
 #   pull request whose own roadmap block still read IN-PROGRESS. See notes/observed-failing.md.
 
+# **The roadmap blocks left for nifeos/record** (milestone 1018 (the design record moves to
+# nifeos/record and is published as a website)). The two checks below the next paragraphs, the
+# IN-PROGRESS test and the moved block, read a branch's own diff of design/roadmap/, and that diff is
+# now in the lane's pull request in nifeos/record, which runs them. Here the job keeps its name,
+# because the ruleset requires it by name, and checks the half this tree can see: a ready
+# `milestone/N-*` branch names a milestone that has a block at the record commit basalt pins
+# (helpers/milestone-branch-block.sh, the same check as script/lint-fleet's 4b). The paragraphs
+# below are why the checks exist.
+#
 # **A ready pull request's roadmap block already says how the work ended** (milestone 630
 # (a merge-queue ejection is caught before the queue, and recovered after it); name provisional).
 #
@@ -72,8 +81,7 @@ jobs:
         timeout-minutes: 2
         continue-on-error: true  # outcome: re-raised
         with:
-          # Two commits, so that HEAD^1 (the base the pull request or the group lands on) is there
-          # to diff the branch's roadmap blocks against.
+          # Two commits, so that the group leg can read the subject of the merge commit under test.
           fetch-depth: 2
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -109,13 +117,21 @@ jobs:
           echo "draft=$draft" >> "$GITHUB_OUTPUT"
           echo "==> #$number, branch '$branch', draft '$draft' (live)"
 
-      - name: A ready pull request carries no IN-PROGRESS block on its own branch, and a milestone branch moves its block
-        if: steps.pr.outputs.draft != 'true'
+      # The blocks are in nifeos/record (milestone 1018 (the design record moves to nifeos/record
+      # and is published as a website)), so a branch here cannot change one, and the status flip
+      # and its IN-PROGRESS test run on the lane's pull request there. What this tree can still
+      # check is that a ready milestone branch names a milestone with a block, read at the commit
+      # basalt pins. That read fetches the record, so it runs on the pull request only: the group
+      # leg reads no network, for the reason the header gives.
+      - name: A ready milestone branch names a milestone that has a block in the record
+        if: steps.pr.outputs.draft != 'true' && github.event_name == 'pull_request'
         env:
           BRANCH: ${{ steps.pr.outputs.branch }}
-        # HEAD is the merge commit under test, in a pull request run and in a group alike, so
-        # HEAD^1 is the base and the diff is what the branch changes.
-        run: script/roadmap --ready-branch "$BRANCH" --against HEAD^1
+        run: helpers/milestone-branch-block.sh "$PWD" "$BRANCH"
+
+      - name: In a group, the record's pull request carries the status flip
+        if: github.event_name == 'merge_group'
+        run: echo "==> merge group; the block and its status are checked in nifeos/record"
 
       - name: A draft is still work in progress, and its block may say so
         if: steps.pr.outputs.draft == 'true'

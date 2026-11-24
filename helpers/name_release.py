@@ -58,7 +58,8 @@ def _tree():
             return open(os.path.join(root, rel), encoding="utf-8", errors="replace").read()
         except OSError:
             return None
-    return paths, read
+    import name_census
+    return paths, name_census.rules_at_pin(read, root)
 
 
 def rows(crate, paths, read):

@@ -228,7 +228,7 @@ fn device_context(root: u64, pscid: u16) -> [u64; 8] {
         0,                                // iohgatp: Bare
         (pscid as u64) << TA_PSCID_SHIFT, // ta
         FSC_MODE_SV39 | (root >> 12),     // fsc = iosatp
-        0,                                // msiptp: MODE Off (notes/riscv-port/iommu.md)
+        0,                                // msiptp: Off (nifeos/record:notes/riscv-port/iommu.md)
         0,                                // msi_addr_mask
         0,                                // msi_addr_pattern
         0,                                // reserved

@@ -1,6 +1,6 @@
 # Capabilities, and why the kernel has no `open()`
 
-The milestone 7 decision. [DECISIONS §10](../design/decisions/0010-capability-microkernel.md) is the record of *what* we chose
+The milestone 7 decision. [DECISIONS §10](https://github.com/nifeos/record/blob/main/design/decisions/0010-capability-microkernel.md) is the record of *what* we chose
 and what we rejected. This is the note on *what the words mean*.
 
 ## The one sentence
@@ -95,8 +95,8 @@ you must hand it a capability to that file. And you cannot hand it one you do no
 
 The bug is not defended against. It is not constructible.
 
-That is the same move as [`TranslationLookasideBufferFlush`'s `Drop`](page-tables.md) and the [lock
-ranking](deadlock.md): make the bad state *unrepresentable* rather than checking for it at
+That is the same move as [`TranslationLookasideBufferFlush`'s `Drop`](https://github.com/nifeos/record/blob/main/notes/page-tables.md) and the [lock
+ranking](https://github.com/nifeos/record/blob/main/notes/deadlock.md): make the bad state *unrepresentable* rather than checking for it at
 runtime and hoping.
 
 ## Why we cannot just add this to Unix later
@@ -127,7 +127,7 @@ want it. It is not the primitive.
 | capabilities to a Unix-shaped API | **additive.** A library. Nothing is thrown away. |
 | Unix to capabilities | **a rewrite**, and it has never once succeeded. |
 
-Which is the same table as [DECISIONS §5](../design/decisions/0005-preemptive-threads.md)'s threads-versus-async, and it decides
+Which is the same table as [DECISIONS §5 (preemptive threads with real stacks)](https://github.com/nifeos/record/blob/main/design/decisions/0005-preemptive-threads.md)'s threads-versus-async, and it decides
 this the same way. When one direction is cheap and the other is a rewrite, take the one that
 keeps the option open.
 
@@ -147,7 +147,7 @@ page table. To start a thread you invoke a capability on a TCB.
 
 ## An interrupt is a message
 
-Where [milestone 2's exception model](exceptions.md) meets this one, and it is the prettiest
+Where the exception model of [milestone 2 (exception vectors, and a fault that tells you what it was)](https://github.com/nifeos/record/blob/main/notes/exceptions.md) meets this one, and it is the prettiest
 consequence.
 
 A driver holds an interrupt capability, binds it to a notification, and blocks. The kernel's handler
@@ -222,7 +222,7 @@ tree, untyped memory.*
 # What was built: milestones 7d and 7e
 
 The decision, §10 (process model: capability-based, microkernel), became code in two steps. Each has its own record in
-[`capabilities/`](capabilities/README.md), and what each found is below.
+[`capabilities/`](https://github.com/nifeos/record/blob/main/notes/capabilities/README.md), and what each found is below.
 
 ## Milestone 7d: the system call surface, and refusing to be a deputy
 
@@ -230,13 +230,13 @@ Milestone 7d (user mode: EL0, capabilities, the ELF loader, and IPC) shipped thr
 else. There is no `open`, `read`, `write` or `fork`. One call has been added since:
 `SYS_CAPABILITY_DELETE` (2026-07-24, milestone 19d (run a real workload)), because forgetting something in your own table needs
 no capability. The surface is five calls today <!--count:system_calls-->, and
-[`notes/abi.md`](abi.md) is the current contract.
+[`notes/abi.md`](https://github.com/nifeos/record/blob/main/notes/abi.md) is the current contract.
 
 - The ABI is a crate, `nifeos/moho_abi`, that the kernel and every user program depend on. If it
   changes, both sides fail to compile.
 - The capability table, `crates/capability_table`, is pure logic and host-tested. Its one operation with
   teeth is `derive`, and rights only ever narrow. `GRANT`, the right to pass a capability on, is one
-  Unix cannot express. A process now delegates over an endpoint ([delegation.md](delegation.md)).
+  Unix cannot express. A process now delegates over an endpoint ([delegation.md](https://github.com/nifeos/record/blob/main/notes/delegation.md)).
 - A new process holds nothing. `CapabilityTable::empty()` is the decision, and the demo shows the
   same binary printing with a console capability and unable to print one byte without it.
 - The console `write` takes a user pointer, so the kernel could be a confused deputy and print its
@@ -245,7 +245,7 @@ no capability. The surface is five calls today <!--count:system_calls-->, and
   or shared address spaces arrive.
 
 The whole record, with the demo output and why the console was still kernel-served at 7d, is in
-[`capabilities/system-call-surface.md`](capabilities/system-call-surface.md).
+[`capabilities/system-call-surface.md`](https://github.com/nifeos/record/blob/main/notes/capabilities/system-call-surface.md).
 
 ## Milestone 7e: IPC, and the scheduler learning to wait
 
@@ -258,4 +258,4 @@ rendezvous run on different stacks. The server on the other end was a kernel thr
 milestone 8 (the console driver leaves the kernel) moved it to userspace.
 
 The whole record, including what single core made easy and where the SMP cost is now written down,
-is in [`capabilities/ipc-endpoints.md`](capabilities/ipc-endpoints.md).
+is in [`capabilities/ipc-endpoints.md`](https://github.com/nifeos/record/blob/main/notes/capabilities/ipc-endpoints.md).

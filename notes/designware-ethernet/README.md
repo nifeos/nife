@@ -1,12 +1,10 @@
 # radon's Ethernet: the pages beside notes/designware-ethernet.md
 
-[`notes/designware-ethernet.md`](../designware-ethernet.md) carries the driver, its split, the
-coherence measurement, the bench step and its Results, and BUGS. The pages here carry what its
-prose budget has no room for.
+The rest of this directory, its parent note and its full index are in nifeos/record, at
+[`notes/designware-ethernet/`](https://github.com/nifeos/record/tree/main/notes/designware-ethernet).
+The file here documents one crate alone, so it stays with the code.
 
-- [`the-receive-rate.md`](the-receive-rate.md): why the first radon transfer ran at 2.3 Mbit/s,
-  how QEMU reproduces it, the fix, and the bench step that measures it.
-- `nifeos/nife:notes/designware-ethernet/the-hardware.md`: the register pages, the two device trees' spellings of the
+- [`the-hardware.md`](the-hardware.md): the register pages, the two device trees' spellings of the
   controller and the YT8531's settings, and the receive ring's held-back slot.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside

@@ -1,6 +1,6 @@
 # Project metrics: the data behind nifeos/record:notes/project-metrics.md
 
-[`notes/project-metrics.md`](../project-metrics.md) is the page to read. `script/metrics` writes
+[`notes/project-metrics.md`](https://github.com/nifeos/record/blob/main/notes/project-metrics.md) is the page to read. `script/metrics` writes
 everything here except [`ledger.md`](ledger.md) and [`limitations.md`](limitations.md), and its
 output reproduces byte for byte. A person appends `ledger.md` by hand, because it holds what no
 script can derive. `limitations.md` is the page's `BUGS` section, also by hand.

@@ -165,7 +165,6 @@ crates/video_terminal/src/keymap.rs::shift question-shape
 
 crates/work_steal_slot/src/lib.rs::claim question-shape
 
-design/init-and-granular-spawn.md::init-and-granular-spawn spelled-out
 
 fixtures/src/login_test_client.rs::F_DIR_WORKS spelled-out
 
@@ -287,29 +286,19 @@ kernel/src/user/non_volatile_memory_express_service.rs::DmaEscape spelled-out
 
 kernel/src/user/non_volatile_memory_express_service.rs::start_dma_escape spelled-out
 
-notes/capabilities/ipc-endpoints.md::ipc-endpoints spelled-out
 
-notes/cross-os-reference-columns.md::cross-os-reference-columns spelled-out
 
-notes/dir-capability.md::dir-capability spelled-out
 
-notes/dma.md::dma spelled-out
 
-notes/env-config.md::env-config spelled-out
 
 notes/ipc-naming.md::ipc-naming spelled-out
 
-notes/ipc-tables-lock-inventory.md::ipc-tables-lock-inventory spelled-out
 
 notes/mutation-testing/baseline-survivors-abi-to-ipc.md::baseline-survivors-abi-to-ipc spelled-out
 
-notes/pcie-transport-scope.md::pcie-transport-scope spelled-out
 
-notes/pcie.md::pcie spelled-out
 
-notes/scheduled-execution/mem-entries.md::mem-entries spelled-out
 
-notes/trusted-init.md::trusted-init spelled-out
 
 redoxfs_server/src/crash.rs::MemIo spelled-out
 

@@ -1,7 +1,7 @@
 # The 2026-10-03 census's survivors, triaged crate by crate
 
 Milestone 637 (triage the crates the 2026-09-21 mutation census measured for the first time), provisional number, 2026-10-03. This appendix of
-[notes/mutation-testing.md](../mutation-testing.md) holds the accounting for the survivors of the
+[notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md) holds the accounting for the survivors of the
 scheduled census of 2026-10-03 ([run 37108924347](https://github.com/nifeos/nife/actions/runs/37108924347)):
 85 crates, 14,853 mutants, 1,004 missed, 92.7% killed. The per-mutant list is the union of the eight
 shards' `missed.txt`, which expire around 2026-12-31.

@@ -1,9 +1,0 @@
-Scripts behind ../actions-cache-budget-2026-10-07.md. Run from the repository root with S=<scratch dir>:
-
-  gh api 'repos/nifeos/nife/actions/caches?per_page=100' --paginate -q '.actions_caches[]' > $S/caches.jsonl
-  python3 notes/actions-cache-budget-2026-10-07/group.py $S/caches.jsonl
-  gh run list -R nifeos/nife -w ci.yml -L 40 --json databaseId,event,headBranch,conclusion,createdAt \
-      -q '.[]|[.databaseId,.event,.headBranch,.conclusion,.createdAt]|@tsv' > $S/ci_runs.tsv
-  (the same with verify.yml into $S/verify_runs.tsv)
-  S=$S python3 notes/actions-cache-budget-2026-10-07/fetch.py   # job logs, about 100 MB
-  S=$S python3 notes/actions-cache-budget-2026-10-07/parse.py

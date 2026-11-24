@@ -1,7 +1,7 @@
 # The job mix instrument, constant by constant
 
 `crates/job_mix` defines the job mix once, for the kernel-side supervisor and the EL0 task.
-[job-mix.md](../job-mix.md) has what the instrument is for and how a bench evening runs it. This
+[job-mix.md](https://github.com/nifeos/record/blob/main/notes/job-mix.md) has what the instrument is for and how a bench evening runs it. This
 page holds the reasons behind the crate's constants, which its doc comments link.
 
 ## The jobs

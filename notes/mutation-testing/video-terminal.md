@@ -4,7 +4,7 @@
 
 How `video_terminal`'s 79 survivors of the 2026-09-19 census were closed, under milestone 326 (nobody
 has been assigned to turn a mutation score upward) part 3. It verifies the crate's row in
-[notes/mutation-testing.md](../mutation-testing.md). The baseline's own `video_terminal` triage is
+[notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md). The baseline's own `video_terminal` triage is
 in [baseline-survivors-grant-plan-to-swish](baseline-survivors-grant-plan-to-swish.md).
 
 ## 2026-09-20: `video_terminal`, milestone 326 (turn a mutation score upward) part 3

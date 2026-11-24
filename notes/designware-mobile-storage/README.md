@@ -1,10 +1,10 @@
 # The DesignWare Mobile Storage driver: the appendices to its note
 
-[`notes/designware-mobile-storage.md`](../designware-mobile-storage.md) is the page to read: the
-part, what was reused, the two data paths, the rules that protect radon's boot card, and the bench
-step. The files here hold detail its prose budget has no room for.
+The rest of this directory, its parent note and its full index are in nifeos/record, at
+[`notes/designware-mobile-storage/`](https://github.com/nifeos/record/tree/main/notes/designware-mobile-storage).
+The file here documents one crate alone, so it stays with the code.
 
-- `nifeos/nife:notes/designware-mobile-storage/driver.md`: the device-tree evidence for the part, the card identification steps,
+- [`driver.md`](driver.md): the device-tree evidence for the part, the card identification steps,
   and what the host simulation models.
 
 Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-11, for the directory and every

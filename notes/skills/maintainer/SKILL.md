@@ -24,7 +24,7 @@ read that too. Forks and work held for an architect are in [decisions](../decisi
 ## The three roles, and the one rule that keeps work moving
 
 Why each role holds the authority it holds, and the night that named them, are in
-[design/tenets/roles-and-the-queue.md](../../../design/tenets/roles-and-the-queue.md). Above all three is the
+[design/tenets/roles-and-the-queue.md](https://github.com/nifeos/record/blob/main/design/tenets/roles-and-the-queue.md). Above all three is the
 architect: see [ARCHITECTS.md](../../../ARCHITECTS.md).
 
 - Maintainer. One per session, the session itself, and sessions are plural. The merge queue is the
@@ -87,7 +87,7 @@ maintainer's tooling supplies and never writes into a brief, a log or a pull req
 
 ## Dependency bumps
 
-Decided 2026-10-25 (UTC); [notes/dependency-updates.md](../../dependency-updates.md) has the whole
+Decided 2026-10-25 (UTC); [notes/dependency-updates.md](https://github.com/nifeos/record/blob/main/notes/dependency-updates.md) has the whole
 practice.
 
 - A bump merges on green, except for a crate the kernel links: a minor or patch bump of one waits
@@ -109,7 +109,7 @@ own finding rather than letting the silence stand for "nothing to do".
 Lane count is set against the collision surface, not against queue depth. Throughput is measured in
 merged work. The question to ask before launching is not "how deep is the queue" but "what files
 will this lane touch, and who else is in them". The measurement that overturned the old rule, and
-the three ceilings below, are in [design/tenets/lane-count.md](../../../design/tenets/lane-count.md).
+the three ceilings below, are in [design/tenets/lane-count.md](https://github.com/nifeos/record/blob/main/design/tenets/lane-count.md).
 
 - Disjoint subsystems: launch freely. Four is a reasonable working number, not a ceiling.
 - Two lanes in the test-wiring hotspot (`system_tests/src/user.rs`, the QEMU runners,

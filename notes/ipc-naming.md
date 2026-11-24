@@ -68,10 +68,10 @@ capabilities exist to avoid.
   rendezvous; `interrupt_notify` delivers it, or bumps `pending` if nobody is waiting. So the naming
   of a
   device event is the *same* as the naming of a peer's message: a rendezvous. "An interrupt becomes
-  a message" is literal. See [interrupts.md](interrupts.md).
+  a message" is literal. See [interrupts.md](https://github.com/nifeos/record/blob/main/notes/interrupts.md).
 - The name is transferable. `SEND_CAPABILITY` / `RECEIVE_CAPABILITY` let one process hand a rendezvous
   capability to another over IPC, narrowed but never widened. Authority to name a channel is
-  itself something you can pass along. See [delegation.md](delegation.md).
+  itself something you can pass along. See [delegation.md](https://github.com/nifeos/record/blob/main/notes/delegation.md).
 
 ## Who is waiting on the other side, and in what order
 
@@ -91,7 +91,7 @@ receiver does `receivers.pop_front()` and wakes exactly that one; a `RECEIVE` th
 - The rendezvous is unbuffered. There is no capacity and no "full" state: a `SEND` blocks *iff*
   no receiver is waiting, never because a buffer filled. This is seL4's rendezvous model, not a
   message queue, and it is fine because bulk data moves by a shared frame, not by copy
-  ([frames.md](frames.md)): there is nothing to buffer.
+  ([frames.md](https://github.com/nifeos/record/blob/main/notes/frames.md)): there is nothing to buffer.
 
 FIFO on both sides, on the rendezvous, chosen deliberately and matching seL4.
 
@@ -163,7 +163,7 @@ thread pool, or pipelined requests).
 
 This is the seL4 model. Mach calls the same thing a port; QNX calls it a channel. All
 three share the defining move: you address the channel, never the peer. It pairs with the
-other half of the story, how bulk data crosses between processes, in [frames.md](frames.md):
+other half of the story, how bulk data crosses between processes, in [frames.md](https://github.com/nifeos/record/blob/main/notes/frames.md):
 IPC names the channel and carries control; shared memory carries the data.
 
 ---

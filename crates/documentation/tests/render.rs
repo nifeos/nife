@@ -285,16 +285,31 @@ fn every_character_survives() {
         .parent()
         .unwrap()
         .to_path_buf();
+    // The corpus is the record's markdown, which lives in `nifeos/record`. helpers/record_root.py
+    // says where: this work tree while it still holds the record, else the record at the commit
+    // basalt pins, fetched once. A missing folder, or a root the helper cannot give, fails the test
+    // rather than shrinking the corpus, so nothing passes unchecked.
+    let found = std::process::Command::new("python3")
+        .arg(root.join("helpers/record_root.py"))
+        .arg("--top")
+        .arg(&root)
+        .output()
+        .unwrap_or_else(|e| {
+            panic!("python3 helpers/record_root.py: {e}; it says where the record is")
+        });
+    assert!(
+        found.status.success(),
+        "helpers/record_root.py failed: {}",
+        String::from_utf8_lossy(&found.stderr)
+    );
+    let record = std::path::PathBuf::from(String::from_utf8(found.stdout).unwrap().trim());
     let mut checked = 0;
-    // The corpus is the record's markdown, read from this work tree. A missing folder fails the
-    // test rather than shrinking the corpus: once the record leaves for `nifeos/record`, this reads
-    // it where helpers/record_root.py says it is, or the test goes, and nothing passes unchecked.
     for dir in ["notes", "design/decisions", "design/roadmap"] {
-        let entries = std::fs::read_dir(root.join(dir)).unwrap_or_else(|e| {
+        let entries = std::fs::read_dir(record.join(dir)).unwrap_or_else(|e| {
             panic!(
                 "{}: {e}; the corpus is the record's markdown, and helpers/record_root.py says \
                  where the record is",
-                root.join(dir).display()
+                record.join(dir).display()
             )
         });
         // One level down as well: §212 (a prose budget) puts appendices under `notes/<stem>/`.

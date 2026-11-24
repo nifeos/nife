@@ -4,7 +4,7 @@
 
 The last lane of milestone 326 (nobody has been assigned to turn a mutation score upward) part 3,
 on 2026-09-21, and its re-derivation of what the part left. It verifies these three crates' rows in
-[notes/mutation-testing.md](../mutation-testing.md).
+[notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md).
 
 ## 2026-09-21: `jh7110_clock_and_reset`, `non_volatile_memory_express`, `screen_console`, milestone 326 (turn a mutation score upward) part 3
 

@@ -35,7 +35,7 @@ pub(super) enum RegionReap {
 /// again and `standing` whether freeing it would unmap a stack in use; they are different
 /// questions. Returns the verdict; the table and the reasons are in notes/region-reaping.md ("The
 /// verdict on one resident"), and the stack fault behind `standing` in
-/// notes/stack/kernel-stack-freed-under-its-owner.md.
+/// nifeos/record:notes/stack/kernel-stack-freed-under-its-owner.md.
 pub(super) fn region_reap_verdict(state: State, standing: bool) -> RegionReap {
     if matches!(state, State::Ready | State::Running) {
         RegionReap::RefuseAndArm

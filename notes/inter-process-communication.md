@@ -115,17 +115,17 @@ takes `bound_receiving`, which says the bound thread is parked in a receive righ
 `SignalVerdict::ToBound` when the kernel should deliver there. The proofs here show no bit is lost on any
 of the three paths. That the kernel computes `bound_receiving` correctly is argued at its call
 site, `signal_locked` in `kernel/src/sched/notification.rs`. Why a signal of no bits wakes nobody
-is in [notification-objects.md](notification-objects.md).
+is in [notification-objects.md](https://github.com/nifeos/record/blob/main/notes/notification-objects.md).
 
 ## The timer
 
 The timer module is the arithmetic of §147 (a timer a userspace service cannot hold), built by
 milestone 106 (a wait that ends on either the interrupt or the deadline). The kernel owns the
 comparator on every architecture and signals a notification at the deadline on the holder's behalf.
-[timed-wait.md](timed-wait.md) priced what that needs from the scheduler. It needs a deadline word
+[timed-wait.md](https://github.com/nifeos/record/blob/main/notes/timed-wait.md) priced what that needs from the scheduler. It needs a deadline word
 per timer, one cached earliest deadline, and a walk that runs only when the tick finds the counter
 at or past the cache. The module is those three things. How the kernel uses them is in
-[timer.md](timer.md).
+[timer.md](https://github.com/nifeos/record/blob/main/notes/timer.md).
 
 The invariant is on the cache, not on a timer: the cached earliest is never later than any armed
 deadline. It may be earlier, because a cancel does not raise it (raising it would take a walk),
@@ -147,11 +147,11 @@ An address wait is a key, an address space and a virtual address, not an object.
 `Mutex::new` `const` and free of system_calls. The module is `B` buckets of intrusive FIFOs, a key
 hashed to a bucket, and oldest waiter first within a key. Keys can collide in a bucket, so every
 lookup asks the caller each waiter's key, which is the kernel's own record. The kernel side is in
-[address-wait.md](address-wait.md).
+[address-wait.md](https://github.com/nifeos/record/blob/main/notes/address-wait.md).
 
 ## How it is proved
 
-The harnesses are Kani proofs, listed in [verification/core-harnesses.md](verification/core-harnesses.md).
+The harnesses are Kani proofs, listed in [verification/core-harnesses.md](https://github.com/nifeos/record/blob/main/notes/verification/core-harnesses.md).
 They are inductive steps: assume an arbitrary valid state, apply one operation, check. A
 non-empty queue is modeled with a single waiter, because every decision and both invariants
 depend only on whether a queue is empty. An operation pops, which only shrinks a queue, and pushes

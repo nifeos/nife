@@ -1,6 +1,6 @@
 # patagonia under HVF, 2026-10-21 (UTC): seL4, the guest's ID registers, and the SMMUv3
 
-The evidence behind [notes/arm-plan-under-hvf.md](../../notes/arm-plan-under-hvf.md), which carries
+The evidence behind [notes/arm-plan-under-hvf.md](https://github.com/nifeos/record/blob/main/notes/arm-plan-under-hvf.md), which carries
 the answers. Every run here is QEMU 11.1.2 with `accel=hvf` on an Apple M-series core, macOS 26.6.
 Unit-specific details are kept off-tree by the maintainers.
 

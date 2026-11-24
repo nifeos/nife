@@ -1,10 +1,10 @@
 # The component manifest: the appendices to notes/component-manifest.md
 
-[`notes/component-manifest.md`](../component-manifest.md) is the page to read: what a manifest is,
-how it differs from a program's, where it lives, and its limits. The files here hold detail its
-prose budget has no room for.
+The rest of this directory, its parent note and its full index are in nifeos/record, at
+[`notes/component-manifest/`](https://github.com/nifeos/record/tree/main/notes/component-manifest).
+The file here documents one crate alone, so it stays with the code.
 
-- `nifeos/nife:notes/component-manifest/capability-plan.md`: the reason behind each item of
+- [`capability-plan.md`](capability-plan.md): the reason behind each item of
   `crates/capability_plan`, which its doc comments link.
 
 Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-11, for the directory and every

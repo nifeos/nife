@@ -1,7 +1,7 @@
 # The baseline ledger: every survivor's disposition
 
-The accounting behind the baseline half of [the triage rule](../mutation-testing.md#the-triage-rule)'s
-claim that nothing stays untriaged. [notes/mutation-testing.md](../mutation-testing.md) quotes its
+The accounting behind the baseline half of [the triage rule](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md#the-triage-rule)'s
+claim that nothing stays untriaged. [notes/mutation-testing.md](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md) quotes its
 totals.
 
 ## The ledger: every survivor's disposition

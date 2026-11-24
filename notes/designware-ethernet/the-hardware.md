@@ -2,7 +2,7 @@
 
 *Name: provisional.*
 
-A page beside [`notes/designware-ethernet.md`](../designware-ethernet.md). It holds the reference
+A page beside [`notes/designware-ethernet.md`](https://github.com/nifeos/record/blob/main/notes/designware-ethernet.md). It holds the reference
 tables that the `designware_ethernet` crate's module comments link to: where the controller's
 registers fall, how the two device trees describe the controller and its PHY, and how the receive
 ring's tail pointer is kept. Each fact here is also the reason for a line of code in that crate.

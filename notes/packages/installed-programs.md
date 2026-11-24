@@ -2,7 +2,7 @@
 
 `crates/installed_programs` holds what is installed, as a table that is never edited, only
 succeeded (§208 (installing a package is granting it, and the installed programs are versioned)).
-[packages.md](../packages.md) has where it sits in install, remove and rollback. This page is the
+[packages.md](https://github.com/nifeos/record/blob/main/notes/packages.md) has where it sits in install, remove and rollback. This page is the
 format the crate reads and writes.
 
 ## A generation

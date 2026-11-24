@@ -10,11 +10,13 @@
 # answering the two calls `state()` makes, and one real `--once` pass whose repeat rows are then
 # read back. No network, and the real repository's run history is never touched; the workflow names
 # are this tree's so the scheduled-file grep finds them, and every date in the fixtures is a
-# synthetic UTC stand-in for the real 2026-09..10 audit-cadence specimen.
+# synthetic UTC stand-in for the real 2026-09..10 audit-cadence specimen. That workflow left with
+# the design record, so its specimen is served under stranger-cadence, a scheduled workflow this
+# tree still holds and the same kind of cadence job.
 #
 # What each fixture pins, and what breaks if the code regresses:
 #
-#   - audit-cadence, four of six failing runs ending in one line: the REPEAT row, with the line
+#   - stranger-cadence, four of six failing runs ending in one line: the REPEAT row, with the line
 #     and the span of dates. Inside it, one run's log carries teardown noise ahead of the error
 #     annotation (dropped by name, or the group reads 3), one carries only the echoed script
 #     (dropped as a frame line, or the group reads CHURN), and one run failed on a different line
@@ -95,7 +97,7 @@ failure_runs() {
 	printf 'failure\t2026-10-12T17:14:12Z\t%s\nfailure\t2026-10-05T16:41:50Z\t%s\nfailure\t2026-09-28T16:21:04Z\t%s\nfailure\t2026-09-21T14:45:40Z\t%s\nfailure\t2026-09-14T14:38:35Z\t%s\nfailure\t2026-09-07T13:52:17Z\t%s\n' \
 		900000000001 900000000002 900000000003 900000000004 900000000005 900000000006
 }
-failure_runs >"$fix/runs-audit-cadence.yml.tsv"
+failure_runs >"$fix/runs-stranger-cadence.yml.tsv"
 
 printf 'failure\t2026-10-12T13:36:42Z\t900000000011\nfailure\t2026-10-05T12:45:23Z\t900000000012\nsuccess\t2026-09-28T12:04:31Z\ts\nsuccess\t2026-09-21T11:10:46Z\ts\nsuccess\t2026-09-14T11:01:12Z\ts\nsuccess\t2026-09-07T10:47:57Z\ts\n' >"$fix/runs-falsifications.yml.tsv"
 
@@ -114,7 +116,7 @@ failure_runs >"$fix/runs-merge-drain.yml.tsv"
 # --- failing-step logs -------------------------------------------------------------------------
 epilogue="design/audit-reports/README.md says how, and which lens the last one lacked."
 
-# The newest audit-cadence run, with teardown and a later step's output after the annotation: both
+# The newest stranger-cadence run, with teardown and a later step's output after the annotation: both
 # must stay out of the final line.
 {
 	frame '##[group]Run set -o pipefail'
@@ -236,7 +238,7 @@ expect_row() {
 	fi
 }
 
-expect_row audit-cadence "4 of last 6 failed" \
+expect_row stranger-cadence "4 of last 6 failed" \
 	"REPEAT: ${epilogue} (2026-09-07..2026-10-12 UTC)"
 expect_row falsifications "2 of last 6 failed" \
 	"CHURN: 2 of the last 6 failed, all 2 different"
@@ -287,7 +289,7 @@ if grep -q 'main is green' "$tmp/out-fail"; then
 	exit 1
 fi
 expect_fail_out '^main: UNKNOWN at '
-expect_fail_out '^repeat-check  *cannot ask  *CANNOT-ASK: unknown; .*audit-cadence'
+expect_fail_out '^repeat-check  *cannot ask  *CANNOT-ASK: unknown; .*stranger-cadence'
 expect_fail_out '^merge watchers  *cannot ask  *CANNOT-ASK'
 expect_fail_out '^cadence-check  *cannot ask  *CANNOT-ASK'
 

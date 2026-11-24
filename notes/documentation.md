@@ -32,7 +32,7 @@ output leaves the same way.
 A link and an image both show their destination, because a terminal cannot follow one or draw the
 other, so the path is the only thing a reader can act on. `every_character_survives` holds the
 layout to losing no letter or digit of any note, decision or roadmap page; what it catches and what
-it cannot see are in [documentation/corpus-test.md](documentation/corpus-test.md).
+it cannot see are in [documentation/corpus-test.md](https://github.com/nifeos/record/blob/main/notes/documentation/corpus-test.md).
 
 ## Installed
 
@@ -78,7 +78,7 @@ The builder once split text on `_` while the query folded `line_editor` to `line
 for any `snake_case` identifier found nothing. The fix is in the writer: `line_editor` now yields
 three terms, `line`, `editor` and `lineeditor`. Only the underscore joins, because the hyphen is
 ambiguous in this tree. The reasoning, and the test that claimed the property and checked a weaker
-one, are in [documentation/underscore-terms.md](documentation/underscore-terms.md).
+one, are in [documentation/underscore-terms.md](https://github.com/nifeos/record/blob/main/notes/documentation/underscore-terms.md).
 
 ### The layout is designed for a reader that holds one page
 
@@ -105,7 +105,7 @@ next line, where a person types one of those names. So search cannot widen what 
 already reach. The reading is `documentation::index::search`, and `cargo xtask manual capability` on
 the host and `apropos capability` at the prompt call that same function over the same bytes. The
 worked example and the split between crate and shell are in
-[documentation/apropos-builtin.md](documentation/apropos-builtin.md).
+[documentation/apropos-builtin.md](https://github.com/nifeos/record/blob/main/notes/documentation/apropos-builtin.md).
 
 ### And the same index, pointed at the repository
 
@@ -116,7 +116,7 @@ ones nothing a person would type led to. It runs the same `documentation::index:
 than a store location. Crate and program module headers are pages, which is what makes
 `crates/moho_abi/src/lib.rs` findable. There is no cache: a run is about a second over five megabytes,
 and a stale cache is worse. An example run and the three deliberate choices are in
-[documentation/repository-search.md](documentation/repository-search.md).
+[documentation/repository-search.md](https://github.com/nifeos/record/blob/main/notes/documentation/repository-search.md).
 
 ### The store's own layout is a thing two programs agree on
 
@@ -132,7 +132,7 @@ Per `cargo xtask manual`, the index is about 1.16 times the markdown it indexes.
 a term stored inline in 24 bytes, so a probe is one page read, and page alignment puts a 16 KiB
 floor under every bundle. The number that justifies the layout is that a lookup is at most five or
 six page reads, with no allocation and a 4 KiB working set. The per-bundle table and how the ratio
-moved are in [documentation/index-cost.md](documentation/index-cost.md); rerun `cargo xtask manual`
+moved are in [documentation/index-cost.md](https://github.com/nifeos/record/blob/main/notes/documentation/index-cost.md); rerun `cargo xtask manual`
 for current numbers, since editing this page moves them.
 
 ## EXAMPLES
@@ -165,7 +165,7 @@ provenance rather than something to open. The store location beside it is comput
 from the shard it opened, so no byte of the index carries it and the two cannot disagree.
 
 The order is by density, not by the raw count in the first column
-([documentation/resolved-bugs.md](documentation/resolved-bugs.md) has the ranking change).
+([documentation/resolved-bugs.md](https://github.com/nifeos/record/blob/main/notes/documentation/resolved-bugs.md) has the ranking change).
 
 Search the same store from the prompt, where the answer is what a person acts on:
 
@@ -217,14 +217,14 @@ mdr: reads an input stream: name a file, redirect with '<', or pipe into it
 `mdr <page>` renders at the prompt (DECISIONS §106 (take the `terminal_sink_caretaker`
 narrowing)), a pipeline head delivers its file, and ranking divides by page length. Why each took
 what it did, including the kernel's one wait point that made the first one hard, is in
-[documentation/resolved-bugs.md](documentation/resolved-bugs.md).
+[documentation/resolved-bugs.md](https://github.com/nifeos/record/blob/main/notes/documentation/resolved-bugs.md).
 
 - A page's last line and the shell's next `$ ` prompt can interleave under contention: an
   accepted interim display race, not a confinement or correctness failure, tracked at milestone 151
   (notification objects). See nifeos/record:notes/tail-output-narrowing.md.
 - A screen-narrowed child is invisible to a concurrent `ps`/`pgrep` for its short life, though
   nothing leaks. Both entries are in full in
-  [documentation/narrowing-bugs.md](documentation/narrowing-bugs.md).
+  [documentation/narrowing-bugs.md](https://github.com/nifeos/record/blob/main/notes/documentation/narrowing-bugs.md).
 - **No pager, and the reason is authority rather than effort.** Paging needs a keypress; a keypress
   needs `terminal_contract::OPERATION_READLINE`; and that opcode rides on the terminal endpoint
   whose read side *is* the keyboard. The spawn protocol has no way to hand a child the right to read
@@ -253,7 +253,7 @@ what it did, including the kernel's one wait point that made the first one hard,
   subtree without `doc/` cannot search at all.
 - The index is 1.16x the markdown it indexes, and the 16 KiB per-bundle floor is most of what moves
   that ratio. Why each search limit above is drawn where it is, entry by entry, is in
-  [documentation/search-limitations.md](documentation/search-limitations.md).
+  [documentation/search-limitations.md](https://github.com/nifeos/record/blob/main/notes/documentation/search-limitations.md).
 - `mdr` reads the whole page before it writes, so a page is bounded by its heap. The heap is the
   job's region, 384 pages (`program_table::STD_REGION_PAGES`), less `mdr`'s image, which loads 71 of
   them on aarch64. The store's largest page, about 18 KB, renders at the prompt
@@ -272,4 +272,4 @@ ruled by §302 and built by milestone 334. The store as something a package
 installs is blocked on milestone 39 (repository structure for a loosely-coupled OS). A graphical
 viewer waits on milestone 33 (a compositor). Each, with
 its reasoning, and the prior art (`man`, `apropos` and `mandb`, docsets, `cargo doc`) are in
-[documentation/where-next.md](documentation/where-next.md).
+[documentation/where-next.md](https://github.com/nifeos/record/blob/main/notes/documentation/where-next.md).

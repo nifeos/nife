@@ -23,7 +23,7 @@ Where this says "this file", it means `AGENTS.md`. Its name was ratified by cale
 
 calef, 2026-08-05. The ladder above says how hard to make a thing hold. This says how much care to
 spend deciding it. The reasoning behind each category, and the two failures of record, are in
-[design/tenets/reversibility.md](../../../design/tenets/reversibility.md).
+[design/tenets/reversibility.md](https://github.com/nifeos/record/blob/main/design/tenets/reversibility.md).
 
 Most decisions here are reversible and should be made quickly, by whoever is holding the problem.
 Code, notes, roadmap wording, which milestone a lane takes, how a script is structured. Deliberating
@@ -65,7 +65,7 @@ is inconvenient." An argument that reduces to "this option is less work to build
 the project's reason for existing. The failure mode is not laziness, it is a recommendation that
 sounds like design: a case made in the vocabulary of architecture whose actual load-bearing clause
 is effort. The worked example, and why agents moved the balance further, are in
-[design/tenets/elegance-over-convenience.md](../../../design/tenets/elegance-over-convenience.md).
+[design/tenets/elegance-over-convenience.md](https://github.com/nifeos/record/blob/main/design/tenets/elegance-over-convenience.md).
 
 The test, and it is one question. *Would I still choose this if both options were the same amount of
 work?* If the answer is no, the recommendation is about effort and must say so out loud, in those
@@ -82,7 +82,7 @@ prettier structure owes numbers, not adjectives.
 ## Open decisions, and work waiting on an architect
 
 Open decisions live in a file, not in a conversation. One waiting on an architect goes in
-`nifeos/record:design/decisions/` marked [`status: PROPOSED`](../../../design/decisions/README.md), one file each: what is
+`nifeos/record:design/decisions/` marked [`status: PROPOSED`](https://github.com/nifeos/record/blob/main/design/decisions/README.md), one file each: what is
 being decided, the options, the recommendation with its reason, and what is blocked until it is
 answered.
 
@@ -133,7 +133,7 @@ The watchers run unattended as `nife-smelter[bot]` in scheduled Actions workflow
 confirms they are alive *and reads what they already found*, because `merge-drain.sh` posts once per
 stall and then goes quiet by design. [`briefs/session-start.md`](../../../briefs/session-start.md) is that
 check, deferring the queue read to [`briefs/survey-the-queue.md`](../../../briefs/survey-the-queue.md). A
-queue reports, it does not resolve. [`notes/merge-queue.md`](../../../notes/merge-queue.md) has the
+queue reports, it does not resolve. [`notes/merge-queue.md`](https://github.com/nifeos/record/blob/main/notes/merge-queue.md) has the
 workflows.
 
 Do not try to route this by requesting a review. GitHub silently refuses a review request from the

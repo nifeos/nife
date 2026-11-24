@@ -18,7 +18,7 @@
 # The five passes come from a fake `sleep` that counts loop iterations and ends the watch when the
 # scenario table is exhausted. A fake `git` answers as the main checkout to the watcher's worktree
 # refusal and fails everywhere else, so `state()` reads an unknown tip and the test stays on the
-# cadence half. `script/stranger-test` and `script/audits` are stubbed to a quiet exit 0, and
+# cadence half. `script/stranger-test` is stubbed to a quiet exit 0, and
 # `script/effort` and `helpers/watcher_watch.py` are absent, so every other contribution to the
 # cadence and DUE streams is empty by construction. Nothing here reaches the network or `gh`.
 #
@@ -88,9 +88,8 @@ exit "$code"
 EOF
 
 printf '%s\n' '#!/bin/sh' 'exit 0' >"$dir/script/stranger-test"
-printf '%s\n' '#!/bin/sh' 'exit 0' >"$dir/script/audits"
 chmod +x "$dir/bin/git" "$dir/bin/sleep" "$dir/script/cadence-check" \
-	"$dir/script/stranger-test" "$dir/script/audits"
+	"$dir/script/stranger-test"
 
 # The watch form, five passes, output to a file. The harness's own sleep stays real; only the
 # watched shell sees the fakes on PATH. A watchdog bounds the run, so a loop that will not end
