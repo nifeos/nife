@@ -338,7 +338,15 @@ def clean_windows(o):
 def check_corpus(o):
     c1, s1, last = clean_windows(o)
     if o.wait > 0:
-        time.sleep(o.wait)
+        # A selftest stands in for the wait (NIFE_FUZZ_STATUS_BETWEEN_READINGS names a program, run
+        # with the seconds as its one argument) so it can grow the corpus after the first reading
+        # and before the second, at any machine load, instead of racing a timer against this
+        # process's start-up.
+        between = os.environ.get("NIFE_FUZZ_STATUS_BETWEEN_READINGS")
+        if between:
+            subprocess.run([between, str(o.wait)], check=False)
+        else:
+            time.sleep(o.wait)
         c2, s2, _ = clean_windows(o)
         if c2 > c1 and s2 > s1:
             return PASS, "clean windows %d -> %d and clean seeds %d -> %d over %d s" % (c1, c2, s1, s2, o.wait)
