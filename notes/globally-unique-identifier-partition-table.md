@@ -184,7 +184,7 @@ has the table of harnesses, their times, and the reasoning in full.
 Stated plainly, because a demonstrator's docs are part of the deliverable:
 
 - **No I/O, by design.** Somebody still has to read LBA 1. That is the block-device lane of
-  milestone 57, and it is separate on purpose. Built 2026-08-03 (nifeos/record:notes/block-devices.md):
+  milestone 57 (partitioning and formatting a real drive), and it is separate on purpose. Built 2026-08-03 (nifeos/record:notes/block-devices.md):
   `disk_surveyor` reads the table off a virtio-blk device, backup half included, on both ISAs. The
   crate gained one module for it, `globally_unique_identifier_partition_table::span`, which computes *where* to read when the disk's
   logical block (512) and the block service's transfer unit (4096) are different numbers. That is
