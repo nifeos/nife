@@ -187,7 +187,7 @@ is in the medium this project exists to get things out of.
   **including the decisions that were refused**. That is on purpose: you can disagree with an
   argument, but not with an authority.
 - [`design/roadmap/`](https://github.com/nifeos/record/blob/main/design/roadmap/README.md) is the only status in the tree: one file per
-  milestone, with `script/roadmap` as the index. It has a fixed status vocabulary
+  milestone, with `script/roadmap` in nifeos/record as the index. It has a fixed status vocabulary
   ([notes/roadmap.md](https://github.com/nifeos/record/blob/main/notes/roadmap.md)) and a checker; anywhere else that claims status is stale by
   construction.
 - [`notes/`](https://github.com/nifeos/record/blob/main/notes/README.md) is a glossary written while building, one file per question that
