@@ -93,7 +93,9 @@ calls, so a sequence split at a buffer boundary still decodes.
 
 A lead byte follows RFC 3629: `0xc2..=0xdf` starts two bytes, `0xe0..=0xef` three, and
 `0xf0..=0xf4` four. `0x80..=0xbf` are continuation bytes only, `0xc0` and `0xc1` could only encode
-an overlong form, and nothing past `0xf4` is assigned, so those draw U+FFFD at once. A sequence cut
+an overlong form, and nothing past `0xf4` is assigned, so those draw U+FFFD at once. After `0xe0`
+the second byte must be at least `0xa0`, and after `0xf0` at least `0x90`; below that the sequence
+is an overlong form (`e0 80 9b` would be ESC), and it draws what `String::from_utf8_lossy` draws. A sequence cut
 short by a byte that is not a continuation draws U+FFFD and reprocesses that byte, so it loses
 exactly the bytes it claimed. U+FFFD is the conventional choice, the one
 `String::from_utf8_lossy` makes.

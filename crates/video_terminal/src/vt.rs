@@ -554,7 +554,12 @@ impl Vt {
         // UTF-8 first: every control code and introducer is below 0x80, so a high-bit byte can
         // only belong to a multi-byte character. See notes/video-terminal.md, "UTF-8".
         if self.utf8_need > 0 {
-            if b & 0xc0 == 0x80 {
+            // RFC 3629's second-byte ranges for `0xe0` and `0xf0`: below them the sequence is an
+            // overlong form (`e0 80 80` would be U+0000), refused as `String::from_utf8_lossy`
+            // refuses it. Only the first continuation can be one, and only then is the code 0.
+            let overlong = self.utf8_code == 0
+                && ((self.utf8_need == 2 && b < 0xa0) || (self.utf8_need == 3 && b < 0x90));
+            if b & 0xc0 == 0x80 && !overlong {
                 // A continuation byte. The operands of `|` share no bit, so `^` would agree.
                 self.utf8_code = (self.utf8_code << 6) | (b & 0x3f) as u32;
                 self.utf8_need -= 1;
@@ -564,7 +569,7 @@ impl Vt {
                 }
                 return;
             }
-            // Truncated: draw the replacement and reprocess `b` rather than eating it.
+            // Truncated or overlong: draw the replacement and reprocess `b` rather than eating it.
             self.utf8_need = 0;
             self.print(Self::REPLACEMENT);
         }
