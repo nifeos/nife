@@ -1541,7 +1541,12 @@ def names(tree):
     enumeration reaches every week the same way: a week before blocks existed shows its names in
     that band, not missing from the total.
     """
-    records, _problems, missing, unblocked = name_census.census(tree.paths, tree.text.get)
+    return names_counted(tree.paths, tree.text.get)
+
+
+def names_counted(paths, read):
+    """`names()` over a path list and a reader, which `check_names_total` narrows to nife's files."""
+    records, _problems, missing, unblocked = name_census.census(paths, read)
     counts = dict.fromkeys(NAME_STATUSES, 0)
     for record in records:
         counts[record['status']] += 1
@@ -1572,6 +1577,12 @@ def check_names_total(rows, week, rev, head):
         raise SystemExit('metrics: script/names printed no `total: N names` line; '
                          'check_names_total reads it')
     ours = int(rows[week]['names_total'])
+    # A tree the record has left counts the record's names too, from its overlay, so the series
+    # does not drop at the move; `script/names` counts this tree's files alone. Compare that part.
+    tree = Tree(rev)
+    if tree.record_paths:
+        own = [path for path in tree.paths if path not in tree.record_paths]
+        ours = names_counted(own, tree.text.get)[2]
     if ours != int(hit.group(1)):
         raise SystemExit('metrics: %s names_total is %d and script/names counts %s names in the '
                          'same tree; helpers/name_census.py is shared, so the two scripts are '
