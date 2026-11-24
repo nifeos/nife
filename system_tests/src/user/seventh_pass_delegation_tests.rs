@@ -6,7 +6,7 @@
 //! `from_bits_cannot_forge_a_right`), and `confinement_attack_tests` drives neither case; this
 //! drives `SEND_CAPABILITY`'s `a1` rights register through `system_call::invoke`. `inter_process_communication_send_capability_from` refuses
 //! before touching the rendezvous, so a refusal parks nothing, and a regression parks the test
-//! thread and fails by the watchdog's dump. See nifeos/record:notes/confinement-outsider-pass-7.md.
+//! thread and fails by the watchdog's dump. See partsfoundry/record:notes/confinement-outsider-pass-7.md.
 
 //! Name: provisional (this pass's lane, 2026-10-12 UTC). Cross-ISA: `invoke`, the delegation rule
 //! (`Delegation::derive`) and the rendezvous are portable kernel code (DECISIONS §19 (architectural parity is a tenet)).

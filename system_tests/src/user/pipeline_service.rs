@@ -25,7 +25,7 @@ const SH_BUDGET_PAGES: u64 = 128;
 /// `spawn_fs_client`'s measured reason, and milestone 50 (pipes and redirection) added an array of
 /// planned endowments it carries by value. It must stay level with `system_initializer`'s
 /// `SHELL_STACK_PAGES`, twenty-eight, which that constant's own comment measures: a test wiring with
-/// less headroom finds faults the boot does not have (nifeos/record:notes/pipes/the-boot.md).
+/// less headroom finds faults the boot does not have (partsfoundry/record:notes/pipes/the-boot.md).
 const SHELL_EXTRA_STACK: usize = 27;
 
 /// What the kernel holds of a scripted shell.

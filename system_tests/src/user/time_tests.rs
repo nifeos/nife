@@ -97,7 +97,7 @@ fn a_command_is_timed_by_the_shells_clock_and_holds_none_itself() {
     );
 
     // Ten seconds, because this is not a benchmark: `bench` measures spawn latency and this proves a
-    // stopwatch exists. See nifeos/record:notes/time-command.md.
+    // stopwatch exists. See partsfoundry/record:notes/time-command.md.
     const SANE: u64 = 10_000_000_000;
     let spawned = nanoseconds_of(timed);
     assert!(

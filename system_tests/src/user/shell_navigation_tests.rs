@@ -55,7 +55,7 @@ pub(super) const ALWAYS: u64 = nb::PWD_IS_ROOT
 /// The run index and the rights ride in one word packed by `file_system_contract::grant::specification`, the same
 /// packing the caretaker's own grant uses: the shell is **told** what its capability carries
 /// because nothing on this wire reports what a handle holds, and `OPENDIR` refuses a request
-/// wider than the parent rather than narrowing it (nifeos/record:notes/shell-navigation.md).
+/// wider than the parent rather than narrowing it (partsfoundry/record:notes/shell-navigation.md).
 ///
 /// `None` when no RedoxFS disk is attached.
 pub(super) fn navigate(root: &'static str, run: u64) -> Option<u64> {

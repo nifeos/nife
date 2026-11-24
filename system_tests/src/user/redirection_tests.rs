@@ -77,7 +77,7 @@ fn listing_counts(printed: &[u8]) -> (u64, u64, u64) {
 /// same listing (`>` created `out.txt` before the first listing was read, so both see it).
 /// `wc < out.txt` then has to agree with what was printed, byte for byte, once the prompt's
 /// two-space indent is taken off. The line spawns no process: the shell is both the producer and
-/// the file end. See nifeos/record:notes/pipes/the-file-end.md.
+/// the file end. See partsfoundry/record:notes/pipes/the-file-end.md.
 #[test_case]
 fn one_builtin_two_destinations_and_the_same_bytes() {
     let mut buf = [0u8; TRANSCRIPT_MAXIMUM];
@@ -123,7 +123,7 @@ fn one_builtin_two_destinations_and_the_same_bytes() {
 /// **What the child holds is a stream, not a file capability**, and that is deliberate rather than a
 /// shortfall. The shell resolves the name and streams the bytes, so `wc` gets an endpoint it cannot
 /// seek, re-read or point at a second name, which is narrower than the per-file capability
-/// `fs_file_caretaker` serves. See nifeos/record:notes/grant-expression.md.
+/// `fs_file_caretaker` serves. See partsfoundry/record:notes/grant-expression.md.
 #[test_case]
 fn naming_a_file_to_a_reader_is_the_operator_left_out() {
     let mut buf = [0u8; TRANSCRIPT_MAXIMUM];

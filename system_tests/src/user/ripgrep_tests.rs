@@ -1,5 +1,5 @@
 //! `ripgrep`, unmodified, from crates.io: milestone 121's test of fatal risk 1, *"only software
-//! written for nife runs on nife"* (`nifeos/record:design/fatal-risks/README.md`).
+//! written for nife runs on nife"* (`partsfoundry/record:design/fatal-risks/README.md`).
 //!
 //! basalt builds the published crate with a target spec and three link arguments (its
 //! `recipes/ripgrep.toml`), with no overlay, vendored copy or fork. Only `ignore` carries a patch,
@@ -7,7 +7,7 @@
 //! `--threads 1` lines here never reach. The tests skip when the archive has no `rg`, as in every
 //! ordinary build: `rg` is installed with `jig`, never in the base image (calef, 2026-10-07 UTC),
 //! and CI's `rg-threads` rows fetch it by digest with `cargo xtask basalt-fetch`. One body serves
-//! all three ISAs (DECISIONS §19 (architectural parity is a tenet)). See nifeos/record:notes/ripgrep-on-nife.md.
+//! all three ISAs (DECISIONS §19 (architectural parity is a tenet)). See partsfoundry/record:notes/ripgrep-on-nife.md.
 
 use super::*;
 
@@ -231,7 +231,7 @@ impl core::fmt::Write for Line {
 /// and whole. The counts are asserted, because they are a fact about the tree and the walk: a
 /// walker that skipped a directory, or a grant that leaked a sibling into the listing, changes
 /// them. The timings are printed and not asserted, because under TCG they are the emulator's time;
-/// nifeos/record:notes/walk-pricing.md records what they mean and which run to believe.
+/// partsfoundry/record:notes/walk-pricing.md records what they mean and which run to believe.
 #[test_case]
 fn a_walk_through_a_confined_grant_is_priced() {
     use core::fmt::Write;
@@ -537,7 +537,7 @@ fn ripgrep_searches_the_tree_it_was_granted() {
 /// The half milestone 121 calls load-bearing: the same `rg`, words and tree, one right withheld.
 /// `rg` names the refusal (§47's `EPERM`, through the caretaker, std's `read_dir` and `ignore`'s
 /// walker, worded by the PAL), says it searched nothing, and prints no match. The control is
-/// [`ripgrep_reaches_a_named_file_without_enumerate`]. See nifeos/record:notes/ripgrep-on-nife.md, "The refusal,
+/// [`ripgrep_reaches_a_named_file_without_enumerate`]. See partsfoundry/record:notes/ripgrep-on-nife.md, "The refusal,
 /// through `rg`".
 ///
 /// Falsification: unfalsified. A replay needs `rg` in the archive, which takes it only after

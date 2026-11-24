@@ -135,7 +135,7 @@ fn the_root_supervisor_drops_its_construction_authority_and_cannot_build_again()
 /// Attempt 0 crashes; its supervisor gets the kernel's fault message, reaps the corpse (§32 (a
 /// supervisor may collect a corpse)) and starts attempt 1, which exits and is **not** restarted.
 /// The progenitor has deleted its untyped by then, so it cannot have built the replacement. It also
-/// proves restart by label (milestone 105); see nifeos/record:notes/system-test-modules.md.
+/// proves restart by label (milestone 105); see partsfoundry/record:notes/system-test-modules.md.
 ///
 /// Falsification: unfalsified. Renamed by milestone 405 (the nine `INIT` roles), which ran it green
 /// on all three architectures but did not break the code it guards to watch it go red.

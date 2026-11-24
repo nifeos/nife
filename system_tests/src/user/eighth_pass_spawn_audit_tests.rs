@@ -7,7 +7,7 @@
 //! appears in it; the boot half (the spawn service delegates the gpu's four rather than parking
 //! them in the shell) is `swish-check`'s census, cited. Claim 23: a child born with one report
 //! endpoint gets `NoSuchSlot` for every mint. Portable, per DECISIONS §19 (architectural parity is
-//! a tenet). See nifeos/record:notes/confinement-outsider-pass-8.md.
+//! a tenet). See partsfoundry/record:notes/confinement-outsider-pass-8.md.
 
 use super::test_programs::kernel_test_subject_image;
 use crate::capability_object::{

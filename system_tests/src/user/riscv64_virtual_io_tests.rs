@@ -159,7 +159,7 @@ fn a_userspace_driver_reads_a_file_from_a_virtual_io_disk() {
     // `interrupt_notify` that wakes the driver, so a report proves the counter moved, and the only
     // way
     // this assertion can fail is a baseline taken after the completion. See
-    // nifeos/record:notes/load-sensitive-assertions.md and the aarch64/x86_64 twin.
+    // partsfoundry/record:notes/load-sensitive-assertions.md and the aarch64/x86_64 twin.
     let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
 
     let Some(report) = virtual_io_service::start(blk_image()) else {
@@ -622,8 +622,8 @@ fn a_reopened_socket_id_connects_again_over_tcp() {
 /// while the guest accepts, reads and answers each. **The UDP bind grant then rides in the same
 /// spawn** (milestone 55's stack half): it refuses a port outside the grant and admits one inside
 /// it, exclusively. **Milestone 54's SMB adapter and milestone 55's multicast DNS responder rode
-/// the same spawn on this ISA too**, until 2026-08-30 and 2026-09-15 respectively; nifeos/record:notes/smb.md and
-/// nifeos/record:notes/mdns.md record them. See the aarch64 twin
+/// the same spawn on this ISA too**, until 2026-08-30 and 2026-09-15 respectively; partsfoundry/record:notes/smb.md and
+/// partsfoundry/record:notes/mdns.md record them. See the aarch64 twin
 /// for the shape, for why all of it shares one exchange (a net server's spawn is frames nothing
 /// reclaims), and for what the stage codes mean.
 #[test_case]
@@ -642,12 +642,12 @@ fn a_host_process_connects_to_the_guest_and_is_answered() {
     ) else {
         crate::testing::skip!("no virtio-net device attached");
     };
-    // E2 (milestone 134, nifeos/record:design/roadmap/0134-the-measurements-that-decide.md): the thread census on
+    // E2 (milestone 134, partsfoundry/record:design/roadmap/0134-the-measurements-that-decide.md): the thread census on
     // the customer path. Every process this topology needs is already spawned by this point
     // (`net_stack` and the echo client), and neither spawns another kernel
     // thread per connection or per request (each is a single-threaded event loop over its own
     // endpoint), so this count is already the peak. Reported as a delta against
-    // `e2_baseline_threads`, not as the absolute reading. See the aarch64 twin and nifeos/record:notes/smb.md.
+    // `e2_baseline_threads`, not as the absolute reading. See the aarch64 twin and partsfoundry/record:notes/smb.md.
     crate::println!(
         "    (E2 thread census: {} threads created by wiring this customer-path topology \
          ({} live now, {e2_baseline_threads} live before this test wired anything): main + \
@@ -769,7 +769,7 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
     // `interrupt_notify` that wakes the driver, so a report proves the counter moved, and the only
     // way
     // this assertion can fail is a baseline taken after the completion. See
-    // nifeos/record:notes/load-sensitive-assertions.md and the aarch64/x86_64 twin.
+    // partsfoundry/record:notes/load-sensitive-assertions.md and the aarch64/x86_64 twin.
     let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
 
     let Some(report) = virtual_io_service::start_pci(blk_image()) else {

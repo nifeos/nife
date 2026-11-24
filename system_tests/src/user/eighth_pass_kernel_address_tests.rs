@@ -6,7 +6,7 @@
 //! **direct map**, the kernel's writable alias of physical memory (§19 (architectural parity is a
 //! tenet)). A precondition asserts each target is mapped for the kernel (`mmu::translate`), so a
 //! refusal to fault cannot hide behind "the address was unmapped anyway". See
-//! nifeos/record:notes/confinement-claims/the-eighth-pass-tests.md.
+//! partsfoundry/record:notes/confinement-claims/the-eighth-pass-tests.md.
 
 use super::test_programs::{a_kernel_address, kernel_test_subject_image, spawn_bare};
 use super::*;

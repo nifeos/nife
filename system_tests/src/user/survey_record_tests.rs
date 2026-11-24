@@ -6,7 +6,7 @@
 //! nothing like a broken walk and is the more dangerous, since every tid still looks correct.
 //! Placement is `sched`'s (`pick_spawn_target`, `place_on`), with no line under `arch/`, so all
 //! three ISAs run these assertions literally (DECISIONS §19 (architectural parity is a tenet)). See
-//! nifeos/record:notes/process-view/survey-design.md.
+//! partsfoundry/record:notes/process-view/survey-design.md.
 
 use moho_abi::Error;
 use moho_abi::survey::record;
@@ -147,7 +147,7 @@ impl Domain {
 /// on the VisionFive 2, whose slot 0 is an M-mode monitor core with no MMU, so `id <
 /// online_count()` would pass on QEMU `virt` while reporting a parked core. It also pins the
 /// sentinel: a started thread never reports [`record::NO_CPU`], so a reader is not tallying "no
-/// answer" as a core. See nifeos/record:notes/process-view/survey-design.md, "The cpu id is a name, not an
+/// answer" as a core. See partsfoundry/record:notes/process-view/survey-design.md, "The cpu id is a name, not an
 /// index".
 #[test_case]
 fn every_surveyed_thread_reports_a_cpu_that_is_online() {

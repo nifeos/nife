@@ -6,7 +6,7 @@
 //! `system_tests/falsifications/user.running_space_tests.*`: option A on one core and across two,
 //! amendments (a) and (b), the corpse gap, and milestone 95's negative control. Every body is
 //! portable; the hand-written reader is one stub per ISA (DECISIONS §19 (architectural parity is a
-//! tenet)). See nifeos/record:notes/unmap.md, "The progenitor gives its windows back".
+//! tenet)). See partsfoundry/record:notes/unmap.md, "The progenitor gives its windows back".
 
 //! # BUGS
 //!
@@ -17,7 +17,7 @@
 //! - The negative control keeps 32 frames the first time it runs in a boot, unexplained.
 //! - Only the fault's address is asserted: riscv64 does not say whether a translation existed.
 //!
-//! nifeos/record:notes/unmap.md, "What the running-space tests leave open", has each in full.
+//! partsfoundry/record:notes/unmap.md, "What the running-space tests leave open", has each in full.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -423,7 +423,7 @@ fn a_bound_space_dies_with_its_thread_not_with_its_capabilities() {
 }
 
 /// A corpse whose space is rooted in a destroyed region does not keep that space past the region
-/// (the gap `nifeos/record:notes/naming-a-running-address-space.md` found by reading).
+/// (the gap `partsfoundry/record:notes/naming-a-running-address-space.md` found by reading).
 ///
 /// The space and its root come from region R, the TCB from region A, and the thread is supervised,
 /// so its fault leaves it `Dead` and unreaped. `DESTROY(R)` must take the corpse's space: the

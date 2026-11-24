@@ -718,7 +718,7 @@ fn caretaker_teardown_reclaims_a_full_session_worth_of_memory() {
 }
 
 /// The terminal is handed out once, and a concurrent second login is denied until logout
-/// (`nifeos/record:design/roadmap/0049-users-and-attribution.md`'s BUGS).
+/// (`partsfoundry/record:design/roadmap/0049-users-and-attribution.md`'s BUGS).
 ///
 /// 1. `alice` ([`ls::HOLD_TERMINAL`]) gets the terminal, proved by a word on `w.term_ep`, and
 ///    ends her session without freeing it.

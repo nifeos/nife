@@ -6,7 +6,7 @@
 //! runs the other root's script, completing its skeleton (`ALWAYS`) while reaching nothing of the
 //! tree it probes. Cross-ISA: the caretaker, the protocol and the shell are portable programs
 //! (DECISIONS §19 (architectural parity is a tenet)). See
-//! nifeos/record:notes/confinement-claims/the-eighth-pass-tests.md.
+//! partsfoundry/record:notes/confinement-claims/the-eighth-pass-tests.md.
 
 use file_system_contract::directory;
 use file_system_fixture::{directory_escape as esc, navigation as nb, tree};

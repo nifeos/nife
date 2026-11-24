@@ -7,14 +7,14 @@
 //! capability table and region usage with their values before the sweep: a forgotten `capability_delete`
 //! or split child crashes nothing, and those two counters keep the evidence. It shares
 //! `login_tests`' one `login` and leaves it as it found it; one portable body (§19 (architectural
-//! parity is a tenet)). See nifeos/record:notes/untested-error-paths.md, "The retype-fault sweep of `login`".
+//! parity is a tenet)). See partsfoundry/record:notes/untested-error-paths.md, "The retype-fault sweep of `login`".
 
 //! # BUGS
 //!
 //! - **One program, one exchange.** `login`'s start-up, a login that opens a schedule, and the
 //!   other services' cleanup paths are not swept: each needs a fresh `login` per N, a teardown
 //!   `holding.rs` cannot do. All of it is
-//!   `nifeos/record:design/roadmap/0786-sweep-the-other-long-lived-services-under-the-retype-fault.md`.
+//!   `partsfoundry/record:design/roadmap/0786-sweep-the-other-long-lived-services-under-the-retype-fault.md`.
 //! - **x86_64 skips the `login` sweep** (its test boot attaches no RedoxFS disk);
 //!   [`the_nth_retype_fails_as_an_empty_region_would_and_no_other`] runs there too.
 //! - **It sees leaks, not wrong answers past the first**: beyond `DENIED`, a working next exchange

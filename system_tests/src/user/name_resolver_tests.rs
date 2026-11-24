@@ -12,8 +12,8 @@
 //! # What a pass is not
 //!
 //! A claim about the UDP path. The resolver's UDP exchange is the same `Query` bytes and the same
-//! `accept`, proved on the host in the `domain_name_system` crate (`nifeos/domain_name_system`); a UDP name server a test owned
-//! would have to bind a host port (nifeos/record:notes/name-resolution.md, "Why DNS over TCP in the test").
+//! `accept`, proved on the host in the `domain_name_system` crate (`partsfoundry/domain_name_system`); a UDP name server a test owned
+//! would have to bind a host port (partsfoundry/record:notes/name-resolution.md, "Why DNS over TCP in the test").
 
 use domain_name_resolution_contract::{
     MAXIMUM_GRANTS, Outcome, Refusal, control_answer, endowment, forget_message, grant_messages,
@@ -526,7 +526,7 @@ fn std_resolve_prints(
 /// the name resolves and a connection by name echoes; NXDOMAIN is `NotFound`; `example.com` is
 /// `PermissionDenied`, which only the grant can say (the peer says `REFUSED`). Without it, the PAL
 /// finds the slot empty and answers `Unsupported` before minting a page. A port slirp holds in
-/// `TIME_WAIT` would stall it; ports follow the boot clock (nifeos/record:notes/net/the-outbound-gates.md).
+/// `TIME_WAIT` would stall it; ports follow the boot clock (partsfoundry/record:notes/net/the-outbound-gates.md).
 ///
 /// Falsification: replayable `system_tests/falsifications/user.name_resolver_tests.a_std_program_resolves_its_granted_zone_and_nothing_without_a_grant.patch`
 #[test_case]

@@ -8,7 +8,7 @@ use super::*;
 /// `x86_64`), because a test that compares against a constant cannot catch a constant. `coremark`
 /// carries it because it reports its own `counter_hertz` over IPC and is built by `coremark_builder`
 /// through `process_builder::build_child_space`, so the number crosses the userspace ELF loader
-/// as well as the kernel's mapping. See nifeos/record:notes/pmu.md, "What the userspace counter tests assert".
+/// as well as the kernel's mapping. See partsfoundry/record:notes/pmu.md, "What the userspace counter tests assert".
 #[test_case]
 fn a_userspace_program_reads_the_frequency_the_kernel_measured() {
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");

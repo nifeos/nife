@@ -4,7 +4,7 @@
 //! Each test is a hostile program reduced to the kernel operations it would issue, driven through
 //! the real dispatcher (`system_call::invoke`) the way a program's `svc`/`ecall` reaches it. Each comes
 //! at its claim from an angle the suite did not already have, and its own doc says which. Nothing
-//! blocks, and every capability and region is reclaimed. See nifeos/record:notes/confinement-outsider-pass-9.md,
+//! blocks, and every capability and region is reclaimed. See partsfoundry/record:notes/confinement-outsider-pass-9.md,
 //! "The kernel tests".
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC), for the module, the file and each

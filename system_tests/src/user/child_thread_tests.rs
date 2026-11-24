@@ -109,7 +109,7 @@ fn a_process_can_build_start_and_run_a_child_thread() {
 /// Never try to reclaim the TCB region while the child is live: a refused reclaim arms §16 (object
 /// revocation)'s kill on its threads (§24 (interrupting the foreground process)), which can reap
 /// the child before its `SEND`. `force_kill_tests` covers the refusal; see
-/// nifeos/record:notes/system-test-modules.md.
+/// partsfoundry/record:notes/system-test-modules.md.
 #[test_case]
 fn reclaim_frees_a_started_then_exited_childs_regions() {
     const CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
@@ -158,7 +158,7 @@ fn reclaim_frees_a_started_then_exited_childs_regions() {
     // core §28 (SMP placement: two random choices at spawn) placed it on, the reaper frees its
     // address space from that core's switch, and a neighbouring test's own late teardown lands
     // here too. These ten frames cannot be moved by any of that. See `testing::RegionRun` and
-    // nifeos/record:notes/load-sensitive-assertions.md.
+    // partsfoundry/record:notes/load-sensitive-assertions.md.
     let as_run = crate::testing::RegionRun::of(as_region);
     let tcb_run = crate::testing::RegionRun::of(thread_control_block_region);
     let tid =

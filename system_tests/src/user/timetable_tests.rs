@@ -13,7 +13,7 @@ const TIMETABLE_BUDGET_PAGES: u64 = 768;
 /// How many fires to ask for before the timetable summarises and exits.
 ///
 /// **Four is a count of fires, not a duration**, and that distinction is the whole of why this test
-/// is safe on a loaded machine (nifeos/record:notes/load-sensitive-assertions.md). Nothing here asserts that a
+/// is safe on a loaded machine (partsfoundry/record:notes/load-sensitive-assertions.md). Nothing here asserts that a
 /// fire happened *within* any interval; the test waits for the fires to arrive and the harness's
 /// per-test ceiling is the only backstop. A slow host makes this test slower and never makes it
 /// red.
@@ -27,7 +27,7 @@ const FIRES: u64 = 4;
 /// that builder does not have"). The timetable's working set is the plan itself, a kilobyte of
 /// `grant_plan::Endowment` per `timetable::Registry` entry. Eight pages died with a data abort at the
 /// stack pointer, a stack overflow that reads like a wild pointer. See
-/// nifeos/record:notes/scheduled-execution/the-guest-tests.md.
+/// partsfoundry/record:notes/scheduled-execution/the-guest-tests.md.
 const TIMETABLE_STACK_PAGES: u64 = 104;
 
 /// The line `components/src/timetable.rs` prints when the plan is complete and it is about to arm. The
@@ -44,7 +44,7 @@ const ARMED: &str = "timetable: armed";
 /// kernel. The host test
 /// `timetable::tests::the_archive_a_timetable_holds_is_measured_against_what_it_will_build` holds
 /// it equal to the plan for `components/timetable.conf`, and the program's own audit line fails
-/// the assertions below as well. See nifeos/record:notes/scheduled-execution/archive-narrowing.md.
+/// the assertions below as well. See partsfoundry/record:notes/scheduled-execution/archive-narrowing.md.
 const PLANNED_PROGRAMS: [&str; 2] = ["least_authority_demo", "memory_grant_depleter"];
 
 /// **What `at-boot memory_grant_depleter --mem 4` grants**, mirrored from
@@ -157,7 +157,7 @@ fn exited(t: &Spawned) -> Option<u64> {
 /// watchdog: the timetable says "the budget cannot back one instance" on its output endpoint and
 /// stops, while the test waits on a report that is never coming. So this looks at both endpoints
 /// and, if the timetable speaks first, fails with its sentence. No deadline: a slow host makes this
-/// slower and never red (nifeos/record:notes/load-sensitive-assertions.md).
+/// slower and never red (partsfoundry/record:notes/load-sensitive-assertions.md).
 fn report(t: &Spawned) -> u64 {
     report_until(t, u64::MAX).expect("no deadline, so a report or a panic")
 }
@@ -408,7 +408,7 @@ fn line(ep: RendezvousId, buf: &mut [u8; 256]) -> Option<usize> {
 /// It walks the real program on the real document, `components/timetable.conf`, which the program
 /// and `crates/timetable`'s host tests also read, so editing it moves all three together. The fires
 /// are counted, never timed. Which entry gets which of the four answers, and why each assertion is
-/// shaped as it is, is in nifeos/record:notes/scheduled-execution/the-guest-tests.md.
+/// shaped as it is, is in partsfoundry/record:notes/scheduled-execution/the-guest-tests.md.
 #[test_case]
 fn a_scheduled_entry_holds_what_the_plan_said_and_a_refused_one_never_runs() {
     let t = spawn_timetable(FIRES);
@@ -655,7 +655,7 @@ const STORED_SCHEDULE_CONTROL: &str =
 /// refused whole with its line number and firing nothing; an edit, whose resent `at-boot` line
 /// keeps its beat while a new one fires once (16); and an empty document, which ends it. Counted,
 /// never timed, with one stated tolerance: a 49 before the 16 is accepted. Each step, and why, is
-/// in nifeos/record:notes/scheduled-execution/the-guest-tests.md.
+/// in partsfoundry/record:notes/scheduled-execution/the-guest-tests.md.
 #[test_case]
 fn a_registrar_replaces_the_document_whole_and_a_failed_replacement_changes_nothing() {
     use timetable::registration as r;
@@ -879,7 +879,7 @@ fn publish_at(t: &Spawned, set: bool, wall: u64) -> u64 {
 /// and the retry is always `SYNCED`, never `SET`, which would clear the stamp a slow report relies
 /// on and fire twice. So a step-4 `SET` the timetable never read is not retried into existence, and
 /// that case needs a pass within [`LEAD`] plus [`MISSED`]. The case analysis is in
-/// nifeos/record:notes/scheduled-execution/the-guest-tests.md.
+/// partsfoundry/record:notes/scheduled-execution/the-guest-tests.md.
 fn fires_at_two(t: &Spawned, set: bool) -> u64 {
     const ATTEMPTS: u32 = 5;
     let due = TWO_AM - publish_at(t, set, TWO_AM - LEAD);
@@ -900,14 +900,14 @@ fn fires_at_two(t: &Spawned, set: bool) -> u64 {
 }
 
 /// **A calendar entry keeps a time of day by a clock it was granted, and a step moves it by S3**
-/// (milestone 129, G5 as ruled with its step rule; nifeos/record:notes/scheduled-execution/calendar-grammar-g5.md).
+/// (milestone 129, G5 as ruled with its step rule; partsfoundry/record:notes/scheduled-execution/calendar-grammar-g5.md).
 ///
 /// The timetable is granted the clock page at `timetable::contract::CLOCK_SLOT`, starting UNKNOWN,
 /// and the test is its registrar and its clock. Counted, never timed: each assertion is the
 /// identity of the next report, so a fire while the clock was unknown, or a second fire after a
 /// backward step, puts a report where another is expected. No assertion depends on when the
 /// timetable reads the page, which nothing tells the test. The five steps, and why each one's
-/// publications are safe, are in nifeos/record:notes/scheduled-execution/the-guest-tests.md.
+/// publications are safe, are in partsfoundry/record:notes/scheduled-execution/the-guest-tests.md.
 #[test_case]
 fn a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3() {
     use timetable::registration as r;

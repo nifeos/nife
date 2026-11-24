@@ -30,7 +30,7 @@ fn interrupt_ignorer_image() -> &'static [u8] {
 /// one register, and the kernel would restore a user stack pointer into its own, silently.
 ///
 /// aarch64-only: RISC-V has one `sp`, swapped with `sscratch` on trap entry, so the hazard cannot
-/// exist there and a twin would assert nothing. See nifeos/record:notes/riscv-parity-scope.md.
+/// exist there and a twin would assert nothing. See partsfoundry/record:notes/riscv-parity-scope.md.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn el1_runs_on_sp_el1() {

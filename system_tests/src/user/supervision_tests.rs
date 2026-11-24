@@ -91,7 +91,7 @@ fn a_faulting_child_reports_to_its_supervisor_and_is_reaped_then_respawned() {
     // Dead, not live, so the region reclaims without a force-kill. Retried, not asserted once:
     // `depart` delivers the death message before the corpse leaves its own kernel stack, and until
     // its `switch_to` the reap is refused, since a stack must not be unmapped under a core standing
-    // on it. See nifeos/record:notes/stack/kernel-stack-freed-under-its-owner.md and the `on_cpu` refusal in
+    // on it. See partsfoundry/record:notes/stack/kernel-stack-freed-under-its-owner.md and the `on_cpu` refusal in
     // `reap_region_objects`.
     assert!(
         super::wait_for(|| sched::reclaim_region(region).is_ok()),

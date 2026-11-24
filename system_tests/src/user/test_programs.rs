@@ -6,7 +6,7 @@
 //! workload)'s user-test port). What stays gated, and why, is written at each test, because a
 //! blanket module comment outlives its reason: a property with no RISC-V analogue
 //! (`el1_runs_on_sp_el1`), or one whose RISC-V twin in `riscv64_virtual_io_tests` would be duplicated
-//! rather than gained. See nifeos/record:notes/riscv-parity-scope.md.
+//! rather than gained. See partsfoundry/record:notes/riscv-parity-scope.md.
 //!
 //! Name: provisional, minted 2026-10-12 (UTC) by the lane for milestone 873 (the catch-all
 //! userspace test file is split by topic).
@@ -80,7 +80,7 @@ pub(super) fn spawn_bare(
 /// A bare thread belongs to no reclaimable region, so nothing tears it down when its test returns,
 /// and a spinner left running loads every later test: two on a four-hart machine starved
 /// `reclaim_frees_a_started_then_exited_childs_regions` into its watchdog on CI. See
-/// `nifeos/record:notes/riscv-parity-scope.md`. The kill is armed rather than immediate (DECISIONS §16 (object
+/// `partsfoundry/record:notes/riscv-parity-scope.md`. The kill is armed rather than immediate (DECISIONS §16 (object
 /// revocation)), so this waits for the name to stop resolving. Returns whether the thread went;
 /// callers assert on it, because a silent failure here restores the leak this exists to remove.
 pub(super) fn reap_bare(tid: crate::thread::ThreadId) -> bool {
@@ -139,7 +139,7 @@ pub(super) fn lay_out_program(space: &mut AddressSpace, elf: &Elf, stack_pages: 
 /// after in order (each named for its failure message), binds `bound_notification` between
 /// configure and start (the only order without a race), and starts with the archive's length in
 /// `x1`. Returns once the program is running. The design is milestone 794's roadmap block; the
-/// bind's reason is in nifeos/record:notes/system-tests-and-the-kernel-crate.md.
+/// bind's reason is in partsfoundry/record:notes/system-tests-and-the-kernel-crate.md.
 ///
 /// Name: provisional (milestone 794's lane, 2026-10-16 UTC).
 #[allow(clippy::too_many_arguments)] // the endowment's rights and the two beyond-the-floor extensions are each a real part of the shape

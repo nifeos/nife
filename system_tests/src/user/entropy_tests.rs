@@ -111,7 +111,7 @@ fn a_client_obtains_unpredictable_bytes_from_a_virtual_io_rng_over_pcie() {
 /// suite on.
 ///
 /// On a `StarFive` VisionFive 2 (radon) this test skips and the boot tour's `hw entropy` line is
-/// what speaks instead; see `nifeos/record:design/roadmap/0159-jh7110-trng-driver/bench-procedure.md` for the
+/// what speaks instead; see `partsfoundry/record:design/roadmap/0159-jh7110-trng-driver/bench-procedure.md` for the
 /// bench procedure.
 #[test_case]
 fn the_jh7110_backend_refuses_to_wire_where_there_is_no_jh7110() {
@@ -141,7 +141,7 @@ fn the_jh7110_backend_refuses_to_wire_where_there_is_no_jh7110() {
 /// `memory::initialize` records the window only when the tree names a JH7110, and this pins it. The
 /// failure is silent: a boot fault nobody would blame on the clock driver. QEMU's `virt` has no
 /// clock or reset controller, so CI runs only the absence path; the sequence itself has never run
-/// against silicon. See `nifeos/record:notes/jh7110-clock-and-reset.md`.
+/// against silicon. See `partsfoundry/record:notes/jh7110-clock-and-reset.md`.
 #[test_case]
 fn no_clock_window_is_mapped_where_there_is_no_jh7110() {
     if entropy_service::jh7110_trng_device().is_some() {
@@ -282,15 +282,15 @@ fn a_fill_gathers_across_round_trips() {
 /// `--cpu max`. Under HVF `helpers/qemu-runner-aarch64.sh` refuses `NIFE_CPU` (so Apple Silicon's
 /// `FEAT_RNG` is not established), and CI's CPU matrix sweeps riscv64 only, so CI always takes the
 /// skip. riscv64 has neither instruction ("Follow-on" in
-/// `nifeos/record:design/roadmap/0162-cpu-instruction-entropy.md`); `x86_64` checks
-/// `arch::isa::get().has_random_seed_instruction()`. See nifeos/record:notes/entropy.md, "Honest limits".
+/// `partsfoundry/record:design/roadmap/0162-cpu-instruction-entropy.md`); `x86_64` checks
+/// `arch::isa::get().has_random_seed_instruction()`. See partsfoundry/record:notes/entropy.md, "Honest limits".
 #[test_case]
 fn a_client_obtains_unpredictable_bytes_from_rndrrs_with_no_device_at_all() {
     let Some(w) = start(Bus::Instruction) else {
         crate::testing::skip!(
             "no instruction-mode entropy source on this build (aarch64: ID_AA64ISAR0_EL1.RNDR is \
              clear, so no FEAT_RNG. riscv64: the ISA has neither instruction, refused on purpose \
-             in nifeos/record:design/roadmap/0162-cpu-instruction-entropy.md). --cpu neoverse-n2 reaches the \
+             in partsfoundry/record:design/roadmap/0162-cpu-instruction-entropy.md). --cpu neoverse-n2 reaches the \
              passing path under TCG only, no CI leg takes it, and the HVF leg cannot boot this \
              kernel at all today (milestone 227). Read this test's doc comment first"
         );

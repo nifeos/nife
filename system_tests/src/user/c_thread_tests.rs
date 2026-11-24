@@ -1,5 +1,5 @@
 //! **Somebody else's threaded C, unmodified, on nife's C library** (milestone 836 (a C library,
-//! stage 2: threads); `nifeos/record:design/fatal-risks/1-only-software-written-for-nife.md`).
+//! stage 2: threads); `partsfoundry/record:design/fatal-risks/1-only-software-written-for-nife.md`).
 //!
 //! hackbench (rt-tests 2.11, basalt's package) in thread mode: groups of sender and receiver
 //! `pthread`s pass messages over pipes or `socketpair`s, every receiver blocking in `read` until a
@@ -7,7 +7,7 @@
 //! whose end must reap every thread, and is given a clock for `gettimeofday`. **Each test skips
 //! when hackbench is not in the archive**, except where CI sets `NIFE_HACKBENCH_REQUIRED=1`. All
 //! three ISAs (§19 (architectural parity is a tenet)). The group sizes keep every run inside a
-//! process's 16 threads; see nifeos/record:notes/system-test-modules.md.
+//! process's 16 threads; see partsfoundry/record:notes/system-test-modules.md.
 
 //! Name: provisional, lane milestone/836-a-c-library-stage-two-threads (#2009), 2026-10-12 (UTC),
 //! for the module and the file. The pull request records no other name considered.

@@ -5,7 +5,7 @@
 //! (`super::x86_programs`) as `supervision_tests` does and read the outcome from the child's
 //! supervision endpoint: a word if the `out` was allowed, an `EVENT_FAULT` if it was not.
 //! `x86_64` only: there is no port space, and no TSS I/O bitmap, on the other two architectures.
-//! See nifeos/record:notes/x86-port/the-port-range-tests.md.
+//! See partsfoundry/record:notes/x86-port/the-port-range-tests.md.
 
 //! # The load-bearing properties
 //!
@@ -181,7 +181,7 @@ const NON_HOLDER_ATTEMPTS: u32 = 64;
 /// its `out` only on that core, otherwise faulting at a different pc
 /// ([`super::x86_programs::port_out_on_cpu_then_exit`]), which counts as a miss and is retried. A
 /// thread moved between its core read and its `out` is not covered. See
-/// nifeos/record:notes/x86-port/the-port-range-tests.md.
+/// partsfoundry/record:notes/x86-port/the-port-range-tests.md.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.x86_port_tests.port_holder_transmits_then_a_non_holder_faults.patch`
 #[test_case]
@@ -319,7 +319,7 @@ fn a_revoked_holder_faults_on_its_next_port_write() {
 /// deletes [`PORT_SLOT_WITHOUT_WAKE`], executes `out` and exits rather than reporting, so a
 /// permitted `out` goes red instead of hanging (row 26's shape): the first `assert_eq!` fails,
 /// holding `EVENT_EXIT` where it wanted `EVENT_FAULT`, and the pc check guards the other direction.
-/// See nifeos/record:notes/x86-port/the-port-range-tests.md.
+/// See partsfoundry/record:notes/x86-port/the-port-range-tests.md.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.x86_port_tests.a_holder_that_deletes_its_port_capability_faults_on_its_next_port_write.patch`
 #[test_case]
@@ -386,13 +386,13 @@ fn a_take_back_leaves_the_invokers_own_bitmap_installed() {
 }
 
 /// **A `PortRange` capability without `WRITE` must not grant port I/O** (row 33 of
-/// `nifeos/record:notes/confinement-claims.md`; milestone 768 (provisional), calef's ruling of 2026-10-05 UTC).
+/// `partsfoundry/record:notes/confinement-claims.md`; milestone 768 (provisional), calef's ruling of 2026-10-05 UTC).
 /// The TSS bitmap cannot grant `in` without `out`, so `sched::thread_control_block_insert_from`
 /// installs `Thread::port_range_grant` only for a `PortRange` carrying `WRITE`, and a `READ`-only
 /// capability grants nothing. The stub is [`super::x86_programs::port_out_then_exit`], so a wrongly
 /// permitted `out` exits rather than parking on a `SEND` and hanging the run (the row-26 hazard).
-/// Why `WRITE` is the right that drives a port is in nifeos/record:notes/x86-port/the-port-range-tests.md, and
-/// the escape it closed in `nifeos/record:notes/confinement-outsider-pass-2.md`.
+/// Why `WRITE` is the right that drives a port is in partsfoundry/record:notes/x86-port/the-port-range-tests.md, and
+/// the escape it closed in `partsfoundry/record:notes/confinement-outsider-pass-2.md`.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.x86_port_tests.a_read_only_port_capability_must_not_grant_port_output.patch`
 #[test_case]

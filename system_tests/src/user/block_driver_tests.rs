@@ -92,7 +92,7 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
     // polls the used ring, or a handler that counts after `interrupt_notify`, breaks it and this
     // fires,
     // where the first assertion alone would pass a polled driver. See
-    // nifeos/record:notes/load-sensitive-assertions.md.
+    // partsfoundry/record:notes/load-sensitive-assertions.md.
     let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
 
     let Some(report) = virtual_io_service::start_pci(blk_image()) else {

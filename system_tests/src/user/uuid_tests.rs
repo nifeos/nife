@@ -10,7 +10,7 @@ use crate::sched::RendezvousId;
 /// There is no `Some` arm, as a limitation: `Spawn::grants` fills a table from slot 0 upward and
 /// cannot place a capability at the slot a manifest names (the gap `xtask`'s `swish-check` list
 /// records for `date`'s second stream). The endowed half is proven at the real prompt by
-/// `script/swish-check`; see `nifeos/record:design/roadmap/0111-entropy-for-a-child.md`.
+/// `script/swish-check`; see `partsfoundry/record:design/roadmap/0111-entropy-for-a-child.md`.
 fn spawn_uuid_holding_no_entropy(endpoints: u64) -> RendezvousId {
     let image = program("uuid").expect("no uuid program in the initial ramdisk");
     let out = crate::sched::create_rendezvous_from(endpoints).expect("no stdout rendezvous");

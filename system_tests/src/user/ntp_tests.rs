@@ -81,7 +81,7 @@ fn entropy() -> Option<crate::sched::RendezvousId> {
 /// Whether this machine has no source of unguessable bytes for the client's nonce, which the client
 /// refuses the network without (`without_entropy_the_client_refuses_rather_than_guessing`), as in
 /// `disk_tests`, `credential_tests` and `entropy_tests`. x86_64's runner attaches no virtio-rng
-/// (nifeos/record:notes/x86-port.md); both QEMU `virt` boards have one on mmio.
+/// (partsfoundry/record:notes/x86-port.md); both QEMU `virt` boards have one on mmio.
 ///
 /// It goes through [`entropy`], never `ensure` directly: the first `ensure` caller gets the
 /// service's `ready` endpoint, which the service sends on, blocking, so a discarded `Wiring` parks
@@ -428,7 +428,7 @@ fn an_ntp_client_holds_no_writable_clock_page() {
 /// neither is a time. A nonce taken from the clock would put the client's time in the transmit field, within a
 /// moment of now; a 64-bit draw lands in a random one of 2^32 seconds, so a false failure is a
 /// 7201-in-2^32 event (about one boot in 600,000). `Query::with_nonce` is worth nothing if the bits
-/// are guessable, as splitmix64 seeded off the virtual counter would be (nifeos/record:notes/entropy.md).
+/// are guessable, as splitmix64 seeded off the virtual counter would be (partsfoundry/record:notes/entropy.md).
 #[test_case]
 fn the_nonce_on_the_wire_is_random_and_is_not_the_clock() {
     if clock_service::machine_has_no_rtc() {

@@ -15,7 +15,7 @@ fn current_cpu_reader_image() -> &'static [u8] {
 /// read must name a core in the online set rather than a particular number, since the scheduler may
 /// place the thread anywhere and a consumer indexing by the id needs a real one (the VisionFive 2's
 /// set is `{1, 2, 3}`). Neither read may be `None`: a running thread has been switched in, so its
-/// page has been written. See nifeos/record:notes/scheduler/the-current-cpu-page.md.
+/// page has been written. See partsfoundry/record:notes/scheduler/the-current-cpu-page.md.
 #[test_case]
 fn a_userspace_thread_reads_a_cpu_that_is_really_online() {
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
@@ -116,7 +116,7 @@ fn a_space_that_never_ran_has_no_answer_and_then_has_the_right_one() {
 /// It asks the allocator about that one frame's bit rather than bracketing the machine's free total,
 /// which a neighboring test's late teardown can move; a leak still fails it, because a frame `Drop`
 /// never returned stays marked used. `memory_region::usage` cannot scope it, since the frame belongs
-/// to no region. See nifeos/record:notes/load-sensitive-assertions.md and nifeos/record:notes/scheduler/the-current-cpu-page.md.
+/// to no region. See partsfoundry/record:notes/load-sensitive-assertions.md and partsfoundry/record:notes/scheduler/the-current-cpu-page.md.
 #[test_case]
 fn the_page_is_returned_when_the_space_is_dropped() {
     let frame = {

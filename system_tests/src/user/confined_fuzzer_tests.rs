@@ -7,7 +7,7 @@
 //! conductor's, so a wrong answer cannot steer the generator. A call that blocks is served, keyed
 //! on the parked thread's state, never on timing. The seed is the reproducer:
 //! `NIFE_CONFINED_FUZZ_SEEDS=<first>:<count>` replaces the committed list at build time. Each
-//! oracle's rule is in nifeos/record:notes/system-test-modules/confined-fuzzer-tests.md.
+//! oracle's rule is in partsfoundry/record:notes/system-test-modules/confined-fuzzer-tests.md.
 
 //! # BUGS
 //!
@@ -38,7 +38,7 @@ use crate::thread::{State, ThreadId, Wait, WaitRole};
 
 /// [`wait_on_every_core`] for a site whose message has nothing to add to it. A fuzzer may run on
 /// another core, which the host can deschedule while this one runs. See
-/// nifeos/record:notes/kernel-test-harness.md.
+/// partsfoundry/record:notes/kernel-test-harness.md.
 fn wait_for(done: impl FnMut() -> bool) -> bool {
     wait_on_every_core(done).is_ok()
 }
@@ -1318,7 +1318,7 @@ fn park_and_take_baselines(c: &mut Conductor) {
         }
         // A failure here is not yet understood; the `BUGS` of milestone 779 (fuzz the surface a
         // confined process can reach)'s block
-        // (nifeos/record:design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md) holds the two
+        // (partsfoundry/record:design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md) holds the two
         // hypotheses, and the message re-reads the state to say which: a fuzzer not live or not
         // parked on GO, or a live fuzzer parked on GO that lost its space.
         let Some(root) = sched::thread_space_root(c.fuzzers[x].tid) else {

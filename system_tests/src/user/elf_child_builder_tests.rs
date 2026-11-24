@@ -130,7 +130,7 @@ fn a_process_spends_memory_region_and_the_kernel_never_allocates() {
 /// raises
 /// it, and the child wakes on the message and reports. A hang means the interrupt never reached
 /// the built child. aarch64-only: RISC-V has no second line to raise, and the property is proved
-/// there by other tests (nifeos/record:notes/riscv-parity-scope.md, "The aarch64-only user tests").
+/// there by other tests (partsfoundry/record:notes/riscv-parity-scope.md, "The aarch64-only user tests").
 ///
 /// Name: provisional (milestone 405 (the nine `INIT` roles)), named for the builder it drives.
 ///
@@ -206,7 +206,7 @@ fn the_console_server_builder_brings_up_a_console_that_prints_for_it() {
 /// `device_child_builder` maps its UART device capability into `device_child`, which reads the
 /// PL011 PrimeCell ID, the fixed `0xB105F00D`: the kernel minted and the builder delegated the
 /// access, and `MAP_INTO` mapped it device-typed, not cached (which would corrupt MMIO). aarch64-
-/// only: RISC-V `virt` has no PL011 (nifeos/record:notes/riscv-parity-scope.md, "The aarch64-only user tests").
+/// only: RISC-V `virt` has no PL011 (partsfoundry/record:notes/riscv-parity-scope.md, "The aarch64-only user tests").
 ///
 /// Name: provisional (milestone 405), named for the builder it drives.
 ///

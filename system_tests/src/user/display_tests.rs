@@ -11,7 +11,7 @@ use crate::sched;
 /// the device reported the transfer, and the kernel checks both against its own value. The backing
 /// attach succeeded under translation, and the IOMMU domain maps exactly the driver's DMA region.
 /// This proves the framebuffer, not the scanout (`-display none`); `cargo xtask`'s scanout check
-/// proves that from the host (nifeos/record:notes/framebuffer-contract.md, "What the test proves, and the one
+/// proves that from the host (partsfoundry/record:notes/framebuffer-contract.md, "What the test proves, and the one
 /// thing it does not" and "Proving the scanout, from the host").
 #[test_case]
 fn a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer() {
@@ -28,14 +28,14 @@ fn a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer() {
         crate::testing::skip!(
             "no virtio-gpu-pci function on the bus: either this kernel enumerated no PCI at all, \
              or (x86_64 under OVMF) the firmware runner attaches no GPU; see \
-             nifeos/record:design/roadmap/0420-the-rest-of-the-x86-64-fixture-set.md"
+             partsfoundry/record:design/roadmap/0420-the-rest-of-the-x86-64-fixture-set.md"
         );
     };
 
     // And a GPU present while the IOMMU is not means every pixel read is bypassing translation.
     // That matters more for a GPU than for a disk: its backing addresses ride in a device-level
     // command payload, not in a descriptor, so the transport's validator never sees them and the
-    // IOMMU is the only thing bounding them (nifeos/record:notes/framebuffer-contract.md).
+    // IOMMU is the only thing bounding them (partsfoundry/record:notes/framebuffer-contract.md).
     assert!(
         crate::iommu::is_active(),
         "a virtio-gpu is present but the IOMMU is not active: the GPU's pixel reads are \
@@ -135,9 +135,9 @@ fn a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer() {
 /// keeps the transport from parsing them: the IOMMU is the barrier. A driver with honest authority
 /// aims the device at a frame outside its domain, and the IOMMU must record a fault there. The
 /// fault queue, not the response code, is the assertion: QEMU answers a translation failure with a
-/// bounce buffer and an OK (nifeos/record:notes/framebuffer-contract/iommu-escape-test.md). It sorts first
+/// bounce buffer and an OK (partsfoundry/record:notes/framebuffer-contract/iommu-escape-test.md). It sorts first
 /// because it resets the GPU, wiping the pictures the host-side scanout check looks for; a reorder
-/// fails that check loudly (nifeos/record:notes/glyphs/terminal-and-proof.md, "Ordering, and what breaks it").
+/// fails that check loudly (partsfoundry/record:notes/glyphs/terminal-and-proof.md, "Ordering, and what breaks it").
 #[test_case]
 fn a_backing_outside_the_grant_is_refused_by_the_iommu() {
     let gpu_driver = program("gpu_driver").expect("no gpu_driver program in the initial ramdisk");
@@ -210,7 +210,7 @@ fn a_backing_outside_the_grant_is_refused_by_the_iommu() {
 /// scanout rectangle. The host checker must reject `video_terminal::script::GREETING_TYPO`; each
 /// script part catches a named failure, and the driver's one report checks that a blank terminal is
 /// a defined picture. It sorts between the confinement and pattern tests
-/// (nifeos/record:notes/glyphs/terminal-and-proof.md, "Ordering, and what breaks it").
+/// (partsfoundry/record:notes/glyphs/terminal-and-proof.md, "Ordering, and what breaks it").
 #[test_case]
 fn a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout() {
     let gpu_driver = program("gpu_driver").expect("no gpu_driver program in the initial ramdisk");
@@ -252,7 +252,7 @@ fn a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout() {
     // **A function-local `static`, not a stack local** (milestone 142): at the grown scanout's
     // grid (`script::COLS` x `script::ROWS`, 80x24), one `Vt` is well over a hundred KiB, which a
     // 24 KiB kernel thread stack cannot hold (`script/stack-frame-check`'s whole reason for being;
-    // see nifeos/record:notes/stack-high-water.md). `Vt::new` is `const fn` and `COLS`/`ROWS` are compile-time
+    // see partsfoundry/record:notes/stack-high-water.md). `Vt::new` is `const fn` and `COLS`/`ROWS` are compile-time
     // constants, so this initializer is evaluated by the compiler and lands in `.bss`, never on the
     // stack. This test builds three such grids (`blank`, `expect`, `typo` below); each gets its own
     // named static for exactly this reason.
@@ -348,7 +348,7 @@ fn a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout() {
 /// and rings a content-free doorbell, so it cannot choose who receives a key. From the ring onward
 /// is `compositor_tests::focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours`, at
 /// the seam of DECISIONS §33 (the compositor's authority is memory, not messages)
-/// (nifeos/record:notes/glyphs/terminal-and-proof.md).
+/// (partsfoundry/record:notes/glyphs/terminal-and-proof.md).
 ///
 /// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
 /// red.
@@ -427,7 +427,7 @@ fn a_keystroke_from_a_virtual_io_keyboard_becomes_a_terminal_byte() {
 /// padding must survive, rgbx (checked on a red and a blue cell) and an aperture that is not
 /// page-aligned. It proves arithmetic and wiring, not the scanout or memory types: the RAM is
 /// device-typed in the driver and cacheable in the direct map, an alias QEMU does not model
-/// (nifeos/record:notes/framebuffer-contract/the-display-tests.md).
+/// (partsfoundry/record:notes/framebuffer-contract/the-display-tests.md).
 #[test_case]
 fn a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver() {
     use machine_discovery::framebuffer::{Framebuffer, PixelOrder};
@@ -545,7 +545,7 @@ fn a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver() {
     );
 
     // Hand everything back: the next test to allocate pays for whatever this one keeps
-    // (nifeos/record:notes/framebuffer-contract/the-display-tests.md). The two programs die by their endpoint
+    // (partsfoundry/record:notes/framebuffer-contract/the-display-tests.md). The two programs die by their endpoint
     // region being reclaimed (`TerminalWiring::held`); the surface, the output page and the pretend
     // screen are frames rather than regions, and are freed only after both are gone.
     w.held

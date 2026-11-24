@@ -86,7 +86,7 @@ const DEV_VA: u64 = address_space_layout::pair_page(0x0310_0000);
 /// takes back, and lends again. Taken from `user::UART_PHYS` (milestone 161 (the x86_64 kernel
 /// port)), whose `x86_64` arm is zero: COM1 is in the I/O port space, so there is no page for a
 /// device capability to map (DECISIONS §121 (what a device capability is when the device has no
-/// page), PROPOSED, `nifeos/record:design/decisions/0121-port-io-capability.md`). That zero is what
+/// page), PROPOSED, `partsfoundry/record:design/decisions/0121-port-io-capability.md`). That zero is what
 /// [`NO_DEVICE_PAGE`] tests for.
 use crate::user::UART_PHYS;
 /// This file needs a device that is a page, and `x86_64` has none.
@@ -227,7 +227,7 @@ fn run_swap(role: u64) -> ([[u64; 5]; MAXIMUM_REPORTS], usize) {
         "the swap system had more to say after the operator's final verdict",
     );
 
-    // The system reclaims itself, asserted (nifeos/record:notes/live-replacement.md, "The system reclaims itself,
+    // The system reclaims itself, asserted (partsfoundry/record:notes/live-replacement.md, "The system reclaims itself,
     // and the test asserts it"): §16 refuses a region with children carved out of it, so the
     // reclaim succeeds only if every collected instance (§32) came home. `sched::reclaim_region`,
     // the `DESTROY` system call's entry point, because the budget is pinned by the objects retyped from
@@ -253,7 +253,7 @@ fn run_swap(role: u64) -> ([[u64; 5]; MAXIMUM_REPORTS], usize) {
 
     // Hygiene, not asserted: the operator's own space and TCB come home through the reaper, which
     // runs when the core it died on next schedules (DECISIONS §28 (SMP placement)), and a
-    // free-frame assertion here flakes on other tests' teardowns (nifeos/record:notes/live-replacement.md's
+    // free-frame assertion here flakes on other tests' teardowns (partsfoundry/record:notes/live-replacement.md's
     // BUGS).
     let _ = sched::reclaim_region(thread_control_block_region);
     // Last, after every thread that held the report endpoint is gone or going. Hygiene like the
@@ -273,7 +273,7 @@ fn had_step(msgs: &[[u64; 5]], step: u64) -> bool {
 }
 
 /// A component this operator cannot provide for is refused before anything is built (milestone
-/// 23's component manifest; `crates/capability_plan`, nifeos/record:notes/component-manifest.md).
+/// 23's component manifest; `crates/capability_plan`, partsfoundry/record:notes/component-manifest.md).
 ///
 /// On both channels, each with the other role's real manifest: the direct channel routes neither
 /// of the broker's `requests` and `backend`, the queued one no `uart`. The refusal must be the typed
@@ -329,7 +329,7 @@ fn the_dependency_graph_matches_what_this_channel_ran(
     );
 }
 
-/// A component is replaced under a client that is talking to it. See nifeos/record:notes/live-replacement.md.
+/// A component is replaced under a client that is talking to it. See partsfoundry/record:notes/live-replacement.md.
 ///
 /// The four steps happen in an order the operator chose, then two witnesses in two address spaces
 /// agree the conversation was unbroken. Neither is consulted about the other's half.
@@ -626,7 +626,7 @@ fn survey_awake(w: u64) -> u64 {
 }
 
 /// A supervisor notices a component that stops answering without dying, restores the service, and
-/// reclaims it (milestone 23's third residual; nifeos/record:notes/hung-component/the-wedge-test.md argues each).
+/// reclaims it (milestone 23's third residual; partsfoundry/record:notes/hung-component/the-wedge-test.md argues each).
 ///
 /// The wedge is silent: one swallowed request, no death message (DECISIONS §26 (the fault
 /// endpoint)), no corpse. The six results are the helpers below, from the operator's unanswered
@@ -922,7 +922,7 @@ fn the_stranded_caller_sees_gone(client: &[u64; 5], log: &[u64; 5]) {
 
 /// A component's state survives its replacement, and a replacement that cannot take the state
 /// over replaces nothing (DECISIONS §209 (state handoff is an opaque blob over a granted frame, and
-/// it is optional); milestone 23's last residual; nifeos/record:notes/state-handoff.md).
+/// it is optional); milestone 23's last residual; partsfoundry/record:notes/state-handoff.md).
 ///
 /// The component answers each request with its tally. The swap is tried against a replacement
 /// reading a layout nobody wrote, then one reading the incumbent's. The client's `SEQ_ECHOED` holds
@@ -1059,7 +1059,7 @@ fn the_client_and_the_page_saw_the_swap_at(msgs: &[[u64; 5]], absorbed: u64) {
 }
 
 /// A dependent that is never warned costs its callers latency, not work (the non-cooperative
-/// fallback, nifeos/record:notes/non-cooperative-fallback.md).
+/// fallback, partsfoundry/record:notes/non-cooperative-fallback.md).
 ///
 /// The queued system, with the graph naming `broker` as before and the operator never warning it,
 /// as when a dependent does not answer. `broker` stays in pass-through, its forwarded `CALL` parks

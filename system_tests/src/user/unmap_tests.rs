@@ -125,7 +125,7 @@ fn listed(name_slot: u64) -> [Option<u64>; 4] {
 /// Two frames at neighbouring addresses; `UNMAP` the first. The first is gone from the tables and
 /// from the record, the second is untouched in both, and the frame capability the first was mapped
 /// under still maps it again at the same address, which is what "the capability survives" has to
-/// mean to be worth saying (provisional semantic two, `nifeos/record:notes/unmap.md`).
+/// mean to be worth saying (provisional semantic two, `partsfoundry/record:notes/unmap.md`).
 ///
 /// Falsification: replayable `system_tests/falsifications/user.unmap_tests.unmap_takes_one_page_and_the_frame_capability_survives_it.patch`
 #[test_case]
@@ -189,7 +189,7 @@ fn unmap_takes_one_page_and_the_frame_capability_survives_it() {
 }
 
 /// **A `va` with nothing mapped is refused, and nothing changes** (provisional semantic one,
-/// `nifeos/record:notes/unmap.md`): never mapped, mapped and already given up, misaligned, and kernel-half all
+/// `partsfoundry/record:notes/unmap.md`): never mapped, mapped and already given up, misaligned, and kernel-half all
 /// answer `BadPointer`, and the one real mapping in the space survives every one of them.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.unmap_tests.unmap_of_a_va_with_nothing_mapped_is_refused_and_changes_nothing.patch`

@@ -146,7 +146,7 @@ fn clock() -> clock_service::Wiring {
 /// the ambient counter and requires `date`'s output to name the same instant, so a wrong epoch, a
 /// nanoseconds/seconds confusion, a timezone applied twice or a wrong calendar fails where a regex
 /// would not. The window is ten seconds because a process spawn sits between the two readings and
-/// the clock has one-second resolution; the failures above miss it by decades (nifeos/record:notes/date.md).
+/// the clock has one-second resolution; the failures above miss it by decades (partsfoundry/record:notes/date.md).
 #[test_case]
 fn date_prints_the_wall_clock_it_was_granted() {
     if clock_service::machine_has_no_rtc() {
@@ -232,7 +232,7 @@ fn date_prints_the_wall_clock_it_was_granted() {
 /// the page is the contract, so a blank page is that machine, which proves in the guest what §43
 /// (reading the clock is a page, setting it is a page you may write) left proven by construction.
 /// Or no clock capability at all, a different fix and sentence. Then there is no mapping either,
-/// and `date` must answer without touching `CLOCK_VA` (nifeos/record:notes/date.md).
+/// and `date` must answer without touching `CLOCK_VA` (partsfoundry/record:notes/date.md).
 #[test_case]
 fn an_unknown_clock_is_said_plainly_rather_than_printed_as_1970() {
     let mut buf = [0u8; 128];
@@ -276,7 +276,7 @@ fn an_unknown_clock_is_said_plainly_rather_than_printed_as_1970() {
 /// ending in `OPERATION_END_OF_STREAM`, and the output carries `OPERATION_END_OF_STREAM` and not one byte before it, so
 /// `date > when.txt` leaves the file empty and the complaint readable. The diagnostic stream is
 /// drained first and to completion: a `date` that interleaved the two would block this test, the
-/// same deadlock a real prompt would hit (nifeos/record:notes/date.md, "The second stream").
+/// same deadlock a real prompt would hit (partsfoundry/record:notes/date.md, "The second stream").
 #[test_case]
 fn a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty() {
     let (out, diag, region) = spawn_date_with_diagnostics();

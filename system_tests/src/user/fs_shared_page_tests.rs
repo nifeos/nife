@@ -1,6 +1,6 @@
 //! The shared-frame witness (milestone 599 (a frame per filesystem client channel), provisional).
 //!
-//! Finding 1 of `nifeos/record:notes/shared-page-audit.md` is one read-write staging frame shared by every FS
+//! Finding 1 of `partsfoundry/record:notes/shared-page-audit.md` is one read-write staging frame shared by every FS
 //! client, which kept clients apart by which was blocked, not by what each could map. Each client
 //! now has its own channel window, keyed by the badge on its endpoint capability. The test runs two
 //! live clients, one rewriting the frame the other staged its name in, and asserts isolation, after

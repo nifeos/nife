@@ -153,7 +153,7 @@ fn the_disk_surveyor_reads_a_table_gptfdisk_wrote() {
         // No fourth mmio block device: this boot did not build the GPT image. A fact about the
         // machine, which the final line must carry as a skip (milestone 214 (a test that prints
         // "skipping" and returns is counted as passed),
-        // nifeos/record:design/roadmap/0214-print-and-return-skips.md).
+        // partsfoundry/record:design/roadmap/0214-print-and-return-skips.md).
         skip_unless_required!(
             X86_FIXTURES_REQUIRED,
             "no GPT disk attached (this boot did not build the GPT image)"
@@ -210,7 +210,7 @@ fn the_disk_surveyor_reads_a_table_gptfdisk_wrote() {
 /// read-only. The boundary is a page permission, not a check the program could be argued out of.
 /// This is the claim `lsblk` plus `parted` cannot make: there the listing is world-readable and
 /// naming a device to a destructive tool is a matter of typing its path. Here the enumeration is a
-/// read-only mapping and the disk is a rendezvous somebody else was handed (nifeos/record:notes/block-devices.md).
+/// read-only mapping and the disk is a rendezvous somebody else was handed (partsfoundry/record:notes/block-devices.md).
 #[test_case]
 fn the_roster_is_a_listing_and_not_a_lever() {
     let faults = USER_FAULTS.load(Ordering::Relaxed);
@@ -351,7 +351,7 @@ fn entropy_rendezvous() -> Option<crate::sched::RendezvousId> {
 ///
 /// Milestone 57's write half, on one disk and in order, because only a later read shows that a
 /// refused run left the disk as it found it. The two capabilities are jointly sufficient and
-/// separately necessary; why entropy is a real need is in nifeos/record:notes/block-devices.md, "The disk tests".
+/// separately necessary; why entropy is a real need is in partsfoundry/record:notes/block-devices.md, "The disk tests".
 #[test_case]
 fn the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else() {
     if fs_service::mkfs_image().is_none() {

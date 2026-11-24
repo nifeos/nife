@@ -6,7 +6,7 @@
 //! `SEND_CAPABILITY` for a copy of its own capability that adds `READ`, which the delegation rule refuses.
 //! A `BADGE`d copy is refused all four server methods, since a badge labels a sender and carries
 //! exactly the source's rights. Nothing blocks. Cross-ISA (DECISIONS §19 (architectural parity is
-//! a tenet)). See nifeos/record:notes/confinement-claims/the-eighth-pass-tests.md.
+//! a tenet)). See partsfoundry/record:notes/confinement-claims/the-eighth-pass-tests.md.
 
 use moho_abi::Error;
 

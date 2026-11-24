@@ -6,7 +6,7 @@
 //! filing of the copy, forced at the test kernel's seam (`delegation_pause::here`), and the
 //! PortRange sweep through a parked hand-off. Every wait is clock-bounded. The first test is
 //! cross-ISA (DECISIONS §19 (architectural parity is a tenet)); the second is `x86_64` only,
-//! because port I/O is. See nifeos/record:notes/confinement-claims/the-eighth-pass-tests.md.
+//! because port I/O is. See partsfoundry/record:notes/confinement-claims/the-eighth-pass-tests.md.
 
 use core::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 
