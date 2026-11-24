@@ -1,9 +1,10 @@
-# toolchain: nightly-2026-11-23
+# toolchain: nightly-2026-11-24
 # qemu: 11.1.2
 # date: 2026-11-21
 # why: nightly-2026-11-21: no row rose. Measured by the bump workflow on one runner at both pins and reproduced here: the compiler alone moved yield_switch -5.55%, ipc_rtt -5.50%, relay_rtt -5.50%, call_reply -5.50%, broker_rtt -5.50%, spawn_reap -4.18%, map_new -3.17%, rfence_self -0.60%, coremark -3.37%, null_system_call -3.23%, ctx_switch -5.34%, ipc_rtt_el0 -5.33%, sink_throughput -5.14%, map_el0 -4.87%, spawn_el0 -4.18%. Coremark touches no OS primitive and moved with the rest, so this is code generation, not a kernel path.
 # why: 2026-11-22: restamped from nightly-2026-11-21 to nightly-2026-11-22 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: map_new -0.045%, map_el0 -0.003% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: map_new -0.045%, map_el0 -0.003%
 # why: 2026-11-23: restamped from nightly-2026-11-22 to nightly-2026-11-23 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: map_el0 -0.003%, null_system_call -0.002% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: map_new -0.045%, map_el0 -0.006%, null_system_call -0.002%
+# why: 2026-11-24: restamped from nightly-2026-11-23 to nightly-2026-11-24 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: map_new +0.090%, broker_rtt +0.086%, call_reply +0.086% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: broker_rtt +0.086%, call_reply +0.086%, ipc_rtt_el0 +0.079%, relay_rtt +0.078%, ipc_rtt +0.077%, spawn_reap +0.075%, sink_throughput +0.071%, yield_switch +0.059%, spawn_el0 +0.059%, ctx_switch +0.052%, map_el0 +0.046%, map_new +0.045%, rfence_self +0.017%, null_system_call -0.002%
 # bench/baseline-riscv64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check fails when the QEMU on
