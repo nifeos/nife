@@ -375,16 +375,11 @@ fn tree_sections() -> Vec<Shelf> {
     let root = workspace_root();
     let mut out = Vec::new();
 
-    // The markdown, in the four places this project keeps it. The repository root is included
-    // because `README.md` is where a stranger starts, and a search that could not return the front
-    // page would be odd about it.
-    for (shard, dir, recurse) in [
-        ("notes", "notes", false),
-        ("decisions", "design/decisions", false),
-        ("roadmap", "design/roadmap", false),
-        ("design", "design", false),
-        ("guides", "", false),
-    ] {
+    // The markdown this repository keeps. The repository root is included because `README.md` is
+    // where a stranger starts, and a search that could not return the front page would be odd about
+    // it. The design record (`design/`, and most of `notes/`) lives in `nifeos/record`, which is
+    // searched there.
+    for (shard, dir, recurse) in [("notes", "notes", false), ("guides", "", false)] {
         let mut docs = Vec::new();
         collect_markdown(&root.join(dir), &root, &mut docs, recurse);
         if !docs.is_empty() {
