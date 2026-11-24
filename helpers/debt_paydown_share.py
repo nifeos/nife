@@ -11,7 +11,7 @@ file, `notes/project-metrics/merged-pull-requests.csv` and its columns. A python
 # WHY
 
 calef asked on 2026-10-11 (UTC) for a chart of the share of pull requests that pay down debt. The
-label and its definition are in notes/debt-paydown.md. A label lives on GitHub and not in git, so
+label and its definition are in nifeos/record:notes/debt-paydown.md. A label lives on GitHub and not in git, so
 `script/metrics`, which reads git and committed records only, cannot see it. This helper is the
 fetch, run daily by the fleet-metrics workflow (milestone 889 (the tree's gates stop depending on
 the fleet tooling) moved it there from metrics.yml), and its CSV is the committed record
@@ -27,7 +27,7 @@ requests behind it, and so a relabel is visible in the diff as the one row it ch
 
 **The whole history is fetched every run and the file rewritten**, unlike the merge queue's
 eight-day window. A label can be added to or taken off a pull request merged months ago (the
-backfill of 2026-10-10 labeled 641 of them at once, and notes/debt-paydown.md tells a lane to fix a
+backfill of 2026-10-10 labeled 641 of them at once, and nifeos/record:notes/debt-paydown.md tells a lane to fix a
 wrong one by hand), so a window would leave the record disagreeing with GitHub for good. The fetch
 is one paginated listing, about ten seconds for 1,900 pull requests on 2026-10-11.
 

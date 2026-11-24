@@ -43,7 +43,7 @@ queued)
     # empty-push skip because an empty push to a queued branch removes it from the queue just as
     # well. One `gh api graphql` call, fail-open with a one-line warning when `gh` cannot answer.
     # Override with `NIFE_PUSH_QUEUED=1` (provisional name). helpers/push-queued-check.sh has the
-    # reasoning and notes/merge-queue.md has the measurement.
+    # reasoning and nifeos/record:notes/merge-queue.md has the measurement.
     printf '%s\n' "$refs" | "$root/helpers/push-queued-check.sh"
     exit $?
     ;;

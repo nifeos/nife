@@ -8,7 +8,7 @@
 # written on 2026-09-23 after one violation and broken twice more on 2026-09-24, both times by a
 # maintainer session on a freshly cleared context: it relayed a lane report as "things worth your
 # eye" (a stale line, two pull requests to sequence) instead of doing them, and when corrected it
-# saved a memory restating the rule instead of applying it. Three strikes is notes/rule-violations.md's
+# saved a memory restating the rule instead of applying it. Three strikes is nifeos/record:notes/rule-violations.md's
 # threshold for moving a rule up the ladder. Prose in an 11,000-word constitution is rung four; the
 # rule was in context both times and lost on salience. A hook is the harness firing it every turn,
 # which is the nearest thing to rung two an agent's behaviour has.

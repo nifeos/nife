@@ -51,7 +51,7 @@
 #
 # Name: provisional, minted by this lane, 2026-09-27 (renamed from the single-caller
 # `architect-label-diff.sh` once `ci.yml` became a second caller); naming is an architect's call
-# (design/naming.md).
+# (nifeos/record:design/naming.md).
 
 set -eu
 

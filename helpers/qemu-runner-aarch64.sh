@@ -16,7 +16,7 @@
 # A test harness that exercises a different boot path than the real thing is testing
 # a fiction.
 #
-# See notes/boot-protocol.md.
+# See nifeos/record:notes/boot-protocol.md.
 
 set -e
 
@@ -54,7 +54,7 @@ set -e
 # takes the same drop.
 #
 # TCG only. HVF does start a guest at EL2 with `virtualization=on`, but that EL2 ignores
-# `HCR_EL2.TGE` and has no VHE (notes/arm-plan-under-hvf.md), and this path has never been run on
+# `HCR_EL2.TGE` and has no VHE (nifeos/record:notes/arm-plan-under-hvf.md), and this path has never been run on
 # it. So asking for both is refused rather than silently ignored, the same posture as NIFE_CPU
 # under HVF below.
 VIRT_EL2=""
@@ -73,7 +73,7 @@ fi
 # The kernel no longer cares which: `machine_discovery::gic` reads the device tree's `compatible`
 # (`arm,cortex-a15-gic` for 2, `arm,gic-v3` for 3), and `arch::interrupt_controller::initialize` confirms it against the
 # hardware before driving it, panicking with both sides named if they disagree. Before 227 a
-# GICv3 booted, printed `interrupts ON` and took no interrupts at all (`notes/interrupts.md`).
+# GICv3 booted, printed `interrupts ON` and took no interrupts at all (`nifeos/record:notes/interrupts.md`).
 #
 # **Why TCG stays at 2.** Every recorded TCG measurement (the icount tripwire's baselines, the
 # fastpath footprint, the benchmark history) was taken on a GICv2, and argon (the Jetson TX1) is a
@@ -171,7 +171,7 @@ explain_probe_failure() {
     echo "  HVF. The kernel drives GICv2 and GICv3 (milestone 227), and HVF on QEMU 11.1.1 accepts only" >&2
     echo "  GICv3, which is this runner's HVF default; if NIFE_GIC=2 is set, unset it. Otherwise the" >&2
     echo "  refusal is QEMU's own, quoted above. script/ci-build skips this leg out loud rather than" >&2
-    echo "  failing; notes/hvf-leg.md has the history." >&2
+    echo "  failing; nifeos/record:notes/hvf-leg.md has the history." >&2
 }
 
 # NIFE_PROBE asks the question and answers nothing else: exit 0 if this machine starts, non-zero
@@ -220,13 +220,13 @@ IMG="$ELF.img"
 # into a PT_LOAD segment (measured; a non-alloc placement either dropped the bytes or broke
 # relocations elsewhere, see the comment in kernel/link-aarch64.ld), and `-O binary` on an
 # unfiltered ELF would grow this flat Image by the CFI's own size for no boot-time benefit. See
-# notes/cfi-unwind.md.
+# nifeos/record:notes/cfi-unwind.md.
 "$OBJCOPY" -O binary --remove-section=.eh_frame --remove-section=.eh_frame_hdr "$ELF" "$IMG"
 
 # The userspace program rides in as an initial ramdisk, exactly the way Linux gets its initramfs:
 # QEMU loads the file into RAM and writes the address into /chosen/linux,initrd-start in the device
 # tree it generates. The kernel finds it there. Nothing about the binary is compiled into the
-# kernel. See notes/elf.md and kernel/src/memory.rs.
+# kernel. See nifeos/record:notes/elf.md and kernel/src/memory.rs.
 INITIAL_RAMDISK=""
 if [ -n "$NIFE_INITIAL_RAMDISK" ] && [ -f "$NIFE_INITIAL_RAMDISK" ]; then
     INITIAL_RAMDISK="-initrd $NIFE_INITIAL_RAMDISK"
@@ -250,7 +250,7 @@ fi
 # A SET NIFE_DISK naming a missing file is an error, not a silent no-op. The old behaviour
 # (quietly booting diskless) had the kernel truthfully reporting "no block device", which reads
 # like a machine fact when it is actually a build-order mistake; it very likely produced the
-# false "riscv virt has no mmio disk" record in notes/riscv-parity-scope.md.
+# false "riscv virt has no mmio disk" record in nifeos/record:notes/riscv-parity-scope.md.
 DISK=""
 if [ -n "$NIFE_DISK" ] && [ ! -f "$NIFE_DISK" ]; then
     echo "qemu-runner-aarch64: NIFE_DISK=$NIFE_DISK does not exist (run mkdisk first)" >&2
@@ -464,7 +464,7 @@ fi
 # the kernel built. That flag is load-bearing here in a way it is not for the disk: a virtio-gpu's
 # backing addresses ride in a device-level command payload, not in a descriptor, so the transport's
 # shadow-ring validator never sees them and the IOMMU is the only thing that bounds them. Drop the
-# flag and the GPU could name any physical address (see notes/framebuffer-contract.md).
+# flag and the GPU could name any physical address (see nifeos/record:notes/framebuffer-contract.md).
 #
 # There is no image file to fail loud on, as with the NIC. The manufactured-fact hazard (NIFE_GPU
 # set but no GPU enumerated) is caught in the kernel test, which ASSERTS a GPU is present rather than
@@ -516,7 +516,7 @@ fi
 # QEMU backs virtio-rng with the host's /dev/urandom by default (`rng-random`, filename
 # /dev/urandom), which is what makes these bytes real and not an emulated counter. That is a fact
 # about the emulator, recorded rather than assumed: on hardware the source is the board's TRNG and
-# notes/entropy.md carries the caveat.
+# nifeos/record:notes/entropy.md carries the caveat.
 #
 # There is no image file to fail loud on, as with the NIC and the GPU. The manufactured-fact hazard
 # (NIFE_RNG set but no device enumerated) is caught in the kernel test, which ASSERTS a device is

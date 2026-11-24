@@ -17,7 +17,7 @@ than that promises the compiler those registers survive the trap, and an optimis
 keep a live value in one. `user_mode_runtime::yield_now` declared none. In the job mix's spawn job
 the compiler loaded `DESTROY`'s five arguments before a yield and trapped with them after it, so
 the second `DESTROY` went out as `invoke(0, 4)`, a `CALL` on the report endpoint, and came back
-`Gone`. It failed 19 of 20 HVF sweeps and wedged the twentieth (notes/job-mix/spawn-job-miscompiled-yield.md).
+`Gone`. It failed 19 of 20 HVF sweeps and wedged the twentieth (nifeos/record:notes/job-mix/spawn-job-miscompiled-yield.md).
 Nothing about it was visible in the source: the defect was a missing declaration, and a missing
 thing is what a reader does not see. Hence a gate rather than a comment.
 
@@ -152,7 +152,7 @@ def main(argv):
             print('  ' + b, file=sys.stderr)
         print('  The compiler may keep a live value in an undeclared register across the trap. '
               'Route the call through `trap6` (crates/user_mode_runtime), or declare all six words. '
-              'notes/job-mix/spawn-job-miscompiled-yield.md has the miscompilation this caught.',
+              'nifeos/record:notes/job-mix/spawn-job-miscompiled-yield.md has the miscompilation this caught.',
               file=sys.stderr)
         return 1
     print(f'system_call asm: {traps} userspace traps, every one declares all six result registers')

@@ -34,7 +34,7 @@ file, instead of the macOS keychain), NIFE_SMELTER_APP_ID, NIFE_SMELTER_ORG, NIF
 NIFE_SMELTER_CACHE. The key's default home is the login keychain, generic password service
 `nife-smelter`, account `private-key`, holding the PEM base64-encoded on one line (`security -w`
 prints a value with newlines in it as hex, so the PEM itself cannot go there as is).
-notes/session-identity.md has the setup steps.
+nifeos/record:notes/session-identity.md has the setup steps.
 
 The release workflows in nifeos/crate-workflows read the same App from two organization secrets,
 visible to selected repositories only (ruled 2026-11-01 UTC):
@@ -42,7 +42,7 @@ NIFE_SMELTER_APP_ID: the App id.
 NIFE_SMELTER_PRIVATE_KEY: the App's PEM.
 Nothing in this script reads either; it only names them so the notes that cite them resolve.
 
-Name provisional (milestone 128's lane, 2026-10-07 UTC); `design/naming.md` is the rule.
+Name provisional (milestone 128's lane, 2026-10-07 UTC); `nifeos/record:design/naming.md` is the rule.
 
 EXAMPLES
 
@@ -134,7 +134,7 @@ def private_key():
         return base64.b64decode(r.stdout.strip(), validate=True)
     except ValueError:
         raise Refusal("the keychain item %s/%s is not base64; store it with "
-                      "`base64 < key.pem | tr -d '\\n'` (notes/session-identity.md)"
+                      "`base64 < key.pem | tr -d '\\n'` (nifeos/record:notes/session-identity.md)"
                       % (KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT))
 
 
@@ -239,7 +239,7 @@ def current():
     key = private_key()
     if key is None:
         raise Refusal("no App key on this machine (keychain item %s/%s, or NIFE_SMELTER_KEY_FILE); "
-                      "notes/session-identity.md says how calef installs one"
+                      "nifeos/record:notes/session-identity.md says how calef installs one"
                       % (KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT))
     token = jwt(key)
     del key
@@ -283,7 +283,7 @@ def session_env():
         return None
     if not key_present():
         raise Refusal("NIFE_SMELTER=1, but this machine has no App key (keychain item %s/%s, or "
-                      "NIFE_SMELTER_KEY_FILE); notes/session-identity.md" % (KEYCHAIN_SERVICE,
+                      "NIFE_SMELTER_KEY_FILE); nifeos/record:notes/session-identity.md" % (KEYCHAIN_SERVICE,
                                                                              KEYCHAIN_ACCOUNT))
     here = os.path.dirname(os.path.realpath(__file__))
     me = os.path.realpath(__file__)
@@ -332,7 +332,7 @@ def check():
         return 0
     print("smelter-token: NIFE_SMELTER=1, but this shell is not on the App, so gh and git act as the "
           "personal login. Prefix the command with `eval \"$(helpers/smelter-token env)\";` "
-          "(notes/session-identity.md).", file=sys.stderr)
+          "(nifeos/record:notes/session-identity.md).", file=sys.stderr)
     return 1
 
 

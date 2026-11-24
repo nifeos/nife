@@ -11,7 +11,7 @@
 # rustup makes one attempt at a connection. On 2026-10-18 a TCP connect to the CDN timed out once
 # (30 s) in `script/bootstrap`, and a docs-only pull request went red for it. On 2026-10-08 the
 # floating `nightly` manifest failed its checksum while the CDN was mid-publish, and that one ejected
-# a pull request from the merge queue. Both cleared on the next try. notes/ci-toolchain-download.md
+# a pull request from the merge queue. Both cleared on the next try. nifeos/record:notes/ci-toolchain-download.md
 # has the two weeks of counts this was measured against.
 #
 # # What it retries, and what it does not

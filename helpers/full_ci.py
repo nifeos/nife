@@ -14,7 +14,7 @@ The heavy gates run only in the merge queue (provisional, ruled 2026-11-03 UTC).
 runs the cheap set: rustfmt, the full script/lint with its clippy and per-target builds, the
 host tests, the mutation gate and the short build checks. The kernel suites under QEMU, the Kani proofs and
 re-falsification, fuzzing, the icount bench and the crate probes run in the merge group, and on a
-push to `main` that no merge group tested. notes/merge-queue.md lists each job and its side. The
+push to `main` that no merge group tested. nifeos/record:notes/merge-queue.md lists each job and its side. The
 Kani jobs also run on a pull request that adds or changes a harness (ruled 2026-11-16 UTC), which
 `helpers/harness_change.py` decides beside this script.
 

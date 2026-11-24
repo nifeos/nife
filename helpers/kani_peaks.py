@@ -13,7 +13,7 @@ never touches and others wait for it. helpers/kani-peaks.tsv records, per row of
 table, the peak memory of one `script/verify --only <row>` at VERIFY_JOBS=1: compile, solver and page
 cache together, read from the run's own cgroup (`memory.peak`). A row's weight is that peak rounded up
 to whole pool units. The peak already counts the compile and the page cache, and CBMC is deterministic
-on the same program and version, so the rounding is the only margin. notes/verification/kani-memory.md
+on the same program and version, so the rounding is the only margin. nifeos/record:notes/verification/kani-memory.md
 has the numbers and the reasoning.
 
 A row counts only for the code it measured. Each row records the git tree of the crate's directory
@@ -57,7 +57,7 @@ HEADER = """\
 # helpers/kani-peaks.tsv: the peak memory of one `script/verify --only <row>` at VERIFY_JOBS=1,
 # compile included, read from the run's cgroup. Written by `python3 helpers/kani_peaks.py measure`;
 # do not hand-edit a number. helpers/kani_peaks.py says when a row counts (its tree and Kani version
-# must match the checkout) and notes/verification/kani-memory.md has the reasoning.
+# must match the checkout) and nifeos/record:notes/verification/kani-memory.md has the reasoning.
 # Measured on an x86_64 Linux host.
 """
 

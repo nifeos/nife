@@ -5,7 +5,7 @@
 # carried its own copy of this predicate, and both copies were wrong in the same way: "open, not a draft, against main"
 # admitted a pull request from ANY fork. The ruleset on `main` requires zero approving reviews, so a
 # stranger whose checks went green was one drain pass from merged, by automation, with nobody having
-# read the diff. The audit report has the whole path (design/audit-reports/, 2026-09-24).
+# read the diff. The audit report has the whole path (nifeos/record:design/audit-reports/, 2026-09-24).
 #
 # `isCrossRepository == false` is the fix: every lane in this project pushes its branch to this
 # repository (AGENTS.md: the pushed branch is the lane ledger), so a head that lives in another

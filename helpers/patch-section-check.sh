@@ -10,7 +10,7 @@
 # that redirects a dependency for the whole build; on main it hides which source a crate really
 # builds from. A crate that has moved to its own repository is pinned as
 # `{ version, git, rev }` at the tag's commit, never patched (milestone 857 (crates released on their own), fork 2;
-# notes/crate-move.md). The one allowed entry is a `path` into vendor/, which is code this tree
+# nifeos/record:notes/crate-move.md). The one allowed entry is a `path` into vendor/, which is code this tree
 # carries and owns (talc, with an upstream fix). Any other patch entry, a `git` or `registry`
 # source or a `path` outside vendor/, fails and names the file and line.
 #
@@ -49,6 +49,6 @@ for f in $files; do
     ' "$f" || status=1
 done
 if [ "$status" -ne 0 ]; then
-    echo "lint: a [patch] section may not reach main. Pin a moved crate as { version, git, rev } at its tag's commit (notes/crate-move.md)." >&2
+    echo "lint: a [patch] section may not reach main. Pin a moved crate as { version, git, rev } at its tag's commit (nifeos/record:notes/crate-move.md)." >&2
 fi
 exit "$status"

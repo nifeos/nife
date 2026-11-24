@@ -7,7 +7,7 @@
 # and an installation token lives an hour, so the token is fetched per call from the helper's cache
 # rather than exported once at session start. If no token can be had, this refuses: falling back to
 # the stored login would put a lane back on calef's account without anyone seeing it happen.
-# notes/session-identity.md has the rest.
+# nifeos/record:notes/session-identity.md has the rest.
 #
 # Name provisional (milestone 128's lane); it has to be `gh` to sit in front of gh.
 

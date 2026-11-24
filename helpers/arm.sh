@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # helpers/arm.sh: the one way to arm a pull request. Provisional name (lane/push-requeue,
-# 2026-11-04 UTC); COE action 7 (notes/coes/2026-11-03-merge-queue-backlog.md).
+# 2026-11-04 UTC); COE action 7 (nifeos/record:notes/coes/2026-11-03-merge-queue-backlog.md).
 #
 #     helpers/arm.sh <pull request number>
 #     helpers/arm.sh <pull request number> --despite-conflict "<why>"
@@ -27,7 +27,7 @@
 # `--despite-lint "<why>"` overrides the same way. Each rule and its cases are at its check, below.
 #
 # `--despite-conflict "<why>"` is the override: it arms over a reported conflict, after posting the
-# reason as a comment on the pull request, since notes/merge-queue/conflict-precheck.md asks a lane
+# reason as a comment on the pull request, since nifeos/record:notes/merge-queue/conflict-precheck.md asks a lane
 # that arms over a conflict to say why there. It refuses an empty reason, and a comment that does not
 # post leaves the pull request unarmed. When the check could not tell (its exit 2: no network, no
 # queue) this arms and says the check did not run, which is how arming behaved before the check

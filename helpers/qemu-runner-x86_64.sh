@@ -22,7 +22,7 @@
 # listeners ride a virtio-mmio NIC that `q35` lacks). Without a referee an attached keyboard fails
 # its test, so those variables belong to the test legs and not to a bare run. The OVMF runner
 # (helpers/qemu-uefi-x86_64.sh) attaches no GPU or keyboard. See
-# design/roadmap/0420-the-rest-of-the-x86-64-fixture-set.md.
+# nifeos/record:design/roadmap/0420-the-rest-of-the-x86-64-fixture-set.md.
 #
 # The kernel halts with `hlt` (arch::halt), so QEMU does not exit on its own. Bound any interactive
 # run with helpers/qemu-bounded.sh. The rule the bound enforces:
@@ -63,8 +63,8 @@ shift
 # going green IS the verification that the broadcast worked, so leaving it to be remembered is how
 # it would not happen. What is still open at three cores and above is a silicon question, carried
 # by `arch::x86_64::ap_boot`'s module doc (unmeasured above two on real hardware; xenon has not
-# been asked to bring all four online); see also design/roadmap/0316-x86-smp-two-cores.md and
-# design/roadmap/0161-x86-64-kernel-port.md item 5.
+# been asked to bring all four online); see also nifeos/record:design/roadmap/0316-x86-smp-two-cores.md and
+# nifeos/record:design/roadmap/0161-x86-64-kernel-port.md item 5.
 SMP="${NIFE_SMP:-2}"
 
 # **`NIFE_TCG_THREAD=multi` gives this port parallel cores instead of interleaved ones** (milestone
@@ -82,7 +82,7 @@ SMP="${NIFE_SMP:-2}"
 # That matters because the failures worth finding on more than one core are the ones that need two
 # cores inside the same instant: a wake that is never delivered, a revocation that reaches one core's
 # state and not another's, a corpse that does not reach the queue the other core is reading. Under
-# round-robin those windows are narrow or absent, which is why `design/fatal-risks/README.md` risk 2 keeps
+# round-robin those windows are narrow or absent, which is why `nifeos/record:design/fatal-risks/README.md` risk 2 keeps
 # having to say "found on a bench, invisible in QEMU".
 #
 # # BUGS
@@ -108,7 +108,7 @@ fi
 # milestone 87's Dell C4PDJ module also presents. One machine model, both paths.
 #
 # `-cpu max` gives us every feature QEMU models. It is the permissive choice, and the same caveat
-# applies as on the RISC-V side (notes/cpu-models.md): a kernel that has only ever run here has
+# applies as on the RISC-V side (nifeos/record:notes/cpu-models.md): a kernel that has only ever run here has
 # never been told no. NIFE_CPU narrows it; `qemu64` is the conservative baseline.
 CPU="${NIFE_CPU:-max}"
 
@@ -163,7 +163,7 @@ DEBUG_EXIT="-device isa-debug-exit,iobase=0xf4,iosize=0x04"
 # QEMU's own default, which is what every boot before this milestone got.
 #
 # **The useful value is `off`, and that is the opposite of what this milestone set out to build.**
-# DECISIONS §86 (whether an NVMe driver can leave the kernel) and notes/confinement-claims.md both
+# DECISIONS §86 (whether an NVMe driver can leave the kernel) and nifeos/record:notes/confinement-claims.md both
 # state that this runner "attaches `-device intel-iommu` with no `intremap=on`, so interrupt
 # remapping is off in every x86_64 boot this tree runs." The first half is a true reading of this
 # file. **The second half is false**, and it was reached by reading this file rather than by booting
@@ -181,7 +181,7 @@ DEBUG_EXIT="-device isa-debug-exit,iobase=0xf4,iosize=0x04"
 #
 # The default does not move: unset is QEMU's default is what the tree already ran, so this adds a
 # knob and changes no existing boot. See
-# design/roadmap/0317-interrupt-remapping-flags/x86-64.md.
+# nifeos/record:design/roadmap/0317-interrupt-remapping-flags/x86-64.md.
 #
 # **`kernel-irqchip=split` is NOT required here, and that is measured rather than inherited.** The
 # advice that pairs the two is real, and it is a KVM constraint: QEMU refuses `intremap=on` with an

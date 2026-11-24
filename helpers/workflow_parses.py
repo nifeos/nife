@@ -13,7 +13,7 @@ A comment line that loses its `#` prefix to a line-wrap slip is invisible to eve
 the pin and swallow checks match their regexes on the lines they care about and wave the rest
 through, and the pre-push hook waves the file through with them. GitHub does not: a workflow file
 that does not parse never starts a run, and for ci.yml and verify.yml that is every pull request
-waiting on a required check nothing can post, the failure shape notes/repo-hardening.md records.
+waiting on a required check nothing can post, the failure shape nifeos/record:notes/repo-hardening.md records.
 This check is the parse those regex gates never did.
 
 # THE PARSER
@@ -85,7 +85,7 @@ def parse(cwd, rels):
 def check_tree(root):
     d = WORKFLOWS
     # `os.listdir` raises when the directory moves, which is loud; the count below is the other
-    # half, for a directory that exists and is empty (design/roadmap/0401-a-gate-that-selects-
+    # half, for a directory that exists and is empty (nifeos/record:design/roadmap/0401-a-gate-that-selects-
     # the-set-it-judges.md).
     names = sorted(f for f in os.listdir(os.path.join(root, d)) if f.endswith((".yml", ".yaml")))
     if not names:
@@ -161,7 +161,7 @@ def selftest():
             print("workflow parses selftest: %s: want %s, got exit %d"
                   % (name, "pass" if want else "fail", rc), file=sys.stderr)
     # The empty directory is a case of its own: this check must not pass by checking nothing
-    # (design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md).
+    # (nifeos/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md).
     with tempfile.TemporaryDirectory() as tmp:
         os.makedirs(os.path.join(tmp, WORKFLOWS))
         if run_quiet(tmp) == 0:

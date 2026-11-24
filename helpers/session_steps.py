@@ -21,7 +21,7 @@ that touched #N for another reason inside the window claims an event it did not 
 gone, on another machine, or not Claude Code. This is the positive half only, which is why
 milestone 642's block refuses a local log as the answer and keeps it as a complement.
 
-Name provisional (milestone 642's lane); `design/naming.md` is the rule.
+Name provisional (milestone 642's lane); `nifeos/record:design/naming.md` is the rule.
 
 EXAMPLES
 

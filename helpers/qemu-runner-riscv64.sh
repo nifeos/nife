@@ -10,7 +10,7 @@
 #
 # The kernel halts with `wfi` (arch::halt), so QEMU does not exit on its own. Bound any interactive
 # run with helpers/qemu-bounded.sh, exactly as on aarch64 (see CLAUDE.md, "Never leave QEMU
-# running"). See notes/riscv-port.md.
+# running"). See nifeos/record:notes/riscv-port.md.
 
 set -e
 
@@ -222,7 +222,7 @@ fi
 # and behind the RISC-V IOMMU (iommu_platform=on). That last flag matters more for the GPU than for
 # the disk: a virtio-gpu's backing addresses ride in a device-level command payload rather than in a
 # descriptor, so the transport's shadow-ring validator never sees them and the IOMMU is the only thing
-# that bounds them. See notes/framebuffer-contract.md and the aarch64 runner.
+# that bounds them. See nifeos/record:notes/framebuffer-contract.md and the aarch64 runner.
 GPU=""
 if [ -n "$NIFE_GPU" ]; then
     GPU="-device virtio-gpu-pci,disable-legacy=on,iommu_platform=on"
@@ -256,7 +256,7 @@ fi
 # either bus (DECISIONS §18), the mmio one on a slot the block scan skips (it matches DeviceID, and
 # an RNG reports 4), and the PCI one behind the RISC-V IOMMU because the buffer this device writes
 # is where the machine's key material comes from. QEMU backs virtio-rng with the host's
-# /dev/urandom, which is what makes these bytes real; see notes/entropy.md for what that does and
+# /dev/urandom, which is what makes these bytes real; see nifeos/record:notes/entropy.md for what that does and
 # does not promise on hardware.
 RNG=""
 if [ -n "$NIFE_RNG" ]; then
@@ -326,7 +326,7 @@ IOMMU="-device riscv-iommu-pci"
 # models, and `thead-c906` is a real shipped chip with real divergences (a hostile case on purpose).
 #
 # The default stays `rv64` so nothing that existed before this flag changes its meaning. See
-# notes/cpu-models.md, which records what each model did with the suite and the one divergence we
+# nifeos/record:notes/cpu-models.md, which records what each model did with the suite and the one divergence we
 # found. **A narrower QEMU model is still QEMU**: it catches the ISA-and-CSR class of bug and says
 # nothing about the JH7110's caches, memory map, or errata.
 CPU="${NIFE_CPU:-rv64}"

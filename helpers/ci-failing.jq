@@ -1,6 +1,6 @@
 # helpers/ci-failing.jq: which REQUIRED checks are failing on a pull request's head commit.
 #
-# Provisional name, minted with helpers/ci-failing.sh (see that file and notes/merge-queue.md).
+# Provisional name, minted with helpers/ci-failing.sh (see that file and nifeos/record:notes/merge-queue.md).
 #
 # Input: an array of check-run objects for one commit, as `gh api repos/R/commits/SHA/check-runs
 # --paginate --slurp` returns them once the pages are flattened (each has `id`, `name`,
@@ -15,7 +15,7 @@
 # has not started. A newer run that is queued, in progress or cancelled therefore hides an older
 # failure, deliberately: a rerun is underway, or a newer push owns the result, and either way the
 # old verdict is no longer the head's. Only `failure` and `timed_out` count, the same pair
-# notes/merge-queue.md says to trust over `statusCheckRollup`.
+# nifeos/record:notes/merge-queue.md says to trust over `statusCheckRollup`.
 #
 # **The `architect hold` check is ignored by name.** It goes red on purpose while `needs-architect`
 # is on a pull request, which is a person's queue and not a failing build; flagging it would label

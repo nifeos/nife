@@ -7,7 +7,7 @@ that runs for a fork's pull request with base privileges checks out the fork's c
     helpers/owned_runner_check.py --selftest
 
 Name provisional (lane/owned-runners-canary, 2026-11-03 UTC). The runbook is
-notes/owned-runners.md.
+nifeos/record:notes/owned-runners.md.
 
 # WHY
 
@@ -67,7 +67,7 @@ a two-space key under `on:`.
   some other way passes.
 - None of this binds a merge group, whose workflow files are the pull request's own: a pull request
   that edits a workflow runs its edit in the queue before this check can fail it. The barrier there
-  is who may put a pull request in the queue (notes/owned-runners.md, "Who can reach the pool").
+  is who may put a pull request in the queue (nifeos/record:notes/owned-runners.md, "Who can reach the pool").
 """
 
 import os
