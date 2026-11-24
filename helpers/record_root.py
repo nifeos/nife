@@ -155,6 +155,54 @@ def path(*parts, top=None):
     return os.path.join(root(top), *parts)
 
 
+def helper(name, top=None):
+    """The record's own `helpers/<name>.py`, imported from `root(top)` as a module.
+
+    The record keeps the parsers of its formats, such as `roadmap_block`, and a reader here that
+    parses a record file imports the record's copy at the pin. It loads by file path, so the
+    record's other helpers never shadow this tree's on `sys.path`. A record helper that imports
+    another record helper by its bare name, such as `roadmap_proposals` importing `roadmap_block`,
+    gets the record's copy only when this tree has no helper of that name; a name this tree has
+    resolves to this tree's helper, as any other import here does.
+    """
+    import importlib.util
+    key = "record_" + name
+    if key in sys.modules:
+        return sys.modules[key]
+    record_helpers = path("helpers", top=top)
+    _record_finder(record_helpers)
+    spec = importlib.util.spec_from_file_location(key, os.path.join(record_helpers, name + ".py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[key] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _record_finder(record_helpers):
+    """Append, once, a finder for record helpers that this tree's `helpers/` does not hold.
+
+    It sits last on `sys.meta_path`, so the standard library and every directory on `sys.path`
+    are searched first.
+    """
+    import importlib.util
+    mine = os.path.dirname(os.path.abspath(__file__))
+
+    class RecordHelpers:
+        directory = record_helpers
+
+        @staticmethod
+        def find_spec(fullname, _path=None, _target=None):
+            if "." in fullname or os.path.exists(os.path.join(mine, fullname + ".py")):
+                return None
+            candidate = os.path.join(record_helpers, fullname + ".py")
+            if not os.path.exists(candidate):
+                return None
+            return importlib.util.spec_from_file_location(fullname, candidate)
+
+    if not any(getattr(f, "directory", None) == record_helpers for f in sys.meta_path):
+        sys.meta_path.append(RecordHelpers)
+
+
 def selftest():
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:

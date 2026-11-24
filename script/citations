@@ -123,8 +123,7 @@ sys.path.insert(0, os.path.join(root, "helpers"))
 import record_root                                                          # noqa: E402
 # The design record, at the commit basalt pins. Its helpers/roadmap_block.py reads a block's status.
 RECORD = record_root.root(root)
-sys.path.insert(0, os.path.join(RECORD, "helpers"))
-import roadmap_block                                                        # noqa: E402
+roadmap_block = record_root.helper("roadmap_block", top=root)
 
 
 def located(target):

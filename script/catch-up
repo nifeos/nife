@@ -59,7 +59,9 @@ root, since_arg = sys.argv[1], sys.argv[2]
 # the import from leaving a `helpers/__pycache__/` behind.
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.join(root, "helpers"))
-import roadmap_block                                                        # noqa: E402
+import record_root                                                          # noqa: E402
+# The block parser is the record's, read at the commit basalt pins.
+roadmap_block = record_root.helper("roadmap_block", top=root)
 
 if since_arg in ("-h", "--help"):
     print("usage: script/catch-up [<since>]\n\n"

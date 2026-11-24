@@ -52,7 +52,7 @@ sys.dont_write_bytecode = True
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(ROOT, "helpers"))
 import record_root  # noqa: E402
-import roadmap_block  # noqa: E402
+roadmap_block = record_root.helper("roadmap_block", top=ROOT)  # the record's parser, at the pin
 
 LIST = "--list" in sys.argv[1:]
 

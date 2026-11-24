@@ -25,7 +25,10 @@ fail() { echo "catch-up-selftest: $1" >&2; exit 1; }
 
 mkdir -p "$work/script" "$work/helpers"
 cp "$repo/script/catch-up" "$work/script/catch-up"
-cp "$repo/helpers/roadmap_block.py" "$work/helpers/"
+cp "$repo/helpers/record_root.py" "$repo/helpers/qualified_paths.py" "$work/helpers/"
+# The block parser is the record's, read at the commit basalt pins; the scratch repository holds a
+# record of its own, so script/catch-up loads the parser from the scratch copy.
+cp "$(python3 "$repo/helpers/record_root.py")/helpers/roadmap_block.py" "$work/helpers/"
 cd "$work"
 git init -q .
 git config user.email selftest@example.invalid
