@@ -300,6 +300,47 @@ PATH="$tmp/bin:$PATH" helpers/trunk-health.sh --once >"$tmp/out-empty" 2>/dev/nu
 grep -q '^main is green at ' "$tmp/out-empty" ||
 	{ echo "$me: an empty run list from a call that succeeded must read green" >&2; cat "$tmp/out-empty" >&2; exit 1; }
 
+# --- --repeat --repo: another repository's own scheduled workflows, and nothing else -------------
+# nifeos/record runs this half for itself, from its own checkout with nife's tree linked into it,
+# so nife's workflows sit beside the record's as untracked files. A scratch repository stands in:
+# one tracked scheduled workflow, and one untracked one carrying the same failing fixture, which
+# must never be asked about. Every gh call is logged, so the repository the half reads is proved
+# by what it asked, not by what it printed.
+other="$tmp/other"
+mkdir -p "$other/helpers" "$other/.github/workflows" "$tmp/otherbin"
+cp helpers/trunk-health.sh "$other/helpers/trunk-health.sh"
+printf 'on:\n  schedule:\n    - cron: "0 9 * * 1"\n' >"$other/.github/workflows/weekly-report.yml"
+cp "$other/.github/workflows/weekly-report.yml" "$other/.github/workflows/linked-in.yml"
+/usr/bin/git -C "$other" init -q
+/usr/bin/git -C "$other" add helpers/trunk-health.sh .github/workflows/weekly-report.yml
+failure_runs >"$fix/runs-weekly-report.yml.tsv"
+failure_runs >"$fix/runs-linked-in.yml.tsv"
+cat >"$tmp/otherbin/gh" <<EOF
+#!/bin/sh
+printf '%s\n' "\$*" >>"$tmp/other-calls.log"
+exec "$tmp/bin/gh" "\$@"
+EOF
+chmod +x "$tmp/otherbin/gh"
+PATH="$tmp/otherbin:$tmp/bin:$PATH" sh "$other/helpers/trunk-health.sh" --repeat --repo example/watched \
+	>"$tmp/out-other" 2>/dev/null
+printf '%-32s %-24s %s\n' weekly-report "4 of last 6 failed" \
+	"REPEAT: ${epilogue} (2026-09-07..2026-10-12 UTC)" >"$tmp/expected"
+grep -F -x -q -f "$tmp/expected" "$tmp/out-other" &&
+	[ "$(wc -l <"$tmp/out-other")" -eq 1 ] ||
+	{ echo "$me: --repeat --repo: expected the one weekly-report row and nothing else:" >&2; cat "$tmp/out-other" >&2; exit 1; }
+grep -q '^api repos/example/watched/actions/workflows/weekly-report\.yml/runs' "$tmp/other-calls.log" &&
+	grep -q '^run view 900000000001 --repo example/watched ' "$tmp/other-calls.log" ||
+	{ echo "$me: --repeat --repo: the named repository was not the one asked:" >&2; cat "$tmp/other-calls.log" >&2; exit 1; }
+if grep -q -e 'linked-in' -e 'nifeos/nife' "$tmp/other-calls.log"; then
+	echo "$me: --repeat --repo asked about an untracked workflow or about nifeos/nife:" >&2
+	cat "$tmp/other-calls.log" >&2
+	exit 1
+fi
+if sh "$other/helpers/trunk-health.sh" --once --repo example/watched >/dev/null 2>&1; then
+	echo "$me: --repo without --repeat must be refused" >&2
+	exit 1
+fi
+
 # --- the ruled home: one issue per distinct repeat, proved offline -------------------------------
 # calef ruled the repeat report's home on 2026-10-16 (UTC): an issue per workflow on the
 # helpers/watcher_watch.py pattern, deduped by workflow name, body updated when the failing line
@@ -385,4 +426,13 @@ rm -f "$iss/fix/issues.json"
 printf '%s\n' "$audit_row" | sync_rows >/dev/null
 expect_calls '"issue", "create"' 1
 
-echo "$me: repeat rows, thresholds, exclusions, silences, API failures and the ruled issue home all as expected"
+# `sync --repo` files in the repository the rows came from, and asks nothing of nifeos/nife.
+rm -f "$iss/fix/issues.json"
+: >"$iss/fix/calls.log"
+printf '%s\n' "$audit_row" | REPEAT_ISSUE_FIXTURES="$iss/fix" PATH="$iss/bin:$PATH" \
+	python3 helpers/repeat_issue.py sync --repo example/watched >/dev/null
+expect_calls '"issue", "create", "--repo", "example/watched"' 1
+expect_calls '"--repo", "example/watched"' 3
+expect_calls 'nifeos/nife' 0
+
+echo "$me: repeat rows, thresholds, exclusions, silences, API failures, another repository and the ruled issue home all as expected"

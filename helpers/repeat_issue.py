@@ -2,6 +2,7 @@
 """Open or update one issue per scheduled workflow whose failures say the same thing again.
 
     helpers/repeat_issue.py sync          # REPEAT rows on stdin; one issue per workflow
+    helpers/repeat_issue.py sync --repo <owner>/<name>   # the same, in another repository
     helpers/repeat_issue.py --selftest
 
 Milestone 422 (a cadence job whose healthy state is red, and nothing that notices it repeating),
@@ -16,6 +17,12 @@ pattern this workflow already runs, closed by the audit landing. What the ruling
 the row is not a gate, no empty pull request carries a label, and no audit-lane gate reads the row.
 
 # THE RULE
+
+Issues are read and written in nifeos/nife, or in the repository `--repo` names. That is the
+repository whose runs the rows were read from (`helpers/trunk-health.sh --repeat --repo`), so an
+issue lands beside the workflow it is about: nifeos/record runs both from its own weekly workflow,
+through its link tree of nife (its helpers/nife_tree.py). `--repo` is provisional, minted
+2026-11-24 (UTC) for nifeos/record#6.
 
 sync reads REPEAT rows, one per workflow, in the format `helpers/trunk-health.sh` prints. CHURN
 rows and everything else are ignored: a workflow whose failures disagree with each other gets no
@@ -135,7 +142,7 @@ def gh(args, token=None):
     return subprocess.run(["gh"] + args, capture_output=True, text=True, env=env)
 
 
-def sync(text):
+def sync(text, repo=REPO):
     rows = parse_rows(text)
     if not rows:
         return 0
@@ -145,14 +152,14 @@ def sync(text):
     # permissions block. GitHub's search answers a token without that permission with no issues
     # and exit 0, so the close never reaches plan() and a duplicate opens (#2435, #2448).
     read = fallback or write
-    listed = gh(["issue", "list", "--repo", REPO, "--state", "open", "--limit", "200",
+    listed = gh(["issue", "list", "--repo", repo, "--state", "open", "--limit", "200",
                  "--json", "number,title,body"], read)
     if listed.returncode:
         print("repeat_issue: could not list issues: %s" % listed.stderr.strip(), file=sys.stderr)
         return 2
     open_issues = {i["title"]: (i["number"], i["body"] or "")
                    for i in (json.loads(listed.stdout) if listed.stdout.strip() else [])}
-    closed_list = gh(["issue", "list", "--repo", REPO, "--state", "closed", "--limit", "200",
+    closed_list = gh(["issue", "list", "--repo", repo, "--state", "closed", "--limit", "200",
                       "--search", '"%s" in:title' % TITLE_PREFIX.strip(),
                       "--json", "number,title,closedAt"], read)
     if closed_list.returncode:
@@ -166,11 +173,11 @@ def sync(text):
     status = 0
     for action, number, title, body in plan(rows, open_issues, closed):
         if action == "open":
-            args = ["issue", "create", "--repo", REPO, "--title", title, "--body", body]
+            args = ["issue", "create", "--repo", repo, "--title", title, "--body", body]
         else:
-            args = ["issue", "edit", str(number), "--repo", REPO, "--body", body]
-        for who, token in (("nife-smelter", write), ("fallback token", fallback)):
-            if token is None and who != "nife-smelter":
+            args = ["issue", "edit", str(number), "--repo", repo, "--body", body]
+        for who, token in (("GH_TOKEN", write), ("fallback token", fallback)):
+            if token is None and who != "GH_TOKEN":
                 continue
             done = gh(args, token)
             if done.returncode == 0:
@@ -273,6 +280,29 @@ def selftest():
     expect("close read past an App token without issues: nothing opens",
            ["issue", "create"] in calls, False)
 
+    # `--repo` reaches every call, reads and the write alike, and nifeos/nife is never asked.
+    asked = []
+
+    def repo_stub(args, token=None):
+        asked.append(args)
+        return subprocess.CompletedProcess(args, 0, "[]" if args[:2] == ["issue", "list"] else "", "")
+
+    gh = repo_stub
+    try:
+        with open(os.devnull, "w") as quiet:
+            real_stdout, sys.stdout = sys.stdout, quiet
+            try:
+                sync("audit-cadence                    5 of last 6 failed       REPEAT: the line "
+                     "(2026-09-21..2026-10-19 UTC)", "example/watched")
+            finally:
+                sys.stdout = real_stdout
+    finally:
+        gh = real_gh
+    expect("--repo: list, list, create", [a[:2] for a in asked],
+           [["issue", "list"], ["issue", "list"], ["issue", "create"]])
+    expect("--repo: every call names the repository",
+           [a[a.index("--repo") + 1] for a in asked], ["example/watched"] * 3)
+
     print("repeat_issue selftest: %s" % ("ok" if ok else "FAILED"))
     return 0 if ok else 1
 
@@ -282,6 +312,8 @@ def main(argv):
         return selftest()
     if argv[1:] == ["sync"]:
         return sync(sys.stdin.read())
+    if argv[1:2] == ["sync"] and len(argv) == 4 and argv[2] == "--repo" and "/" in argv[3]:
+        return sync(sys.stdin.read(), argv[3])
     print(__doc__, file=sys.stderr)
     return 2
 
