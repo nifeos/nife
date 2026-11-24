@@ -494,6 +494,12 @@ def passive_count(texts):
 # `selftest` guards it: no derived marker may match ordinary bold, and a pattern that does must be
 # named in NOT_MARKERS with its reason, or the lint fails.
 PARSER_ROOTS = ('script', 'helpers')
+# The record's parsers count too (milestone 1018 (the design record moves to nifeos/record and is
+# published as a website)). They left with the record, and this tree's readers of record files
+# still load them (`record_root.helper`), so a span they read is still a key here. With no `root`
+# given, `derived_markers` and `opaque_readers` read the Python of the record's `script/` and
+# `helpers/` at the commit basalt pins as well as this tree's; a file both hold is read once, from
+# here.
 NOT_MARKERS = {
     # Reads a running-order TABLE cell's leading verdict; table rows are never counted here anyway,
     # and on prose it would match any bold that opens with a capital word ("**A run ...").
@@ -531,51 +537,63 @@ def _flags(node):
     return flags
 
 
+def _parser_files(root):
+    """[(rel, path)] for each file under PARSER_ROOTS; with no `root`, this tree's and the record's."""
+    roots = [root] if root else [os.path.dirname(os.path.dirname(os.path.abspath(__file__)))]
+    if not root:
+        record = record_root.root()
+        if os.path.realpath(record) != os.path.realpath(roots[0]):
+            roots.append(record)
+    seen, out = set(), []
+    for top in roots:
+        for d in PARSER_ROOTS:
+            base = os.path.join(top, d)
+            for name in sorted(os.listdir(base)) if os.path.isdir(base) else []:
+                rel = f'{d}/{name}'
+                if rel not in seen:
+                    seen.add(rel)
+                    out.append((rel, os.path.join(base, name)))
+    return out
+
+
 def derived_markers(root=None):
     """[(file, pattern, flags)] for every bold marker a script or helper parses. See above."""
     import ast
-    root = root or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     out = []
-    for d in PARSER_ROOTS:
-        base = os.path.join(root, d)
-        if not os.path.isdir(base):
+    for rel, path in _parser_files(root):
+        if rel == 'helpers/prose_ratchet.py':
+            continue  # the counter itself: its BOLD matches every span by design
+        if not os.path.isfile(path):
             continue
-        for name in sorted(os.listdir(base)):
-            rel = f'{d}/{name}'
-            if rel == 'helpers/prose_ratchet.py':
-                continue  # the counter itself: its BOLD matches every span by design
-            path = os.path.join(base, name)
-            if not os.path.isfile(path):
-                continue
+        try:
+            text = open(path, encoding='utf-8').read()
+        except (UnicodeDecodeError, OSError):
+            continue
+        if '**' not in text:
+            continue
+        for src in _python_of(rel, text):
             try:
-                text = open(path, encoding='utf-8').read()
-            except (UnicodeDecodeError, OSError):
+                tree = ast.parse(src)
+            except SyntaxError:
                 continue
-            if '**' not in text:
-                continue
-            for src in _python_of(rel, text):
-                try:
-                    tree = ast.parse(src)
-                except SyntaxError:
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call) or not node.args:
                     continue
-                for node in ast.walk(tree):
-                    if not isinstance(node, ast.Call) or not node.args:
-                        continue
-                    f, a0 = node.func, node.args[0]
-                    if not (isinstance(a0, ast.Constant) and isinstance(a0.value, str)):
-                        continue
-                    if (isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name)
-                            and f.value.id == 're'
-                            and f.attr in ('compile', 'match', 'search', 'finditer', 'findall')
-                            and '\\*\\*' in a0.value):
-                        flags = _flags(node.args[1]) if len(node.args) > 1 else 0
-                        for kw in node.keywords:
-                            if kw.arg == 'flags':
-                                flags |= _flags(kw.value)
-                        out.append((rel, a0.value, flags))
-                    elif (isinstance(f, ast.Attribute) and f.attr == 'startswith'
-                          and a0.value.startswith('**') and len(a0.value.strip('*')) > 0):
-                        out.append((rel, '^' + re.escape(a0.value), 0))
+                f, a0 = node.func, node.args[0]
+                if not (isinstance(a0, ast.Constant) and isinstance(a0.value, str)):
+                    continue
+                if (isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name)
+                        and f.value.id == 're'
+                        and f.attr in ('compile', 'match', 'search', 'finditer', 'findall')
+                        and '\\*\\*' in a0.value):
+                    flags = _flags(node.args[1]) if len(node.args) > 1 else 0
+                    for kw in node.keywords:
+                        if kw.arg == 'flags':
+                            flags |= _flags(kw.value)
+                    out.append((rel, a0.value, flags))
+                elif (isinstance(f, ast.Attribute) and f.attr == 'startswith'
+                      and a0.value.startswith('**') and len(a0.value.strip('*')) > 0):
+                    out.append((rel, '^' + re.escape(a0.value), 0))
     return out
 
 
@@ -618,40 +636,38 @@ def _enclosing_name(tree, target):
 def opaque_readers(root=None):
     """[(file, name or line)] for every bold reader `derived_markers` cannot see. See above."""
     import ast
+    files = _parser_files(root)
     root = root or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     parsed, out = set(), []
-    for d in PARSER_ROOTS:
-        base = os.path.join(root, d)
-        for name in sorted(os.listdir(base)) if os.path.isdir(base) else []:
-            rel, path = f'{d}/{name}', os.path.join(base, name)
-            if rel == 'helpers/prose_ratchet.py' or not os.path.isfile(path):
-                continue
+    for rel, path in files:
+        if rel == 'helpers/prose_ratchet.py' or not os.path.isfile(path):
+            continue
+        try:
+            text = open(path, encoding='utf-8').read()
+        except (UnicodeDecodeError, OSError):
+            continue
+        for src in _python_of(rel, text):
             try:
-                text = open(path, encoding='utf-8').read()
-            except (UnicodeDecodeError, OSError):
+                tree = ast.parse(src)
+            except SyntaxError:
                 continue
-            for src in _python_of(rel, text):
-                try:
-                    tree = ast.parse(src)
-                except SyntaxError:
+            parsed.add(rel)
+            for node in ast.walk(tree):
+                if not (isinstance(node, ast.Call) and node.args):
                     continue
-                parsed.add(rel)
-                for node in ast.walk(tree):
-                    if not (isinstance(node, ast.Call) and node.args):
-                        continue
-                    f, a0 = node.func, node.args[0]
-                    if not (isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name)
-                            and f.value.id == 're' and f.attr in _RE_CALLS):
-                        continue
-                    consts = [n.value for n in ast.walk(a0)
-                              if isinstance(n, ast.Constant) and isinstance(n.value, str)]
-                    if not any(_BOLD_TEXT.search(c) for c in consts):
-                        continue
-                    # A bare literal with two escaped stars is derived; anything else is not.
-                    derived = (isinstance(a0, ast.Constant) and '\\*\\*' in a0.value
-                               and f.attr in ('compile', 'match', 'search', 'finditer', 'findall'))
-                    if not derived:
-                        out.append((rel, _enclosing_name(tree, node) or f'line {node.lineno}'))
+                f, a0 = node.func, node.args[0]
+                if not (isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name)
+                        and f.value.id == 're' and f.attr in _RE_CALLS):
+                    continue
+                consts = [n.value for n in ast.walk(a0)
+                          if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+                if not any(_BOLD_TEXT.search(c) for c in consts):
+                    continue
+                # A bare literal with two escaped stars is derived; anything else is not.
+                derived = (isinstance(a0, ast.Constant) and '\\*\\*' in a0.value
+                           and f.attr in ('compile', 'match', 'search', 'finditer', 'findall'))
+                if not derived:
+                    out.append((rel, _enclosing_name(tree, node) or f'line {node.lineno}'))
     for d in OTHER_LANGUAGE_ROOTS:
         for dirpath, _, names in os.walk(os.path.join(root, d)):
             for name in sorted(names):
