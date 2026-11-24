@@ -140,6 +140,7 @@ review-status	1	-	-	1	-	both	crate reviews keep one closed set of finding states
 shellcheck	1	-	-	0	-	code	shellcheck
 -	1	-	-	1	-	code	dependency direction
 -	1	-	-	1	-	both	package boundaries
+record-freeze	1	-	-	1	-	code	no pull request changes a path that moves with the record (the freeze)
 -	1	-	-	0	-	code	the region claim protocol has one decision path
 -	0	main	-	0	-	code	unused dependencies
 -	1	-	-	1	-	code	tests the suite cannot see

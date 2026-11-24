@@ -4305,6 +4305,24 @@ python3 helpers/record_paths.py --check
 python3 helpers/record_root.py --selftest >/dev/null
 python3 helpers/record_root.py --check
 
+echo "==> no pull request changes a path that moves with the record (the freeze)"
+# lint-scope: code
+# lint-quick
+# lint-id: record-freeze
+# Milestone 1018, step 6, the plan's pull request 6: from here until the removal pull request, a
+# record edit that landed in nife would be missing from nifeos/record, which is cut from the frozen
+# tip. In a pull request or merge group run, helpers/record_freeze.py refuses a diff that touches a
+# path helpers/record_paths.py selects, at the base or at the head; in a lane's own run it only
+# warns, so a draft holding a record edit still pushes. The one exception is the removal pull
+# request, which removes every moving path and adds packages/moved.toml; the helper's header says
+# why neither half happens by accident. The failure message tells a lane where its edit goes.
+python3 helpers/record_freeze.py --selftest >/dev/null
+python3 helpers/record_freeze.py
+grep -q 'helpers/record_freeze.py --moves notes/project-metrics.md' .github/workflows/metrics.yml || {
+    echo "lint: .github/workflows/metrics.yml no longer asks helpers/record_freeze.py whether its page is frozen, so its daily pull request would fail the freeze" >&2
+    exit 1
+}
+
 # The region claim protocol has ONE decision path (milestone 136).
 #
 # Milestone 135 lifted the untyped region table out of `kernel/src/untyped.rs` into
