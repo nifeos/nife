@@ -655,6 +655,30 @@ fn an_unknown_sequence_leaves_nothing_on_the_screen() {
         "an ESC that is not ST stays in the string"
     );
 
+    // CAN and SUB end a string that was never terminated, as the DEC parser does, so a writer
+    // that leaves one open blinds the screen only until one of them arrives.
+    for cancel in [0x18u8, 0x1a] {
+        let mut t = vt(8, 1);
+        t.feed(b"a\x1b]0;never ends");
+        t.feed(&[cancel]);
+        t.feed(b"b");
+        assert_eq!(rows(&t)[0], "ab      ", "{cancel:#04x} inside a string");
+        let mut t = vt(8, 1);
+        t.feed(b"a\x1b]x\x1b");
+        t.feed(&[cancel]);
+        t.feed(b"b");
+        assert_eq!(
+            rows(&t)[0],
+            "ab      ",
+            "{cancel:#04x} after a string's ESC"
+        );
+        let mut t = vt(8, 1);
+        t.feed(b"a\x1b[1;2");
+        t.feed(&[cancel]);
+        t.feed(b"b");
+        assert_eq!(rows(&t)[0], "ab      ", "{cancel:#04x} inside a CSI");
+    }
+
     // Control codes with no meaning here are consumed, not drawn.
     let mut t = vt(8, 1);
     t.feed(b"a\x01\x02\x1f\x7fb");

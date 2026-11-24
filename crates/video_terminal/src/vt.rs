@@ -519,6 +519,13 @@ impl Vt {
     }
 
     fn byte(&mut self, b: u8) {
+        // CAN and SUB end any sequence in progress, a string included, as the DEC parser does: a
+        // writer that left a string open cannot blind the screen past one of them. See
+        // notes/video-terminal.md, "Parsing".
+        if matches!(b, 0x18 | 0x1a) && !matches!(self.state, State::Ground) {
+            self.state = State::Ground;
+            return;
+        }
         match self.state {
             State::Ground => self.ground(b),
             State::Esc => self.esc(b),
