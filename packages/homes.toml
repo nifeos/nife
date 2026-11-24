@@ -37,16 +37,6 @@ paths = [
     "packages/base-image.approval.toml",
 ]
 
-# ---- What moves: the design record ------------------------------------------------------------
-[[home]]
-# The design record, milestone 1018 (the design record moves to `nifeos/record` and is published as
-# a website): the roadmap, decisions, journeys, naming, tenets and cross-cutting notes, in a
-# repository of their own. The website pulls them at build time. helpers/record_paths.py writes the
-# extraction's path lists from this file.
-status = "provisional"
-repo = "record"
-paths = ["design/", "notes/"]
-
 [[home]]
 # The lane skills and the briefs are agent instructions, not documentation, so they stay with the
 # lanes that read them (milestone 1018, question 1).
