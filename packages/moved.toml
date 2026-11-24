@@ -19,7 +19,7 @@ record_commit = "109298893d62b1a5fc2f3aa5a9805066214023dc"
 old = "design/"
 new = "nifeos/record:design/"
 date = "2026-11-24"
-reason = "milestone 1018: the design record moves to nifeos/record and is published as a website"
+reason = "milestone 1018 (the design record moves to nifeos/record and is published as a website)"
 
 [[moved]]
 old = "notes/"
@@ -49,7 +49,7 @@ reason = "milestone 1018: the record's own tooling leaves with it"
 old = "script/citations"
 new = "nifeos/record:script/citations"
 date = "2026-11-24"
-reason = "milestone 1018: the record's own tooling leaves with it"
+reason = "milestone 1018: the record half leaves; nife keeps the code half, which reads the record at basalt's pin"
 
 [[moved]]
 old = "helpers/roadmap_block.py"
