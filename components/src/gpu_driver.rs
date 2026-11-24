@@ -275,8 +275,9 @@ fn submit(direct_memory_access_phys: u64, req_len: u32) -> u32 {
     // **The completion is the used ring advancing, not the wakeup.** The device's interrupt line is
     // shared across every driver that ever holds this device, and a wakeup can be spurious,
     // coalesced, or a previous operator's leftover, so the used index is what decides (nifeos/record:notes/dma.md,
-    // the kill-mid-write section). The bound turns "no completion ever" into a legible failure
-    // instead of a hang the watchdog has to catch.
+    // the kill-mid-write section). The bound counts wake-ups, not time: a device that keeps raising
+    // its line without completing ends in a legible failure, and a device that never raises it
+    // leaves this process blocked in `interrupt_wait`, a hang only the watchdog catches.
     for _ in 0..64 {
         interrupt_wait(INTERRUPT); // blocks until the device raises its line
         let istatus = mr(INTERRUPT_STATUS);
