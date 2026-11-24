@@ -2118,7 +2118,7 @@ MUTEOF
 # to prefer it: `script/coverage`'s per-feature line is now belt and braces rather than the mechanism.
 #
 # **Not the same question as the four-list problem beside it**, which is worth saying because the two
-# read alike. Milestone 393, `nifeos/record:design/roadmap/0393-the-host-excluded-crate-set-lives-in-four-places.md`, is about
+# read alike. Milestone 393 (four files each record which crates cannot compile for the host), `nifeos/record:design/roadmap/0393-the-host-excluded-crate-set-lives-in-four-places.md`, is about
 # which CRATES cannot compile for the host, restated in four files where one derives it. This is
 # about a crate that compiles perfectly well and a feature of it that a single-package test run does
 # not turn on. Solving either leaves the other exactly where it was.
@@ -3355,7 +3355,7 @@ TOKEN = re.compile(r'\b((?:NIFE|CRICKER)_[A-Z0-9_]+)\b')
 # Names whose reader was deleted on purpose, each with where its retirement is recorded. See the
 # comment above the check: this is for a retirement, never for a rename.
 RETIRED = {
-    'NIFE_MCAST_PORT': 'milestone 298, 2026-09-15: the multicast prober and its runner hub (nifeos/record:notes/mdns.md)',
+    'NIFE_MCAST_PORT': 'milestone 298 (retire the multicast DNS responder), 2026-09-15: the multicast prober and its runner hub (nifeos/record:notes/mdns.md)',
 }
 
 live = set()

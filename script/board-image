@@ -180,7 +180,7 @@ board-image: --reboot builds a card that makes the board RESET ITSELF every two 
   * If the console is lost entirely, U-Boot's autoboot countdown on the next boot is the
     fallback, and rewriting the card is the one after that.
 
-  See nifeos/record:notes/soak.md, "The rebooting soak on radon, which is milestone 249's experiment".
+  See nifeos/record:notes/soak.md, "The rebooting soak on radon, which is milestone 249's experiment" (milestone 249: the boot lottery sampled by a person walking to the board).
 
 WARNING
 fi

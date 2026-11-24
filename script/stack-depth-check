@@ -6,7 +6,7 @@
 #
 #   - `script/stack-frame-check` measures ONE FRAME, statically, and gates it against the guard
 #     page. It cannot say which frames sit on top of each other, so ten legal frames still stack.
-#   - milestone 84's watermark (nifeos/record:notes/stack-high-water.md) measures the DEPTH THE SUITE REACHED,
+#   - milestone 84 (stack high-water: measure kernel stack depth), its watermark (nifeos/record:notes/stack-high-water.md) measures the DEPTH THE SUITE REACHED,
 #     at runtime. It sees only paths the suite exercised, so an unexercised deep chain is invisible.
 #
 # This is the third: **the deepest chain the binary can produce**, from the entry points a kernel

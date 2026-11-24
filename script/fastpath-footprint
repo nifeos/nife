@@ -130,7 +130,7 @@
 #   - **`arches` below is a hardcoded string and derives nothing.** All three supported
 #     architectures are in it today, so nothing is silently unmeasured, but a fourth ISA arriving
 #     will be measured here only when somebody remembers to type it. That is finding 11 of
-#     nifeos/record:notes/architecture-list-sweep.md and milestone 186 owns the mechanism; taking a hand-fix here
+#     nifeos/record:notes/architecture-list-sweep.md and milestone 186 (derive the architecture list) owns the mechanism; taking a hand-fix here
 #     would be a second hand-fix of the same defect. (The older text of this bug said the script
 #     gated two of three and that x86_64 had no baseline. Both were true when written and neither
 #     is now: x86_64 was widened in on 2026-08-27, `bench/fastpath-x86_64.txt` exists, and
