@@ -23,7 +23,7 @@ an unexplained cost. Above 5% is a lane to open.
     python3 helpers/baseline_drift.py --update     # fetch each week's reading on main; metrics.yml
 
 `script/metrics` imports it for the weekly series (`unexplained-drift.csv`), the status line on
-notes/project-metrics.md, and the generated appendix notes/project-metrics/baseline-drift.md.
+nifeos/record:notes/project-metrics.md, and the generated appendix notes/project-metrics/baseline-drift.md.
 
 Name: provisional, minted by milestone 415's lane on 2026-09-26. A shared python module under
 `helpers/`, outside `script/names`' scope, so its provenance is this paragraph. Refused
@@ -98,7 +98,7 @@ ARCHES = tuple(ANCHORS)
 TRIPWIRE_PCT = 10.0      # `cargo xtask bench --check`'s bound against the last floor
 WATCH_PCT = 5.0          # half the tripwire: unexplained drift past it is a lane to open
 # What explains a step, and what `main` measured each week. The second is the one input to
-# notes/project-metrics.md that git cannot restate: GitHub keeps a run's artifacts 90 days, so
+# nifeos/record:notes/project-metrics.md that git cannot restate: GitHub keeps a run's artifacts 90 days, so
 # `--update` commits each week's reading once and `script/metrics` restates everything else from it.
 # Both are read from the working tree, because metrics.yml runs `--update` and then `script/metrics`
 # before either is committed. Names provisional, minted 2026-10-22 (UTC) by
