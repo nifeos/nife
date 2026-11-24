@@ -152,6 +152,8 @@ def patterns(old):
         ('web-link', re.compile(r'github(?:\\?\.)com[/:](?P<n>%s)\b' % o)),
         ('org-literal', re.compile(
             r'(?:(?P<q>["\'])(?P<n>%s)(?P=q)|=\s*(?P<n2>%s)\b(?![/.-]))' % (o, o))),
+        # A stubbed API path flattened into a fixture file name: api_repos_<org>_<repo>_...
+        ('api-repo', re.compile(r'(?<=_repos_)(?P<n>%s)(?=_)' % o)),
         ('slug', re.compile(r'(?:(?<=:-)|(?<![\w.~/-]))(?P<n>%s)/(?=[\w.<{$*\[(-])' % o)),
     ]
 

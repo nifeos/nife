@@ -62,10 +62,10 @@ healthy() {
     printf '[{"status":"completed","conclusion":"success","createdAt":"%s"}]\n' "$(stamp -3600)" > "$fx/run_list"
     printf '[{"tagName":"fuzz-%s"}]\n' "$TODAY" > "$fx/release_list"
     echo '[]' > "$fx/issue_list"
-    echo '[]' > "$fx/api_repos_nifeos_nife_security-advisories"
-    printf '{"sha":"%s"}\n' "$SHA" > "$fx/api_repos_nifeos_nife_commits_main"
+    echo '[]' > "$fx/api_repos_partsfoundry_nife_security-advisories"
+    printf '{"sha":"%s"}\n' "$SHA" > "$fx/api_repos_partsfoundry_nife_commits_main"
     echo '[{"type":"required_status_checks","parameters":{"required_status_checks":[{"context":"lint"}]}}]' \
-        > "$fx/api_repos_nifeos_nife_rules_branches_main"
+        > "$fx/api_repos_partsfoundry_nife_rules_branches_main"
     checks green
     echo active > "$fx/is_active"
     printf 'UnitFileState=enabled\nActiveState=active\nNextElapseUSecRealtime=Tue 14:00:00 UTC\n' > "$fx/show_timer"
@@ -86,7 +86,7 @@ checks() {
     [ "$state" = pending ] && { concl=null; status=in_progress; }
     printf '{"total_count":1,"check_runs":[{"name":"lint","head_sha":"%s","status":"%s","conclusion":%s,"app":{"slug":"github-actions","id":15368}}]}\n' \
         "$SHA" "$status" "$( [ "$concl" = null ] && echo null || echo "\"$concl\"")" \
-        > "$fx/api_repos_nifeos_nife_commits_${SHA}_check-runs_per_page_100_page_1"
+        > "$fx/api_repos_partsfoundry_nife_commits_${SHA}_check-runs_per_page_100_page_1"
 }
 
 # run MODE-ARGS...: sets rc and out.
@@ -128,10 +128,10 @@ healthy; printf '[{"tagName":"fuzz-%s"}]\n' "$OLD" > "$fx/release_list"
 run; expect "fuzz release exists" PASS; expect "daily publish is on" FAIL
 healthy; echo '[{"number":7},{"number":9}]' > "$fx/issue_list"
 run; expect "loop-broken issues" FAIL; printf '%s\n' "$out" | grep -q '2 open issue' || fail "issue count not printed"
-healthy; echo '[{"ghsa_id":"GHSA-xxxx-xxxx-xxxx","summary":"SECRET-DETAIL"}]' > "$fx/api_repos_nifeos_nife_security-advisories"
+healthy; echo '[{"ghsa_id":"GHSA-xxxx-xxxx-xxxx","summary":"SECRET-DETAIL"}]' > "$fx/api_repos_partsfoundry_nife_security-advisories"
 run; expect advisories PASS
 printf '%s\n' "$out" | grep -q 'SECRET-DETAIL\|GHSA' && fail "an advisory detail was printed"
-healthy; rm "$fx/api_repos_nifeos_nife_security-advisories"
+healthy; rm "$fx/api_repos_partsfoundry_nife_security-advisories"
 run; expect advisories UNKNOWN; exit_is 0
 healthy; checks red; run; expect "host commit" FAIL
 healthy; checks pending; run; expect "host commit" UNKNOWN; exit_is 0

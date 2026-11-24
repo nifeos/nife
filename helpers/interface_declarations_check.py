@@ -231,7 +231,8 @@ def crate_interfaces(crate, src):
     return out
 
 
-NIFEOS_GIT = 'git+https://github.com/partsfoundry/'
+# partsfoundry, or nifeos, its former name, which a lockfile may still say while the rename lands.
+NIFEOS_GIT = ('git+https://github.com/partsfoundry/', 'git+https://github.com/nifeos/')
 
 
 def metadata():
