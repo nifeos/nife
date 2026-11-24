@@ -1,6 +1,6 @@
 # Mutation testing: the appendices
 
-[`notes/mutation-testing.md`](../mutation-testing.md) is the page to read; it is written so a reader
+[`notes/mutation-testing.md`](https://github.com/nifeos/record/blob/main/notes/mutation-testing.md) is the page to read; it is written so a reader
 can act without opening anything here, and its appendix table is the index. These files hold the
 per-crate triage and the dated censuses behind the current numbers.
 

@@ -41,9 +41,9 @@ BUGS
   rather than letting it read nothing and pass.
 - `helpers/name_census.py` and `helpers/name_release.py` do not ask here. The census takes one
   path list and one `read` callback over a single tree, and reads `name_rules.RULES_DOC` and the
-  documents' own blocks through it; `script/metrics` hands it each week's commit the same way. A
-  record path read through that callback stays in the code's tree, so the census needs a second
-  reader for the record's paths before it can read the record anywhere else.
+  documents' own blocks through it. `script/names` hands it a callback that reads `RULES_DOC`
+  here. `script/metrics` hands it each week's commit, and a commit after the removal holds no
+  copy, so that census needs a second reader for the record's paths.
 """
 
 import os
