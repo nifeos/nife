@@ -7,7 +7,7 @@
 //! spawn site and not in the entry (DECISIONS §43 (reading the clock is a page)). A document that
 //! does not parse is an [`Error`] with its line. `every` and `at-boot` entries run on the monotonic
 //! counter; a calendar line ([`recurrence`]) needs the wall clock. No IO and no system calls, so it is
-//! all host-tested; the program is `components/src/timetable.rs`. See `nifeos/record:notes/scheduled-execution.md`.
+//! all host-tested; the program is `components/src/timetable.rs`. See `partsfoundry/record:notes/scheduled-execution.md`.
 
 //! # The document
 //!

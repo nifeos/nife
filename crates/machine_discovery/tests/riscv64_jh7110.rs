@@ -1,6 +1,6 @@
 //! The JH7110's disabled monitor core, on the host, before the board ever runs a byte of ours.
 //!
-//! The VisionFive 2 prep (`nifeos/record:notes/visionfive2.md`). `fixtures/jh7110.dts` is hand-written, modeled on
+//! The VisionFive 2 prep (`partsfoundry/record:notes/visionfive2.md`). `fixtures/jh7110.dts` is hand-written, modeled on
 //! the mainline `jh7110.dtsi` the note cites, and this file holds the `status = "disabled"` half
 //! of what it witnesses: the S7 monitor core's ISA and MMU must not narrow the machine record, and
 //! the roster must still know the hart exists and may not be started. The same fixture's PLIC
@@ -93,7 +93,7 @@ fn the_cpu_list_knows_the_s7_is_unusable() {
 /// **The DW-8250's shape, straight off the serial node.** These are exactly the reads
 /// `console::configure_from_dtb` performs (reg-shift, reg-io-width, clock-frequency, and the
 /// compatible that turns on the busy quirk), against the same node name the kernel pins
-/// (`serial@10000000`), so the UART facts in `nifeos/record:notes/visionfive2.md` have a machine-readable witness
+/// (`serial@10000000`), so the UART facts in `partsfoundry/record:notes/visionfive2.md` have a machine-readable witness
 /// and the kernel's hardcoded node name has one too.
 #[test]
 fn the_jh7110_serial_node_states_the_dw8250_shape() {

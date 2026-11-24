@@ -3,7 +3,7 @@
 //! The answer is `riscv,isa-extensions` and `riscv,isa-base` (Linux 6.6 and later) or the older
 //! single `riscv,isa` string; [`Isa::from_device_tree`] parses both. [`Isa::common`] is the
 //! intersection over every hart that may speak for the machine and [`Isa::any`] the union, and
-//! `mmu-type` is the narrowest any such hart declares. See `nifeos/record:notes/isa-discovery.md`.
+//! `mmu-type` is the narrowest any such hart declares. See `partsfoundry/record:notes/isa-discovery.md`.
 
 //! # BUGS
 //!
@@ -842,7 +842,7 @@ fn strip_base_prefix(value: &[u8]) -> &[u8] {
 /// - `None`: neither letter, which is silence, not absence.
 ///
 /// Only the run before the first `_` is scanned, so `_sstc` never reads as a bare `s`. See
-/// `nifeos/record:notes/visionfive2/hart-roster-stops.md`.
+/// `partsfoundry/record:notes/visionfive2/hart-roster-stops.md`.
 pub fn supervisor_mode_claim(value: &[u8]) -> Option<bool> {
     let single_letters = strip_base_prefix(value)
         .split(|&b| b == b'_')

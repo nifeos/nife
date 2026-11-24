@@ -1,12 +1,12 @@
 //! **Many boots in a log, and what the placement lottery drew each time.**
 //!
 //! [`progress`](crate::progress) reads one boot; [`tally`] reads a capture of many and reports how
-//! often each arrangement came up, with the rate beside every draw. `nifeos/record:notes/soak/rebooting-soak.md`
-//! says why the distribution is wanted, and `nifeos/record:notes/soak/boot-lottery.md` holds the draws so far.
+//! often each arrangement came up, with the rate beside every draw. `partsfoundry/record:notes/soak/rebooting-soak.md`
+//! says why the distribution is wanted, and `partsfoundry/record:notes/soak/boot-lottery.md` holds the draws so far.
 //!
 //! A core is **clean** when it carries at least one responder or caller and no grinder: a grinder
 //! starves the IPC threads beside it, and a core with no IPC thread is idle to the round-trip rate
-//! (`nifeos/record:notes/soak/radon-2026-09-03.md`). A draw is judged on the **last** census it printed, because
+//! (`partsfoundry/record:notes/soak/radon-2026-09-03.md`). A draw is judged on the **last** census it printed, because
 //! the spawn census is the lottery's ticket and the settled one is what the machine ran.
 
 //! # BUGS
@@ -218,7 +218,7 @@ fn field(line: &str, name: &str) -> Option<u64> {
 impl Series {
     /// **The distribution, and the two lines of arithmetic that are the milestone's whole result.**
     ///
-    /// Plain text on purpose: this goes into `nifeos/record:notes/soak.md` beside the nine hand-drawn boots, and a
+    /// Plain text on purpose: this goes into `partsfoundry/record:notes/soak.md` beside the nine hand-drawn boots, and a
     /// table a person can paste is worth more than a format a program would have to re-read.
     pub fn report(&self) -> String {
         let mut out = String::new();
@@ -297,7 +297,7 @@ impl Series {
         let _ = writeln!(
             out,
             "  A count of draws is not a probability. It is this board, this firmware and this \
-             build, and DECISIONS 138 is where the mechanism lives; see nifeos/record:notes/soak.md."
+             build, and DECISIONS 138 is where the mechanism lives; see partsfoundry/record:notes/soak.md."
         );
         out
     }
@@ -327,7 +327,7 @@ mod tests {
 
     /// **The clean-core count, against the arrangement radon actually printed.**
     ///
-    /// This census is quoted from `nifeos/record:notes/soak.md`'s record of the 17:06 run's settled arrangement,
+    /// This census is quoted from `partsfoundry/record:notes/soak.md`'s record of the 17:06 run's settled arrangement,
     /// which is the only one this project has off a board. The placement is that run's, verbatim;
     /// the marker prefix is today's, because this is a parser input rather than a record and a
     /// board printed `soak-census:` before milestone 297 renamed it. Three of the four grinders are on core
@@ -371,7 +371,7 @@ mod tests {
 
     /// **The last census wins, because the spawn one is the ticket and not the result.**
     ///
-    /// The spawn block here has two clean cores and the re-census has none. `nifeos/record:notes/soak.md` records
+    /// The spawn block here has two clean cores and the re-census has none. `partsfoundry/record:notes/soak.md` records
     /// that on radon the arrangement converges once, about twenty-five seconds in, and then holds;
     /// judging on the spawn block would misattribute every run.
     #[test]

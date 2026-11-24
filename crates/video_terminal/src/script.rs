@@ -17,7 +17,7 @@ pub const COLS: u32 = 80;
 pub const ROWS: u32 = 24;
 
 /// **What the application prints.** Delivered as `OPERATION_WRITE`, the terminal contract's application
-/// half (`nifeos/record:notes/terminal-contract.md`), exactly as a program printing to a serial console would.
+/// half (`partsfoundry/record:notes/terminal-contract.md`), exactly as a program printing to a serial console would.
 ///
 /// Chosen so the picture is hard to produce by accident: four rows, five renditions (a 24-bit
 /// Solarized yellow that no indexed colour matches among them), a `\r\n` pair as

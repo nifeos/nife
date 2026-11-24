@@ -7,7 +7,7 @@
 //! per victim; [`Slot::take`] is an acquire swap to zero, so a take with no hand-off still lets the
 //! next thief in. The pair carries nothing yet and makes a request field safe the day one is
 //! added; loom falsifies the relaxed spelling. A failed claim is relaxed: the loser acts on
-//! nothing. See `nifeos/record:notes/interleaving/what-was-modeled.md`, "`crates/work_steal_slot`, the pilot".
+//! nothing. See `partsfoundry/record:notes/interleaving/what-was-modeled.md`, "`crates/work_steal_slot`, the pilot".
 
 //! # BUGS
 //!
@@ -28,7 +28,7 @@
 // which records every access and lets the model checker replay the protocol under every
 // interleaving and every reordering the C11 model permits; under anything else it is the real one
 // and this crate is exactly what the kernel compiles. Nothing but `script/interleaving-check` sets
-// the cfg. See `nifeos/record:notes/interleaving.md`.
+// the cfg. See `partsfoundry/record:notes/interleaving.md`.
 #[cfg(not(loom))]
 use core::sync::atomic::{AtomicU32, Ordering};
 
@@ -226,7 +226,7 @@ mod tests {
 mod interleavings {
     //! Every interleaving of the steal handshake, and every reordering C11 permits within it.
     //!
-    //! Run with `script/interleaving-check`. See `nifeos/record:notes/interleaving.md` for the method, what this
+    //! Run with `script/interleaving-check`. See `partsfoundry/record:notes/interleaving.md` for the method, what this
     //! model cannot reach, and what it cost.
 
     use loom::cell::UnsafeCell;
@@ -244,7 +244,7 @@ mod interleavings {
     /// afterwards. The flag is a *real* atomic, deliberately: it lives outside the model and
     /// accumulates across every execution loom runs, where a loom atomic would be reset by each.
     ///
-    /// See `nifeos/record:notes/verification.md`'s non-vacuity section for why this is not optional.
+    /// See `partsfoundry/record:notes/verification.md`'s non-vacuity section for why this is not optional.
     struct Reached(core::sync::atomic::AtomicBool);
 
     impl Reached {
@@ -432,7 +432,7 @@ mod interleavings {
     ///
     /// The kernel has one victim per slot today (`serve_steal_request` runs on the owning core
     /// with interrupts masked), so this guards the discipline rather than the running code: with
-    /// the swap replaced by a load and a store, only this harness fails. See `nifeos/record:notes/interleaving.md`,
+    /// the swap replaced by a load and a store, only this harness fails. See `partsfoundry/record:notes/interleaving.md`,
     /// "And the pilot found nothing, which is its own result".
     #[test]
     fn a_second_victim_cannot_serve_the_same_request() {
@@ -471,7 +471,7 @@ mod interleavings {
 
     /// The relaxed twin of [`Slot`], which exists only to be broken.
     ///
-    /// A harness that cannot be made to fail is not evidence (`nifeos/record:notes/verification.md`'s rule, applied
+    /// A harness that cannot be made to fail is not evidence (`partsfoundry/record:notes/verification.md`'s rule, applied
     /// to a model checker instead of a solver). This is the same protocol with the pairing removed.
     struct RelaxedSlot {
         inner: AtomicU32,

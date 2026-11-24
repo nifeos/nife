@@ -6,7 +6,7 @@
 //! [`provision::PUT`] and [`verify::VERIFY`] are both opcode 1, because the endpoint gives a number
 //! its meaning. Every reply is one word with [`NO_DATA`] second, and [`MISMATCH`] answers a wrong
 //! secret and an unknown identity alike, so the verify endpoint is neither a decryption oracle nor
-//! an identity oracle. See `nifeos/record:notes/credentials.md` and `nifeos/record:notes/credentials/contract.md`.
+//! an identity oracle. See `partsfoundry/record:notes/credentials.md` and `partsfoundry/record:notes/credentials/contract.md`.
 //!
 //! Limitation, recorded by §172 (whether a verify endpoint names the identity it asks about): a
 //! verify request names the identity it asks about, so a holder of the verify endpoint can test a
@@ -99,7 +99,7 @@ pub const FULL: u64 = 5;
 /// The service could not obtain a salt and therefore stored nothing. Provisioning only. Distinct
 /// from [`MALFORMED`], which is the provisioner's bug; serving anyway with a made-up salt is the
 /// silent degradation §44 (entropy is a capability, and the refusal is loud) forbids. See
-/// `nifeos/record:notes/credentials/contract.md`.
+/// `partsfoundry/record:notes/credentials/contract.md`.
 pub const NO_ENTROPY: u64 = 6;
 
 /// The largest reply code. Everything at or below this is a reply; see [`code`].
@@ -248,12 +248,12 @@ pub const fn is_authenticated(r0: u64) -> bool {
 
 /// The one login the gates share, so several programs agree on an account down to the byte. It is
 /// the account section 4.2.1 of [MS-NLMP] publishes, so a gate asserts against numbers Microsoft
-/// printed. A fixture, not a deployment: a real share's account must never be these (`nifeos/record:notes/smb.md`'s
-/// BUGS). See `nifeos/record:notes/credentials/contract.md`.
+/// printed. A fixture, not a deployment: a real share's account must never be these (`partsfoundry/record:notes/smb.md`'s
+/// BUGS). See `partsfoundry/record:notes/credentials/contract.md`.
 pub mod fixture {
     /// The resource the SMB gate's share authenticates against: the name its NTLM key is stored
     /// under. A *resource* rather than an account, which is milestone 65's model
-    /// (`nifeos/record:design/roadmap/0065-secrets-service.md`): a secret is scoped to the thing it opens.
+    /// (`partsfoundry/record:design/roadmap/0065-secrets-service.md`): a secret is scoped to the thing it opens.
     pub const SMB_RESOURCE: &[u8] = b"backups-alice";
     /// The password behind it. Published by Microsoft; secret to nobody.
     pub const SMB_PASSWORD: &[u8] = b"Password";
@@ -266,7 +266,7 @@ pub mod fixture {
     /// The three people every credential fixture in this tree authenticates (milestone 293 (a role
     /// that differs only in its credentials is an argument)), as identity and secret pairs rather
     /// than parallel arrays, so an insertion cannot pair `bob` with `carol`'s password. `carol` has
-    /// no home subtree in `kernel::user::login_tests`. See `nifeos/record:notes/credentials/contract.md`.
+    /// no home subtree in `kernel::user::login_tests`. See `partsfoundry/record:notes/credentials/contract.md`.
     pub const PEOPLE: [(&[u8], &[u8]); 3] = [
         (b"alice", b"correct horse battery staple"),
         (b"bob", b"a different secret entirely"),
@@ -621,7 +621,7 @@ mod proofs {
     /// outside those ranges the packing is deliberately lossy. On its own it is blind to a swap of
     /// both length fields in encoder and decoder (milestone 213 (a harness that re-implements the
     /// code instead of calling it proves nothing about the code)); the parse proof above catches
-    /// that, so weakening it uncovers the wire format. See `nifeos/record:notes/credentials/contract.md`.
+    /// that, so weakening it uncovers the wire format. See `partsfoundry/record:notes/credentials/contract.md`.
     /// Falsification: replayable `crates/credential_contract/falsifications/proofs.a_request_word_round_trips_every_field.patch`
     #[kani::proof]
     fn a_request_word_round_trips_every_field() {

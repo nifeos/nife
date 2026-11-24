@@ -438,7 +438,7 @@ fn the_reboot_preview_names_the_reboot_object_and_nothing_else_has_it() {
 fn exactly_three_programs_declare_entropy() {
     // The manifest table is the whole of who may draw random bytes here (§44 (entropy is a
     // capability)), so a new declaring program must change this count. `std_exerciser` checks
-    // `SystemRng`; `jig`'s TLS handshake draws its key share (`nifeos/record:notes/shell/caps-preview.md`).
+    // `SystemRng`; `jig`'s TLS handshake draws its key share (`partsfoundry/record:notes/shell/caps-preview.md`).
     let mut declared = 0;
     for &p in Program::ALL {
         if p.manifest().entropy {

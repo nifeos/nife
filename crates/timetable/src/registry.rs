@@ -225,7 +225,7 @@ impl<'a> Registry<'a> {
     ///
     /// Computable at registration, so the printed plan names every program this process will ever
     /// start, a host test holds that against the document, and a spawn site can narrow the archive
-    /// it hands over to this set. See `nifeos/record:notes/scheduled-execution/archive-narrowing.md`.
+    /// it hands over to this set. See `partsfoundry/record:notes/scheduled-execution/archive-narrowing.md`.
     pub fn programs(&self) -> u64 {
         let mut set = 0u64;
         for r in self.rows() {
@@ -261,7 +261,7 @@ impl<'a> Registry<'a> {
 
     /// **Read the wall clock into the registry**, once per pass, before [`due`](Registry::due).
     ///
-    /// S3 with the `SET` fix, as ruled with G5 (`nifeos/record:notes/scheduled-execution/calendar-grammar-g5.md`):
+    /// S3 with the `SET` fix, as ruled with G5 (`partsfoundry/record:notes/scheduled-execution/calendar-grammar-g5.md`):
     ///
     /// - An unknown clock (`None`) leaves every calendar row dormant: nothing arms or fires.
     /// - A new generation is a step, or the first known reading. Every calendar row is re-armed to

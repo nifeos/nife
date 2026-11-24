@@ -4,8 +4,8 @@
 //! host and a channel; an [`Entry`]'s [`Location`]s are HTTPS only, tried before the repository's
 //! own `targets/` ([`Index::sources`]), and never reach a private address ([`public_address`]).
 //! The encoding is a stand-in that a TUF client replaces in [`Index::parse`] alone, and [`accept`]
-//! is the installer's own check. See `nifeos/record:notes/packages/the-index-format.md` for calef's rulings and
-//! `nifeos/record:notes/packages/the-index-crate.md`.
+//! is the installer's own check. See `partsfoundry/record:notes/packages/the-index-format.md` for calef's rulings and
+//! `partsfoundry/record:notes/packages/the-index-crate.md`.
 //!
 //! # EXAMPLES
 //!
@@ -221,7 +221,7 @@ impl<'a> Location<'a> {
     /// IPv4 address [`public_address`] admits, and the slice must not be empty, or the location is
     /// refused. The returned [`CheckedLocation`] holds that very slice: its addresses are the only
     /// ones a client dials, and its host name is for TLS alone, never resolved again, which closes
-    /// DNS rebinding (calef, #1901, 2026-10-10 UTC). See `nifeos/record:notes/packages/the-index-crate.md`.
+    /// DNS rebinding (calef, #1901, 2026-10-10 UTC). See `partsfoundry/record:notes/packages/the-index-crate.md`.
     pub fn check<'r>(
         &self,
         resolved: &'r [SocketAddr],
@@ -346,7 +346,7 @@ impl core::fmt::Display for LocationRefusal<'_> {
 /// number (WHATWG's test: decimal digits, or `0x` and hex) but that is not canonical: `0010.0.0.1`,
 /// `0x0a.0.0.1`, `10.1`, `167772161`, `10.0.0.0x1`. Readers disagree on those (CVE-2021-29921,
 /// CVE-2021-29923), so they are refused outright (calef, #2020, 2026-10-12 UTC). [`is_host`] has
-/// already admitted `host`. See `nifeos/record:notes/packages/the-index-format.md`.
+/// already admitted `host`. See `partsfoundry/record:notes/packages/the-index-format.md`.
 fn ipv4_literal(host: &str) -> Result<Option<[u8; 4]>, LocationRefusal<'_>> {
     let last = host.rsplit('.').next().unwrap_or(host);
     let hex = last.strip_prefix("0x").or_else(|| last.strip_prefix("0X"));
@@ -582,7 +582,7 @@ pub fn accept<'b>(entry: &Entry<'_>, bytes: &'b [u8]) -> Result<Installable<'b>,
 /// program)). A version is dpkg's upstream version, with no epoch or revision.
 /// [`check`](version::check) refuses whatever dpkg refuses or warns about, where the index is read
 /// ([`crate::Index::parse`]); [`compare`](version::compare) is dpkg's `verrevcmp`. See
-/// `nifeos/record:notes/packages/the-index-crate.md`.
+/// `partsfoundry/record:notes/packages/the-index-crate.md`.
 ///
 /// # EXAMPLES
 ///
@@ -823,7 +823,7 @@ pub mod fixture {
 // An image's index sources (milestone 801 (packages over the internet)): where an image says its
 // distribution's index is, and the root its TLS must chain to, read from the image's
 // `package_index_sources` archive entry ([`SOURCES_ENTRY`]). The format is on [`Sources`] and in
-// `nifeos/record:notes/packages/the-index-crate.md`. Every name in this section is provisional.
+// `partsfoundry/record:notes/packages/the-index-crate.md`. Every name in this section is provisional.
 
 /// The archive entry an image's index sources travel in, packed before the measurement table
 /// so the table vouches for it, as `package_archive::CATALOG` is. Name: provisional.
@@ -833,7 +833,7 @@ pub const SOURCES_ENTRY: &str = "package_index_sources";
 /// `image_index_sources` chooses it or the test image's). `basalt.nifeos.org` (GitHub Pages, calef,
 /// 2026-10-12 UTC) on 443, pinned to ISRG Root X1 as §250 (an image names its distribution's
 /// package index) rules, then `basalt.crickertech.com` on another registrable domain (clause 6).
-/// See `nifeos/record:notes/packages/the-index-crate.md`.
+/// See `partsfoundry/record:notes/packages/the-index-crate.md`.
 ///
 /// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`. The
 /// host label `basalt.crickertech.com` is provisional too: calef chose the domain, and `basalt.`
@@ -911,7 +911,7 @@ impl Root<'_> {
 /// location-root <name> [<root>]                     a further root for listed locations
 /// ```
 ///
-/// Blank lines and `#` comments are skipped. See `nifeos/record:notes/packages/the-index-crate.md`.
+/// Blank lines and `#` comments are skipped. See `partsfoundry/record:notes/packages/the-index-crate.md`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Sources<'a> {
     repositories: [Option<Configured<'a>>; MAXIMUM_REPOSITORIES],

@@ -1,12 +1,12 @@
 //! **Credentials: an identity, and a secret you can check but never read back**
-//! (`nifeos/record:notes/credentials.md`). The pure logic behind the credential service: how a secret becomes a
+//! (`partsfoundry/record:notes/credentials.md`). The pure logic behind the credential service: how a secret becomes a
 //! record, how a presented secret is checked against one, and how a record is encoded. No system calls
 //! and no allocation. The wire contract is `credential_contract`; the service is
 //! `components/src/credentialer.rs`. A [`Record`] is an identity, a random 16-byte salt, three
 //! cost parameters and a 32-byte **Argon2id** tag (RFC 9106): nothing to decrypt and no read path,
 //! so recovering a secret means finding a preimage, which the memory-hard cost prices. RustCrypto's
 //! `argon2`, run against RFC 9106's known-answer vectors, because a password KDF's correctness is
-//! won by exposure (§46 (thin primitives or whole subsystems); `nifeos/record:notes/credentials/argon2id.md`).
+//! won by exposure (§46 (thin primitives or whole subsystems); `partsfoundry/record:notes/credentials/argon2id.md`).
 
 //! Three things a naive verifier would not do:
 //!
@@ -19,7 +19,7 @@
 
 //! # BUGS
 //!
-//! - No persistence: a [`Store`] dies with its process (secrets at rest: `nifeos/record:notes/credentials.md`).
+//! - No persistence: a [`Store`] dies with its process (secrets at rest: `partsfoundry/record:notes/credentials.md`).
 //! - No rehash when the cost moves, and no lockout or rate limiting.
 //!
 //! Name: ratified 2026-09-13 (calef). It shares `credentialer` with the program because it is that
@@ -100,7 +100,7 @@ pub enum Verdict {
 /// **These are a policy, not a constant of nature**, and the right values depend on the machine
 /// and on how long a login is allowed to take. [`Cost::DEFAULT`] is what this tree wires; the
 /// reasoning, the measurement, and the honest gap against OWASP's recommendation are in
-/// `nifeos/record:notes/credentials.md`.
+/// `partsfoundry/record:notes/credentials.md`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Cost {
     /// Memory in KiB: RFC 9106's memory size `m`.
@@ -125,7 +125,7 @@ impl Cost {
     /// axis, deliberately: the machine under test is 128 MiB of QEMU RAM under TCG, and 4 MiB with
     /// three passes keeps a verify inside a second there while an attacker's GPU still has to find
     /// 4 MiB per guess, which is where a memory-hard KDF beats PBKDF2
-    /// (`nifeos/record:notes/credentials/argon2id.md`).
+    /// (`partsfoundry/record:notes/credentials/argon2id.md`).
     ///
     /// **Raise it on real hardware.** The parameters travel in the record ([`Record::cost`]) rather
     /// than being compiled in, so raising them is a provisioning change.
@@ -281,7 +281,7 @@ impl Record {
     const MAGIC: [u8; 4] = *b"CRED";
 
     /// Version 3 drops the NTLM half, removed 2026-08-30 with the SMB implementation it existed
-    /// to serve (`nifeos/record:notes/smb.md`). Version 2's records carried an `NTOWFv2` and a `has_ntlm` flag in
+    /// to serve (`partsfoundry/record:notes/smb.md`). Version 2's records carried an `NTOWFv2` and a `has_ntlm` flag in
     /// bytes this version does not have, so the version byte moves rather than the format
     /// shrinking quietly. Nothing in the tree writes a record to a disk, so there is no migration
     /// to write; when there is, this is the number it keys off.
@@ -335,7 +335,7 @@ impl Record {
     /// Serialise. **This writes the tag**, which is not a secret in the sense the password is (it
     /// is a one-way image of it), but is still the material an offline cracking attempt needs. A
     /// caller that encodes a record has taken on the job of protecting the bytes; nothing in this
-    /// tree calls this on a path that leaves the process, and `nifeos/record:notes/credentials.md` is explicit
+    /// tree calls this on a path that leaves the process, and `partsfoundry/record:notes/credentials.md` is explicit
     /// that secrets at rest are unsolved.
     pub fn encode(&self) -> [u8; Self::ENCODED_LEN] {
         let mut out = [0u8; Self::ENCODED_LEN];
@@ -345,7 +345,7 @@ impl Record {
         // out[6] and out[7] stay zero: reserved, and checked zero on decode so the format has
         // exactly one encoding per record and a future field cannot be smuggled past an old
         // reader. out[6] held `has_ntlm` in version 2 (removed 2026-08-30 with the SMB
-        // implementation; `nifeos/record:notes/smb.md`), which is why the version byte moved to 3.
+        // implementation; `partsfoundry/record:notes/smb.md`), which is why the version byte moved to 3.
         let mut o = 8;
         out[o..o + MAXIMUM_IDENTITY].copy_from_slice(&self.id);
         o += MAXIMUM_IDENTITY;
@@ -665,7 +665,7 @@ mod tests {
     /// deliberately expensive per derivation, an interpreter multiplies that by about a thousand,
     /// and the store tests derive dozens of times. The paths are identical at any cost, only the
     /// block count shrinks. The known-answer vector tests do NOT use this helper; their costs are
-    /// pinned by the published answers and stay as published (`nifeos/record:notes/undefined-behavior.md`).
+    /// pinned by the published answers and stay as published (`partsfoundry/record:notes/undefined-behavior.md`).
     fn cheap() -> Cost {
         if cfg!(miri) {
             Cost::new(8, 1, 1).unwrap()
@@ -1155,7 +1155,7 @@ mod tests {
         );
     }
     // The tests from here down each pin something milestone 85's mutation run showed nothing
-    // pinned. See `nifeos/record:notes/mutation-testing.md`.
+    // pinned. See `partsfoundry/record:notes/mutation-testing.md`.
 
     /// The length guards, boundary by boundary: every existing test used either a short name or
     /// one past the limit, so `>` could rot to `>=` (refusing the longest legal identity) with

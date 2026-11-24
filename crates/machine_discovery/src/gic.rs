@@ -6,7 +6,7 @@
 //! whose binding this kernel does not drive is a [`Refusal`]. [`Gic::confirm`] checks it against
 //! the architecture revision the kernel read from the hardware (`GICD_PIDR2.ArchRev` for a GICv3,
 //! `GICC_IIDR.ArchitectureVersion` for a GICv2), so a tree that names the wrong version fails at
-//! boot. See `notes/machine-discovery.md` ("The GIC") and `nifeos/record:notes/interrupts.md`.
+//! boot. See `notes/machine-discovery.md` ("The GIC") and `partsfoundry/record:notes/interrupts.md`.
 
 //! `notes/machine-discovery.md` ("The GIC") says why `ID_AA64PFR0_EL1.GIC` is not a fact here.
 

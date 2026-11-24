@@ -208,7 +208,7 @@ impl<T: Node> Notification<T> {
     /// ([`SignalVerdict::Counted`]).
     ///
     /// Zero bits is [`SignalVerdict::Empty`] and changes nothing, for the reason
-    /// `nifeos/record:notes/notification-objects.md` gives.
+    /// `partsfoundry/record:notes/notification-objects.md` gives.
     ///
     /// Name: ratified 2026-11-21 (UTC).
     pub fn signal(&mut self, bits: u64, bound_receiving: bool) -> SignalVerdict<T> {

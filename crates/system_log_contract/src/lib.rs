@@ -6,8 +6,8 @@
 //!   the unbadged intake capability, which only the spawner holds.
 //! - [`read`]: how a reader asks for records, and the shared page they land in as JSONL.
 //!
-//! A writer speaks the byte sink (`nifeos/byte_sink_contract`), not this crate. See
-//! `nifeos/record:notes/system-log.md`, "Attribution".
+//! A writer speaks the byte sink (`partsfoundry/byte_sink_contract`), not this crate. See
+//! `partsfoundry/record:notes/system-log.md`, "Attribution".
 
 //! # BUGS
 //!
@@ -343,12 +343,12 @@ pub mod kernel_ring {
     //!
     //! Every word is an `AtomicU64`, and a slot is a seqlock whose sequence word is the record's
     //! `seq`: the writer stores [`BUSY`], then the body, then the `seq`, and a reader that sees the
-    //! same `seq` before and after its copy has a record nobody touched. See `nifeos/record:notes/system-log.md`,
+    //! same `seq` before and after its copy has a record nobody touched. See `partsfoundry/record:notes/system-log.md`,
     //! "The kernel ring".
 
     //! # BUGS
     //!
-    //! - 63 records, not the 180 lines §242 (a system log) sized 16 KiB for; `nifeos/record:notes/system-log.md`.
+    //! - 63 records, not the 180 lines §242 (a system log) sized 16 KiB for; `partsfoundry/record:notes/system-log.md`.
 
     use core::sync::atomic::{AtomicU64, Ordering, fence};
 
@@ -567,7 +567,7 @@ pub mod kernel_ring {
 /// [`OPERATION_KERNEL_LINE`](console::OPERATION_KERNEL_LINE) with the count in the low bits, which
 /// the console never acknowledges. [`Inserter`](console::Inserter) writes a kernel line only at
 /// the start of a terminal line, and [`OPERATION_FLUSH`](console::OPERATION_FLUSH) forces queued
-/// lines out. See `nifeos/record:notes/system-log.md`, "Kernel lines on the console".
+/// lines out. See `partsfoundry/record:notes/system-log.md`, "Kernel lines on the console".
 pub mod console {
     /// A chunk of a kernel line: `OPERATION_KERNEL_LINE << 56 | count`, bytes in the next two words.
     pub const OPERATION_KERNEL_LINE: u64 = 0x4b;

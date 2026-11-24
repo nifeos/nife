@@ -482,7 +482,7 @@ fn changing_a_mapping_is_forced_through_break_before_make() {
 /// costs no new frames.
 ///
 /// The flip side: tearing down a whole address space by `unmap` would leak these tables. The
-/// kernel never does that; it frees the recorded frame set wholesale (`nifeos/record:notes/teardown.md`).
+/// kernel never does that; it frees the recorded frame set wholesale (`partsfoundry/record:notes/teardown.md`).
 #[test]
 fn unmap_then_map_reuses_the_intermediate_tables() {
     let pool = Pool::new(3); // exactly one chain of L1+L2+L3

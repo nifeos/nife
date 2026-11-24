@@ -7,7 +7,7 @@
 //! architectures: no lock is needed. The wakes array (milestone 221 (the soak never crosses cores,
 //! so build the hook that makes it)) stands apart from the round-trip total, a different quantity.
 //! The anomaly counters are the kernel's and stay in `sched`'s per-core trace counters, out of the
-//! subject's reach. See `nifeos/record:notes/soak.md`, "The shape".
+//! subject's reach. See `partsfoundry/record:notes/soak.md`, "The shape".
 
 //! # BUGS
 //!
@@ -41,7 +41,7 @@
 
 /// Where the kernel maps the page in every worker's address space.
 ///
-/// A pair page on the address-space map (`nifeos/address_space_layout`), the same neighbourhood
+/// A pair page on the address-space map (`partsfoundry/address_space_layout`), the same neighbourhood
 /// `program_table::job_channel_page`'s window uses.
 pub const VA: u64 = address_space_layout::pair_page(0x0020_0000);
 

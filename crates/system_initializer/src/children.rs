@@ -1,6 +1,6 @@
 //! The builders: the thin shapes over the ABI that make one child each (a grant, a caretaker, the
 //! network stack, a graphical terminal session, the terminal), and `reclaim`. Why caretakers and
-//! sessions are built and reclaimed the way they are is in `nifeos/record:notes/system-initializer/children.md`.
+//! sessions are built and reclaimed the way they are is in `partsfoundry/record:notes/system-initializer/children.md`.
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
 
@@ -84,7 +84,7 @@ fn grant_page(own_ut: u64, region: u64, name: &[u8], set: &[u8]) -> Option<u64> 
 /// the client it serves)). Everything comes from the client's `region`; `care_words` are the
 /// `START` words, carrying the rights alone, and `grant` the page [`build_grant`] wrote, mapped
 /// read-only at [`GRANT_PAGE_VA`]. `None` when the descent is refused or the build fails.
-/// See `nifeos/record:notes/system-initializer/children.md`.
+/// See `partsfoundry/record:notes/system-initializer/children.md`.
 ///
 /// # BUGS
 ///
@@ -151,7 +151,7 @@ pub(super) fn build_caretaker(
 /// reclaim the objects a process built) armed, and one preemption later succeeds
 /// (`sched::reclaim_region`). The path is reached when a directory grant's caretaker was built and
 /// its program was not. Bounded and silent on failure, unlike `job_undertaker`: a trap here would
-/// take the prompt down over one command's memory. See `nifeos/record:notes/system-initializer/children.md`.
+/// take the prompt down over one command's memory. See `partsfoundry/record:notes/system-initializer/children.md`.
 pub(super) fn reclaim(region: u64) {
     for _ in 0..RECLAIM_ATTEMPTS {
         if process_builder::memory_region_destroy(region) {
@@ -167,7 +167,7 @@ pub(super) fn reclaim(region: u64) {
 /// # BUGS
 ///
 /// - Under load the count may miss the preemption and silently strand a region (the note's
-///   "How many times `reclaim` retries", `nifeos/record:notes/system-initializer/children.md`).
+///   "How many times `reclaim` retries", `partsfoundry/record:notes/system-initializer/children.md`).
 const RECLAIM_ATTEMPTS: usize = 64;
 
 /// **Build `net_stack` from the NIC trio and wait for its DHCP lease.** Returns `(stack, lease,
@@ -440,7 +440,7 @@ const SCREEN_IN_VA: u64 = address_space_layout::pair_page(0x0000_0000_00a1_0000)
 /// **One `graphical_terminal` session's region, in pages**: everything the session is made of, so
 /// the session job's one reap ends the drivers with it. Measured on aarch64 and riscv64 under
 /// `script/swish-check`'s graphical launch, not counted; it comes out of [`JOBS_BUDGET_PAGES`] for
-/// the life of the session. How it was measured is in `nifeos/record:notes/system-initializer/budgets.md`.
+/// the life of the session. How it was measured is in `partsfoundry/record:notes/system-initializer/budgets.md`.
 ///
 /// # BUGS
 ///
@@ -486,7 +486,7 @@ pub(super) struct GraphicalTerminalLaunch<'a> {
 /// tables, and only the session program is supervised, so its one reap ends the drivers too.
 /// `Err(())` is a refused spawn, never a trap, and the region is reclaimed; our capability to it is
 /// deleted either way (§32 (a supervisor may collect a corpse without being able to build one)).
-/// See `nifeos/record:notes/system-initializer/children.md`.
+/// See `partsfoundry/record:notes/system-initializer/children.md`.
 #[inline(never)]
 pub(super) fn build_graphical_terminal_session(
     l: &GraphicalTerminalLaunch,

@@ -65,7 +65,7 @@ const DIGEST_OFFSET_BYTES: usize = MAGIC_OFFSET_BYTES + MAGIC.len();
 /// size. The page is one whole frame, and this is how much of it carries data; the rest is zeroes.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3102. The
-/// page-crate family's name for the content length (`nifeos/record:design/naming/crates.md`).
+/// page-crate family's name for the content length (`partsfoundry/record:design/naming/crates.md`).
 pub const PAGE_CONTENT_BYTES: usize = DIGEST_OFFSET_BYTES + DIGEST_BYTES;
 
 /// **Build a base digest page's content** for `digest`. The writer copies the result into a zeroed

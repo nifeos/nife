@@ -11,7 +11,7 @@
 
 //! # BUGS
 //!
-//! - Only [`RADON`] has been checked against a machine (`nifeos/record:notes/board-console/limitations.md`).
+//! - Only [`RADON`] has been checked against a machine (`partsfoundry/record:notes/board-console/limitations.md`).
 //! - [`XENON`]'s empty prologue rests on one capture; a firmware failure there names nothing.
 //! - argon has no profile until it prints something on a wire.
 //! - Nothing gates a profile against its board beyond review and a capture per asserted rung.
@@ -216,11 +216,11 @@ impl Profile {
 
 /// **radon, a `StarFive` VisionFive 2** (JH7110), and the only profile checked against a machine.
 ///
-/// Every marker was first quoted from `nifeos/record:notes/visionfive2.md`'s bench runbook and then checked
+/// Every marker was first quoted from `partsfoundry/record:notes/visionfive2.md`'s bench runbook and then checked
 /// against bytes off the wire on 2026-09-01; the captures are in `tests/fixtures/captured/` and the
-/// tests assert on them. See `nifeos/record:notes/board-console.md` for the table of where each one came from.
+/// tests assert on them. See `partsfoundry/record:notes/board-console.md` for the table of where each one came from.
 ///
-/// Name: recorded (the board's codename; `nifeos/record:notes/visionfive2.md`).
+/// Name: recorded (the board's codename; `partsfoundry/record:notes/visionfive2.md`).
 pub static RADON: Profile = Profile {
     name: "radon",
     prologue: &[

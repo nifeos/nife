@@ -5,7 +5,7 @@
 //! out only on the arming banner, which `arm_reboot` prints after `console::discard_waiting_bytes`
 //! drains the UART; a byte sent at `soak-test: started` is about 90 ms early and silently
 //! discarded. It then waits [`CONFIRM_WINDOW`] for `soak-test-reboot: DISARMED`. `--stop` is
-//! `--stop-after 1`. `nifeos/record:notes/board-console.md`, "Writing to a board", has the whole argument.
+//! `--stop-after 1`. `partsfoundry/record:notes/board-console.md`, "Writing to a board", has the whole argument.
 
 //! # BUGS
 //!
@@ -25,7 +25,7 @@ use std::time::{Duration, Instant};
 ///
 /// The kernel accepts any byte, so this is a choice inside a fixed contract: Enter is what a
 /// person presses when `kernel/src/soak.rs` says *"press any key on this console"*. `NUL` was
-/// refused; `nifeos/record:notes/board-console/modules.md` has why.
+/// refused; `partsfoundry/record:notes/board-console/modules.md` has why.
 pub(crate) const ESCAPE_BYTE: u8 = b'\r';
 
 /// **How long to wait for the board's `DISARMED` line before giving up on it.**

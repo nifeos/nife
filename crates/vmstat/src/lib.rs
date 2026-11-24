@@ -1,7 +1,7 @@
 //! **`vmstat`: the machine's counters since boot** (§225 (`free` sees the machine and your share)).
 //!
 //! The logic of `components/src/vmstat.rs`: averages since boot, from the machine statistics page.
-//! Its columns: `nifeos/record:notes/process-view/the-machine-and-your-share.md`, "`vmstat`'s columns".
+//! Its columns: `partsfoundry/record:notes/process-view/the-machine-and-your-share.md`, "`vmstat`'s columns".
 
 //! # BUGS
 //!

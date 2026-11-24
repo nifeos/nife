@@ -7,7 +7,7 @@ use crate::windows::disk_from;
 mod system {
     // `raw-dylib`: rustc writes the import table itself, so these calls need no `libkernel32.a`
     // from a MinGW installation. Whether the rest of std then links from a non-Windows host is
-    // untested; `nifeos/record:notes/boot-stick.md`'s host table says a MinGW runtime or the Windows SDK is needed.
+    // untested; `partsfoundry/record:notes/boot-stick.md`'s host table says a MinGW runtime or the Windows SDK is needed.
     #[link(name = "kernel32", kind = "raw-dylib")]
     unsafe extern "system" {
         pub fn GetLogicalDrives() -> u32;

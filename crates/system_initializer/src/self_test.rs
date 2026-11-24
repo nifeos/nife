@@ -2,7 +2,7 @@
 //! what its checks need, wait for its verdict, and print its transcript before the prompt
 //! (milestone 1063 (the boot self-test's spawning checks run from userspace)). The checks
 //! themselves are the program's; this is only the wiring, in the terms
-//! `self_test_contract::self_test_program` fixes. See `nifeos/record:notes/self-test-checks.md`, "The two halves".
+//! `self_test_contract::self_test_program` fixes. See `partsfoundry/record:notes/self-test-checks.md`, "The two halves".
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`.

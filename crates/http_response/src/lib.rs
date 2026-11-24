@@ -6,7 +6,7 @@
 //! the status line and headers in a fixed buffer (parsed by `httparse`), and hands back the part
 //! that is body, so the caller hashes and stores it without this crate holding a byte. It is
 //! strict: it requires `Content-Length` and CRLF line ends, refuses `Transfer-Encoding`, caps the
-//! head at [`HEAD_MAXIMUM`] and refuses a body longer than it said. See `nifeos/record:notes/packages/fetching.md`.
+//! head at [`HEAD_MAXIMUM`] and refuses a body longer than it said. See `partsfoundry/record:notes/packages/fetching.md`.
 //!
 
 //! # BUGS
@@ -20,7 +20,7 @@
 //! - A minor version other than 0 or 1 is refused.
 //!
 //! Name: provisional 2026-09-24 (milestone 198's rung 3a consumer lane). `http` alone would claim
-//! more than a request writer and a response reader; `nifeos/record:design/naming.md` is the rule and calef's the
+//! more than a request writer and a response reader; `partsfoundry/record:design/naming.md` is the rule and calef's the
 //! call.
 
 #![no_std]

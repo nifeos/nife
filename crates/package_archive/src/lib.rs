@@ -3,7 +3,7 @@
 //! package) puts the digest that decides whether the bytes may run in the recipe. A host tool
 //! writes a package with [`write_package`] and a target reads it with [`Package::parse`], as with
 //! `crates/nifefs`. Pure logic, `no_std` and allocation-free: a reader borrows out of its buffer,
-//! because the first consumer's loader has no allocator. `nifeos/record:notes/packages.md`, "The format".
+//! because the first consumer's loader has no allocator. `partsfoundry/record:notes/packages.md`, "The format".
 
 //! ```text
 //!   header, HEADER_LEN = 112 bytes; integers u32 LE, names NUL-padded to NAME_LEN = 32 bytes:

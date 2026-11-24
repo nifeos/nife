@@ -1,7 +1,7 @@
 //! **The version set** (milestone 614 (two installed versions of one program, each runnable, and a
 //! caller granted the one it needs), ruling 4): [`FILE`], a project's `<program> <version>` lines,
 //! which select among installed versions and vouch for nothing. See
-//! `nifeos/record:notes/shell/the-swish-crate.md`, "The version set".
+//! `partsfoundry/record:notes/shell/the-swish-crate.md`, "The version set".
 //!
 //! # EXAMPLES
 //!

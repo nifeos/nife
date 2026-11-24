@@ -1,7 +1,7 @@
 //! The JH7110 Ethernet port's two processes and what the kernel tells each: the control process's
 //! windows, spawn words ([`control_spawn_words`]) and report ([`ControlRecord`]), and the data plane's
 //! windows and spawn words ([`Handoff`]). The kernel maps every window and lists it on the
-//! startup page. See `nifeos/record:notes/designware-ethernet.md`.
+//! startup page. See `partsfoundry/record:notes/designware-ethernet.md`.
 //!
 //! Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, after the crate it
 //! serves.
@@ -22,7 +22,7 @@ use startup_page_contract::WindowKind;
 /// The spawner maps it here and lists it on the startup page, where the server reads it.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
-/// driver crate's `DATA_PLANE_VA`, renamed to spell out the address as `nifeos/record:design/naming.md` asks.
+/// driver crate's `DATA_PLANE_VA`, renamed to spell out the address as `partsfoundry/record:design/naming.md` asks.
 pub const DATA_PLANE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_0090_0000);
 /// The controller's DMA (direct memory access) register page
 /// (`designware_ethernet::registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES`),

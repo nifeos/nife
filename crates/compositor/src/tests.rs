@@ -79,7 +79,7 @@ fn a_commit_says_whether_its_damage_was_clipped() {
 
 /// `area` on a rectangle that is neither square nor 2 by 2. Every fixture here was square, and
 /// `w + h` equals `w * h` at 2 by 2, so `* -> +` survived from the 2026-08-03 run to the
-/// 2026-09-19 census. See `nifeos/record:notes/mutation-testing.md`.
+/// 2026-09-19 census. See `partsfoundry/record:notes/mutation-testing.md`.
 #[test]
 fn area_multiplies_width_by_height() {
     assert_eq!(Rect::new(0, 0, 3, 5).area(), 15);

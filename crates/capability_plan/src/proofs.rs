@@ -4,7 +4,7 @@
 //! loop, and what is symbolic is the routing table: slot numbers, and which roles are routed.
 //! Selecting a declaration with `SHAPES[kani::any()]` instead does not finish. The harness paths
 //! are `proofs::<harness>`, which `script/falsifications` reads from this file's name. See
-//! notes/component-manifest/capability-plan.md and `nifeos/record:notes/verification.md`.
+//! notes/component-manifest/capability-plan.md and `partsfoundry/record:notes/verification.md`.
 //!
 //! Name: provisional (milestone 882's lane, 2026-10-12 UTC).
 
@@ -69,7 +69,7 @@ const SHAPES: [Requirements; 4] = [
 /// A slot number at or past `moho_abi::CAPABILITY_TABLE_SLOTS` (sixty-four since 2026-10-04, thirty-two before) is not
 /// a routing a supervisor could make: the kernel refuses it. Raising the table from twenty-four
 /// did not move these harnesses' times past their noise (measured by milestone 126 (the `procps` package), in
-/// `nifeos/record:notes/process-view/the-machine-and-your-share.md`). Bounding it here is not a weakening of the property, which
+/// `partsfoundry/record:notes/process-view/the-machine-and-your-share.md`). Bounding it here is not a weakening of the property, which
 /// is about *which* slot a need is wired to rather than how large the number is, and it is what
 /// makes these harnesses a viable gate: unbounded `u64` slots put the solver past seventy
 /// thousand verification conditions for a fact about copying two integers through.
@@ -117,7 +117,7 @@ fn a_plan_never_grants_a_right_the_declaration_did_not_ask_for() {
             // through `direction.rights()` (milestone 211), both became implied by it:
             // `READ = 1<<0`, `WRITE = 1<<1`, `GRANT = 1<<2`, so an equality against one of
             // the first two settles the other two. The `& GRANT == 0` line is the one
-            // `nifeos/record:notes/confinement-claims.md` credited as the only thing catching the original
+            // `partsfoundry/record:notes/confinement-claims.md` credited as the only thing catching the original
             // defect, and 211's fix turned the rescue assertion into the decoration. That
             // inversion is worth more than the line was.
 

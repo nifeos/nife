@@ -4,7 +4,7 @@
 //! holds; a machine whose tree names no always-on window, for one, gets a server that serves no
 //! always-on device. Its clients speak `jh7110_clock_and_reset_contract`, and
 //! `jh7110_clock_and_reset_devices` holds what each badge brings up. See
-//! `nifeos/record:notes/jh7110-clock-and-reset.md`.
+//! `partsfoundry/record:notes/jh7110-clock-and-reset.md`.
 //!
 //! Name: provisional.
 

@@ -3,7 +3,7 @@
 //!
 //! The description rides the boot command line as one `screen=` token. [`Framebuffer::encode`] is
 //! what `uefi_loader` calls and [`Framebuffer::parse`] what the kernel calls, so neither keeps its
-//! own copy of the spelling. See `nifeos/record:notes/serial-less-output.md` for why a token and not a field,
+//! own copy of the spelling. See `partsfoundry/record:notes/serial-less-output.md` for why a token and not a field,
 //! and `notes/machine-discovery.md` ("The screen token").
 
 //! # BUGS

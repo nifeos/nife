@@ -1,7 +1,7 @@
 //! **Two boot slots, and the rule that stops a bad upgrade bricking the machine.** An upgrade
 //! writes the slot that is not running and puts it on trial; if the trial image never comes up,
 //! the machine goes back to the previous one by itself. This crate touches no disk; see
-//! `nifeos/record:notes/boot-slots.md`. `system_installer` writes the state and `uefi_loader`'s chooser acts on it.
+//! `partsfoundry/record:notes/boot-slots.md`. `system_installer` writes the state and `uefi_loader`'s chooser acts on it.
 //!
 //! The state is bits 48 to 56 ([`PRIORITY_SHIFT`], [`TRIES_SHIFT`], [`SUCCESSFUL_BIT`]) of a slot
 //! partition's GPT attributes, which UEFI 2.11 section 5.3.3 gives to the owner of the type,
@@ -15,7 +15,7 @@
 //!   Version 2 is [`members`]; the chooser still reads only version 1 until it adopts
 //!   [`members::parse`].
 //! - Confirmation proves nothing off the boot path, and a machine that never confirms rolls back a
-//!   working upgrade, which fails safe. See `nifeos/record:notes/boot-slots.md`, "What marks a trial boot
+//!   working upgrade, which fails safe. See `partsfoundry/record:notes/boot-slots.md`, "What marks a trial boot
 //!   successful".
 //! - [`select`] takes any number of slots; two is `system_installer`'s choice, not this crate's.
 //! - An exhausted slot's priority is not zeroed, unlike ChromeOS: [`select`] already skips it.
@@ -278,7 +278,7 @@ pub const SLOT_VERSION: u32 = 1;
 /// Only the first [`SLOT_HEADER_BYTES`] carry anything. The rest is padding, and it is padding
 /// rather than a smaller reservation so that **the image starts on a transfer-block boundary**.
 /// `system_installer` writes whole 4096-byte blocks, and milestone 198 rung 2a already lost ten megabytes
-/// to an unaligned start once; that bug is recorded in `nifeos/file_allocation_table` and this
+/// to an unaligned start once; that bug is recorded in `partsfoundry/file_allocation_table` and this
 /// number is what stops it happening a second time in a different file.
 pub const SLOT_IMAGE_OFFSET: u64 = 4096;
 
@@ -372,7 +372,7 @@ impl SlotHeader {
 /// agree on**, and the spelling was ratified by calef on 2026-09-22. The screen's token belongs to
 /// `machine_discovery::framebuffer`, so no one place lists the line's vocabulary;
 /// `uefi_loader::handoff::cmdline` writes all of it, and its `CMDLINE_LEN` adds up the lengths. See
-/// `nifeos/record:notes/boot-slots/the-command-line.md`.
+/// `partsfoundry/record:notes/boot-slots/the-command-line.md`.
 pub mod cmdline {
     /// The token's key, including the `=`. Provisional: names are an architect's.
     pub const KEY: &str = "boot-slot=";
@@ -443,7 +443,7 @@ pub mod cmdline {
 /// filesystem only then, because RedoxFS writes on mount. **Absence is the safe answer**: a stick,
 /// a `-kernel` boot and an older loader all leave the internal disk alone. It sits beside
 /// [`cmdline`] as the same kind of token two programs agree on (rule 7). Key and value are
-/// provisional. See `nifeos/record:notes/boot-slots/the-command-line.md`.
+/// provisional. See `partsfoundry/record:notes/boot-slots/the-command-line.md`.
 ///
 /// # EXAMPLES
 ///
@@ -491,7 +491,7 @@ pub mod medium {
 /// Version 2 describes three files, the kernel, the composed archive and the system manifest, each
 /// by offset, length and SHA-256 digest, so an updater can write each from the package that
 /// produced it. The layout was ruled on 2026-11-01 (UTC); see
-/// `nifeos/record:design/roadmap/1006-what-an-os-update-writes-into-a-slot.md`, question 3. Pure
+/// `partsfoundry/record:design/roadmap/1006-what-an-os-update-writes-into-a-slot.md`, question 3. Pure
 /// computation over byte slices, no allocation and no I/O.
 ///
 /// | offset | size | |

@@ -58,7 +58,7 @@ pub fn expansion(
 /// starting with `..` designates nothing; `.` designates this directory (calef's N1 ruling,
 /// 2026-09-27T06:27Z); otherwise the first component is looked up with `resolve`, and a name not
 /// here is inert bytes unless the program may create ([`grant_contract::WordGrant::Create`]). A word
-/// grants its whole first component (milestone 205's BUGS). See `nifeos/record:notes/shell/the-swish-crate.md`,
+/// grants its whole first component (milestone 205's BUGS). See `partsfoundry/record:notes/shell/the-swish-crate.md`,
 /// "What a word designates".
 pub fn designation(
     line: &[u8],

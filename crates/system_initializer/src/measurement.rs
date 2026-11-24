@@ -1,5 +1,5 @@
 //! Measured boot (milestone 104 (the measurement continues past init)): `measured`, the one call
-//! every component load goes through. See `nifeos/record:notes/system-initializer.md`, "The measured load".
+//! every component load goes through. See `partsfoundry/record:notes/system-initializer.md`, "The measured load".
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
 

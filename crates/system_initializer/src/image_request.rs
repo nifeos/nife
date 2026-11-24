@@ -96,7 +96,7 @@ pub(super) fn copy_args(
 /// **The spawn endpoint, as the spawn loop reads it**: shell requests, `job_undertaker`'s reaps
 /// ([`spawn_protocol::UNDERTAKER_BADGE`]) and installer holders ([`spawn_protocol::installer_badge`]).
 /// Every receive takes reaps out of the way and keeps another sender's first message, and a short
-/// pool waits for owed reaps ([`SpawnEndpoint::split`]). See `nifeos/record:notes/system-initializer/children.md`.
+/// pool waits for owed reaps ([`SpawnEndpoint::split`]). See `partsfoundry/record:notes/system-initializer/children.md`.
 ///
 /// # BUGS
 ///

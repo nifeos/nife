@@ -4,7 +4,7 @@
 //! order: opening a macOS `cu` device resets its termios, and the setting reverts when the last
 //! holder closes. The dial-in `/dev/tty.*` side blocks in `open` until carrier detect, which a
 //! three-wire cable never asserts. `stty(1)` stands in for a serial crate, and `O_NONBLOCK` is not
-//! used because `watch` reads on a worker thread; `nifeos/record:notes/board-console/design.md` has why, and the
+//! used because `watch` reads on a worker thread; `partsfoundry/record:notes/board-console/design.md` has why, and the
 //! hazard left over.
 
 use std::ffi::OsStr;
@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// The bench's baud rate: 115200 8N1, no flow control, from the VisionFive 2 Quick Start Guide by
-/// way of `nifeos/record:notes/visionfive2.md`'s serial wiring table.
+/// way of `partsfoundry/record:notes/visionfive2.md`'s serial wiring table.
 pub const BAUD: u32 = 115_200;
 
 /// The device-name prefixes worth offering, most likely first.
@@ -466,7 +466,7 @@ mod tests {
     /// A regular file is not a serial port: this checks that `open` opens what it was given, that
     /// a device `stty` cannot configure yields a complaint rather than a failure, and that the
     /// descriptor reads the real 2026-09-01 capture. Whether `tcsetattr` took is beyond any host
-    /// test (`nifeos/record:notes/board-console/design.md`); `confirm_speed` gates it at runtime.
+    /// test (`partsfoundry/record:notes/board-console/design.md`); `confirm_speed` gates it at runtime.
     #[test]
     fn open_hands_back_a_readable_descriptor_and_a_complaint_it_can_survive() {
         let captured = include_bytes!("../tests/fixtures/captured/vf2-2026-09-01-manual-boot.log");

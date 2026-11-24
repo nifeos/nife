@@ -20,7 +20,7 @@ index bb71bac08..bf2e041d2 100644
 --- a/crates/direct_memory_access_validator/src/lib.rs
 +++ b/crates/direct_memory_access_validator/src/lib.rs
 @@ -37,7 +37,7 @@ pub const F_INDIRECT: u16 = 4;
- /// See the `in_region_is_sound` proof and nifeos/record:notes/dma/validator.md.
+ /// See the `in_region_is_sound` proof and partsfoundry/record:notes/dma/validator.md.
  pub fn is_in_region(base: u64, size: u64, physical_address: u64, len: u64) -> bool {
      match (physical_address.checked_add(len), base.checked_add(size)) {
 -        (Some(end), Some(limit)) => physical_address >= base && end <= limit,

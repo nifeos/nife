@@ -5,7 +5,7 @@
 //! window pool, and [`budgets`] the region sizes the shell splits and the progenitor counts.
 //! [`plan`] and [`plan_stage`] resolve a typed name against the catalog and plan the line against
 //! its manifest, returning the row beside the endowment, because the shell and the progenitor speak
-//! about a program by its row. See `nifeos/record:notes/grant-expression.md` and `nifeos/record:notes/program-manifest.md`.
+//! about a program by its row. See `partsfoundry/record:notes/grant-expression.md` and `partsfoundry/record:notes/program-manifest.md`.
 //!
 //! Name: provisional (it waits on the naming-layers decision), minted 2026-11-14 (UTC) by lane
 //! milestone/1094-grant-plan-split.

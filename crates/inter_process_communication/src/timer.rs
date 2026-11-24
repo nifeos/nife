@@ -150,7 +150,7 @@ pub fn lowered(cached: u64, deadline: u64) -> u64 {
     cached.min(deadline)
 }
 
-/// **Whether the tick must walk.** The one comparison per idle tick `nifeos/record:notes/timed-wait.md` priced.
+/// **Whether the tick must walk.** The one comparison per idle tick `partsfoundry/record:notes/timed-wait.md` priced.
 ///
 /// Name: ratified 2026-11-21 (UTC).
 pub fn is_due(cached: u64, now: u64) -> bool {

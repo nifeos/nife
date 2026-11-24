@@ -8,7 +8,7 @@
 //! which it resembles and is not shown to be. It counts down twice before it resets, so
 //! [`load_for`] halves the time asked for. Writes are refused until [`UNLOCK_KEY`] is in [`LOCK`], so each sequence
 //! unlocks first and locks last. Sources: Linux's `drivers/watchdog/starfive-wdt.c` and
-//! `StarFive`'s U-Boot `jh7110.dtsi`, read 2026-10-20 (UTC). See `nifeos/record:notes/jh7110-watchdog.md`, which
+//! `StarFive`'s U-Boot `jh7110.dtsi`, read 2026-10-20 (UTC). See `partsfoundry/record:notes/jh7110-watchdog.md`, which
 //! lists every source and what it gave.
 
 //! # BUGS

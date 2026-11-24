@@ -4,7 +4,7 @@
 //! parser. The one exception is [`Psci`], which parses `/psci`: the firmware conduit depends on
 //! what runs above EL1, which no ID register can say. The three granule fields spend their
 //! encodings three different ways, so each is decoded on its own line. See
-//! `nifeos/record:notes/isa-discovery.md` and `notes/machine-discovery.md` ("aarch64").
+//! `partsfoundry/record:notes/isa-discovery.md` and `notes/machine-discovery.md` ("aarch64").
 
 //! # BUGS
 //!

@@ -4,7 +4,7 @@
 //! On a machine whose firmware enumerates PCI, the root port arrives with its buses and windows
 //! set. On the JH7110 nothing has run before the kernel, so the root port at `00:00.0` reads zero
 //! bus numbers and forwards nothing, and the function behind it at bus 1 is invisible until
-//! [`configure`] runs. See `nifeos/record:notes/jh7110-pci-express.md`.
+//! [`configure`] runs. See `partsfoundry/record:notes/jh7110-pci-express.md`.
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 //! calef has not named it.

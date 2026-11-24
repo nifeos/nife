@@ -34,7 +34,7 @@ fn discover_finds_the_device_on_a_tree_shaped_like_the_real_board() {
 /// `trng@1600C000`, `compatible = "starfive,trng"`, `status = "disabled"`, and `discover` must
 /// find it. The fixture is transcribed from the firmware's source, not dumped from a board, so
 /// whether the running firmware's tree carries the node is still a bench fact;
-/// `nifeos/record:design/roadmap/0239-radons-tree-describes-less-than-the-chip-has.md` has the two commands
+/// `partsfoundry/record:design/roadmap/0239-radons-tree-describes-less-than-the-chip-has.md` has the two commands
 /// that settle it.
 #[test]
 fn discover_finds_the_device_under_the_vendor_uboots_own_spelling() {

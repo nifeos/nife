@@ -6,7 +6,7 @@
 //! (`fixtures/src/window.rs`), the kernel-side test and the host scanout check, so none can drift.
 //! It holds no authorization code: every per-client fact lives in per-client memory and the reply
 //! words carry status only. No GPU acceleration, fonts, window management or alpha blending. See
-//! `nifeos/record:notes/compositor.md`, and notes/compositor/arithmetic.md for the scene and the clips.
+//! `partsfoundry/record:notes/compositor.md`, and notes/compositor/arithmetic.md for the scene and the clips.
 //!
 //! Name: ratified 2026-08-01 (calef), replacing `compose`. Refused `compose` (a verb, where a
 //! namespace is a thing), `compositor_proto` (promises a wire definition and delivers an algorithm)
@@ -15,7 +15,7 @@
 
 #![no_std]
 // milestone 68's ratchet is workspace-wide (§107); this crate opts out until its 19-item
-// worklist (`nifeos/record:notes/doc-coverage.md`) is burned down.
+// worklist (`partsfoundry/record:notes/doc-coverage.md`) is burned down.
 #![allow(missing_docs)]
 
 // ================================================================================================
@@ -141,7 +141,7 @@ impl Rect {
     /// The bounding box of two rectangles, ignoring empties. The compositor accumulates one damage
     /// rectangle per frame this way: a bounding box costs a few extra pixels of copying and saves
     /// keeping a region list, which is the right trade at this scale and the wrong one at a
-    /// desktop's (`nifeos/record:notes/compositor.md` records it as a limit).
+    /// desktop's (`partsfoundry/record:notes/compositor.md` records it as a limit).
     pub const fn union(&self, o: &Rect) -> Rect {
         if self.is_empty() {
             return *o;
@@ -545,7 +545,7 @@ pub mod proto {
     // mapping that *is* the authority. Reading the screen is a read-only mapping; enumerating windows
     // is a read-only page. A client holding neither has nothing to call and nowhere to look, which is
     // a stronger statement than a guarded verb and a smaller protocol. The one thing it costs is a
-    // consistent snapshot (a live mapping can be read mid-composite); `nifeos/record:notes/compositor.md` records that
+    // consistent snapshot (a live mapping can be read mid-composite); `partsfoundry/record:notes/compositor.md` records that
     // as a limit and the served-copy path as what would fix it.
 
     /// The reply to a word whose opcode the compositor does not implement. Negative-is-an-error, the
@@ -630,7 +630,7 @@ pub mod proto {
     /// Keystrokes arrive here rather than in message words because the doorbell is shared, so a
     /// keystroke in a message would be forgeable. The compositor forwards them to the focused
     /// client as `terminal_contract::OPERATION_BYTES`, the terminal contract's driver half
-    /// verbatim (`nifeos/record:notes/terminal-contract.md`), so a terminal needs no change to be a client.
+    /// verbatim (`partsfoundry/record:notes/terminal-contract.md`), so a terminal needs no change to be a client.
     pub mod ring {
         /// u32, compositor: bytes consumed.
         pub const HEAD: u64 = 0x00;

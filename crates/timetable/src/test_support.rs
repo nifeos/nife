@@ -9,7 +9,7 @@ use std::string::String;
 use crate::Held;
 
 /// **The shipped document is a specification, not a comment.** The retired `multicast_dns_config` reached
-/// this shape first (`nifeos/record:notes/mdns.md`) and the reason is the same: a configuration file nothing parses in CI is a file that
+/// this shape first (`partsfoundry/record:notes/mdns.md`) and the reason is the same: a configuration file nothing parses in CI is a file that
 /// rots, and the first person to notice is the one whose machine will not boot.
 pub(crate) const REFERENCE: &str = include_str!("../../../components/timetable.conf");
 

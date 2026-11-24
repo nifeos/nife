@@ -6,7 +6,7 @@
 //! three and nobody picks a target (U1 in the roadmap block). Each file is one sealed application
 //! holding its kernel and the archive that kernel measures, and the loader's build refuses a
 //! mismatched pair (`uefi_loader/build.rs`), so this program cannot pair a kernel with the wrong
-//! archive. See `nifeos/record:notes/boot-stick/the-program.md`.
+//! archive. See `partsfoundry/record:notes/boot-stick/the-program.md`.
 
 use measured_boot::{hex, sha256};
 
@@ -41,7 +41,7 @@ pub fn total(files: &[File]) -> u64 {
 /// **The note written to `NIFE.TXT`**: what is on the stick, from which build, and the digest of
 /// each file.
 ///
-/// It exists because of a BUGS entry in `nifeos/record:notes/x86-uefi-boot.md`: *a stale `.efi` on a stick is
+/// It exists because of a BUGS entry in `partsfoundry/record:notes/x86-uefi-boot.md`: *a stale `.efi` on a stick is
 /// silent*. A stick written by this program says what it carries in a file anyone can open on any
 /// computer, and the digests let a bench session confirm the stick holds the build it thinks it
 /// does (`shasum -a 256 /Volumes/NIFE/EFI/BOOT/*`).

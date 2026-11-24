@@ -1,6 +1,6 @@
 //! The PLIC context map, read from three machines' trees, on the host.
 //!
-//! The VisionFive 2 prep (`nifeos/record:notes/visionfive2.md`): the kernel's `2*hart + 1` S-context formula is
+//! The VisionFive 2 prep (`partsfoundry/record:notes/visionfive2.md`): the kernel's `2*hart + 1` S-context formula is
 //! QEMU `virt`'s layout, not a law, and the JH7110 breaks it because its disabled S7 contributes
 //! only an M context. These tests hold both directions: the JH7110 fixture proves the different
 //! answer is read, and the QEMU dumps prove the parsed answer equals what the formula assumed on
@@ -13,7 +13,7 @@ const JH7110: &[u8] = include_bytes!("fixtures/jh7110.dtb");
 /// `compatible` is "riscv,plic0" only, not "sifive,plic-1.0.0": neither `JH7110` above nor
 /// `jh7110-vendor.dtb` had this right, both having modeled the PLIC section on the mainline
 /// dtsi rather than measuring the real firmware tree. See the fixture's own header for the full
-/// story and `nifeos/record:notes/visionfive2.md`'s BUGS section.
+/// story and `partsfoundry/record:notes/visionfive2.md`'s BUGS section.
 const VISIONFIVE2_UBOOT: &[u8] = include_bytes!("fixtures/visionfive2-uboot-control.dtb");
 /// The suite's own machine, single-hart, shared with the `device_tree_blob` crate's fixtures.
 const QEMU_VIRT: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt.dtb");

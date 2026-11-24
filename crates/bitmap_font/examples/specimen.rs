@@ -3,7 +3,7 @@
 //! `--font PATH [--name NAME]` loads a candidate as Unifont `.hex`, BDF `.bdf`, the `.art` picture
 //! or a raw character-generator ROM (`.rom`/`.bin`), and a repeated `--font` draws the fonts
 //! interleaved line by line with each name in a left gutter. `--metrics` prints the font's row for
-//! the table in `nifeos/record:notes/glyphs.md`. Half blocks (the default) show the font at about its real aspect
+//! the table in `partsfoundry/record:notes/glyphs.md`. Half blocks (the default) show the font at about its real aspect
 //! ratio; `--dots` prints one character per pixel, the format the crate's doctest pins the bit
 //! order with. See notes/glyphs/bitmap-font.md.
 
@@ -432,7 +432,7 @@ fn dots(font: &Font, text: &str) -> String {
     out
 }
 
-/// What the shapes measure over the 52 letters: the row of the table in `nifeos/record:notes/glyphs.md`. Ink per
+/// What the shapes measure over the 52 letters: the row of the table in `partsfoundry/record:notes/glyphs.md`. Ink per
 /// letter is weight; the left-edge and width sigmas are consistency, what the eye reads as rhythm;
 /// cap, x-height and descender are the vertical proportions, with the baseline at the bottom of `x`
 /// and the descender the rows a `g` reaches below it.

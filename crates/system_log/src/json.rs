@@ -3,7 +3,7 @@
 //! It writes and never parses. The field order is fixed (`seq`, `time`, `source`, `program`,
 //! `user`, `severity`, `msg`, then the flags that are set), so two records diff cleanly and a grep
 //! still works. Each byte that does not decode as UTF-8 becomes U+FFFD, so every line is valid
-//! JSON. See `nifeos/record:notes/system-log.md`, "The JSONL writer".
+//! JSON. See `partsfoundry/record:notes/system-log.md`, "The JSONL writer".
 
 use system_log_contract::record::{Header, TEXT_MAXIMUM, flags};
 use system_log_contract::{control, severity};

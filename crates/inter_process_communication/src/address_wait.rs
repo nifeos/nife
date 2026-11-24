@@ -5,7 +5,7 @@
 //! An address wait (Linux calls it a fast user-space mutex, "futex") is a key, `(address_space, virtual_address)`, not an object. This module is the queuing: buckets of
 //! intrusive FIFOs, oldest waiter first within a key, with each waiter's key read back through
 //! `key_of` because keys collide in a bucket. The kernel side is `kernel/src/sched/address_wait.rs`; see
-//! `nifeos/record:notes/address-wait.md` and `notes/inter-process-communication.md`.
+//! `partsfoundry/record:notes/address-wait.md` and `notes/inter-process-communication.md`.
 //!
 //! # Examples
 //!

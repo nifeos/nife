@@ -10,7 +10,7 @@
 /// [`flush`](Self::flush) or the `unsafe` [`assume_no_stale_entry`](Self::assume_no_stale_entry)
 /// discharges it. [`MapError::AlreadyMapped`](crate::MapError::AlreadyMapped) forces
 /// break-before-make. Mapping a page that was invalid needs none, since the hardware may not cache
-/// a faulting entry. See `nifeos/record:notes/page-tables.md`, "The TLB obligation" and "Break-before-make".
+/// a faulting entry. See `partsfoundry/record:notes/page-tables.md`, "The TLB obligation" and "Break-before-make".
 ///
 /// Name: provisional, minted 2026-11-20 (UTC) by lane/1104-page-tables-names-cleared.
 #[must_use = "a page table changed: the TLB MUST be invalidated, or the CPU keeps using the old \

@@ -1,5 +1,5 @@
 //! `stick_maker`: write nife's boot files to a USB stick or SD card. This file hands
-//! `stick_maker::cli::run` the real machine and terminal. See `nifeos/record:notes/boot-stick.md`.
+//! `stick_maker::cli::run` the real machine and terminal. See `partsfoundry/record:notes/boot-stick.md`.
 //!
 //! ```text
 //! stick_maker                      # find the removable disks, ask which, confirm, write

@@ -4,7 +4,7 @@
 //! read, and a USB hard disk answers `DRIVE_FIXED`, so `disk.rs`'s one rule refuses it. The five
 //! `kernel32` functions are declared by hand rather than through a bindings crate (§46 (thin
 //! primitives or whole subsystems)). This file is the pure half, [`disk_from`], tested on every
-//! host; `host/windows.rs` calls it. See `nifeos/record:notes/boot-stick/the-program.md`, "Windows".
+//! host; `host/windows.rs` calls it. See `partsfoundry/record:notes/boot-stick/the-program.md`, "Windows".
 
 //! # BUGS
 //!

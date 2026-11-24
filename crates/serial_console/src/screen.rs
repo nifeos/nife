@@ -6,7 +6,7 @@
 //! bit or matches nothing: an exact lookup, not optical character recognition. `cargo xtask
 //! uefi-boot` reads the tour off a QEMU screendump with [`read`], and the graphical `swish-check`
 //! leg reads the display terminal with [`decode_exact`]. A photograph of a screen is a different
-//! problem; `nifeos/record:notes/serial-less-output.md` records it. See `nifeos/record:notes/board-console/modules.md`.
+//! problem; `partsfoundry/record:notes/serial-less-output.md` records it. See `partsfoundry/record:notes/board-console/modules.md`.
 
 //! # BUGS
 //!
@@ -348,7 +348,7 @@ fn cell(
 fn parse_pixmap(ppm: &[u8]) -> Result<(usize, usize, &[u8]), ReadError> {
     // Both skips count a run of bytes with one pass of an iterator and add the count once, so no
     // loop here carries a cursor that a mutant could stop moving and turn into a hang
-    // (`nifeos/record:notes/mutation-testing.md`, "delete the loop"). The first skips whitespace and `#` comments
+    // (`partsfoundry/record:notes/mutation-testing.md`, "delete the loop"). The first skips whitespace and `#` comments
     // together: a comment runs to the next newline.
     let blank_run = |from: usize| -> usize {
         let mut in_comment = false;

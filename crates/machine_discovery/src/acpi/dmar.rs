@@ -385,7 +385,7 @@ impl ReservedRegion {
 /// DMAR is 204 bytes and its first DRHD is `0xfed90000`; on the Skylake `OptiPlex` 7040, the same
 /// family and the same register addresses, Linux reports that unit with flags `0x0` and a second
 /// at `0xfed91000` with flags `0x1` (`INCLUDE_PCI_ALL`), which is the integrated-graphics unit
-/// followed by the catch-all. See `nifeos/record:notes/risk-6-bench-evening.md` for the source.
+/// followed by the catch-all. See `partsfoundry/record:notes/risk-6-bench-evening.md` for the source.
 ///
 /// Name: provisional (milestone 261's bench rehearsal).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

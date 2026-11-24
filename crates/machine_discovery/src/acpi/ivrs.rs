@@ -4,7 +4,7 @@
 //! An IVHD describes one IOMMU and the device ids it serves; an IVMD, memory a device keeps DMA-ing
 //! into. Firmware lists one IOMMU once per IVHD type it supports, so [`IvrsUnits::parse`] decodes
 //! only the highest type it understands, as Linux does. Ownership is by 16-bit device id, so
-//! [`IvrsUnits::owner_index`] needs no bus. See `nifeos/record:notes/amd-vi.md` and `notes/machine-discovery.md`
+//! [`IvrsUnits::owner_index`] needs no bus. See `partsfoundry/record:notes/amd-vi.md` and `notes/machine-discovery.md`
 //! ("ACPI").
 
 //! # BUGS

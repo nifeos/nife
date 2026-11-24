@@ -8,7 +8,7 @@
 //! time from here is untrusted input the client may propose and never set. [`Packet::parse`] is
 //! total on 48 bytes; [`Query::accept`] alone rejects. A timestamp counts from 1900 in binary
 //! fractions ([`Timestamp`]), its seconds wrap on 7 February 2036 at 06:28:16 UTC
-//! ([`Timestamp::to_unix`]), and offsets are modular ([`Interval`]). See `nifeos/record:notes/ntp.md`.
+//! ([`Timestamp::to_unix`]), and offsets are modular ([`Interval`]). See `partsfoundry/record:notes/ntp.md`.
 
 //! Name: ratified 2026-10-18 (calef, a crate-naming session). Kept: the NTPv4 standard's own full
 //! name, so its `_protocol` is the standard's word and not nife's contract suffix. His answer was
@@ -212,7 +212,7 @@ impl Timestamp {
     /// is era 0, counted from 1900 (20 January 1968 to 7 February 2036 at 06:28:16 UTC); clear is
     /// era 1, counted from the rollover (to 26 February 2104). The window is
     /// [`MINIMUM_UNIX_SECONDS`]`..=`[`MAXIMUM_UNIX_SECONDS`], clipped at the Unix epoch because the seconds returned
-    /// are unsigned, and the crate expires in 2104. See `nifeos/record:notes/ntp/the-era-pivot.md` for why a
+    /// are unsigned, and the crate expires in 2104. See `partsfoundry/record:notes/ntp/the-era-pivot.md` for why a
     /// nearest-era rule is worse.
     pub const fn to_unix(self) -> (u64, u32) {
         let s = self.seconds() as u64;
@@ -694,7 +694,7 @@ impl Query {
     /// zero transmit timestamp; timestamps against causality (T2 ≤ T3, T1 ≤ T4, a round trip no
     /// shorter than the turnaround); a root distance of [`MAXIMUM_ROOT_DISTANCE`] or more; a
     /// non-zero reference timestamp later than the transmit timestamp. Each is its [`Reject`]
-    /// variant. None authenticates: an on-path attacker sees the nonce. See `nifeos/record:notes/ntp.md`.
+    /// variant. None authenticates: an on-path attacker sees the nonce. See `partsfoundry/record:notes/ntp.md`.
     ///
     /// **A `Query` is for one request, and the replay test is the caller's.** `RFC 5905` drops a
     /// packet whose transmit timestamp equals the last one accepted; this crate keeps no state, so
@@ -878,12 +878,12 @@ mod tests {
     }
 
     /// **Every nanosecond there is, checked by running the code on all 10^9 of them**: 0.6 s, so
-    /// exhaustive, where Kani cannot finish (`nifeos/record:notes/ntp/what-is-proved.md` has the measurements).
+    /// exhaustive, where Kani cannot finish (`partsfoundry/record:notes/ntp/what-is-proved.md` has the measurements).
     /// It needs the optimized build `[profile.dev.package.network_time_protocol]` in the workspace
     /// manifest supplies, as `measured_boot` has for SHA-256. Under Miri, about a thousand times
     /// slower, it walks every 999,983rd value (a prime, so the samples miss any power-of-two
     /// structure) plus the edges, and "Miri-clean" means those values
-    /// (`nifeos/record:notes/undefined-behavior.md`).
+    /// (`partsfoundry/record:notes/undefined-behavior.md`).
     #[test]
     fn every_nanosecond_survives_the_round_trip() {
         #[cfg(miri)]
@@ -1214,7 +1214,7 @@ mod tests {
     }
 
     // Milestone 85 survivors. The exhaustive sweeps quantify over the CONVERSIONS; these are the
-    // edges and accessors the sweeps never touch. See `nifeos/record:notes/mutation-testing.md`.
+    // edges and accessors the sweeps never touch. See `partsfoundry/record:notes/mutation-testing.md`.
 
     /// `MAXIMUM_UNIX_SECONDS` is a wall with two sides. Checks read off the constant move with it, so the
     /// wall is also pinned as a date worked by hand: era 0's 2^32 seconds less the 1900-to-1970
@@ -1273,7 +1273,7 @@ mod tests {
 
 // =================================================================================================
 // Machine-checked proofs (Kani). Behind `#[cfg(kani)]`, so an ordinary build/test never sees them;
-// only `cargo kani` (script/verify) sets that cfg. See `nifeos/record:notes/verification.md` and `nifeos/record:notes/ntp.md`.
+// only `cargo kani` (script/verify) sets that cfg. See `partsfoundry/record:notes/verification.md` and `partsfoundry/record:notes/ntp.md`.
 //
 // The three things worth proving here are the three things the crate docs call easy to get wrong:
 // the fixed-point conversion, the era pivot, and the fact that no hostile packet can make the

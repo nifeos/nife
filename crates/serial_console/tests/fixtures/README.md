@@ -40,7 +40,7 @@ Nothing has been cleaned up; cleaning it would remove the parts a recogniser has
   ### ERROR ### Please RESET the board ###
   ```
 
-  That is exactly the caveat `nifeos/record:notes/visionfive2.md` records about U-Boot's fallback DTB addresses.
+  That is exactly the caveat `partsfoundry/record:notes/visionfive2.md` records about U-Boot's fallback DTB addresses.
   It is the third outcome, and the reason the recogniser has one: U-Boot refusing before the kernel
   ever ran looks nothing like a hang and must not be reported as one.
 
@@ -105,7 +105,7 @@ off a board:
 time in `serial_console::respell_pre_297_markers` and never on disk; that function's block says why
 the parser does not simply match both spellings, and why the third capture above is what makes that
 affordable. Rewriting the marker inside a `captured/` file would be the fabricated transcript
-`nifeos/record:design/naming/rename-where-names-hide.md` records, and this directory exists to make that
+`partsfoundry/record:design/naming/rename-where-names-hide.md` records, and this directory exists to make that
 impossible to do by accident.
 
 **Both board captures show a degraded U-Boot environment on this card, and that is not a defect in
@@ -125,8 +125,8 @@ is a stronger success signal than the banner because it means the whole boot tou
 ## `synthetic/`
 
 **Written by hand from documented markers**, because no capture of either case exists. Each line is
-either a marker quoted from `nifeos/record:notes/visionfive2.md`'s failure-triage ladder, a line quoted from this
-tree's own source (`nifeos/record:notes/trusted-init.md` for the measured-boot refusal), or filler in the shape
+either a marker quoted from `partsfoundry/record:notes/visionfive2.md`'s failure-triage ladder, a line quoted from this
+tree's own source (`partsfoundry/record:notes/trusted-init.md` for the measured-boot refusal), or filler in the shape
 vendor firmware prints so that a chunk boundary lands somewhere other than on a marker. No test
 asserts on the filler.
 

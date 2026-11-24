@@ -3,7 +3,7 @@
 //! `diskutil` is Apple's supported scripting interface to Disk Arbitration, in every install, so
 //! this module reads its `-plist` output (`plist.rs` says why not the table). This file is the pure
 //! half, [`assemble`], tested against captured documents; `host/macos.rs` runs the tool. See
-//! `nifeos/record:notes/boot-stick/the-program.md`, "macOS".
+//! `partsfoundry/record:notes/boot-stick/the-program.md`, "macOS".
 
 //! # BUGS
 //!

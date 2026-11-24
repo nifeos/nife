@@ -5,7 +5,7 @@
 //! `/proc/self/mounts` for mounts; udev's `/run/udev/data` for an unmounted filesystem. Only
 //! erasing needs privileges. This is the pure half: [`assemble`] takes the three roots as
 //! arguments, so tests use a fake sysfs. `host/linux.rs` runs `sfdisk`, `mkfs.vfat` and `mount`.
-//! See `nifeos/record:notes/boot-stick/the-program.md`, "Linux".
+//! See `partsfoundry/record:notes/boot-stick/the-program.md`, "Linux".
 
 //! # BUGS
 //!

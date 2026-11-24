@@ -2,7 +2,7 @@
 //! terminal: framebuffer, virtio-gpu, and a foreign component)'s input).
 //!
 //! A virtio-input device sends Linux evdev codes, a key going down or up, not characters. This
-//! turns them into the terminal contract's driver-half bytes (`nifeos/record:notes/terminal-contract.md`,
+//! turns them into the terminal contract's driver-half bytes (`partsfoundry/record:notes/terminal-contract.md`,
 //! `OPERATION_BYTES`) for `components/src/keyboard_driver.rs`, on the host where a wrong row is a
 //! failed test rather than a QEMU boot. It covers a US layout's main block and the arrow and
 //! navigation clusters, shifted and unshifted, and control on letters; no keypad, function keys,
@@ -191,7 +191,7 @@ impl Keyboard {
     /// Is a shift key held?
     ///
     /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-    /// (`nifeos/record:design/naming/functions-that-answer-yes-or-no.md`). It does not yet follow the Rust
+    /// (`partsfoundry/record:design/naming/functions-that-answer-yes-or-no.md`). It does not yet follow the Rust
     /// predicate rule calef ratified 2026-09-24; recommended `is_shift_held`, because `is_shift`
     /// does not parse.
     pub const fn shift(&self) -> bool {

@@ -39,7 +39,7 @@ pub enum MapError {
     /// **The address space already maps this frame with flags that, beside these, would make the
     /// page writable through one mapping and executable through the other**
     /// ([`Flags::makes_writable_executable_pair`]). Nothing in this crate raises it: the kernel's
-    /// mapping hold does, because only it knows what else a space maps (`nifeos/record:notes/mapping-log.md`, "No
+    /// mapping hold does, because only it knows what else a space maps (`partsfoundry/record:notes/mapping-log.md`, "No
     /// frame is writable and executable in one space").
     ///
     /// Name: provisional, minted 2026-10-31 (UTC) by lane
@@ -360,7 +360,7 @@ where
 
     /// Remove a mapping, and return the physical frame it pointed at, which the caller took from the
     /// frame allocator and must give back. Only the leaf is cleared: break-before-make remaps the
-    /// same address at once, so the tables stay. Teardown does not use this (`nifeos/record:notes/teardown.md`).
+    /// same address at once, so the tables stay. Teardown does not use this (`partsfoundry/record:notes/teardown.md`).
     ///
     /// Returns a [`TranslationLookasideBufferFlush`] you cannot ignore.
     ///

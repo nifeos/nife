@@ -6,7 +6,7 @@
 //! `boot_self_test` and endows the program with the slots, images and pair pages
 //! [`self_test_program`] fixes, and the program answers on its report endpoint with the two
 //! messages that module names. The tally and the verdict's grammar are `boot_ladder::verdict`'s;
-//! this crate holds only what passes between the three programs. See `nifeos/record:notes/self-test-checks.md`,
+//! this crate holds only what passes between the three programs. See `partsfoundry/record:notes/self-test-checks.md`,
 //! "The two halves".
 //!
 //! # BUGS

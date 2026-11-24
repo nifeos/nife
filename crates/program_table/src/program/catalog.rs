@@ -12,7 +12,7 @@
 /// The id is written, never derived from position, because the shell and the progenitor agree on
 /// it: removal leaves a hole, [`PROGRAM_COUNT`] is one past the highest id, and
 /// `the_wire_ids_already_shipped_never_move` pins the shipped ids. A repeated id or name fails the
-/// build at the `const` assertions below. See `nifeos/record:notes/adding-a-program/why-it-works-this-way.md`.
+/// build at the `const` assertions below. See `partsfoundry/record:notes/adding-a-program/why-it-works-this-way.md`.
 macro_rules! programs {
     (
         $(#[$enum_meta:meta])*
@@ -137,7 +137,7 @@ pub(super) const fn all_distinct_names(names: &[&str]) -> bool {
 }
 
 /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-/// (`nifeos/record:design/naming/functions-that-answer-yes-or-no.md`). It does not yet follow the Rust predicate
+/// (`partsfoundry/record:design/naming/functions-that-answer-yes-or-no.md`). It does not yet follow the Rust predicate
 /// rule calef ratified 2026-09-24; recommended `bytes_eq`, because std's `ptr_eq` and `addr_eq`
 /// shape.
 pub(super) const fn same_bytes(a: &[u8], b: &[u8]) -> bool {
@@ -207,7 +207,7 @@ programs! {
         /// prompt, and [`OutputDeclaration::Bytes`](crate::OutputDeclaration::Bytes), so `echo a |
         /// wc | wc` composes. With an input and no file, `wc report.txt` is `wc < report.txt`
         /// ([`line::Source::File`](grant_plan::line::Source::File)); see
-        /// `nifeos/record:notes/grant-expression/per-file-grants.md`.
+        /// `partsfoundry/record:notes/grant-expression/per-file-grants.md`.
         Wc { id: 6, name: "wc" },
         /// **Render markdown for a terminal** (milestone 40, `components/src/mdr.rs`,
         /// notes/documentation.md).
@@ -220,7 +220,7 @@ programs! {
         /// Name: provisional.
         Mdr { id: 7, name: "mdr" },
         /// **List the processes in the supervision domain it was spawned into** (milestone 126 (the `procps` package),
-        /// `components/src/ps.rs`, `nifeos/record:notes/process-view.md`).
+        /// `components/src/ps.rs`, `partsfoundry/record:notes/process-view.md`).
         ///
         /// The reason [`Manifest::domain`](crate::Manifest::domain) exists, and the same asymmetry [`Program::Date`] made for the
         /// clock: the grant is real and it is not something a person designates on the line. There is
@@ -228,12 +228,12 @@ programs! {
         /// by which supervision endpoint the progenitor put in its capability table, and `caps ps` prints that.
         Ps { id: 8, name: "ps" },
         /// **Name the members of that same domain that match, and do nothing to them** (milestone 126,
-        /// `components/src/pgrep.rs`, `nifeos/record:notes/process-view.md`).
+        /// `components/src/pgrep.rs`, `partsfoundry/record:notes/process-view.md`).
         ///
         /// [`Program::Ps`]'s manifest exactly: a domain names its members and does not act on them
         /// (calef, 2026-08-17), so there is no `pkill`. `ProgramArgumentDeclaration::Forbidden`, as
         /// for [`Program::Date`]: the state mask it reads is a register the shell cannot set, so at
-        /// this prompt it names every member. See `nifeos/record:notes/process-view.md` ("`pgrep`, and the `pkill`
+        /// this prompt it names every member. See `partsfoundry/record:notes/process-view.md` ("`pgrep`, and the `pkill`
         /// that cannot exist") and `crates/pgrep`'s `BUGS`.
         Pgrep { id: 9, name: "pgrep" },
         /// **Print how long the ambient monotonic counter has been running** (milestone 126,
@@ -244,7 +244,7 @@ programs! {
         /// exception to DECISIONS §10's no-ambient-authority rule), so this program needed no clock
         /// capability, no domain, no memory, no file, nothing beyond the report channel every spawn
         /// carries. The one member of milestone 126's "machine-wide statistics" row that turned out to
-        /// be pure wiring rather than a design fork; see `nifeos/record:design/roadmap/0126-who-else-is-running.md`.
+        /// be pure wiring rather than a design fork; see `partsfoundry/record:design/roadmap/0126-who-else-is-running.md`.
         Uptime { id: 10, name: "uptime" },
         /// **Print the inert-configuration page** (milestone 47's environment-variable fork, DECISIONS
         /// §111; `components/src/printenv.rs`).
@@ -263,7 +263,7 @@ programs! {
         /// It is `disk_partitioner`'s draw without the disk: both call
         /// `uuid::Builder::from_random_bytes` over sixteen bytes from the service. Its second stream
         /// exists so a boot with no entropy service leaves `uuid > id.txt` empty and says why on the
-        /// terminal, since a predictable identifier is worse than none. See `nifeos/record:notes/entropy.md`.
+        /// terminal, since a predictable identifier is worse than none. See `partsfoundry/record:notes/entropy.md`.
         ///
         /// Name: provisional. Request for Comments (RFC) 9562's own term for the object, which
         /// `uuid` crate also uses; the partition table says
@@ -372,7 +372,7 @@ programs! {
         /// invokes the reboot object, which does not return when the reset works. When the firmware
         /// refuses, it says so on its second stream.
         ///
-        /// Name: provisional. A verb, which `nifeos/record:design/naming.md` passes only as a term of art, like
+        /// Name: provisional. A verb, which `partsfoundry/record:design/naming.md` passes only as a term of art, like
         /// `bind`; every Unix since V7 has spelled this one `reboot`.
         Reboot { id: 21, name: "reboot" },
         /// **The package manager** (milestone 809 (the package client becomes a program)): it
@@ -387,7 +387,7 @@ programs! {
         /// Name: ratified 2026-10-06 (calef): the guide that makes flat-pack assembly come out the
         /// same every time. Refused `package`, `pkg`, `bpm`, `knap` and `flatpak`; `kit` and `cam`
         /// collide with shipped commands. Its verbs are apt's where apt has one
-        /// (`nifeos/record:design/naming/command-line-names.md`, 2026-10-10).
+        /// (`partsfoundry/record:design/naming/command-line-names.md`, 2026-10-10).
         Jig { id: 22, name: "jig" },
         /// **Wait a given number of milliseconds, or for ever, and say so** (milestone 933 (every
         /// job is built the way a supervised job is), `fixtures/src/job_sleeper.rs`).

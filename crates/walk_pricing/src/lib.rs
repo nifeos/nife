@@ -4,7 +4,7 @@
 //! [`price`] times slopes over [`file_system_fixture::walk`]'s tree, each over one variable: per
 //! path component, per directory entry and per byte read, and the whole walk split by call
 //! ([`Split`]) to check them against. Points are medians of [`REPS`] or [`WHOLE_REPS`] warm runs.
-//! Plain `std::fs`, so nife and a host run the same code; see `nifeos/record:notes/walk-pricing.md`.
+//! Plain `std::fs`, so nife and a host run the same code; see `partsfoundry/record:notes/walk-pricing.md`.
 //!
 //! # Name
 //!
@@ -18,7 +18,7 @@
 //! - The per-entry slope is inside one `READDIR` page; see `fixture::walk::WIDE_FILES`.
 //! - Path-shaped only: a walker holding `std::fs::Dir` handles is not measured.
 //!
-//! `nifeos/record:notes/walk-pricing.md`, "What the instrument does not see", has each in full.
+//! `partsfoundry/record:notes/walk-pricing.md`, "What the instrument does not see", has each in full.
 
 use std::path::Path;
 use std::time::Instant;
@@ -28,7 +28,7 @@ use file_system_fixture::walk as tree;
 
 /// Timed runs per slope point. Odd, so the median is a run rather than an average of two. Three
 /// rather than five because the kernel suite runs this under TCG on three architectures inside a
-/// CI job with a time limit; the figures to quote are the totals anyway (`nifeos/record:notes/walk-pricing.md`).
+/// CI job with a time limit; the figures to quote are the totals anyway (`partsfoundry/record:notes/walk-pricing.md`).
 pub const REPS: usize = 3;
 
 /// Timed runs of the whole walk. Five since milestone 606 (a directory walk costs what it does on

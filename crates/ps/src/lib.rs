@@ -1,4 +1,4 @@
-//! **`ps`: what a process listing is when there is no `/proc`** (`nifeos/record:notes/process-view.md`). The
+//! **`ps`: what a process listing is when there is no `/proc`** (`partsfoundry/record:notes/process-view.md`). The
 //! program's logic, lifted out to run on the host; `components/src/ps.rs` is the system call and the
 //! two output streams. The listing is a capability, not ambient `/proc`: this crate is handed a
 //! function that reads one entry of a domain, backed by `moho_abi::rendezvous::SURVEY` on an endowed
@@ -6,7 +6,7 @@
 //! empty domain and a refusal stay three distinct answers. [`collect`] takes the whole domain
 //! into the caller's buffer before anything is written, then the caller emits
 //! [`Survey::write_diagnostics`] and [`Survey::write_report`] in that order (§67 (a program's
-//! second stream is a declaration)). `nifeos/record:notes/process-view/the-ps-crate.md` has the reasons.
+//! second stream is a declaration)). `partsfoundry/record:notes/process-view/the-ps-crate.md` has the reasons.
 
 //! # BUGS
 //!
@@ -31,7 +31,7 @@
 /// The widest domain a survey can produce: the kernel's entire thread table (`MAXIMUM_THREADS` in
 /// `kernel/src/sched.rs`). **A buffer this size makes truncation unreachable rather than handled**,
 /// and a compile-time assertion in `kernel::user::survey_tests` keeps the two in step. The buffer
-/// is a stack allocation in `ps` and `pgrep`; `nifeos/record:notes/process-view/the-ps-crate.md` has its measured
+/// is a stack allocation in `ps` and `pgrep`; `partsfoundry/record:notes/process-view/the-ps-crate.md` has its measured
 /// cost against the child stack.
 ///
 /// Name: ratified 2026-10-27 (#2797).
@@ -195,7 +195,7 @@ impl Survey<'_> {
     /// walk carrying two facts, is DECISIONS §204 (how userspace asks where a thread runs)'s shape.
     /// A tid in the first walk and not the second died in between and keeps `None`; one only in the
     /// second is ignored. A refusal in the second walk is recorded as one in the first is, so
-    /// [`is_refused`](Self::is_refused) tells the caller. `nifeos/record:notes/process-view/the-ps-crate.md` has
+    /// [`is_refused`](Self::is_refused) tells the caller. `partsfoundry/record:notes/process-view/the-ps-crate.md` has
     /// the cost and the bargain.
     pub fn join_cpu_time(&mut self, read: &mut dyn FnMut(u64) -> (i64, u64, u64)) {
         self.join(read, |row, milliseconds| {

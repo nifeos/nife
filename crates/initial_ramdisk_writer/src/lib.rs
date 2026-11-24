@@ -7,7 +7,7 @@
 //! measurement table last, so the table measures everything above it. The result is a pure
 //! function of its inputs, so the host composer and a device updater that call it with the same
 //! inputs write the same bytes. Reading a file in, writing the image out and the kernel's
-//! measurement manifest stay with the caller. See `nifeos/record:notes/adding-a-program/the-archives.md`.
+//! measurement manifest stay with the caller. See `partsfoundry/record:notes/adding-a-program/the-archives.md`.
 
 //! # BUGS
 //!

@@ -3,7 +3,7 @@
 //! and refuses userspace whose bytes do not match (`kernel::trust::require`). [`inspect`] asks the
 //! same question on the host by searching the kernel image for the digest of each entry it would
 //! hand over, and checks the archive's measurement table against its own contents. See
-//! `nifeos/record:notes/sealed-pair.md`.
+//! `partsfoundry/record:notes/sealed-pair.md`.
 
 //! # BUGS
 //!
@@ -14,7 +14,7 @@
 //! - `nifefs::write_image` does not refuse duplicate names, and an entry whose name is not UTF-8 is
 //!   skipped: the first duplicate is hashed twice and the second never, and neither can be read by
 //!   the kernel, so the verdict is right and the dead bytes go unreported.
-//! - It asks whether a digest is present, not whether the kernel checks it; `nifeos/record:notes/sealed-pair.md`.
+//! - It asks whether a digest is present, not whether the kernel checks it; `partsfoundry/record:notes/sealed-pair.md`.
 //!
 //! Name: provisional: the thing (a sealed pair), not the act. Refused `card_check` (three of the
 //! checked places are not a card) and `seal` (a generic verb).
@@ -27,7 +27,7 @@ use measured_boot::Digest;
 /// trust root names: `progenitor` alone, which [`inspect`] requires of every archive. Every other
 /// program the kernel enters, the six test child builders of milestone 19 (run a real workload)
 /// included, is measured through the archive's table (`kernel::trust::require_program_in`). One
-/// list for `xtask::measure`, `uefi_loader`'s build and [`inspect`]; see `nifeos/record:notes/sealed-pair.md`, "One
+/// list for `xtask::measure`, `uefi_loader`'s build and [`inspect`]; see `partsfoundry/record:notes/sealed-pair.md`, "One
 /// list of boot programs".
 pub const BOOT_PROGRAMS: [&str; 1] = [measured_boot::PROGENITOR];
 
@@ -336,7 +336,7 @@ pub const AUTHORITY_NOTICE: &str = "The kernel's own check is the authority and 
 ///
 /// `kernel` is the image as it will be loaded: a flat `booti` image, an ELF, or a UEFI boot file
 /// with the pair embedded. Nothing is parsed out of it; only its bytes are searched (see
-/// `nifeos/record:notes/sealed-pair.md`, "Searching bytes, not parsing them").
+/// `partsfoundry/record:notes/sealed-pair.md`, "Searching bytes, not parsing them").
 ///
 /// # Errors
 ///

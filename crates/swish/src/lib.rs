@@ -4,8 +4,8 @@
 //! Every renderer writes through `out: &mut dyn FnMut(&[u8])`, and a directory listing comes
 //! through a second callback, `expand`, so [`echo`] and [`expansion`] are testable end to end.
 //! The split is milestone 70 (`swish`'s remaining logic in a crate, host-testable like its
-//! siblings). See `nifeos/record:notes/shell.md`, "The program and the crate (milestone 70)", and
-//! `nifeos/record:notes/shell/the-swish-crate.md`.
+//! siblings). See `partsfoundry/record:notes/shell.md`, "The program and the crate (milestone 70)", and
+//! `partsfoundry/record:notes/shell/the-swish-crate.md`.
 
 //! # BUGS
 //!

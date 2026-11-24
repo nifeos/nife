@@ -6,8 +6,8 @@
 //!
 //! It lives here rather than in the contract so the contract carries no `user_mode_runtime` edge
 //! (DECISIONS §235 (the OS is built and updated from packages, and its source divides by purpose) P3: a contract never links the runtime), the same split as
-//! `supervision_contract` and `process_builder`. See `nifeos/record:notes/live-replacement.md` and
-//! `nifeos/record:notes/state-handoff.md`.
+//! `supervision_contract` and `process_builder`. See `partsfoundry/record:notes/live-replacement.md` and
+//! `partsfoundry/record:notes/state-handoff.md`.
 //!
 //! # Examples
 //!
@@ -127,7 +127,7 @@ pub fn start(version: u64, xform: fn(u64) -> u64, a0: u64, log_base: u64, a2: u6
 /// ([`NOTE_NOT_ABSORBED`]) and exits, so the operator can decline to commit before any request is
 /// answered wrongly. The reply's second word is the tally, equal to the echoed sequence number
 /// exactly when nothing was lost. Quiescing writes the blob before the reply, so `QUIESCED` is the
-/// receipt; a quiesced instance can be told to [`POKE_RESUME`]. See `nifeos/record:notes/state-handoff.md`.
+/// receipt; a quiesced instance can be told to [`POKE_RESUME`]. See `partsfoundry/record:notes/state-handoff.md`.
 pub fn serve_with_state(
     version: u64,
     xform: fn(u64) -> u64,
@@ -253,7 +253,7 @@ pub fn serve(version: u64, xform: fn(u64) -> u64, log_base: u64, device: bool, w
             // **Stop answering, without dying**: keep the endpoint, the device and `slot`, and
             // park on a control endpoint nothing sends to, with no `log_put`. The ordinary swap
             // trigger is sent here, at the swallowed request, so the operator's quiesce arrives
-            // after it was taken. See `nifeos/record:notes/hung-component/the-wedge-test.md`.
+            // after it was taken. See `partsfoundry/record:notes/hung-component/the-wedge-test.md`.
             OPERATION_PUT if wedge != 0 && arg == wedge => {
                 user_mode_runtime::send(NOTE, NOTE_SWAP_NOW, version, served);
                 loop {

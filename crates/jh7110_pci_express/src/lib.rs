@@ -17,7 +17,7 @@
 //! `drivers/pinctrl/starfive/pinctrl-starfive-jh7110.c` and `-sys.c`, and
 //! `arch/riscv/boot/dts/starfive/jh7110.dtsi` and `jh7110-common.dtsi`. No BSD drives this
 //! controller, so each spelled-out name carries the Linux spelling as its alias. See
-//! `nifeos/record:notes/jh7110-pci-express.md`.
+//! `partsfoundry/record:notes/jh7110-pci-express.md`.
 //!
 //! # BUGS
 //!

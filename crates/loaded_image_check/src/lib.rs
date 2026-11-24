@@ -5,7 +5,7 @@
 //! 16-byte aligned. Every byte it reads belongs to the
 //! process, so the milestone-7 test spawns it with no authority. It says no by trapping through the
 //! caller's `fail`, because a program whose loader is broken has no reliable way to report; the
-//! kernel turns the trap into a fault the test counts. See `nifeos/record:notes/elf/loaded-image-check.md`.
+//! kernel turns the trap into a fault the test counts. See `partsfoundry/record:notes/elf/loaded-image-check.md`.
 
 //! # Bugs
 //!

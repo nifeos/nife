@@ -11,7 +11,7 @@
 //!
 //! It grants nothing of its own to what it cannot vouch for (§219 (how the shell names an installed
 //! program to the spawner)). What [`boot`] builds, the measured load, the spawn service and the
-//! full account of each BUGS entry are in `nifeos/record:notes/system-initializer.md`.
+//! full account of each BUGS entry are in `partsfoundry/record:notes/system-initializer.md`.
 
 //! # BUGS
 //! - A refused `console` or `line_editor`, or an absent core component, traps silently.

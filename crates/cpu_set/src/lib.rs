@@ -5,7 +5,7 @@
 //! zero; on the VisionFive 2 it is `{1, 2, 3}` (slot 0 is the S7, an M-mode monitor core with no
 //! MMU), where count-as-index touches a parked core's per-CPU state and skips an online cpu. The
 //! kernel's `smp::online_cpus` and `smp::nth_online` delegate here and add only the live mask, so
-//! the shape QEMU cannot boot is proven on the host. See `nifeos/record:notes/visionfive2/hart-roster-stops.md`.
+//! the shape QEMU cannot boot is proven on the host. See `partsfoundry/record:notes/visionfive2/hart-roster-stops.md`.
 //!
 //! # EXAMPLES
 //!

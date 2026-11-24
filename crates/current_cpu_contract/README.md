@@ -1,9 +1,9 @@
 # current_cpu_contract
 
-[![check](https://github.com/nifeos/current_cpu_contract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nifeos/current_cpu_contract/actions/workflows/ci.yml?query=branch%3Amain)
-[![proofs](https://github.com/nifeos/current_cpu_contract/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/nifeos/current_cpu_contract/actions/workflows/proofs.yml?query=branch%3Amain)
-[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/current_cpu_contract#license)
-[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/current_cpu_contract/blob/main/Cargo.toml)
+[![check](https://github.com/partsfoundry/current_cpu_contract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/partsfoundry/current_cpu_contract/actions/workflows/ci.yml?query=branch%3Amain)
+[![proofs](https://github.com/partsfoundry/current_cpu_contract/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/partsfoundry/current_cpu_contract/actions/workflows/proofs.yml?query=branch%3Amain)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/partsfoundry/current_cpu_contract#license)
+[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/partsfoundry/current_cpu_contract/blob/main/Cargo.toml)
 
 The page that tells a thread which core it is running on, without a system call. `no_std`. A kernel
 and the runtime of its processes share this one definition. The writer and the readers cannot drift

@@ -3,7 +3,7 @@
 //! `components/src/system_log.rs` wraps around [`Log`]. The service stamps each line from the
 //! writer's badge ([`registry`]), joins each writer's chunks into lines ([`assembler`]), renders
 //! them as JSONL ([`json`]) and keeps them in a 64 KiB ring read by cursor ([`ring`]). See
-//! `nifeos/record:notes/system-log.md`.
+//! `partsfoundry/record:notes/system-log.md`.
 
 //! # BUGS
 //!
@@ -12,7 +12,7 @@
 //! - A ninth writer mid-line cuts the least recent writer's line into two records, `"cut":true`.
 //! - No writer has a quota, and a writer picks its own severity, as `syslog(3)` allows.
 //! - The intake endpoint must receive nothing the kernel writes, because a kernel delivery reads
-//!   as the spawner's badge 0; `nifeos/record:notes/system-log.md`, "The intake hears only programs".
+//!   as the spawner's badge 0; `partsfoundry/record:notes/system-log.md`, "The intake hears only programs".
 //!
 //! Name: ratified 2026-10-06 (calef): §242's noun, shared with the program. `starlog` was deferred,
 //! not refused, for a reader command that does not exist yet.

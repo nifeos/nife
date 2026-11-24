@@ -1,6 +1,6 @@
 #![no_std]
 //! **The wire contract between a client and the login service**: on success it
-//! delegates capabilities back rather than changing anything ambient. See `nifeos/record:notes/login.md`.
+//! delegates capabilities back rather than changing anything ambient. See `partsfoundry/record:notes/login.md`.
 //!
 //! Not a `CALL`: a reply carries two words, and only `moho_abi::rendezvous::SEND_CAPABILITY` hands back
 //! capabilities. `REQUEST`/`RESULT` are a front door shared by every client, carrying only a bare
@@ -31,7 +31,7 @@
 //!   deployment needs `LOGOUT` to carry a capability only the session holds.
 //! - A terminal holder that exits without logging out wedges it until `login` restarts.
 //!
-//! Name: ratified 2026-08-23 (calef); see `nifeos/record:design/naming/vocabulary.md`.
+//! Name: ratified 2026-08-23 (calef); see `partsfoundry/record:design/naming/vocabulary.md`.
 
 pub use credential_contract::{
     MAXIMUM_IDENTITY, MAXIMUM_SECRET, PAGE, operation, place, read, wipe,
@@ -123,7 +123,7 @@ pub const CONNECTED: u64 = 4;
 ///    run-unvouched, `WRITE` without `GRANT` (§219 gate D2), so it cannot be passed on.
 ///
 /// A full logout destroys 3 before 4, because LIFO reclaim strands 4's pages otherwise
-/// (`nifeos/record:notes/login/contract.md`). Logging out is optional.
+/// (`partsfoundry/record:notes/login/contract.md`). Logging out is optional.
 pub const OK: u64 = 1;
 
 /// **A bit of [`OK`]'s second word: the sixth capability, the run-unvouched one, follows**
@@ -321,7 +321,7 @@ pub fn identity_hint(identity: &[u8]) -> u64 {
 // ===========================================================================================
 // **How the login service is started** (milestone 233 (`login` dies on every boot)): a contract
 // between whoever spawns it and the program, here because three binaries agree on it (rule 7).
-// `nifeos/record:notes/login/contract.md` has why a client contract's crate holds it.
+// `partsfoundry/record:notes/login/contract.md` has why a client contract's crate holds it.
 // ===========================================================================================
 
 /// **Where `fs_subtree_caretaker`'s ELF bytes are mapped, read-only, before `login`'s `_start`
@@ -330,7 +330,7 @@ pub fn identity_hint(identity: &[u8]) -> u64 {
 /// `login` gets this one program's bytes, not the boot archive: the spawner can map only pages it
 /// holds a `PageFrame` for, and a service that can read every boot file to answer a password holds
 /// authority it never exercises. The blob costs the spawner no capability-table slots
-/// (`nifeos/record:notes/login/contract.md`). Zero length means no vouched-for caretaker: `login` still starts and
+/// (`partsfoundry/record:notes/login/contract.md`). Zero length means no vouched-for caretaker: `login` still starts and
 /// answers every login [`DENIED`].
 pub const CARETAKER_ELF_VA: u64 = 0x0000_0000_0100_0000;
 
@@ -427,7 +427,7 @@ pub mod user_timetable_keeper {
 /// this crate so a host test reaches it; `components/src/login.rs` is the one caller.
 ///
 /// The slot counts are from `login.rs`'s code, counted in
-/// `nifeos/record:notes/durable-delegation/boot-rederivation-in-login.md` (question 5). They are counts, not a
+/// `partsfoundry/record:notes/durable-delegation/boot-rederivation-in-login.md` (question 5). They are counts, not a
 /// measurement: no gauge reports one process's table.
 ///
 /// Name: provisional, minted 2026-09-27 (UTC) by milestone 152's lane, for this module and

@@ -6,7 +6,7 @@
 //! spawn words ([`Target::pack`], [`pack_timing`]). The route
 //! (`components/src/power_management_chip_route.rs`) receives on [`REQUEST_SLOT`] and answers one
 //! request, [`RESET`]. A reset the power controller honors never answers; every other outcome is a
-//! [`Status`]. See `nifeos/record:notes/board-reboot.md`.
+//! [`Status`]. See `partsfoundry/record:notes/board-reboot.md`.
 //!
 //! Name: provisional.
 

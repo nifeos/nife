@@ -162,7 +162,7 @@ fn write_grant(e: &Endowment, command: &[u8], report: bool, out: &mut dyn FnMut(
 /// capability reaches, and this compares the two so a host test pins the sentence. **It measures,
 /// it does not enforce**: a scheduler cannot narrow its own endowment, so as with
 /// [`Unbacked`](crate::Unbacked) the fix is at the spawn site. See
-/// `nifeos/record:notes/scheduled-execution/archive-narrowing.md`.
+/// `partsfoundry/record:notes/scheduled-execution/archive-narrowing.md`.
 ///
 /// # Examples
 ///
@@ -348,7 +348,7 @@ mod tests {
     /// equal to the plan**, so its first assertion names the programs rather than counting them:
     /// `system_tests/src/user/timetable_tests.rs`'s `PLANNED_PROGRAMS` cannot be computed there (a
     /// `Registry` is 21632 bytes against a 4096-byte guard page), and a document edited without it
-    /// fails here. See `nifeos/record:notes/scheduled-execution/archive-narrowing.md`.
+    /// fails here. See `partsfoundry/record:notes/scheduled-execution/archive-narrowing.md`.
     #[test]
     fn the_archive_a_timetable_holds_is_measured_against_what_it_will_build() {
         let doc = parse(REFERENCE).expect("the shipped document parses");

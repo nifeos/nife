@@ -16,7 +16,7 @@
 //! Name: provisional, minted 2026-10-29 (UTC) by lane
 //! `milestone/607-item-3-contracts-drop-the-runtime`. It splits `supervision_contract`, whose own
 //! name was ratified 2026-10-28 and whose doc named this split as open
-//! (`nifeos/record:design/naming/convention-rulings.md`). calef names it.
+//! (`partsfoundry/record:design/naming/convention-rulings.md`). calef names it.
 
 use supervision_contract::{
     CHILD_STACK_VA, CHILDS_OWN_PROCESS, CHILDS_OWN_SPACE, CHILDS_OWN_THREAD, Child, ChildEndowment,
@@ -50,7 +50,7 @@ pub const PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(PAGE).u
 ///
 /// [`map_scratch`] wraps around it, since destroying a child's region revokes the builder's
 /// mappings of it (milestone 604 (provisional), DECISIONS §13 (frame revocation)). The progenitor
-/// checks its size against its own budgets at compile time. See `nifeos/record:notes/progenitor-and-loading.md`.
+/// checks its size against its own budgets at compile time. See `partsfoundry/record:notes/progenitor-and-loading.md`.
 ///
 /// Name: provisional (milestone 604, 2026-09-26).
 pub const SCRATCH_WINDOW: address_space_layout::Band = address_space_layout::Band {
@@ -90,7 +90,7 @@ static SCRATCH_NEXT: core::sync::atomic::AtomicU64 =
     core::sync::atomic::AtomicU64::new(SCRATCH_WINDOW.start);
 
 /// **Map `frame` at the next free page of [`SCRATCH_WINDOW`]**, with page tables from `own_ut`,
-/// read/write if `writable`; `Err` after a full lap. See `nifeos/record:notes/progenitor-and-loading.md`.
+/// read/write if `writable`; `Err` after a full lap. See `partsfoundry/record:notes/progenitor-and-loading.md`.
 ///
 /// # BUGS
 /// - One thread per builder: the cursor takes no lock, so two building threads waste a probe.
@@ -246,7 +246,7 @@ pub fn build_child(
 ///
 /// Split out for milestone 23 (a capability-routed component OS with live replacement)'s live
 /// replacement (DECISIONS §41 (the endpoint is the broker)), which maps a device in before
-/// `CONFIGURE` consumes the address space (`nifeos/record:notes/live-replacement.md`). A failure gives back every
+/// `CONFIGURE` consumes the address space (`partsfoundry/record:notes/live-replacement.md`). A failure gives back every
 /// capability slot it took (milestone 757 (a test kernel fails a process on its Nth retype),
 /// provisional); the memory is the caller's, given back by destroying `build_ut`.
 pub fn build_child_space(
@@ -356,7 +356,7 @@ fn lay_out_child(
     // The timebase page: the builder's own rate, written into a fresh page from `build_ut`, so
     // every child of this, the only userspace loader, inherits it. A builder that does not know
     // the rate writes a zeroed page and the child refuses (calef, 2026-09-21: only accurate
-    // numbers). See `nifeos/record:notes/progenitor-and-loading.md`.
+    // numbers). See `partsfoundry/record:notes/progenitor-and-loading.md`.
     #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
     {
         let page =

@@ -1,5 +1,5 @@
 //! The aarch64 format: four levels, 4 KiB pages, 48-bit virtual addresses. The descriptor is full
-//! of traps; the constants below carry the ones that bite. See `nifeos/record:notes/page-tables.md`.
+//! of traps; the constants below carry the ones that bite. See `partsfoundry/record:notes/page-tables.md`.
 //!
 //! ```text
 //!  47      39 38      30 29      21 20      12 11         0
@@ -335,7 +335,7 @@ mod tests {
 /// The walk in `Mapper` is memory-safe and isolating only if the index math is right for every
 /// address and the leaf keeps address and permissions apart. These prove exactly that for this
 /// format, symbolically. The Sv39 module proves the same properties for its format; the shared walk
-/// inherits both. See `nifeos/record:notes/verification.md`.
+/// inherits both. See `partsfoundry/record:notes/verification.md`.
 #[cfg(kani)]
 mod verification {
     use super::*;

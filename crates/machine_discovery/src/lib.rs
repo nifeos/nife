@@ -3,7 +3,7 @@
 //! ACPI.
 //!
 //! Each record is `Copy` with public fields, and `missing_requirements` is the one verb a call
-//! site branches on. There is no trait. See `nifeos/record:notes/isa-discovery.md` for the tiers of discovery
+//! site branches on. There is no trait. See `partsfoundry/record:notes/isa-discovery.md` for the tiers of discovery
 //! and `notes/machine-discovery.md` for the shared readers.
 
 //! # BUGS
@@ -19,7 +19,7 @@
 
 #![no_std]
 // milestone 68's ratchet is workspace-wide (§107); this crate opts out until its 54-item
-// worklist (`nifeos/record:notes/doc-coverage.md`) is burned down.
+// worklist (`partsfoundry/record:notes/doc-coverage.md`) is burned down.
 #![allow(missing_docs)]
 
 // ACPI (milestone 161), and it sits here rather than in the x86_64 module for the reason

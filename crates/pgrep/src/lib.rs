@@ -1,10 +1,10 @@
-//! **`pgrep`: a domain names its members, and that is all naming buys you** (`nifeos/record:notes/process-view.md`).
+//! **`pgrep`: a domain names its members, and that is all naming buys you** (`partsfoundry/record:notes/process-view.md`).
 //! This is the filter, lifted out so it runs on the host; `components/src/pgrep.rs` is the system call
 //! and the output. It takes a finished [`ps::Survey`] from [`ps::collect`] rather than walking,
 //! because two implementations of `SURVEY`'s resume protocol could disagree. It tells four answers
 //! apart (matched, none matched, an empty domain, a refusal), and its pattern matches a member's
 //! run state, resolved by [`Selector::from_pattern`] into a bitmask before it crosses a process
-//! boundary. There is no `pkill`: a tid carries no authority. See `nifeos/record:notes/process-view/pgrep.md`.
+//! boundary. There is no `pkill`: a tid carries no authority. See `partsfoundry/record:notes/process-view/pgrep.md`.
 
 //! # BUGS
 //!
@@ -76,7 +76,7 @@ impl Selector {
     /// A pattern that matched no state does not collapse into this zero:
     /// [`from_pattern`](Selector::from_pattern) goes through [`of`](Selector::of) and can return
     /// [`NONE`](Selector::NONE), which [`Selection::write_diagnostics`] reports on its own.
-    /// See `nifeos/record:notes/process-view/pgrep.md`, "The zero on the wire".
+    /// See `partsfoundry/record:notes/process-view/pgrep.md`, "The zero on the wire".
     pub const fn from_wire(mask: u64) -> Selector {
         if mask == 0 {
             Selector::EVERY

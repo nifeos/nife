@@ -14,7 +14,7 @@ use crate::{Manifest, StartupContract, spawn_protocol};
 /// region, narrowed to `WRITE`, is its allocator's budget at
 /// `std_runtime_contract::MEMORY_REGION_SLOT`. 256 pages of heap, the test harness's
 /// `BUDGET_PAGES`, plus 128 for the build; not a measured high-water mark. See
-/// `nifeos/record:notes/grant-expression/grant-plan-crate.md` ("The `std` region").
+/// `partsfoundry/record:notes/grant-expression/grant-plan-crate.md` ("The `std` region").
 ///
 /// Name: provisional.
 pub const STD_REGION_PAGES: u64 = 256 + 128;
@@ -25,7 +25,7 @@ pub const STD_REGION_PAGES: u64 = 256 + 128;
 ///
 /// A package manager reads a whole package into one run of its own pages before it sends it a page
 /// at a time, so the run is its buffer and its frames. It comes from the progenitor's image pool,
-/// which is sized for a package's bytes. See `nifeos/record:notes/grant-expression/grant-plan-crate.md` ("The `std`
+/// which is sized for a package's bytes. See `partsfoundry/record:notes/grant-expression/grant-plan-crate.md` ("The `std`
 /// region").
 ///
 /// Name: provisional.
@@ -44,14 +44,14 @@ pub const fn named_std_region_pages(m: &Manifest) -> u64 {
 /// its job pool, so both read the number here. Counted from the largest debug image the prompt
 /// spawns, its stack, a thread control block, an address-space root, the tables for the windows a
 /// child touches and the mapping records of §13 (capability revocation and untyped reclamation);
-/// see `nifeos/record:notes/system-initializer/budgets.md`.
+/// see `partsfoundry/record:notes/system-initializer/budgets.md`.
 ///
 /// Name: provisional, moved here from `system_initializer` by milestone 933's lane.
 pub const JOB_REGION_PAGES: u64 = 60;
 
 /// **One directory-granted native job's region**: the program, the `fs_subtree_caretaker` that
 /// carries its grant and the two endpoints between them, out of one carve (§92 (a caretaker is
-/// supervised by the client it serves)). See `nifeos/record:notes/system-initializer/budgets.md`.
+/// supervised by the client it serves)). See `partsfoundry/record:notes/system-initializer/budgets.md`.
 ///
 /// Name: provisional, moved here from `system_initializer` by milestone 933's lane.
 pub const DIRECTORY_JOB_REGION_PAGES: u64 = 98;
@@ -60,7 +60,7 @@ pub const DIRECTORY_JOB_REGION_PAGES: u64 = 98;
 /// pool was this size, and the shell's budget carries the same mix for the jobs it holds (milestone
 /// 933). Small on purpose, as the pool was: `script/swish-check` runs more jobs through it than it
 /// could hold without the regions coming back, so widening it silently retires that gate. See
-/// `nifeos/record:notes/system-initializer/budgets.md`.
+/// `partsfoundry/record:notes/system-initializer/budgets.md`.
 ///
 /// Name: provisional (milestone 933's lane).
 pub const JOB_POOL_PAGES: u64 = JOB_REGION_PAGES * 6 + STD_REGION_PAGES;

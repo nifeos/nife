@@ -51,7 +51,7 @@ pub struct Document<'a> {
 
 /// Why a document does not parse. Every variant carries the **1-based line number** it went wrong
 /// on, because a configuration error a person cannot find is a configuration error they will not
-/// fix. The retired `multicast_dns_config` reached the same shape for the same reason (`nifeos/record:notes/mdns.md`).
+/// fix. The retired `multicast_dns_config` reached the same shape for the same reason (`partsfoundry/record:notes/mdns.md`).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Error {
     /// A line that is neither blank, a comment, nor a schedule word followed by a command.
