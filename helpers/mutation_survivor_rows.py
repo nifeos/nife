@@ -172,7 +172,10 @@ def home_problem(home, root):
         if not pathlib.Path(record_root.path("design/roadmap/proposals", f"{rest}.md", top=root)).is_file():
             return f"home {home!r}: no design/roadmap/proposals/{rest}.md"
     elif kind == "BUGS":
+        # A BUGS section may sit in a component's own file here or in a record document.
         p = root / rest
+        if not p.is_file():
+            p = pathlib.Path(record_root.path(rest, top=root))
         if not p.is_file() or not BUGS_HEADING.search(p.read_text(errors="replace")):
             return f"home {home!r}: {rest} is not a file with a BUGS section"
     return None
