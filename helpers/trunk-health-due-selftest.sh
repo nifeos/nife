@@ -75,10 +75,8 @@ want "wording drift" "$out" "$stranger_unknown"
 # 5. exit 0 is authoritative even when stdout says DUE.
 stub stranger-test 0 'stranger-test: DUE. no run in 31 days'
 out="$(pass)"
-for n in stranger-test; do
-	if printf '%s\n' "$out" | grep -q "^$n "; then
-		echo "$me: exit 0 must produce no $n row:" >&2; printf '%s\n' "$out" >&2; exit 1
-	fi
-done
+if printf '%s\n' "$out" | grep -q "^stranger-test "; then
+	echo "$me: exit 0 must produce no stranger-test row:" >&2; printf '%s\n' "$out" >&2; exit 1
+fi
 
 echo "$me: DUE rows, cannot-ask rows and exit-code authority all as expected"
