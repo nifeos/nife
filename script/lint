@@ -274,16 +274,16 @@ echo "==> script/verify --parallel forks the shards, joins their verdicts, and k
 python3 helpers/verify_parallel.py --selftest >/dev/null
 echo "==> script/idle-pull-requests classifies open pull requests (the queue sweep's idle check)"
 # lint-scope: code
-# notes/idle-pull-requests.md: the classifier (queued, armed, held, running, idle) and its four flags run on
+# nifeos/record:notes/idle-pull-requests.md: the classifier (queued, armed, held, running, idle) and its four flags run on
 # fixture pull requests with a stub for the blocker lookup, no `gh` and no network.
 python3 helpers/idle_pull_requests.py --selftest >/dev/null
 echo "==> script/crate-move stages a move as the runbook says"
 # lint-scope: code
-# notes/crate-move.md: the dry run deletes Name: blocks, regenerates falsification patches over the stripped source and
+# nifeos/record:notes/crate-move.md: the dry run deletes Name: blocks, regenerates falsification patches over the stripped source and
 # fills the template pins. The selftest drives those transforms on fixtures, with no tree and no
 # network.
 python3 helpers/crate_move.py --selftest >/dev/null
-# The board-check checker (notes/jh7110-entropy-board-check.md) judges a log no gate here can produce,
+# The board-check checker (nifeos/record:notes/jh7110-entropy-board-check.md) judges a log no gate here can produce,
 # so its selftest is what keeps summarize, fill and check right between bench sessions, and it holds
 # results-template.md to the code.
 python3 -I tools/jh7110_entropy_board_check/results.py --selftest >/dev/null
@@ -393,7 +393,7 @@ python3 helpers/clippy_record.py fuzz/clippy cargo clippy \
     --manifest-path fuzz/Cargo.toml --all-targets -- -D warnings
 
 # A crate that is to leave keeps its fuzz targets in its own `fuzz/` workspace, for the same reason
-# and in the same lane. See notes/talc-fuzzing.md.
+# and in the same lane. See nifeos/record:notes/talc-fuzzing.md.
 echo "==> clippy: memory_region_heap fuzz target (its own workspace)"
 # lint-scope: code
 # lint-lane: fuzz
@@ -560,7 +560,7 @@ cargo clippy -p components --features confinement_attackers --target aarch64-unk
 #   THREE architectures is still caught, by the aarch64 and riscv64 passes above, which keep full
 #   dead-code checking. The only thing that can now hide is code dead on x86_64 alone, which today
 #   is the expected state of a partial port and tomorrow is a real gap. **The trigger for removing
-#   this flag is the x86 boot joining the shared path**; see design/roadmap/0161-x86-64-kernel-port.md.
+#   this flag is the x86 boot joining the shared path**; see nifeos/record:design/roadmap/0161-x86-64-kernel-port.md.
 #
 # - **`-A clippy::reversed_empty_ranges`** is a smaller thing and is not a suppression of a real
 #   finding: `arch::mmu::VIRTUAL_IO_SLOTS` is genuinely ZERO on q35 (a PC has no virtio-mmio bus; every
@@ -669,7 +669,7 @@ cargo clippy -p user_mode_runtime --target x86_64-unknown-none --lib -- -D warni
 # (the boot block is `cfg(not(test))`).
 #
 # **The list below is written out, not globbed, and that is the property to keep** (milestone 296,
-# which removed `initboot` from it). Milestone 401, `design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md`,
+# which removed `initboot` from it). Milestone 401, `nifeos/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md`,
 # is the class: a gate that computes the set it judges goes BLIND rather than red when the set
 # empties, which is how milestone 265's crate check passed by checking zero crates. This loop cannot
 # do that -- an empty `for` list is visible in the diff and in the output, since every iteration
@@ -894,7 +894,7 @@ if missing:
     print('For a third of this tree\'s unsafe fns the doc section is the ONLY enforcement there '
           'is: they contain no unsafe operation, so neither unsafe lint has anything to fire on. '
           'Spell it `# Safety` (a heading), not `SAFETY:` (a block comment): that is the form '
-          'rustdoc renders as the contract. See notes/unsafe-obligations.md.', file=sys.stderr)
+          'rustdoc renders as the contract. See nifeos/record:notes/unsafe-obligations.md.', file=sys.stderr)
     sys.exit(1)
 
 print(f'unsafe fn contracts: {total} declarations '
@@ -989,7 +989,7 @@ python3 helpers/lint_arch_parity.py
 # reach `script/citations` and the roadmap's `## Revisit` check are honest about for their own
 # claims. A file that is data rather than code (the boot header aarch64/image_header.s is the one
 # example today) says so with a `CFI-EXEMPT:` comment instead of carrying directives that would
-# describe a frame the file never builds; see notes/cfi-unwind.md for what that would cost.
+# describe a frame the file never builds; see nifeos/record:notes/cfi-unwind.md for what that would cost.
 echo "==> hand-written asm carries CFI"
 # lint-scope: code
 cfi_bad=""
@@ -1007,7 +1007,7 @@ done
 if [ "$cfi_seen" -eq 0 ]; then
     echo "lint: no .s files matched kernel/src/arch/*/*.s, so the CFI check judged nothing." >&2
     echo "Hand-written assembly moved. Fix the pattern above; a selector that matches nothing" >&2
-    echo "passes by checking nothing (design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md)." >&2
+    echo "passes by checking nothing (nifeos/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md)." >&2
     exit 1
 fi
 if [ -n "$cfi_bad" ]; then
@@ -1017,7 +1017,7 @@ if [ -n "$cfi_bad" ]; then
     echo "Add .cfi_startproc/.cfi_endproc around each function (and .type/.size), describing the" >&2
     echo "frame the function actually builds. Where a function genuinely has no caller (a boot" >&2
     echo "entry, a fake-return trampoline), say so with .cfi_undefined on the return-address" >&2
-    echo "register rather than inventing a formula; see notes/cfi-unwind.md and the CFI comments" >&2
+    echo "register rather than inventing a formula; see nifeos/record:notes/cfi-unwind.md and the CFI comments" >&2
     echo "in kernel/src/arch/*/context.s for the shape. A file that is genuinely data, not code," >&2
     echo "gets a CFI-EXEMPT: comment instead (see kernel/src/arch/aarch64/image_header.s)." >&2
     exit 1
@@ -1037,7 +1037,7 @@ echo "CFI: every hand-written .s file with an exported symbol carries call-frame
 # dispatchers), and each is a codegen path away from the same host-compile failure. The helper
 # walks `kernel/src`, reads each attribute whole so a multi-line `cfg_attr` is one unit, and fails
 # any custom section without the gate, so the next one cannot land ungated.
-# `notes/kernel-proofs.md` stub-list item 5 and `notes/linker-scripts.md` carry the design. The
+# `nifeos/record:notes/kernel-proofs.md` stub-list item 5 and `nifeos/record:notes/linker-scripts.md` carry the design. The
 # empty-selector guard fails a run that judges no custom section at all.
 echo "==> the custom-section link_section names are gated to the bare-metal target"
 # lint-scope: code
@@ -1099,7 +1099,7 @@ if start < 0:
           file=sys.stderr)
     print("      machine description a function so that nothing could gate half of it. If it was",
           file=sys.stderr)
-    print("      renamed, rename it here too and say why in design/roadmap/0267-*.md.",
+    print("      renamed, rename it here too and say why in nifeos/record:design/roadmap/0267-*.md.",
           file=sys.stderr)
     sys.exit(1)
 
@@ -1130,7 +1130,7 @@ if bad:
           file=sys.stderr)
     print("print on every boot. A demonstration that should be compiled out belongs in the tour",
           file=sys.stderr)
-    print("block in `kernel_main`, or in a userspace program. See design/roadmap/0267-*.md.",
+    print("block in `kernel_main`, or in a userspace program. See nifeos/record:design/roadmap/0267-*.md.",
           file=sys.stderr)
     sys.exit(1)
 
@@ -1152,7 +1152,7 @@ M267EOF
 # see. So this takes the posture of milestone 112 (the SAFETY comments that bind nobody) instead: a
 # narrow check that is true beats a broad one that is aspirational. What it buys is the forcing function, because an author made to write down
 # where the partner lives has to go and look for it, and that is exactly the step neither 43's nor
-# 80's author took. See notes/memory-ordering.md, which measures the broad check and shows why it fails.
+# 80's author took. See nifeos/record:notes/memory-ordering.md, which measures the broad check and shows why it fails.
 #
 # Fences only, not every `Ordering::Release`. A `Release` store names its variable, so its partner
 # is a grep away; `fence()` names nothing at all, which is what makes it the site where the partner
@@ -1260,7 +1260,7 @@ Put a comment directly above the fence saying where the matching acquire or rele
 `// %s <file> <function>'s fence(Acquire)`. If there is no matching fence because the ordering
 comes from somewhere else (a blocking IPC rendezvous, a lock, a spawn), say THAT and say which,
 because a reader who cannot find the partner has no way to tell a sound fence from a one-sided
-one. See notes/memory-ordering.md for the inventory and every site's adjudication.
+one. See nifeos/record:notes/memory-ordering.md for the inventory and every site's adjudication.
 """ % MARKER)
     sys.exit(1)
 print(f"fences: {seen} outside test code, each naming its counterpart")
@@ -1360,7 +1360,7 @@ echo "==> no [patch] section reaches main"
 # lint-scope: code
 # lint-quick
 # A crate that has moved to its own repository is pinned as { version, git, rev } at its tag's commit
-# (milestone 857 (crates released on their own), fork 2; notes/crate-move.md). A [patch] redirects a dependency for the whole build
+# (milestone 857 (crates released on their own), fork 2; nifeos/record:notes/crate-move.md). A [patch] redirects a dependency for the whole build
 # and is a local development aid, so none lands, in any manifest or .cargo/config.toml. The one entry
 # allowed is a path into vendor/, code this tree carries. helpers/patch-section-check-selftest.sh
 # plants each form and a clean tree.
@@ -1410,10 +1410,10 @@ echo "actions: every uses: line is pinned to a commit SHA"
 # marker words are matched with the punctuation attached rather than as bare words.
 #
 # **Markdown is out of scope, and that is a self-consistency exemption rather than a gap.** Prose
-# that explains this convention has to spell the forbidden shape (design/roadmap/0094-untracked-work.md
+# that explains this convention has to spell the forbidden shape (nifeos/record:design/roadmap/0094-untracked-work.md
 # does); the em-dash gate below dodges the same problem by building
 # its character out of UTF-8 bytes, and a TODO marker cannot be disguised that way without making
-# the sentence unreadable. Prose is also where a *historical* marker legitimately lives: notes/uart.md
+# the sentence unreadable. Prose is also where a *historical* marker legitimately lives: nifeos/record:notes/uart.md
 # quotes a milestone-5 TODO that was resolved five milestones ago, as history, not as intent. Code
 # has no such category. This script excludes itself for the same reason.
 #
@@ -1432,7 +1432,7 @@ if [ -n "$todo_bad" ]; then
     echo "" >&2
     echo "Spell it TODO(milestone N): and add the block under design/roadmap/, or take the note out" >&2
     echo "of the marker form and record the limitation next to the feature (the BUGS convention)." >&2
-    echo "A marker with no home is work nobody will find; see design/roadmap/0094-untracked-work.md." >&2
+    echo "A marker with no home is work nobody will find; see nifeos/record:design/roadmap/0094-untracked-work.md." >&2
     exit 1
 fi
 # Every milestone a compliant marker cites has to have a block. Cheap, and it is the check that
@@ -1453,7 +1453,7 @@ todo_count=$(git grep -hoE '(TODO|FIXME|XXX|HACK)[[:blank:]]*\(milestone [0-9]+\
     ':!vendor' ':!patches' ':!*.md' ':!script/lint' 2>/dev/null | wc -l | tr -d ' ')
 echo "TODO markers: $todo_count in code, each naming a milestone that has a block"
 
-# The milestone blocks, validated (see notes/roadmap.md's status vocabulary and script/roadmap).
+# The milestone blocks, validated (see nifeos/record:notes/roadmap.md's status vocabulary and script/roadmap).
 # Catches a status token nobody defined, a block missing the `## Index row` section that carries its
 # Built date and its precis, and a milestone referenced in prose that has no block, which is exactly
 # how milestone 34 (gPU acceleration via virtio-gpu 3D (the display ladder's rung four)) went missing. Documentation is part of this project's deliverable, so the record
@@ -1604,7 +1604,7 @@ if bad:
               f'{os.path.basename(b)[len(n):]}, and its links with it)', file=sys.stderr)
     print('calef ruled on 2026-10-07 (UTC) that these numbers are zero-padded to four digits so the',
           file=sys.stderr)
-    print('directory sorts. See design/decisions/README.md and design/roadmap/README.md.',
+    print('directory sorts. See nifeos/record:design/decisions/README.md and nifeos/record:design/roadmap/README.md.',
           file=sys.stderr)
     sys.exit(1)
 print(f'numbered records: every file in {", ".join(DIRS)} carries a four-digit number')
@@ -1639,7 +1639,7 @@ if [ -f "$dependabot" ] && grep -qE '^[[:space:]]*ignore:' "$dependabot" &&
     echo "If a dependency genuinely must be held, say so where you hold it:" >&2
     echo "  # EXCEPTION (§81): <why this one cannot be upgraded, and what would change it>" >&2
     echo >&2
-    echo "See design/decisions/0081-dependency-upgrades.md." >&2
+    echo "See nifeos/record:design/decisions/0081-dependency-upgrades.md." >&2
     exit 1
 fi
 
@@ -1695,7 +1695,7 @@ if missing or stale:
           file=sys.stderr)
     print('lockfile nothing watches is an upgrade nobody hears about; see',
           file=sys.stderr)
-    print('design/decisions/0081-dependency-upgrades.md.', file=sys.stderr)
+    print('nifeos/record:design/decisions/0081-dependency-upgrades.md.', file=sys.stderr)
     sys.exit(1)
 print(f'update watchers: all {len(want)} committed Cargo.lock directories are in dependabot.yml')
 PY
@@ -1754,7 +1754,7 @@ PYALLOWLIST
 # written, and both gates reported clean throughout because both numbers exist.
 #
 # This compares a citation's parenthetical gloss against the record's own title or body, and checks
-# that an attributed block quote still exists in the file it names. See notes/citations.md for the
+# that an attributed block quote still exists in the file it names. See nifeos/record:notes/citations.md for the
 # tolerance rule and for the honest list of what it still cannot see.
 #
 # The selftest runs first and costs nothing (fixtures, no subprocesses, no tree), for the reason
@@ -1774,7 +1774,7 @@ echo "==> citations"
 # it on 2026-09-19: *"add the gloss ratchet."* A `milestone N` or `§N` on a line this branch ADDS has
 # to say what it cites, once per number per file; nothing existing is touched, and nothing is swept.
 #
-# **Why a ratchet and not a sweep.** notes/citations.md priced the sweep and refused it: 2,911 sites,
+# **Why a ratchet and not a sweep.** nifeos/record:notes/citations.md priced the sweep and refused it: 2,911 sites,
 # every one of which has to be READ to know what its author meant, because a pattern-applied gloss
 # would make a wrong citation look verified. That argument is about a sweep and says nothing against
 # a rule on new text, which is what this is. It moves the tree at the rate the tree changes.
@@ -1972,7 +1972,7 @@ python3 helpers/kernel_dependency_unsafe.py --check
 # from the build graph, so it happily mutates a file nothing compiles and scores every one of those
 # mutants MISSED, in "0s build + 0s test". `uefi_loader/src/main.rs` is 154 of that crate's 189
 # mutants, which is what scored the code that boots xenon at 15% and put it in
-# notes/mutation-testing.md as one of two crates blamed for the tree's score falling seven points.
+# nifeos/record:notes/mutation-testing.md as one of two crates blamed for the tree's score falling seven points.
 # The library half beside it, which is the half the design deliberately lifted out to BE
 # host-testable, was at 91% the whole time.
 #
@@ -2118,7 +2118,7 @@ MUTEOF
 # to prefer it: `script/coverage`'s per-feature line is now belt and braces rather than the mechanism.
 #
 # **Not the same question as the four-list problem beside it**, which is worth saying because the two
-# read alike. Milestone 393, `design/roadmap/0393-the-host-excluded-crate-set-lives-in-four-places.md`, is about
+# read alike. Milestone 393 (four files each record which crates cannot compile for the host), `nifeos/record:design/roadmap/0393-the-host-excluded-crate-set-lives-in-four-places.md`, is about
 # which CRATES cannot compile for the host, restated in four files where one derives it. This is
 # about a crate that compiles perfectly well and a feature of it that a single-package test run does
 # not turn on. Solving either leaves the other exactly where it was.
@@ -2394,7 +2394,7 @@ python3 "$(dirname "$0")/../helpers/lint_icount_baselines.py" || exit 1
 # true; a real marker is lower case. The names below are the real ones.)
 #
 # and the registry below is the other half: one entry per name, each saying in the prose's own words
-# WHICH QUESTION IT ANSWERS, and deriving the answer from the tree. See notes/counted-claims.md.
+# WHICH QUESTION IT ANSWERS, and deriving the answer from the tree. See nifeos/record:notes/counted-claims.md.
 #
 # **It is a ratchet, not a sweep.** An unmarked number stays unchecked and the gate says nothing
 # about it; the population grows as people touch numbers. That is the honest boundary of what this
@@ -2404,7 +2404,7 @@ echo "==> counted claims"
 # lint-scope: both
 # The comment-and-literal stripper every count below is built on, against its fixtures first. It
 # once backtracked exponentially on an unterminated raw string (CodeQL alert 26, see
-# notes/code-scanning.md), which would hang this gate instead of failing it.
+# nifeos/record:notes/code-scanning.md), which would hang this gate instead of failing it.
 python3 helpers/rust_source.py --selftest >/dev/null
 python3 - <<'PYEOF' || exit 1
 import json
@@ -2613,7 +2613,7 @@ def _security_audits():
 # unsafe code is there in a code base, and is that something we should be monitoring and driving in
 # a particular direction over time?" A standalone census would have answered it with another
 # one-time number nobody re-takes, which is the failure this milestone exists to fix, so it is a
-# derivation here instead. See notes/register-of-measures.md and notes/unsafe-obligations.md.
+# derivation here instead. See nifeos/record:notes/register-of-measures.md and nifeos/record:notes/unsafe-obligations.md.
 #
 # **The counting lives in `helpers/rust_source.py` and the file WALK lives here**, which is
 # milestone 236's line and worth reading before moving either. `script/metrics` derives the same
@@ -2687,7 +2687,7 @@ REGISTRY = {
         'how many workspace packages carry at least one Kani proof harness',
         lambda: len(_harness_hits()),
     ),
-    # The per-crate harness counts notes/verification/core-harnesses.md marks. One entry per crate
+    # The per-crate harness counts nifeos/record:notes/verification/core-harnesses.md marks. One entry per crate
     # that appendix covers, added by milestone 427 (the documentation sweep the worklist already
     # ranks) after five of its nine counts were found wrong: a count that rots silently in prose
     # had already cost two sweeps their re-derivation. A lane landing a harness in one of these
@@ -2760,7 +2760,7 @@ REGISTRY = {
     # The census's third population (milestone 139 (drive the unsafe count down), 2026-10-07 UTC;
     # name provisional). Its opening measurement counted `unsafe impl` as one number and the gate
     # above watched only its Send/Sync half; this is the other half, held the same way, at the
-    # tree's exact value. `unsafe fn` is deliberately still not here: notes/unsafe-obligations.md
+    # tree's exact value. `unsafe fn` is deliberately still not here: nifeos/record:notes/unsafe-obligations.md
     # says why, beside this marker.
     'unsafe-trait-claims': (
         'how many `unsafe impl` of an unsafe trait other than Send/Sync the tree makes, each one a '
@@ -2770,7 +2770,7 @@ REGISTRY = {
     # The census's fourth population, added 2026-10-12 (UTC) by milestone 891 (a mutable static
     # becomes an atomic, a lock or a recorded cell); name provisional. A ratchet ceiling, so it
     # fails in both directions: a new `static mut` stops the lane that adds it, and one converted
-    # away has to be banked by lowering the marker. notes/unsafe-obligations/ceilings.md has the
+    # away has to be banked by lowering the marker. nifeos/record:notes/unsafe-obligations/ceilings.md has the
     # scope.
     'static-mut-declarations': (
         'how many `static mut` declarations the Rust that runs on nife makes outside its test '
@@ -2791,7 +2791,7 @@ REGISTRY = {
 # **A ratchet ceiling (2026-09-24): a ceiling that must also follow the tree DOWN.** An ordinary
 # ceiling is silent when the tree falls below it, which is right for a quantity with headroom and
 # wrong for one whose ceiling is meant to sit at the tree's exact value. `agents-md-lines` is the
-# case. Its ceiling was 935 when #1189 split AGENTS.md into imperatives plus `design/tenets/`
+# case. Its ceiling was 935 when #1189 split AGENTS.md into imperatives plus `nifeos/record:design/tenets/`
 # appendices and took the file to 584 lines, and from then on the gate would have let the file
 # regrow by 351 lines without a word: a fixed ceiling far above the file stops nothing. So a name in
 # this set fails in BOTH directions. Above the ceiling is the old failure (take the addition out, or
@@ -2800,8 +2800,8 @@ REGISTRY = {
 #
 # The shape is `unsafe-thread-safety-claims`' (a ceiling written at the tree's exact value) with the
 # slack direction closed, and the baseline stays where every counted claim's does: in the marker,
-# beside the claim it counts (for `static-mut-declarations`, notes/unsafe-obligations/ceilings.md;
-# for `agents-md-lines`, design/roadmap/0118-constitution-budget.md until 2026-10-06). Not a
+# beside the claim it counts (for `static-mut-declarations`, nifeos/record:notes/unsafe-obligations/ceilings.md;
+# for `agents-md-lines`, nifeos/record:design/roadmap/0118-constitution-budget.md until 2026-10-06). Not a
 # separate baseline file, because the marker already is one, and two places holding one number is
 # the drift this convention exists to end. BUGS: a raise is still an ordinary edit to that marker. Nothing here compares the number
 # against origin/main, because every raise on record (925 to 929, and before) was a considered act
@@ -2879,7 +2879,7 @@ if bad:
         print(f'  {entry}', file=sys.stderr)
     print('', file=sys.stderr)
     print('Fix the number, or fix the derivation in script/lint if the tree is right and the gate '
-          'is asking the wrong question. See notes/counted-claims.md.', file=sys.stderr)
+          'is asking the wrong question. See nifeos/record:notes/counted-claims.md.', file=sys.stderr)
     sys.exit(1)
 
 unused = sorted(set(REGISTRY) - seen)
@@ -2902,7 +2902,7 @@ if _census:
           f'{_census["thread_safety"]} Send/Sync claims (ceiling); '
           f'{_census["trait_claims"]} other unsafe trait impls (ceiling); '
           f'{_census["static_mut"]} static mut declarations (ceiling, follows the tree down). '
-          f'See notes/register-of-measures.md')
+          f'See nifeos/record:notes/register-of-measures.md')
 
 # --- the three derivations that could not be made one (milestone 236) ----------------------------
 #
@@ -2922,7 +2922,7 @@ if _census:
 # `rust_source.harness_count` is the function `script/metrics` itself calls. Nothing below knows
 # what a harness looks like.
 #
-# One number rather than a table: the count is what reaches a reader, on notes/project-metrics.md
+# One number rather than a table: the count is what reaches a reader, on nifeos/record:notes/project-metrics.md
 # and in the prose this file's counted claims gate, and a per-package breakdown would fail on a
 # scope difference the three deliberately have.
 # no-cargo-ok: everything above runs without cargo; only this cross-check needs `cargo metadata`.
@@ -2952,7 +2952,7 @@ if len(set(_ways.values())) != 1:
 if _text_count['falsified'] != int(_falsifications[1]):
     print(f'lint: script/falsifications counts {_falsifications[1]} harnesses with evidence and '
           f'helpers/rust_source.py counts {_text_count["falsified"]}, so the falsification ratio on '
-          f'notes/project-metrics.md is not the one script/falsifications reports. See milestone 236.',
+          f'nifeos/record:notes/project-metrics.md is not the one script/falsifications reports. See milestone 236.',
           file=sys.stderr)
     sys.exit(1)
 # The fourth state (§134, amended 2026-10-06) is held to the same agreement, because it is a series
@@ -2961,7 +2961,7 @@ if _text_count['falsified'] != int(_falsifications[1]):
 if _text_count['unfalsifiable'] != int(_falsifications[2]):
     print(f'lint: script/falsifications counts {_falsifications[2]} unfalsifiable harnesses and '
           f'helpers/rust_source.py counts {_text_count["unfalsifiable"]}, so the harnesses chart on '
-          f'notes/project-metrics.md is not the one script/falsifications reports. See milestone '
+          f'nifeos/record:notes/project-metrics.md is not the one script/falsifications reports. See milestone '
           f'236 (three derivations are copied between scripts, and nothing notices when they drift).',
           file=sys.stderr)
     sys.exit(1)
@@ -2971,7 +2971,7 @@ PYEOF
 
 # The naming conventions, for the ones a machine can check (milestone 46, DECISIONS §39). The rest of
 # them -- "name a component for what it is", "prefer a word a reader can parse without prior Unix
-# exposure" -- need judgement and stay prose, in design/naming.md. The service-model and contract-name checks do not.
+# exposure" -- need judgement and stay prose, in nifeos/record:design/naming.md. The service-model and contract-name checks do not.
 #
 # Every check below is a ratchet, and the argument is §39's: a name is a claim, made before a reader
 # sees a line of code. `netd`, `compd`, `gpud` and `termd` each claimed a Unix daemon model this OS
@@ -3085,7 +3085,7 @@ fi
 #     `cfg(all(kani, target_arch = "aarch64"))` so the prover can reach it from an aarch64 host. Inside that module `crate::arch` is aarch64's, not riscv64's, and
 #     nothing says so at the call site: a harness that reaches a `crate::arch` call proves the
 #     host's code while reading as riscv64's, which is the "stub that reads as coverage"
-#     notes/kernel-proofs.md exists to prevent (its stub-list item 8).
+#     nifeos/record:notes/kernel-proofs.md exists to prevent (its stub-list item 8).
 #
 #     The mechanism is a recorded set per file. The references a file has today are listed below
 #     with the reason no harness reaches them; a new one fails here, and the author decides at that
@@ -3144,7 +3144,7 @@ if bad:
     print("Inside that module crate::arch resolves to aarch64, so a harness reaching one of these "
           "proves aarch64's code under riscv64's name. If no harness reaches it, add it to "
           "RECORDED in script/lint check 5b with the reason. If one does, the harness is a fiction: "
-          "restructure it. See notes/kernel-proofs.md, stub-list item 8.", file=sys.stderr)
+          "restructure it. See nifeos/record:notes/kernel-proofs.md, stub-list item 8.", file=sys.stderr)
     sys.exit(1)
 print(f"proof-only modules: {len(files)} riscv64 file(s) on the aarch64 prover host, every "
       "crate::arch reference recorded")
@@ -3327,13 +3327,13 @@ echo "==> the stranger test's run record"
 #    is the same exemption the "daemon" check makes for `design/` and `design/naming.md`: an audit
 #    report has to be able to quote the stale name it found, and so does the procedure that explains
 #    how it was found. Note what is deliberately NOT exempt: a fenced code block. The eleventh stale
-#    name in the first sweep was inside one (`notes/cpu-models.md` opened with
+#    name in the first sweep was inside one (`nifeos/record:notes/cpu-models.md` opened with
 #    `CRICKER_CPU=sifive-u54 cargo run ...`), and a fence is exactly where a reader copies from, so
 #    exempting fences would exempt the sites that matter most.
 #
 #    It is deliberately narrow. It knows one namespace, `NIFE_`/`CRICKER_`, because those are the
 #    names this project mints and therefore the ones only this project can check. See
-#    notes/documentation-audit.md.
+#    nifeos/record:notes/documentation-audit.md.
 #
 #    **A third case the two above do not cover: a name retired on purpose, quoted in an account**
 #    (milestone 298, 2026-09-15). Retiring the multicast DNS responder removed the only reader of
@@ -3355,7 +3355,7 @@ TOKEN = re.compile(r'\b((?:NIFE|CRICKER)_[A-Z0-9_]+)\b')
 # Names whose reader was deleted on purpose, each with where its retirement is recorded. See the
 # comment above the check: this is for a retirement, never for a rename.
 RETIRED = {
-    'NIFE_MCAST_PORT': 'milestone 298, 2026-09-15: the multicast prober and its runner hub (notes/mdns.md)',
+    'NIFE_MCAST_PORT': 'milestone 298 (retire the multicast DNS responder), 2026-09-15: the multicast prober and its runner hub (nifeos/record:notes/mdns.md)',
 }
 
 live = set()
@@ -3392,7 +3392,7 @@ if bad:
         print(f'  {f}:{i}: {name}', file=sys.stderr)
     print('Nothing reads or assigns it, so a reader who types it gets nothing. Either the tree '
           'renamed it and the prose did not follow (milestone 120 left eleven of these), or the '
-          'name is new and the code that reads it has not landed. See notes/documentation-audit.md.',
+          'name is new and the code that reads it has not landed. See nifeos/record:notes/documentation-audit.md.',
           file=sys.stderr)
     sys.exit(1)
 ours = sorted(n for n in live if n.startswith(('NIFE_', 'CRICKER_')))
@@ -3435,7 +3435,7 @@ echo "==> the empty-diff check"
 #     `# outcome:` label (re-raised, reported, or exception with a reason) that is checked against
 #     its job, and a pipeline into `tee` has pipefail. The weekly falsification sweep replayed
 #     nothing for three weeks behind exactly those two constructs. Fixtures first, because a green
-#     run looks the same as a check that cannot fire. See notes/denominators.md.
+#     run looks the same as a check that cannot fire. See nifeos/record:notes/denominators.md.
 echo "==> workflow steps that swallow a failure"
 # lint-scope: code
 python3 "$(dirname "$0")/../helpers/workflow_swallows.py" --selftest
@@ -3459,7 +3459,7 @@ python3 "$(dirname "$0")/../helpers/workflow_parses.py"
 #     hosted runner and then completes, which spent a merge-group job's 20-minute budget and
 #     ejected pull requests. Every checkout is a 2-minute first attempt that may fail plus a
 #     3-minute retry that may not, or says on the line above why it is exempt. Fixtures first,
-#     because a green run looks the same as a check that cannot fire. See notes/ci.md.
+#     because a green run looks the same as a check that cannot fire. See nifeos/record:notes/ci.md.
 echo "==> no workflow step uses a bare actions/checkout"
 # lint-scope: code
 python3 "$(dirname "$0")/../helpers/workflow_checkout_retry.py" --selftest
@@ -3613,7 +3613,7 @@ echo "==> markdown links and the notes index"
 # 1. Relative links must resolve. Currently clean, so this is a REGRESSION GUARD: milestone 46 moved
 #    five things and could easily have broken a link, and the next rename might.
 # 2. Every notes/*.md must appear in notes/README.md or an area page under notes/README/, which
-#    CLAUDE.md requires and which had already drifted (notes/session-handoff.md).
+#    CLAUDE.md requires and which had already drifted (nifeos/record:notes/session-handoff.md).
 #
 # Backticked repo paths are still deliberately NOT checked, but **the measurement that justified it
 # has rotted and the conclusion is weaker than it was.** Re-measured by milestone 93's first
@@ -3629,7 +3629,7 @@ echo "==> markdown links and the notes index"
 #
 # The reason it stays ungated is now the false-positive *rate* rather than a claim of perfection, and
 # separating deliberate history from rot needs a reader. That reader is the documentation sweep
-# (notes/documentation-audit.md), and `script/audits --worklist` ranks which document to hand them.
+# (nifeos/record:notes/documentation-audit.md), and `script/audits --worklist` ranks which document to hand them.
 python3 - <<'PY'
 import glob, os, re, sys
 
@@ -3738,7 +3738,7 @@ echo "==> the lint ratchet's selftest (clippy lints counted against a baseline t
 python3 helpers/lint_ratchet.py --selftest
 echo "==> the lint ratchet (the clippy sections' saved diagnostics, judged; no clippy of its own)"
 # lint-scope: code
-# The panic proposal's mechanism (design/roadmap/0896-panics-in-the-kernel-and-the-parsers-are-
+# The panic proposal's mechanism (nifeos/record:design/roadmap/0896-panics-in-the-kernel-and-the-parsers-are-
 # counted-and-fall.md), built by milestone 888 with one lint registered: `too_many_lines` at 100
 # code lines (calef, 2026-10-09 UTC), one row per function in design/lint-baseline.tsv, over every
 # tracked .rs file outside vendor/ (§283 (a function is held to 100 code lines by a lint ratchet)).
@@ -3750,7 +3750,7 @@ echo "==> the lint ratchet (the clippy sections' saved diagnostics, judged; no c
 # above saved. Each of them runs through helpers/clippy_record.py, which adds the ratcheted lints
 # as `--force-warn` (a `-D warnings` leaves that a warning) and writes clippy's JSON and a sidecar
 # under target/lint-clippy/. The configurations are the lint census's five
-# (notes/lint-census-2026-10-09.md), with --all-targets where the passes above build test code,
+# (nifeos/record:notes/lint-census-2026-10-09.md), with --all-targets where the passes above build test code,
 # plus system_tests and the host-only workspaces; helpers/lint_ratchet.py's CONFIGURATIONS names
 # each one and the arguments its section must have run with.
 #
@@ -3767,10 +3767,10 @@ python3 helpers/lint_ratchet.py --check target/lint-clippy
 echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 2026-10-07; per-directory caps and in-body ceilings, milestone 929)"
 # lint-scope: code
 # Milestone 860 (comments state the constraint as it is now). calef ruled the ruling on 2026-10-07
-# (UTC), deciding fork (c) of notes/comment-cost-2026-10-07.md (PR #1800), recorded as §267 (a
+# (UTC), deciding fork (c) of nifeos/record:notes/comment-cost-2026-10-07.md (PR #1800), recorded as §267 (a
 # comment states the constraint as it is now): a comment states the constraint as it is now, in a
 # sentence or two; history goes in the commit message, semantics and rulings go in
-# design/decisions/ cited by §N, and a cap of about 40 lines per comment block is held by a ratchet
+# nifeos/record:design/decisions/ cited by §N, and a cap of about 40 lines per comment block is held by a ratchet
 # that only falls. The cost the note measured is not the median two-line comment (a uniform sample
 # kept 80% of blocks as written) but the long tail: blocks over 40 lines hold a fifth of all comment
 # lines, 2.5 million tokens of comment in a 4.3 million token tree. The block definition (a run of
@@ -3827,7 +3827,7 @@ python3 helpers/history_ratchet.py --check
 echo "==> capability is not abbreviated cap (calef, 2026-10-06)"
 # lint-scope: code
 # lint-quick
-# design/naming/acronyms-and-abbreviations.md: every name spells `capability` out. The sweep of
+# nifeos/record:design/naming/acronyms-and-abbreviations.md: every name spells `capability` out. The sweep of
 # existing identifiers brought the count to zero, and helpers/vendored_name_gates.py counts Rust
 # identifiers with a `cap` or `caps` component (comments and strings skipped, so the English word
 # for a ceiling is never read) and fails a count over its ceiling or a branch that adds any net.
@@ -3837,7 +3837,7 @@ python3 helpers/vendored_name_gates.py cap --check
 echo "==> unit symbols are spelled out (2026-10-27)"
 # lint-scope: code
 # lint-quick
-# design/naming.md ("Units"): a name spells its unit out. helpers/vendored_name_gates.py counts Rust
+# nifeos/record:design/naming.md ("Units"): a name spells its unit out. helpers/vendored_name_gates.py counts Rust
 # identifiers that carry `us`, `s`, `sec`, `secs`, `nanos`, `millis`, `micros` or `mins` (comments
 # and strings skipped; it does not yet count `ns`, `ms` or `hz`, which its header records) and
 # fails a count over its ceiling or a branch that adds any net. Fixtures first.
@@ -3846,7 +3846,7 @@ python3 helpers/vendored_name_gates.py unit --check
 echo "==> system call is spelled out as system call (2026-11-20)"
 # lint-scope: code
 # lint-quick
-# design/naming.md: the tree spells `system_call` out. helpers/system_call_names.py counts Rust and Python
+# nifeos/record:design/naming.md: the tree spells `system_call` out. helpers/system_call_names.py counts Rust and Python
 # identifiers and tracked paths that carry `system_call` or `system_calls`, less the foreign uses its one
 # boundary list (KEPT) names, and fails a count over its ceiling or a branch that adds any net.
 # Fixtures first.
@@ -3855,7 +3855,7 @@ python3 helpers/system_call_names.py --check
 echo "==> a component reads its window addresses from the startup page (ceiling only falls)"
 # lint-scope: code
 # lint-quick
-# design/roadmap/1069-a-process-reads-its-window-addresses-from-a-startup-page.md: a component
+# nifeos/record:design/roadmap/1069-a-process-reads-its-window-addresses-from-a-startup-page.md: a component
 # finds each window on its startup page rather than at an address it compiled in.
 # helpers/window_address_literals.py counts `pair_page(0x`, `runtime_window(0x` and
 # `service_window(0x` calls in components/src/ and fails a count over its ceiling, or under it so
@@ -3926,7 +3926,7 @@ echo "==> CI steps leave evidence when they hang"
 python3 helpers/hang_evidence.py --selftest >/dev/null
 python3 helpers/hang_evidence.py lint
 # No rust-cache entry is saved from a merge group, where no later run can restore it
-# (lane/actions-cache-budget, provisional; notes/actions-cache-budget-2026-10-07.md). Watched
+# (lane/actions-cache-budget, provisional; nifeos/record:notes/actions-cache-budget-2026-10-07.md). Watched
 # failing 2026-10-07 against base 1f5be6843: 18 unscoped steps in ci.yml and verify.yml.
 # The same helper holds ci.yml's `main-caches` job (milestone 870 (`main` keeps its CI caches
 # warm), provisional) to the jobs that restore what it saves: each actions/cache step there has a
@@ -3944,7 +3944,7 @@ python3 helpers/cache_save_scope.py
 # pull_request_target or workflow_run job names the pull request's head. Fixtures first: the
 # selftest plants each trigger an outsider can reach, a bare push, a push that takes tags, a missing
 # timeout, an owned label in a matrix and in a reusable workflow's input, and a head checkout under
-# pull_request_target and workflow_run, and requires each to fail. notes/owned-runners.md;
+# pull_request_target and workflow_run, and requires each to fail. nifeos/record:notes/owned-runners.md;
 # helpers/owned_runner_check.py says more.
 echo "==> owned-runner jobs run only for the queue and main, and no base-token job checks out a head"
 # lint-scope: code
@@ -3958,7 +3958,7 @@ helpers/open-kvm-selftest.sh
 # only a workflow main already had when this landed (2026-10-04) may say `never`, which is read from
 # git ancestry rather than from the record. The weekly falsification sweep and the COE labeller both shipped unexercised and
 # both reported success over nothing. Fixtures first, for the reason the falsification ratchet's
-# run first. See helpers/observed_failing.py and notes/observed-failing.md.
+# run first. See helpers/observed_failing.py and nifeos/record:notes/observed-failing.md.
 # Observed failing: 2026-10-04, run 37230967057: refused a probe workflow, new since the cutoff,
 #   that said `never` (commit 0562ea03b; the commit after it removes the probe).
 echo "==> every workflow records the run it was watched failing in"
@@ -4036,7 +4036,7 @@ python3 helpers/mutation_diff_gate.py --selftest >/dev/null
 # ^<file>:\d+:\d+: replace ...$ entry, function-shaped or const-item, and the older `module::`
 # paths), requires the named file, function, type and `THE_*` const assertion to exist, and
 # fails a shape it cannot read, so an entry the check does not understand cannot pass by reading
-# nothing (design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md). The selftest proves
+# nothing (nifeos/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md). The selftest proves
 # every rule against fixtures, including the generic `Host<R, D>::reset` form.
 echo "==> every mutation exclusion names code that exists"
 # lint-scope: code
@@ -4151,7 +4151,7 @@ echo "==> em-dashes"
 #
 # Anything a quotation cannot carry belongs in a file no prose gate reads, which is why the 55
 # transcripts behind milestone 521 (does an AI review of a pull request catch anything the gates and
-# the maintainer do not) are archived in `notes/delegated-review/transcripts.tar.gz` rather than
+# the maintainer do not) are archived in `nifeos/record:notes/delegated-review/transcripts.tar.gz` rather than
 # committed as files.
 emdash="$(printf '\342\200\224')"
 # `path:line:text`, minus the lines whose text begins a blockquote.
@@ -4274,7 +4274,7 @@ echo "==> package boundaries"
 # every tracked path has exactly one home; every crate and program is in exactly one package; a link
 # across a package boundary goes to an `interface` crate, to a declared `depends`, or through a
 # dated exception that fails once its link is gone. helpers/packages.py's header is the manual and
-# notes/package-boundaries.md the table. The selftest plants one violation per rule first, because
+# nifeos/record:notes/package-boundaries.md the table. The selftest plants one violation per rule first, because
 # a green check that could not have gone red says nothing.
 python3 helpers/packages.py --selftest
 # The verify shard timings (lane/verify-shard-refresh, 2026-10-07 UTC): script/verify's packer and
@@ -4401,7 +4401,7 @@ PINNED = {
     ("RegionTable", "retype_run", "&mut self"),
     ("RegionTable", "retype_object_page", "&mut self"),
     ("RegionTable", "unpin", "&mut self"),
-    # Subtree ceilings (notes/memory-regions.md, "Subtree ceilings"). `insert_root_with_ceilings`
+    # Subtree ceilings (nifeos/record:notes/memory-regions.md, "Subtree ceilings"). `insert_root_with_ceilings`
     # is `insert_root` with the ceilings a root's subtree lives under; `release_object` lowers a
     # live count and never touches a pin, a child count or a watermark. The two observers report
     # counts against ceilings and never whether a region is pinned, childless or claimable, so
@@ -4521,7 +4521,7 @@ if bad:
     print(
         "\nThis surface is what `kernel/src/memory_region.rs` can reach, and its narrowness is why the\n"
         "kernel cannot rebuild the pre-#316 check-then-remove gap that double-freed a region\n"
-        "(notes/interleaving.md, notes/object-revocation.md). Before editing the pin, answer the\n"
+        "(nifeos/record:notes/interleaving.md, nifeos/record:notes/object-revocation.md). Before editing the pin, answer the\n"
         "question the pin exists to force:\n"
         "\n"
         "  Can a caller use this to learn that a region may be reclaimed, and still be holding\n"
@@ -4562,7 +4562,7 @@ if bad:
         "region is reclaimable and removing its name are one borrow (`claim_for_destroy`) exactly\n"
         "so that there is no intermediate state for a second caller to race into; reading\n"
         "`has_children` or `bounds` and then freeing puts that state back, and the two callers\n"
-        "that both pass the read both reach the loop. See notes/interleaving.md.",
+        "that both pass the read both reach the loop. See nifeos/record:notes/interleaving.md.",
         file=sys.stderr,
     )
     raise SystemExit(1)
@@ -4786,21 +4786,21 @@ PY
 # (a deliverable in "three <halves>", four of them landing over three days, a test pinning "all
 # three <halves>", three <halves> that are one claim). The examples are written with the angle
 # brackets on purpose: a gate whose own comment spells the forbidden shape fires on itself, which
-# design/roadmap/0094-untracked-work.md hit first and script/lint line 660 already records.
+# nifeos/record:design/roadmap/0094-untracked-work.md hit first and script/lint line 660 already records.
 #
 # The tree has ~3,500 uses of half/halves and nearly all are honest two-way splits, so this reads
 # ONLY the arithmetic-impossible shape: a count word immediately before the word. It does not judge
 # whether a "half" far from its subject has two siblings, because that needs a reader, and a gate
 # that guesses at prose is how script/lint lost three checks. The word this tree uses for one branch
 # of a multi-way split is "arm" (components/src/console.rs: "its x86 arm"), and
-# design/naming/vocabulary.md says so in its row for "half".
+# nifeos/record:design/naming/vocabulary.md says so in its row for "half".
 #
-# `git grep` does not understand `\b` and silently matches nothing (design/naming/rename-traps.md
+# `git grep` does not understand `\b` and silently matches nothing (nifeos/record:design/naming/rename-traps.md
 # records the same trap costing two renames a count), so the boundaries here are POSIX classes.
 echo "==> every RETYPE outside the run wrapper passes 0"
 # lint-scope: code
 # `MemoryRegion::RETYPE`'s first argument became a page count on 2026-09-26 (calef, option A of
-# design/roadmap/0659-a-region-retypes-a-frame-run.md), with 0 meaning one page. Every caller
+# nifeos/record:design/roadmap/0659-a-region-retypes-a-frame-run.md), with 0 meaning one page. Every caller
 # before it passed 0 and still means one page, so a raw invoke passing anything else is a run asked
 # for by accident. The one intended caller is `user_mode_runtime::retype_page_frame_run`.
 # The kernel's own tests are exempt: they drive the handler directly with every count on purpose.
@@ -4819,7 +4819,7 @@ echo "==> halves that are not halves"
 if git grep -nEi '(^|[^[:alnum:]_])(three|four|five|six|seven|eight|nine|ten|several|many)[[:space:]]+halves([^[:alnum:]_]|$)' \
     -- '*.md' '*.rs' '*.yml' '*.toml' 'script/*' 'helpers/*' ':!vendor' ':!patches'; then
     echo "lint: a count above two in front of that word. Two things have halves; three have arms," >&2
-    echo "      parts or pieces (design/naming.md, \"A half implies two\")." >&2
+    echo "      parts or pieces (nifeos/record:design/naming.md, \"A half implies two\")." >&2
     exit 1
 fi
 echo "halves: none counted above two"

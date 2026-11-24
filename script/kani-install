@@ -8,7 +8,7 @@
 #
 # An installed cargo-kani at any other version is replaced, loudly, never kept: a proof run on a
 # Kani nobody pinned is the failure this exists to stop. The riscv64 row builds its own patched
-# 0.67.0 (script/verify-riscv64, notes/kernel-proofs/riscv64-with-a-patched-kani.md) and never
+# 0.67.0 (script/verify-riscv64, nifeos/record:notes/kernel-proofs/riscv64-with-a-patched-kani.md) and never
 # comes through here; that version skew is recorded there and in the milestone block.
 #
 # Two guards protect the shared ~/.kani, which every lane on a machine uses:

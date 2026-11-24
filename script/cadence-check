@@ -123,7 +123,7 @@
 # and `undefined-behavior-check`, which calef ratified on 2026-08-03. Refused `workflow-health`
 # (it names GitHub's noun rather than the function, and this is about whether an answer is still
 # arriving, not about whether a workflow is well) and `schedules` (a plural noun names an
-# inventory, and notes/check-inventory.md is the inventory; this is the tripwire). calef has not
+# inventory, and nifeos/record:notes/check-inventory.md is the inventory; this is the tripwire). calef has not
 # ratified it.
 
 set -e

@@ -1,6 +1,6 @@
 #!/bin/sh
 # script/fuzz: run the coverage-guided fuzz targets over the parsers that read bytes we did not
-# write (milestone 42's second leg). See notes/fuzzing.md.
+# write (milestone 42 (supply chain and fuzzing in CI), its second leg). See nifeos/record:notes/fuzzing.md.
 #
 # **Fuzzing has no completion condition, so this takes a time budget instead.** A proof either
 # discharges or it does not; a fuzzer runs until you stop it. Everything else about the way this is

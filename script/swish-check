@@ -9,12 +9,12 @@
 #
 # **`--input-race` is the input driver's proof.** Enter lands while the driver holds, the window
 # in which a driver that cleared the PL011's interrupt after draining would strand a byte in the
-# FIFO and never read input again. The cause and the runs are in notes/swish-check-flake.md.
+# FIFO and never read input again. The cause and the runs are in nifeos/record:notes/swish-check-flake.md.
 #
 # **It also gates the progenitor's stack** (milestone progenitor-stack (provisional)): the kernel
 # prints `progenitor stack: N of M bytes at peak` each time the mark settles higher, this echoes
 # each line with the command it followed, and a `BELOW` (less than two pages left) fails the run.
-# notes/stack/progenitor-stack.md has the numbers and the frames.
+# nifeos/record:notes/stack/progenitor-stack.md has the numbers and the frames.
 #
 # **The x86_64 leg (milestone 182) boots the UEFI image under OVMF**, the `BOOTX64.EFI` a customer
 # copies to a USB stick, rather than a kernel under QEMU's PVH loader. It types the same
@@ -55,7 +55,7 @@
 #   4. **A USB keyboard on an xHCI controller** (milestone 242 (USB host and HID), all three
 #      architectures, x86_64 included): no script, `echo hello` pressed on the keyboard with
 #      `sendkey`, and `hello` required back. Full speed, and on x86_64 MSI with no MSI-X, as
-#      xenon's controller is. notes/usb.md.
+#      xenon's controller is. nifeos/record:notes/usb.md.
 #
 # Both launches make the same two assertions, the session's `$ ` prompt on the screen and one key
 # echoed beside it, and neither can tell which source the key came from, which is the property
@@ -94,7 +94,7 @@
 # the same commit pass one CI run and fail the next, and watched `construction budget dropped` come
 # out with a longest surviving run of five characters. That is a defect in the system rather than in
 # this script, it has consequences well past this gate (anything reading a board's serial log), and
-# it is proposed as its own milestone in `design/roadmap/0230-shell-check-is-red.md`.
+# it is proposed as its own milestone in `nifeos/record:design/roadmap/0230-shell-check-is-red.md`.
 #
 # **Narrowed by milestone 342 (the kernel and the `console` server drive one UART from two address
 # spaces), 2026-10-03.** Once the system log service attaches, the kernel's lines reach the UART
@@ -131,7 +131,7 @@
 #
 # **The two graphical launches prove one key, not the script.** They are green since milestone 177
 # found the hang that kept them red (the boot never received two drivers' one-time reports, so both
-# drivers sat in a blocking SEND; notes/framebuffer-contract.md has the evidence). What they check is
+# drivers sat in a blocking SEND; nifeos/record:notes/framebuffer-contract.md has the evidence). What they check is
 # the launched session's prompt on the screen and one typed key echoed beside it; nothing past that
 # is asserted on the graphical path. Folding them in made the plain legs' gauges read them, which is
 # how the capability-slot record turned out to be two short (`kernel/src/capability_object.rs`).
@@ -144,7 +144,7 @@
 # things, and a reader who had met the linter met this and was wrong about it. That cost a real
 # boot: on 2026-09-23 a lane briefed explicitly not to start QEMU ran `script/shell-check` believing
 # it was a shell-script linter and booted a 109-minute bounded emulator. Second, the word it was
-# built from is stale: design/naming.md's BUGS records that `shell` no longer names any program in
+# built from is stale: nifeos/record:design/naming.md's BUGS records that `shell` no longer names any program in
 # this tree, because the shell is `swish`. Refused `prompt-check` (it names a surface rather than the
 # binary, and this family is named for what it drives).
 #

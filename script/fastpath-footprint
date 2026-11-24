@@ -6,9 +6,9 @@
 # FOOTPRINT of its hot path rather than anything inherent to microkernels: a kernel that touches a
 # lot of memory per IPC evicts the *application's* working set, so the cost shows up as capacity
 # misses spread through the workload instead of as time in the kernel. L4 was written against that,
-# and seL4 keeps a hand-maintained fastpath for the same reason. notes/benchmarks.md has the full
+# and seL4 keeps a hand-maintained fastpath for the same reason. nifeos/record:notes/benchmarks.md has the full
 # argument, the frontier cache sizes it is measured against, and the target;
-# design/roadmap/0132-the-fastpath-footprint.md is the milestone that owns this gate.
+# nifeos/record:design/roadmap/0132-the-fastpath-footprint.md is the milestone that owns this gate.
 #
 # **What this measures**: an UPPER BOUND on the instruction footprint of an IPC round trip, in two
 # parts, because they are two different quantities and averaging them would hide both.
@@ -56,7 +56,7 @@
 # (7028)`, which measures movement away from whatever the binary happened to be last month and means
 # something different after every compiler change. Drift is still what FAILS, because a 5% jump
 # inside one pull request is a mistake somebody just made; the budget is reported and not gated,
-# for the reason set out at `L1I` below. See `notes/benchmarks/kernel-footprint-and-caches.md`, "The
+# for the reason set out at `L1I` below. See `nifeos/record:notes/benchmarks/kernel-footprint-and-caches.md`, "The
 # target".
 #
 # **What it is not.** It is not a cache measurement. No cache is modelled by icount and the HVF host
@@ -120,7 +120,7 @@
 # §134's split points the other way and would put a reporter in the noun half, where this already
 # sits. Nothing depends on it. no architect has ratified it.
 #
-# See notes/benchmarks.md and script/stack-frame-check, whose shape this copies: derive a number
+# See nifeos/record:notes/benchmarks.md and script/stack-frame-check, whose shape this copies: derive a number
 # from the built kernel, compare it against a rule, fail the build. That gate exists because
 # `sched::reap_region_objects` grew a 6816-byte frame that compiled without a warning and was found
 # only when CI faulted one run in five. A hot-path footprint has the same shape: it grows silently.
@@ -130,7 +130,7 @@
 #   - **`arches` below is a hardcoded string and derives nothing.** All three supported
 #     architectures are in it today, so nothing is silently unmeasured, but a fourth ISA arriving
 #     will be measured here only when somebody remembers to type it. That is finding 11 of
-#     notes/architecture-list-sweep.md and milestone 186 owns the mechanism; taking a hand-fix here
+#     nifeos/record:notes/architecture-list-sweep.md and milestone 186 (derive the architecture list) owns the mechanism; taking a hand-fix here
 #     would be a second hand-fix of the same defect. (The older text of this bug said the script
 #     gated two of three and that x86_64 had no baseline. Both were true when written and neither
 #     is now: x86_64 was widened in on 2026-08-27, `bench/fastpath-x86_64.txt` exists, and
@@ -154,7 +154,7 @@
 #     a record a failing run prints, not a gate.
 #   - **`system_call_entry` is flat, so an inlining decision can move bytes into it that no system call
 #     fetches.** Three instances in two days on 2026-09-04, each closed with `#[inline(never)]` on
-#     the folded callee. `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md`
+#     the folded callee. `nifeos/record:design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md`
 #     holds them and the options. Milestone 188 phase 2 fixed the largest *structural* instance of
 #     the same shape (aarch64's sixteen-entry vector table, at `ENTRY_SLICE`) but did nothing about
 #     the inlining one, which is a different mechanism with the same symptom.
@@ -195,7 +195,7 @@ while [ $# -gt 0 ]; do
 done
 
 # **`--features` never gates and never saves.** A padded build's footprint is an experiment's
-# reading (E3, design/roadmap/0134-the-measurements-that-decide.md), not a candidate baseline: it is
+# reading (E3, nifeos/record:design/roadmap/0134-the-measurements-that-decide.md), not a candidate baseline: it is
 # expected to fail a 5% tolerance built for the un-padded kernel, and checking it would just print
 # the failure the experiment is deliberately causing. `--save` with `--features` would silently
 # replace the real baseline with an experimental one, which is the mistake this refuses outright.
@@ -225,7 +225,7 @@ fi
 # the pin check below measures two more builds of the same ISA and must read them the same way.
 measure() {
     # **The RELEASE binary, and that is the whole point.** A debug kernel's `.text` is about twice
-    # the size (notes/benchmarks.md measured 348 KiB against 168 KiB on aarch64), so a debug
+    # the size (nifeos/record:notes/benchmarks.md measured 348 KiB against 168 KiB on aarch64), so a debug
     # footprint would be measuring the absence of the optimizer rather than the shape of the path.
     if [ -n "$features" ]; then
         echo "==> $arch: building the release kernel (--features $features)"
@@ -360,7 +360,7 @@ for line in open(dis_path, encoding="utf8", errors="replace"):
 size = {s: last.get(s, start[s]) - start[s] + 4 for s in start}
 
 # **The roots: what "the IPC fastpath" is.** These lists are a decision, not a heuristic, and they
-# are the question notes/benchmarks.md named as the thing blocking this gate from existing. Matched
+# are the question nifeos/record:notes/benchmarks.md named as the thing blocking this gate from existing. Matched
 # by regex because mangled names carry a per-target crate disambiguator that is not stable.
 #
 # `schedule`, `finish_switch` and `current_capability` are in both, because both shapes reach them: the
@@ -548,14 +548,14 @@ total = closure_total + entry_total
 # This script's own first line says the fastpath must stay small enough to live in L1i. That is a
 # physical budget, and what the output reported was `+1.4% against baseline (7028)`: drift from
 # whatever the binary happened to be last month. The facts a reader needs were in
-# notes/benchmarks.md and nowhere near the gate, so the gate's number meant something different
+# nifeos/record:notes/benchmarks.md and nowhere near the gate, so the gate's number meant something different
 # after every compiler change and said nothing about the constraint it exists to serve.
 #
-#   L1I     32 KB, radon's SiFive U74 (notes/benchmarks.md's cache table names it the binding
+#   L1I     32 KB, radon's SiFive U74 (nifeos/record:notes/benchmarks.md's cache table names it the binding
 #           constraint: the smallest L1i among the machines this tree actually runs on, and it sits
 #           at the bottom of the frontier range anyway, so it tracks the board list rather than a
 #           number somebody liked).
-#   TARGET  4 KiB, about an eighth of that L1i. notes/benchmarks/kernel-footprint-and-caches.md's
+#   TARGET  4 KiB, about an eighth of that L1i. nifeos/record:notes/benchmarks/kernel-footprint-and-caches.md's
 #   "The target" derives the
 #           fraction from Liedtke's argument rather than from roundness: the constraint is not that
 #           the kernel fits, it is that the kernel leaves most of L1 intact for the application,
@@ -597,7 +597,7 @@ print(f"    total          {total:6d} B  {against(total)}"
       f"  ({total/1024:.2f} KiB), an upper bound")
 # The third distance, and the only one the tree has already voted on. §144 (a delta and a ceiling)
 # decides an absolute 16 KiB per architecture on exactly this `total`, derived in
-# notes/target-hardware.md as half of the 32 KB L1i, which is where Liedtke's argument genuinely
+# nifeos/record:notes/target-hardware.md as half of the 32 KB L1i, which is where Liedtke's argument genuinely
 # weakens. It is DECIDED and not built: no check here enforces it, so printing the fraction is what
 # keeps the decision visible against the number it was made about.
 print(f"    {100 * total / (16 * 1024):.0f}% of the 16 KiB ceiling §144 (a delta and a ceiling) decides and does not yet enforce")
@@ -678,7 +678,7 @@ if pin_bad and os.environ.get("NOCHECK"):
     pin_bad = False             # an experiment's build reports the escape and does not gate on it
 
 # **`--layout`: where the hot path landed, and proof that nothing else moved** (milestone 134's
-# layout control, 2026-09-19; notes/footprint-perturbation.md). E3 compares kernels that differ in
+# layout control, 2026-09-19; nifeos/record:notes/footprint-perturbation.md). E3 compares kernels that differ in
 # where code sits, so each image needs two facts before it is worth a boot: that it executes the
 # same instructions as its siblings, and where its hot symbols fall in radon's L1i.
 #
@@ -804,7 +804,7 @@ if os.environ.get("LAYOUT"):
         # **How much of the hot path this pad actually moves.** Only the symbols after the sled
         # move when it grows. The linker scripts place it after `.text.hot`, so with milestone 796's
         # pin this reads 0 of N, and an E3 image perturbs no hot instruction
-        # (notes/footprint-perturbation/step-0-under-the-pin.md).
+        # (nifeos/record:notes/footprint-perturbation/step-0-under-the-pin.md).
         moved = [s for s in hot if start[s] > start[pad[0]]]
         share = 100 * sum(size[s] for s in moved) / max(1, sum(size[s] for s in hot))
         print(f"    layout: the sled precedes {len(moved)} of {len(hot)} hot symbols, "
@@ -877,7 +877,7 @@ if save:
             "# bench/fastpath-%s.txt: an upper bound on the IPC fastpath's instruction footprint.\n"
             "# Written by script/fastpath-footprint --save. Updating this file is a statement that a\n"
             "# footprint change is intended and understood; do it in the commit that causes it.\n"
-            "# See notes/benchmarks.md for what the numbers mean and what they are measured against.\n"
+            "# See nifeos/record:notes/benchmarks.md for what the numbers mean and what they are measured against.\n"
             "#\n"
             "# `ipc_send_receive` and `ipc_call_reply` are the two IPC shapes, measured separately since\n"
             "# milestone 188 phase 1 because the system runs the second and this gate measured only the\n"
@@ -903,7 +903,7 @@ for line in open(base_path):
 
 # **Five percent, tighter than the icount tripwire's ten**, and the reason is that these numbers are
 # static. icount drifts across builds because the compiler remakes inlining decisions for unrelated
-# reasons (notes/benchmarks.md records that measurement); a symbol size moves when the code moves.
+# reasons (nifeos/record:notes/benchmarks.md records that measurement); a symbol size moves when the code moves.
 # A looser bound here would let real creep through.
 #
 # **Symmetric on purpose** (milestone 156). A one-sided `delta > TOL` only ever catches growth, so

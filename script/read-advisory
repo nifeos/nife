@@ -15,7 +15,7 @@
 # below hands it, and prints the advisory to standard output: identifier, state, severity, summary,
 # the affected packages and the description. A fuzz finding's advisory holds the finding class and
 # the reproducer (fuzz-findings-without-a-person, step 1), so what this prints is the one place a
-# lane learns a held finding. The ruling is design/roadmap/1014-fix-lanes-read-the-advisory.md.
+# lane learns a held finding. The ruling is nifeos/record:design/roadmap/1014-fix-lanes-read-the-advisory.md.
 #
 # # What it never does
 #
@@ -37,7 +37,7 @@
 #
 #     NIFE_ADVISORY_READER_TOKEN="$(sudo -n /usr/local/sbin/fuzz-token issue reader)" script/read-advisory <id>
 #
-# (notes/fuzzing/finishing-the-setup.md, step P11). The whole channel is the one function below;
+# (nifeos/record:notes/fuzzing/finishing-the-setup.md, step P11). The whole channel is the one function below;
 # nothing else in this file knows where the token came from.
 token_channel() { printf '%s' "${NIFE_ADVISORY_READER_TOKEN-}"; }
 channel_name='NIFE_ADVISORY_READER_TOKEN'

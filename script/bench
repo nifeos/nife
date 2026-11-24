@@ -21,7 +21,7 @@
 #   script/bench --keyboard  attach a virtio keyboard and press it over the QEMU monitor, for the
 #                            keyboard_up and keyboard_event rows of keyboard_driver; composes with
 #                            --riscv64 and --x86, never gates. See
-#                            notes/benchmarks/kernel-bench-harness.md, "The keyboard rows"
+#                            nifeos/record:notes/benchmarks/kernel-bench-harness.md, "The keyboard rows"
 #
 # **All three architectures, each against its own baseline.** With no architecture flag the
 # instrument is aarch64 and the baseline is `bench/baseline-aarch64.txt`; `--riscv64` and `--x86`
@@ -39,7 +39,7 @@
 #
 # --real is single-hart by default so the primitive magnitudes are per-core (the cross-OS comparison
 # reads them that way); --smp boots the whole machine for the aggregate-throughput bench.
-# See design/roadmap/0021-benchmarks.md and notes/benchmarks.md.
+# See nifeos/record:design/roadmap/0021-benchmarks.md and nifeos/record:notes/benchmarks.md.
 #
 # Name: recorded (DECISIONS §134 for the form, and milestone 63's name table for the word).
 # Introduced 2026-07-23 with milestone 21. §134 lists this script by name in the verb half of the

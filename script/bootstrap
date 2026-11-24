@@ -12,12 +12,12 @@
 #
 # Name: ratified 2026-07-22 by adopting Scripts to Rule Them All. The canonical set keeps its
 # standard names even where a more descriptive word exists, because the entire value is that the
-# command is the same in every repository that follows the pattern (design/naming.md).
+# command is the same in every repository that follows the pattern (nifeos/record:design/naming.md).
 
 set -e
 
 # `sudo` only when not already root: a container often runs as root with no `sudo` binary at all,
-# which is the cloud-session case (notes/working-from-a-cloud-session.md).
+# which is the cloud-session case (nifeos/record:notes/working-from-a-cloud-session.md).
 if [ "$(id -u)" -eq 0 ]; then SUDO=; else SUDO=sudo; fi
 cd "$(dirname "$0")/.."
 
@@ -43,7 +43,7 @@ helpers/rustup-retry.sh component add --toolchain "$channel" rust-src llvm-tools
 # **Every target the pin declares**, read from `rust-toolchain.toml` rather than spelled here, the
 # way `channel` above already is and the way `script/drift` does it: a fourth architecture is
 # installed here the day it is added to the pin, and there is no second list to forget. See
-# notes/architecture-list-sweep.md, option A.
+# nifeos/record:notes/architecture-list-sweep.md, option A.
 all_targets="$(awk -F'"' '/^targets *=/ {for (i = 2; i < NF; i += 2) printf "%s ", $i}' rust-toolchain.toml)"
 # shellcheck disable=SC2086  # word splitting is the point: one flag per target
 helpers/rustup-retry.sh target add --toolchain "$channel" $all_targets
@@ -158,7 +158,7 @@ fi
 # Linux both are source builds, about 85 s per job on the arm64 runners (measured on #1778), and six
 # CI jobs (test, cpu-matrix, bench, boot-check, swish-check, swish-check-x86_64) never lint. Unset,
 # the default, installs everything, so a developer and `script/ci-build` with no arguments are
-# unchanged; a job that lints must not set it. See notes/scripts/helpers-and-bootstrap.md.
+# unchanged; a job that lints must not set it. See nifeos/record:notes/scripts/helpers-and-bootstrap.md.
 if [ -n "$NIFE_SKIP_LINT_TOOLS" ]; then
     echo "==> Skipping cargo-machete and typos (NIFE_SKIP_LINT_TOOLS is set)"
 else

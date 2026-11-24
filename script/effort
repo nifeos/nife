@@ -37,7 +37,7 @@
 #     records and writes the aggregate to a machine-local cache outside the repository, so a week's
 #     numbers outlive the transcripts they came from. Nothing in it touches the tree, so it is safe
 #     to run unattended from `launchd` beside `merge-drain.sh` and `trunk-health.sh` (the plist is in
-#     notes/project-metrics.md). A month of nobody committing then costs nothing.
+#     nifeos/record:notes/project-metrics.md). A month of nobody committing then costs nothing.
 #   - **`--check` is rung two as well, pointed at the other failure.** It fails when the newest
 #     closed week has no committed row, or when its row was captured before the week ended (the
 #     `captured_at` section below). `helpers/trunk-health.sh` relays it, so the existing watcher
@@ -48,7 +48,7 @@
 # after each week closes. That is rung four, it is said to be rung four, and the two mechanisms
 # above exist so that missing it is a delay rather than a loss. A scheduled job that runs it and
 # opens the pull request is
-# milestone 934 (design/roadmap/0934-a-closed-week-is-captured-after-it-closes.md) and not built.
+# milestone 934 (a closed week's effort row is captured after the week closes), nifeos/record:design/roadmap/0934-a-closed-week-is-captured-after-it-closes.md, and not built.
 #
 # # What is counted
 #
@@ -104,7 +104,7 @@
 # **Read the mean as a bill, not as waste.** Carrying context is what makes a long session coherent,
 # and the finding is that it dominates the cost, not that it is useless. The question it opens, which
 # is whether sessions should have a length limit and at what threshold, is not answered here;
-# design/roadmap/proposals/ carries it.
+# nifeos/record:design/roadmap/proposals/ carries it.
 #
 # ## `machine_hours`, and what it conflates
 #
@@ -394,7 +394,7 @@ def is_project_dir(directory, main=None):
         return True
     for name in OPENCODE_PROJECT_NAMES:
         # The worktrees directory is matched wherever it lives, not only under `projects/`: a tool
-        # records its physical working directory, and notes/dev-machine-disk.md moves the worktrees
+        # records its physical working directory, and nifeos/record:notes/dev-machine-disk.md moves the worktrees
         # to their own volume behind a symlink, where a lane's directory reads
         # `/Volumes/nife-build/nife-worktrees/<lane>`.
         if os.path.basename(directory.rstrip('/')) == name or ('/%s-worktrees/' % name) in directory:

@@ -8,7 +8,7 @@
 #   2. Is the vendored tree actually the upstream release we say it is? That is script/vendor-verify.
 #
 # **Why this is a gate and not a report.** The thesis is that this kernel confines code it did not
-# write (DECISIONS §14, §27, §31, notes/redoxfs-audit.md). Not knowing when that code has a published
+# write (DECISIONS §14 (the project's direction), §27 (the filesystem service), §31 (the foreign-language seam), nifeos/record:notes/redoxfs-audit.md). Not knowing when that code has a published
 # advisory was an odd blind spot for a project making that claim, and it stays a blind spot unless
 # something red-lights.
 #
@@ -27,7 +27,7 @@
 #     redoxfs_server and tools/redoxfs_host, at the feature sets we actually build; checking it
 #     standalone would evaluate its default features (`fuse`, which wants macFUSE) and report on
 #     code nothing here ever compiles.
-#   - **notes/packages/container-format-measurements/fuzz/** is a measuring harness for that note,
+#   - **nifeos/record:notes/packages/container-format-measurements/fuzz/** is a measuring harness for that note,
 #     kept as `Cargo.toml.in` so no cargo command treats it as a crate. Nothing builds or ships it.
 #
 # See notes/scripts.md.

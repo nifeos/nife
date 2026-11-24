@@ -19,7 +19,7 @@
 # (the RISC-V Linux Image header sits at offset 0; boot.s emits it), verifies the header magic,
 # packs the userspace archive the kernel measures, writes the U-Boot boot script beside them under
 # target/board/, and either copies all three onto a card you name or prints the commands that do.
-# See notes/visionfive2.md for the boot path, the DTB caveat, and the bench runbook.
+# See nifeos/record:notes/visionfive2.md for the boot path, the DTB caveat, and the bench runbook.
 #
 # **What it will and will not do to a disk** (milestone 217 answered this deliberately). Formatting
 # is still yours: `dd` and `diskutil eraseDisk` name a whole device, they destroy everything on it,
@@ -59,9 +59,9 @@
 #   target/<target>/debug/ because nothing on this path sets xtask's release flag, so every board
 #   payload, and every job-mix and soak number taken from one, runs debug programs under a release
 #   kernel. On radon (2026-10-05) the system call stub alone was 3 to 8 ticks of a 110-tick null-system-call
-#   job (notes/job-mix/radon-2026-10-05.md). Fixing it moves every radon baseline at once, so it is
+#   job (nifeos/record:notes/job-mix/radon-2026-10-05.md). Fixing it moves every radon baseline at once, so it is
 #   a proposal with a re-baseline, not a flag flip:
-#   design/roadmap/0797-release-userspace-in-board-images.md.
+#   nifeos/record:design/roadmap/0797-release-userspace-in-board-images.md.
 
 set -eu
 # A heavy job: wait for one of the machine's heavy-job slots first (helpers/heavy_slot.py).
@@ -77,7 +77,7 @@ cd "$(dirname "$0")/.."
 # flag here rather than a second script because everything else about the payload is identical, and
 # because the archive/kernel ORDER below is the thing that must not be re-derived by hand: a lane
 # that built the soak kernel separately would rebuild it against the previous archive and meet
-# MEASURED BOOT REFUSED at the bench, which is boot 12 all over again. See notes/soak.md.
+# MEASURED BOOT REFUSED at the bench, which is boot 12 all over again. See nifeos/record:notes/soak.md.
 # **The rebooting payload** (milestone 249): the soak, plus a cold reboot every two minutes, so
 # the boot-time thread-placement lottery can be drawn fifty times unattended instead of nine times
 # by a person walking to the board. It is a second flag rather than a second value of --soak
@@ -92,7 +92,7 @@ cd "$(dirname "$0")/.."
 # exact machine they were designed for. The two features go on together for that reason, rather
 # than being offered separately for somebody to get wrong at the bench. The cost is stated where a
 # reader meets it, in `single_hart`'s own entry in kernel/Cargo.toml: `smp_throughput`, `fs_read`
-# and `fs_throughput` skip on this card. See notes/footprint-perturbation.md.
+# and `fs_throughput` skip on this card. See nifeos/record:notes/footprint-perturbation.md.
 FEATURES=board
 TH1520=no
 SOAK=no
@@ -146,10 +146,10 @@ fi
 # **The multi-tasking workload payload** (milestone 168): the same image, with the kernel feature
 # that replaces the halt at the end of the boot tour with a sweep of EL0 tasks through a
 # heterogeneous job mix, reported as jobs per minute against task count. It is the instrument
-# design/decisions/0096-process-kernel-or-event-kernel.md is waiting on, and its gate is HARDWARE, so
+# nifeos/record:design/decisions/0096-process-kernel-or-event-kernel.md is waiting on, and its gate is HARDWARE, so
 # a card is how the number is actually taken. A flag here rather than a second script for --soak's
 # reason: everything else about the payload is identical, and the archive/kernel ORDER below is the
-# thing that must not be re-derived by hand. See notes/job-mix.md.
+# thing that must not be re-derived by hand. See nifeos/record:notes/job-mix.md.
 # `--bench` replaces the end of the boot tour too, so it is exclusive with the other two for the
 # same reason and with the same refusal rather than a silent preference.
 if [ "$BENCH" = yes ] && { [ "$SOAK" = yes ] || [ "$JOB_MIX" = yes ]; }; then
@@ -180,7 +180,7 @@ board-image: --reboot builds a card that makes the board RESET ITSELF every two 
   * If the console is lost entirely, U-Boot's autoboot countdown on the next boot is the
     fallback, and rewriting the card is the one after that.
 
-  See notes/soak.md, "The rebooting soak on radon, which is milestone 249's experiment".
+  See nifeos/record:notes/soak.md, "The rebooting soak on radon, which is milestone 249's experiment" (milestone 249 (the boot lottery is sampled by a person walking to the board)).
 
 WARNING
 fi
@@ -390,11 +390,11 @@ fi
 # than guessing: `Device tree not found or missing FDT support`, then `### ERROR ### Please RESET
 # the board ###`, which is a hang, before a single instruction of ours runs. What goes on the card
 # instead is a U-Boot script carrying the exact commands the 2026-09-01 bench boot proves, so the
-# boot sequence is unchanged and only the typing is gone. See notes/visionfive2.md.
+# boot sequence is unchanged and only the typing is gone. See nifeos/record:notes/visionfive2.md.
 if [ "$TFTP" = yes ]; then
     # The network-first script (257). The address is not a constant anywhere in this tree: xtask
     # reads it off this machine's own interfaces, or takes the one named here, and the board echoes
-    # it at boot so a console log says what the card expects. See notes/visionfive2.md.
+    # it at boot so a console log says what the card expects. See nifeos/record:notes/visionfive2.md.
     if [ -n "$SERVER" ]; then
         cargo xtask board-script --tftp --server "$SERVER"
     else

@@ -2,7 +2,7 @@
 # script/lint-fleet: the checks of the agent-fleet tooling, apart from the tree's own lint.
 #
 # Milestone 889 (the tree's gates stop depending on the fleet tooling), the first step of calef's
-# Fork 4 ruling on #1976 (2026-10-12 UTC). design/roadmap/0902-tooling-sorted-by-who-needs-it.md
+# Fork 4 ruling on #1976 (2026-10-12 UTC). nifeos/record:design/roadmap/0902-tooling-sorted-by-who-needs-it.md
 # sorted the tree's tooling into who needs it, and found script/lint running 22 checks of the
 # machinery that runs a fleet of agent lanes: the claim, the merge drain and its detectors, the
 # architect label and hold, the session identity, the merge watchers and two method-metric
@@ -67,7 +67,7 @@ echo "==> rule 4: a branch that looks like a milestone claim parses as one"
 #    also **fixed when the lane is cut**, where a label is editable at any time; for a check whose
 #    job is "you claimed 126, so move 126's block", the claim has to be the immutable half.
 #
-#    So the taxonomy moves to design/naming.md as a convention, and the only thing still refused is
+#    So the taxonomy moves to nifeos/record:design/naming.md as a convention, and the only thing still refused is
 #    a name that LOOKS like a milestone claim and would therefore skip 4b in silence. That is the
 #    one real hole the allowlist was plugging: `milestone-126-pgrep`, with a hyphen, does not match
 #    4b's `milestone/*` and would sail past the check that exists to catch a status that never
