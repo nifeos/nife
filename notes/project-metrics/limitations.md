@@ -35,7 +35,7 @@ The `BUGS` section of [notes/project-metrics.md](../project-metrics.md): what it
   GitHub serves the SVG as an `<img>`, so a media query inside it cannot see the page theme.
 - `patches/` is outside the `unsafe` census, inherited from `script/lint` along with its reason.
   That code does run on the machine, making it a real hole rather than a boundary, and
-  `notes/register-of-measures.md` records the blocks it leaves uncounted.
+  `nifeos/record:notes/register-of-measures.md` records the blocks it leaves uncounted.
 - `names_total` is not the sum of the naming columns, which is the one place a column here
   breaks the pattern the milestone and decision columns set. It covers every named thing in that week's
   tree; the four statuses count the ones whose header carries a block that parses. The chart draws the gap as a band, the register explains it, and the gap does not fold into `Unrecorded`, because
@@ -48,7 +48,7 @@ The `BUGS` section of [notes/project-metrics.md](../project-metrics.md): what it
   (`name_census.pub_items`). The census misses an item a macro generates, and counts a `pub` line inside a block
   comment or raw string. `pub(crate)` items are not public and are not counted unless
   they carry a block. 2026W42 has 7,419 `pub` items, 2,955 of them constants. `helpers/` helpers
-  are outside `script/names`' surfaces, and design/naming.md's
+  are outside `script/names`' surfaces, and nifeos/record:design/naming.md's
   `BUGS` carries what that leaves uncovered.
 - `proposals_unnumbered` is a net count and cannot see the flow. Five proposals have left the
   directory and 81 remain; a flat line fits both a stalled pile and one draining as fast as it fills. The measurement that would tell them apart is the age of the oldest,

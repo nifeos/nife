@@ -4,7 +4,7 @@
 installed by the package that owns it. The pure logic is `crates/documentation`; the program is
 `mdr/`, a `std` program; the store is built by `cargo xtask manual`.)*
 
-The project's own argument is written in markdown: 328 files, three megabytes, `design/decisions/`
+The project's own argument is written in markdown: 328 files, three megabytes, `nifeos/record:design/decisions/`
 and a hundred notes. A nife that serves them, on itself, through a viewer that can name
 nothing is a better demonstration of the component story than another synthetic test, and it costs
 the documentation nothing because it already exists.
@@ -221,7 +221,7 @@ what it did, including the kernel's one wait point that made the first one hard,
 
 - A page's last line and the shell's next `$ ` prompt can interleave under contention: an
   accepted interim display race, not a confinement or correctness failure, tracked at milestone 151
-  (notification objects). See notes/tail-output-narrowing.md.
+  (notification objects). See nifeos/record:notes/tail-output-narrowing.md.
 - A screen-narrowed child is invisible to a concurrent `ps`/`pgrep` for its short life, though
   nothing leaks. Both entries are in full in
   [documentation/narrowing-bugs.md](documentation/narrowing-bugs.md).

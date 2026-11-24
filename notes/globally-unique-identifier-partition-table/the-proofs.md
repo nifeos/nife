@@ -42,7 +42,7 @@ and it would fail on every real disk.
 The first attempt at the header round trip went through `encode_into` and `decode`, so the formula
 carried two 92-byte CRC-32s over symbolic bytes. It ran 274 seconds without finishing. The
 `script/verify` budget is about three minutes per harness, the same budget the DMA harnesses record
-in notes/verification.md.
+in nifeos/record:notes/verification.md.
 
 The measured reason is in the two CRC harnesses above. One table CRC plus one bitwise CRC over 8
 symbolic bytes is 20 s. Two table CRCs over the same 8 bytes is 33 s. So the table version costs

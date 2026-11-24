@@ -10,4 +10,4 @@ carry:
   the scancode map and the script the kernel test feeds.
 
 *Name: provisional, for the directory and the stems `handoff-and-component` and `palette-keymap-and-script`: the directory follows
-`notes/process-view/`'s shape, a page's appendices beside it. calef names directories and files.*
+`nifeos/record:notes/process-view/`'s shape, a page's appendices beside it. calef names directories and files.*

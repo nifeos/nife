@@ -44,17 +44,17 @@ Full rows: [records-and-indexes.md](scripts/records-and-indexes.md).
 
 | script | what it does |
 |---|---|
-| `script/decisions` | Index `design/decisions/`; `--check` is gated in `lint`; `--renumber-from <n>` shifts a collided run up by `--by <k>`, keyed on the filename. |
+| `script/decisions` | Index `nifeos/record:design/decisions/`; `--check` is gated in `lint`; `--renumber-from <n>` shifts a collided run up by `--by <k>`, keyed on the filename. |
 | `script/roadmap` | Index the milestones; `--ready`, `--unclaimed`, `--outstanding`, `--proposed`. |
 | `script/journeys` | Progress against the end-to-end user journeys. |
 | `script/citations` | Does each `§N` or `milestone N` gloss match what it cites? `--ratchet` gates added lines. |
-| `script/fatal-risks` | Does `design/fatal-risks/README.md` agree with the records it cites? |
+| `script/fatal-risks` | Does `nifeos/record:design/fatal-risks/README.md` agree with the records it cites? |
 | `script/catch-up` | What changed since you last looked. |
 | `script/apropos <word>` | Search every document in the repository. |
 | `script/site` | Build the design record as a website and report its broken links. |
 | `script/names` | Who named this, when, and what was refused. |
 | `script/review-status` | Crate review findings, by state. |
-| `script/metrics` | The weekly measures behind `notes/project-metrics.md`. |
+| `script/metrics` | The weekly measures behind `nifeos/record:notes/project-metrics.md`. |
 
 ### How the project measures itself
 

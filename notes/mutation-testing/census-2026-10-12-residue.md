@@ -109,7 +109,7 @@ say so.
 
 - Five gaps stay. `board_console`'s three need a real tty and a host `/dev`.
   `address_space_identifier`'s two are a release-only guard behind two `debug_assert!`s of the same
-  condition, which `notes/mutation-testing.md` calls equivalent under the harness. They stay `gap`,
+  condition, which `nifeos/record:notes/mutation-testing.md` calls equivalent under the harness. They stay `gap`,
   because that is the weaker claim.
 - The 547 rows marked `killed` whose keys the 2026-10-12 census still lists were not re-run. Most
   are the inflow triage's kills, written after that census. Run

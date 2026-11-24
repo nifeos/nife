@@ -10,7 +10,7 @@ that [notes/mutation-testing.md](../mutation-testing.md) summarizes. The second 
 ## 2026-09-19: milestone 326, triaging the census's regressions
 
 The census of 2026-09-14 produced 771 survivors, and nobody had looked at one.
-`design/fatal-risks/README.md`'s risk 3 is AMBER for exactly that reason. Its stated condition for going
+`nifeos/record:design/fatal-risks/README.md`'s risk 3 is AMBER for exactly that reason. Its stated condition for going
 back to green is that milestone 326's first two parts carry no untriaged survivor. This section is
 that accounting, crate by crate, in the block's own order.
 
@@ -129,7 +129,7 @@ error, which is what the guard is for.
 Before: 134 caught, 48 missed, 12 unviable (73.6% of viable). After: 146 caught, 0 missed
 (100.0%).
 
-The headline first, because the block asked for it. `design/fatal-risks/README.md`'s risk 2 names
+The headline first, because the block asked for it. `nifeos/record:design/fatal-risks/README.md`'s risk 2 names
 `next_after` as its strongest counterfactual: the milestone 6 (threads, the context switch, and
 preemption) timer drift, proved over code the timer does not call. Milestone 326 put this crate
 second on its list for that reason, not for its rate. **No survivor touched `next_after`, the phase

@@ -1,4 +1,4 @@
-# Project metrics: the data behind notes/project-metrics.md
+# Project metrics: the data behind nifeos/record:notes/project-metrics.md
 
 [`notes/project-metrics.md`](../project-metrics.md) is the page to read. `script/metrics` writes
 everything here except [`ledger.md`](ledger.md) and [`limitations.md`](limitations.md), and its
@@ -21,4 +21,4 @@ Four more records come from GitHub's job and pull request data, each written by 
   provisional).
 
 *Name: provisional, minted 2026-09-02 with `script/metrics` (`175a2409b`), for the directory and
-`ledger.md`; `notes/project-metrics.md` records the same. Naming is an architect's.*
+`ledger.md`; `nifeos/record:notes/project-metrics.md` records the same. Naming is an architect's.*

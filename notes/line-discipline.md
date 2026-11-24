@@ -52,7 +52,7 @@ Three things it leaves out on purpose:
   answers Tab with `LineEditor::pending` and `LineEditor::insert_text` (§227 (how Tab reaches the
   shell)).
 - It keeps no output-side state. Newline translation is the free function `expand_output`,
-  because output shares no state with input editing (notes/thread-control-block.md has the tty
+  because output shares no state with input editing (nifeos/record:notes/thread-control-block.md has the tty
   layer).
 
 ## The build-vs-reuse call: built, against the rule's default
@@ -225,7 +225,7 @@ spawner picks one of two wirings in `arg0`:
 `MODE_RING` is DECISIONS §33 (the compositor's authority is memory, not messages) seen from the
 producing side, and [glyphs.md](glyphs.md) has its argument. `MODE_DIRECT` serves a boot with
 exactly one terminal, where there is no second window to misdirect a keystroke to
-(design/roadmap/0177-graphical-interactive-boot.md). The driver holds one fixed `CALL` capability to
+(nifeos/record:design/roadmap/0177-graphical-interactive-boot.md). The driver holds one fixed `CALL` capability to
 `line_editor`'s served endpoint, granted at spawn, and sends every keystroke there in the same
 `OPERATION_BYTES` framing the UART receive driver uses. A keyboard and a serial line are both one
 input source to the discipline, and neither contract grew to carry the other's bytes. That is
