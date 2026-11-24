@@ -505,6 +505,13 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
     {
         die(E_GEOMETRY);
     }
+    // Both wirings pack their rows: `negotiate_geometry` derives the scanout's stride from the
+    // width, and the compositor publishes `Window::stride`, which is the same product. A control
+    // page that says otherwise is refused, because the stride sizes the mapping below and every
+    // offset `paint` writes at; the grid check bounds it only through this equality.
+    if stride != w * gfx::BYTES_PER_PIXEL {
+        die(E_GEOMETRY);
+    }
     // `reset_to`, not `*term() = Vt::new(cols, rows)` (milestone 142): `cols`/`rows` are runtime
     // values negotiated with the driver or the compositor, so `Vt::new` here would run as an
     // ordinary function call rather than being evaluated at compile time, and its return value (a
@@ -523,9 +530,10 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
     // SURFACE_VA itself, above, and the kernel sized that run from the same geometry the driver
     // answers `INFO` with: `gfx::SURFACE_PAGE_FRAMES` on virtio-gpu (where `stride * h` is
     // `gfx::SURFACE_BYTES`), `width * height * 4` rounded up on a firmware screen
-    // (`display_service::start_screen_terminal`). The grid check above also bounds `stride * h`
-    // under 28 MB, far short of `OUT_VA`, so even a driver that lied could only fault this
-    // process, never write its output page. MODE_WINDOW's frames are mapped by the compositor's
+    // (`display_service::start_screen_terminal`). The grid check above, with the stride check
+    // that ties `stride` to `w`, bounds `stride * h` under 28 MB, far short of `OUT_VA`, in both
+    // wirings, so even a driver or a control page that lied could only fault this process, never
+    // write its output page. MODE_WINDOW's frames are mapped by the compositor's
     // `spawn_client_term` before `HELLO`'s reply arrived, sized to the same geometry (`stride`,
     // `h`) this process just read off the control page it validated above (milestone 139 (drive
     // the unsafe count down), round 4).
