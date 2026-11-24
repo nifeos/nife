@@ -36,7 +36,7 @@ dependencies = [
 [[package]]
 name = "rsext4"
 version = "0.10.0-nifeos.1"
-source = "git+https://github.com/nifeos/rsext4?rev=ac4b184f6502d5cfc23ca3101e7727c594b8f44d#ac4b184f6502d5cfc23ca3101e7727c594b8f44d"
+source = "git+https://github.com/nifeos/rsext4?rev=8bba0ace4d5fbca61a44e6e4e420f15f983cc278#8bba0ace4d5fbca61a44e6e4e420f15f983cc278"
 dependencies = [
  "bitflags",
  "thiserror",
