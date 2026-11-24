@@ -58,7 +58,7 @@ pub(crate) fn riscv64_initial_ramdisk_path() -> String {
         .to_string()
 }
 
-/// The packages a program can live in (milestone 175 (split `user/`)). See nifeos/record:notes/adding-a-program.md for
+/// The packages a program can live in (milestone 175 (split `user/`)). See partsfoundry/record:notes/adding-a-program.md for
 /// which one a new program belongs in.
 const PROGRAM_PACKAGES: [&str; 2] = ["components", "fixtures"];
 
@@ -71,7 +71,7 @@ const PROGRAM_PACKAGES: [&str; 2] = ["components", "fixtures"];
 ///
 /// Refuses, rather than packing a partial archive, when a `[[bin]]` block has a shape
 /// [`bin_names`] does not understand, and when [`check_declared_programs`] fails. See
-/// nifeos/record:notes/adding-a-program/the-archives.md.
+/// partsfoundry/record:notes/adding-a-program/the-archives.md.
 fn declared_programs() -> Result<&'static [String], String> {
     // Read once per `xtask` run: `test` packs three archives, and they must pack the same list.
     static DECLARED: std::sync::OnceLock<Result<Vec<String>, String>> = std::sync::OnceLock::new();
@@ -304,7 +304,7 @@ fn is_std_built_elsewhere(p: program_table::Program) -> bool {
 ///
 /// - It holds `progenitor`, so a scanner that stopped finding blocks fails here rather than
 ///   packing an archive that boots nothing (see
-///   nifeos/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md).
+///   partsfoundry/record:design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md).
 /// - No name is declared twice, across both packages.
 /// - Every program `grant_plan` lets the shell spawn is built; otherwise it passes every host test
 ///   and fails only at boot.
@@ -468,7 +468,7 @@ pub(crate) fn has_initial_ramdisk_x86() -> bool {
 /// the `progenitor` entry to boot, and the progenitor loads the rest by name. Unlike its siblings
 /// this only packs: `user()` builds and then calls it, and so does every command that boots the
 /// aarch64 kernel, including the `initial-ramdisk-aarch64` subcommand. The image is generated and
-/// never checked in. See nifeos/record:notes/adding-a-program/the-archives.md.
+/// never checked in. See partsfoundry/record:notes/adding-a-program/the-archives.md.
 ///
 /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
 /// `initial_ramdisk_aarch64`: the question shape asks a `bool` `is_`, `has_`, `can_` or a finite

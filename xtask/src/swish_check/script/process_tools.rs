@@ -19,7 +19,7 @@ pub(super) const LINES: &[Line] = &[
     // **`ps` cannot see the machine**: the listing above holds only the shell's domain, where a
     // `/proc`-shaped `ps` would list every server and driver. The count is not asserted, because
     // whether `ps` walks before or after `wc` exists is a race (a survey is a snapshot,
-    // nifeos/record:notes/process-view.md); `kernel::user::survey_tests` asserts the confinement claim
+    // partsfoundry/record:notes/process-view.md); `kernel::user::survey_tests` asserts the confinement claim
     // deterministically on both ISAs. And `caps ps` prints the scope before anything is spawned,
     // the half Linux cannot express: there every program sees the same processes.
     line(0, "caps ps", &["cap 7  endpoint  domain"]),

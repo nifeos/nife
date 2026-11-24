@@ -88,7 +88,7 @@ pub(super) fn std_patch_size_hint() -> bool {
 /// backend, and add nife to std's `build.rs` known-platform chain (so std is not
 /// `restricted_std` and ordinary programs need no `#![feature]`). These string anchors couple us
 /// to the pinned nightly's std internals; a rustc bump that reshapes them fails loudly here, which
-/// is the intended tripwire (see nifeos/record:notes/std.md).
+/// is the intended tripwire (see partsfoundry/record:notes/std.md).
 pub(super) fn std_patch_dispatch() -> bool {
     let sys = farm_std_src().join("sys");
     DISPATCH_ARMS.iter().all(|edit| edit.apply(&sys))
@@ -232,7 +232,7 @@ const DISPATCH_ARMS: &[SysEdit] = &[
     // arm is `crate::intrinsics::abort()`, which the kernel reports as a fault. This arm does what
     // `_start` already does on `main`'s return, the same `SYSTEM_CALL_EXIT` with the same code (which the
     // kernel discards). `a_whole_std_program_runs_on_the_native_abi` asserts exit, not fault. See
-    // nifeos/record:notes/std/caveats.md.
+    // partsfoundry/record:notes/std/caveats.md.
     SysEdit::After(
         "exit.rs",
         "pub fn exit(code: i32) -> ! {\n    cfg_select! {",

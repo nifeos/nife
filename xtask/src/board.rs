@@ -2,7 +2,7 @@
 //! without a person at its prompt (milestone 218).
 //!
 //! The recogniser that says how far a boot got lives in `serial_console`; this keeps the
-//! argument parsing, the log, and the report. See nifeos/record:notes/visionfive2.md.
+//! argument parsing, the log, and the report. See partsfoundry/record:notes/visionfive2.md.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -119,7 +119,7 @@ fn board_console_exposure(args: &[String]) -> ExitCode {
     }
     println!();
     println!(
-        "Paste each row into the machine's table under nifeos/record:notes/multicore-defect-curve/ (radon's is \
+        "Paste each row into the machine's table under partsfoundry/record:notes/multicore-defect-curve/ (radon's is \
          radon-rows.md) with the next free E id; `?` is a column the log cannot supply."
     );
     if soaked.iter().all(|b| b.is_clean()) {
@@ -604,7 +604,7 @@ pub(crate) fn parse_duration(text: &str) -> Option<std::time::Duration> {
 /// The stage to wait for, or `none` to watch for the whole duration.
 ///
 /// `none` is not a formality: sustained watching with nothing to wait for is what
-/// `nifeos/record:design/fatal-risks/README.md`'s multicore entry (risk 5) needs, and it is the case a boot check
+/// `partsfoundry/record:design/fatal-risks/README.md`'s multicore entry (risk 5) needs, and it is the case a boot check
 /// cannot cover.
 ///
 /// **It takes a board** (milestone 324 part 3), because four of these words name rungs of a
@@ -668,10 +668,10 @@ fn stage_words(board: &'static serial_console::board::Profile) -> String {
 // refuses with a `hang()` only the reset button clears
 // (crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-extlinux-refused.log). So the card
 // carries a script `scan_dev_for_scripts` sources, issuing the commands a person types at the
-// `StarFive #` prompt (vf2-2026-09-01-manual-boot.log). See nifeos/record:notes/visionfive2.md.
+// `StarFive #` prompt (vf2-2026-09-01-manual-boot.log). See partsfoundry/record:notes/visionfive2.md.
 // ===========================================================================================
 
-/// The script the board runs, verbatim: the manual sequence of nifeos/record:notes/visionfive2.md, every line
+/// The script the board runs, verbatim: the manual sequence of partsfoundry/record:notes/visionfive2.md, every line
 /// proven on silicon, with three edits. The load device comes from the variables `boot_a_script`
 /// sets before sourcing it (`devtype`, `devnum`, `distro_bootpart`), and the archive's length is
 /// stashed under our own name as soon as `load` reports it, so a later command that sets `filesize`
@@ -726,7 +726,7 @@ const BOARD_ARCHIVE_ADDR: &str = "0x90000000";
 /// it, read at that moment, and the script echoes it at boot. Interfaces are enumerated rather than
 /// asking the routing table, because a VPN's default route answers an address the board cannot
 /// reach; anything outside RFC 1918 is dropped. Several are normal: the first is taken and all are
-/// printed, so `--server` can pick another. See nifeos/record:notes/visionfive2/network-boot.md.
+/// printed, so `--server` can pick another. See partsfoundry/record:notes/visionfive2/network-boot.md.
 fn host_private_addresses() -> Vec<(String, std::net::Ipv4Addr)> {
     // BSD/macOS first, then iproute2, because the bench machine is the Mac and CI is Ubuntu.
     if let Some(out) = host_tool_output("ifconfig", &[]) {
@@ -829,7 +829,7 @@ const BOARD_SERVED_SCRIPT_ADDR: &str = "0x84000000";
 /// either takes both from the card. `autoload no` stops bare `dhcp` from fetching the bootfile DHCP
 /// names, and `netretry no` makes a missing network fail in seconds rather than hang. The shape is
 /// deliberately dull (one state variable, `if cmd; then` and `fi`, nesting at most two, no `else`)
-/// because U-Boot's hush has not been watched running it. See nifeos/record:notes/visionfive2/network-boot.md.
+/// because U-Boot's hush has not been watched running it. See partsfoundry/record:notes/visionfive2/network-boot.md.
 pub(crate) fn board_network_boot_script(server: &str, words: &str) -> String {
     let archive = BOARD_ARCHIVE_ADDR;
     let served = BOARD_SERVED_SCRIPT;
@@ -1262,7 +1262,7 @@ mod tests {
     /// working.** Nobody is watching when this runs, and U-Boot's parser is a cut-down hush whose
     /// failures are silent, so the guard is on the vocabulary rather than on the outcome: no
     /// comments, no parentheses, no shell forms this project has never seen the board execute. It
-    /// also pins the two addresses whose arithmetic nifeos/record:notes/visionfive2.md carries.
+    /// also pins the two addresses whose arithmetic partsfoundry/record:notes/visionfive2.md carries.
     #[test]
     fn the_board_script_stays_inside_the_proven_vocabulary() {
         let script = board_boot_script(WORDS);

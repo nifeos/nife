@@ -1,7 +1,7 @@
 //! The bootable UEFI image (milestone 87): the entry real firmware can start.
 //!
 //! Staged at `target/esp` for a QEMU/OVMF boot or for a FAT32 stick, and booted under OVMF
-//! by `uefi-boot` and `uefi-test`. See nifeos/record:notes/x86-uefi-boot.md.
+//! by `uefi-boot` and `uefi-test`. See partsfoundry/record:notes/x86-uefi-boot.md.
 
 use std::path::Path;
 use std::process::Command;
@@ -32,7 +32,7 @@ pub(crate) fn esp_dir() -> std::path::PathBuf {
 /// **Build the bootable UEFI image** (milestone 87) at [`esp_dir`], with no kernel features: the
 /// kernel, the archive, and the loader that embeds both. Only [`uefi_image_command`] reads the
 /// command line; other callers' arguments are theirs. See
-/// nifeos/record:notes/x86-uefi-boot/running-under-firmware.md, "Inside the two gates".
+/// partsfoundry/record:notes/x86-uefi-boot/running-under-firmware.md, "Inside the two gates".
 /// ```text
 /// cargo xtask uefi-image
 /// helpers/qemu-uefi-x86_64.sh target/esp    # boot it under QEMU with real firmware
@@ -103,7 +103,7 @@ pub(crate) fn uefi_kernel(features: Option<&str>) -> Option<String> {
     // `target/init-measure-x86_64.txt`, which `kernel/build.rs` compiles in as the measured-boot
     // trust root, so a kernel built first vouches for the previous archive and the handover refuses
     // ("MEASURED BOOT REFUSED"). QEMU rarely shows it; two benches did
-    // (nifeos/record:notes/x86-uefi-boot/running-under-firmware.md). `has_initial_ramdisk_x86` never builds the
+    // (partsfoundry/record:notes/x86-uefi-boot/running-under-firmware.md). `has_initial_ramdisk_x86` never builds the
     // kernel, so this order is safe.
     let mut build = vec!["build", "-p", "kernel", "--target", X86_TARGET];
     if let Some(list) = features {
@@ -157,7 +157,7 @@ fn uefi_screen_esp_dir() -> std::path::PathBuf {
 ///
 /// A second directory rather than `target/esp`, and the separation is the point rather than
 /// tidiness. `esp_dir()` is what the bench procedure copies to a USB stick, and a stick carries no
-/// sign of which kernel is inside the one file on it (`nifeos/record:notes/x86-uefi-boot.md`'s last `BUGS`
+/// sign of which kernel is inside the one file on it (`partsfoundry/record:notes/x86-uefi-boot.md`'s last `BUGS`
 /// entry). If the suite run wrote over that directory, a `cargo xtask uefi-boot` followed by a copy
 /// would put the *test* kernel on the machine, which boots, prints a tour, runs 200 tests and then
 /// asks QEMU to exit on a port no Dell answers. Two directories make that unrepresentable.
@@ -283,7 +283,7 @@ pub(crate) fn uefi_stage_archive(
 /// (milestone 165 (x86_64 PCI enumeration)), and the shell on the screen answering a serial
 /// keystroke ([`screen_watch`]). The runner bounds the boot, so a hang fails rather than hangs; it
 /// is stopped once the screen has answered. Returns whether everything held. See
-/// nifeos/record:notes/x86-uefi-boot/running-under-firmware.md, "What `uefi-boot` asserts".
+/// partsfoundry/record:notes/x86-uefi-boot/running-under-firmware.md, "What `uefi-boot` asserts".
 pub(crate) fn uefi_boot() -> bool {
     uefi_boot_staged()
 }
@@ -384,7 +384,7 @@ fn start_uefi_screen_boot(sock: &str) -> Option<std::process::Child> {
         // Two cores (milestone 195 (finish the UEFI boot path)): this checks that the loader's
         // request for the trampoline page at 0x8000 worked, and that device interrupts still reach
         // the boot core with a second local APIC. The suite keeps one core until it is measured at
-        // two under OVMF; see nifeos/record:notes/x86-uefi-boot/running-under-firmware.md, "SMP under firmware".
+        // two under OVMF; see partsfoundry/record:notes/x86-uefi-boot/running-under-firmware.md, "SMP under firmware".
         .env("NIFE_SMP", "2")
         // The bare firmware machine whether or not a suite leg ran first: `test()` sets these in
         // this process for the PVH leg, and the tour must be one machine either way.
@@ -620,7 +620,7 @@ fn uefi_screen_showed_the_shell(screen: &ScreenReadings, shot: &Path) -> bool {
 /// `mmu::initialize`, the glyphs), and any decoded row proves all five. Not the self-test verdict:
 /// `boot_self_test` prints it after the hand-over, once the screen is the shell's terminal, so it
 /// is read off the terminal ([`ScreenReadings::verdict`]). See
-/// nifeos/record:notes/x86-uefi-boot/running-under-firmware.md.
+/// partsfoundry/record:notes/x86-uefi-boot/running-under-firmware.md.
 const UEFI_SCREEN_MARKER: boot_ladder::Head<'static> = serial_console::HEADS.core_runs();
 
 /// **The tour's first line, reported when the screen was tall enough to still be holding it.**
@@ -696,7 +696,7 @@ fn terminal_text(ppm: &[u8]) -> Option<String> {
 /// 3. The answer: [`UEFI_SCREEN_COMMAND`] typed, and a row equal to [`UEFI_SCREEN_ANSWER`].
 ///
 /// On its own thread, because the runner returns only after QEMU is gone. Stops when the monitor
-/// stops answering, or at a deadline. See nifeos/record:notes/x86-uefi-boot/running-under-firmware.md.
+/// stops answering, or at a deadline. See partsfoundry/record:notes/x86-uefi-boot/running-under-firmware.md.
 fn screen_watch(
     sock: &str,
     shot: &Path,
@@ -907,7 +907,7 @@ fn uefi_test_image(package: &str) -> bool {
     }
     // A hang detector, well above an honest run: the `system_tests` boot takes about 190 s in CI
     // on the 1120x624 scanout. A caller's own `NIFE_UEFI_TIMEOUT` wins. See
-    // nifeos/record:notes/x86-uefi-boot/running-under-firmware.md, "Inside the two gates".
+    // partsfoundry/record:notes/x86-uefi-boot/running-under-firmware.md, "Inside the two gates".
     if std::env::var_os("NIFE_UEFI_TIMEOUT").is_none() {
         command.env("NIFE_UEFI_TIMEOUT", "300");
     }

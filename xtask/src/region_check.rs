@@ -17,7 +17,7 @@
 //! `grant_plan`'s; the stack numbers are read out of `crates/system_initializer/src/layout.rs`, so
 //! no number is copied here. The one number that is this file's own is [`TABLES_AND_RECORDS`], the
 //! tables, thread control block, address-space root and mapping records of one address space, and
-//! the margin [`MARGIN_PAGES`]; `nifeos/record:notes/system-initializer/budgets.md` says how each was chosen.
+//! the margin [`MARGIN_PAGES`]; `partsfoundry/record:notes/system-initializer/budgets.md` says how each was chosen.
 //!
 //! Debug images only, because a debug image is the largest and is what the suites spawn. A `std`
 //! program is built elsewhere and with its own region, so it is skipped.
@@ -215,7 +215,7 @@ pub(crate) fn region_check() -> bool {
     if failed {
         eprintln!(
             "region-check: a program outgrew its job region; shrink it, or raise the region in \
-             grant_plan with a measured reason (nifeos/record:notes/system-initializer/budgets.md)"
+             grant_plan with a measured reason (partsfoundry/record:notes/system-initializer/budgets.md)"
         );
     } else {
         println!(

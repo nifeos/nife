@@ -12,7 +12,7 @@ use crate::disk::{disk_path, mkdisk, mkredoxfs, redoxfs_server_build};
 use crate::host::{flag_value, kernel_elf, run, workspace_root};
 use crate::{RELEASE, RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, cargo_profiled, user};
 
-/// The microbenchmarks (milestone 21 (benchmarks with teeth); nifeos/record:design/roadmap/0021-benchmarks.md),
+/// The microbenchmarks (milestone 21 (benchmarks with teeth); partsfoundry/record:design/roadmap/0021-benchmarks.md),
 /// with two instruments:
 ///
 /// - default: TCG with `-icount`, exact counts. `--check` diffs them against
@@ -21,7 +21,7 @@ use crate::{RELEASE, RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, cargo_profiled,
 /// - `--real`: HVF on the host core, statistical nanoseconds, never gating. `--release` implies it.
 ///
 /// The bench kernel never exits on its own (semihosting does not work under HVF), so xtask watches
-/// the QEMU child for `bench: done` and kills it under both accelerators. See nifeos/record:notes/benchmarks.md.
+/// the QEMU child for `bench: done` and kills it under both accelerators. See partsfoundry/record:notes/benchmarks.md.
 pub(crate) fn bench() -> bool {
     let check = std::env::args().any(|a| a == "--check");
     let save = std::env::args().any(|a| a == "--save");
@@ -39,7 +39,7 @@ pub(crate) fn bench() -> bool {
     // A save that cannot say why is refused (milestone 302, calef 2026-09-16; milestone 415
     // (sub-tripwire drift accumulates across baseline saves) item 2): a row records a number and
     // nothing about why it holds it, so a reader cannot tell compiler drift from a regression
-    // (nifeos/record:notes/benchmarks.md, `rfence_self`). Refusing is the highest rung a string command line can
+    // (partsfoundry/record:notes/benchmarks.md, `rfence_self`). Refusing is the highest rung a string command line can
     // reach, and the cost §190 (must an icount baseline save record why it moved) weighed is a
     // reason typed on every save. Checked before the build so it costs a second; `run_bench` reads
     // the flag again at the write.
@@ -65,7 +65,7 @@ pub(crate) fn bench() -> bool {
     }
 
     // E3 (milestone 134 (the register of measures),
-    // nifeos/record:design/roadmap/0134-the-measurements-that-decide.md): an extra kernel feature beside `bench`,
+    // partsfoundry/record:design/roadmap/0134-the-measurements-that-decide.md): an extra kernel feature beside `bench`,
     // for the padded-fastpath experiment. `--real` only: there is no cache under TCG for a
     // footprint change to perturb, so an icount run would measure noise.
     let extra_features = flag_value("--extra-features");
@@ -122,7 +122,7 @@ fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
     if (smp && !redoxfs_server_build(TARGET))
         // `fs_walk` (milestone 606 (a directory walk costs what it does on Linux)) runs
         // `std_exerciser`, which reaches the archive only if built first, from this worktree's own
-        // std farm (nifeos/record:notes/std.md).
+        // std farm (partsfoundry/record:notes/std.md).
         || (smp && !crate::farm::std_exerciser())
         || !mkdisk()
         || !user()
@@ -147,7 +147,7 @@ fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
         cmd.env("NIFE_ACCEL", "hvf");
         if smp {
             // Primitives in this run are not per-core clean (the reap-heavy ones inflate under
-            // cross-core reap lag); see nifeos/record:notes/benchmarks/per-core-and-multi-hart.md. The bench
+            // cross-core reap lag); see partsfoundry/record:notes/benchmarks/per-core-and-multi-hart.md. The bench
             // reads the online count, so this only needs to be more than one.
             cmd.env("NIFE_SMP", "4");
             eprintln!(
@@ -155,7 +155,7 @@ fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
             );
         } else {
             // One hart: a primitive magnitude is a per-core number, and at `-smp 4` the reap-heavy
-            // primitives pick up cross-core reap lag (nifeos/record:notes/benchmarks/per-core-and-multi-hart.md).
+            // primitives pick up cross-core reap lag (partsfoundry/record:notes/benchmarks/per-core-and-multi-hart.md).
             cmd.env("NIFE_SMP", "1");
             eprintln!(
                 "--- bench: HVF, single hart, per-core magnitudes (statistical; medians matter) ---"
@@ -166,7 +166,7 @@ fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
         cmd.args(["-icount", "shift=0,sleep=off"]);
         // One hart: CNTVCT advances with QEMU's global virtual time, and under `-icount` an idle
         // hart in `wfi` jumps it to the next tick, so `-smp 4` counts other harts' idle jumps
-        // (nifeos/record:notes/benchmarks/icount-drift-and-provenance.md, the 2026-07-28 attribution).
+        // (partsfoundry/record:notes/benchmarks/icount-drift-and-provenance.md, the 2026-07-28 attribution).
         cmd.env("NIFE_SMP", "1");
         eprintln!(
             "--- bench: aarch64, single hart, TCG + icount (deterministic instruction counts) ---"
@@ -218,7 +218,7 @@ fn bench_riscv64(check: bool, save: bool, features: &str) -> bool {
     cmd.env("NIFE_INITIAL_RAMDISK", riscv64_initial_ramdisk_path());
     // `host::cargo` exports `NIFE_DISK` for every child, and the riscv64 runner treats one naming
     // a missing file as fatal. Removing it moves rows by at most 0.05%
-    // (nifeos/record:notes/benchmarks/drift-since-the-2026-09-26-floors.md). `boot_check.rs` does the same.
+    // (partsfoundry/record:notes/benchmarks/drift-since-the-2026-09-26-floors.md). `boot_check.rs` does the same.
     cmd.env_remove("NIFE_DISK");
     // One hart: a parent waiting on a spawned child leaves its hart in `wfi`, and under `-icount`
     // that jumps virtual time to the next tick, quantizing the spawn primitives.
@@ -249,7 +249,7 @@ fn bench_riscv64(check: bool, save: bool, features: &str) -> bool {
 /// `--real` is plain TCG, statistical and never gating. The bench boot runs no virtio, so it needs
 /// no disk, and neither `mkdisk` nor `user()`. `cargo xtask bench --x86 [--real]
 /// [--check|--save]`; why icount works here though `icount()` refuses x86_64 is in
-/// nifeos/record:notes/benchmarks/x86-instruments.md.
+/// partsfoundry/record:notes/benchmarks/x86-instruments.md.
 fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
     // `--keyboard` needs `keyboard_driver`, and the plain x86_64 bench boot has no initial ramdisk.
     // Built before the kernel, whose build measures the archive's programs.
@@ -278,8 +278,8 @@ fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
     // One core, pinned rather than inherited from the runner, whose default is 2. Two cores are a
     // different instrument: still deterministic, but `spawn_reap`'s parent spins until the reaper
     // on the other core runs, and unrelated edits swing rows by 40 to 90%
-    // (nifeos/record:notes/benchmarks/x86-instruments.md; gating them is
-    // nifeos/record:design/roadmap/0585-two-core-bench-is-a-different-instrument.md).
+    // (partsfoundry/record:notes/benchmarks/x86-instruments.md; gating them is
+    // partsfoundry/record:design/roadmap/0585-two-core-bench-is-a-different-instrument.md).
     cmd.env("NIFE_SMP", "1");
     if real {
         eprintln!(
@@ -404,11 +404,11 @@ fn baseline_header(
 # apples to apples.
 # A tick is not an instruction: one guest instruction is one virtual nanosecond under -icount
 # shift=0 and this counter ticks at its own rate (instructions = ticks * 1e9 / cntfrq), so raw
-# ticks do not compare across architectures; nifeos/record:notes/benchmarks/icount-tick-scales.md holds the
+# ticks do not compare across architectures; partsfoundry/record:notes/benchmarks/icount-tick-scales.md holds the
 # per-architecture scales and the corrected cross-arch table.
              # Updating this file is a statement that a performance change is intended and
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
-             # 10% tripwire (icount counts drift across builds; see nifeos/record:notes/benchmarks.md).
+             # 10% tripwire (icount counts drift across builds; see partsfoundry/record:notes/benchmarks.md).
 "
     )
 }
@@ -685,7 +685,7 @@ fn save_bench_baseline(
     // still writes the pin), and `script/lint` fails when it and `rust-toolchain.toml` disagree.
     // `--restamp` may later move it, so it reads "last proven valid for". The emulator comes from
     // the binary, and the line names both when they disagree. See
-    // nifeos/record:notes/benchmarks/icount-drift-and-provenance.md.
+    // partsfoundry/record:notes/benchmarks/icount-drift-and-provenance.md.
     let pinned = pinned_nightly().unwrap_or_else(|| "unrecorded".into());
     let ran = running_qemu(qemu_binary).unwrap_or_else(|| "unrecorded".into());
     let qemu = match pinned_qemu() {
@@ -746,7 +746,7 @@ fn check_bench_baseline(
         // several percent, non-uniformly, because the compiler remakes whole-crate inlining and
         // monomorphization decisions (measured: a new bench function moved yield_switch -7% while
         // ipc_rtt went +1.8%). So icount --check catches a gross regression, "you 3x'd IPC," not
-        // a 3% one; --real medians, read by a human, are the fine signal. See nifeos/record:notes/benchmarks.md.
+        // a 3% one; --real medians, read by a human, are the fine signal. See partsfoundry/record:notes/benchmarks.md.
         let slack = (base / 10).max(64);
         let (lo, hi) = (base.saturating_sub(slack), base + slack);
         if *cur < lo || *cur > hi {
@@ -789,7 +789,7 @@ fn emulator_matches_baseline(
     // Compared against the emulator this run used, not the pin, which would forbid a baseline
     // truthfully recorded off-pin. `unrecorded` does not fail. A mismatch means re-recording and
     // settling the pin together, since CI builds the pinned emulator (`script/ci-qemu`). See
-    // nifeos/record:notes/benchmarks/icount-drift-and-provenance.md.
+    // partsfoundry/record:notes/benchmarks/icount-drift-and-provenance.md.
     let stamped_qemu = text
         .lines()
         .filter_map(|l| l.trim_start().strip_prefix("# qemu:"))

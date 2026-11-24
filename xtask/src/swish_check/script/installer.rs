@@ -142,7 +142,7 @@ pub(super) const LINES: &[Line] = &[
     // pages. So each of the three authorities the progenitor holds must answer "refused", and the
     // census must read exactly slots 0, 1 and 2. Falsified once per authority before it was
     // committed: granting the domain, entropy or the network to an unvouched child turned this
-    // line red (milestone 202's block, nifeos/record:design/roadmap/0202-*.md, has the three runs).
+    // line red (milestone 202's block, partsfoundry/record:design/roadmap/0202-*.md, has the three runs).
     line(
         1,
         crate::disk::INSTALLED_UNVOUCHED,

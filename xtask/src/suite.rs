@@ -1,5 +1,5 @@
 //! The `cargo xtask test` command: the host tests in milliseconds, then each architecture's
-//! kernel under QEMU, and the Miri run beside them. See nifeos/record:notes/xtask-test.md.
+//! kernel under QEMU, and the Miri run beside them. See partsfoundry/record:notes/xtask-test.md.
 
 //! # EXAMPLES
 //!
@@ -43,7 +43,7 @@ use crate::{RELEASE, RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, time_record, us
 /// (`--arch aarch64,riscv64`). An enum needs a variant per combination; three flags have no default
 /// arm for a leg to fall into, so each predicate is explicit. No `--arch` means every leg, so the
 /// parity gate (§19) cannot be weakened by forgetting a flag. The constants keep the four values
-/// every other caller names. See nifeos/record:notes/xtask-test.md.
+/// every other caller names. See partsfoundry/record:notes/xtask-test.md.
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) struct ArchLegs {
     aarch64: bool,
@@ -99,21 +99,21 @@ impl ArchLegs {
     }
 
     /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-    /// (nifeos/record:design/naming/functions-that-answer-yes-or-no.md). It does not yet follow the Rust
+    /// (partsfoundry/record:design/naming/functions-that-answer-yes-or-no.md). It does not yet follow the Rust
     /// predicate rule calef ratified 2026-09-24; recommended `includes_aarch64`, because
     /// `is_aarch64` would be false for `ALL`, which also answers yes.
     pub(crate) fn aarch64(self) -> bool {
         self.aarch64
     }
     /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-    /// (nifeos/record:design/naming/functions-that-answer-yes-or-no.md). It does not yet follow the Rust
+    /// (partsfoundry/record:design/naming/functions-that-answer-yes-or-no.md). It does not yet follow the Rust
     /// predicate rule calef ratified 2026-09-24; recommended `includes_riscv64`, because
     /// `is_riscv64` would be false for `ALL`, which also answers yes.
     pub(crate) fn riscv64(self) -> bool {
         self.riscv64
     }
     /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-    /// (nifeos/record:design/naming/functions-that-answer-yes-or-no.md). It does not yet follow the Rust
+    /// (partsfoundry/record:design/naming/functions-that-answer-yes-or-no.md). It does not yet follow the Rust
     /// predicate rule calef ratified 2026-09-24; recommended `includes_x86_64`, because `is_x86_64`
     /// would be false for `ALL`, which also answers yes.
     pub(crate) fn x86_64(self) -> bool {
@@ -126,12 +126,12 @@ impl ArchLegs {
 /// emulator, so they go first (DECISIONS §7 (testing: QEMU harness + host-testable crates)). Flags:
 /// `--arch aarch64|riscv64|x86_64[,...]` runs the named legs in the suite's order; `--no-host` skips
 /// the host pass; `--cpu <model>` sets `NIFE_CPU`; `--hvf` runs the aarch64 leg on the physical core
-/// ([`hvf_kernel_leg`], nifeos/record:notes/hvf-leg.md) and refuses `--cpu`; `--test <substring>` runs matching
+/// ([`hvf_kernel_leg`], partsfoundry/record:notes/hvf-leg.md) and refuses `--cpu`; `--test <substring>` runs matching
 /// kernel tests on every leg (§19), skips the host pass, the image checks and the referees'
 /// verdicts, and fails when nothing matches; `--repeat <N>` repeats that selection in one boot;
 /// `--host-only` runs the host pass and boots nothing.
-/// Callers: `script/cpu-matrix` (`--arch`, `--cpu`; nifeos/record:notes/cpu-models.md) and `script/ci-build`
-/// (`--hvf`, an `--arch` list, `--no-host`, `--host-only`). See nifeos/record:notes/xtask-test.md for each flag's
+/// Callers: `script/cpu-matrix` (`--arch`, `--cpu`; partsfoundry/record:notes/cpu-models.md) and `script/ci-build`
+/// (`--hvf`, an `--arch` list, `--no-host`, `--host-only`). See partsfoundry/record:notes/xtask-test.md for each flag's
 /// reasons.
 pub(crate) fn test() -> bool {
     if std::env::args().any(|a| a == "--host-only") {
@@ -182,14 +182,14 @@ pub(crate) fn test() -> bool {
     }
     // The same booted suite on riscv64's Sv39 kernel (parity workstream B), exiting through the
     // SiFive test finisher. What stays aarch64-only genuinely needs aarch64: the userspace-exec
-    // suite's hand-written machine code, and SMP. See nifeos/record:notes/riscv-parity-scope.md.
+    // suite's hand-written machine code, and SMP. See partsfoundry/record:notes/riscv-parity-scope.md.
     if legs.riscv64() && !riscv64_suite(filter.is_some()) {
         return false;
     }
     // The third architecture (milestone 161 (the x86_64 kernel port), roadmap item 4), exiting
     // through `isa-debug-exit`.
     // It runs last and sets its own archive, disk and NIC, since the earlier legs leave theirs in
-    // the environment. nifeos/record:notes/xtask-test.md has what it builds and attaches.
+    // the environment. partsfoundry/record:notes/xtask-test.md has what it builds and attaches.
     if legs.x86_64() && !x86_64_suite(filter.is_some()) {
         return false;
     }
@@ -197,7 +197,7 @@ pub(crate) fn test() -> bool {
     // the only check here that fails when the screen is black. A boot of its own, because `ramfb`
     // adds a QEMU console and the suite's machine has a virtio-gpu on console 0. Not under `--cpu`,
     // a cost decision: nothing on the screen path varies with `-cpu`, and the leg still runs on
-    // every ordinary `script/test`. See nifeos/record:notes/serial-less-output/ramfb.md.
+    // every ordinary `script/test`. See partsfoundry/record:notes/serial-less-output/ramfb.md.
     if flag_value("--cpu").is_none() && flag_value("--image").is_none() {
         if legs.aarch64() && !crate::screen::screen_boot("aarch64") {
             return false;
@@ -211,7 +211,7 @@ pub(crate) fn test() -> bool {
 
 /// `--image kernel|system`: run one of a leg's two test images. A kernel mutant is run against the
 /// kernel's unit tests first, and only a survivor pays for the whole-system image
-/// (nifeos/record:design/roadmap/0955-the-kernel-and-its-programs-are-mutated-under-qemu.md). Skips the
+/// (partsfoundry/record:design/roadmap/0955-the-kernel-and-its-programs-are-mutated-under-qemu.md). Skips the
 /// screen tour, the post-run image checks and, on x86_64, the extra machines, as `--test` does:
 /// they judge a whole run. False after refusing a value, or the flag beside `--test` or `--hvf`.
 /// Name: provisional.
@@ -343,7 +343,7 @@ pub(crate) fn export_test_filter() -> Option<String> {
     // `--test <substring>` (milestone 210) rides the environment into `kernel/build.rs`, which
     // bakes it into the test binary as a `rustc-env`: a booted kernel has no command line. Unset
     // without the flag, so a stale shell value cannot change what a plain `script/test` means. It
-    // does not narrow the architectures (DECISIONS §19). Timings in nifeos/record:notes/xtask-test.md.
+    // does not narrow the architectures (DECISIONS §19). Timings in partsfoundry/record:notes/xtask-test.md.
     let filter = flag_value("--test");
     match filter.as_deref() {
         Some(f) => {
@@ -443,7 +443,7 @@ fn host_pass(hvf: bool, filtered: bool) -> bool {
 /// the test selection, not from the dependency graph. One derivation serves script/lint's two
 /// clippy passes, script/coverage, script/mutation and this file's host and Miri passes.
 /// script/lint's "the host pass excludes exactly the bare-metal crates" gate fails if this file
-/// stops calling it or the derivation disagrees with `cargo metadata`. See nifeos/record:notes/xtask-test.md.
+/// stops calling it or the derivation disagrees with `cargo metadata`. See partsfoundry/record:notes/xtask-test.md.
 fn host_excluded_args() -> Vec<String> {
     let output = Command::new("sh")
         .arg("helpers/host-excluded-crates.sh")
@@ -730,7 +730,7 @@ fn riscv64_suite(filtered: bool) -> bool {
     }
     // Fresh images for this leg: the aarch64 leg writes the shared image, and reusing it would
     // order-couple the legs. The cross-boot write failure this separates out is a tracked item in
-    // nifeos/record:notes/fs-server.md, with its recipe.
+    // partsfoundry/record:notes/fs-server.md, with its recipe.
     if !mkredoxfs() || !mkredoxfs_crash() || !mkgptdisk() || !mkblankdisk() || !mknvmedisk() {
         return false;
     }
@@ -889,7 +889,7 @@ fn x86_64_suite(filtered: bool) -> bool {
 /// One test, `found_on_the_bus_behind_it`, not the suite: the claim needing a second topology is
 /// that the walk follows a bridge, and re-running the suite would cover the tests rather than the
 /// topology. About three seconds. Skipped under `--test`, whose filter this would clobber, running
-/// something the caller did not ask for. See nifeos/record:notes/xtask-test.md.
+/// something the caller did not ask for. See partsfoundry/record:notes/xtask-test.md.
 fn x86_64_behind_a_root_port() -> bool {
     eprintln!();
     eprintln!("--- kernel test, x86_64 with the NVMe behind a PCIe root port ---");
@@ -967,7 +967,7 @@ fn x86_64_on_amd_vi() -> bool {
 /// full run, riscv64 when `--arch x86_64` was not asked for, aarch64 when it was the only leg. No
 /// crash test runs on x86_64 (the twins in `filesystem_tests` and `riscv64_virtual_io_tests` are cfg-gated
 /// to their ISAs), so after an x86_64 leg the crash check is skipped: a check whose subject did not
-/// happen is worse than no check. See nifeos/record:notes/xtask-test.md.
+/// happen is worse than no check. See partsfoundry/record:notes/xtask-test.md.
 fn images_after_the_run(legs: ArchLegs, filtered: bool) -> bool {
     // **Not under a filter** (milestone 210 (no kernel test can be run by name, so one
     // falsification costs a whole suite)), for the same reason the `--arch x86_64` guard
@@ -1055,7 +1055,7 @@ fn filtered_leg(arch: &str, target: &str) -> bool {
 /// ending with neither. The guest's watchdogs still fire (the virtual timer is passed through and
 /// QEMU injects the interrupt), so they bound the leg and there is no host deadline. The referee
 /// runs on a thread, never touching the environment, because it presses the keys the keyboard test
-/// waits for. See nifeos/record:notes/hvf-leg.md and nifeos/record:notes/hvf-leg/semihosting.md.
+/// waits for. See partsfoundry/record:notes/hvf-leg.md and partsfoundry/record:notes/hvf-leg/semihosting.md.
 fn hvf_kernel_leg(package: &str, watch_devices: bool) -> (bool, usize) {
     let Some(elf) = kernel_test_elf(package, TARGET, "test --hvf") else {
         return (false, 0);
@@ -1356,7 +1356,7 @@ pub(crate) fn kernel_test_elf_with(
 
 /// **The host tests again, under Miri's interpreter** (milestone 79 (Miri over the host crates)):
 /// aliasing (tree borrows), provenance, uninitialized reads, leaks. Returns cargo's verdict. See
-/// nifeos/record:notes/undefined-behavior.md. The selection is `test()`'s, `--workspace` less
+/// partsfoundry/record:notes/undefined-behavior.md. The selection is `test()`'s, `--workspace` less
 /// [`host_excluded_args`], plus four judgment exclusions with no `unsafe` Miri could execute:
 /// `xtask` (safe pixel arithmetic, about seven minutes under Miri); `serial_console` (about 55
 /// minutes, and ten tests reach the host filesystem or wall-clock timeouts); `stick_maker`

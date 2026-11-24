@@ -4,7 +4,7 @@
 //! [`crate::uefi`]'s `uefi_boot` twin, and deliberately the same shape: a QEMU monitor on a unix
 //! socket, a poller asking it for a screendump, and `serial_console::screen` turning the picture
 //! back into text. Here the kernel allocates the framebuffer and tells the emulator about it over
-//! `fw_cfg` (`kernel/src/screen.rs`). See nifeos/record:notes/serial-less-output/ramfb.md.
+//! `fw_cfg` (`kernel/src/screen.rs`). See partsfoundry/record:notes/serial-less-output/ramfb.md.
 //!
 //! *Module and subcommand names provisional (AGENTS.md: calef names these).*
 
@@ -36,7 +36,7 @@ const SERIAL_GRACE_SECONDS: u64 = 120;
 /// byte order, the stride and the font. The machine has no virtio-gpu, because `screendump` with no
 /// device argument writes console 0 and a boot with both would photograph whichever console QEMU
 /// ordered first. The boot is stopped once the screen has answered and the serial line has caught
-/// up; the kernel never exits on its own. See nifeos/record:notes/serial-less-output/ramfb.md.
+/// up; the kernel never exits on its own. See partsfoundry/record:notes/serial-less-output/ramfb.md.
 pub(crate) fn screen_boot(arch: &str) -> bool {
     let Some((runner, elf, archive)) = build_screen_leg(arch) else {
         return false;

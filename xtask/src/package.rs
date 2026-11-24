@@ -56,7 +56,7 @@
 //! - **A recipe cannot say where its source came from**: every package built here comes from this
 //!   repository.
 //!
-//! Installing a fetched package happens on the target; see nifeos/record:notes/packages.md.
+//! Installing a fetched package happens on the target; see partsfoundry/record:notes/packages.md.
 
 use std::path::PathBuf;
 

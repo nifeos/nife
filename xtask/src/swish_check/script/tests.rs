@@ -184,7 +184,7 @@ fn every_spawnable_program_has_a_swish_check_line() {
                 "scripted now, so take it off UNSCRIPTED"
             } else {
                 "the shell can spawn it and SWISH_CHECK_SCRIPT never does; add a line (see \
-                 nifeos/record:notes/adding-a-program.md), or add it to UNSCRIPTED with the reason"
+                 partsfoundry/record:notes/adding-a-program.md), or add it to UNSCRIPTED with the reason"
             }
         );
     }

@@ -44,7 +44,7 @@ pub(crate) fn main() -> ExitCode {
         // The third archive (milestone 161). Same programs, built for x86_64.
         "initial-ramdisk-x86" => has_initial_ramdisk_x86(),
         // The bootable UEFI image (milestone 87): the entry real firmware can start, staged at
-        // target/esp for a QEMU/OVMF boot or for a FAT32 stick. See nifeos/record:notes/x86-uefi-boot.md.
+        // target/esp for a QEMU/OVMF boot or for a FAT32 stick. See partsfoundry/record:notes/x86-uefi-boot.md.
         // Name: `uefi-image` and `uefi-boot` ratified 2026-08-30 (calef, in session, on milestone
         // 87's lane report). Hyphenated like every other subcommand, and each names what it
         // produces rather than the tool that produces it.
@@ -77,7 +77,7 @@ pub(crate) fn main() -> ExitCode {
         "uefi-test" => uefi_test_command(),
         // The stick (DECISIONS §157): every architecture's boot file, sealed, and `stick_maker`
         // built around them; then the same directory booted under all three firmwares. See
-        // xtask/src/stick.rs and nifeos/record:notes/boot-stick.md. Names provisional (2026-09-19).
+        // xtask/src/stick.rs and partsfoundry/record:notes/boot-stick.md. Names provisional (2026-09-19).
         "stick" => stick::stick(),
         "stick-boot" => stick::stick_boot(),
         // Milestone 578 (an ACPI discovery path for aarch64): the aarch64 stick with ACPI and no device tree, as a cloud machine boots
@@ -195,7 +195,7 @@ pub(crate) fn main() -> ExitCode {
 /// If `--hvf` was passed, boot under Apple's Hypervisor.framework instead of TCG.
 ///
 /// How the aarch64 kernel finds the initial ramdisk the runner passes as `-initrd` is in
-/// nifeos/record:notes/adding-a-program/the-archives.md.
+/// partsfoundry/record:notes/adding-a-program/the-archives.md.
 pub(crate) fn maybe_hvf() {
     if std::env::args().any(|a| a == "--hvf") {
         // SAFETY: `set_var`/`remove_var` became unsafe in edition 2024 because they race other

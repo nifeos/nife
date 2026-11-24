@@ -100,7 +100,7 @@ const RISCV64_TARGET: &str = "riscv64imac-unknown-none-elf";
 /// `helpers/qemu-runner-x86_64.sh`, exactly as the RISC-V one is, and since item 4's hand-off this
 /// const also builds the third userspace archive: `initial-ramdisk-x86` compiles `user` for it and
 /// [`has_initial_ramdisk_x86`] packs the same programs RISC-V's archive carries. See
-/// nifeos/record:notes/x86-port/userspace.md.
+/// partsfoundry/record:notes/x86-port/userspace.md.
 const X86_TARGET: &str = "x86_64-unknown-none";
 
 /// Whether this run builds optimized binaries. Only `bench --release` sets it (a fair cross-OS
@@ -127,7 +127,7 @@ fn build() -> bool {
 /// It is a **separate crate with its own linker script** (linked at `address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS`, in the low half,
 /// where `TTBR0` lives), so it cannot accidentally share anything with the kernel. And it stays
 /// an **ELF**: the kernel's loader wants program headers, unlike the kernel itself, which QEMU
-/// wants as a flat image. See nifeos/record:notes/elf.md.
+/// wants as a flat image. See partsfoundry/record:notes/elf.md.
 pub(crate) fn user() -> bool {
     archive::build_programs(TARGET) && has_initial_ramdisk_aarch64()
 }

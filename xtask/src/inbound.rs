@@ -32,7 +32,7 @@ const INBOUND_OFFERED: usize = 4;
 /// fourth would only re-confirm the re-arm, which each guest test asserts itself
 /// (`serve_one_inbound` fails the run if a second `accept` does not answer). Run 32195227733's
 /// riscv64 leg collected three of four with all 279 guest tests passing, and the mechanism of that
-/// lost round is not identified. Read nifeos/record:notes/net/the-inbound-check.md before touching this number:
+/// lost round is not identified. Read partsfoundry/record:notes/net/the-inbound-check.md before touching this number:
 /// at two it proves nothing one listener could not fake.
 const INBOUND_REQUIRED: usize = 3;
 
@@ -57,7 +57,7 @@ fn free_loopback_port() -> Option<u16> {
 /// requires the guest's own answer back. It **retries for the whole run**, because nothing here
 /// knows when the accept test starts: a connection that arrives while another net test holds the
 /// NIC is reset by smoltcp at no cost. It stops once both rounds have completed. See
-/// nifeos/record:notes/net/the-inbound-half.md.
+/// partsfoundry/record:notes/net/the-inbound-half.md.
 pub(crate) struct InboundProber {
     arch: String,
     port: Option<u16>,
@@ -192,7 +192,7 @@ impl InboundProber {
                 eprintln!("inbound check ({arch}) FAILED (QEMU {qemu}): {reason}");
                 eprintln!(
                     "  A host process connecting to the guest is the one thing no in-guest test can \
-                     stage. See nifeos/record:notes/net/the-inbound-half.md."
+                     stage. See partsfoundry/record:notes/net/the-inbound-half.md."
                 );
                 false
             }
@@ -215,7 +215,7 @@ impl InboundProber {
 /// so a dropped connection becomes a round the guest serves to nobody. A timeout keeps reading the
 /// same connection until it answers, dies or the run ends; a hard error (the RST of a guest with no
 /// listener, most of a boot) gives up cheaply, since nothing was consumed. See
-/// nifeos/record:notes/net/the-inbound-half.md.
+/// partsfoundry/record:notes/net/the-inbound-half.md.
 fn probe_inbound(
     port: u16,
     stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
@@ -297,7 +297,7 @@ fn probe_inbound(
              clusters and a missing round means the host lost one that the guest served, and the \
              outcome beside it names how. ONE cluster means a whole listener never ran: look for \
              `(no virtio-net device attached; skipping)` in the transcript, which is the only way \
-             either guest test passes without offering its two. See nifeos/record:notes/net/the-inbound-check.md.",
+             either guest test passes without offering its two. See partsfoundry/record:notes/net/the-inbound-check.md.",
             trace.attempts,
         ))
     };
@@ -351,7 +351,7 @@ fn read_the_answer(
             Err(e) => {
                 *last = format!("reading the guest's answer failed: {e}");
                 // Kept on the event, not only in `last`, which is printed on a red run alone.
-                // nifeos/record:notes/net/the-inbound-check.md: a green run's `read-failed` once threw away the one fact that
+                // partsfoundry/record:notes/net/the-inbound-check.md: a green run's `read-failed` once threw away the one fact that
                 // would have named it.
                 error = Some(format!("{:?}, os error {:?}", e.kind(), e.raw_os_error()));
                 outcome = match e.kind() {
@@ -376,7 +376,7 @@ fn read_the_answer(
 /// errno said `Interrupted, os error 4`. Dropping the connection there does not take back the
 /// payload already written: slirp still delivers it when the guest next polls, the guest serves a
 /// round into a socket nobody holds, and two of those in one boot is "2 of 4" and a red leg. See
-/// nifeos/record:notes/net/the-inbound-half.md.
+/// partsfoundry/record:notes/net/the-inbound-half.md.
 fn read_error_is_not_yet(kind: std::io::ErrorKind) -> bool {
     use std::io::ErrorKind;
     matches!(

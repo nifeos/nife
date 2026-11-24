@@ -1,5 +1,5 @@
 //! **Milestone 494 (a driver for the network card a PC actually has)'s bench boot, rehearsed**
-//! (nifeos/record:notes/e1000e.md).
+//! (partsfoundry/record:notes/e1000e.md).
 //!
 //! `cargo xtask network-bench` builds the `network_bench` kernel in release, stages it behind the
 //! UEFI loader at `target/esp-network-bench` for a stick, and boots it once under OVMF with
@@ -16,7 +16,7 @@
 //! `--debug` builds the debug profile. `--debug-userspace` builds the archive debug under a release
 //! kernel, the pairing `script/board-image` ships to radon (milestone 797 (release userspace in
 //! board images)), so the rehearsal's `receive` line shows the cost radon's programs pay
-//! (nifeos/record:notes/designware-ethernet/the-receive-rate.md). Names provisional.
+//! (partsfoundry/record:notes/designware-ethernet/the-receive-rate.md). Names provisional.
 
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, ExitCode, Stdio};

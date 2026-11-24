@@ -1,6 +1,6 @@
 //! **Reading a transcript two writers share**: the kernel's fault tokens, the job pool's
 //! `free` row, markers found through a shuffle, and the boot claim. See
-//! nifeos/record:notes/swish-check-harness.md, "Two writers share one UART".
+//! partsfoundry/record:notes/swish-check-harness.md, "Two writers share one UART".
 //!
 //! Name: provisional (milestone 847's lane, 2026-10-11 UTC; §280 (the swish-check harness
 //! splits into submodules, with its script in one)).
@@ -175,7 +175,7 @@ enum BootClaim {
 /// [`BootClaim::Affirmed`]. Neither, while the kernel wrote during the boot, is
 /// [`BootClaim::Unreadable`], a pass the caller reports; neither with one writer is
 /// [`BootClaim::Silent`], a failure. This trades false red for false green on purpose; the
-/// residual hole is in `script/swish-check`'s BUGS. See nifeos/record:notes/swish-check-harness.md, "Two writers
+/// residual hole is in `script/swish-check`'s BUGS. See partsfoundry/record:notes/swish-check-harness.md, "Two writers
 /// share one UART".
 fn boot_claim(transcript: &str, positive: &str, negative: &str) -> BootClaim {
     if transcript.contains(negative) {

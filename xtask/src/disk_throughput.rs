@@ -1,4 +1,4 @@
-//! **Fatal risk 6's bench boot, rehearsed** (milestone 261 (the NVMe driver leaves the kernel); nifeos/record:notes/risk-6-bench-evening.md).
+//! **Fatal risk 6's bench boot, rehearsed** (milestone 261 (the NVMe driver leaves the kernel); partsfoundry/record:notes/risk-6-bench-evening.md).
 //!
 //! `cargo xtask disk-throughput` builds the `disk_throughput` kernel **in release** (the number is
 //! the claim, and a debug build's would understate it), stages it behind the UEFI loader at

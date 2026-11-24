@@ -1,6 +1,6 @@
 //! **What each leg omits, how long it waits, and whether it ran slow**: the per-architecture
 //! omissions, the x86_64 hand-over markers, the timeouts and the leg-cost verdict. See
-//! nifeos/record:notes/swish-check-harness.md, "Timeouts and what a leg costs".
+//! partsfoundry/record:notes/swish-check-harness.md, "Timeouts and what a leg costs".
 //!
 //! Name: provisional (milestone 847's lane, 2026-10-11 UTC; §280 (the swish-check harness
 //! splits into submodules, with its script in one)).
@@ -41,7 +41,7 @@ pub(super) const SWISH_CHECK_BOOT_SECONDS: u64 = 120;
 ///
 /// - It is a per-echo budget, not a per-line one, and it flakes under load: a failure after a
 ///   partial echo is a load report until the one leg is rerun. How long an echo takes under load
-///   is not measured. See nifeos/record:notes/swish-check-harness.md, "Timeouts and what a leg costs".
+///   is not measured. See partsfoundry/record:notes/swish-check-harness.md, "Timeouts and what a leg costs".
 pub(super) const SWISH_CHECK_LINE_SECONDS: u64 = 30;
 
 /// **The `x86_64` leg's per-line bound under TCG, half again the others'**, measured rather than
@@ -51,7 +51,7 @@ pub(super) const SWISH_CHECK_LINE_SECONDS: u64 = 30;
 /// The slowest emulated line was 10.8 s on patagonia and 14.2 s on CI's arm64 runner (run
 /// 37089120726), so 45 s is 3.2 times CI's slowest. The difference from the other legs is the
 /// screen path, each store through TCG. The tables, and the earlier tick-paced runs that are not
-/// this bound's evidence, are in nifeos/record:notes/swish-check-harness.md, "Timeouts and what a leg costs".
+/// this bound's evidence, are in partsfoundry/record:notes/swish-check-harness.md, "Timeouts and what a leg costs".
 pub(super) const SWISH_CHECK_X86_LINE_SECONDS: u64 = 45;
 
 /// **What one leg's median line costs when it is healthy, per architecture and accelerator**
@@ -62,7 +62,7 @@ pub(super) const SWISH_CHECK_X86_LINE_SECONDS: u64 = 45;
 /// and 37141058488); a median sits at or under it, so the rows are loose on purpose. A leg is held
 /// to its own row, not its peers', because emulated `x86_64` legitimately costs about fourteen
 /// times aarch64. A leg with no row is reported and not failed. The sources, and what the check
-/// catches and misses, are in nifeos/record:notes/swish-check-harness.md, "Timeouts and what a leg costs".
+/// catches and misses, are in partsfoundry/record:notes/swish-check-harness.md, "Timeouts and what a leg costs".
 const LEG_COST_BASELINE: &[(&str, &str, f64)] = &[
     ("aarch64", "tcg", 0.20),
     ("riscv64", "tcg", 0.21),

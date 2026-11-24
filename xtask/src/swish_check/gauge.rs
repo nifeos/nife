@@ -1,7 +1,7 @@
 //! **The gauges the kernel prints into a transcript, taken out as it arrives** (`script/swish-check`).
 //! The progenitor-stack and capability-slot gauges speak from the kernel's idle loop, between a
 //! prompt and the next line's echo, and every reader in [`super`] assumes those two are adjacent.
-//! See nifeos/record:notes/swish-check-harness.md, "The gauges".
+//! See partsfoundry/record:notes/swish-check-harness.md, "The gauges".
 
 #[allow(unused_imports)]
 use super::*;
@@ -15,7 +15,7 @@ use super::*;
 /// (dropped, newline and all) or is not (emitted), and output is only ever appended to. Only a
 /// whole kernel line is removed; a gauge a userspace writer shuffled into is left and fails the
 /// run. The raw transcript keeps both gauges for their own checks. See
-/// nifeos/record:notes/swish-check-harness.md, "The gauges".
+/// partsfoundry/record:notes/swish-check-harness.md, "The gauges".
 pub(super) struct GaugeFilter {
     pending: String,
     needles: &'static [&'static str],
@@ -274,7 +274,7 @@ pub(super) fn strip_one_gauge(text: &str) -> Option<String> {
 /// Interleaving can destroy a known string but never manufacture one, so matching the gauge's own
 /// words (numbers as wildcards) has no false positives worth the name. Unlike [`find_marker`], this
 /// deletes the matched characters, so the caller's exact-match waits still recognize the rest. See
-/// nifeos/record:notes/swish-check-harness.md, "The gauges".
+/// partsfoundry/record:notes/swish-check-harness.md, "The gauges".
 pub(super) fn degauge(text: &str) -> String {
     let mut out = text.to_string();
     // Bounded rather than "until none found": a gate must not hang on a text that somehow keeps
@@ -296,8 +296,8 @@ pub(super) fn degauge(text: &str) -> String {
 /// `$ ` line ending at a gauge's offset, followed there by the same line and its line end. A prefix
 /// redraw (`$ pack\n$ packages/...\n`) and any other kernel line stay.
 /// `no_script_types_a_silent_line_twice_in_a_row` keeps every script free of the one shape this
-/// could mistake for a redraw. See nifeos/record:notes/swish-check-flake.md, "The noteless signature", and
-/// nifeos/record:notes/swish-check-harness.md.
+/// could mistake for a redraw. See partsfoundry/record:notes/swish-check-flake.md, "The noteless signature", and
+/// partsfoundry/record:notes/swish-check-harness.md.
 pub(super) fn without_redraws(filtered: &str, gauges: &[(usize, String)]) -> String {
     let mut cuts: Vec<(usize, usize)> = Vec::new();
     let mut offsets: Vec<usize> = gauges.iter().map(|(at, _)| *at).collect();

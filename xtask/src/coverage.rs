@@ -8,7 +8,7 @@
 //! invalidated), boots it under `helpers/qemu-bounded.sh`, and turns the profile into the report
 //! `script/coverage` writes for the host crates: an HTML report `helpers/error_paths.py` reads, and
 //! an lcov file. The first increment covers the kernel's own unit-test image on aarch64. See
-//! nifeos/record:notes/kernel-coverage.md.
+//! partsfoundry/record:notes/kernel-coverage.md.
 //!
 //! Name: provisional, minted 2026-10-27 (UTC) by the lane for milestone 781.
 

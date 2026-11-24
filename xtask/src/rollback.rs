@@ -2,7 +2,7 @@
 //! machine comes back on the image it had before, with nobody typing anything (rung 2b of milestone
 //! 198 (a package manager, and the trivial install that makes a second customer possible)).
 //! `crates/boot_slot`, `components/src/system_installer.rs` and `uefi_loader/src/chooser.rs` are
-//! only as good as the three boots below. See nifeos/record:notes/boot-slots.md.
+//! only as good as the three boots below. See partsfoundry/record:notes/boot-slots.md.
 //!
 //! **Killing the machine at the handoff is the test.** A kernel that wedges, a driver that spins
 //! and a power cut are, to the disk, one event: the try was spent and nothing came back. The

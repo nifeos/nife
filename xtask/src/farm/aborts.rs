@@ -15,9 +15,9 @@ use super::*;
 ///
 /// It reads which `library/std/src/sys/` sources rustc actually compiled for nife out of cargo's
 /// own dep-info, so nothing here models `cfg`, and finds each body there that ends the process. A
-/// function that aborts never answers `Unsupported`, so the gap list in nifeos/record:notes/crates-io-on-nife.md
+/// function that aborts never answers `Unsupported`, so the gap list in partsfoundry/record:notes/crates-io-on-nife.md
 /// cannot see one. It does not judge: most of what it finds is correct, so a new body fails the
-/// build until it is bound in the PAL or accepted with its reason. See nifeos/record:notes/std/std-aborts.md.
+/// build until it is bound in the PAL or accepted with its reason. See partsfoundry/record:notes/std/std-aborts.md.
 pub(crate) fn std_aborts() -> bool {
     let compiled = compiled_std_sources();
     if compiled.is_empty() {
@@ -45,7 +45,7 @@ pub(crate) fn std_aborts() -> bool {
              rustup link did this). Fix: rm -rf std_exerciser/target && cargo xtask std-exerciser, which \
              rebuilds the dep-info against this worktree's own farm. Re-running without clearing it \
              first reproduces this exact failure in about thirty seconds, because cargo considers \
-             the (foreign) build unit fresh. See nifeos/record:notes/std.md's BUGS."
+             the (foreign) build unit fresh. See partsfoundry/record:notes/std.md's BUGS."
         );
         return false;
     }
@@ -102,7 +102,7 @@ pub(crate) fn std_aborts() -> bool {
          If it cannot be reached, or if ending the process is the honest answer, add it to\n\
          `ABORTS_ACCEPTED` in xtask/src/main.rs WITH THE REASON. An entry with no reason is the\n\
          thing this check exists to stop.\n\
-         See nifeos/record:notes/std.md, \"What still ends a nife process\"."
+         See partsfoundry/record:notes/std.md, \"What still ends a nife process\"."
     );
     false
 }
@@ -149,7 +149,7 @@ pub(super) fn abort_shaped(line: &str) -> Option<&'static str> {
 /// entry. Three reasons appear, and only one of them is a licence: *unreachable on nife* (behind
 /// a `cfg` nife does not satisfy; the safe ones), *no answer exists* (single-threaded, so the call
 /// can only deadlock or end, and upstream chose to end), and *ours, and deliberate* (the PAL's
-/// own, where ending the process is the honest report). See nifeos/record:notes/std/std-aborts.md.
+/// own, where ending the process is the honest report). See partsfoundry/record:notes/std/std-aborts.md.
 pub(super) const ABORTS_ACCEPTED: &[(&str, &str, &str)] = &[
     // ---- unreachable on nife ------------------------------------------------------------------
     // The heap's generated `talc` core (milestone 784 (reuse what the tree wrote), item d): each is
@@ -321,7 +321,7 @@ pub(super) fn compiled_std_sources() -> Vec<PathBuf> {
         for tok in text.split_whitespace() {
             // `sys/` only: it is std's platform layer, where a panic says "this platform has
             // nothing to offer", while one above it says "you called this wrong" on every platform.
-            // The gap this leaves is in nifeos/record:notes/std/std-aborts.md's BUGS.
+            // The gap this leaves is in partsfoundry/record:notes/std/std-aborts.md's BUGS.
             if tok.contains("library/std/src/sys/") && tok.ends_with(".rs") {
                 let p = PathBuf::from(tok);
                 if p.is_file() && !out.contains(&p) {
@@ -340,7 +340,7 @@ pub(super) fn compiled_std_sources() -> Vec<PathBuf> {
 /// leaves paths [`std_aborts`] would report as a defect in this project's source, with a file and
 /// line that name a different checkout. Comparing each path's canonical form against this
 /// worktree's own `farm_dir()` turns that false accusation into a true statement about the
-/// machine. See nifeos/record:notes/std/std-aborts.md's BUGS.
+/// machine. See partsfoundry/record:notes/std/std-aborts.md's BUGS.
 pub(super) fn foreign_std_sources(compiled: &[PathBuf]) -> Vec<PathBuf> {
     let Ok(farm) = farm_std_src().canonicalize() else {
         // No farm resolves here at all. That is not this function's question: std_exerciser

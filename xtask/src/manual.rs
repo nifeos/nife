@@ -377,7 +377,7 @@ fn tree_sections() -> Vec<Shelf> {
 
     // The markdown this repository keeps. The repository root is included because `README.md` is
     // where a stranger starts, and a search that could not return the front page would be odd about
-    // it. The design record (`design/`, and most of `notes/`) lives in `nifeos/record`, which this
+    // it. The design record (`design/`, and most of `notes/`) lives in `partsfoundry/record`, which this
     // search does not reach and which has no search of its own.
     for (shard, dir, recurse) in [("notes", "notes", false), ("guides", "", false)] {
         let mut docs = Vec::new();

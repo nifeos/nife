@@ -18,7 +18,7 @@ use crate::{RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, profile_dir, user};
 ///
 /// It attaches the archive but no disk: nothing here types, so `<` and `>` are `swish-check`'s. The
 /// archive costs about six seconds; `x86_64` boots PVH `-kernel`, not the UEFI image `swish-check`
-/// pays minutes for under OVMF, since the prompt reaches COM1 either way. See nifeos/record:notes/boot-ladder.md.
+/// pays minutes for under OVMF, since the prompt reaches COM1 either way. See partsfoundry/record:notes/boot-ladder.md.
 ///
 /// # BUGS
 ///

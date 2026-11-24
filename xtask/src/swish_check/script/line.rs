@@ -15,7 +15,7 @@
 /// supervised job (`interrupt_heeder`, `interrupt_ignorer`). It has no default, and the summary's
 /// total is summed from it. A line with jobs whose answer says "could not spawn" or "faulted"
 /// fails even with no wanted phrases; `a_job_count_names_a_program` bounds a tag from above. See
-/// nifeos/record:notes/swish-check-harness.md, "Why the script's rows assert what they assert".
+/// partsfoundry/record:notes/swish-check-harness.md, "Why the script's rows assert what they assert".
 #[derive(Clone)]
 pub(in crate::swish_check) struct Line {
     pub(crate) typed: &'static str,

@@ -17,7 +17,7 @@ use super::*;
 /// ([`unlink_sysroot_anchors`]) and whose `src` subtree is a real copy, patched: the overlay PAL
 /// files, the ABI/heap crates generated verbatim, and a `target_os = "nife"` arm in std's
 /// `cfg_select!` dispatchers. The real toolchain is never touched. A stamp of all inputs guards the
-/// rebuild, so a warm farm and its build-std cache survive across runs. See nifeos/record:notes/std.md, "The
+/// rebuild, so a warm farm and its build-std cache survive across runs. See partsfoundry/record:notes/std.md, "The
 /// toolchain: build-std against a patched rust-src".
 pub(crate) fn std_src() -> bool {
     let stamp = std_inputs_stamp();
@@ -50,7 +50,7 @@ pub(crate) fn std_src() -> bool {
     let cp = |args: &[&str]| run("cp", args);
     // Hard links cannot cross filesystems, and a container can mount the checkout on a different
     // one from `~/.rustup`, as can a Mac whose worktrees sit on their own APFS volume
-    // (nifeos/record:notes/dev-machine-disk.md). A real copy costs about 1.2 GiB per farm and works everywhere.
+    // (partsfoundry/record:notes/dev-machine-disk.md). A real copy costs about 1.2 GiB per farm and works everywhere.
     // Ask the device numbers first rather than let `cp -al` find out: across volumes it prints one
     // "Cross-device link" error per file, hundreds of lines that read as a broken build to anyone
     // skimming the log, before this function falls back and succeeds.
@@ -67,7 +67,7 @@ pub(crate) fn std_src() -> bool {
         } else {
             eprintln!(
                 "std-src: the farm and {} are on different volumes, so the toolchain is copied, \
-                 not hard-linked (nifeos/record:notes/dev-machine-disk.md)",
+                 not hard-linked (partsfoundry/record:notes/dev-machine-disk.md)",
                 real.display()
             );
         }
@@ -136,7 +136,7 @@ pub(super) fn is_sysroot_anchor(rel: &Path) -> bool {
 /// the nightly in 1 run of 8, and every time under `cargo xtask std-exerciser`; with real copies,
 /// the farm in 30 of 30. The copies cost about 90 MB per farm (nightly-2026-10-06); the rest of
 /// `lib`, libLLVM at 140 MB among it, is found by path and keeps sharing blocks. See
-/// nifeos/record:notes/std/caveats.md, "The farm copies `rustc` and its driver rather than linking them".
+/// partsfoundry/record:notes/std/caveats.md, "The farm copies `rustc` and its driver rather than linking them".
 pub(super) fn unlink_sysroot_anchors(farm: &Path) -> std::io::Result<()> {
     for dir in ["bin", "lib"] {
         for e in std::fs::read_dir(farm.join(dir))? {

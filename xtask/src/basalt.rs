@@ -337,7 +337,7 @@ fn build_in(scratch: &Path, architectures: &[&str]) -> Result<String, String> {
         "-q",
         "--depth",
         "1",
-        "https://github.com/nifeos/basalt",
+        "https://github.com/partsfoundry/basalt",
         commit,
     ])?;
     git(&["checkout", "-q", "--detach", "FETCH_HEAD"])?;
@@ -419,14 +419,15 @@ fn pinned_index() -> Result<String, String> {
     let (commit, release) = parse_pin(PIN)?;
     let mut lines = String::new();
     for name in PACKAGES {
-        let url =
-            format!("https://raw.githubusercontent.com/nifeos/basalt/{commit}/recipes/{name}.toml");
+        let url = format!(
+            "https://raw.githubusercontent.com/partsfoundry/basalt/{commit}/recipes/{name}.toml"
+        );
         let text = String::from_utf8(download(&url)?).map_err(|_| format!("{url}: not UTF-8"))?;
         let recipe = parse_recipe(&text).map_err(|why| format!("{url}: {why}"))?;
         for (architecture, digest) in recipe.digests {
             let stem = format!("{}-{}-{architecture}", recipe.name, recipe.version);
             lines.push_str(&format!(
-                "{stem} {digest} {RELEASE_ROOT}=https://github.com/nifeos/basalt/releases/download/{release}/{stem}.nifepkg\n"
+                "{stem} {digest} {RELEASE_ROOT}=https://github.com/partsfoundry/basalt/releases/download/{release}/{stem}.nifepkg\n"
             ));
         }
     }

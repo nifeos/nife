@@ -25,7 +25,7 @@ pub(super) const STD_TARGETS: [&str; 3] = [
 /// reads. An inherited `CARGO_TARGET_DIR` (AGENTS.md tells every lane to export one) would move the
 /// build away from all of them, so the sweep would judge stale evidence and the archive pack stale
 /// ELFs. `inherited` is the exported value, if any; the notes are empty unless it named elsewhere.
-/// See nifeos/record:notes/std.md, "Each worktree has its own toolchain name".
+/// See partsfoundry/record:notes/std.md, "Each worktree has its own toolchain name".
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by maintainer/names-comply-free-crates. Refused
 /// `exerciser_target_dir` (`dir` is spelled out, per §154 (the acronym test is whether the phrase
@@ -39,7 +39,7 @@ pub(super) fn exerciser_target_directory(inherited: Option<&str>) -> (PathBuf, V
         let note = format!(
             "pinning CARGO_TARGET_DIR to {}; the caller exported {}, which would have put \
              the build and its dep-info where std-aborts never reads (the 1377 silent pass, \
-             2026-09-30; see nifeos/record:notes/std.md's BUGS)",
+             2026-09-30; see partsfoundry/record:notes/std.md's BUGS)",
             pinned.display(),
             exported.display()
         );
@@ -56,7 +56,7 @@ pub(super) fn exerciser_target_directory(inherited: Option<&str>) -> (PathBuf, V
 /// `RUSTUP_TOOLCHAIN` names the farm by path, never a `+toolchain` selector or a linked name: the
 /// cargo proxy that launched xtask already exports `RUSTUP_TOOLCHAIN=nightly`, which would override
 /// a `+` selector, and a name another process can relink. `CARGO_TARGET_DIR` is pinned by
-/// [`exerciser_target_directory`], which names any override out loud. See nifeos/record:notes/std.md, "The
+/// [`exerciser_target_directory`], which names any override out loud. See partsfoundry/record:notes/std.md, "The
 /// toolchain: build-std against a patched rust-src".
 pub(crate) fn std_exerciser() -> bool {
     if !std_src() {
