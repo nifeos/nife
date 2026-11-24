@@ -57,8 +57,13 @@ test feeds a title-setting sequence to hold this. A
 string ends at BEL (xterm's terminator) or at `ESC \` (ST); an `ESC` followed by anything else is
 part of the string. CAN (`0x18`) and SUB (`0x1a`) end any sequence in progress, a string included,
 and are themselves consumed, as the DEC parser on vt100.net does. Without them, a writer that opens
-a string and never closes it hides everything printed after it. A two-byte escape the engine does not speak consumes its final byte too, so
-it cannot leave a stray letter on the screen.
+a string and never closes it hides everything printed after it. A two-byte escape the engine does
+not speak consumes its final byte too, so it cannot leave a stray letter on the screen.
+
+The parser belongs to the session, not to a writer. Every writer feeds the same `Vt`, so one that
+stops inside a sequence or a string hands that state to the next, which loses its first bytes until
+a terminator, CAN or SUB arrives. A program cannot reach past its session this way, so the engine
+keeps one parser rather than resetting it between writers it cannot tell apart.
 
 A `CSI` sequence carries at most sixteen parameters. One 24-bit color is five (`38;2;r;g;b`), a
 foreground and a background together are ten, and a highlighter often adds a reset and a

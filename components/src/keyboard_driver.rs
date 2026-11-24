@@ -23,6 +23,12 @@
 //!
 //! - A used-ring entry naming a buffer this driver never posted ends it with `E_COMPLETION`, so a
 //!   lying device stops the keyboard. It could do that anyway by staying silent.
+//! - A device that moves the used index past what it completed makes the drain replay the event
+//!   buffers it names, up to 65,535 of them a wake-up. Every buffer below `EVENTS` is posted, so
+//!   the replay stays inside the page; it types old keys again, and only a device can cause it.
+//! - [`MODE_RING`] overwrites bytes the compositor has not read once more than the ring's capacity
+//!   is waiting, so a stalled compositor loses the oldest keys. The compositor drains the newest
+//!   capacity's worth, so the two ends agree on which bytes are lost.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

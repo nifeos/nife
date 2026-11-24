@@ -28,6 +28,9 @@
 //! - **No key repeat, no lock keys, no LEDs** (`nifeos/universal_serial_bus`'s BUGS): holding a key types it once.
 //! - **Bring-up polls the event ring**, with bounds from the specification (nifeos/record:notes/usb.md).
 //! - **Only port changes survive a command wait**; a key pressed meanwhile is lost (nifeos/record:notes/usb.md).
+//! - **A lying controller can silence the keyboard.** A transfer event naming a TRB or a buffer
+//!   this driver never queued is dropped without queuing a report buffer again, so a few of them
+//!   use up the queue. It could do that anyway by staying silent.
 //!
 //! Name: ratified 2026-10-17 (calef, a program-naming session). Kept, with the acronym, because
 //! "USB" is the everyday word and the expansion adds nothing a newcomer can use. He weighed
