@@ -3,7 +3,7 @@
 //!
 //! `CR0.TS`, written per thread, is the enable bit: set, the next FP or SSE instruction raises
 //! `#NM`. It never defers a restore (the `LazyFP` scheme of CVE-2018-3665), so the registers hold
-//! the running thread's values or [`FpState::INITIAL`]. See nifeos/record:notes/x86-port/cpu-state.md.
+//! the running thread's values or [`FpState::INITIAL`]. See partsfoundry/record:notes/x86-port/cpu-state.md.
 
 //! # BUGS
 //!
@@ -110,7 +110,7 @@ const CR4_OSXMMEXCPT: u64 = 1 << 10;
 /// one architecture's boot path does not pass through `arch::initialize` at all.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     let mut cr4 = read_cr4();
     cr4 |= CR4_OSFXSR | CR4_OSXMMEXCPT;
@@ -238,7 +238,7 @@ impl FpState {
 /// and `clts` clears bit 3 of `CR0` and nothing else (Intel SDM vol. 2A, `CLTS`). Real parts
 /// reserve bits and fault on writing them; the model does not, so these proofs say only that the
 /// code writes back every bit it did not mean to change. See
-/// nifeos/record:notes/kernel-proofs/stubbing-an-instruction.md.
+/// partsfoundry/record:notes/kernel-proofs/stubbing-an-instruction.md.
 ///
 /// Proved on an `x86_64` host only: Kani compiles for its host, and CI's `prove` shards run on
 /// x86_64.

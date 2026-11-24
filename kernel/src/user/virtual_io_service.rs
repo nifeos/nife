@@ -24,7 +24,7 @@ const ROLE_VIRTUAL_IO_NET: u64 = 40;
 /// The shared body of [`start`] (mmio), [`start_pci`] (PCIe) and the writer starters; every bus and
 /// every role gets the same world. `rid` is the PCIe requester id the IOMMU keys its tables on;
 /// mmio devices have no IOMMU in front of them and pass `None`. `None` when the IOMMU refuses to
-/// attach the device. See nifeos/record:notes/virtual-io.md.
+/// attach the device. See partsfoundry/record:notes/virtual-io.md.
 fn wire(
     image: &'static [u8],
     transport: crate::virtual_io::Transport,
@@ -144,7 +144,7 @@ pub fn start_net_pci(image: &'static [u8]) -> Option<RendezvousId> {
 ///
 /// `net_stack::HEAP_MAXIMUM` caps the heap at 96 pages, which leaves 32 for page tables and
 /// clients' frame mappings; if one number moves, the other must. See
-/// nifeos/record:notes/net/memory-and-reclamation.md.
+/// partsfoundry/record:notes/net/memory-and-reclamation.md.
 pub(super) const NET_SERVER_BUDGET_PAGES: u64 = 128;
 /// smoltcp builds packets on the stack; one mapped stack page is not enough. Eight extra keeps
 /// the poll loop clear (`allocator_exerciser` needed three for `alloc` collections; smoltcp asks more).
@@ -186,7 +186,7 @@ pub fn start_net_server_pci(image: &'static [u8]) -> Option<(RendezvousId, Holdi
 ///
 /// Returns `(report endpoint, stack endpoint, what ends the service)`, or `None` when the IOMMU
 /// refuses to attach the NIC. A caller with no client ignores the stack. See
-/// nifeos/record:notes/net/memory-and-reclamation.md.
+/// partsfoundry/record:notes/net/memory-and-reclamation.md.
 fn wire_net_server(
     image: &'static [u8],
     transport: crate::virtual_io::Transport,
@@ -220,7 +220,7 @@ fn wire_net_server(
     let report = crate::sched::create_rendezvous_from(ep_region).expect("no report endpoint");
     let stack = crate::sched::create_rendezvous_from(ep_region).expect("no stack endpoint");
     // The retransmit timer's notification is bound by the spawner, because a running thread holds
-    // no capability to its own TCB (`nifeos/record:notes/timer.md`, "Binding a notification to yourself").
+    // no capability to its own TCB (`partsfoundry/record:notes/timer.md`, "Binding a notification to yourself").
     let wake = crate::sched::create_notification_from(ep_region).expect("no notification");
     let retransmit = crate::sched::create_timer_from(ep_region).expect("no retransmit timer");
     let budget =
@@ -312,7 +312,7 @@ const NET_CLIENT_BLOB_PAGES: u64 = 1;
 /// transport. `listen_grant` is the port range a `LISTEN` may bind
 /// (`socket_contract::listen_grant`), or [`socket_contract::NO_PORT_GRANT`]; the spawner decides
 /// it, not the client. Returns the client's report endpoint and what ends the service, or `None` if
-/// no NIC is attached. See nifeos/record:notes/net.md.
+/// no NIC is attached. See partsfoundry/record:notes/net.md.
 pub fn start_net_stack(
     image: &'static [u8],
     cli_arg: u64,
@@ -495,7 +495,7 @@ const STD_NET_STACK_PAGES: u64 = 32;
 ///
 /// Returns the program's stdout endpoint, its thread (so a test can tell a dead program from a busy
 /// one) and what ends the service, or `None` if no NIC is attached or the IOMMU refuses it. See
-/// nifeos/record:notes/net.md.
+/// partsfoundry/record:notes/net.md.
 pub fn start_net_std(
     net_stack_image: &'static [u8],
     std_image: &'static [u8],

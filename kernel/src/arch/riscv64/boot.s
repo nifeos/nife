@@ -13,9 +13,9 @@
 #
 # This is the single sketchiest moment in the RISC-V port: if the boot table is wrong, the `csrw
 # satp` fetches the next instruction through a broken mapping and the machine vanishes with no
-# output. See nifeos/record:notes/riscv-port.md and arch/riscv64/mmu.rs (BOOT_PAGE_TABLE).
+# output. See partsfoundry/record:notes/riscv-port.md and arch/riscv64/mmu.rs (BOOT_PAGE_TABLE).
 
-# CFI (call-frame information): see nifeos/record:notes/cfi-unwind.md. No directives on `_start` itself below:
+# CFI (call-frame information): see partsfoundry/record:notes/cfi-unwind.md. No directives on `_start` itself below:
 # like kernel/src/arch/aarch64/image_header.s, it is a data structure (the RISC-V Image header)
 # with one instruction grafted onto its front so the entry point can also be byte 0 of it; function
 # directives on it would claim it is a function, which it is not. `_start_kernel` (the real code)
@@ -24,7 +24,7 @@
 .section ".text.boot", "ax"
 .global _start
 _start:
-    # The RISC-V Linux Image header (milestone 16a (real hardware), nifeos/record:notes/visionfive2.md). U-Boot's `booti` refuses
+    # The RISC-V Linux Image header (milestone 16a (real hardware), partsfoundry/record:notes/visionfive2.md). U-Boot's `booti` refuses
     # a payload without it, and QEMU never reads it (`-kernel` takes the ELF), so these 64 bytes are
     # what makes one kernel binary loadable by both. Layout per Linux's
     # Documentation/arch/riscv/boot-image-header.rst (header version 0.2); U-Boot checks exactly one
@@ -43,7 +43,7 @@ _start:
     # 0x8020_0000, the PHYS_START this kernel is linked for (link-riscv64.ld), which on QEMU virt is
     # DRAM base + 2 MiB. One linked address, both machines, no board relink; the cost is that this
     # header is wrong for any board whose RAM does not put 0x8020_0000 inside it. Revisit if the
-    # kernel ever learns to run at an arbitrary load address. See nifeos/record:notes/visionfive2.md.
+    # kernel ever learns to run at an arbitrary load address. See partsfoundry/record:notes/visionfive2.md.
     .dword  0x40200000              # text_offset: image load offset from start of RAM
     .dword  __image_size            # image_size: runtime footprint incl. .bss and stacks (link script)
     .dword  0                       # flags: bit 0 = 0, little-endian

@@ -1,6 +1,6 @@
 //! Tests for rendezvous: blocking send and receive, call and reply, the reply capability, and what
 //! a revoked or reclaimed rendezvous does to the threads parked on it. See
-//! nifeos/record:notes/scheduler/rendezvous.md.
+//! partsfoundry/record:notes/scheduler/rendezvous.md.
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC).
 
@@ -261,7 +261,7 @@ fn a_server_that_exits_frees_the_caller_it_never_answered() {
 /// IPC thread becomes `Ready` only by the hand that completed its rendezvous (message staged,
 /// signal counted, or abort flagged). An undelivered wake is refused, the receiver stays parked
 /// and linked on the wait queue, and a real sender still reaches it afterwards. See
-/// nifeos/record:notes/scheduler/undelivered-wake-gate.md.
+/// partsfoundry/record:notes/scheduler/undelivered-wake-gate.md.
 #[test_case]
 fn a_wake_without_delivery_cannot_complete_a_parked_receive() {
     static GOT: AtomicU64 = AtomicU64::new(u64::MAX);

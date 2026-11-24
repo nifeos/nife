@@ -4,7 +4,7 @@
 //! `.option norvc` keeps each `nop` 4 bytes, so 1,272 of them are 5,088 bytes, as on aarch64.
 //! Re-measure with `script/fastpath-footprint --features fastpath_pad --arch riscv64` after
 //! touching this or the fastpath. E3's latency half needs `--real`, which riscv64 lacks
-//! (nifeos/record:design/roadmap/0134-the-measurements-that-decide.md, BUGS).
+//! (partsfoundry/record:design/roadmap/0134-the-measurements-that-decide.md, BUGS).
 use core::arch::global_asm;
 
 /// One sled unit: `fastpath_pad` alone links exactly this many `nop`s, as it did before the

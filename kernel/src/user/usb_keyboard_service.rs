@@ -1,6 +1,6 @@
 //! Wiring for the USB keyboard driver, whose [`Spawn`] literal is the confinement claim: the
 //! interrupt, attach and report endpoints, the register pages `register_window` chose, and the DMA
-//! work pages. See nifeos/record:notes/usb.md, "What the driver holds".
+//! work pages. See partsfoundry/record:notes/usb.md, "What the driver holds".
 //!
 //! # BUGS
 //!
@@ -58,7 +58,7 @@ pub(crate) fn start(
     // Through the arch layer, as the `Interrupt` capability's ACKNOWLEDGE is: on riscv64 a source enabled
     // on
     // the boot hart's context instead is moved by its first ACKNOWLEDGE, and no keystroke after the first
-    // arrives (measured). See nifeos/record:notes/usb.md, "What the driver holds".
+    // arrives (measured). See partsfoundry/record:notes/usb.md, "What the driver holds".
     crate::arch::interrupt_controller::enable(found.intid);
 
     let attach = crate::sched::create_rendezvous();

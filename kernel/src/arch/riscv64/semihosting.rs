@@ -2,7 +2,7 @@
 //!
 //! On QEMU `virt` the exit writes the `sifive_test` finisher; under the `board` feature it prints a
 //! `NIFE-TEST-EXIT:` marker and asks SBI SRST to shut down. [`reboot`] is the same SRST call with
-//! the cold-reboot type, and returns when firmware refuses. See nifeos/record:notes/riscv-port/firmware.md.
+//! the cold-reboot type, and returns when firmware refuses. See partsfoundry/record:notes/riscv-port/firmware.md.
 
 // Only the test harness and the test-mode panic arm reach the exit, so the gates are `not(test)`
 // rather than a blanket allow, keeping the test build on the dead-code gate.
@@ -73,7 +73,7 @@ const SBI_SYSTEM_RESET_FID: usize = 0;
 #[cfg(feature = "board")]
 const SRST_RESET_TYPE_SHUTDOWN: usize = 0;
 /// SRST reset type: cold reboot. Firmware may support any subset of the types, and refuses one it
-/// does not with `SBI_ERR_NOT_SUPPORTED`. See nifeos/record:notes/riscv-port/firmware.md.
+/// does not with `SBI_ERR_NOT_SUPPORTED`. See partsfoundry/record:notes/riscv-port/firmware.md.
 const SRST_RESET_TYPE_COLD_REBOOT: usize = 1;
 /// SRST reset reason: none (no additional reason specified).
 const SRST_RESET_REASON_NONE: usize = 0;
@@ -94,7 +94,7 @@ fn sbi_system_reset(reset_type: usize) -> isize {
 ///
 /// The arch reboot contract: one line per route before trying it, drained to the wire, then the
 /// firmware's error after. Called by the rebooting soak and `kernel::reboot::restart`. See
-/// nifeos/record:notes/riscv-port/firmware.md.
+/// partsfoundry/record:notes/riscv-port/firmware.md.
 ///
 /// Name: provisional (milestone 249 (the boot lottery is sampled by a person walking to the
 /// board)): calef names public items.

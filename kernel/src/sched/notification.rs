@@ -1,5 +1,5 @@
 //! Notifications: creating one, signal, wait and poll, and binding one to a thread so a signal
-//! reaches a receiver parked on its rendezvous. See nifeos/record:notes/notification-objects.md ("The kernel
+//! reaches a receiver parked on its rendezvous. See partsfoundry/record:notes/notification-objects.md ("The kernel
 //! half").
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
@@ -81,7 +81,7 @@ pub fn create_notification_from(region: u64) -> Option<NotificationId> {
 
 /// The mailbox of a receive the bound notification ended, `(BOUND, word, 0, 0, BOUND)`: §101's
 /// `w0 = 2`, the word in `w1`, and the tag again in `w4`, the one register no sender can write (see
-/// `moho_abi::notification::BOUND`, and nifeos/record:notes/notification-objects.md for why `w0` alone is forgeable).
+/// `moho_abi::notification::BOUND`, and partsfoundry/record:notes/notification-objects.md for why `w0` alone is forgeable).
 pub(super) const fn bound_delivery(word: u64) -> [u64; 5] {
     [
         moho_abi::notification::BOUND,
@@ -95,7 +95,7 @@ pub(super) const fn bound_delivery(word: u64) -> [u64; 5] {
 /// The bound thread and the rendezvous it is parked on, if it is parked in a receive right now:
 /// `Blocked` as a `Receiver` with nothing delivered yet, which is exactly "still linked on that
 /// receiver queue". This is the boolean the crate's `signal` takes on trust; the argument is in
-/// nifeos/record:notes/notification-objects.md ("Who counts as a bound receiver").
+/// partsfoundry/record:notes/notification-objects.md ("Who counts as a bound receiver").
 ///
 /// Context: caller holds `IPC_TABLES`.
 pub(super) fn bound_receiver(
@@ -170,7 +170,7 @@ pub(super) fn wake_placed(
 /// into notification `id`, waking a waiter or the bound receiver by `placement`. `Err(Gone)` if the
 /// name no longer resolves; otherwise the remote core to poke, if any.
 ///
-/// Context: caller holds `IPC_TABLES`; legal in interrupt context (nifeos/record:notes/notification-objects.md,
+/// Context: caller holds `IPC_TABLES`; legal in interrupt context (partsfoundry/record:notes/notification-objects.md,
 /// "One signal path").
 pub(super) fn signal_locked(
     sched: &mut IpcTables,
@@ -339,7 +339,7 @@ pub(super) fn take_bound_signal(sched: &mut IpcTables, tid: ThreadId) -> Option<
 }
 
 /// Tear down every notification whose page lies in `[base, end)`: abort and wake each waiter, then
-/// drop the name, rescanning as the rendezvous sweep does (nifeos/record:notes/region-reaping.md). A thread bound
+/// drop the name, rescanning as the rendezvous sweep does (partsfoundry/record:notes/region-reaping.md). A thread bound
 /// to one keeps a stale name, which every reader treats as unbound.
 ///
 /// Context: caller holds `IPC_TABLES`.

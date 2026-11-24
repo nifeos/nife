@@ -2,7 +2,7 @@
 //! allocating)): a process retypes its own region into the pages and objects it wants, so the
 //! kernel's free-frame count does not move while it allocates. The table and its decisions are
 //! `crates/memory_regions`; this module is the I/O: the frame allocator, the direct map, the
-//! revoke and the lock. See nifeos/record:notes/memory-regions.md.
+//! revoke and the lock. See partsfoundry/record:notes/memory-regions.md.
 //!
 //! # BUGS
 //! `Error::OutOfMemory` collapses three causes into one code (DECISIONS §119 (splitting
@@ -18,7 +18,7 @@ use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 /// The most untyped regions that can be live **at once**. Slots are reused (the table is
 /// generational), so this bounds concurrent regions, not creations over the kernel's lifetime.
 ///
-/// Read the ledger of what holds regions at the peak, in nifeos/record:notes/memory-regions.md, before raising or
+/// Read the ledger of what holds regions at the peak, in partsfoundry/record:notes/memory-regions.md, before raising or
 /// lowering it. A full table refuses quietly, and there is no gate.
 ///
 /// # BUGS
@@ -75,7 +75,7 @@ pub fn create(pages: u64) -> Option<u64> {
 
 /// [`create`] for a root whose subtree lives under `ceilings`: no more than that many objects of
 /// each [`Counted`] kind live in it at once, and each region split below it gets a sixteenth of
-/// them (`RegionTable::split`). See nifeos/record:notes/memory-regions.md, "Subtree ceilings".
+/// them (`RegionTable::split`). See partsfoundry/record:notes/memory-regions.md, "Subtree ceilings".
 ///
 /// Name: provisional.
 pub fn create_with_ceilings(pages: u64, ceilings: Ceilings) -> Option<u64> {
@@ -108,7 +108,7 @@ pub fn create_with_ceilings(pages: u64, ceilings: Ceilings) -> Option<u64> {
 /// (object revocation)); one freed out of order leaves a hole until no child above it is live.
 ///
 /// A refusal moves nothing, a full table included: the parent keeps its watermark and child count
-/// (`RegionTable::split`; nifeos/record:notes/region-split-on-a-full-table.md).
+/// (`RegionTable::split`; partsfoundry/record:notes/region-split-on-a-full-table.md).
 pub fn split(parent: u64, pages: u64) -> Option<u64> {
     // The test kernel's Nth-retype fault (milestone 757 (a test kernel fails a process on its Nth
     // retype), provisional): refused before the lock, so the region is left exactly as an
@@ -136,7 +136,7 @@ pub fn split(parent: u64, pages: u64) -> Option<u64> {
 /// **The kernel keeps this fraction of every table for itself**: one eighth, so the progenitor's
 /// subtree may hold the other seven. What the kernel holds outside that subtree (its own threads
 /// and rendezvous, the roots and spaces of the services it starts) is measured against this in
-/// nifeos/record:notes/memory-regions.md, "Subtree ceilings".
+/// partsfoundry/record:notes/memory-regions.md, "Subtree ceilings".
 const KERNEL_RESERVE_OF_EACH_TABLE: usize = 8;
 
 /// **The ceilings the progenitor's subtree lives under**: every kernel table less the kernel's
@@ -183,7 +183,7 @@ pub fn progenitor_ceilings() -> Ceilings {
 
 /// **One object of `kind` retyped from `region` has left its kernel table**: a thread reaped, a
 /// lent address space dropped, or an insert refused after the page was retyped. Its subtree's
-/// count falls by one. A no-op on a dead name. See nifeos/record:notes/memory-regions.md, "Subtree ceilings".
+/// count falls by one. A no-op on a dead name. See partsfoundry/record:notes/memory-regions.md, "Subtree ceilings".
 ///
 /// Every caller releases an object once, when it leaves its table, so the table never refuses
 /// one here. If a defect ever released one object twice, the table refuses the second release
@@ -372,7 +372,7 @@ pub fn region_bounds(region: u64) -> Option<(u64, u64)> {
 /// (`sched::reclaim_region`): reap the objects with `IPC_TABLES`, unpin, then [`destroy`].
 ///
 /// Separate from [`destroy`] because [`destroy`] must never take `IPC_TABLES`: it is reachable from
-/// `AddressSpace::Drop`, which already runs under it. See nifeos/record:notes/memory-regions.md.
+/// `AddressSpace::Drop`, which already runs under it. See partsfoundry/record:notes/memory-regions.md.
 pub fn unpin(region: u64) {
     REGIONS.lock().unpin(typed(region));
 }
@@ -385,7 +385,7 @@ pub fn unpin(region: u64) {
 /// reclamation)), so no peer is left mapping a returned
 /// page. `RegionTable::claim_for_destroy` decides and removes the name in one borrow, so at most
 /// one caller frees a region's pages. Takes `REGIONS`, releasing it before the revoke takes
-/// `IPC_TABLES`. See nifeos/record:notes/memory-regions.md.
+/// `IPC_TABLES`. See partsfoundry/record:notes/memory-regions.md.
 pub fn destroy(region: u64) {
     // The guard is a temporary of this `let`, so `REGIONS` is released at the semicolon, before
     // the revoke: revocation takes `IPC_TABLES`, a higher rank, and holding `REGIONS` across it

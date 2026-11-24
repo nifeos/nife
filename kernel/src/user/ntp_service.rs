@@ -3,7 +3,7 @@
 //!
 //! The client and the witness are endowed by one function, [`spawn_with_client_endowment`], so
 //! `an_ntp_client_holds_no_writable_clock_page` tests the client's real capability set. Do not grow
-//! a second list of grants here. See nifeos/record:notes/ntp.md.
+//! a second list of grants here. See partsfoundry/record:notes/ntp.md.
 
 use super::*;
 use crate::capability_object::{

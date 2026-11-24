@@ -5,7 +5,7 @@
 //! ([`bring_up_secondaries`]) at a physical entry point on its own stack; the secondary lands in
 //! [`secondary_main`], which makes it a scheduler participant. Load balancing is `sched::spawn`'s
 //! (DECISIONS §28 (SMP placement: two random choices at spawn, message-shaped stealing)). See
-//! nifeos/record:notes/smp.md.
+//! partsfoundry/record:notes/smp.md.
 
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 
@@ -22,7 +22,7 @@ const SECONDARY_STACK_SIZE: usize = 64 * 1024;
 /// The unmapped page below each secondary stack.
 ///
 /// One page of address space per core and **zero physical frames**: `map_everything` skips it, so
-/// the MMU faults on the first byte written past the bottom of the stack. See nifeos/record:notes/smp.md.
+/// the MMU faults on the first byte written past the bottom of the stack. See partsfoundry/record:notes/smp.md.
 const SECONDARY_STACK_GUARD: usize = 4096;
 
 /// A core's slot: its guard page, then the stack that grows down into it. A multiple of the page
@@ -36,7 +36,7 @@ const SECONDARY_STACK_SLOT: usize = SECONDARY_STACK_GUARD + SECONDARY_STACK_SIZE
 /// The `UnsafeCell` keeps the static out of `.rodata`, which the fine kernel map makes read-only.
 /// The `link_section` gives the stacks their own `(NOLOAD)` region, so the mapper can map each
 /// stack and skip each guard; nothing zeroes it. The linker scripts only anchor
-/// `__secondary_stacks_start`..`__secondary_stacks_end` around it. See nifeos/record:notes/smp.md.
+/// `__secondary_stacks_start`..`__secondary_stacks_end` around it. See partsfoundry/record:notes/smp.md.
 #[repr(C, align(4096))]
 struct Stacks(core::cell::UnsafeCell<[[u8; SECONDARY_STACK_SLOT]; MAXIMUM_CPUS]>);
 
@@ -74,7 +74,7 @@ pub fn online_harts_mask() -> usize {
 /// The online cpus, by id, in ascending order: [`online_harts_mask`] as an iterator. The online
 /// set is not contiguous from zero on real boards (the VisionFive 2's is {1,2,3,4}), so iterate
 /// the set, never `0..online_count()`. The mask arithmetic is `crates/cpu_set`'s, host-tested.
-/// See nifeos/record:notes/smp.md.
+/// See partsfoundry/record:notes/smp.md.
 pub fn online_cpus() -> cpu_set::Cpus {
     cpu_set::cpus_in(online_harts_mask())
 }
@@ -143,7 +143,7 @@ static HWID: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(u64::MAX) }; MA
 /// Per slot: did the tree describe a core this kernel could actually start? False for a core
 /// firmware marked `status = "disabled"`, for one whose own `riscv,isa` disclaims supervisor mode
 /// (the VisionFive 2's S7, whose vendor node claims a schedulable core everywhere else), and
-/// for one whose `enable-method` is a mechanism this kernel does not speak. See nifeos/record:notes/smp.md.
+/// for one whose `enable-method` is a mechanism this kernel does not speak. See partsfoundry/record:notes/smp.md.
 static STARTABLE: [AtomicBool; MAXIMUM_CPUS] = [const { AtomicBool::new(false) }; MAXIMUM_CPUS];
 
 /// How many `cpu@` nodes the tree had, which may be more than the slots that got seated. Kept so
@@ -155,7 +155,7 @@ static DESCRIBED: AtomicUsize = AtomicUsize::new(0);
 ///
 /// Called once, on the boot core, before [`bring_up_secondaries`] and before `mmu::initialize`
 /// replaces the coarse boot map the tree is reached through. Seats each described core at the slot
-/// its hardware id names and prints the roster; it starts nothing. See nifeos/record:notes/smp.md.
+/// its hardware id names and prints the roster; it starts nothing. See partsfoundry/record:notes/smp.md.
 ///
 /// # Panics
 ///
@@ -167,7 +167,7 @@ pub(crate) fn read_cpu_list() {
     let list = CpuList::from_device_tree(&dt).expect("cannot read /cpus");
 
     // Seat each core at the slot its hardware id names: logical id equals hardware id by
-    // construction, and an excluded core costs no other core its seat. See nifeos/record:notes/smp.md.
+    // construction, and an excluded core costs no other core its seat. See partsfoundry/record:notes/smp.md.
     let mut startable = 0;
     let mut unseated = 0; // startable cores whose hart id names no slot
     for cpu in list.cpus().iter() {
@@ -242,7 +242,7 @@ pub(crate) fn read_cpu_list() {
 /// `cpus` is `(local_apic_id, enabled)` per entry, in table order
 /// (`arch::machine::Acpi::cpus[..cpu_count]`). Each core is seated at the slot its local APIC id
 /// names, and `enabled` is what [`STARTABLE`] takes. Called once, by `x86_64`'s [`read_cpu_list`],
-/// before [`bring_up_secondaries`]. See nifeos/record:notes/smp.md.
+/// before [`bring_up_secondaries`]. See partsfoundry/record:notes/smp.md.
 #[cfg(target_arch = "x86_64")]
 fn seat_cpus_from_acpi(cpus: &[(u8, bool)]) {
     let mut startable = 0;
@@ -322,7 +322,7 @@ unsafe extern "C" {
 /// Start every secondary core the machine described, and wait until each has come online.
 ///
 /// Called once, on the boot core, after the scheduler exists and [`read_cpu_list`] has recorded
-/// the roster. Empty and unstartable seats are skipped. See nifeos/record:notes/smp.md.
+/// the roster. Empty and unstartable seats are skipped. See partsfoundry/record:notes/smp.md.
 ///
 /// # BUGS
 ///
@@ -335,7 +335,7 @@ pub(crate) fn bring_up_secondaries() {
     ONLINE_MASK.fetch_or(1 << cpu::id(), Ordering::Release);
 
     // The single-hart measurement build (kernel/Cargo.toml's `single_hart`) starts nobody, but only
-    // after the mask above: everything that broadcasts reads it. See nifeos/record:notes/smp.md.
+    // after the mask above: everything that broadcasts reads it. See partsfoundry/record:notes/smp.md.
     #[cfg(feature = "single_hart")]
     {
         println!("  smp: 1 core(s) online (single_hart: secondaries left parked)");
@@ -365,7 +365,7 @@ pub(crate) fn bring_up_secondaries() {
 
     // The entry is PHYSICAL: the core starts with its MMU off. Computed only once the machine can
     // be asked at all, and on x86_64 not converted, because `secondary_boot` is linked at its
-    // physical trampoline address there and `virt_to_phys` would underflow. See nifeos/record:notes/smp.md.
+    // physical trampoline address there and `virt_to_phys` would underflow. See partsfoundry/record:notes/smp.md.
     #[cfg(target_arch = "x86_64")]
     let entry = arch::secondary_boot_entry(secondary_boot as *const () as u64);
     #[cfg(not(target_arch = "x86_64"))]
@@ -413,7 +413,7 @@ pub(crate) fn bring_up_secondaries() {
 
 /// A secondary core's first Rust, called from `secondary_boot` once its MMU is on and it has a
 /// stack. `cpu_id` came from `MPIDR_EL1`. It turns the core into a full scheduler participant and
-/// then becomes that core's idle thread. See nifeos/record:notes/smp.md.
+/// then becomes that core's idle thread. See partsfoundry/record:notes/smp.md.
 #[unsafe(no_mangle)]
 pub(crate) extern "C" fn secondary_main(cpu_id: usize) -> ! {
     // 1. Per-CPU pointer first, ahead of anything that could take a lock (the lock path reads this
@@ -443,7 +443,7 @@ pub(crate) extern "C" fn secondary_main(cpu_id: usize) -> ! {
 
     // 6. (tests only) Prove this core schedules from its OWN queue. `spawn_on`, not `spawn`:
     //    `spawn` places on the lighter of two sampled cores (DECISIONS §28), so the probes would
-    //    not cover every core. See nifeos/record:notes/smp.md.
+    //    not cover every core. See partsfoundry/record:notes/smp.md.
     #[cfg(any(test, feature = "system_tests"))]
     crate::sched::spawn_on(cpu::id(), || {
         RAN_ON[cpu::id()].store(true, Ordering::Release);
@@ -465,7 +465,7 @@ pub(crate) extern "C" fn secondary_main(cpu_id: usize) -> ! {
 }
 
 // The SMP tests need more than one core online (the runners default to `-smp 4`; NIFE_SMP moves
-// it, up to MAXIMUM_CPUS). See nifeos/record:notes/smp.md.
+// it, up to MAXIMUM_CPUS). See partsfoundry/record:notes/smp.md.
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -475,7 +475,7 @@ mod tests {
     ///
     /// Returns whether `cond` held by the deadline. The bound is wide for host contention starving
     /// the guest's vCPUs, and under the watchdog so that a failure names the subsystem. See
-    /// nifeos/record:notes/smp.md and nifeos/record:notes/load-sensitive-assertions.md.
+    /// partsfoundry/record:notes/smp.md and partsfoundry/record:notes/load-sensitive-assertions.md.
     fn wait_for(mut cond: impl FnMut() -> bool) -> bool {
         let deadline = crate::arch::timer::now() + 60 * crate::arch::timer::frequency();
         while crate::arch::timer::now() < deadline {
@@ -491,7 +491,7 @@ mod tests {
     ///
     /// `translate` reads the root out of the hardware register, so this is the map the CPU is using.
     /// The pages either side of each hole must translate, or the hole protects nothing. It says
-    /// nothing about the coarse boot map, on which the guards are mapped. See nifeos/record:notes/smp.md.
+    /// nothing about the coarse boot map, on which the guards are mapped. See partsfoundry/record:notes/smp.md.
     #[test_case]
     fn every_secondary_stack_sits_on_a_guard_page() {
         for id in 0..MAXIMUM_CPUS {
@@ -554,7 +554,7 @@ mod tests {
     fn the_roster_is_the_machines_own_cpu_list() {
         // Zero means nobody has read a roster, not "this machine has no cores". x86_64 always
         // skips: `crate::DTB` holds PVH's `hvm_start_info` pointer there, and parsing it as a
-        // device tree would panic. See nifeos/record:notes/smp.md, BUGS.
+        // device tree would panic. See partsfoundry/record:notes/smp.md, BUGS.
         if super::described_count() == 0 || cfg!(target_arch = "x86_64") {
             crate::testing::skip!(
                 "nothing has read this machine's core roster from a device tree (either \
@@ -729,7 +729,7 @@ mod tests {
     /// target (`PerCpu::adopted`) is this test's thread. It asserts arrival at the named core, not
     /// that the target then ran it: a steal can move a placed thread, and a wait for every core to
     /// run one can wedge forever. `every_secondary_runs_scheduled_work` and
-    /// `a_batch_of_cpu_bound_work_reaches_every_cpu` cover execution. See nifeos/record:notes/smp.md.
+    /// `a_batch_of_cpu_bound_work_reaches_every_cpu` cover execution. See partsfoundry/record:notes/smp.md.
     #[test_case]
     fn work_can_be_placed_on_every_cpu() {
         for s in &SPREAD {
@@ -855,7 +855,7 @@ mod tests {
     /// workers, more than cores, migrate across harts, each re-checking `tp` on every spin.
     ///
     /// # BUGS
-    /// Under host load this loses coverage quietly rather than going red. See nifeos/record:notes/smp.md.
+    /// Under host load this loses coverage quietly rather than going red. See partsfoundry/record:notes/smp.md.
     #[test_case]
     fn a_migrated_kernel_thread_keeps_its_hart_pointer() {
         use core::sync::atomic::AtomicUsize;
@@ -894,7 +894,7 @@ mod tests {
             // Drain this wave, yielding so the workers sharing this core get their turns. The
             // budget is delivered ticks, not counter time or a spin count, so a descheduled
             // emulator stretches it; the workers' `life` stays counter time on purpose. See
-            // `testing::TickBudget` and nifeos/record:notes/smp.md.
+            // `testing::TickBudget` and partsfoundry/record:notes/smp.md.
             let mut budget = crate::testing::TickBudget::new(2 * crate::arch::timer::TICK_HERTZ);
             while DONE.load(Ordering::Relaxed) < total {
                 assert!(
@@ -921,13 +921,13 @@ mod tests {
     }
 
     /// **A preemptible kernel thread that asks for its own name gets its own name**, however it
-    /// migrates (nifeos/record:notes/mmu.md, BUGS: a user thread losing its text translation).
+    /// migrates (partsfoundry/record:notes/mmu.md, BUGS: a user thread losing its text translation).
     ///
     /// The name lives in the running core's `PerCpu`, so a read split across a migration reads
     /// another core's `current`. Each worker takes its own name once with interrupts masked, then
     /// asks again with them open, in [`a_migrated_kernel_thread_keeps_its_hart_pointer`]'s waves;
     /// one answer naming another thread is the bug. The staggered lives, the clock read once per 256
-    /// reads and the 24 waves are measured choices. See nifeos/record:notes/smp.md.
+    /// reads and the 24 waves are measured choices. See partsfoundry/record:notes/smp.md.
     #[test_case]
     fn a_migrated_kernel_thread_reads_its_own_name() {
         use core::sync::atomic::{AtomicU64, AtomicUsize};

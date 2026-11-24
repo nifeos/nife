@@ -1,4 +1,4 @@
-/* nife kernel image layout, RISC-V (milestone 20, nifeos/record:notes/riscv-port.md).
+/* nife kernel image layout, RISC-V (milestone 20, partsfoundry/record:notes/riscv-port.md).
  *
  * THE KERNEL IS LINKED HIGH AND LOADED LOW, exactly like the aarch64 script, and for the same
  * reason: the kernel lives in the high (kernel) half of the address space, so the portable
@@ -9,7 +9,7 @@
  * QEMU's `virt` enters the payload at its PHYSICAL start (the Linux RISC-V boot protocol: hart id in
  * a0, DTB in a1), so boot.s runs at low physical addresses with every absolute symbol linked high.
  * It uses PC-relative addressing until it turns Sv39 on, then jumps to the high alias of itself. See
- * boot.s and nifeos/record:notes/riscv-port.md for how it survives that.
+ * boot.s and partsfoundry/record:notes/riscv-port.md for how it survives that.
  *
  * KERNEL_VA_BASE is the Sv39 high-half base: bits 63:38 all one (the sign extension of bit 38 = 1),
  * so it touches only the untranslated top bits. VA = PA | KERNEL_VA_BASE is exact and reversible,
@@ -45,9 +45,9 @@ SECTIONS
          * anywhere else moves none of it, and while the block is under 16 KiB no two of its lines
          * share a set. On 2026-10-05 a text shift that changed no instruction moved radon's
          * one-task `null_system_call` between 110 and 118 ticks; whether this flattens that is the
-         * radon sweep in nifeos/record:design/roadmap/0796-pin-the-hot-trap-paths-placement.md.
+         * radon sweep in partsfoundry/record:design/roadmap/0796-pin-the-hot-trap-paths-placement.md.
          * `script/fastpath-footprint` fails the build when a hot symbol is outside these bounds.
-         * See nifeos/record:notes/benchmarks/kernel-footprint-and-caches.md, "The hot section". */
+         * See partsfoundry/record:notes/benchmarks/kernel-footprint-and-caches.md, "The hot section". */
         . = ALIGN(16384);
         __text_hot_start = .;
         *(SORT_BY_NAME(.text.hot.*))
@@ -110,7 +110,7 @@ SECTIONS
      * the boot stack has above. The slot layout (and the core count) lives in kernel/src/smp.rs;
      * this script only anchors a page-aligned region so the holes can exist, because the stacks
      * used to be in `.bss`, which is mapped wholesale. (NOLOAD): a stack needs no file bytes, and
-     * nothing zeroes this region. Same shape as link-aarch64.ld; see nifeos/record:notes/stack-high-water.md. */
+     * nothing zeroes this region. Same shape as link-aarch64.ld; see partsfoundry/record:notes/stack-high-water.md. */
     .secondary_stacks (NOLOAD) : AT(ADDR(.secondary_stacks) - KERNEL_VA_BASE) ALIGN(4096) {
         __secondary_stacks_start = .;
         *(.secondary_stacks)
@@ -144,7 +144,7 @@ SECTIONS
      * no flat-Image / objcopy step at all (see helpers/qemu-runner-riscv64.sh's own header
      * comment), so QEMU's `-kernel` loads the ELF's PT_LOAD segments directly, CFI included. That
      * is harmless extra RAM in a VM with QEMU's usual hundreds of megabytes and is not why this
-     * section moved; see nifeos/record:notes/cfi-unwind.md's BUGS section for the honest scope of what this
+     * section moved; see partsfoundry/record:notes/cfi-unwind.md's BUGS section for the honest scope of what this
      * milestone did and did not strip. */
     .eh_frame : { KEEP(*(.eh_frame)) KEEP(*(.eh_frame_hdr)) }
 

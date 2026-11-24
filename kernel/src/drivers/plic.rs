@@ -4,7 +4,7 @@
 //! external interrupt. Between a claim and its completion the source's gateway forwards nothing
 //! more, the only mask the interrupt path uses. A completion counts only on a context that enables
 //! the source, so the interrupt path never disables one. Only the enable words take a lock
-//! ([`ENABLE_BITS`]). See nifeos/record:notes/interrupts/controller-drivers.md.
+//! ([`ENABLE_BITS`]). See partsfoundry/record:notes/interrupts/controller-drivers.md.
 //!
 
 //! The register model, all 32-bit MMIO at fixed offsets from the base (from the device tree):
@@ -56,7 +56,7 @@ fn write(off: usize, val: u32) {
 /// `context` must be this hart's supervisor context number.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub unsafe fn initialize(base: usize, context: usize) {
     // The one check [`claim_register`] leans on, made once here instead of on every interrupt.
     assert!(
@@ -90,7 +90,7 @@ pub(crate) fn open_context(context: usize) {
 /// Context: an `InterruptSafeMutualExclusionLock` at [`rank::INTERRUPT_CONTROLLER`], a leaf taken holding
 /// nothing, never by
 /// an interrupt handler. It guards `()`, not [`PLIC_BASE`], so claim/complete never takes it. See
-/// nifeos/record:notes/interrupts/controller-drivers.md and nifeos/record:notes/arch-audit.md finding 3.
+/// partsfoundry/record:notes/interrupts/controller-drivers.md and partsfoundry/record:notes/arch-audit.md finding 3.
 static ENABLE_BITS: InterruptSafeMutualExclusionLock<()> =
     InterruptSafeMutualExclusionLock::new(rank::INTERRUPT_CONTROLLER, ());
 
@@ -115,7 +115,7 @@ fn set_enable_bit(source: u32, context: usize, on: bool) {
 ///
 /// The enable bit first and the priority second: QEMU's PLIC re-evaluates a pending source on a
 /// priority write but not on an enable write, so the other order leaves an early interrupt pending
-/// and undelivered (nifeos/record:notes/usb.md, "The keystroke stall").
+/// and undelivered (partsfoundry/record:notes/usb.md, "The keystroke stall").
 pub fn enable(source: u32, context: usize) {
     set_enable_bit(source, context, true);
     // Priority 1, the lowest that interrupts. Outside the lock: a whole-word write to a register
@@ -151,7 +151,7 @@ const CLAIM_REACH: usize = THRESHOLD_BASE + u16::MAX as usize * CONTEXT_STRIDE +
 /// `context`'s claim/complete register.
 ///
 /// Wrapping arithmetic, because no wrap can happen and this is inlined into the trap body every
-/// interrupt crosses (release builds check overflow, nifeos/record:notes/overflow-checks.md): the offset is under
+/// interrupt crosses (release builds check overflow, partsfoundry/record:notes/overflow-checks.md): the offset is under
 /// `CLAIM_REACH` for every context this kernel holds, and `initialize` refused a base that
 /// `CLAIM_REACH` would carry past the top of the address space.
 #[inline(always)]

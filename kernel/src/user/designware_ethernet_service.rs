@@ -2,7 +2,7 @@
 //! and reset server bring its clocks and resets up, and allocates the DMA region. The control
 //! process (`designware_ethernet_control`) then does the rest of the bring-up and reports; on a
 //! link, `net_stack` starts over the DMA region and the controller's DMA page (`0x1000` to
-//! `0x1fff`), without the MAC page or an interrupt. See nifeos/record:notes/designware-ethernet.md, "The
+//! `0x1fff`), without the MAC page or an interrupt. See partsfoundry/record:notes/designware-ethernet.md, "The
 //! confinement, stated plainly".
 
 //! # Scope note (rule 5, architectural parity)

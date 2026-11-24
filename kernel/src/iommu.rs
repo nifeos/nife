@@ -5,7 +5,7 @@
 //!
 //! [`confine`] maps exactly the regions it is given, identity (IOVA == PA), so any other address
 //! the device emits faults. Each driver's `initialize` denies every unattached device, so the
-//! window between Bus-Master Enable and `confine` is closed by the hardware. See nifeos/record:notes/iommu.md.
+//! window between Bus-Master Enable and `confine` is closed by the hardware. See partsfoundry/record:notes/iommu.md.
 
 use page_tables::domain::{DirectMemoryAccessRegion, build_identity_domain};
 
@@ -19,7 +19,7 @@ use crate::arch::mmu::phys_to_virt;
 /// `iommu=smmuv3` (aarch64) or without a `riscv-iommu-pci` function (riscv), where the kernel
 /// runs exactly as it did before this milestone. The confinement path checks this before
 /// attaching a device, so a machine with no IOMMU keeps working (with only the software shadow
-/// ring for DMA defence, now demoted to defence in depth; see nifeos/record:notes/dma.md).
+/// ring for DMA defence, now demoted to defence in depth; see partsfoundry/record:notes/dma.md).
 pub fn is_active() -> bool {
     crate::arch::iommu::is_active()
 }
@@ -153,7 +153,7 @@ const MAXIMUM_CONFINED_REGIONS: usize = 4 + machine_discovery::acpi::MAXIMUM_RES
 /// Allocate one zeroed frame and return its physical address. The domain's root table and every
 /// intermediate table come from here. These frames are owned by the IOMMU from now on; a re-attach
 /// of the same device leaks the previous domain's tables, which is acceptable because `confine`
-/// runs once per device per boot (see nifeos/record:notes/iommu.md).
+/// runs once per device per boot (see partsfoundry/record:notes/iommu.md).
 fn zeroed_page_frame() -> u64 {
     crate::memory::alloc_zeroed()
         .expect("no frame for an IOMMU DMA domain")
@@ -177,7 +177,7 @@ pub(crate) fn confine(rid: u32, regions: &[DirectMemoryAccessRegion]) -> Result<
     // The grant plus the firmware's reserved regions for this device: VT-d 4.1 section 3.16 wants
     // an RMRR identity-mapped in its device's domain, or the firmware's own DMA faults. One that
     // overlaps the grant is skipped, since mapping a page twice fails the build. See
-    // nifeos/record:notes/iommu.md, "Reserved regions".
+    // partsfoundry/record:notes/iommu.md, "Reserved regions".
     let mut all = [DirectMemoryAccessRegion {
         base: 0,
         size: 0,
@@ -240,7 +240,7 @@ pub(crate) fn build_identity<F: page_tables::PageFormat>(
 
 /// The physical regions a virtio device's domain must cover: the driver's DMA region (its rings'
 /// used half and its data buffers) and the kernel-private shadow page (the descriptor table and
-/// available ring the device actually reads). Both are frame-granular. See nifeos/record:notes/dma.md for why the
+/// available ring the device actually reads). Both are frame-granular. See partsfoundry/record:notes/dma.md for why the
 /// device reads a shadow the driver cannot write.
 ///
 /// The shadow page is read-only to the device, which only reads a split virtqueue's descriptor

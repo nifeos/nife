@@ -6,7 +6,7 @@
 //! the [`graphics_contract::SURFACE_PAGE_FRAMES`]-page scanout is one capability and one `MAP` call.
 //! The kernel places no page at spawn beyond the one `load` gives every process.
 //!
-//! See nifeos/record:notes/framebuffer-contract.md and nifeos/record:notes/framebuffer-contract/kernel-wiring.md.
+//! See partsfoundry/record:notes/framebuffer-contract.md and partsfoundry/record:notes/framebuffer-contract/kernel-wiring.md.
 
 use core::num::NonZeroU64;
 
@@ -35,7 +35,7 @@ const ROLE_BACKING_ESCAPE: u64 = 1;
 ///
 /// At 1120x624 the 683-page surface spans two 2 MiB windows (two L3 tables) and the terminal's
 /// output page a third. Twenty-four pages has also booted a 900-page 1280x720 surface, and is under
-/// one percent of the free pool. See nifeos/record:notes/frames.md.
+/// one percent of the free pool. See partsfoundry/record:notes/frames.md.
 const MAP_BUDGET_PAGES: u64 = 24;
 
 // The driver's capability table. Must match components/src/gpu_driver.rs.
@@ -143,7 +143,7 @@ pub fn start(
 /// Returns `(report endpoint, the victim frame's physical address)`, or `None` if no GPU is on the
 /// bus. The driver gets the honest driver's world exactly, and no client. The kernel picks the
 /// victim frame, passes it in `arg2`, and never frees it, since a device has been told to read it.
-/// See nifeos/record:notes/framebuffer-contract/kernel-wiring.md.
+/// See partsfoundry/record:notes/framebuffer-contract/kernel-wiring.md.
 pub fn start_backing_escape(driver_image: &'static [u8]) -> Option<(RendezvousId, u64)> {
     let victim = crate::memory::alloc()
         .expect("no victim frame for the backing-escape test")
@@ -320,7 +320,7 @@ pub struct TerminalWiring {
 ///
 /// The caller must receive three blocking reports, or the screen freezes after one frame: `UP` and
 /// then `FLUSHED` on `driver_report`, and `TERM_UP` on `term_report`. The tests read `FLUSHED`'s
-/// digest, so this does not swallow it. See nifeos/record:notes/framebuffer-contract/kernel-wiring.md.
+/// digest, so this does not swallow it. See partsfoundry/record:notes/framebuffer-contract/kernel-wiring.md.
 pub fn start_terminal(
     driver_image: &'static [u8],
     term_image: &'static [u8],
@@ -465,7 +465,7 @@ const _: () = assert!(SCREEN_SLOT_SURFACE < moho_abi::fault::FAULT_RENDEZVOUS_SL
 ///
 /// The surface is the screen divided by `screen_console::ScreenConsole::scale_for_cell`'s scale,
 /// the boot console's rule, capped at what one terminal grid can lay out. See
-/// nifeos/record:notes/framebuffer-contract/kernel-wiring.md.
+/// partsfoundry/record:notes/framebuffer-contract/kernel-wiring.md.
 fn screen_terminal_aperture(
     screen: &machine_discovery::framebuffer::Framebuffer,
 ) -> Option<(screen_console::Aperture, u64)> {
@@ -520,7 +520,7 @@ fn screen_terminal_aperture(
 ///
 /// `screen` must already be off the kernel's console (`console::yield_screen`), or two painters
 /// share it. The driver holds no interrupt, DMA, transport or physical address, and only the rows
-/// its surface reaches, mapped at spawn. See nifeos/record:notes/framebuffer-contract/kernel-wiring.md.
+/// its surface reaches, mapped at spawn. See partsfoundry/record:notes/framebuffer-contract/kernel-wiring.md.
 pub fn start_screen_terminal(
     driver_image: &'static [u8],
     term_image: &'static [u8],

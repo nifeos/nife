@@ -1,5 +1,5 @@
 //! **A user address space**: its page table, the frames it owns, its address-space identifier, and
-//! what its `Drop` gives back. See nifeos/record:notes/user-address-spaces.md.
+//! what its `Drop` gives back. See partsfoundry/record:notes/user-address-spaces.md.
 //!
 //! Name: provisional (milestone 872's lane, 2026-10-11 UTC; §281 (the kernel's user-mode file
 //! splits into child modules of `user`)).
@@ -10,7 +10,7 @@ use super::*;
 /// from, its TLB tag and its current-CPU pages.
 ///
 /// An address space dies all at once: `Drop` destroys its region, tables and leaves alike, rather
-/// than unmapping page by page. See nifeos/record:notes/user-address-spaces.md.
+/// than unmapping page by page. See partsfoundry/record:notes/user-address-spaces.md.
 pub struct AddressSpace {
     pub(super) root: PageFrame,
     /// **This address space's TLB tag, for life** (milestone 15; `crates/address_space_identifier`). Every user
@@ -36,7 +36,7 @@ pub struct AddressSpace {
     /// `crates/current_cpu_contract` holds the layout and calef's ruling of 2026-09-21 (a thread
     /// observing itself is a per-thread page). The frame comes from the global frame allocator, not
     /// `backing`'s region, so `Drop` frees it by hand. The address is worked out once at attach, to
-    /// keep an overflow check off the context switch (nifeos/record:notes/overflow-checks.md).
+    /// keep an overflow check off the context switch (partsfoundry/record:notes/overflow-checks.md).
     pub(super) current_cpu_page: Option<(PageFrame, u64)>,
 
     /// **The other threads' current-CPU pages** (milestone 812 (`std::thread::spawn` runs real
@@ -61,7 +61,7 @@ pub struct AddressSpace {
 /// [`user_address_space_create`] is lent a region its caller holds a `MemoryRegion` capability to
 /// and reclaims with `MemoryRegion::DESTROY` (milestone 19b (run a real workload)). Two names for
 /// one run of memory, and only one may free it: a type, so no space can be built without saying
-/// which. See nifeos/record:notes/user-address-spaces.md.
+/// which. See partsfoundry/record:notes/user-address-spaces.md.
 #[derive(Clone, Copy)]
 pub(super) enum Backing {
     /// The space carved this region itself and holds the only name for it. `Drop` frees it.
@@ -89,7 +89,7 @@ const AS_OVERHEAD: u64 = 16;
 /// **The window cost [`AS_OVERHEAD`]'s margin already carries**, which [`load`] subtracts rather
 /// than charging a second time: one log page ([`crate::revoke::log_pages_for`], 170 recorded
 /// mappings) and no table pages, since such a window touches at most one 2 MiB L3. Charging it
-/// again costs a frame per long-lived process; see nifeos/record:notes/user-address-spaces.md.
+/// again costs a frame per long-lived process; see partsfoundry/record:notes/user-address-spaces.md.
 pub(super) const WINDOW_IN_OVERHEAD: u64 = 1;
 
 impl AddressSpace {
@@ -169,7 +169,7 @@ impl AddressSpace {
         };
 
         // Read-only to the process, which is what keeps this out of Tock's necessarily-unsafe
-        // kernel category (nifeos/record:notes/trusted-base.md): the kernel writes a frame it owns and lends the
+        // kernel category (partsfoundry/record:notes/trusted-base.md): the kernel writes a frame it owns and lends the
         // process a view, rather than writing into memory the process supplied.
         if self
             .map_physical(
@@ -249,7 +249,7 @@ impl AddressSpace {
     /// (capability revocation and untyped reclamation) use-after-free; an unrecordable mapping is
     /// refused as `OutOfPageFrames`. A mapping that would leave the page writable here and
     /// executable elsewhere in this space is refused as `WritableAndExecutable`
-    /// (`MappingHold::record_mapping`). See nifeos/record:notes/user-address-spaces.md.
+    /// (`MappingHold::record_mapping`). See partsfoundry/record:notes/user-address-spaces.md.
     ///
     /// # BUGS
     /// [`Self::map_new`] does not record: its frames die with this space's region and no capability

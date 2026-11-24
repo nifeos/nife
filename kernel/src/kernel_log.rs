@@ -1,12 +1,12 @@
 //! The kernel's ring, and where each of its lines goes, as §175 (where the kernel's own output
 //! goes once userspace owns the console) rules, with the drain shape in
-//! `nifeos/record:notes/kernel-ring-drain.md`.
+//! `partsfoundry/record:notes/kernel-ring-drain.md`.
 //!
 //! Every line becomes one record in a ring of frames (`system_log_contract::kernel_ring`, shared
 //! with the log service). The kernel also writes it to the UART with no drainer, with a stalled
 //! one ([`STALL_NANOSECONDS`]) and on a panic ([`enter_panic`]), flagging it `DIRECT`; a drainer that
 //! keeps up forwards it whole. Signalling is deferred to [`signal_if_safe`], since `println!` runs
-//! under arbitrary locks. See nifeos/record:notes/kernel-console.md, "The kernel's ring".
+//! under arbitrary locks. See partsfoundry/record:notes/kernel-console.md, "The kernel's ring".
 //!
 
 //! # BUGS
@@ -408,7 +408,7 @@ pub(crate) fn flood_tick() {
         return;
     }
     // Ten a second where the leg runs at 0.2 s a line, one a second on `x86_64`'s TCG leg, which
-    // runs some thirty times slower (nifeos/record:notes/benchmarks/swish-check-x86-leg.md). At ten a second
+    // runs some thirty times slower (partsfoundry/record:notes/benchmarks/swish-check-x86-leg.md). At ten a second
     // there the service fell behind, and the kernel's counted fallback spliced 29 of 6,990 lines,
     // which is the fallback working as ruled rather than the property this probe is for.
     const EVERY: u64 = if cfg!(target_arch = "x86_64") {

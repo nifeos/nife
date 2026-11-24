@@ -1,5 +1,5 @@
 //! A per-file grant: a caretaker narrows the directory to one file, and the confined program holds
-//! only the caretaker. See nifeos/record:notes/grant-expression.md.
+//! only the caretaker. See partsfoundry/record:notes/grant-expression.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -27,7 +27,7 @@ pub struct Grant {
 /// The FS server, an `fs_file_caretaker` holding the directory, and the program, which holds only
 /// the caretaker's endpoint and nothing that names the FS server. All three share one frame.
 /// Returns the program's report endpoint and what ends the grant. See
-/// nifeos/record:notes/fs-server/kernel-wiring.md.
+/// partsfoundry/record:notes/fs-server/kernel-wiring.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn start_granted(
     blk_image: &'static [u8],

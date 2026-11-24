@@ -4,7 +4,7 @@
 //! It reaches no kernel global (§4 (kernel shape)): the
 //! register block, a scratch region and that region's physical address are all arguments, from
 //! `crate::screen`. It runs only before `arch::mmu::initialize`, through the coarse boot map; the
-//! fine map does not cover `fw_cfg`. See nifeos/record:notes/serial-less-output/ramfb.md.
+//! fine map does not cover `fw_cfg`. See partsfoundry/record:notes/serial-less-output/ramfb.md.
 //!
 
 //! # BUGS
@@ -106,7 +106,7 @@ impl FirmwareConfiguration {
         unsafe {
             // The command bytes (normal memory) must be visible before the register write
             // (device memory) that starts the transfer, or the device reads a stale command
-            // (nifeos/record:notes/memory-ordering.md).
+            // (partsfoundry/record:notes/memory-ordering.md).
             // PAIR: none in this tree, and none possible: the reader is QEMU's `fw_cfg` model.
             core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
             let high = ((address >> 32) as u32).to_be();

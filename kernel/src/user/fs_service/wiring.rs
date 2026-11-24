@@ -1,7 +1,7 @@
 //! Wiring the service: the block server and the FS server, spawned once per boot and
 //! remembered, and the readiness sentinels a caller drains before either is running.
 //!
-//! See nifeos/record:notes/fs-server/kernel-wiring.md.
+//! See partsfoundry/record:notes/fs-server/kernel-wiring.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -123,7 +123,7 @@ fn wire_servers(
 /// region. `None` when there is no NVMe controller.
 ///
 /// BUGS: the FS server is given the whole disk, not the nife data partition, so it can address the
-/// EFI system partition and the table. See nifeos/record:notes/fs-server/kernel-wiring.md.
+/// EFI system partition and the table. See partsfoundry/record:notes/fs-server/kernel-wiring.md.
 fn nvme_disk() -> Option<(RendezvousId, Option<RendezvousId>, u64)> {
     let image = crate::user::program("non_volatile_memory_express")?;
     let wiring = crate::user::non_volatile_memory_express_service::ensure(image)?;
@@ -137,7 +137,7 @@ fn nvme_disk() -> Option<(RendezvousId, Option<RendezvousId>, u64)> {
 /// The DMA region is `1 + BLK_PAGES` contiguous pages: page 0 for the rings, request header and
 /// status, then the data pages, which are also the region shared with the client, so the device
 /// DMAs up to `BLK_PAGES` blocks straight into it. The crash test and `disk_service` start their
-/// own. See nifeos/record:notes/fs-server/block-server.md.
+/// own. See partsfoundry/record:notes/fs-server/block-server.md.
 pub(in crate::user) fn spawn_block_server(
     blk_image: &'static [u8],
     dev: crate::virtual_io::BlockDevice,

@@ -1,5 +1,5 @@
 //! The thread table: the fixed array of thread control block pointers, generational over
-//! [`MAXIMUM_THREADS`] slots, that every thread id names. See nifeos/record:notes/thread-control-block.md ("The
+//! [`MAXIMUM_THREADS`] slots, that every thread id names. See partsfoundry/record:notes/thread-control-block.md ("The
 //! thread table").
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
@@ -11,7 +11,7 @@ use super::*;
 /// measured number: a refused spawn cannot say how close the suite came.
 ///
 /// Context: updated with `fetch_max` by both inserts, under `IPC_TABLES`. See
-/// nifeos/record:notes/thread-control-block.md ("The peak").
+/// partsfoundry/record:notes/thread-control-block.md ("The peak").
 pub(super) static PEAK_THREADS: core::sync::atomic::AtomicUsize =
     core::sync::atomic::AtomicUsize::new(0);
 
@@ -22,7 +22,7 @@ pub(super) static PEAK_THREADS: core::sync::atomic::AtomicUsize =
 /// running thread only as a tid, so the slot needs no lock. Each core writes only its running
 /// thread's slot; a survey's relaxed read of a slot in flight is stale, never torn. Zeroed when a
 /// slot is filled, so a corpse keeps its time until it is reaped. See
-/// nifeos/record:notes/thread-control-block.md ("CPU time, per slot").
+/// partsfoundry/record:notes/thread-control-block.md ("CPU time, per slot").
 pub(super) static CPU_TICKS: [core::sync::atomic::AtomicU64; MAXIMUM_THREADS] =
     [const { core::sync::atomic::AtomicU64::new(0) }; MAXIMUM_THREADS];
 
@@ -68,9 +68,9 @@ pub(super) struct ThreadControlBlockPointer(*mut Thread);
 // SAFETY: see the type's doc; sending the pointer is sound because dereferencing it is gated.
 unsafe impl Send for ThreadControlBlockPointer {}
 
-/// The thread table: generational names (`nifeos/generational_table`, notes/generational-names.md) over
+/// The thread table: generational names (`partsfoundry/generational_table`, notes/generational-names.md) over
 /// page-resident TCBs, each at the start of one page that never moves, so the context-switch
-/// assembly and the intrusive queues may hold pointers into it. See nifeos/record:notes/thread-control-block.md.
+/// assembly and the intrusive queues may hold pointers into it. See partsfoundry/record:notes/thread-control-block.md.
 pub(super) struct Threads {
     pub(super) table: generational_table::Table<ThreadControlBlockPointer, MAXIMUM_THREADS>,
 }
@@ -252,7 +252,7 @@ impl Threads {
     /// an inbox lock; and the token's pointer is the one the table stores, which every later
     /// access derives from, not a `&mut Thread` from `get_mut`. `get_mut` is called again on
     /// queued threads, and each call would invalidate a token derived from an earlier one. See
-    /// nifeos/record:notes/thread-control-block.md ("Queue tokens").
+    /// partsfoundry/record:notes/thread-control-block.md ("Queue tokens").
     fn mint_token(&mut self, name: ThreadId) {
         let Some(node) = self.pointer(name).and_then(core::ptr::NonNull::new) else {
             return;

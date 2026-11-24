@@ -5,7 +5,7 @@
 //! A port has no page, so a port capability cannot be a mapping. Ring 3's access is gated by the
 //! TSS I/O permission bitmap, one bit per port and one bitmap per core (`segments`, §121 (a device
 //! capability when the device has no page: x86 port I/O)). These functions are instructions, so
-//! they live under `arch/`. See nifeos/record:notes/x86-port/cpu-state.md.
+//! they live under `arch/`. See partsfoundry/record:notes/x86-port/cpu-state.md.
 
 use core::arch::asm;
 

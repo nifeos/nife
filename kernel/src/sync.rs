@@ -4,7 +4,7 @@
 //! Either other order leaves a window where this core holds the lock with interrupts live, and a
 //! handler that wants the same lock spins forever. The guard restores the interrupt state it found
 //! rather than enabling, so a lock released inside a handler does not unmask it. See
-//! nifeos/record:notes/locking.md and DECISIONS §9 (locking).
+//! partsfoundry/record:notes/locking.md and DECISIONS §9 (locking).
 
 use core::mem::ManuallyDrop;
 use core::ops::{Deref, DerefMut};
@@ -14,9 +14,9 @@ use crate::arch::interrupts;
 
 /// Lock ranks: a lock may only be taken strictly below every rank this core already holds.
 ///
-/// A cycle is then unrepresentable, so an AB-BA deadlock cannot be written (nifeos/record:notes/deadlock.md).
+/// A cycle is then unrepresentable, so an AB-BA deadlock cannot be written (partsfoundry/record:notes/deadlock.md).
 /// Two locks at the same rank never nest. Why each rank sits where it does, and which locks it is
-/// taken under, is in nifeos/record:notes/locking.md, "The ranks, and why each sits where it does".
+/// taken under, is in partsfoundry/record:notes/locking.md, "The ranks, and why each sits where it does".
 pub mod rank {
     /// The user-built address spaces, behind `Object::AddressSpace`. Top of the order: a `MAP_INTO`
     /// takes `MEMORY_REGION` and `MAPPINGS` under it, and never `IPC_TABLES`.
@@ -37,7 +37,7 @@ pub mod rank {
     /// One thread's capability table, one lock per thread in its TCB page (provisional name).
     ///
     /// The running thread's own lookups take it alone; another thread's table is taken only under
-    /// `IPC_TABLES`; a holder takes nothing. See nifeos/record:notes/locking.md for why that order is the speed.
+    /// `IPC_TABLES`; a holder takes nothing. See partsfoundry/record:notes/locking.md for why that order is the speed.
     pub const CAPABILITY_TABLE: u32 = 57;
 
     /// The kernel's own object budget, the region kernel stacks draw from. Above `MEMORY_REGION`,
@@ -75,7 +75,7 @@ pub mod rank {
     /// The interrupt controller: the GIC on aarch64, the PLIC on RISC-V. Taken by the interrupt
     /// handler,
     /// which may print while holding it. One rank for two drivers that never coexist; `x86_64`
-    /// never takes it. See nifeos/record:notes/locking.md.
+    /// never takes it. See partsfoundry/record:notes/locking.md.
     ///
     /// Name: ratified 2026-10-27 (#2797).
     #[cfg_attr(target_arch = "x86_64", allow(dead_code))] // the GIC and PLIC drivers are its only takers
@@ -131,7 +131,7 @@ pub(crate) unsafe fn force_reset_ranks() {
 }
 
 /// Panic for a lock taken out of order. Out of line and cold, so no `lock()` site carries the
-/// formatted message (nifeos/record:notes/locking.md, "Why the lock path carries inline hints").
+/// formatted message (partsfoundry/record:notes/locking.md, "Why the lock path carries inline hints").
 ///
 /// Name: provisional, like every new function in this tree until an architect rules.
 #[cold]
@@ -171,7 +171,7 @@ impl<T> InterruptSafeMutualExclusionLock<T> {
     /// Mask interrupts, then take the lock, and return the guard that undoes both.
     ///
     /// Panics if this core holds a lock of `self`'s rank or lower. `#[inline]` so each codegen unit
-    /// decides for itself, the same on every host (nifeos/record:notes/locking.md).
+    /// decides for itself, the same on every host (partsfoundry/record:notes/locking.md).
     ///
     /// Context: any, interrupt handlers included.
     #[inline]
@@ -262,7 +262,7 @@ impl<T> Drop for InterruptSafeGuard<'_, T> {
     /// Release the lock, restore the rank found, then restore interrupts.
     ///
     /// `#[inline(always)]` so it lands in `.text.hot` with its caller on every build
-    /// (nifeos/record:notes/locking.md, "Why the lock path carries inline hints").
+    /// (partsfoundry/record:notes/locking.md, "Why the lock path carries inline hints").
     #[inline(always)]
     fn drop(&mut self) {
         // ORDER: release the lock, THEN restore interrupts. Reversing these leaves a window
@@ -299,7 +299,7 @@ impl<T> DerefMut for InterruptSafeGuard<'_, T> {
 mod tests {
     //! Tests for the kernel's lock.
 
-    /// The lock masks interrupts for as long as it is held (nifeos/record:notes/locking.md).
+    /// The lock masks interrupts for as long as it is held (partsfoundry/record:notes/locking.md).
     #[test_case]
     fn interrupt_safe_mutual_exclusion_lock_masks_interrupts_while_held() {
         use crate::arch::interrupts;
@@ -424,7 +424,7 @@ mod tests {
         );
     }
 
-    /// While holding a lock, only a strictly lower rank may be taken (nifeos/record:notes/deadlock.md).
+    /// While holding a lock, only a strictly lower rank may be taken (partsfoundry/record:notes/deadlock.md).
     #[test_case]
     fn the_hierarchy_permits_only_strictly_decreasing_ranks() {
         use crate::sync::{InterruptSafeMutualExclusionLock, rank, would_violate};

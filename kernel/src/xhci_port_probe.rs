@@ -2,7 +2,7 @@
 //!
 //! [`before_handoff`] prints the controller and every `PORTSC` as the firmware left them, and
 //! [`after_report`] every `PORTSC` after the driver's scan, then each port that moved, out to five
-//! seconds. It only reads, and stalls the boot about five seconds. See nifeos/record:notes/bench-boots.md.
+//! seconds. It only reads, and stalls the boot about five seconds. See partsfoundry/record:notes/bench-boots.md.
 //!
 //! Name: provisional, minted 2026-10-21 (UTC) by maintainer/xenon-usb-no-ports.
 

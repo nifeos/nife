@@ -6,7 +6,7 @@
 //! the context descriptors, and the command and event queues the SMMU is driven by.
 //!
 //! Default deny: `initialize` sets `GBPA.ABORT`, installs an all-invalid stream table and only then
-//! sets `SMMUEN`, so every stream aborts until `attach` writes its STE. See nifeos/record:notes/iommu.md, "The
+//! sets `SMMUEN`, so every stream aborts until `attach` writes its STE. See partsfoundry/record:notes/iommu.md, "The
 //! two arch drivers, structural twins", and its honest limits.
 //!
 //! # BUGS
@@ -221,7 +221,7 @@ fn cr0_set(base: u64, bits: u32) {
 /// `base` is the register page from the device tree. Everything aborts until `attach`.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(base: u64) {
     let mut g = SMMU.lock();
     assert!(g.is_none(), "SMMU initialized twice");
@@ -601,12 +601,12 @@ pub fn take_fault() -> Option<Fault> {
 }
 
 /// **Proofs over the word-building that decides which physical addresses a device may touch**
-/// (`nifeos/record:design/fatal-risks/README.md` risk 7).
+/// (`partsfoundry/record:design/fatal-risks/README.md` risk 7).
 ///
 /// The register accessors are unreachable to a harness, so `initialize`, `leaf_at`, `cmd_push`,
 /// `attach` and `take_fault` are unproved; so are the register offsets and bit constants, which
-/// only Arm IHI 0070 states. Nothing here covers the RISC-V IOMMU or VT-d. See nifeos/record:notes/iommu.md, "What is proved,
-/// as against tested", and nifeos/record:notes/kernel-proofs.md, "The stub boundary, enumerated".
+/// only Arm IHI 0070 states. Nothing here covers the RISC-V IOMMU or VT-d. See partsfoundry/record:notes/iommu.md, "What is proved,
+/// as against tested", and partsfoundry/record:notes/kernel-proofs.md, "The stub boundary, enumerated".
 #[cfg(kani)]
 mod proofs {
     use super::*;

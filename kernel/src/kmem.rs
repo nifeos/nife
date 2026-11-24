@@ -4,7 +4,7 @@
 //! After the carve the kernel cannot spend beyond it, so the frame allocator's count does not move
 //! when kernel threads come and go, and a steady-state test asserts exactly zero. Dead object pages
 //! go on a fixed free-stack and are reused page for page: a budget with reuse, not an allocator.
-//! See nifeos/record:notes/kernel-budget.md.
+//! See partsfoundry/record:notes/kernel-budget.md.
 
 use page_frames::FRAME_BYTES;
 
@@ -13,7 +13,7 @@ use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 /// The carve: 8192 pages (32 MiB). A thread costs 7 pages here (six of stack, see thread.rs
 /// `STACK_PAGES`, and one of TCB), so `sched::MAXIMUM_THREADS` (1024) takes 7168, endpoints about
 /// 60, and the rest is slack. Exhaustion fails the spawn or create cleanly; raising this is the fix
-/// when the image legitimately needs more. See nifeos/record:notes/kernel-budget.md.
+/// when the image legitimately needs more. See partsfoundry/record:notes/kernel-budget.md.
 const KERNEL_OBJ_PAGES: u64 = 8192;
 
 // A full thread table must fit the carve, or the thread ceiling moves down to here unannounced.

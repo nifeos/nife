@@ -7,7 +7,7 @@
 //! One retype is one call into `memory_region::split`, `retype_run` or `retype_object_page`, so a
 //! `MAP` counts once per page table it builds. The target is a thread, read from the core's
 //! current-thread word. Only the test kernel has it (`cfg(feature = "system_tests")`). See
-//! nifeos/record:notes/test-kernel-seams.md, which has the reasoning.
+//! partsfoundry/record:notes/test-kernel-seams.md, which has the reasoning.
 
 //! # BUGS
 //!

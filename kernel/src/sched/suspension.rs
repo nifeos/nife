@@ -5,7 +5,7 @@
 //! every teardown that finishes a blocked thread finishes a suspended one. `SUSPEND` records
 //! [`suspend_requested`](crate::thread::Thread::suspend_requested), and the thread parks where it
 //! next meets `schedule`: [`park_suspended_current`] leaving a core, [`park_popped_and_pop_again`]
-//! about to be switched onto one. See `nifeos/record:notes/suspend-and-resume.md`.
+//! about to be switched onto one. See `partsfoundry/record:notes/suspend-and-resume.md`.
 //!
 //! Name: provisional (lane/48-tcb-suspend-resume, 2026-10-18 UTC). The module and its four
 //! functions are provisional names.
@@ -169,7 +169,7 @@ fn wait_until_off_core(tid: ThreadId) {
 mod tests {
     //! §300's two promises, on the paths a real caller takes: a suspended thread runs no further,
     //! and a resumed one runs on from where it stopped rather than from its entry. One test per
-    //! hard case in `nifeos/record:notes/suspend-and-resume.md`: running on another core, blocked in IPC,
+    //! hard case in `partsfoundry/record:notes/suspend-and-resume.md`: running on another core, blocked in IPC,
     //! suspending itself, and a TCB with nothing to stop.
 
     use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};

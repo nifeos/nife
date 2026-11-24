@@ -9,21 +9,21 @@
 ///
 /// A fallback, not the answer: the boot paths ask the machine first
 /// ([`uart_interrupt_number_and_source`]), and
-/// on the JH7110 UART0 is PLIC line 32 (nifeos/record:notes/visionfive2.md, BUGS).
+/// on the JH7110 UART0 is PLIC line 32 (partsfoundry/record:notes/visionfive2.md, BUGS).
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md; `INTID` is the GIC's own term and stays.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md; `INTID` is the GIC's own term and stays.
 #[cfg(target_arch = "aarch64")]
 pub const UART_RECEIVE_INTID: u32 = 33;
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md; `INTID` is the GIC's own term and stays.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md; `INTID` is the GIC's own term and stays.
 #[cfg(target_arch = "riscv64")]
 pub const UART_RECEIVE_INTID: u32 = 10;
 /// `x86_64`: COM1 is ISA interrupt 4, the legacy line. It is neither the IO APIC input it may be
 /// remapped to (the ACPI MADT's overrides say, unread here) nor the IDT vector that input raises.
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md; `INTID` is the GIC's own term and stays.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md; `INTID` is the GIC's own term and stays.
 #[cfg(target_arch = "x86_64")]
 pub const UART_RECEIVE_INTID: u32 = 4;
 
@@ -72,7 +72,7 @@ pub const X86_COM1_PORT_COUNT: u16 = 8;
 
 /// Is there no UART page a device capability can map on this machine? True on `x86_64`, where
 /// [`UART_PHYS`] is zero (§121 (what a device capability is when the device has no
-/// page) (`nifeos/record:design/decisions/0121-port-io-capability.md`)).
+/// page) (`partsfoundry/record:design/decisions/0121-port-io-capability.md`)).
 ///
 /// A fixture that went ahead anyway would map physical page zero, read real-mode vector bytes, and
 /// report a green test for a device story x86 does not have.

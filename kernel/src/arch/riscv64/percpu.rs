@@ -1,5 +1,5 @@
 //! This hart's identity and its per-CPU block: the trap stash `sscratch` points at, the boot hart's
-//! id, and the `tp`-based per-CPU pointer. See nifeos/record:notes/riscv-port.md, the per-hart `tp` hazard.
+//! id, and the `tp`-based per-CPU pointer. See partsfoundry/record:notes/riscv-port.md, the per-hart `tp` hazard.
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
@@ -88,7 +88,7 @@ const _: () = assert!(
 );
 
 /// This hart's `PerCpu::current`, in one `ld` from `tp`, so a migration cannot fall between finding
-/// the block and reading the field (nifeos/record:notes/mmu.md, BUGS).
+/// the block and reading the field (partsfoundry/record:notes/mmu.md, BUGS).
 ///
 /// `tp` is right at every S-mode instruction: `switch_to` never touches it, and `trap.s` returns to
 /// S-mode with the live hart's `tp`.

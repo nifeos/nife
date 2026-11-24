@@ -1,6 +1,6 @@
 //! The crash test's own service, on its own disk (§34 (RedoxFS is the primary filesystem, on three
 //! conditions), condition 1): a filesystem killed mid-transaction, and the fresh server that mounts
-//! what it left behind. See nifeos/record:notes/fs-server/crash-consistency.md.
+//! what it left behind. See partsfoundry/record:notes/fs-server/crash-consistency.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.

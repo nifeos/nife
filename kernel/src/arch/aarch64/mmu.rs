@@ -2,8 +2,8 @@
 //!
 //! The instruction after a table switch is fetched through the new tables, so a map that misses
 //! the running code stops the machine without a message; `verify` walks the tables first.
-//! `cargo xtask gdb` is the tool for this moment. See nifeos/record:notes/mmu.md, "What
-//! `kernel/src/arch/aarch64/mmu.rs` holds to", nifeos/record:notes/page-tables.md and nifeos/record:notes/higher-half.md.
+//! `cargo xtask gdb` is the tool for this moment. See partsfoundry/record:notes/mmu.md, "What
+//! `kernel/src/arch/aarch64/mmu.rs` holds to", partsfoundry/record:notes/page-tables.md and partsfoundry/record:notes/higher-half.md.
 
 use core::ffi::c_void;
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -16,7 +16,7 @@ use crate::{memory, println};
 
 /// This architecture's page-table format. Portable code that must name the format (the user-VA gate
 /// in system call.rs, the user `Mapper` in user.rs) refers to it as `arch::mmu::Format`, so the choice
-/// of format lives in `arch/`, not in the portable kernel. See nifeos/record:notes/riscv-port.md (leak #2).
+/// of format lives in `arch/`, not in the portable kernel. See partsfoundry/record:notes/riscv-port.md (leak #2).
 pub type Format = Aarch64;
 
 // ---- the translation registers' fields ----
@@ -87,7 +87,7 @@ fn ttbr1_root() -> u64 {
 ///
 /// Only bits 63:48, which are not translated: `VA = PA | KERNEL_VA_BASE` is exact and reversible,
 /// and a kernel address has its physical address's table indices, so boot.s can point both TTBRs
-/// at one table. See nifeos/record:notes/higher-half.md.
+/// at one table. See partsfoundry/record:notes/higher-half.md.
 pub const KERNEL_VA_BASE: u64 = 0xffff_0000_0000_0000;
 
 /// **Where kernel thread stacks live, virtually** (`thread.rs`'s `STACK_AREA`).
@@ -116,7 +116,7 @@ pub const fn virt_to_phys(va: u64) -> u64 {
 /// The PL011. Mapped as **device** memory, and that word is load-bearing.
 ///
 /// As normal memory the CPU may speculatively read it, and reading a FIFO register consumes the
-/// byte. See nifeos/record:notes/page-tables.md.
+/// byte. See partsfoundry/record:notes/page-tables.md.
 const UART_BASE: u64 = 0x0900_0000;
 const UART_SIZE: u64 = 0x1000;
 
@@ -134,7 +134,7 @@ pub fn phys_to_ptr(pa: u64) -> *mut PageTable {
 /// the empty reserved table. Called already running at high virtual addresses.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     let root = memory::alloc()
         .expect("no frame for the root page table")
@@ -243,7 +243,7 @@ where
     map_range(m, stack_bottom(), stack_top(), Flags::kernel_data())?;
 
     // 4b. The secondary stacks, slot by slot so each slot's bottom page stays a guard. They are
-    // outside `.bss` because step 2 maps that in one range. See nifeos/record:notes/stack-high-water.md.
+    // outside `.bss` because step 2 maps that in one range. See partsfoundry/record:notes/stack-high-water.md.
     for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (bottom, top) = crate::smp::secondary_stack_span(id);
         map_range(m, bottom, top, Flags::kernel_data())?;
@@ -491,7 +491,7 @@ unsafe fn install(root: u64) {
 /// An empty L0 table, installed in `TTBR0_EL1` whenever no user address space is active.
 ///
 /// A low address from EL1 walks it and faults; swapping a user space is one `msr ttbr0_el1`. See
-/// nifeos/record:notes/mmu.md.
+/// partsfoundry/record:notes/mmu.md.
 static RESERVED_TTBR0: AtomicU64 = AtomicU64::new(0);
 
 /// Allocate and install the empty TTBR0 root. Called at the end of `initialize`.
@@ -547,7 +547,7 @@ pub(crate) fn share_kernel_half(_root: u64) {}
 /// Point `TTBR0_EL1` at a composed root-plus-ASID value ([`ttbr0_value`]). **No TLB flush.**
 ///
 /// Every user mapping is tagged with its space's ASID, so the old space's entries stop matching.
-/// See nifeos/record:notes/address-space-identifiers.md.
+/// See partsfoundry/record:notes/address-space-identifiers.md.
 ///
 /// # Safety
 /// The root inside `ttbr` must be a page-aligned L0 table whose descriptors are all valid or
@@ -607,7 +607,7 @@ pub fn deactivate_user() {
 
 /// **Could EL0 read this address?** Asked of the silicon with `AT S1E0R`, not of the kernel's own
 /// permission model. Only the system tests call it: no system call dereferences a user pointer. See
-/// nifeos/record:notes/mmu.md, "What `kernel/src/arch/aarch64/mmu.rs` holds to".
+/// partsfoundry/record:notes/mmu.md, "What `kernel/src/arch/aarch64/mmu.rs` holds to".
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn user_can_read(va: u64) -> bool {
     // SAFETY: address translation has no side effects beyond PAR_EL1.
@@ -829,7 +829,7 @@ pub(crate) fn reserved_root() -> u64 {
 /// `ttbr` must be a value [`ttbr0_value`] composed over a **live** `AddressSpace`'s L0 root and the
 /// ASID that owns its mappings, or [`reserved_root`]. The table must outlive every instruction
 /// executed at EL0 until some later write to `TTBR0_EL1` replaces it. Why this is a contract and
-/// not a type is in nifeos/record:notes/mmu.md.
+/// not a type is in partsfoundry/record:notes/mmu.md.
 pub(crate) unsafe fn switch_user_root(ttbr: u64) {
     if instructions::read_ttbr0() == ttbr {
         return;
@@ -1156,7 +1156,7 @@ mod tests {
 
     /// The UART is device-typed.
     ///
-    /// See `UART_BASE` and nifeos/record:notes/page-tables.md.
+    /// See `UART_BASE` and partsfoundry/record:notes/page-tables.md.
     #[test_case]
     fn the_uart_is_mapped_as_device_memory() {
         use crate::arch::mmu;

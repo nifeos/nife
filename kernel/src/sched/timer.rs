@@ -1,5 +1,5 @@
 //! Timers: one-shot deadlines that signal a notification, armed and cancelled by their holder and
-//! expired from the tick. See nifeos/record:notes/timer-capability.md.
+//! expired from the tick. See partsfoundry/record:notes/timer-capability.md.
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).

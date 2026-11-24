@@ -77,7 +77,7 @@ pub struct Wiring {
 ///
 /// Returns once the compositor is spawned. A caller may spawn clients before `status::COMP_UP`
 /// arrives on [`Wiring::report`], since a client's first act is a content-free `HELLO`. See
-/// nifeos/record:notes/compositor/kernel-wiring.md.
+/// partsfoundry/record:notes/compositor/kernel-wiring.md.
 pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> Wiring {
     assert!(n <= SCENE.len() && n <= compositor::MAXIMUM_WINDOWS && focusable <= n);
     let image = program("compositor").expect("no compositor program in the initial ramdisk");
@@ -217,7 +217,7 @@ impl Wiring {
     ///
     /// BUGS: the slot's frames are mapped as they are, not scrubbed, so a client spawned into a
     /// slot an earlier client used would see that client's last pixels until it painted. Nothing
-    /// respawns a client today. Read from this code, not run. See nifeos/record:notes/compositor-claim-25.md.
+    /// respawns a client today. Read from this code, not run. See partsfoundry/record:notes/compositor-claim-25.md.
     pub fn spawn_client(&self, i: usize, role: u64) {
         self.spawn_client_probing(i, role, self.neighbour_probe_va(i));
     }
@@ -269,7 +269,7 @@ impl Wiring {
 
         // The screen (slot 3, `READ` only) and its map budget (slot 4) go only to `ROLE_CAPTURE`, by
         // `grant_at`, since a sequential fill cannot leave slot 2 empty. See
-        // nifeos/record:notes/compositor/kernel-wiring.md.
+        // partsfoundry/record:notes/compositor/kernel-wiring.md.
         let capture_budget = if role & ROLE_CAPTURE != 0 {
             Some(
                 crate::memory_region::create(MAP_BUDGET_PAGES)
@@ -386,7 +386,7 @@ impl Wiring {
         // PAIR: `drain_input` in components/src/compositor.rs, which reads `TAIL` and then the
         // bytes, the single reader of every writer of the ring. The `ipc_call` below also orders
         // this producer on its own (the compositor is blocked in `receive_capability` on the doorbell);
-        // see nifeos/record:notes/memory-ordering.md.
+        // see partsfoundry/record:notes/memory-ordering.md.
         core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
         // SAFETY: inside the ring frame.
         unsafe {
@@ -414,7 +414,7 @@ impl Wiring {
     /// Its input endpoint is also the endpoint it serves, since it has one wait point (§33 (the
     /// compositor's authority is memory, not messages)). Returns the output page and that endpoint.
     /// Panics unless `i` is below `focusable`, since otherwise the terminal would hold no endpoint
-    /// to serve. See nifeos/record:notes/compositor/kernel-wiring.md.
+    /// to serve. See partsfoundry/record:notes/compositor/kernel-wiring.md.
     pub fn spawn_terminal(&self, i: usize) -> TermClient {
         assert!(
             i < self.focusable,

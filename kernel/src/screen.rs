@@ -6,7 +6,7 @@
 //! *Module name provisional (AGENTS.md: an architect names modules).*
 //!
 //! The pixels are a static because the region must be contiguous and owned before the frame
-//! allocator exists. See nifeos/record:notes/serial-less-output/ramfb.md.
+//! allocator exists. See partsfoundry/record:notes/serial-less-output/ramfb.md.
 //!
 
 //! # EXAMPLES

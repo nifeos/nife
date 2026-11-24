@@ -1,8 +1,8 @@
 //! PL011 UART driver, aarch64's console.
 //!
 //! Constructed with a base address, it reaches into no globals (§4 (kernel shape)); whoever owns
-//! it decides where it lives. See nifeos/record:notes/uart.md and
-//! nifeos/record:notes/portability.md.
+//! it decides where it lives. See partsfoundry/record:notes/uart.md and
+//! partsfoundry/record:notes/portability.md.
 
 // Register offsets from the base and the bits this driver uses, from the PrimeCell UART (PL011)
 // Technical Reference Manual (Arm DDI 0183), chapter 3, "Programmers Model", under each
@@ -87,7 +87,7 @@ impl Pl011 {
     /// Configure the UART: 8 data bits, no parity, one stop bit, FIFOs on.
     ///
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-    /// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+    /// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self) {
         // Turn the UART off while we reconfigure it.
         self.write(CR, 0);
@@ -132,7 +132,7 @@ impl Pl011 {
     /// `Ns16550::discard_waiting_bytes`, deliberately.
     ///
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// nifeos/record:design/naming/acronyms-and-abbreviations.md; `discard_waiting_bytes` drops the bytes
+    /// partsfoundry/record:design/naming/acronyms-and-abbreviations.md; `discard_waiting_bytes` drops the bytes
     /// `is_byte_waiting` would have reported.
     pub fn discard_waiting_bytes(&self) {
         let mut bound = 64u32;
@@ -153,7 +153,7 @@ impl Pl011 {
     /// Wait until every byte written has left the wire: polls `UARTFR.BUSY` (FIFO or shift register
     /// still transmitting), where [`write_byte`](Self::write_byte) only waits for room. The twin of
     /// `Ns16550::drain_transmitter`, bounded the same way, for `arch::reboot`'s PSCI call
-    /// (nifeos/record:notes/kernel-console.md, "Escapes from the ring").
+    /// (partsfoundry/record:notes/kernel-console.md, "Escapes from the ring").
     ///
     /// Name: provisional for milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write),
     /// 2026-10-10: calef names public items.
@@ -171,7 +171,7 @@ impl Pl011 {
 /// The entire formatting engine (`{:?}`, `{:x}`, width, padding) lives in
 /// `core::fmt`, which we still have without `std`. All `std` was ever contributing
 /// was *somewhere for the bytes to go*. We supply that in five lines.
-/// See nifeos/record:notes/no-std.md.
+/// See partsfoundry/record:notes/no-std.md.
 impl core::fmt::Write for Pl011 {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         for byte in s.bytes() {

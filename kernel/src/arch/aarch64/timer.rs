@@ -2,7 +2,7 @@
 //!
 //! Part of the CPU, reached through system registers, one per core. The handler re-arms from the
 //! absolute deadline (`CNTV_CVAL_EL0`), so the ticks sit on a grid anchored at boot. See
-//! nifeos/record:notes/aarch64-port.md, "The Generic Timer", and nifeos/record:notes/interrupts.md.
+//! partsfoundry/record:notes/aarch64-port.md, "The Generic Timer", and partsfoundry/record:notes/interrupts.md.
 
 // `ticks`, `missed_ticks`, `uptime_milliseconds` and `interval` have no caller outside this file's tests on
 // aarch64, so each is `cfg_attr(not(test), allow(dead_code))` rather than the whole module.
@@ -16,7 +16,7 @@ use crate::cpu::{self, MAXIMUM_CPUS};
 ///
 /// A PPI, per core: the device tree's `interrupts = <1 11 ...>` is PPI 11, and PPIs start at INTID
 /// 16. The virtual timer, not the physical one, because a hypervisor owns the physical timer and
-/// a guest that touches it traps. See nifeos/record:notes/virtualization.md.
+/// a guest that touches it traps. See partsfoundry/record:notes/virtualization.md.
 pub(crate) const TIMER_INTID: u32 = 27;
 
 // `CNTV_CTL_EL0` (Arm DDI 0487, CNTV_CTL_EL0): bit 0 `ENABLE`, bit 1 `IMASK` (set masks the line,
@@ -55,7 +55,7 @@ static COUNTER_OPEN: [AtomicBool; MAXIMUM_CPUS] = [const { AtomicBool::new(false
 /// The GIC must already be up: this enables [`TIMER_INTID`] at it.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     let freq = instructions::read_cntfrq();
     assert!(
@@ -64,7 +64,7 @@ pub fn initialize() {
          nonsense"
     );
 
-    // EL0 may read `CNTVCT_EL0` and `CNTFRQ_EL0`, a deliberate exception to §10 (process model: capability-based, microkernel), nifeos/record:notes/abi.md;
+    // EL0 may read `CNTVCT_EL0` and `CNTFRQ_EL0`, a deliberate exception to §10 (process model: capability-based, microkernel), partsfoundry/record:notes/abi.md;
     // the physical counter and the timer registers stay trapped. EL0VCTEN is bit 1 (Arm DDI 0487,
     // CNTKCTL_EL1).
     const EL0VCTEN: u64 = 1 << 1;
@@ -84,7 +84,7 @@ pub fn initialize() {
 /// Write `PMUSERENR_EL0 = 0`, so EL0 cannot read the **cycle** counter.
 ///
 /// Per core, beside the `CNTKCTL_EL1` write, because the register is banked and resets to an
-/// UNKNOWN value. See nifeos/record:notes/pmu.md, "Who may read the cycle counter from EL0".
+/// UNKNOWN value. See partsfoundry/record:notes/pmu.md, "Who may read the cycle counter from EL0".
 fn close_cycle_counter_to_el0() {
     // Without FEAT_PMUv3 the register does not exist and an access is UNDEFINED.
     if !super::pmu::is_pmuv3_present() {
@@ -115,7 +115,7 @@ pub fn is_cycle_counter_grantable() -> bool {
 
 /// **Open or close EL0's view of `PMCCNTR_EL0` for the thread about to run** (DECISIONS 139
 /// option 4). Writes `PMUSERENR_EL0.CR` and nothing else, and only when the value changes. No
-/// `isb`: the way back to EL0 is an `eret`. See nifeos/record:notes/pmu.md, "Who may read the cycle counter".
+/// `isb`: the way back to EL0 is an `eret`. See partsfoundry/record:notes/pmu.md, "Who may read the cycle counter".
 ///
 /// # BUGS
 ///
@@ -162,7 +162,7 @@ fn start(interval: u64) {
 /// not what the timer calls)): **`previous + interval`, not `now + interval`**, so the deadlines
 /// stay on the boot grid. A tick that arrives late comes back onto its original beat and fires
 /// once, rather than in a loop. The arch layer only reads the registers, counts the miss and arms.
-/// See nifeos/record:notes/aarch64-port.md, "The Generic Timer".
+/// See partsfoundry/record:notes/aarch64-port.md, "The Generic Timer".
 fn rearm(interval: u64) {
     let now = instructions::read_cntvct();
     // Read before the write below: the icount instrument compares the arrival against it.
@@ -200,7 +200,7 @@ pub(crate) const ARRIVAL_BOUND: u64 = 2_000;
 /// write.
 ///
 /// A miss is this exceeding one tick period, 10,000,000 instructions at 100 Hz, so the bound is
-/// about 4,000 times tighter, and no host can move it. See nifeos/record:notes/instruction-clock.md.
+/// about 4,000 times tighter, and no host can move it. See partsfoundry/record:notes/instruction-clock.md.
 #[cfg(feature = "icount")]
 pub(crate) const HANDLER_BOUND: u64 = 2_500;
 
@@ -313,7 +313,7 @@ pub fn ticks() -> u64 {
 /// measuring can move between the two reads.
 ///
 /// A kernel thread can be stolen by an idle core at any preemption point (§28 (SMP placement)),
-/// so two reads of [`ticks`] may be of two counters. See nifeos/record:notes/load-sensitive-assertions.md.
+/// so two reads of [`ticks`] may be of two counters. See partsfoundry/record:notes/load-sensitive-assertions.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) fn ticks_on(cpu: usize) -> u64 {
     TICKS[cpu].load(Ordering::Relaxed)
@@ -333,7 +333,7 @@ pub fn frequency() -> u64 {
 /// `CNTFRQ_EL0` is written by firmware, and `arm,armv8-timer`'s optional `clock-frequency` exists
 /// for boards where firmware gets it wrong. This refuses rather than preferring either (calef,
 /// 2026-09-21 UTC). QEMU's `virt` states no such property, so only the absent path has run. See
-/// nifeos/record:notes/aarch64-port.md, "The counter's rate is checked against the device tree".
+/// partsfoundry/record:notes/aarch64-port.md, "The counter's rate is checked against the device tree".
 ///
 /// # Panics
 ///
@@ -384,9 +384,9 @@ pub fn uptime_milliseconds() -> u64 {
 /// or not interrupts are masked.
 ///
 /// The emulator can raise the timer tens of milliseconds after the deadline, so tests that hold a
-/// tick across a mask wait for this bit. See nifeos/record:notes/load-sensitive-assertions.md.
+/// tick across a mask wait for this bit. See partsfoundry/record:notes/load-sensitive-assertions.md.
 ///
-/// Name: ratified 2026-09-24 (calef, the Rust predicate-naming rule in nifeos/record:design/naming.md). Refused
+/// Name: ratified 2026-09-24 (calef, the Rust predicate-naming rule in partsfoundry/record:design/naming.md). Refused
 /// `tick_pending` (a bare participle reads as a getter, and Rust asks the question with `is_`).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn is_tick_pending() -> bool {
@@ -474,7 +474,7 @@ mod tests {
     ///
     /// Over a window with no miss, [`rearm`] moves `CNTV_CVAL_EL0` by exactly one interval per
     /// delivered tick; re-arming with `TVAL` fails it on the first tick. Kept in lockstep with the
-    /// riscv64 twin. See nifeos/record:notes/aarch64-port.md, "What the timer tests can and cannot claim".
+    /// riscv64 twin. See partsfoundry/record:notes/aarch64-port.md, "What the timer tests can and cannot claim".
     #[test_case]
     fn ticks_arrive_at_the_configured_rate() {
         use crate::arch::timer;
@@ -520,7 +520,7 @@ mod tests {
                  periods, so a window containing one proves nothing about the one-interval law, and whether these misses are a \
                  contended host or a slow handler is the one question a wall clock cannot answer \
                  from inside the guest. `script/icount` answers it and asserts this same law with \
-                 no host term in it. Milestone 62; nifeos/record:notes/load-sensitive-assertions.md.)",
+                 no host term in it. Milestone 62; partsfoundry/record:notes/load-sensitive-assertions.md.)",
                 ATTEMPTS,
                 misses,
                 now.saturating_sub(next),
@@ -549,13 +549,13 @@ mod tests {
 
     // No wall-clock test bounds the handler's latency: a slow handler and a descheduled host land
     // in the same band. `script/icount` bounds it in instructions. See
-    // nifeos/record:notes/load-sensitive-assertions/timer-assertion-disposition.md.
+    // partsfoundry/record:notes/load-sensitive-assertions/timer-assertion-disposition.md.
 
     /// **The cost of masking, made visible.**
     ///
     /// A lock held across more than one tick period loses a tick, which is why DECISIONS §9 keeps
     /// critical sections short. If it stopped costing one, `InterruptSafeMutualExclusionLock` would have stopped
-    /// masking. See nifeos/record:notes/interrupts.md.
+    /// masking. See partsfoundry/record:notes/interrupts.md.
     #[test_case]
     fn a_long_critical_section_costs_a_tick() {
         use crate::arch::timer;
@@ -650,9 +650,9 @@ mod tests {
         );
     }
 
-    /// **No tick lands while a lock is held**, the deadlock DECISIONS §9 and nifeos/record:notes/locking.md
+    /// **No tick lands while a lock is held**, the deadlock DECISIONS §9 and partsfoundry/record:notes/locking.md
     /// exist to prevent. Confirms ticks flow, holds a lock across three periods, asserts none
-    /// landed and one is pending, then releases and watches them resume. See nifeos/record:notes/interrupts.md,
+    /// landed and one is pending, then releases and watches them resume. See partsfoundry/record:notes/interrupts.md,
     /// "The test the whole locking discipline was written for".
     #[test_case]
     fn holding_a_lock_masks_the_timer() {
@@ -689,7 +689,7 @@ mod tests {
                 timer::ticks_on(cpu),
                 before,
                 "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutualExclusionLock is not masking, \
-                 and the deadlock in nifeos/record:notes/locking.md is live: a handler that touched this lock \
+                 and the deadlock in partsfoundry/record:notes/locking.md is live: a handler that touched this lock \
                  would spin forever waiting for code that cannot run."
             );
 
@@ -705,7 +705,7 @@ mod tests {
                 timer::ticks_on(cpu),
                 before,
                 "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutualExclusionLock is not masking, \
-                 and the deadlock in nifeos/record:notes/locking.md is live: a handler that touched this lock \
+                 and the deadlock in partsfoundry/record:notes/locking.md is live: a handler that touched this lock \
                  would spin forever waiting for code that cannot run."
             );
             (cpu, before)
@@ -744,7 +744,7 @@ mod tests {
 
     /// Wait for `cond`, bounded in tick periods of the free-running counter, checking once a
     /// period. Used only on the "has it happened yet" side of a property, where a busy host makes
-    /// a late pass rather than a wrong answer. See nifeos/record:notes/load-sensitive-assertions.md.
+    /// a late pass rather than a wrong answer. See partsfoundry/record:notes/load-sensitive-assertions.md.
     fn within_periods(periods: u32, mut cond: impl FnMut() -> bool) -> bool {
         for _ in 0..periods {
             if cond() {

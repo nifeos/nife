@@ -22,7 +22,7 @@ pub const KERNEL_VA_BASE: u64 = 0xffff_ffff_8000_0000;
 /// `0xffff888000000000`, Linux's `page_offset_base`. It must be canonically high, clear of
 /// PML4[511] where the image lives and of the low half ring 3 gets, with room above it for all of
 /// physical memory (it has 64 TiB). `boot.s` installs its PML4 entry before any Rust runs, so the
-/// arithmetic below is valid from the first instruction. See nifeos/record:notes/x86-port/kernel-page-tables.md.
+/// arithmetic below is valid from the first instruction. See partsfoundry/record:notes/x86-port/kernel-page-tables.md.
 ///
 /// Name: provisional (milestone 161 (the `x86_64` kernel port)): calef names the constants, and
 /// this one was minted by a lane. The tree's analogous name is [`KERNEL_VA_BASE`], which is why
@@ -35,7 +35,7 @@ pub const DIRECT_MAP_BASE: u64 = 0xffff_8880_0000_0000;
 /// `0xffff_c900_0000_0000` is Linux's `VMALLOC_START`. The other architectures' expression,
 /// `KERNEL_VA_BASE | 0x10_0000_0000`, is the identity here, because this `KERNEL_VA_BASE` already
 /// has those bits set, and would put every stack over `.text`. See
-/// nifeos/record:notes/x86-port/kernel-page-tables.md.
+/// partsfoundry/record:notes/x86-port/kernel-page-tables.md.
 ///
 /// Name: provisional (milestone 161, roadmap item 4).
 pub const THREAD_STACK_AREA: u64 = 0xffff_c900_0000_0000;
@@ -108,7 +108,7 @@ pub(crate) const IO_APIC_PHYS: u64 = 0xfec0_0000;
 /// window comes from ACPI's MCFG through `memory::pci_regions()`. It stays as the value
 /// `machine::print_acpi_summary` prints the MCFG's answer against, which on x86 is no equality
 /// invariant: firmware places the window (OVMF at `0xe000_0000`, xenon at `0xf000_0000`), so the
-/// two agree only on q35 under `SeaBIOS`. See nifeos/record:notes/x86-port/kernel-page-tables.md.
+/// two agree only on q35 under `SeaBIOS`. See partsfoundry/record:notes/x86-port/kernel-page-tables.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) const PCI_ECAM_PHYS: u64 = 0xb000_0000;
 

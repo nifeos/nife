@@ -3,9 +3,9 @@
 //! The timer fires, the handler calls [`schedule`], and the CPU is taken from a thread that never
 //! asked to give it up (DECISIONS §5 (preemptive threads with real stacks)). Three rules hold:
 //! release the run-queue lock before switching, keep interrupts masked across the switch, and
-//! have a brand-new thread unmask its own interrupts. nifeos/record:notes/threads.md says why breaking each is a
+//! have a brand-new thread unmask its own interrupts. partsfoundry/record:notes/threads.md says why breaking each is a
 //! bug (its "Three rules" and "A brand-new thread unmasks its own interrupts"), and
-//! nifeos/record:notes/scheduler.md covers the per-core queues, placement and stealing.
+//! partsfoundry/record:notes/scheduler.md covers the per-core queues, placement and stealing.
 
 use core::sync::atomic::{AtomicPtr, AtomicU32, AtomicU64, Ordering};
 
@@ -78,7 +78,7 @@ pub use timer::*;
 /// **Per-cpu ring of the last few scheduler events** (module name provisional): the last
 /// [`trace::DEPTH`] events each core performed, which [`dump_threads`] prints, so the path into a
 /// wedge is on the serial log. One writer per ring, its own core; compiled out of `--features
-/// bench` builds. See nifeos/record:notes/scheduler-instruments.md.
+/// bench` builds. See partsfoundry/record:notes/scheduler-instruments.md.
 #[cfg(not(feature = "bench"))]
 mod trace;
 
@@ -92,14 +92,14 @@ mod trace;
 /// **A corruption tripwire over `IpcTables`'s registries** (module name provisional): armed, it
 /// re-reads the thread table and the rendezvous registry on each tick and prints every byte that
 /// changed. It shows rather than judges. Unarmed it costs one relaxed load per tick; compiled out
-/// of `--features bench` builds. See nifeos/record:notes/scheduler-instruments.md.
+/// of `--features bench` builds. See partsfoundry/record:notes/scheduler-instruments.md.
 ///
 /// # BUGS
 ///
 /// - Nothing calls it, so nothing outside its own kernel test exercises arming it.
 #[cfg(not(feature = "bench"))]
 // An exception, marked as AGENTS.md asks: nothing arms this today, and it is kept because it is
-// how a board hang gets diagnosed. nifeos/record:notes/scheduler-instruments.md has the case for keeping it.
+// how a board hang gets diagnosed. partsfoundry/record:notes/scheduler-instruments.md has the case for keeping it.
 #[allow(dead_code)]
 mod canary;
 

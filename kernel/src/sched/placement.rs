@@ -1,5 +1,5 @@
 //! Where a thread runs: spawn placement, the secondary cores' idle loops and inboxes, work
-//! stealing, and the choice of a core for a woken thread. See nifeos/record:notes/scheduler.md.
+//! stealing, and the choice of a core for a woken thread. See partsfoundry/record:notes/scheduler.md.
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).
@@ -83,14 +83,14 @@ pub fn drain_inbox() {
 /// Returns the core owed a reschedule SGI, which the caller sends after releasing `IPC_TABLES` and
 /// never re-derives from [`cpu::id()`]: a steal in between would strand the thread. The inbox lock
 /// orders the thread-table insert before the drain (§11 (SMP)). See
-/// nifeos/record:notes/scheduler/missed-reschedule-poke.md.
+/// partsfoundry/record:notes/scheduler/missed-reschedule-poke.md.
 ///
 /// Context: caller holds `IPC_TABLES` (interrupts masked); takes the target's inbox lock.
 ///
 /// # BUGS
 /// The `#[must_use]` meant for this answer sits on `spawn_on`, so dropping it here compiles.
 pub(super) fn place_on(target: usize, thread: Unqueued<Thread>) -> Option<usize> {
-    // A remote parked core's inbox is drained by nothing (nifeos/record:notes/visionfive2.md, third stop). The
+    // A remote parked core's inbox is drained by nothing (partsfoundry/record:notes/visionfive2.md, third stop). The
     // release board build compiles this out; `dump_threads`'s parked-inbox line is the field
     // diagnostic. Placing onto oneself is exempt: a secondary's bring-up probe spawns onto its own
     // core one step before that core sets its online bit, and a local push needs no drain.
@@ -149,7 +149,7 @@ pub(super) fn pick_spawn_target() -> usize {
 #[inline(never)]
 pub fn serve_steal_request() {
     // The acquire/release pairing and the read-and-clear are in `steal_request`, where loom checks
-    // them (nifeos/record:notes/interleaving.md).
+    // them (partsfoundry/record:notes/interleaving.md).
     let Some(requester) = cpu::current().steal_request.take() else {
         return;
     };
@@ -203,7 +203,7 @@ pub(super) fn try_initiate_steal() {
 /// It does not drain its own inbox before parking (§133 (whether an idle core should drain its own
 /// inbox before parking)): a missed reschedule SGI then wedges loudly, with a watchdog dump naming
 /// the stranded thread, instead of starting threads late. See
-/// nifeos/record:notes/scheduler/missed-reschedule-poke.md.
+/// partsfoundry/record:notes/scheduler/missed-reschedule-poke.md.
 pub fn run_idle() -> ! {
     loop {
         // Gauges, here because this is where the kernel reaches after every phase of a boot with
@@ -240,12 +240,12 @@ pub(super) fn pick_wake_target() -> usize {
 /// A device-interrupt wake (§28.2): load-aware, not local, placed on [`pick_wake_target`]'s choice,
 /// because an interrupt carries no locality. Returns `Some(target)` when that is a remote core, so
 /// the caller sends the reschedule SGI after releasing `IPC_TABLES`; `None` when it stayed local or
-/// the wake was refused or deferred. See nifeos/record:notes/scheduler.md ("Wakes").
+/// the wake was refused or deferred. See partsfoundry/record:notes/scheduler.md ("Wakes").
 ///
 /// Context: caller holds `IPC_TABLES`.
 pub(super) fn wake_load_aware(sched: &mut IpcTables, tid: ThreadId) -> Option<usize> {
     let t = sched.threads.get_mut(tid)?;
-    // The decision is `Handshake::try_wake`, which loom searches (nifeos/record:notes/interleaving.md).
+    // The decision is `Handshake::try_wake`, which loom searches (partsfoundry/record:notes/interleaving.md).
     match t.handshake.try_wake() {
         WakeVerdict::NotBlocked => None,
         WakeVerdict::Refused => {

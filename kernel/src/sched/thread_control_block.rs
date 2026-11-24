@@ -1,6 +1,6 @@
 //! Thread control blocks: creating one from a region, inserting capabilities before it starts,
 //! starting it, and the binders that name what a thread is bound to. Configuring an embryo is
-//! [`configure`]. See nifeos/record:notes/thread-control-block.md.
+//! [`configure`]. See partsfoundry/record:notes/thread-control-block.md.
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).
@@ -138,7 +138,7 @@ pub fn supervise_current_thread(ep: RendezvousId, label: u64) {
 /// thread gets its kernel stack and entry context and is placed by the power of two choices.
 pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), moho_abi::Error> {
     // Built before `IPC_TABLES` is taken: it maps pages and allocates frames, which other cores'
-    // IPC would wait behind (nifeos/record:notes/job-mix/null-system-call-under-load.md). Declared before the guard,
+    // IPC would wait behind (partsfoundry/record:notes/job-mix/null-system-call-under-load.md). Declared before the guard,
     // so a refusal releases the lock first; a missing stack is still reported after the checks.
     let stack = crate::thread::KernelStack::new();
     let mut guard = IPC_TABLES.lock();

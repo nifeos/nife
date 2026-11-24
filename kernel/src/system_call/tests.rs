@@ -184,7 +184,7 @@ fn a_slice_maps_only_its_window() {
 
 /// **`RETYPE` mints a run, `0` still means one page, and a run that does not fit moves
 /// nothing** (calef's ruling of 2026-09-26, option A of
-/// nifeos/record:design/roadmap/0659-a-region-retypes-a-frame-run.md). Through the real handler, so the
+/// partsfoundry/record:design/roadmap/0659-a-region-retypes-a-frame-run.md). Through the real handler, so the
 /// argument reaches the proved arithmetic and the capability names the whole run.
 #[test_case]
 fn retype_mints_a_run_and_a_refused_run_moves_nothing() {

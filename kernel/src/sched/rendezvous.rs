@@ -1,5 +1,5 @@
 //! **Rendezvous**: creating one, and send, receive, call and reply on it, with capability transfer
-//! and the stranding of callers whose server is gone. See nifeos/record:notes/scheduler/rendezvous.md.
+//! and the stranding of callers whose server is gone. See partsfoundry/record:notes/scheduler/rendezvous.md.
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).
@@ -74,7 +74,7 @@ pub fn create_rendezvous_from(region: u64) -> Option<RendezvousId> {
 /// Panics on the unrecoverable: the registry at [`MAXIMUM_RENDEZVOUS`], the chunk bound reached, or
 /// no memory left to carve. `pub(crate)`, so the system tests cannot call it: the chunks are never
 /// freed, so a test endpoint made here would cost the boot a page for good. A test carves from a
-/// region it owns with [`create_rendezvous_from`]. See nifeos/record:notes/scheduler/rendezvous.md.
+/// region it owns with [`create_rendezvous_from`]. See partsfoundry/record:notes/scheduler/rendezvous.md.
 ///
 /// Context: takes `IPC_TABLES` (a new chunk is carved under it) and releases it before
 /// `try_create_rendezvous_from` takes it again.
@@ -130,13 +130,13 @@ pub(crate) fn create_rendezvous() -> RendezvousId {
 // The asynchronous half of IPC: a word a signaller ORs into and a waiter takes. The decision core
 // (what a signal, a wait and a poll do) is `inter_process_communication::notification`, proved
 // there; what lives here is what the crate cannot see: the registry, the mailboxes, the wake, and
-// the TCB binding, which reaches into another object's wait queue. See nifeos/record:notes/notification-objects.md.
+// the TCB binding, which reaches into another object's wait queue. See partsfoundry/record:notes/notification-objects.md.
 
 /// Widen a three-word IPC message `m` into the five-word mailbox, with `badge` (the badge on the
 /// endpoint capability the sender invoked, 0 when unbadged) in word 3 and zero in word 4. Only a
 /// fault or exit message (DECISIONS §26 (the fault endpoint)) fills the top two otherwise, so the
 /// fault path reuses the rendezvous machinery. A plain `SEND` carries its badge because §242 (a
-/// system log) stamps every record from it; see nifeos/record:notes/scheduler/rendezvous.md.
+/// system log) stamps every record from it; see partsfoundry/record:notes/scheduler/rendezvous.md.
 pub(super) fn wide(m: [u64; 3], badge: u64) -> [u64; 5] {
     [m[0], m[1], m[2], badge, 0]
 }
@@ -147,7 +147,7 @@ pub(super) fn wide(m: [u64; 3], badge: u64) -> [u64; 5] {
 /// Otherwise the message is parked in our own mailbox, we join the sender queue and block, and a
 /// later receiver collects it and wakes us. A user thread reaches this through the `SEND` method.
 /// A stale `ep` sets the abort flag and an interrupt-carrying one the refusal flag, instead.
-/// See nifeos/record:notes/scheduler/rendezvous.md.
+/// See partsfoundry/record:notes/scheduler/rendezvous.md.
 ///
 /// Context: takes `IPC_TABLES`; may block.
 #[inline(always)]
@@ -400,7 +400,7 @@ pub(super) fn collected_without_serving(sched: &mut IpcTables, sender: ThreadId)
 ///
 /// Beside the mailbox, so only a death pays for the sixth word. Only a plain `RECEIVE` by a user
 /// thread gets it, and no ordinary message writes it, so a child cannot forge one. See
-/// nifeos/record:notes/scheduler/rendezvous.md.
+/// partsfoundry/record:notes/scheduler/rendezvous.md.
 ///
 /// Context: caller holds `IPC_TABLES`.
 ///
@@ -701,7 +701,7 @@ pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64;
 ///
 /// The kernel mints a one-shot `Reply` naming this caller and hands it to the server through
 /// [`inter_process_communication_receive_capability`], and the caller is reachable only through it (DECISIONS §12). See
-/// nifeos/record:notes/scheduler/rendezvous.md.
+/// partsfoundry/record:notes/scheduler/rendezvous.md.
 ///
 /// # BUGS
 /// - A live server that never replies, or had no room for the Reply, blocks its caller forever:
@@ -894,7 +894,7 @@ pub(crate) fn ipc_reply_capability(
 /// every `outgoing_capability`, so no Reply names a thread that has left its park.
 ///
 /// Run by [`strand_reply_caller`] before it wakes a caller, and by [`finish_blocked_resident`] on
-/// a caller it ends. O(threads x slots), on teardown paths only. See nifeos/record:notes/scheduler/rendezvous.md.
+/// a caller it ends. O(threads x slots), on teardown paths only. See partsfoundry/record:notes/scheduler/rendezvous.md.
 ///
 /// Context: caller holds `IPC_TABLES`; takes each capability table's lock beneath it.
 pub(super) fn delete_reply_capabilities_naming(sched: &mut IpcTables, caller: ThreadId) {
@@ -915,7 +915,7 @@ pub(super) fn delete_reply_capabilities_naming(sched: &mut IpcTables, caller: Th
 /// it. Every `Reply` naming it is deleted before the wake, or a server holding a stale one could
 /// answer the caller's next, unrelated `CALL`. Only a thread parked awaiting a reply is touched;
 /// returns whether this did anything. `#[cold]` because every caller is a teardown, one of them
-/// the top of [`schedule`]. See nifeos/record:notes/scheduler/rendezvous.md and nifeos/record:notes/blocked-thread-teardown.md.
+/// the top of [`schedule`]. See partsfoundry/record:notes/scheduler/rendezvous.md and partsfoundry/record:notes/blocked-thread-teardown.md.
 ///
 /// Context: caller holds `IPC_TABLES`; takes capability-table locks beneath it.
 #[cold]
@@ -941,7 +941,7 @@ pub(super) fn strand_reply_caller(sched: &mut IpcTables, caller: ThreadId) -> bo
 /// the top of [`schedule`], and [`reap_region_objects`]'s removal phase.
 ///
 /// Reads the table once into an array of [`crate::capability_object::CAPABILITY_TABLE_SLOTS`] victims in this
-/// `#[inline(never)]` frame, then acts. See nifeos/record:notes/scheduler/rendezvous.md.
+/// `#[inline(never)]` frame, then acts. See partsfoundry/record:notes/scheduler/rendezvous.md.
 ///
 /// Context: caller holds `IPC_TABLES`; takes capability-table locks beneath it.
 #[cold]
@@ -978,7 +978,7 @@ pub(super) fn strand_callers_of(sched: &mut IpcTables, tid: ThreadId) {
 /// Rescans the thread table rather than listing victims, because a list bounded by
 /// `MAXIMUM_THREADS` would grow the deepest frame in the kernel. The scan ends on the abort flag,
 /// not on `wait_on`, which a wake deferred behind `on_cpu` leaves in place. See
-/// nifeos/record:notes/scheduler/rendezvous.md.
+/// partsfoundry/record:notes/scheduler/rendezvous.md.
 ///
 /// Context: caller holds `IPC_TABLES`; takes capability-table locks beneath it.
 #[cold]

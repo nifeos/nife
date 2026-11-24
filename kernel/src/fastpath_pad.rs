@@ -5,7 +5,7 @@
 //! [`core::hint::black_box`] guard is a real branch LLVM cannot delete and never takes.
 //! [`PAD_UNITS`] sizes the sled; [`SHIFT_BYTES`] appends zeros, which trap if executed, so a pad
 //! and a shift differ only in whether the bytes count as footprint. Names are provisional. See
-//! nifeos/record:notes/footprint-perturbation/layout-control.md.
+//! partsfoundry/record:notes/footprint-perturbation/layout-control.md.
 
 /// The sled's length, in units of `UNIT_NOPS` (each arch's `fastpath_pad.rs`).
 pub(crate) const PAD_UNITS: usize = parse(env!("NIFE_FASTPATH_PAD"));

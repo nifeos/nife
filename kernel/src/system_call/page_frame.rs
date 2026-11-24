@@ -1,4 +1,4 @@
-//! **The `PageFrame` methods**: map, slice and revoke. See nifeos/record:notes/system-call-boundary.md.
+//! **The `PageFrame` methods**: map, slice and revoke. See partsfoundry/record:notes/system-call-boundary.md.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.

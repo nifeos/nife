@@ -1,5 +1,5 @@
 //! **The device starters**: each brings one device up at boot and hands back what `boot_progenitor`
-//! grants the progenitor. See nifeos/record:notes/progenitor-boot.md.
+//! grants the progenitor. See partsfoundry/record:notes/progenitor-boot.md.
 //!
 //! Name: provisional (milestone 872's lane, 2026-10-11 UTC; §281 (the kernel's user-mode file
 //! splits into child modules of `user`)).
@@ -12,7 +12,7 @@ use super::*;
 /// `None`, having printed why, for a controller the kernel would not hand over or a driver that
 /// failed; `None` silently with no controller. A report of no keyboard still grants the attach
 /// endpoint, because the driver keeps watching its ports. The kernel starts this driver, not the
-/// progenitor, because its pages are spawn-time mappings (nifeos/record:notes/progenitor-boot.md). Name
+/// progenitor, because its pages are spawn-time mappings (partsfoundry/record:notes/progenitor-boot.md). Name
 /// provisional.
 #[cfg_attr(
     any(
@@ -95,7 +95,7 @@ pub(super) struct VirtualIoBootGrant {
     pub(super) vid: u64,
     /// The device's completion interrupt, **routed** (`crate::sched::bind_interrupt`) but not
     /// **enabled**: aarch64's GIC enables inline and riscv64 pins the PLIC source to the boot hart
-    /// (`nifeos/record:notes/harts-and-pes.md`'s hart lottery), so the caller enables it beside
+    /// (`partsfoundry/record:notes/harts-and-pes.md`'s hart lottery), so the caller enables it beside
     /// `uart_interrupt_number`.
     pub(super) intid: u32,
     /// The DMA region's physical base. A driver writes physical addresses into virtio
@@ -113,7 +113,7 @@ pub(super) struct VirtualIoBootGrant {
 ///
 /// The MMIO transport only, not PCIe. It does `entropy_service::start`'s kernel-side setup and then
 /// hands the three capabilities back, because on this boot the progenitor builds the entropy
-/// service. See nifeos/record:notes/progenitor-boot.md.
+/// service. See partsfoundry/record:notes/progenitor-boot.md.
 pub(super) fn boot_virtual_io_rng_device() -> Option<VirtualIoBootGrant> {
     boot_virtual_io_mmio_device(crate::virtual_io::find_entropy_device()?)
 }
@@ -126,7 +126,7 @@ pub(super) fn boot_virtual_io_rng_device() -> Option<VirtualIoBootGrant> {
 /// works on aarch64 too. No instruction, or an all-zero first draw, is a refusal with no fallback
 /// generator (DECISIONS §137 (a hardware TRNG with no published health-test claim) option A). On
 /// `x86_64` the installer may already have taken the readiness report. See
-/// nifeos/record:notes/progenitor-boot.md.
+/// partsfoundry/record:notes/progenitor-boot.md.
 pub(super) fn boot_instruction_entropy() -> Option<crate::sched::RendezvousId> {
     let image = program("entropy")?;
     let Some(w) = entropy_service::ensure(image, entropy_service::Bus::Instruction) else {
@@ -167,7 +167,7 @@ pub(super) fn boot_virtual_io_net_device() -> Option<VirtualIoBootGrant> {
 /// bring-up; `None` silently with no such NIC, which is every `virt` boot.
 ///
 /// The kernel builds it, for [`boot_usb_keyboard`]'s reason, and it is the wiring every `e1000e`
-/// gate already runs. See nifeos/record:notes/progenitor-boot.md.
+/// gate already runs. See partsfoundry/record:notes/progenitor-boot.md.
 #[cfg_attr(
     any(
         test,
@@ -246,7 +246,7 @@ pub(super) fn boot_designware_network()
         crate::println!(
             "  network     : NONE. The JH7110's Ethernet port at {:#x} is described and left as \
              the firmware left it: no bench boot has proved this driver yet (milestone 53's \
-             runbook, nifeos/record:notes/designware-ethernet.md, is how one does)",
+             runbook, partsfoundry/record:notes/designware-ethernet.md, is how one does)",
             port.port.registers_physical_address,
         );
         return None;
@@ -314,7 +314,7 @@ fn boot_virtual_io_mmio_device(
 /// Always granted, for the clock page's reason. The page is assembled once, into a frame nothing
 /// else can see, and only then handed over, so it needs no seqlock (`environment_contract`). The
 /// values are the least-assuming defaults the kernel's `std` harness uses
-/// (`system_tests/src/user/std_service.rs`). See nifeos/record:notes/progenitor-boot.md.
+/// (`system_tests/src/user/std_service.rs`). See partsfoundry/record:notes/progenitor-boot.md.
 pub(super) fn boot_config_page() -> u64 {
     let bytes = environment_contract::PageBuilder::new()
         .time_zone("UTC")
@@ -350,7 +350,7 @@ pub(super) fn boot_config_page() -> u64 {
 /// kernel painting, and only then is the driver spawned, so there are never two painters. A refusal
 /// after the yield leaves the screen blank and the boot on the UART. `None` on aarch64 and riscv64
 /// until milestone 157 (real display output on the board) tells the console about a screen. See
-/// nifeos/record:notes/progenitor-boot.md. **Name provisional.**
+/// partsfoundry/record:notes/progenitor-boot.md. **Name provisional.**
 pub(super) fn boot_screen_terminal() -> Option<display_service::TerminalWiring> {
     let driver = program("framebuffer_driver")?;
     let terminal = program("display_terminal")?;

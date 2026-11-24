@@ -5,7 +5,7 @@
 //! both GIC versions: a GICv2 is `drivers/gic.rs`; a GICv3 is `drivers/gicv3.rs` plus
 //! `gic_cpu_interface.rs`. [`initialize`] takes the version from the device tree and confirms it
 //! with the hardware before any configuration write. The RISC-V twin is the PLIC. See
-//! nifeos/record:notes/aarch64-port.md, "Which GIC, and where its lines go".
+//! partsfoundry/record:notes/aarch64-port.md, "Which GIC, and where its lines go".
 //!
 //! Name: ratified 2026-10-27 (#2797). `interrupts` already names the masking module, so this one names the controller.
 
@@ -155,7 +155,7 @@ pub fn send_sgi(intid: u32, target_cpu: usize) {
 /// (`pci_configuration_space::intx_interrupt_number`) onto `mmu::PCI_INTERRUPT_NUMBER_BASE`, and `kernel/src/pci.rs`
 /// falls back to that. A GICv3
 /// ITS would implement MSI here on a board that needs it. See
-/// nifeos/record:design/roadmap/0215-x86-64-pci-interrupt-routing.md.
+/// partsfoundry/record:design/roadmap/0215-x86-64-pci-interrupt-routing.md.
 pub(crate) fn alloc_msi_vector(
     _requester_id: u32,
 ) -> Option<(u32, pci_configuration_space::MsiTarget)> {
@@ -186,7 +186,7 @@ pub(crate) fn device_line_interrupts() -> Option<u64> {
 /// With no GIC in the tree, or with one the hardware contradicts.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     let found = crate::memory::gic_regions().expect("no interrupt controller in the DTB");
     let gicd = crate::arch::mmu::phys_to_virt(found.distributor().start);

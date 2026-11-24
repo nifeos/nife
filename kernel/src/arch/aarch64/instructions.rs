@@ -5,13 +5,13 @@
 //!
 //! Names ratified 2026-10-26 (UTC), milestone 707 (aarch64 registers spelled the way riscv64 and
 //! x86_64 spell them): the accessors, `wfi`, `dsb_sy`, `isb` and `arch::current_el`. Each accessor
-//! opens with its register's full name and carries `#[doc(alias)]` (nifeos/record:design/naming.md).
+//! opens with its register's full name and carries `#[doc(alias)]` (partsfoundry/record:design/naming.md).
 //!
 //! Here is every `asm!` this tree wrote around logic, and one accessor for each system register
 //! that `timer`, `mmu`, `exceptions`, `isa`, `percpu` and `thread_pointer` read or write whole.
 //! Fixed sequences with no Rust logic inside stay at their sites, and so do `pmu.rs`'s own `PMU*`
 //! reads. A model of a function here is an
-//! unchecked claim about the silicon (nifeos/record:notes/kernel-proofs/stubbing-an-instruction.md). Every
+//! unchecked claim about the silicon (partsfoundry/record:notes/kernel-proofs/stubbing-an-instruction.md). Every
 //! function is `#[inline(always)]` and carries its call site's `options` unchanged.
 //!
 //! A system-register accessor is one `mrs` or `msr` with `options(nomem, nostack)`, so a write whose

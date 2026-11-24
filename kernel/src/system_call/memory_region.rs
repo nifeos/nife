@@ -1,5 +1,5 @@
 //! **The `MemoryRegion` methods**: map, retype, split, destroy and the usage records, and the arm
-//! of [`invoke`] that decodes them. See nifeos/record:notes/system-call-boundary.md.
+//! of [`invoke`] that decodes them. See partsfoundry/record:notes/system-call-boundary.md.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -11,7 +11,7 @@ use crate::arch::mmu;
 /// asks for, then the method's out-of-line body.
 ///
 /// `#[inline(always)]`, unlike the bodies, because this is decoder and `script/fastpath-footprint`
-/// counts it inside `system_call_entry` (nifeos/record:notes/system-call-boundary.md).
+/// counts it inside `system_call_entry` (partsfoundry/record:notes/system-call-boundary.md).
 ///
 /// Name: provisional (lane maintainer/long-function-paydown-invoke, 2026-10-12 UTC).
 #[inline(always)]

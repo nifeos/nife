@@ -10,7 +10,7 @@ use super::*;
 ///
 /// Recorded, not recomputed: `CPUID` answers "which core am I", every caller of [`boot_cpu_id`]
 /// asks "which core booted", and the two differ once a secondary is online. riscv64's
-/// `BOOT_HARTID` is the same shape; see nifeos/record:notes/x86-port/cpu-state.md.
+/// `BOOT_HARTID` is the same shape; see partsfoundry/record:notes/x86-port/cpu-state.md.
 ///
 /// The name is **provisional** (an architect names things): it mirrors `BOOT_HARTID` on the
 /// architecture that already had this shape.
@@ -78,7 +78,7 @@ pub fn percpu() -> usize {
 const CURRENT_OFF: usize = core::mem::offset_of!(crate::cpu::PerCpu, current);
 
 /// **This core's `PerCpu::current`, in one `gs`-relative load**, so no interrupt can fall between
-/// finding the block and reading the field (nifeos/record:notes/mmu.md, BUGS).
+/// finding the block and reading the field (partsfoundry/record:notes/mmu.md, BUGS).
 ///
 /// [`percpu()`] and then a load is two steps. A preempted kernel thread that resumes on another core
 /// between them still holds the first core's block in a general register, and reads the name of

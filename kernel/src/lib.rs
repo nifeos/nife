@@ -2,7 +2,7 @@
 //!
 //! `no_std`, because there is no operating system beneath us to answer `std`'s system calls, and
 //! `no_main`, because no C runtime sets up a stack and calls `main`: the entry point is `_start`,
-//! in assembly. See nifeos/record:notes/no-std.md.
+//! in assembly. See partsfoundry/record:notes/no-std.md.
 //!
 //! Two images link this crate: the kernel binary, `src/main.rs`, which is only a link line, and the
 //! system-test image, `system_tests/`. So everything lives here, and `no_main` applies only when

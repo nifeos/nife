@@ -39,7 +39,7 @@ pub(crate) enum Event {
     /// delivering site (1 send, 2 receive-collect, 3 `send_capability`, 4 `receive_capability`-collect, 5 call,
     /// 6 reply, 7 interrupt signal, 8 death message, 9 a notification signal to a waiter, 10 one to
     /// its
-    /// bound receiver), so a dump says who served a thread (nifeos/record:notes/visionfive2.md, fifth stop).
+    /// bound receiver), so a dump says who served a thread (partsfoundry/record:notes/visionfive2.md, fifth stop).
     Served = 10,
 }
 

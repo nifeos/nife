@@ -12,7 +12,7 @@
 //! it, since the interrupt entry cache has no register-based invalidation.
 //!
 //! This is also `x86_64`'s IOMMU front door: every public entry point hands the call to
-//! [`super::amd_vi`] when an AMD-Vi unit is up. See nifeos/record:notes/iommu.md, which holds the design and
+//! [`super::amd_vi`] when an AMD-Vi unit is up. See partsfoundry/record:notes/iommu.md, which holds the design and
 //! the detail of each BUGS entry.
 
 //! # BUGS
@@ -193,7 +193,7 @@ struct Unit {
     /// The IOTLB invalidate register's offset, from `ECAP.IRO` (not fixed by the specification).
     iotlb: u64,
     /// `ECAP.IR`: does this unit offer interrupt remapping? Recorded, never acted on. See the
-    /// constant's comment and nifeos/record:notes/iommu.md's BUGS for why a read-only field earns its place.
+    /// constant's comment and partsfoundry/record:notes/iommu.md's BUGS for why a read-only field earns its place.
     interrupt_remapping: bool,
     /// The next domain id to hand out, and the largest `CAP.ND` allows. See [`Unit::domain_id`].
     next_did: u32,
@@ -246,7 +246,7 @@ impl Unit {
     /// `ECAP.C` is clear, as on xenon's catch-all unit. `clflush` per 64-byte line rather than
     /// `wbinvd`, which would write back every cache in the package for a few bytes of table. The
     /// caller fences (`mfence`) once after its last flush and before any register write that makes
-    /// the unit read. See nifeos/record:notes/iommu.md.
+    /// the unit read. See partsfoundry/record:notes/iommu.md.
     fn publish(&self, pa: u64, len: u64) {
         if self.coherent {
             return;
@@ -447,7 +447,7 @@ const REDIRECTION_LEVEL: u64 = 1 << 15;
 /// to requester `source_id` alone.** Present, remapped format, fixed delivery to one physical
 /// destination, faults recorded, and the requester id verified on all sixteen bits, so a message
 /// any other function raises with this entry's handle is refused. `level` is the trigger mode,
-/// which an IO APIC line's entry must match. See nifeos/record:notes/iommu.md.
+/// which an IO APIC line's entry must match. See partsfoundry/record:notes/iommu.md.
 const fn remapped_entry(vector: u8, destination: u8, source_id: u16, level: bool) -> [u64; 2] {
     [
         ENTRY_PRESENT
@@ -778,7 +778,7 @@ fn interrupt_remapping_up(
 /// remapping on where an IOMMU offers it).
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(dmar: &DmarUnits, io_apic_id: Option<u8>) {
     *DMAR.lock() = Some(*dmar);
     {
@@ -1168,7 +1168,7 @@ pub(crate) fn build_domain(regions: &[page_tables::domain::DirectMemoryAccessReg
 
 /// Global invalidation: the context cache first (a stale context entry would still point
 /// translation at the previous domain), then the IOTLB. Queued where the unit has a queue, else a
-/// write-and-poll on each one's own register. Both use global granularity; see nifeos/record:notes/iommu.md's
+/// write-and-poll on each one's own register. Both use global granularity; see partsfoundry/record:notes/iommu.md's
 /// BUGS for the cost.
 fn invalidate_all(s: &mut Unit) {
     if s.rwbf {
@@ -1303,7 +1303,7 @@ pub fn take_fault() -> Option<Fault> {
         let hi = r64(s.base, s.frcd + 8);
         if hi & (1 << 63) == 0 {
             // PPF was set but this record's own F bit is not: nothing to report from the one
-            // register this driver reads. See nifeos/record:notes/iommu.md's BUGS on why only one is ever read.
+            // register this driver reads. See partsfoundry/record:notes/iommu.md's BUGS on why only one is ever read.
             continue;
         }
         // Write-1-to-clear: writing back exactly what was read clears the F bit (bit 63 of `hi`)
@@ -1440,7 +1440,7 @@ const _: () = assert!(Vtd::LEVELS == 4);
 
 /// Proofs that a remapping entry grants exactly what the kernel asked for, and that a message
 /// names exactly one entry (milestone 1068). They run on an `x86_64` host, where `crate::arch` is
-/// this architecture's. See nifeos/record:notes/iommu.md.
+/// this architecture's. See partsfoundry/record:notes/iommu.md.
 #[cfg(kani)]
 mod proofs {
     use super::*;
@@ -1725,7 +1725,7 @@ mod tests {
     /// compatibility-format message aimed straight at the first disk's vector is blocked, with its
     /// own fault reason. QEMU's model (`vtd_interrupt_remap_msi`, QEMU 10.2) passes the
     /// compatibility format whatever `GCMD.CFI` says, so that last half is asserted only on bare
-    /// metal (nifeos/record:notes/iommu/interrupt-remapping.md); a guest says which it is in `CPUID.1:ECX[31]`.
+    /// metal (partsfoundry/record:notes/iommu/interrupt-remapping.md); a guest says which it is in `CPUID.1:ECX[31]`.
     #[test_case]
     fn a_message_forged_from_another_devices_grant_is_refused() {
         if interrupt_remapping_enabled() != Some(true) {
@@ -1813,7 +1813,7 @@ mod tests {
         if guest && landed {
             crate::println!(
                 "    this guest's VT-d model delivered a compatibility-format message with CFIS \
-                 clear; bare metal refuses it (nifeos/record:notes/iommu/interrupt-remapping.md)"
+                 clear; bare metal refuses it (partsfoundry/record:notes/iommu/interrupt-remapping.md)"
             );
         } else {
             assert!(

@@ -1,6 +1,6 @@
 //! Address wait and wake, the scheduler half (§269 (how threads share a process) fork 2). The queues
 //! are `inter_process_communication::address_wait`, the wire contract `moho_abi::address_space::WAIT`, and the
-//! argument `nifeos/record:notes/address-wait.md`.
+//! argument `partsfoundry/record:notes/address-wait.md`.
 //!
 //! Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. The module and its functions say what the call does, a wait on an address
 //! and a wake of it, and not the Linux word for it (a fast user-space mutex); the alias on each
@@ -52,7 +52,7 @@ pub fn is_current_space(space: u64) -> bool {
 /// and that `space` is the caller's.
 ///
 /// Context: reads the word and parks under one hold of `IPC_TABLES`, which `WAKE` also takes, so a
-/// waker's store is either seen here or finds this thread parked (nifeos/record:notes/address-wait.md). The load is
+/// waker's store is either seen here or finds this thread parked (partsfoundry/record:notes/address-wait.md). The load is
 /// `Acquire`, pairing with the waker's store.
 ///
 /// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. Spelled out from the Linux word.
@@ -76,7 +76,7 @@ pub fn address_wait(space: u64, va: u64, expected: u32) -> Result<u64, moho_abi:
         // aligned and inside the page. An atomic load, because user threads write the word
         // concurrently. Whether the frame can be revoked between the walk and the load has not been
         // argued (the walk is not under the space's own lock), and it is recorded in
-        // nifeos/record:notes/address-wait.md's BUGS: the worst case is reading one stale word of a frame being freed,
+        // partsfoundry/record:notes/address-wait.md's BUGS: the worst case is reading one stale word of a frame being freed,
         // which makes this compare wrong and nothing else, since nothing read is returned.
         let word = unsafe {
             (*(crate::arch::mmu::phys_to_virt(phys) as *const core::sync::atomic::AtomicU32))

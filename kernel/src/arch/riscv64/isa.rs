@@ -5,7 +5,7 @@
 //! `mmu::initialize`) the measured `satp.ASID` width. [`initialize`] runs after
 //! `memory::initialize` and before `mmu::initialize`.
 //!
-//! See nifeos/record:notes/riscv-port/firmware.md.
+//! See partsfoundry/record:notes/riscv-port/firmware.md.
 
 use machine_discovery::riscv64::{EID_BASE, Isa, SBI_TABLE, Sbi, SbiExtensions};
 
@@ -25,7 +25,7 @@ static ISA: InterruptSafeMutualExclusionLock<Option<Isa>> =
 /// describe its ISA, or firmware too old to answer, is reported as unknown and the boot continues.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(dtb_ptr: usize) {
     // SAFETY: the same pointer `memory::initialize` has already validated the magic of, named
     // through the boot table's direct map because we are running virtual.
@@ -96,7 +96,7 @@ pub fn is_thead() -> bool {
 /// Record whether this is a T-Head hart and whether it reads memory types from its page tables
 /// (`th.sxstatus.MAEE`), and panic if the build's `mmu::Format` disagrees, in either direction.
 ///
-/// `mvendorid` comes from SBI, since S-mode cannot read it. See nifeos/record:notes/riscv-port/firmware.md.
+/// `mvendorid` comes from SBI, since S-mode cannot read it. See partsfoundry/record:notes/riscv-port/firmware.md.
 fn probe_thead() {
     const GET_MVENDORID: usize = 4;
     let vendor = sbi_call(EID_BASE, GET_MVENDORID, 0);

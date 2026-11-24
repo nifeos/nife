@@ -20,7 +20,7 @@ index 611a21980..f180134d2 100644
 @@ -267,7 +267,7 @@ impl Wiring {
          // The screen (slot 3, `READ` only) and its map budget (slot 4) go only to `ROLE_CAPTURE`, by
          // `grant_at`, since a sequential fill cannot leave slot 2 empty. See
-         // nifeos/record:notes/compositor/kernel-wiring.md.
+         // partsfoundry/record:notes/compositor/kernel-wiring.md.
 -        let capture_budget = if role & ROLE_CAPTURE != 0 {
 +        let capture_budget = if role & (ROLE_CAPTURE | ROLE_PROBE_SCREEN) != 0 {
              Some(

@@ -4,7 +4,7 @@
 //! Each per-core word is written only by its own core, on a cache line of its own; the frame count
 //! under the allocator's lock. Before [`publish`] the writes land in a static sink, so a writer
 //! never tests whether the page exists. The layout is `crates/machine_statistics_contract`'s. See
-//! nifeos/record:notes/machine-statistics.md.
+//! partsfoundry/record:notes/machine-statistics.md.
 
 //! # BUGS
 //! - A counter written before [`publish`] is lost.

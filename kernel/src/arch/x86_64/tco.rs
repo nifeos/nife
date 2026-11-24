@@ -5,7 +5,7 @@
 //! nothing from the CPU, so the reset lands `2 x TMR x 0.6` seconds after the last pet;
 //! [`Tco::arm`] takes the time to the reset and does the halving. `SECOND_TO_STS` survives that
 //! reset, so the next boot reports how the last one ended. [`find`] returns a [`Tco`] value, and
-//! nothing here keeps a static. See nifeos/record:notes/x86-port/tco-watchdog.md, which holds the register map,
+//! nothing here keeps a static. See partsfoundry/record:notes/x86-port/tco-watchdog.md, which holds the register map,
 //! its sources and the detail of each BUGS entry.
 
 //! # BUGS

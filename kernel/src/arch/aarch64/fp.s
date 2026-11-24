@@ -31,7 +31,7 @@
 // x0 = the state block. `q0`-`q31` go at offset 16 (see `FpState` in fp.rs: the first sixteen
 // bytes are the `live` flag and its padding, which keeps the vector area 16-byte aligned without
 // the caller having to think about it). `FPCR` and `FPSR` follow at 528.
-// CFI: see nifeos/record:notes/cfi-unwind.md. Both routines below are ordinary leaf functions reached by `bl`
+// CFI: see partsfoundry/record:notes/cfi-unwind.md. Both routines below are ordinary leaf functions reached by `bl`
 // and returning by `ret`; sp never moves, so the default frame (CFA = sp, return address in lr)
 // is already correct and no directive needs restating it.
 .global fp_save

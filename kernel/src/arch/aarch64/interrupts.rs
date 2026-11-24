@@ -1,7 +1,7 @@
 //! Masking and unmasking interrupts: the `I` bit of `PSTATE.DAIF`, where a set bit means masked.
 //!
 //! `msr daifset, #2` and `msr daifclr, #2` touch only `I`, so there is no read-modify-write window.
-//! FIQ and SError stay as the boot protocol left them. See nifeos/record:notes/aarch64-port.md, "Masking
+//! FIQ and SError stay as the boot protocol left them. See partsfoundry/record:notes/aarch64-port.md, "Masking
 //! interrupts".
 
 use super::instructions;

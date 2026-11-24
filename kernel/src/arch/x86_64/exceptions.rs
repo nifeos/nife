@@ -4,7 +4,7 @@
 //! x86 has 256 entry points and tells the handler nothing, so trap.s manufactures the vector with
 //! one stub per vector, and ten of the 32 exceptions push an error code the other 246 vectors do
 //! not. The kernel sees a [`TrapFrame`], counters it can assert on, the last user fault, and an
-//! `initialize` that makes faults reportable. See nifeos/record:notes/x86-port/traps.md.
+//! `initialize` that makes faults reportable. See partsfoundry/record:notes/x86-port/traps.md.
 
 use core::cell::SyncUnsafeCell;
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
@@ -67,7 +67,7 @@ impl TrapFrame {
     /// return: the tree's one number register plus six (aarch64 `x8` + `x0`..`x5`, RISC-V `a7` +
     /// `a0`..`a5`). `r10` stands in for `rcx` because `system_call` overwrites `rcx` with the return
     /// address and `r11` with RFLAGS. The ABI is §124 (the x86-64 system call ABI); see
-    /// nifeos/record:notes/x86-port/traps.md.
+    /// partsfoundry/record:notes/x86-port/traps.md.
     pub(crate) fn system_call_nr(&self) -> u64 {
         self.rax
     }
@@ -219,7 +219,7 @@ unsafe extern "C" {
 /// portable counter every architecture's interrupt tests read.
 ///
 /// The timer, the reschedule IPI and unclaimed device vectors are not counted, so a tick cannot
-/// satisfy a test waiting for a device's completion (nifeos/record:notes/load-sensitive-assertions.md). Ticks are
+/// satisfy a test waiting for a device's completion (partsfoundry/record:notes/load-sensitive-assertions.md). Ticks are
 /// `arch::timer::ticks()`; a device vector is [`DEVICE_INTERRUPTS`], and one with no route
 /// [`SPURIOUS_INTERRUPTS`].
 ///
@@ -249,7 +249,7 @@ pub(crate) static DEVICE_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 /// proves a program reached user mode and came back by watching it rise). Every system call on every
 /// core bumps this one line, so it is compiled out of every other build: until 2026-10-04 it was
 /// in all of them, and it was one of two shared writes on the cheapest system call's path
-/// (nifeos/record:notes/job-mix/null-system-call-under-load.md).
+/// (partsfoundry/record:notes/job-mix/null-system-call-under-load.md).
 #[cfg(any(test, feature = "system_tests"))]
 pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 
@@ -272,7 +272,7 @@ static LAST_USER_FAULT_ADDRESS: AtomicU64 = AtomicU64::new(0);
 /// One slot for the whole machine, as on the other two ISAs. A fault in an unrelated thread
 /// overwrites it before a test reads it, and a user exception that is not a page fault records
 /// address 0. A test that asserts on it must retry or tie the record to its own thread. Found by
-/// the eighth outsider pass (`nifeos/record:notes/confinement-outsider-pass-8.md`), whose row-21 test retries.
+/// the eighth outsider pass (`partsfoundry/record:notes/confinement-outsider-pass-8.md`), whose row-21 test retries.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn last_user_fault() -> Option<(UserFault, u64)> {
     // Pairs with the `Release` on `USER_FAULTS` in [`user_fault`]: a caller that has already seen
@@ -386,10 +386,10 @@ static IDT_BUILT: AtomicBool = AtomicBool::new(false);
 ///
 /// The table is built once, by the first core here (the boot core), and every core `lidt`s its
 /// own IDTR. A secondary rebuilding it would race the boot core's live interrupt delivery, which
-/// stays enabled across `bring_up_secondaries`. See nifeos/record:notes/x86-port/traps.md.
+/// stays enabled across `bring_up_secondaries`. See partsfoundry/record:notes/x86-port/traps.md.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     if !IDT_BUILT.swap(true, Ordering::AcqRel) {
         // SAFETY: guarded by the swap above, so at most one core ever runs this loop, and it runs
@@ -534,7 +534,7 @@ unsafe extern "C" {
 ///
 /// # BUGS
 /// The return is `iretq`, not `sysretq`, which faults in ring 0 on the user's stack for a
-/// non-canonical `rcx` (CVE-2012-0217). See nifeos/record:notes/x86-port/traps.md.
+/// non-canonical `rcx` (CVE-2012-0217). See partsfoundry/record:notes/x86-port/traps.md.
 ///
 /// # Safety
 /// Called only from `x86_system_call_entry`, which has just constructed a complete [`TrapFrame`] at the
@@ -685,7 +685,7 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
         // A self-directed interrupt, which becomes a message; the local APIC delivers it through
         // the ICR, IRR, ISR and EOI. Its intid is its vector, where a device line's is a legacy
         // interrupt
-        // (0..15), so the two cannot collide. See nifeos/record:notes/x86-port/traps.md.
+        // (0..15), so the two cannot collide. See partsfoundry/record:notes/x86-port/traps.md.
         v if v == super::interrupt_controller::SELF_TEST_VECTOR as u64
             || v == super::interrupt_controller::SELF_TEST_VECTOR_B as u64 =>
         {
@@ -917,7 +917,7 @@ fn report_walk(address: u64) {
 
 /// Turn an x86 exception into the portable [`UserFault`].
 ///
-/// A page fault's error code states the class (nifeos/record:notes/x86-port/traps.md has its bits). Bit 0 (`P`)
+/// A page fault's error code states the class (partsfoundry/record:notes/x86-port/traps.md has its bits). Bit 0 (`P`)
 /// set means the page was present and the hardware refused it, [`UserFault::Permission`] rather
 /// than [`UserFault::Translation`]; bit 1 is a write and bit 4 an instruction fetch. Any other
 /// exception is [`UserFault::Other`], as the other two report an illegal instruction.

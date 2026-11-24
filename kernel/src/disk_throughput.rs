@@ -3,7 +3,7 @@
 //! [`run`] replaces the hand-over: it preflights the two night-of conditions (the DMAR scope that
 //! owns the NVMe, and an LBA size this driver serves), measures a confined EL0 NVMe driver's write,
 //! flush and read throughput one command at a time, prints one `disk-throughput:` verdict and
-//! halts. It writes to the disk. See nifeos/record:notes/bench-boots.md and nifeos/record:notes/risk-6-bench-evening.md.
+//! halts. It writes to the disk. See partsfoundry/record:notes/bench-boots.md and partsfoundry/record:notes/risk-6-bench-evening.md.
 
 //! # BUGS
 //! - It writes: [`WINDOW_BLOCKS`] blocks 1 MiB into the namespace are overwritten.
@@ -86,7 +86,7 @@ impl core::fmt::Display for Verdict {
 
 /// The NVMe server's image, measured through `trust::require_program` as the progenitor would
 /// have; a refusal halts with `MEASURED BOOT REFUSED`. Returns why when the archive has none. See
-/// nifeos/record:notes/bench-boots.md.
+/// partsfoundry/record:notes/bench-boots.md.
 fn measured_server() -> Result<&'static [u8], &'static str> {
     const NAME: &str = "non_volatile_memory_express";
     let image = crate::trust::require_program(NAME)

@@ -5,7 +5,7 @@
 //! Sv39>`, shares the kernel half into every process root, and does TLB maintenance with
 //! `sfence.vma`.
 //!
-//! See nifeos/record:notes/riscv-port/memory.md.
+//! See partsfoundry/record:notes/riscv-port/memory.md.
 
 use core::ffi::c_void;
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -46,7 +46,7 @@ fn read_satp() -> u64 {
 /// Install a whole address space (kernel high half and user low half) by writing `satp`.
 ///
 /// Flushes the whole TLB only when [`asid_tagging_is_trusted`] is false. See
-/// nifeos/record:notes/riscv-tlb-shootdown.md.
+/// partsfoundry/record:notes/riscv-tlb-shootdown.md.
 ///
 /// # Safety
 /// `satp` must name a well-formed, live Sv39 root that contains the kernel's high half. It is the
@@ -88,7 +88,7 @@ pub const THREAD_STACK_AREA: u64 = KERNEL_VA_BASE | 0x0000_0010_0000_0000;
 /// top gigabyte of the Sv39 high half ([`DEVICE_WINDOW_VA`], root index 511).
 ///
 /// It names devices above the direct map's 255 GiB, such as the TH1520's at `0xff_d800_0000`. See
-/// nifeos/record:notes/riscv-port/memory.md.
+/// partsfoundry/record:notes/riscv-port/memory.md.
 pub(crate) const DEVICE_WINDOW_PA: u64 = 0xff_c000_0000;
 /// One gigabyte: one root entry.
 pub(crate) const DEVICE_WINDOW_SIZE: u64 = 1 << 30;
@@ -124,7 +124,7 @@ const _: () = {
 /// `KERNEL_VA_BASE`, that lasts until `mmu::initialize` installs the W^X tables.
 ///
 /// `boot.s` loads its physical address into `satp`, so it is a real static in `.data`. See
-/// nifeos/record:notes/riscv-port/memory.md for which gigapages it maps and why.
+/// partsfoundry/record:notes/riscv-port/memory.md for which gigapages it maps and why.
 #[repr(C, align(4096))]
 struct BootTable([u64; page_tables::ENTRIES]);
 
@@ -212,7 +212,7 @@ pub fn virtual_io_slots() -> u64 {
 /// from the device tree (`memory::pci_regions`).
 ///
 /// `pci::ecam_buses()` is what is mapped; no survey runs on this architecture, so it stays 1. See
-/// nifeos/record:notes/riscv-port/memory.md.
+/// partsfoundry/record:notes/riscv-port/memory.md.
 pub(crate) const PCI_ECAM_BUSES: u16 = 1;
 
 /// How much of the 32-bit PCI memory window the kernel maps and assigns BARs from: 2 MB, room for
@@ -229,7 +229,7 @@ pub(crate) const PCI_INTERRUPT_NUMBER_BASE: u32 = 32;
 ///
 /// `pa` must be below [`DIRECT_MAP_LIMIT`] or inside the window; any other address aliases another
 /// frame. [`refuse_unnameable_ram`] and `direct_map` check that at boot. See
-/// nifeos/record:notes/riscv-port/memory.md.
+/// partsfoundry/record:notes/riscv-port/memory.md.
 pub const fn phys_to_virt(pa: u64) -> u64 {
     (pa & ((1 << 38) - 1)) | KERNEL_VA_BASE
 }
@@ -277,7 +277,7 @@ pub fn phys_to_ptr(pa: u64) -> *mut PageTable {
 /// switch is seamless. Runs once, on the primary hart, before any secondary or user space exists.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     refuse_unnameable_ram();
     let root = memory::alloc()
@@ -352,7 +352,7 @@ const SATP_ASID_WIDTH: u32 = 16;
 /// field, reads back what stuck, and restores `satp` exactly; only the tag moves. Code the compiler
 /// places between the writes runs on the same root under another tag, and none of the five
 /// wrappers is `nomem`, so no memory access moves past the closing `sfence.vma`. `mod proofs`
-/// proves both promises. See nifeos/record:notes/riscv-tlb-shootdown.md and nifeos/record:notes/riscv-port/memory.md.
+/// proves both promises. See partsfoundry/record:notes/riscv-tlb-shootdown.md and partsfoundry/record:notes/riscv-port/memory.md.
 fn probe_asid_bits() -> usize {
     let original = read_satp();
     let all_ones = original | (((1u64 << SATP_ASID_WIDTH) - 1) << SATP_ASID_SHIFT);
@@ -426,7 +426,7 @@ where
 }
 
 /// Build every mapping the kernel needs in `m`: the direct map of RAM, the W^X kernel sections, the
-/// stacks, and the devices the device tree names. See nifeos/record:notes/riscv-port/memory.md.
+/// stacks, and the devices the device tree names. See partsfoundry/record:notes/riscv-port/memory.md.
 fn map_everything<A, P>(m: &mut Mapper<A, P, Format>) -> Result<(), MapError>
 where
     A: FnMut() -> Option<u64>,
@@ -526,7 +526,7 @@ where
     direct_map(m, 0x10_0000, 0x10_1000, Flags::device())?;
 
     // 8. The virtio-mmio window, only where the device tree names the bus: elsewhere that address
-    //    may be RAM already mapped in step 1 (nifeos/record:notes/visionfive2.md).
+    //    may be RAM already mapped in step 1 (partsfoundry/record:notes/visionfive2.md).
     let named = crate::device_tree().is_ok_and(|dt| {
         let mut slot = [device_tree_blob::Region {
             start: 0,
@@ -738,7 +738,7 @@ pub fn asid_of(satp: u64) -> u16 {
 /// number tag another space.
 ///
 /// Local `sfence.vma x0, asid` first, which leaves the global kernel half alone, then an SBI RFENCE
-/// that returns once every other online hart has run it. See nifeos/record:notes/riscv-tlb-shootdown.md.
+/// that returns once every other online hart has run it. See partsfoundry/record:notes/riscv-tlb-shootdown.md.
 pub fn flush_asid(asid: u16) {
     // Local first: it orders this hart's page-table writes before the others are told.
     instructions::sfence_vma_asid(asid as u64);
@@ -753,7 +753,7 @@ pub fn flush_asid(asid: u16) {
 /// returns whether it was permitted before.
 ///
 /// Test builds only, so a shipping kernel that strays into the low half faults. See
-/// nifeos/record:notes/riscv-port/memory.md.
+/// partsfoundry/record:notes/riscv-port/memory.md.
 #[cfg(any(test, feature = "system_tests"))]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests call it; a unit-test boot on some ISAs does not
 pub fn permit_kernel_access_to_user_pages(allowed: bool) -> bool {
@@ -834,7 +834,7 @@ pub(crate) fn unmap_user_at(root: u64, va: u64) -> Option<u64> {
 /// [`crate::revoke::revoke_region`]. Name provisional (lane 2451, 2026-10-20 UTC).
 ///
 /// `each` calls the unmap it is handed once per address; unmapped pages are skipped. The caller
-/// must not free any frame before this returns. See nifeos/record:notes/riscv-port/memory.md.
+/// must not free any frame before this returns. See partsfoundry/record:notes/riscv-port/memory.md.
 pub(crate) fn unmap_user_pages(root: u64, asid: u16, each: impl FnOnce(&mut dyn FnMut(u64))) {
     // SAFETY: as `unmap_user_at`.
     let mut mapper = unsafe { Mapper::<_, _, Format>::new(root, Half::Low, || None, phys_to_ptr) };
@@ -875,7 +875,7 @@ pub fn translate_at(root: u64, va: u64) -> Option<(u64, Flags)> {
 /// `PageFrame::MAP`. Name provisional (lane 2451, 2026-10-20 UTC).
 ///
 /// Holds the span mapped so far. The drop fences each page locally and every other hart once. See
-/// nifeos/record:notes/riscv-port/memory.md.
+/// partsfoundry/record:notes/riscv-port/memory.md.
 pub(crate) struct UserMapBatch {
     lo: u64,
     hi: u64,
@@ -948,7 +948,7 @@ pub(crate) fn reserved_root() -> u64 {
 /// Install the address space named by the composed `satp`, unless the live `satp` already is it.
 ///
 /// `#[inline(always)]`, with [`write_satp`], so both stay in `.text.hot` with the context switch.
-/// See nifeos/record:notes/riscv-port/memory.md.
+/// See partsfoundry/record:notes/riscv-port/memory.md.
 ///
 /// # Safety
 /// `satp` must be a value [`ttbr0_value`] composed over a **live** `AddressSpace`'s root, or
@@ -1079,7 +1079,7 @@ pub fn is_mapped(va: u64) -> bool {
 /// Copy the kernel root's top-level entries 256..512 into the fresh process root at `root`, so one
 /// `satp` sees the user low half and the whole shared kernel high half.
 ///
-/// Called by `user::AddressSpace` right after it allocates a root. See nifeos/record:notes/riscv-port/memory.md.
+/// Called by `user::AddressSpace` right after it allocates a root. See partsfoundry/record:notes/riscv-port/memory.md.
 pub(crate) fn share_kernel_half(root: u64) {
     let kernel_root = KERNEL_ROOT.load(Ordering::Relaxed);
     // SAFETY: both are page-aligned root tables reachable through the direct map. We copy only the
@@ -1120,7 +1120,7 @@ mod tests;
 /// Proofs of the logic around `satp`, against stubs of `csrr satp`, `csrw satp` and `sfence.vma`.
 ///
 /// The stubs model the hardware from the privileged specification, unchecked against silicon, and
-/// the proofs hold only under that model. See nifeos/record:notes/riscv-port/memory.md and
-/// nifeos/record:notes/kernel-proofs/stubbing-an-instruction.md.
+/// the proofs hold only under that model. See partsfoundry/record:notes/riscv-port/memory.md and
+/// partsfoundry/record:notes/kernel-proofs/stubbing-an-instruction.md.
 #[cfg(kani)]
 mod proofs;

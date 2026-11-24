@@ -2,7 +2,7 @@
 //!
 //! A canary under the boot stack, the guard-page lookup a fatal fault prints, and the paint that
 //! measures how deep each kernel stack has been. See notes/stack.md,
-//! nifeos/record:notes/stack/reading-a-guard-page-report.md and nifeos/record:notes/stack-high-water.md.
+//! partsfoundry/record:notes/stack/reading-a-guard-page-report.md and partsfoundry/record:notes/stack-high-water.md.
 
 use core::ffi::c_void;
 
@@ -21,7 +21,7 @@ const CANARY: [u64; 4] = [
 /// Paint the canary. Call this before anything can use much stack.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     // SAFETY: `__stack_bottom` is inside our own image, and by definition nothing has
     // pushed a frame that deep, or we would already be dead.
@@ -46,7 +46,7 @@ pub(crate) fn headroom() -> i64 {
 
 /// Which kernel stack a faulting address belongs to, when it lands in that stack's guard page.
 ///
-/// Each kind is allocated a different way; nifeos/record:notes/stack/reading-a-guard-page-report.md has them.
+/// Each kind is allocated a different way; partsfoundry/record:notes/stack/reading-a-guard-page-report.md has them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum GuardPage {
     /// The boot stack's guard page (`__stack_guard`). Core 0 runs the whole test suite on it.
@@ -66,12 +66,12 @@ pub(crate) enum GuardPage {
 ///
 /// Returns the stack's kind, or `None` when `addr` is in no guard page. Takes no lock and touches
 /// no allocator, because every caller is a fatal-fault path. See
-/// nifeos/record:notes/stack/reading-a-guard-page-report.md.
+/// partsfoundry/record:notes/stack/reading-a-guard-page-report.md.
 ///
 /// # BUGS
 ///
 /// A `None` does not mean the stack is fine: a frame larger than the one-page guard can step over
-/// it into the neighboring slot without faulting (nifeos/record:notes/load-sensitive-assertions.md).
+/// it into the neighboring slot without faulting (partsfoundry/record:notes/load-sensitive-assertions.md).
 pub(crate) fn guard_page_at(addr: u64) -> Option<GuardPage> {
     const PAGE: u64 = 4096;
 
@@ -127,7 +127,7 @@ pub(crate) fn thread_stack_site(addr: u64) -> Option<(u64, i64)> {
 /// `addr` is the faulting address and `interrupted_sp` the `sp` saved in the trap frame (the live
 /// one is the interrupt stack's). Prints which stack, how far below its bottom the access landed,
 /// where `sp` was, and for a thread or interrupt stack a scan of its words. Called from both ISAs'
-/// fatal-fault paths. nifeos/record:notes/stack/reading-a-guard-page-report.md says how to read it.
+/// fatal-fault paths. partsfoundry/record:notes/stack/reading-a-guard-page-report.md says how to read it.
 pub(crate) fn warn_if_guard_page(addr: u64, interrupted_sp: u64) {
     let Some(kind) = guard_page_at(addr) else {
         return;
@@ -220,7 +220,7 @@ pub(crate) fn warn_if_guard_page(addr: u64, interrupted_sp: u64) {
 ///
 /// A conservative backtrace, because this kernel keeps no frame pointers: read the hits as
 /// candidates for `llvm-addr2line`. Asks the page tables before each page and reports unmapped
-/// bytes instead of reading them. See nifeos/record:notes/stack/reading-a-guard-page-report.md.
+/// bytes instead of reading them. See partsfoundry/record:notes/stack/reading-a-guard-page-report.md.
 ///
 /// # BUGS
 ///
@@ -266,7 +266,9 @@ fn print_text_words(bottom: u64, top: u64) {
         crate::println!(
             "    vector down to this slot's base, which is exactly the address above. See"
         );
-        crate::println!("    nifeos/record:notes/stack/kernel-stack-freed-under-its-owner.md.");
+        crate::println!(
+            "    partsfoundry/record:notes/stack/kernel-stack-freed-under-its-owner.md."
+        );
     }
     if printed == CAP {
         crate::println!("    ... capped at {CAP} words; the shallower stack is not shown.");
@@ -306,7 +308,7 @@ fn top() -> u64 {
 // Paint a stack before use, then scan for the deepest word overwritten. `paint` and `high_water`
 // are built everywhere (`ipc_stack_depth` and `progenitor_stack` use them); the kernel-stack
 // report is test builds only, so painting adds nothing to a spawn outside a test. A watermark
-// sees only exercised paths. See nifeos/record:notes/stack-high-water.md.
+// sees only exercised paths. See partsfoundry/record:notes/stack-high-water.md.
 
 /// The paint word. Not zero (fresh `.bss` is zeroes, and a stack full of zeroes would read as
 /// untouched), not a plausible pointer or length, and not one of the canary words.
@@ -400,7 +402,7 @@ pub(crate) fn note_thread_stack_use(used: u64) {
 /// Print every kernel stack's high-water mark and fail on any over its limit.
 ///
 /// Run by the test runner after the last test. Depth depends on what ran, not on host load, apart
-/// from where a trap frame lands. Limits and margins: nifeos/record:notes/stack-high-water.md, "The gate".
+/// from where a trap frame lands. Limits and margins: partsfoundry/record:notes/stack-high-water.md, "The gate".
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn report_high_water() {
     use core::sync::atomic::Ordering;
@@ -461,11 +463,11 @@ pub(crate) fn report_high_water() {
     );
 
     // Checked after the printing, so a trip always comes with its numbers. The boot, secondary and
-    // thread limits and their margins are in nifeos/record:notes/stack-high-water.md, "The gate".
+    // thread limits and their margins are in partsfoundry/record:notes/stack-high-water.md, "The gate".
     assert!(
         used <= 61440,
         "boot stack high-water {used} exceeded 61440: the suite's deepest path has grown ~7 KiB \
-         past its measured depth and is within a page of the guard (nifeos/record:notes/stack-high-water.md)",
+         past its measured depth and is within a page of the guard (partsfoundry/record:notes/stack-high-water.md)",
     );
     assert!(
         maximum_secondary <= 16384,
@@ -478,13 +480,13 @@ pub(crate) fn report_high_water() {
     assert!(
         maximum_interrupt <= 8192,
         "an interrupt stack's high-water {maximum_interrupt} exceeded 8192, half its slot: a trap \
-         handler's chain has grown past anything measured (nifeos/record:notes/stack/interrupt-stack.md, \
+         handler's chain has grown past anything measured (partsfoundry/record:notes/stack/interrupt-stack.md, \
          script/stack-depth-check)",
     );
     assert!(
         tmax <= 18432,
         "thread stack high-water {tmax} exceeded 18432: some kernel thread is within 6 KiB of its \
-         guard page, ~3 KiB past the measured worst-case stacking (nifeos/record:notes/stack-high-water.md)",
+         guard page, ~3 KiB past the measured worst-case stacking (partsfoundry/record:notes/stack-high-water.md)",
     );
 }
 

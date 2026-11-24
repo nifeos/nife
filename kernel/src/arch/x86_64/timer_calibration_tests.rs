@@ -2,10 +2,10 @@
 //! assertions that need a boot (`boot`): the windows were timed, and the stored rate is the
 //! smallest. Under QEMU because `timer.rs` builds only for `x86_64-unknown-none`; a second caller
 //! would move the rule to the `counter_frequency_contract` crate. See
-//! nifeos/record:design/roadmap/0571-the-x86-boot-calibrates-once-and-can-be-wrong-by-4x.md.
+//! partsfoundry/record:design/roadmap/0571-the-x86-boot-calibrates-once-and-can-be-wrong-by-4x.md.
 //!
 //! # BUGS
-//! - These prove the estimator, not accuracy; an independent clock does (nifeos/record:notes/tsc-under-tcg.md).
+//! - These prove the estimator, not accuracy; an independent clock does (partsfoundry/record:notes/tsc-under-tcg.md).
 //! - A machine reporting `CPUID` leaf 0x15 passes the boot tests by skipping; none does under TCG.
 
 #[cfg(any(test, feature = "system_tests"))]

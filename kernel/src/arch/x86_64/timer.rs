@@ -1,5 +1,5 @@
 //! The timer, `x86_64`: the TSC and the APIC timer, each measured against the 8254 PIT in polled
-//! 10 ms windows (smallest wins), and the APIC timer for the tick. See nifeos/record:notes/tsc-under-tcg.md.
+//! 10 ms windows (smallest wins), and the APIC timer for the tick. See partsfoundry/record:notes/tsc-under-tcg.md.
 //!
 //! # BUGS
 //! - The TSC is assumed invariant: `isa::initialize` refuses a part saying otherwise, or warns in
@@ -38,7 +38,7 @@ const CALIBRATION_MILLISECONDS: u64 = 10;
 /// sooner. A window can only be late, so each is an upper bound on the rate and the minimum is the
 /// tightest. Sixteen is measured: on a host saturated to load 30, a cap of five left one boot in
 /// eighteen wrong by over 1%, and sixteen left none of 200. The table is in
-/// nifeos/record:notes/benchmarks/counter-frequency-and-calibration.md.
+/// partsfoundry/record:notes/benchmarks/counter-frequency-and-calibration.md.
 const CALIBRATION_WINDOW_CAP: usize = 16;
 
 /// When to stop taking windows: two within one part in this of the smallest end the calibration.
@@ -404,7 +404,7 @@ pub(crate) fn apic_timer_frequency() -> u64 {
 /// If [`initialize_frequency`] has not run, for the same reason [`frequency`] does.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     let apic_hertz = APIC_TIMER_HERTZ.load(Ordering::Relaxed);
     assert!(
@@ -445,7 +445,7 @@ pub fn is_cycle_counter_grantable() -> bool {
 ///
 /// A stated exception to §19 (architectural parity is a tenet): `CR4.TSD` could close `rdtsc`, but
 /// `crates/user_mode_runtime`'s `counter_ticks()` is `rdtsc` with no coarse clock to fall back on, so every
-/// thread runs with the counter open, granted or not. See nifeos/record:notes/x86-port/user-mode-runtime.md.
+/// thread runs with the counter open, granted or not. See partsfoundry/record:notes/x86-port/user-mode-runtime.md.
 ///
 /// Built only under `test` or `--features cycle_counter_grant` (milestone 237 (the cycle-counter
 /// grant costs 136 bytes of IPC fastpath)); see `kernel/Cargo.toml`'s feature block.
@@ -476,9 +476,9 @@ pub fn ticks() -> u64 {
 /// The twin of the riscv64 `is_tick_pending`, whose comment has the measurement: the emulator
 /// raises the timer from its own main loop, milliseconds and occasionally tens of milliseconds
 /// late, so a test that assumes a tick is pending after a fixed masked spin can be measuring the
-/// host. See nifeos/record:notes/load-sensitive-assertions.md.
+/// host. See partsfoundry/record:notes/load-sensitive-assertions.md.
 ///
-/// Name: ratified 2026-09-24 (calef, the Rust predicate-naming rule in nifeos/record:design/naming.md). Refused
+/// Name: ratified 2026-09-24 (calef, the Rust predicate-naming rule in partsfoundry/record:design/naming.md). Refused
 /// `tick_pending` (a bare participle reads as a getter, and Rust asks the question with `is_`).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn is_tick_pending() -> bool {
@@ -495,7 +495,7 @@ pub fn spin_for(counter_ticks: u64) {
 
 /// Ticks since boot on a **named** core, which is what a test needs when the thread doing the
 /// measuring can move between the two reads (§28 (SMP placement)). See
-/// nifeos/record:notes/load-sensitive-assertions.md.
+/// partsfoundry/record:notes/load-sensitive-assertions.md.
 #[allow(dead_code)] // the bench build, the hang dump and the system tests read it; a plain build does not
 pub(crate) fn ticks_on(cpu: usize) -> u64 {
     TICKS[cpu].load(Ordering::Relaxed)

@@ -52,7 +52,7 @@ pub(super) fn depart(event: u64, pc: u64, addr: u64, whole: bool) -> ! {
             .map_or((None, 0), |(ep, label)| (Some(ep), label));
 
         // Free every caller whose `CALL` this thread collected and never answered, so it returns
-        // `Error::Gone` instead of blocking forever (nifeos/record:notes/blocked-thread-teardown.md).
+        // `Error::Gone` instead of blocking forever (partsfoundry/record:notes/blocked-thread-teardown.md).
         strand_callers_of(sched, current);
 
         match fault_ep {

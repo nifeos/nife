@@ -2,7 +2,7 @@
 //! the refusal; the decoding is host-tested in [`machine_discovery::x86_64`]. Three features are
 //! gated (milestone 524 (the three `x86_64` boot gates)): NX in `boot.s`, and `system_call` and the
 //! invariant TSC in [`initialize`], where a hypervisor turns the TSC's refusal into a warning. See
-//! nifeos/record:notes/x86-port/cpu-state.md.
+//! partsfoundry/record:notes/x86-port/cpu-state.md.
 //!
 //! # BUGS
 //!
@@ -22,7 +22,7 @@ use crate::{print, println};
 /// `__cpuid` is safe on the pinned toolchain and `unsafe` on the older rustc Kani bundles, so the
 /// `unsafe` block satisfies the prover and `allow(unused_unsafe)` satisfies `-D warnings`. The
 /// allow is load-bearing for the prover, not a sign the call needs auditing; it goes when Kani's
-/// rustc passes 2026-02. See nifeos/record:notes/x86-port/cpu-state.md.
+/// rustc passes 2026-02. See partsfoundry/record:notes/x86-port/cpu-state.md.
 ///
 /// Name: provisional (milestone 304 (`cargo kani -p kernel` only ever compiled one architecture)):
 /// `cpuid` is the instruction's own mnemonic, which AGENTS.md's naming section keeps rather than
@@ -70,7 +70,7 @@ fn words(r: CpuidResult) -> [u32; 4] {
 /// used for and where `CPUID` says so.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(boot_info_pointer: usize) {
     let _ = boot_info_pointer;
 
@@ -185,7 +185,7 @@ pub fn draw_random_seed() -> Option<u64> {
 /// bits), or when `ECX`, the crystal frequency, is zero ("not enumerated"; this port keeps no
 /// model-to-crystal table). Under QEMU TCG with `-cpu max` the maximum leaf is `0xd`, so every boot
 /// today calibrates. The rate is a constant only because [`initialize`] refuses bare metal without
-/// the invariant TSC. See nifeos/record:notes/x86-port/cpu-state.md.
+/// the invariant TSC. See partsfoundry/record:notes/x86-port/cpu-state.md.
 pub(crate) fn tsc_crystal_hertz() -> Option<u64> {
     if get().maximum_leaf < 0x15 {
         return None;

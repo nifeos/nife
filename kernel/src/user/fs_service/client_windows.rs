@@ -2,7 +2,7 @@
 //! channels the service keeps side by side, one per live client, and the one `login` keeps for its
 //! durable sessions.
 //!
-//! See nifeos/record:notes/a-frame-per-filesystem-client-channel.md.
+//! See partsfoundry/record:notes/a-frame-per-filesystem-client-channel.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.

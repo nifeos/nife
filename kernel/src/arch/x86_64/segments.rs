@@ -7,7 +7,7 @@
 //!
 //! `syscall`/`sysret` derive four selectors from `IA32_STAR` by arithmetic (SS is CS + 8 entering;
 //! user SS and CS are the base + 8 and + 16), so the order kernel code, kernel data, user data,
-//! user code is forced, and reordering it faults `sysret`. See nifeos/record:notes/x86-port/traps.md.
+//! user code is forced, and reordering it faults `sysret`. See partsfoundry/record:notes/x86-port/traps.md.
 
 use core::arch::asm;
 use core::cell::SyncUnsafeCell;
@@ -160,7 +160,7 @@ pub(crate) struct DescriptorTablePointer {
 /// `boot.s` installed, and the old one goes away.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub unsafe fn initialize() {
     let id = crate::cpu::id();
 
@@ -203,7 +203,7 @@ pub unsafe fn initialize() {
     // Loading a segment register in long mode zeroes that segment's base MSR, and `gs`'s base is
     // the per-CPU pointer `cpu::initialize_this_cpu` already set (the console lock reads it). So it
     // is saved and put back around the reload, here rather than by the caller. `fs` would need the
-    // same if anything used its base. See nifeos/record:notes/x86-port/traps.md.
+    // same if anything used its base. See partsfoundry/record:notes/x86-port/traps.md.
     let gs_base = super::percpu();
 
     // SAFETY: `gdtr` describes the table above, which is well-formed by construction. The far
@@ -319,7 +319,7 @@ unsafe fn write_range_bits(iomap: *mut u8, base: u16, count: u16, deny: bool) {
 /// An unchanged grant returns after one comparison, as on nearly every switch. A change writes only
 /// the bits that move, then points `iomap_base` at the bitmap or past the limit; the CPU reads the
 /// TSS on each `in`/`out`, so no `ltr` is needed. `#[cold]` keeps the body out of the IPC
-/// fastpath's footprint (`script/fastpath-footprint`). See nifeos/record:notes/x86-port/traps.md.
+/// fastpath's footprint (`script/fastpath-footprint`). See partsfoundry/record:notes/x86-port/traps.md.
 ///
 /// Context: interrupts masked and `sched::IPC_TABLES` held (the switch path; the single-hart bench
 /// boot calls it bare); touches only this core's TSS.
@@ -396,8 +396,8 @@ pub(super) fn revoke_installed_port_grant_on(id: usize, base: u16, count: u16) {
 /// A revoked holder may be running on another core whose bitmap still permits the range. The local
 /// reset comes first, as in [`super::mmu::flush_tlb`]; the remote half rides the TLB shootdown's
 /// NMI, since an ordinary IPI deadlocks against a core spinning for `IPC_TABLES` with interrupts
-/// masked (nifeos/record:notes/x86-tlb-shootdown.md). `spare_this_cpu` keeps the invoker's own grant, which the
-/// take-back leaves in place; a whole-machine sweep passes `false`. See nifeos/record:notes/x86-port/traps.md.
+/// masked (partsfoundry/record:notes/x86-tlb-shootdown.md). `spare_this_cpu` keeps the invoker's own grant, which the
+/// take-back leaves in place; a whole-machine sweep passes `false`. See partsfoundry/record:notes/x86-port/traps.md.
 pub(crate) fn revoke_port_grant_everywhere(base: u16, count: u16, spare_this_cpu: bool) {
     if !spare_this_cpu {
         revoke_installed_port_grant(base, count);
@@ -419,7 +419,7 @@ pub fn installed_port_grant() -> Option<(u16, u16)> {
 /// [`IOMAP_BYTES`] of it, with no guard byte, since no port access checks it. It measures the 8 KiB
 /// write alone: nothing points `iomap_base` at it. Milestone 299's lazy install is the real one;
 /// this stays the upper-bound baseline `tss_iomap_lazy_switch` and `tss_iomap_lazy_nop` read
-/// against. See nifeos/record:design/decisions/0121-port-io-capability.md.
+/// against. See partsfoundry/record:design/decisions/0121-port-io-capability.md.
 #[cfg(feature = "bench")]
 #[repr(C, align(8))]
 struct BenchIoBitmap([u8; IOMAP_BYTES]);

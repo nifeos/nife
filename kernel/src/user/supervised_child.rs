@@ -7,7 +7,7 @@
 //! same path. It is the TCB path (`create_thread_control_block`, `CAPABILITY_INSERT`, `CONFIGURE`,
 //! `START`), not [`super::run`]: supervision is fixed at `START` from the fault slot and never
 //! afterward (DECISIONS §26 (the fault endpoint)), and a thread `run` enters never passes `START`.
-//! See nifeos/record:notes/self-test-checks.md.
+//! See partsfoundry/record:notes/self-test-checks.md.
 //!
 //! # BUGS
 //!

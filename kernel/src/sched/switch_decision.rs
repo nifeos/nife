@@ -3,7 +3,7 @@
 //! under `IPC_TABLES` with interrupts masked, once per switch, and both are `#[inline(always)]`, so
 //! their bytes are `schedule`'s own and stay in its pinned hot section. They live in a child of
 //! `sched` because `sched.rs` is a split parent, which only shrinks (§282 (when a file is split,
-//! the parent becomes an index)). See nifeos/record:notes/scheduler/switch.md.
+//! the parent becomes an index)). See partsfoundry/record:notes/scheduler/switch.md.
 //!
 //! Name: provisional (maintainer/schedule-split, 2026-10-12 UTC). The module and both functions,
 //! `choose_next` and `switch_operands`, are provisional names.
@@ -15,7 +15,7 @@ use super::*;
 /// Returns `None` to keep running `current`: the queue was empty and it can still run, or the pop
 /// handed back `current` itself, which `heal_self_pop` repairs. Panics when nothing can run and
 /// there is no idle thread. `current`'s state is read here rather than passed in, and the function
-/// is `#[inline(always)]`, both for code size; see nifeos/record:notes/scheduler/switch.md.
+/// is `#[inline(always)]`, both for code size; see partsfoundry/record:notes/scheduler/switch.md.
 ///
 /// Context: caller holds `IPC_TABLES` with interrupts masked, and has already carried out any kill
 /// or suspension order on `current`.

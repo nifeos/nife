@@ -4,7 +4,7 @@
 //! `arch::riscv64::pmu` and `arch::x86_64::pmu`, the counter is checked to move before it is
 //! believed, and why it does not is recorded as a value the boot line prints.
 //! [`initialize_this_cpu`] runs on every core and assigns each register rather than
-//! read-modify-writing it. See nifeos/record:notes/pmu.md, "How this kernel starts it, and what it prints".
+//! read-modify-writing it. See partsfoundry/record:notes/pmu.md, "How this kernel starts it, and what it prints".
 
 //! # BUGS
 //!
@@ -24,7 +24,7 @@ use crate::cpu::{self, MAXIMUM_CPUS};
 /// **The value written to `PMCCFILTR_EL0` on every core: zero, so EL0 and EL1 are counted and EL2
 /// is not.** calef's ruling A1, 2026-10-07 (UTC), recorded in milestone 353's block.
 ///
-/// Zero counts EL0 and EL1, Secure and Non-secure, and not EL2. See nifeos/record:notes/pmu.md, "Why
+/// Zero counts EL0 and EL1, Secure and Non-secure, and not EL2. See partsfoundry/record:notes/pmu.md, "Why
 /// `PMCCFILTR_EL0` is zero".
 ///
 /// Name: provisional, minted by milestone 353's lane on 2026-10-07 (UTC), replacing
@@ -101,7 +101,7 @@ static CHECK_ELAPSED: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; 
 /// **What `PMCCFILTR_EL0` held before this kernel overwrote it**, per core, for the boot line.
 ///
 /// Evidence for milestone 25 (cross-OS comparison), never state this kernel uses: seL4's published
-/// TX1 figures counted whatever firmware left here. See nifeos/record:notes/pmu.md, "Why `PMCCFILTR_EL0` is zero".
+/// TX1 figures counted whatever firmware left here. See partsfoundry/record:notes/pmu.md, "Why `PMCCFILTR_EL0` is zero".
 static FIRMWARE_FILTER: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
 /// `ID_AA64DFR0_EL1.PMUVer`, bits 11:8 (Arm DDI 0487, `ID_AA64DFR0_EL1`).

@@ -1,7 +1,7 @@
 //! Spawning a client of the service, and the two waits that order a client after the
 //! servers and caretakers it depends on.
 //!
-//! See nifeos/record:notes/fs-server/kernel-wiring.md.
+//! See partsfoundry/record:notes/fs-server/kernel-wiring.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -31,7 +31,7 @@ pub(super) const GRANT_ENDPOINT_PAGES: u64 = 4;
 ///
 /// `extra_stack` is pages below the one `run` maps, at most [`CLIENT_EXTRA_STACK`]. A shell's need
 /// tracks the largest value `grant_plan` hands it; an overflow presents as a data abort on `sp`,
-/// then the 60-second lost-wakeup watchdog. See nifeos/record:notes/fs-server/kernel-wiring.md.
+/// then the 60-second lost-wakeup watchdog. See partsfoundry/record:notes/fs-server/kernel-wiring.md.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn spawn_fs_client(
     client_image: &'static [u8],
@@ -149,7 +149,7 @@ pub fn wait_for_service(readiness: Readiness) {
 /// The FS server, the caretaker and the client share one frame. At startup the caretaker stages
 /// the granted name there and blocks in a `CALL`; a client that already existed could write over
 /// it, and the FS server would resolve whatever it found. So: drain the service, wait for this
-/// sentinel, then spawn the client. See nifeos/record:notes/fs-server/kernel-wiring.md.
+/// sentinel, then spawn the client. See partsfoundry/record:notes/fs-server/kernel-wiring.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(super) fn wait_for_caretaker(caretaker_ready: RendezvousId) {
     assert_eq!(

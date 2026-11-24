@@ -28,7 +28,7 @@
 # WHAT THIS DOES NOT BOOT. PVH is a hypervisor protocol. A real machine's firmware does not speak it,
 # so milestone 87's OptiPlex will need either a UEFI stub or GRUB's Multiboot (which enters in the
 # same 32-bit protected mode this trampoline already expects, so the trampoline itself carries over
-# unchanged; only the header and the ebx contract differ). See nifeos/record:notes/x86-port.md's BUGS.
+# unchanged; only the header and the ebx contract differ). See partsfoundry/record:notes/x86-port.md's BUGS.
 #
 # That entry mode is the whole reason this file is three times the size of its RISC-V twin. RISC-V
 # and aarch64 are entered in the width they run in, so their boot code can be linked high and use
@@ -60,7 +60,7 @@
 # means the instruction after `mov cr0, eax` is fetched through a broken mapping, the CPU takes a
 # page fault with no IDT, escalates to a double fault with no IDT, and triple-faults, which on QEMU
 # is a machine reset with no output. `-d int,cpu_reset -no-reboot` is how you see it. See
-# nifeos/record:notes/x86-port/boot.md.
+# partsfoundry/record:notes/x86-port/boot.md.
 
 # ---------------------------------------------------------------------------------------------
 # The PVH entry note. This is the whole boot header: four words that tell the loader where to jump.
@@ -80,7 +80,7 @@
 3:  .long _start                        # the 32-bit entry, a physical address (`.boot` is linked low)
 4:  .align 4
 
-# CFI (call-frame information): see nifeos/record:notes/cfi-unwind.md. No directives anywhere in the 16-bit and
+# CFI (call-frame information): see partsfoundry/record:notes/cfi-unwind.md. No directives anywhere in the 16-bit and
 # 32-bit stretches of this file (`_start` through `long_mode_entry`, and the whole of
 # `secondary_boot` through `ap_long_mode_entry`): these modes have no valid stack for most of their
 # length (no caller, no `sp` worth describing) and DWARF call-frame information is specified and
@@ -185,7 +185,7 @@ _start:
 
     # --- 2f. NX, checked HERE because the next step is what would fault ---
     #
-    # The first of three boot gates (nifeos/record:design/roadmap/0524-the-three-x86-64-boot-gates.md). The other
+    # The first of three boot gates (partsfoundry/record:design/roadmap/0524-the-three-x86-64-boot-gates.md). The other
     # two are checked in Rust by arch::x86_64::isa::initialize, where the console exists and a refusal
     # can be read. This one cannot wait for that: step 3 below sets EFER.NXE, and on a part without
     # NX that bit is reserved, so `wrmsr` raises #GP with no IDT installed, which escalates to a

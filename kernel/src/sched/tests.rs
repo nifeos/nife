@@ -29,7 +29,7 @@ fn a_running_thread_cannot_be_granted_the_cycle_counter() {
 /// Returns whether `cond` held, evaluating it once more after the deadline.
 ///
 /// A yield count is not a duration once placement scatters work across cores
-/// (nifeos/record:notes/load-sensitive-assertions.md). Two seconds is far beyond an honest completion and well
+/// (partsfoundry/record:notes/load-sensitive-assertions.md). Two seconds is far beyond an honest completion and well
 /// inside the harness's 90 s per-test ceiling, which stays the backstop for a genuine hang.
 pub(super) fn wait_for(mut cond: impl FnMut() -> bool) -> bool {
     let deadline = crate::arch::timer::now() + 2 * crate::arch::timer::frequency();
@@ -83,7 +83,7 @@ pub(super) fn spin_until(mut cond: impl FnMut() -> bool) -> bool {
 // The delivery tests below are portable; only the trigger is architectural. aarch64 sends itself
 // an SGI, x86_64 a local-APIC self-IPI, and RISC-V, which has neither, makes the console UART
 // assert its own transmit-empty line into the PLIC (`console::raise_uart_interrupt`). See
-// nifeos/record:notes/interrupts.md, "Testing it on RISC-V, which has no SGI".
+// partsfoundry/record:notes/interrupts.md, "Testing it on RISC-V, which has no SGI".
 
 /// The interrupt `an_interrupt_becomes_a_message` raises.
 #[cfg(target_arch = "aarch64")]
@@ -242,7 +242,7 @@ fn a_spawned_thread_runs() {
 ///
 /// Both checks loop until a pass of this core's own runs: `check()` is single-flight, and timer
 /// ticks on other cores call it too, so a tick's pass that read the byte before the flip can take
-/// the slot and return `false` here (nifeos/record:notes/cpu-models.md BUGS).
+/// the slot and return `false` here (partsfoundry/record:notes/cpu-models.md BUGS).
 #[test_case]
 fn the_canary_reports_a_byte_that_changed_behind_its_back() {
     use core::sync::atomic::AtomicU8;
@@ -307,7 +307,7 @@ fn threads_round_robin() {
 /// DECISIONS §5 (preemptive threads with real stacks): "Under cooperative scheduling, one bad user
 /// program hangs the machine permanently." The spinner is a tight loop with no yield, no system call
 /// and no call, nothing a cooperative scheduler could hook; only a timer interrupt can take its
-/// core back. If this passes, the kernel can host untrusted code. See nifeos/record:notes/scheduler/switch.md.
+/// core back. If this passes, the kernel can host untrusted code. See partsfoundry/record:notes/scheduler/switch.md.
 #[test_case]
 fn a_thread_that_never_yields_is_preempted_anyway() {
     static SPINNING: AtomicU64 = AtomicU64::new(0);
@@ -392,7 +392,7 @@ fn a_thread_that_never_yields_is_preempted_anyway() {
 fn a_finished_thread_is_reaped_and_its_memory_returned() {
     // Reaping is proven per thread, by `is_thread_present` on this test's own ThreadIds, not by
     // the table headcount, which a neighbour's late teardown moves
-    // (nifeos/record:notes/load-sensitive-assertions.md). The probe reports its own stack address, because a
+    // (partsfoundry/record:notes/load-sensitive-assertions.md). The probe reports its own stack address, because a
     // test cannot read a stack out of a thread that may already be reaped.
     static PROBE_SP: AtomicU64 = AtomicU64::new(0);
 
@@ -413,7 +413,7 @@ fn a_finished_thread_is_reaped_and_its_memory_returned() {
     // The FIRST batch legitimately costs a couple of frames: the stack area is a fresh
     // region of virtual address space, so `map_page` has to build an L2 and an L3 page
     // table for it. Those are a one-time cost, not a leak: `unmap_page` frees the leaf
-    // mapping but leaves the intermediate tables standing, on purpose (nifeos/record:notes/teardown.md).
+    // mapping but leaves the intermediate tables standing, on purpose (partsfoundry/record:notes/teardown.md).
     batch_of_eight();
 
     // Stack reuse is asserted directly; the frame count below is near-blind to the leak in this
@@ -421,7 +421,7 @@ fn a_finished_thread_is_reaped_and_its_memory_returned() {
     // batch is reaped must land below the watermark that stood before it; one, because the
     // watermark is the high-water mark of concurrent threads and a batch can legitimately raise
     // it. Before the frame baseline, so the settle absorbs its frees. See
-    // nifeos/record:notes/load-sensitive-assertions/stack-reuse-and-proxy-detectors.md.
+    // partsfoundry/record:notes/load-sensitive-assertions/stack-reuse-and-proxy-detectors.md.
     let watermark = crate::thread::stack_area_span().1;
     PROBE_SP.store(0, Ordering::SeqCst);
     let probe = crate::sched::spawn(|| {
@@ -474,7 +474,7 @@ fn a_finished_thread_is_reaped_and_its_memory_returned() {
     // `<=`, not `==`: a leak keeps `used` above `before`, and a neighbour's late teardown can only
     // free frames. This catches a per-thread frame the reaper failed to return; the reuse claim
     // above covers the defect in the test's name. The message prints the count the wait decided
-    // on, so a `false` return leaves `seen > before` (nifeos/record:notes/load-sensitive-assertions.md).
+    // on, so a `false` return leaves `seen > before` (partsfoundry/record:notes/load-sensitive-assertions.md).
     let mut seen = before;
     let came_back = wait_for(|| {
         seen = used();
@@ -525,7 +525,7 @@ fn every_thread_stack_has_a_guard_page() {
 /// the stack rather than a reader doing it by hand. The three kinds are allocated three ways (a
 /// linker symbol, a `.bss` array, a slot in the virtual area 64 GiB up), so one of each is
 /// checked, and so are the negatives: a classifier answering `Thread(0)` everywhere would pass the
-/// positives. See nifeos/record:notes/stack/kernel-stack-freed-under-its-owner.md.
+/// positives. See partsfoundry/record:notes/stack/kernel-stack-freed-under-its-owner.md.
 #[test_case]
 fn a_guard_page_fault_names_its_stack() {
     use crate::arch::mmu;
@@ -573,7 +573,7 @@ fn a_guard_page_fault_names_its_stack() {
 /// in that window unmaps the stack a core is still running on.
 ///
 /// Stated over `(state, on_cpu)` because the window is a few hundred instructions on two cores and
-/// cannot be staged. See nifeos/record:notes/stack/kernel-stack-freed-under-its-owner.md.
+/// cannot be staged. See partsfoundry/record:notes/stack/kernel-stack-freed-under-its-owner.md.
 #[test_case]
 fn a_dead_thread_still_standing_on_its_stack_is_not_reapable() {
     use super::{RegionReap, State, region_reap_verdict};
@@ -697,7 +697,7 @@ fn a_slots_guard_page_begins_where_the_slot_below_it_ends() {
 #[test_case]
 fn kernel_stacks_do_not_touch_the_frame_allocator_in_steady_state() {
     // Each spawn is followed to its own reap by ThreadId, not by the table headcount, which every
-    // other test's teardown moves (nifeos/record:notes/load-sensitive-assertions.md).
+    // other test's teardown moves (partsfoundry/record:notes/load-sensitive-assertions.md).
     let settle = |tid| {
         assert!(
             wait_for(|| !crate::sched::is_thread_present(tid)),
@@ -781,7 +781,7 @@ fn other_threads_run_while_one_is_blocked() {
     crate::sched::reclaim_region(region).expect("test region would not reclaim");
 }
 
-/// **An interrupt becomes a message.** DECISIONS §10 and nifeos/record:notes/interrupts.md, executed.
+/// **An interrupt becomes a message.** DECISIONS §10 and partsfoundry/record:notes/interrupts.md, executed.
 ///
 /// A thread blocks on a rendezvous bound to an interrupt, the test raises it from software, the
 /// handler signals the rendezvous, and the thread wakes: the path a userspace driver takes. The

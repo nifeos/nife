@@ -2,7 +2,7 @@
 //! and PAT settings that close ring 3 off from what it must not reach.
 //!
 //! Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-//! nifeos/record:design/naming/acronyms-and-abbreviations.md; a module is a thing, so it takes the noun
+//! partsfoundry/record:design/naming/acronyms-and-abbreviations.md; a module is a thing, so it takes the noun
 //! `cpu_initialization` rather than the verb.
 
 use super::*;
@@ -12,7 +12,7 @@ use super::*;
 /// trap can be delivered through it.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     // First, before this core prints anything or adopts the fine map: the fine map's framebuffer
     // pages select PAT entry 1, and on a core that has not run this, entry 1 is write-through.
@@ -39,7 +39,7 @@ pub fn initialize() {
 /// this runs before `mmu::initialize` builds the fine map, or on a secondary before
 /// `mmu::initialize_secondary` adopts it, and runs on every core so they agree. Without the PAT
 /// (`CPUID.1:EDX[16]`), `PWT` alone is write-through and the boot line says so. See
-/// nifeos/record:notes/x86-port/cpu-state.md.
+/// partsfoundry/record:notes/x86-port/cpu-state.md.
 ///
 /// Name: provisional (the console-scroll lane).
 pub(super) fn give_write_combining_a_page_attribute_entry() {
@@ -79,7 +79,7 @@ pub(super) fn give_write_combining_a_page_attribute_entry() {
 /// `crates/page_tables`'s decoder reports a user page as not kernel-executable, and that is true only
 /// with this bit set. Setting it without `CPUID.(7,0):EBX[7]` is `#GP`, so a CPU that does not
 /// offer it is left alone and the boot line says ring 0 can execute ring-3 pages there. Per core:
-/// `CR4` is per-CPU state. See nifeos/record:notes/x86-port/cpu-state.md.
+/// `CR4` is per-CPU state. See partsfoundry/record:notes/x86-port/cpu-state.md.
 pub(super) fn close_ring3_pages_to_ring0_execution() {
     /// `CR4.SMEP`: "Supervisor Mode Execution Prevention".
     const SMEP: u64 = 1 << 20;
@@ -118,7 +118,7 @@ pub(super) fn close_ring3_pages_to_ring0_execution() {
 /// that the kernel never granted, and `boot.s` writes only `PAE` into `CR4`, so the bit is whatever
 /// firmware left. It is read first, and the boot console says so when firmware left it set.
 /// `CR4.TSD` stays open on purpose: `user_mode_runtime::counter_ticks()` is `rdtsc`. Per core: `CR4` is
-/// per-CPU state. See nifeos/record:notes/x86-port/cpu-state.md.
+/// per-CPU state. See partsfoundry/record:notes/x86-port/cpu-state.md.
 pub(super) fn close_performance_counters_to_ring3() {
     /// `CR4.PCE`: "Performance-Monitoring Counter Enable". Set means `RDPMC` is legal at any
     /// privilege level; clear means ring 0 only.

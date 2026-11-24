@@ -5,7 +5,7 @@
 //! [`KERNEL_VA_BASE`] (PML4[511]), so the direct map of physical memory is a separate PML4 entry
 //! at [`DIRECT_MAP_BASE`] (PML4[273]), as on Linux. `boot.s` installs the direct map's entry
 //! before the first Rust instruction, so [`phys_to_virt`] means one thing for the machine's whole
-//! life, and [`initialize`] drops the boot identity map. See nifeos/record:notes/x86-port/kernel-page-tables.md,
+//! life, and [`initialize`] drops the boot identity map. See partsfoundry/record:notes/x86-port/kernel-page-tables.md,
 //! which holds the design and the detail of each BUGS entry.
 
 //! # BUGS

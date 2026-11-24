@@ -6,7 +6,7 @@
 //! `PageFrame::MAP`, `AddressSpace::MAP_INTO` and `MemoryRegion::MAP`, just before the critical
 //! section that reads the source capability and files the copy. Nothing is held at the seam. Only
 //! the test kernel has it: the module and every call are under `cfg(feature = "system_tests")`. See
-//! nifeos/record:notes/test-kernel-seams.md, which has the protocol.
+//! partsfoundry/record:notes/test-kernel-seams.md, which has the protocol.
 
 //! # BUGS
 //!

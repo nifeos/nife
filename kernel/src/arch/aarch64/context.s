@@ -21,7 +21,7 @@
 // we invented; it falls out of the calling convention, and it is why real kernels have both a
 // trap frame *and* a much cheaper voluntary switch.
 //
-// (No floating-point registers, because the kernel is built `softfloat`. See nifeos/record:notes/aarch64.md
+// (No floating-point registers, because the kernel is built `softfloat`. See partsfoundry/record:notes/aarch64.md
 // that decision, made at milestone 1 for a completely different reason, means `d8`–`d15`
 // simply do not appear here.)
 //
@@ -35,7 +35,7 @@
 //
 // That is the whole trick. A context switch is a function call that returns somewhere else.
 //
-// See nifeos/record:notes/threads.md.
+// See partsfoundry/record:notes/threads.md.
 
 .section ".text", "ax"
 
@@ -44,8 +44,8 @@
 //   x0 = where to STORE our stack pointer (i.e. `&mut prev.context`)
 //   x1 = the stack pointer to RESTORE     (i.e. `next.context`)
 //
-// AAPCS64 puts the first two arguments in x0 and x1. See nifeos/record:notes/registers.md.
-// CFI (see nifeos/record:notes/cfi-unwind.md for the general shape). This function's frame is exactly the 96
+// AAPCS64 puts the first two arguments in x0 and x1. See partsfoundry/record:notes/registers.md.
+// CFI (see partsfoundry/record:notes/cfi-unwind.md for the general shape). This function's frame is exactly the 96
 // bytes it pushes, described once below with the ordinary push/pop CFI a compiler would emit for
 // any other function that spills twelve callee-saved registers. **The stack swap needs no CFI of
 // its own**: `.cfi_def_cfa_offset 96` says "CFA = sp + 96", a formula in terms of the CURRENT sp,
@@ -57,7 +57,7 @@
 // debugger stopped anywhere in this function, on either side of the swap, sees a correct frame.
 // In the pinned hot section, because every IPC that blocks runs it: milestone 796 (pin the
 // hot trap path's placement).
-// See nifeos/record:notes/benchmarks/kernel-footprint-and-caches.md, "The hot section".
+// See partsfoundry/record:notes/benchmarks/kernel-footprint-and-caches.md, "The hot section".
 .section ".text.hot.switch_to", "ax"
 .global switch_to
 .type switch_to, @function

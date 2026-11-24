@@ -43,7 +43,7 @@ pub(crate) const PSCI_NOT_DISCOVERED: i64 = i64::MIN;
 ///
 /// `target_mpidr` is the core's `MPIDR_EL1[39:0]`, `entry` the physical address it starts at with
 /// the MMU off, and `context` arrives in its x0. The conduit and the function id are the ones
-/// `isa::initialize` read from `/psci`. See nifeos/record:notes/aarch64-port.md, "PSCI and the entry exception
+/// `isa::initialize` read from `/psci`. See partsfoundry/record:notes/aarch64-port.md, "PSCI and the entry exception
 /// level".
 ///
 /// # BUGS

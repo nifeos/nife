@@ -1,5 +1,5 @@
 //! Spawning a kernel thread: [`spawn`], [`spawn_on`] a named core, and [`spawn_with_quota`]. See
-//! nifeos/record:notes/scheduler.md ("Placement").
+//! partsfoundry/record:notes/scheduler.md ("Placement").
 //!
 //! The other end of a thread's life (`exit`, `exit_thread`, `fault` and the departure they share)
 //! is in `sched.rs`, because `system_call::dispatch` reaches it and `script/fastpath-footprint`
@@ -63,7 +63,7 @@ pub fn spawn<F: FnOnce() + Send + 'static>(f: F) -> Option<ThreadId> {
 ///
 /// No caller: a userspace process spawns out of its own untyped budget, which is its quota. Kept as
 /// the bound for kernel threads, allowed unconditionally (§38 (a suppression is scoped to an item
-/// and carries a reason), disposition 3). See nifeos/record:notes/quotas.md.
+/// and carries a reason), disposition 3). See partsfoundry/record:notes/quotas.md.
 #[allow(dead_code)]
 pub fn spawn_with_quota<F: FnOnce() + Send + 'static>(
     budget: &'static AtomicU32,
@@ -112,7 +112,7 @@ pub fn spawn_with_quota<F: FnOnce() + Send + 'static>(
 /// `schedule` ends a killed thread wherever it finds it running, and a spawn closure holds the
 /// space it is loading as a local until [`adopt_address_space`] gives it to the registry, so a kill
 /// in between would lose the image and its page tables for the boot. Pair it with [`allow_kill`]
-/// right after the space is adopted; nothing in between may block. See nifeos/record:notes/frames.md.
+/// right after the space is adopted; nothing in between may block. See partsfoundry/record:notes/frames.md.
 ///
 /// Name: provisional (lane/frame-ledger-overrun, 2026-10-22 UTC).
 pub fn defer_kill() {

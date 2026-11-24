@@ -7,7 +7,7 @@
 //! cannot change the `FS` base, by ruling: `CR4.FSGSBASE` stays off (§269 fork 4), so the kernel's
 //! copy is always the register's value. The write is lazy: the register always holds the running
 //! thread's value, so a switch writes `IA32_FS_BASE` only when the incoming value differs. See
-//! nifeos/record:notes/x86-port/cpu-state.md.
+//! partsfoundry/record:notes/x86-port/cpu-state.md.
 
 use super::exceptions::TrapFrame;
 

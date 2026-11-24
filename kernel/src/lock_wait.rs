@@ -3,7 +3,7 @@
 //! Built only with `--features lock_wait`. Counts contended acquisitions and their wait per rank,
 //! the reaper's stack-free and removal times, and `sched::current_capability`'s calls and waits, per core
 //! and only while [`ARMED`]. An uncontended acquisition costs what it always did. What it cannot
-//! see is in nifeos/record:notes/job-mix/lock-wait-instrument.md.
+//! see is in partsfoundry/record:notes/job-mix/lock-wait-instrument.md.
 //!
 //! Module, feature and the `job-mix-lock:` line are provisional names, a lane's coinage, per the
 //! naming tenet.

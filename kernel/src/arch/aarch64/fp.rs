@@ -1,6 +1,6 @@
 //! **A thread's floating-point and SIMD registers, aarch64**, for the portable [`crate::fp`]. With
 //! no dirty bit, [`FpState::live`] records whether a thread has ever used the unit. See
-//! nifeos/record:notes/aarch64-port.md, "Floating point and SIMD".
+//! partsfoundry/record:notes/aarch64-port.md, "Floating point and SIMD".
 //!
 //! # BUGS
 //!
@@ -97,10 +97,10 @@ const ZEN_AND_SMEN: u64 = (0b11 << 16) | (0b11 << 24);
 ///
 /// Called per core from `sched::initialize` and `sched::adopt_secondary_idle`: `CPACR_EL1` is
 /// banked and resets to an UNKNOWN value. QEMU resets it to the value this writes, so no test sees
-/// a part that reset it open; see nifeos/record:notes/aarch64-port.md, "Floating point and SIMD".
+/// a part that reset it open; see partsfoundry/record:notes/aarch64-port.md, "Floating point and SIMD".
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     instructions::write_cpacr_synchronized(instructions::read_cpacr() & !(FPEN | ZEN_AND_SMEN));
 }
@@ -219,7 +219,7 @@ impl FpState {
 ///
 /// The stub models `CPACR_EL1` as a plain 64-bit register with no RES0 fields and no pipeline, so
 /// these proofs say only that the code never writes a field it did not mean to, not which fields
-/// exist. See nifeos/record:notes/kernel-proofs/stubbing-an-instruction.md.
+/// exist. See partsfoundry/record:notes/kernel-proofs/stubbing-an-instruction.md.
 #[cfg(kani)]
 mod proofs {
     use core::sync::atomic::AtomicU64;

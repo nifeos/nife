@@ -4,7 +4,7 @@
 //! The kernel reads each slot's identity registers and hands the device to the driver that claims
 //! its type (`components/src/block_driver.rs` for a disk). It keeps the two DMA-critical powers,
 //! the ring addresses and the "go", and validates every descriptor before the device sees it. See
-//! nifeos/record:notes/virtual-io.md, "The kernel's half", and nifeos/record:notes/dma.md.
+//! partsfoundry/record:notes/virtual-io.md, "The kernel's half", and partsfoundry/record:notes/dma.md.
 
 use crate::arch::mmu::{
     self, VIRTUAL_IO_INTERRUPT_NUMBER_BASE, VIRTUAL_IO_MMIO_BASE, VIRTUAL_IO_SLOT_STRIDE,
@@ -174,7 +174,7 @@ pub(crate) struct BlockDevice {
 ///
 /// The order is a contract, the roster's row order: every virtio-mmio slot in slot order, then
 /// every modern virtio-pci function in bus:device.function order. Resolving a PCI ordinal brings
-/// the function up; the mmio half only reads identity registers. See nifeos/record:notes/virtual-io.md, "The
+/// the function up; the mmio half only reads identity registers. See partsfoundry/record:notes/virtual-io.md, "The
 /// kernel's half".
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // fs_service is the caller, and the phase-2 test drives it
 pub(crate) fn find_block_device_n(n: usize) -> Option<BlockDevice> {
@@ -215,7 +215,7 @@ fn mmio_block_device_n(n: usize) -> Option<VirtualIoMmioDevice> {
 
 // ---------------------------------------------------------------------------------------------
 // DMA confinement: the kernel owns the device's transport, keeps the ring addresses and the "go",
-// and validates every descriptor against the driver's DMA region first. See nifeos/record:notes/dma.md.
+// and validates every descriptor against the driver's DMA region first. See partsfoundry/record:notes/dma.md.
 // ---------------------------------------------------------------------------------------------
 
 use crate::sync::{InterruptSafeMutualExclusionLock, rank};
@@ -257,7 +257,7 @@ const REG_DEVICE_CONFIG: u64 = 0x100;
 /// The transport seam: everything above it speaks virtio-mmio's register vocabulary, the one
 /// `moho_abi::virtual_io` exposes, and a `Transport` answers it on whichever bus the device sits. The mmio
 /// variant passes through; the pci variant translates to the common-config layout, the ISR byte
-/// and the notify doorbell. See nifeos/record:notes/pcie.md, "The transport seam".
+/// and the notify doorbell. See partsfoundry/record:notes/pcie.md, "The transport seam".
 pub(crate) enum Transport {
     /// A virtio-mmio slot: the vocabulary IS this device's register block.
     Mmio { mmio_phys: u64 },
@@ -314,7 +314,7 @@ const PCI_QUEUE_DEVICE: u64 = 0x30;
 /// Safe fns over a module invariant: they are private, and every call site passes a field of
 /// `Transport::Pci` (resolved from a mapped BAR, copied only by `Transport::pci`) plus a bounded
 /// offset. `notify_addr[q]` is zero until set up, so [`notify`] checks
-/// [`Transport::is_doorbell_ready`] first. See nifeos/record:notes/virtual-io.md, "The kernel's half".
+/// [`Transport::is_doorbell_ready`] first. See partsfoundry/record:notes/virtual-io.md, "The kernel's half".
 fn pread<T: Copy>(phys: u64) -> T {
     // SAFETY: `phys` is a field of a `Transport::Pci`, plus at most a common-config offset or a
     // device-config offset. Those fields come from `pci.rs`'s BAR resolution and reach this module
@@ -560,7 +560,7 @@ struct Device {
     driver_features_sel: u32,
     /// Physical base of the kernel-private shadow page: the descriptor table and available ring
     /// the device reads, copied here by `notify` after validation, so the bytes the device reads
-    /// are the bytes the kernel validated. See nifeos/record:notes/dma.md, "The shadow descriptor ring".
+    /// are the bytes the kernel validated. See partsfoundry/record:notes/dma.md, "The shadow descriptor ring".
     shadow_base: u64,
 }
 
@@ -569,7 +569,7 @@ struct Device {
 /// A slot comes back when its driver dies ([`bind_to_current_thread`], [`unregister`]), so this
 /// counts live transports, not every transport a boot has wired. A name that outlives its device
 /// is refused, not resolved to the device that took the slot next (§16 (object revocation), amendment of 2026-10-27).
-/// See nifeos/record:notes/virtual-io.md, "The kernel's half".
+/// See partsfoundry/record:notes/virtual-io.md, "The kernel's half".
 ///
 /// Twelve: the full kernel and system suites pass on all three architectures at twelve, where
 /// thirty-four were needed while no slot came back. Ten bumps of this number are not coming back.
@@ -616,7 +616,7 @@ static OWNED: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize:
 ///
 /// `rid` is the PCIe requester id, `None` on virtio-mmio. With an IOMMU active and a `rid`, the
 /// device is confined in hardware to its DMA region plus the shadow page before it is entered in
-/// the table; the shadow ring stays as defence in depth (nifeos/record:notes/dma.md). Returns `None`, with the
+/// the table; the shadow ring stays as defence in depth (partsfoundry/record:notes/dma.md). Returns `None`, with the
 /// device unregistered and still blocked, when the IOMMU refuses to attach it
 /// ([`crate::iommu::confine`] prints why).
 pub(crate) fn register(
@@ -714,7 +714,7 @@ pub(crate) fn release_owned_by(tid: crate::thread::ThreadId) {
 /// specification asks of a driver, so the device holds no queue, feature or interrupt the dead
 /// driver programmed and stops reading memory that is about to be reused. The kernel-private shadow
 /// frame goes back to the allocator after the reset. The driver's DMA region is the caller's, as it
-/// was at `register`. See nifeos/record:notes/virtual-io.md, "The kernel's half".
+/// was at `register`. See partsfoundry/record:notes/virtual-io.md, "The kernel's half".
 pub(crate) fn unregister(id: u64) -> bool {
     let removed = {
         let mut devs = DEVICES.lock();
@@ -786,7 +786,7 @@ fn direct_memory_access_write64(phys: u64, v: u64) {
 ///
 /// A thin adapter over `crates/direct_memory_access_validator::validate_and_shadow`, which Kani
 /// proves for every input: ring physical addresses, the direct-map closures and `QSIZE` pass
-/// straight through. See nifeos/record:notes/dma.md and nifeos/record:notes/verification.md.
+/// straight through. See partsfoundry/record:notes/dma.md and partsfoundry/record:notes/verification.md.
 #[allow(clippy::too_many_arguments)]
 fn validate_and_shadow(
     direct_memory_access_base: u64,
@@ -890,7 +890,7 @@ pub(crate) fn write_register(id: u64, off: u64, val: u32) -> Result<(), Transpor
 ///
 /// `INDIRECT_DESC` (bit 28) and `RING_PACKED` (bit 34) both change what the device reads
 /// descriptors from, which the validator assumes it controls, so both are forced off. See
-/// nifeos/record:notes/dma.md, "The shadow descriptor ring".
+/// partsfoundry/record:notes/dma.md, "The shadow descriptor ring".
 fn sanitize_driver_features(sel: u32, val: u32) -> u32 {
     const F_INDIRECT_DESC_LO: u32 = 1 << 28; // feature bit 28
     const F_RING_PACKED_HI: u32 = 1 << (34 - 32); // feature bit 34
@@ -1023,7 +1023,7 @@ const TEST_HOOK_DRIVER_OK: u32 = 1 | 2 | 8 | 4;
 ///
 /// Points queue 0's used ring into the shadow page, fills `flags` with `0xffff`, and kicks with
 /// nothing available, so the device's one write is clearing `VRING_USED_F_NO_NOTIFY`. No fault
-/// record is promised. See nifeos/record:notes/virtual-io.md, "The kernel's half".
+/// record is promised. See partsfoundry/record:notes/virtual-io.md, "The kernel's half".
 #[cfg(test)]
 pub(crate) fn provoke_write_to_shadow(id: u64) -> u16 {
     let mut devs = DEVICES.lock();
@@ -1058,7 +1058,7 @@ pub(crate) fn provoke_write_to_shadow(id: u64) -> u16 {
 ///
 /// Goes around the shadow ring, which would refuse first: queue 0's available ring is pointed at
 /// `avail_out_of_domain`, filled from the CPU (which the IOMMU does not police), and kicked. The
-/// device's first read is the out-of-domain IOVA. See nifeos/record:notes/iommu.md.
+/// device's first read is the out-of-domain IOVA. See partsfoundry/record:notes/iommu.md.
 #[cfg(test)]
 pub(crate) fn provoke_iommu_escape(id: u64, avail_out_of_domain: u64) {
     let mut devs = DEVICES.lock();
@@ -1098,7 +1098,7 @@ pub(crate) fn provoke_iommu_escape(id: u64, avail_out_of_domain: u64) {
 ///
 /// The request is `GET_ID` (virtio 1.1 section 5.2.6): it touches no sector and writes twenty
 /// bytes of serial number, so any disk serves. The interrupt confinement tests aim the message it
-/// raises somewhere it was never granted. See nifeos/record:notes/iommu.md.
+/// raises somewhere it was never granted. See partsfoundry/record:notes/iommu.md.
 #[cfg(all(test, target_arch = "x86_64"))]
 pub(crate) fn provoke_completion(id: u64) -> bool {
     /// `VIRTIO_BLK_T_GET_ID`, and `VIRTQ_DESC_F_WRITE` (the device writes this buffer).

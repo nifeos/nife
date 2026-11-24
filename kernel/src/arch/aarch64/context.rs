@@ -7,7 +7,7 @@
 //! kernel thread" or "for a user thread" and gets back an opaque [`Context`] it only ever stores and
 //! hands to [`switch_to`]. That is the seam that lets a second architecture (RISC-V, with a
 //! different callee-saved set and different trampolines) drop in without touching `thread.rs`. See
-//! nifeos/record:notes/riscv-port.md, the `Context` leak.
+//! partsfoundry/record:notes/riscv-port.md, the `Context` leak.
 
 /// The callee-saved registers, as `switch_to` pushes them.
 ///

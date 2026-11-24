@@ -4,7 +4,7 @@
 //! controller up and grants the data plane those two. The data plane gets the request endpoint, a
 //! readiness endpoint and the endpoint its grants arrive on, and one window per client
 //! ([`Wiring::client_capability`]). The kernel's own part is [`find_and_confine`]. See
-//! nifeos/record:notes/non-volatile-memory-express.md.
+//! partsfoundry/record:notes/non-volatile-memory-express.md.
 //!
 //! [`find_and_confine`]: crate::non_volatile_memory_express::find_and_confine
 
@@ -456,7 +456,7 @@ impl DmaEscape {
 /// writes into a PRP. The kernel picks the victim frame and plants its canary, and only
 /// [`DmaEscape::release_completed`] frees it, after the controller is disabled. The kernel picks
 /// it because a server guessing "the frame past my region" may guess a frame inside the domain;
-/// see nifeos/record:notes/dma.md for the use-after-free.
+/// see partsfoundry/record:notes/dma.md for the use-after-free.
 #[cfg(feature = "system_tests")]
 pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
     // The victim, outside any run find_and_confine will confine the controller to. Planted with

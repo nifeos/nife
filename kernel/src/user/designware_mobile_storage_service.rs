@@ -2,7 +2,7 @@
 //! clocks and releases its reset, for this controller's badge alone, and the kernel then hands a process one device-typed page of the controller, the transfer region,
 //! two endpoints and the window of the card it may serve;
 //! `components/src/designware_mobile_storage.rs` has what it holds and is refused. See
-//! nifeos/record:notes/designware-mobile-storage.md.
+//! partsfoundry/record:notes/designware-mobile-storage.md.
 //!
 //! Its one caller is the `storage_bench` boot. On radon the booted system's block server serves a
 //! USB drive (§260 (radon's block server serves a USB drive)), not this card.
@@ -20,7 +20,7 @@ use crate::sched::RendezvousId;
 /// Whether the booted system may start this server. True: a `storage_bench` boot on radon
 /// read and wrote through it on 2026-10-22 (UTC), `verdict READ-OK 10960 KiB/s, WRITE-VERIFIED
 /// sectors 2040..2048 (were zero), restored, EL0 block server served`
-/// (`bench/radon-2026-10-22/53-storage-write.log`, nifeos/record:notes/designware-mobile-storage.md's runbook).
+/// (`bench/radon-2026-10-22/53-storage-write.log`, partsfoundry/record:notes/designware-mobile-storage.md's runbook).
 pub(crate) const PROVEN_ON_SILICON: bool = true;
 
 /// Extra stack pages for the server, below the single page `run` maps. The write path's programmed

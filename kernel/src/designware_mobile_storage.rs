@@ -4,7 +4,7 @@
 //! Parity: the JH7110 is a riscv64 part on one board, so this module is riscv64-only. The crate is
 //! architecture-neutral, and a board with this controller on another ISA (several Rockchip arm64
 //! boards) needs only this file's twenty lines and a device-tree match. See
-//! nifeos/record:notes/designware-mobile-storage.md.
+//! partsfoundry/record:notes/designware-mobile-storage.md.
 
 use designware_mobile_storage::host_controller::RegisterWindowAndClock;
 use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccessRegion;
@@ -60,7 +60,7 @@ impl RegisterWindowAndClock for Window {
 }
 
 /// **The IDMAC's region**: contiguous pages in the direct map, ordinary cached memory. radon's DMA
-/// is coherent (nifeos/record:notes/designware-ethernet.md's probe), so a `fence` is all the ordering the
+/// is coherent (partsfoundry/record:notes/designware-ethernet.md's probe), so a `fence` is all the ordering the
 /// controller needs; a board whose DMA is not would need cache maintenance here.
 pub(crate) struct Region {
     phys: u64,

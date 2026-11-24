@@ -217,11 +217,11 @@ isr_\num:
 # at fixed, known offsets from here (CFA+16 and CFA+40 below), and the SysV DWARF mapping already
 # treats register 16 as the return-address column and register 7 as an ordinary describable
 # register, so no special pseudo-register or GDB cooperation is needed the way AArch64's ELR_mode
-# would need (see vectors.s's CFI note for that comparison, and nifeos/record:notes/cfi-unwind.md for what this
+# would need (see vectors.s's CFI note for that comparison, and partsfoundry/record:notes/cfi-unwind.md for what this
 # bought in practice).
 # From here to x86_system_call_entry's end is the pinned hot section: milestone 796 (pin the hot
 # trap path's placement).
-# See nifeos/record:notes/benchmarks/kernel-footprint-and-caches.md, "The hot section". A `system_call` runs only
+# See partsfoundry/record:notes/benchmarks/kernel-footprint-and-caches.md, "The hot section". A `system_call` runs only
 # isr_restore and x86_system_call_entry. isr_common rides along because it falls through into
 # isr_restore, and splitting them would add a `jmp` to every IDT trap.
 .section ".text.hot.x86_system_call_entry", "ax"

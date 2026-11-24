@@ -28,7 +28,7 @@ pub(crate) fn restart() -> moho_abi::Error {
 ///
 /// The order is the one `reboot` keeps, so the bench paths and the prompt reset a board the same
 /// way. Returns only when every route was refused, each refusal already on the console. See
-/// nifeos/record:design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md.
+/// partsfoundry/record:design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md.
 #[cfg_attr(
     not(any(feature = "reboot_soak_test", feature = "storage_read_matrix")),
     allow(dead_code)

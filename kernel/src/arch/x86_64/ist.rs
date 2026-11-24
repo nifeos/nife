@@ -6,7 +6,7 @@
 //! core's per-CPU pointer, so `isr_paranoid` finds the kernel's GS base from its own `rsp`. The
 //! NMI handler must take no exception that returns, since any `iretq` reopens NMIs;
 //! `exceptions::x86_paranoid_dispatch` panics if an NMI lands on an NMI stack. See
-//! nifeos/record:notes/x86-port/cpu-state.md, which holds the detail of each BUGS entry.
+//! partsfoundry/record:notes/x86-port/cpu-state.md, which holds the detail of each BUGS entry.
 //!
 //! Name: provisional: milestone 915 (NMI, double fault and machine check run on their own stacks),
 //! 2026-10-13 UTC. `ist` is the architecture's own term for the table these stacks hang from.

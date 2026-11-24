@@ -5,7 +5,7 @@
 //! records blocked transactions. `initialize` installs an all-invalid directory (DECISIONS §20
 //! (IOMMU-backed DMA isolation)).
 //!
-//! See nifeos/record:notes/iommu.md and nifeos/record:notes/riscv-port/iommu.md.
+//! See partsfoundry/record:notes/iommu.md and partsfoundry/record:notes/riscv-port/iommu.md.
 
 //! # BUGS
 //!
@@ -17,7 +17,7 @@
 //!   [`AttachError::BeyondDeviceTable`]; the three-level mode would reach them.
 //! - A leaf, once allocated, is never freed.
 //!
-//! Details in nifeos/record:notes/riscv-port/iommu.md, BUGS.
+//! Details in partsfoundry/record:notes/riscv-port/iommu.md, BUGS.
 
 use crate::arch::mmu::phys_to_virt;
 use crate::iommu::AttachError;
@@ -221,14 +221,14 @@ fn non_leaf_entry_leaf(entry: u64) -> u64 {
 /// A device context's words in directory order: `tc`, `iohgatp`, `ta`, `fsc`, then the extended
 /// format's four MSI words. The base (32-byte) format writes only the first four. Pure so that
 /// `the_iommu_is_handed_exactly_the_domain_the_kernel_built` can read each field
-/// back at the spec's bit positions.
+/// back at the spec's bit positions. `msiptp` is Off: partsfoundry/record:notes/riscv-port/iommu.md.
 fn device_context(root: u64, pscid: u16) -> [u64; 8] {
     [
         DC_TC_V,                          // tc: valid, faults reported (DTF clear)
         0,                                // iohgatp: Bare
         (pscid as u64) << TA_PSCID_SHIFT, // ta
         FSC_MODE_SV39 | (root >> 12),     // fsc = iosatp
-        0,                                // msiptp: Off (nifeos/record:notes/riscv-port/iommu.md)
+        0,                                // msiptp: Off, as the comment above says
         0,                                // msi_addr_mask
         0,                                // msi_addr_pattern
         0,                                // reserved
@@ -262,7 +262,7 @@ fn queue_enable(base: u64, csr: u64, what: &str) {
 /// device faults until `attach` writes its context.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(base: u64) {
     let mut g = IOMMU.lock();
     assert!(g.is_none(), "IOMMU initialized twice");
@@ -498,7 +498,7 @@ pub fn take_fault() -> Option<Fault> {
 /// id's entry or invalidation lands on another's.
 ///
 /// They run on an aarch64 host, where `crate::arch` is aarch64's, so they prove only this file's
-/// word arithmetic. See nifeos/record:notes/riscv-port/iommu.md and nifeos/record:notes/kernel-proofs.md, stub-list item 8.
+/// word arithmetic. See partsfoundry/record:notes/riscv-port/iommu.md and partsfoundry/record:notes/kernel-proofs.md, stub-list item 8.
 #[cfg(kani)]
 mod proofs {
     use super::*;
@@ -510,7 +510,7 @@ mod proofs {
     /// The IOMMU is handed exactly the domain the kernel built, and it is still translating.
     ///
     /// `iosatp.MODE` is Sv39 for every `root`, since MODE 0 is Bare; the PPN, PSCID and other words
-    /// are exact for a page-frame root below 2^56. See nifeos/record:notes/riscv-port/iommu.md.
+    /// are exact for a page-frame root below 2^56. See partsfoundry/record:notes/riscv-port/iommu.md.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.riscv64.iommu.proofs.the_iommu_is_handed_exactly_the_domain_the_kernel_built.patch`
     #[kani::proof]
@@ -560,7 +560,7 @@ mod proofs {
     ///
     /// Over every `u32`, `directory_position` admits exactly the ids below the directory's limit,
     /// places each in one root entry and inside its leaf's frame, and no two share a byte; and
-    /// `IODIR.INVAL_DDT` decodes to exactly this device with DV set. See nifeos/record:notes/riscv-port/iommu.md.
+    /// `IODIR.INVAL_DDT` decodes to exactly this device with DV set. See partsfoundry/record:notes/riscv-port/iommu.md.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.riscv64.iommu.proofs.no_device_can_reach_another_devices_context.patch`
     #[kani::proof]

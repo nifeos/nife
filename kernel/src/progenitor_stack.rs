@@ -2,7 +2,7 @@
 //!
 //! [`paint_page`] paints each stack page as `boot_progenitor` maps it, and [`report_peak`], from
 //! the idle loop, prints the settled high-water, which `script/swish-check` fails below
-//! [`HEADROOM_FLOOR`]. See nifeos/record:notes/stack/progenitor-stack.md.
+//! [`HEADROOM_FLOOR`]. See partsfoundry/record:notes/stack/progenitor-stack.md.
 //!
 //! # BUGS
 //!
@@ -22,7 +22,7 @@ pub(crate) const STACK_BYTES: u64 = PROGENITOR_STACK_PAGES * PAGE;
 /// `script/swish-check` fails.
 ///
 /// Two pages: one is the step this stack has grown by (a page buffer in the install path's biggest
-/// frames), the other covers paths the gauge cannot see. nifeos/record:notes/stack/progenitor-stack.md, "The
+/// frames), the other covers paths the gauge cannot see. partsfoundry/record:notes/stack/progenitor-stack.md, "The
 /// gate", has the measurements.
 pub(crate) const HEADROOM_FLOOR: u64 = 2 * PAGE;
 

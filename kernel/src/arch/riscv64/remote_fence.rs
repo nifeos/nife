@@ -11,14 +11,14 @@ pub(super) const SBI_RFENCE_EID: usize = 0x5246_4E43;
 /// The RFENCE `size` meaning "every address": all-ones (OpenSBI's `SBI_TLB_FLUSH_ALL`).
 ///
 /// For [`sbi_remote_sfence_vma_asid`] it reaches `sfence.vma x0, asid`; `start = size = 0` would
-/// flush every ASID on every target. See nifeos/record:notes/riscv-tlb-shootdown.md, "The `size` argument is a
+/// flush every ASID on every target. See partsfoundry/record:notes/riscv-tlb-shootdown.md, "The `size` argument is a
 /// trap".
 pub(super) const SBI_RFENCE_ALL: usize = usize::MAX;
 
 /// How many remote RFENCEs this boot has issued, in bench builds only, off the shipping TLB path.
 ///
 /// Each is an `ecall` into firmware, and a single-hart boot must issue none. See
-/// nifeos/record:notes/benchmarks/riscv-map-new-and-the-rfence-probe.md.
+/// partsfoundry/record:notes/benchmarks/riscv-map-new-and-the-rfence-probe.md.
 #[cfg(feature = "bench")]
 pub(super) static REMOTE_FENCES: core::sync::atomic::AtomicU64 =
     core::sync::atomic::AtomicU64::new(0);
@@ -55,7 +55,7 @@ pub fn sbi_remote_sfence_vma(hart_mask: usize, start: usize, size: usize) {
 /// Discard every translation tagged `asid` on the harts in `hart_mask` (`sfence.vma x0, asid`),
 /// the remote half of `mmu::flush_asid`. Returns once every target has drained it, since OpenSBI's
 /// RFENCE is synchronous, which lets the ASID tag another space; targets service it with S-mode
-/// interrupts masked. See nifeos/record:notes/riscv-tlb-shootdown.md.
+/// interrupts masked. See partsfoundry/record:notes/riscv-tlb-shootdown.md.
 ///
 /// # BUGS
 ///

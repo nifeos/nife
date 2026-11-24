@@ -7,7 +7,7 @@
 //!
 //! Set up on day one, per DECISIONS §7 (testing: QEMU harness + host-testable crates, from commit
 //! one). The watchdogs, the frame ledger, skips, filters and repeats are in
-//! nifeos/record:notes/kernel-test-harness.md.
+//! partsfoundry/record:notes/kernel-test-harness.md.
 
 use core::sync::atomic::{
     AtomicBool, AtomicPtr, AtomicU8, AtomicU32, AtomicU64, AtomicUsize, Ordering,
@@ -21,7 +21,7 @@ use crate::arch::semihosting;
 use crate::{print, println};
 
 // The hang watchdog: a no-progress heartbeat for a lost wakeup and a per-test wall-clock ceiling
-// for a livelock, both off the boot core's timer interrupt. nifeos/record:notes/kernel-test-harness.md has what
+// for a livelock, both off the boot core's timer interrupt. partsfoundry/record:notes/kernel-test-harness.md has what
 // each
 // can and cannot see.
 /// **Which tests this binary runs**: a substring of the full test path, or empty for the whole
@@ -32,7 +32,7 @@ use crate::{print, println};
 /// # BUGS
 ///
 /// A filtered run is not the suite: whole-suite ceilings cannot fail in it, and a test that passes
-/// only after another can fail alone. See nifeos/record:notes/kernel-test-harness.md.
+/// only after another can fail alone. See partsfoundry/record:notes/kernel-test-harness.md.
 const TEST_FILTER: &str = env!("NIFE_TEST_FILTER");
 
 /// **Did this run name a test by filter?** For the few tests too expensive for the whole suite,
@@ -54,7 +54,7 @@ const FILTER_COUNTED_ACROSS_IMAGES: bool = !env!("NIFE_TEST_FILTER_ACROSS_IMAGES
 /// **How many times the runner repeats the filtered tests in one boot**, from `NIFE_TEST_REPEAT`
 /// (name provisional; empty means once, and a value that is not a whole number of at least 1 fails
 /// the build). The first failing iteration ends the boot, and [`note_repeat_failure`] names it.
-/// See nifeos/record:notes/kernel-test-harness.md.
+/// See partsfoundry/record:notes/kernel-test-harness.md.
 ///
 /// # BUGS
 ///
@@ -187,7 +187,7 @@ static TEST_NAME_LEN: AtomicUsize = AtomicUsize::new(0);
 
 /// **The current test's skip reason**, set by [`skip!`] when the fixture a test needs is not on
 /// this machine: a third outcome beside pass (return) and fail (panic). `skip!` is a macro so its
-/// `return` leaves the test itself. See nifeos/record:notes/kernel-test-harness.md.
+/// `return` leaves the test itself. See partsfoundry/record:notes/kernel-test-harness.md.
 pub static SKIP_REASON: AtomicPtr<u8> = AtomicPtr::new(core::ptr::null_mut());
 pub static SKIP_REASON_LEN: AtomicUsize = AtomicUsize::new(0);
 /// **A test printed the word "skip" while it was running**, set by the console writer and read
@@ -199,7 +199,7 @@ static PRINTED_A_SKIP_WORD: AtomicBool = AtomicBool::new(false);
 /// returns without a skip reason fails rather than counting as a pass (milestone 214 (a test that
 /// prints "skipping" and returns is counted as passed)). It reads what was printed, so it needs no
 /// allow-list. A test that prints "skip" for another reason and passes is a false positive; the
-/// tree has none. See nifeos/record:notes/kernel-test-harness.md.
+/// tree has none. See partsfoundry/record:notes/kernel-test-harness.md.
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn note_printed(fragment: &str) {
     // A byte loop, not `str::contains`: every print reaches this, and the two-way searcher's
@@ -294,7 +294,7 @@ macro_rules! skip {
 pub use crate::skip;
 
 // The frame ledger: what each test never gave back, and the longest run still free at the end.
-// One bitmap scan per test, between tests. See nifeos/record:notes/kernel-test-harness.md.
+// One bitmap scan per test, between tests. See partsfoundry/record:notes/kernel-test-harness.md.
 
 /// Free frames when the first test started: the ledger's opening balance.
 static FRAMES_AT_START: AtomicUsize = AtomicUsize::new(0);
@@ -319,13 +319,13 @@ const PAGE_FRAME_REPORT_MINIMUM: usize = 16;
 
 /// **What the whole suite may leave unreturned, in frames**, checked once at the end of the run.
 ///
-/// Not zero: `nifeos/record:notes/frame-budget.md` prices what a boot keeps on
+/// Not zero: `partsfoundry/record:notes/frame-budget.md` prices what a boot keeps on
 /// purpose. Just above the measured total, so a test that keeps its memory fails here, naming
 /// itself, rather than later as `OutOfPageFrames` in something innocent.
 ///
 /// # BUGS
 ///
-/// - Two test sites keep their endpoints for the boot on purpose (nifeos/record:notes/kernel-test-harness.md).
+/// - Two test sites keep their endpoints for the boot on purpose (partsfoundry/record:notes/kernel-test-harness.md).
 /// - The kernel's `user::*_service` wiring still uses the never-freed pool, once per test.
 ///
 /// A scripted shell holds its jobs, so the test progenitor supervises each job on the shell's
@@ -335,8 +335,8 @@ const PAGE_FRAME_REPORT_MINIMUM: usize = 16;
 /// takes the corpse with it (`script/swish-check`'s hundred-cycle line). Every space the kernel
 /// loads also holds its startup page and that page's two tables (`user::loader`'s
 /// `STARTUP_PAGE_COST`), so each space the suite keeps keeps three frames more. The NVMe admin
-/// process stays for the boot too (nifeos/record:notes/frames/page-frame-budget.md), as do four tests' block
-/// servers, so each page `block_driver`'s image grows keeps four frames (nifeos/record:notes/frame-budget.md).
+/// process stays for the boot too (partsfoundry/record:notes/frames/page-frame-budget.md), as do four tests' block
+/// servers, so each page `block_driver`'s image grows keeps four frames (partsfoundry/record:notes/frame-budget.md).
 const SUITE_PAGE_FRAME_BUDGET: usize = 25_025;
 
 /// **The longest run of free frames the boot must still have at the end**, in frames.
@@ -415,7 +415,7 @@ fn report_page_frame_ledger() {
              about one: loading a program takes a contiguous run, so the next test to load anything \
              substantial would fail as Unmappable(OutOfPageFrames), and it would do so in whichever \
              test happened to be next rather than in the one that spent the memory. Read the \
-             `[that test kept N frames]` lines above for who grew. See nifeos/record:notes/frames.md."
+             `[that test kept N frames]` lines above for who grew. See partsfoundry/record:notes/frames.md."
         );
         semihosting::exit(semihosting::EXIT_FAILURE);
     }
@@ -426,7 +426,7 @@ fn report_page_frame_ledger() {
              A test built a service and did not hand its memory back. Read the \
              `[that test kept N frames]` lines above for who grew; the reclaim path is \
              `kill_thread` + `sched::reclaim_region`, wrapped as `user::holding::Holding`. Do not \
-             raise the budget without an account of what is permanent and why. See nifeos/record:notes/frames.md."
+             raise the budget without an account of what is permanent and why. See partsfoundry/record:notes/frames.md."
         );
         semihosting::exit(semihosting::EXIT_FAILURE);
     }
@@ -665,7 +665,7 @@ fn current_test_name() -> Option<&'static str> {
 ///
 /// A descheduled emulator misses deadlines, so on a busy host fewer ticks arrive and the budget
 /// stretches with the guest's work, where a wall-clock one would shrink. A change of core
-/// re-anchors, since tick counts are per core. See nifeos/record:notes/kernel-test-harness.md.
+/// re-anchors, since tick counts are per core. See partsfoundry/record:notes/kernel-test-harness.md.
 ///
 /// # EXAMPLES
 ///
@@ -724,7 +724,7 @@ impl TickBudget {
 /// holds it open where a [`TickBudget`] of this core's ticks would run out. A core that takes no
 /// ticks (stopped, or wedged with interrupts masked) holds it open until `backstop_seconds` of the
 /// counter pass. Ticks are kept as `u32`, wrapping, for a small `Err`. See
-/// nifeos/record:notes/kernel-test-harness.md.
+/// partsfoundry/record:notes/kernel-test-harness.md.
 ///
 /// Name: provisional (lane/fuzz-deadlines-count-guest-progress, 2026-10-31 UTC).
 ///
@@ -818,7 +818,7 @@ impl core::fmt::Display for EveryCoreTickBudget {
 /// Yield until `done()`, or until an [`EveryCoreTickBudget`] of two seconds' ticks on every online
 /// core, bounded by twenty seconds of the counter, runs out. `Err` carries the budget, whose
 /// `Display` is the observation it decided on. The seeded fuzz drivers wait with this
-/// (nifeos/record:notes/kernel-test-harness.md).
+/// (partsfoundry/record:notes/kernel-test-harness.md).
 ///
 /// Name: provisional (lane/fuzz-deadlines-count-guest-progress, 2026-10-31 UTC).
 #[cfg(any(test, feature = "system_tests"))]
@@ -915,7 +915,7 @@ pub const WAIT_ON_EVERY_CORE_SECONDS: u64 = 2;
 
 /// Seconds of the counter after which [`wait_on_every_core`] gives up whatever the ticks say.
 /// Under the 60 s hang watchdog and the 90 s per-test budget, and more than ten times the longest
-/// stall measured on a loaded host (nifeos/record:notes/kernel-test-harness.md).
+/// stall measured on a loaded host (partsfoundry/record:notes/kernel-test-harness.md).
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane/fuzz-deadlines-count-guest-progress.
 #[cfg(any(test, feature = "system_tests"))]
@@ -1035,7 +1035,7 @@ impl<T: Fn()> Testable for T {
                 "this test printed \"skip\" and then returned, so the run counts it as a PASS. \
                  A test whose fixture is absent calls testing::skip!(reason), which returns and \
                  puts it in the skipped column; a println! and a `return` are indistinguishable \
-                 from proving the claim. See nifeos/record:design/roadmap/0214-print-and-return-skips.md.",
+                 from proving the claim. See partsfoundry/record:design/roadmap/0214-print-and-return-skips.md.",
             );
         }
 
@@ -1290,7 +1290,7 @@ fn announce_repeat_run(iteration: u32, previous_frames: Option<usize>) -> Repeat
 /// A root region's pages come from the frame allocator and go back to it, so their used bits are
 /// the property itself, and nothing outside the region moves them. A frame a reclaim never
 /// returned stays used, so a leak fails every run. `memory_region::usage` is the instrument for a
-/// child region. See nifeos/record:notes/kernel-test-harness.md.
+/// child region. See partsfoundry/record:notes/kernel-test-harness.md.
 ///
 /// Name: provisional (this lane; calef names the interfaces).
 pub struct RegionRun {

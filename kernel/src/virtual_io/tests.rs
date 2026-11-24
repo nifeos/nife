@@ -136,7 +136,7 @@ fn the_validator_refuses_a_descriptor_that_escapes_the_dma_region() {
 ///
 /// - The two are separate allocations, so this cannot fail whatever the code does. That the
 ///   device's queue registers get the shadow's address, never the driver's, is asserted nowhere
-///   (`nifeos/record:notes/confinement-claims.md`, row 17).
+///   (`partsfoundry/record:notes/confinement-claims.md`, row 17).
 #[test_case]
 fn the_shadow_ring_is_immune_to_a_descriptor_mutated_after_validation() {
     let (driver, shadow, size) = two_regions();

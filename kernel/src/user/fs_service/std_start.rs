@@ -1,5 +1,5 @@
 //! Starting a `std` program with a directory capability: whole, narrowed by a caretaker, clocked,
-//! or bound to one subtree by the FS server. The spawn they share is `std_spawn`. See nifeos/record:notes/std.md.
+//! or bound to one subtree by the FS server. The spawn they share is `std_spawn`. See partsfoundry/record:notes/std.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.

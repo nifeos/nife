@@ -3,7 +3,7 @@
 //!
 //! Every status that device produces is odd, so success is reported as host status **3** (a write
 //! of 1), and `helpers/qemu-runner-x86_64.sh` maps it back. Both halves name the number, because
-//! getting it backwards makes a failing suite pass. See nifeos/record:notes/semihosting.md.
+//! getting it backwards makes a failing suite pass. See partsfoundry/record:notes/semihosting.md.
 //!
 //! # BUGS
 //!

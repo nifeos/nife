@@ -17,7 +17,7 @@ fn harness_runs() {
 ///
 /// A zero-initialized static lands in `.bss`, which occupies no bytes in the
 /// ELF file. Nobody loaded it. If our zeroing loop were wrong, this would hold
-/// whatever garbage was in RAM at power-on. See nifeos/record:notes/elf.md.
+/// whatever garbage was in RAM at power-on. See partsfoundry/record:notes/elf.md.
 #[test_case]
 fn bss_was_zeroed() {
     use core::sync::atomic::{AtomicU64, Ordering};
@@ -41,7 +41,7 @@ fn stack_pointer_is_16_byte_aligned() {
 ///
 /// We run at EL1, whether the machine started us there or at EL2 and `boot.s` dropped down
 /// (`virt,virtualization=on`, or U-Boot on a board; `arch::entry_el` records which). See
-/// nifeos/record:notes/aarch64.md.
+/// partsfoundry/record:notes/aarch64.md.
 ///
 /// RISC-V has no twin: S-mode cannot read its own privilege level, and
 /// `arch::riscv64::exceptions`'s `breakpoint_is_caught_and_execution_resumes` proves it sideways,
@@ -56,7 +56,7 @@ fn running_at_el1() {
 ///
 /// The flat binary's arm64 Image header makes QEMU follow the Linux boot protocol and pass a
 /// pointer. A zero means the runner has regressed to shipping an ELF, which QEMU loads on its
-/// bare-metal path with `x0` zero. See nifeos/record:notes/boot-protocol.md.
+/// bare-metal path with `x0` zero. See partsfoundry/record:notes/boot-protocol.md.
 #[test_case]
 fn device_tree_pointer_was_provided() {
     use core::sync::atomic::Ordering;

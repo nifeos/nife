@@ -3,7 +3,7 @@
 //! `MIDR_EL1` names the part and the `ID_AA64*` registers say what it can do, so discovery reads
 //! registers and parses no firmware. The decoding is in [`machine_discovery::aarch64`],
 //! host-tested; what only the machine can do is here: the reads, the record, and the refusal. See
-//! nifeos/record:notes/aarch64-port.md, "Asking the part what it is".
+//! partsfoundry/record:notes/aarch64-port.md, "Asking the part what it is".
 
 use core::sync::atomic::{AtomicU8, AtomicU32, Ordering};
 
@@ -47,7 +47,7 @@ static PSCI_ID_FROM_PROPERTY: AtomicU8 = AtomicU8::new(0);
 /// does not stop the boot: it runs on one core, and bring-up says so.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// nifeos/record:design/naming/acronyms-and-abbreviations.md.
+/// partsfoundry/record:design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(dtb_ptr: usize) {
     // SAFETY: the pointer firmware handed us, whose magic `memory::initialize` has already checked
     // (it runs first and panics otherwise), named through the boot map's direct region.

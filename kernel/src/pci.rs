@@ -6,8 +6,8 @@
 //! accessors into the mapped ECAM window and the policy: which device, where BARs go, which command
 //! bits to set. Every window comes through `memory::pci_regions()`, and a machine that names none
 //! answers every probe with "nobody home", no MMIO touched. How a function's interrupt is chosen
-//! is the machine's answer (nifeos/record:notes/pcie.md, "Placing BARs, and routing interrupts"). See
-//! nifeos/record:notes/pcie.md and nifeos/record:notes/pcie-transport-scope.md.
+//! is the machine's answer (partsfoundry/record:notes/pcie.md, "Placing BARs, and routing interrupts"). See
+//! partsfoundry/record:notes/pcie.md and partsfoundry/record:notes/pcie-transport-scope.md.
 //!
 //! # BUGS
 //!
@@ -29,7 +29,7 @@ const BUS_BYTES: u64 = 0x10_0000;
 /// How many buses of configuration space this kernel has mapped, and may therefore read. Zero
 /// means no survey has run and [`ecam_buses`] answers the architecture's compiled-in default.
 /// A runtime value because a controller behind a root port needs the bus behind that port mapped,
-/// and nothing compiled in knows which bus that is (nifeos/record:notes/pcie.md, "More than one bus").
+/// and nothing compiled in knows which bus that is (partsfoundry/record:notes/pcie.md, "More than one bus").
 static ECAM_BUSES: AtomicU16 = AtomicU16::new(0);
 
 /// The ECAM window's physical base, cached from `memory::pci_regions` by
@@ -80,7 +80,7 @@ pub fn ecam_bytes() -> u64 {
 /// describes is readable; called later it would read off the end of the mapped window. On riscv64
 /// `bring_up_jh7110_root_port` calls it once the port forwards, over exactly the buses mapped. It
 /// prints the list rather than a count, because a missing disk hides in an ordinary count. The bus
-/// range it records is contiguous from 0, not the set found (nifeos/record:notes/pcie.md, "More than one bus",
+/// range it records is contiguous from 0, not the set found (partsfoundry/record:notes/pcie.md, "More than one bus",
 /// and its `BUGS`).
 #[cfg_attr(target_arch = "aarch64", allow(dead_code))]
 pub(crate) fn survey() -> usize {
@@ -181,7 +181,7 @@ fn read_bars(bus_device_function: BusDeviceFunction) -> [Option<Bar>; 6] {
 /// A BAR already inside the window `mmu::map_everything` mapped is left alone; a nonzero one
 /// outside it is adopted where it stands ([`adopt`]); only one that is unassigned, or assigned
 /// somewhere this kernel cannot honour, is moved. Nonzero alone is not evidence of mapped: see
-/// nifeos/record:notes/pcie.md, "Placing BARs, and routing interrupts".
+/// partsfoundry/record:notes/pcie.md, "Placing BARs, and routing interrupts".
 fn place_bars(bus_device_function: BusDeviceFunction, bars: &mut [Option<Bar>; 6]) -> bool {
     // The window `mmu::map_everything` mapped. `BAR_LIMIT` is the same `PCI_BAR_MAPPED` clamp that
     // call computed, so it agrees even where the tree describes a larger window.
@@ -239,7 +239,7 @@ fn place_bars(bus_device_function: BusDeviceFunction, bars: &mut [Option<Bar>; 6
 }
 
 /// Does `lo..hi` overlap any region the machine called usable RAM? The one safety question
-/// adoption turns on (nifeos/record:notes/pcie.md, "Placing BARs, and routing interrupts").
+/// adoption turns on (partsfoundry/record:notes/pcie.md, "Placing BARs, and routing interrupts").
 fn overlaps_ram(lo: u64, hi: u64) -> bool {
     crate::memory::ram_regions().any(|(start, size)| lo < start + size && hi > start)
 }
@@ -249,7 +249,7 @@ fn overlaps_ram(lo: u64, hi: u64) -> bool {
 ///
 /// Refuses a BAR that overlaps RAM, and one with a page that fails to map for any reason other than
 /// `AlreadyMapped`, which is success here and nowhere else in this tree. Unreachable on the
-/// device-tree architectures, where every BAR arrives zero. See nifeos/record:notes/pcie.md, "Placing BARs, and
+/// device-tree architectures, where every BAR arrives zero. See partsfoundry/record:notes/pcie.md, "Placing BARs, and
 /// routing interrupts".
 fn adopt(
     bus_device_function: BusDeviceFunction,
@@ -540,7 +540,7 @@ pub(crate) fn find_gpu_device() -> Option<PciVirtualIoDevice> {
 /// Find the first modern virtio-input function on the bus and bring it up (milestone 29's keyboard).
 /// `None` if there is no PCI input device.
 ///
-/// PCIe only by choice, so the keyboard sits behind the IOMMU the way the GPU does (nifeos/record:notes/pcie.md,
+/// PCIe only by choice, so the keyboard sits behind the IOMMU the way the GPU does (partsfoundry/record:notes/pcie.md,
 /// "Placing BARs, and routing interrupts").
 pub(crate) fn find_input_device() -> Option<PciVirtualIoDevice> {
     let bus_device_function = find_virtual_io_bdf(
@@ -599,7 +599,7 @@ pub fn count_block_devices() -> usize {
 ///
 /// Returns `(functions, stranded)`: how many functions answer, and how many carry a memory BAR this
 /// kernel can neither use where it is nor adopt. Zero stranded is the passing answer. Counting
-/// only, like [`count_block_devices`] and for its reason. See nifeos/record:notes/pcie.md, "Placing BARs, and
+/// only, like [`count_block_devices`] and for its reason. See partsfoundry/record:notes/pcie.md, "Placing BARs, and
 /// routing interrupts".
 // The x86 boot tour is the only caller: on both `virt` boards every BAR arrives zero.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
@@ -757,7 +757,7 @@ fn bring_up(
 /// `msi_fallback` lets a function with MSI and no MSI-X (the xHCI on an Intel PCH) take plain MSI;
 /// virtio functions pass `false`, since a virtio queue names its vector by MSI-X table index.
 /// `msix_vector` is `pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR` whenever the answer was not MSI-X. `None` when no
-/// route exists. See nifeos/record:notes/pcie.md, "Placing BARs, and routing interrupts".
+/// route exists. See partsfoundry/record:notes/pcie.md, "Placing BARs, and routing interrupts".
 fn function_interrupt(
     bus_device_function: BusDeviceFunction,
     bars: &[Option<Bar>; 6],
@@ -879,7 +879,7 @@ fn intx_intid(bus_device_function: BusDeviceFunction) -> Option<u32> {
 ///
 /// `bars` are the placed BARs: the table lives in the one its BIR names, and one that is unplaced
 /// or too small is refused. The entry is written before MSI-X Enable, its mask cleared last, and
-/// Function Mask cleared explicitly because some parts set it at reset. See nifeos/record:notes/pcie.md,
+/// Function Mask cleared explicitly because some parts set it at reset. See partsfoundry/record:notes/pcie.md,
 /// "Placing BARs, and routing interrupts".
 fn program_msix(
     bus_device_function: BusDeviceFunction,
@@ -1220,7 +1220,7 @@ const JH7110_MARKER: &str = "  jh7110 pcie:";
 /// port to forward bus 1, and only then records the port's windows in `memory::pci_regions`, so
 /// every walk here sees a host that answers. A link that never trained still records the root port,
 /// with one bus, so no walk reads bus 1. Prints each step, the clock and reset reports and the
-/// [`survey`] list; nifeos/record:notes/jh7110-pci-express-bench.md reads them. A no-op on every machine whose
+/// [`survey`] list; partsfoundry/record:notes/jh7110-pci-express-bench.md reads them. A no-op on every machine whose
 /// tree names no such port, which is every machine CI boots.
 #[cfg(target_arch = "riscv64")]
 pub(crate) fn bring_up_jh7110_root_port() {
@@ -1550,7 +1550,7 @@ mod tests {
     /// Asserts the whole chain, since "an NVMe was found" passes on a flat machine too: the survey
     /// recorded more than one bus, a bridge states a subtree, and the controller is on a bus a
     /// bridge named. It does not bring the controller up: under PVH nothing programs the bridge's
-    /// memory window (nifeos/record:notes/pcie.md, "More than one bus", `BUGS`).
+    /// memory window (partsfoundry/record:notes/pcie.md, "More than one bus", `BUGS`).
     #[cfg(target_arch = "x86_64")]
     #[test_case]
     fn a_controller_behind_a_bridge_is_found_on_the_bus_behind_it() {

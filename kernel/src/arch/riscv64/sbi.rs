@@ -1,6 +1,6 @@
 //! One SBI call: the single `ecall` every Supervisor Binary Interface request in the kernel goes
 //! through, so the calling convention is stated once and a proof can stub one function
-//! (nifeos/record:notes/kernel-proofs.md).
+//! (partsfoundry/record:notes/kernel-proofs.md).
 //!
 //! *Name provisional (a lane minted it 2026-09-25; names are calef's). `sbi` is the specification's
 //! own name for the interface.*

@@ -2,7 +2,7 @@
  *
  * QEMU's `virt` machine puts RAM at 0x4000_0000. Given a flat arm64 Image, QEMU follows
  * the Linux boot protocol: it loads us at RAM_base + text_offset, hands us a device tree
- * pointer in x0, and lets go. See nifeos/record:notes/boot-protocol.md and nifeos/record:notes/linker-scripts.md.
+ * pointer in x0, and lets go. See partsfoundry/record:notes/boot-protocol.md and partsfoundry/record:notes/linker-scripts.md.
  *
  * Every section boundary here is exported, because milestone 4 maps each one with
  * DIFFERENT permissions and the linker is the only thing that knows where they landed.
@@ -21,7 +21,7 @@ ENTRY(_start)
  * lays the flat binary out by LMA, which is what QEMU reads.
  *
  * Which means the code in boot.s runs at a physical address while every absolute address
- * baked into it is virtual. See boot.s and nifeos/record:notes/higher-half.md for how it survives that.
+ * baked into it is virtual. See boot.s and partsfoundry/record:notes/higher-half.md for how it survives that.
  *
  * The base is 0xffff_0000_0000_0000, and the choice is not arbitrary: it touches only bits
  * 63:48, which are NOT TRANSLATED. So a kernel virtual address and its physical address have
@@ -237,7 +237,7 @@ SECTIONS
      * section exists. `script/image` and every QEMU runner still strip it from the flat binary
      * with `llvm-objcopy --remove-section` (Image size on disk, not debuggability); ordinary
      * bytes trailing at the end of an ALLOC layout is the shape that flag was built for. The ELF
-     * `gdb <elf>` reads directly keeps the real content either way. See nifeos/record:notes/cfi-unwind.md. */
+     * `gdb <elf>` reads directly keeps the real content either way. See partsfoundry/record:notes/cfi-unwind.md. */
     .eh_frame : { KEEP(*(.eh_frame)) KEEP(*(.eh_frame_hdr)) }
 
     /DISCARD/ : {

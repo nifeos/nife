@@ -7,21 +7,21 @@
 # saved state itself, so it is not stored in the frame; it is what `switch_to` swaps.
 #
 # The trick is identical to aarch64: `ret` returns into `ra`, and by that point `ra` was loaded
-# from the OTHER thread's stack, so the return lands in a different thread. See nifeos/record:notes/threads.md.
+# from the OTHER thread's stack, so the return lands in a different thread. See partsfoundry/record:notes/threads.md.
 #
 # UNPROVEN until RISC-V boots (the console step and beyond exercise it). It assembles and links now,
 # which is all the compile milestone claims.
 
 # In the pinned hot section, because every IPC that blocks runs it: milestone 796 (pin the
 # hot trap path's placement).
-# See nifeos/record:notes/benchmarks/kernel-footprint-and-caches.md, "The hot section".
+# See partsfoundry/record:notes/benchmarks/kernel-footprint-and-caches.md, "The hot section".
 .section ".text.hot.switch_to", "ax"
 
 # switch_to(prev_context: *mut *mut Context, next_context: *mut Context)
 #   a0 = where to STORE our stack pointer (&mut prev.context)
 #   a1 = the stack pointer to RESTORE     (next.context)
 # The RISC-V calling convention puts the first two arguments in a0 and a1.
-# CFI (see nifeos/record:notes/cfi-unwind.md and, for the full argument, the identical technique in
+# CFI (see partsfoundry/record:notes/cfi-unwind.md and, for the full argument, the identical technique in
 # arch/aarch64/context.s). One continuous frame description, no special handling at the stack
 # swap: `.cfi_def_cfa_offset 112` is a formula in terms of the CURRENT sp, and `next_context` (a1)
 # is by construction the exact sp another thread's own earlier call to this function (or

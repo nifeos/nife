@@ -85,7 +85,7 @@ pub const DELEGATED_TEST_INTERRUPT: u32 =
 /// the archive and in its measurement table (`trust::require_program_in`): otherwise this panics or halts,
 /// rather than leaving a test waiting on a report nobody sends. Slots 0 to 4 hold the building
 /// budget, `report`, the console UART's registers, the test interrupt and the UART receive
-/// interrupt. This is not the boot path; [`boot_progenitor`] is. See nifeos/record:notes/progenitor-boot.md.
+/// interrupt. This is not the boot path; [`boot_progenitor`] is. See partsfoundry/record:notes/progenitor-boot.md.
 /// Returns a [`holding::Holding`] over the thread and its 12,288-page budget, to hand back.
 ///
 /// Name: ratified 2026-10-18 (calef), with the rule that took `init` out of nife's own names.
@@ -133,7 +133,7 @@ pub fn spawn_elf_child_builder(
     };
 
     // Carved here rather than inside the thread, so the caller can name it and reclaim it
-    // (nifeos/record:notes/frames.md).
+    // (partsfoundry/record:notes/frames.md).
     let build_region = crate::memory_region::create_with_ceilings(
         12288,
         crate::memory_region::progenitor_ceilings(),
@@ -294,7 +294,7 @@ fn run_with(
 ) -> ! {
     // Every window this process will have mapped beyond its image: the `Spawn` windows, a device
     // run, and every granted `PageFrame` run, both those still in `spawn.grants` and those the spawn
-    // closure already placed with `grant_at`. See [`load`] and nifeos/record:notes/user-address-spaces.md.
+    // closure already placed with `grant_at`. See [`load`] and partsfoundry/record:notes/user-address-spaces.md.
     let granted_runs: u64 = spawn
         .grants
         .iter()
@@ -401,8 +401,8 @@ fn enter_at(entry: u64, arg0: u64, arg1: u64, arg2: u64) -> ! {
 /// mode at `entry` on `user_sp`. Never returns.
 ///
 /// The frame must be at the top, because the next trap rebuilds it there, and above the live `sp`,
-/// because a callee or a trap builds below it. Both are asserted. See nifeos/record:notes/userspace.md and
-/// nifeos/record:notes/riscv-port.md.
+/// because a callee or a trap builds below it. Both are asserted. See partsfoundry/record:notes/userspace.md and
+/// partsfoundry/record:notes/riscv-port.md.
 fn enter_frame(entry: u64, user_sp: u64, arg0: u64, arg1: u64, arg2: u64) -> ! {
     // Not a local: `enter_userspace` does `mov sp, x0`, and the next trap's `SAVE_CONTEXT` rebuilds
     // the frame at exactly this address, so it must be writable stack, never `.rodata`.
@@ -432,7 +432,7 @@ fn enter_frame(entry: u64, user_sp: u64, arg0: u64, arg1: u64, arg2: u64) -> ! {
     // SAFETY: `frame` is 16-byte-aligned writable kernel stack (a KernelStack top is page
     // aligned and TrapFrame is a multiple of 16), the user code and stack are mapped, and the
     // user address space is installed. `arch` owns the register layout: we ask for a user-entry
-    // frame and hand it back to `arch` to make the jump (nifeos/record:notes/riscv-port.md, leak #3).
+    // frame and hand it back to `arch` to make the jump (partsfoundry/record:notes/riscv-port.md, leak #3).
     unsafe {
         frame.write(TrapFrame::for_user_entry(
             entry,
