@@ -1,10 +1,10 @@
 #!/bin/sh
 #
 # Selftest for helpers/milestone-branch-block.sh (script/lint-fleet's check 4b), run by script/lint-fleet.
-# Builds a throwaway repository with an `origin/main` ref, so it needs no tree and no network. The
-# cases are #1901's shape (cut with one number, renumbered, branch kept) beside the case the check
-# exists to catch. The failing case is the point: a check that never fails looks the same as one
-# that cannot (milestone 640 (a gate is not evidence until it has failed)).
+# Builds a throwaway repository that holds a record of its own, so it needs no tree and no network.
+# The cases are #1901's shape (cut with one number, renumbered, branch kept) beside the case the
+# check exists to catch. The failing case is the point: a check that never fails looks the same as
+# one that cannot (milestone 640 (a gate is not evidence until somebody has watched it fail)).
 #
 # Name: provisional, 2026-10-10 (UTC), after the other helpers/*-selftest.sh.
 
