@@ -58,6 +58,8 @@ yields it, and drops one in a file that an open pull request carrying `architect
    organization's repositories include non-crates, `packages/homes.toml` names homes rather than
    crates, and nothing is published to crates.io yet); (b) the rule cannot tell that the commit is
    on that repository's main, which the ruling requires. Reviewers check it until a lint does.
+   The ruling of 2026-11-25 (UTC) extends that approval to the same crates in the `partsfoundry`
+   organization, where the crate repositories are moving, so both organizations count as our own.
 3. **format-crate**: a version constant, magic value, or documented on-disk layout moved in a crate
    that is classified, from its own head content, as a format crate: it declares a `pub const`
    ending in `VERSION` or `MAGIC`, or its module doc carries a markdown table with a `version`
@@ -1681,6 +1683,24 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
  [dependencies]
 +thing = { git = "https://github.com/nifeos-fork/thing", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 """, 'dependency'),
+
+    ("dependency: a look-alike of partsfoundry at a full commit fires", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++thing = { git = "https://github.com/partsfoundry-fork/thing", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+""", 'dependency'),
+
+    ("dependency: a crate still at its nifeos address at a full commit stays quiet (ruling of 2026-11-25 UTC covers both)", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++jh7110_entropy = { git = "https://github.com/nifeos/jh7110_entropy", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+""", None),
 
     ("dependency: a crates.io dependency named like a first-party crate still fires", """\
 diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
