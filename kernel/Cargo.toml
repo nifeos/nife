@@ -30,7 +30,7 @@ workspace = true
 # and its device registers are named offsets in `drivers/`, as on riscv64 and x86_64, so a proof can
 # stub every access (milestone 707 (aarch64 registers spelled the way riscv64 and x86_64
 # spell them), §46).
-moho_abi = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/moho_abi", rev = "43cbb5bbe07aa84d6de26685106613ac8badcf69" }
+moho_abi = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/moho_abi", rev = "b4b6ec3a01475d4ab012cd104da32895955f7b15" }
 address_space_identifier = { version = "0.1.0", path = "../crates/address_space_identifier" }
 # The corruption canary's arm/check/disarm serialization (2026-08-15), lifted out of `sched.rs`
 # after its hand-written two-flag protocol raced: the kernel calls the loom-searched gate rather

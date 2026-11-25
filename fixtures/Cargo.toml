@@ -623,7 +623,7 @@ packaged_only = ["greeting", "noteless", "greeting_v2", "alto", "tenor", "dialer
 [dependencies]
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
 address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
-moho_abi = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/moho_abi", rev = "43cbb5bbe07aa84d6de26685106613ac8badcf69" }
+moho_abi = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/moho_abi", rev = "b4b6ec3a01475d4ab012cd104da32895955f7b15" }
 # The words the milestone 7-19 capability demonstrations agree on, now that each is its own
 # binary (milestone 291). AGENTS.md rule 7: what two binaries must agree on is a crate.
 capability_witness_contract = { version = "0.1.0", path = "../crates/capability_witness_contract" }
