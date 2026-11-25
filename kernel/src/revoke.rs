@@ -807,7 +807,7 @@ mod tests {
 
     use super::*;
     use crate::capability_object::{
-        INTERFACE_RIGHTS, Rights, page_frame_run_capability, page_frame_run_len,
+        INTERFACE_RIGHTS, page_frame_run_capability, page_frame_run_len,
     };
     use crate::user::AddressSpace;
 
