@@ -1411,9 +1411,7 @@ crates/device_tree_patch/src/lib.rs::output_len
 
 crates/device_tree_patch/src/lib.rs::reason
 
-crates/direct_memory_access_validator/src/lib.rs::AVAIL_OFF
 
-crates/direct_memory_access_validator/src/lib.rs::DESC_OFF
 
 crates/direct_memory_access_validator/src/lib.rs::Desc
 
@@ -1421,13 +1419,9 @@ crates/direct_memory_access_validator/src/lib.rs::F_INDIRECT
 
 crates/direct_memory_access_validator/src/lib.rs::F_NEXT
 
-crates/direct_memory_access_validator/src/lib.rs::LAYOUT_QSIZE
 
-crates/direct_memory_access_validator/src/lib.rs::RING_BLOCK
 
-crates/direct_memory_access_validator/src/lib.rs::RING_END
 
-crates/direct_memory_access_validator/src/lib.rs::USED_OFF
 
 crates/direct_memory_access_validator/src/lib.rs::buf_len
 
