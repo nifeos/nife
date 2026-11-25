@@ -6,7 +6,7 @@
 
 use super::*;
 use crate::capability_object::{
-    Rights, page_frame_capability, page_frame_run_capability, page_frame_run_len,
+    INTERFACE_RIGHTS, Rights, page_frame_capability, page_frame_run_capability, page_frame_run_len,
     rendezvous_capability,
 };
 
@@ -759,7 +759,7 @@ fn grant_kernel_network_stack(tid: crate::thread::ThreadId, no_virtual_io_net: b
     if let Some((stack, report)) = kernel_stack {
         let s29 = crate::sched::thread_control_block_insert_capability(
             tid,
-            rendezvous_capability(stack, Rights::ALL),
+            rendezvous_capability(stack, INTERFACE_RIGHTS),
             Some(29),
         )
         .expect("insert the kernel-built stack's endpoint");

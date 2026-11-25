@@ -38,8 +38,8 @@ use contract::device::{layout, registers};
 
 use super::*;
 use crate::capability_object::{
-    Rights, memory_region_capability, notification_capability, rendezvous_capability,
-    timer_capability,
+    INTERFACE_RIGHTS, Rights, memory_region_capability, notification_capability,
+    rendezvous_capability, timer_capability,
 };
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
@@ -470,7 +470,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
         };
         at(3, memory_region_capability(budget));
         at(4, rendezvous_capability(stack, Rights::READ));
-        at(5, notification_capability(wake, Rights::ALL));
+        at(5, notification_capability(wake, INTERFACE_RIGHTS));
         at(6, timer_capability(poll, Rights::WRITE));
         // What each socket is minted from (§255 (each socket is its own capability)); slot 8, the
         // server's own address space, `run_with_own_space` adds once the space exists.

@@ -141,16 +141,16 @@ const _: () = assert!(core::mem::size_of::<Capability>() == 32);
 /// `nifeos/record:design/roadmap/0778-capability-tables-sized-per-process.md`. See nifeos/record:notes/capability-objects.md.
 pub const CAPABILITY_TABLE_SLOTS: usize = 64;
 
-// The free-slot word is a `u64`, so 64 is also the ceiling the type allows. `capability` asserts it
-// for every size; it is repeated here, where the next raise will be typed. Raising past it needs a
-// wider word or a second one (`capability_table::MAXIMUM_SLOTS`).
+// `capability_table::MAXIMUM_SLOTS` is the most slots any table may have; the type refuses more at
+// compile time, and this repeats it where the next raise will be typed.
 const _: () = assert!(
     CAPABILITY_TABLE_SLOTS <= capability_table::MAXIMUM_SLOTS,
-    "the capability table's free-slot bitmap is one u64; widen it before raising the slot count"
+    "a capability table has at most capability_table::MAXIMUM_SLOTS slots"
 );
-// The table's layout, pinned: 64 slots of 32 bytes, the `u64` free word and two `u16` counts,
-// rounded to eight. If this fires, `crate::thread`'s page-fit check is the next thing to read.
-const _: () = assert!(core::mem::size_of::<CapabilityTable>() == 2064);
+// The table's layout, pinned: 64 slots of 32 bytes, the free-slot set of four `u64` words (one per
+// 64 of `MAXIMUM_SLOTS`, whatever this table's size) and three `u16` counts, rounded to eight. If
+// this fires, `crate::thread`'s page-fit check is the next thing to read.
+const _: () = assert!(core::mem::size_of::<CapabilityTable>() == 2088);
 pub(crate) type CapabilityTable = capability_table::CapabilityTable<Object, CAPABILITY_TABLE_SLOTS>;
 
 /// The progenitor's peak capability count on `script/swish-check`'s aarch64 leg: 39 of
@@ -244,19 +244,39 @@ const _: () = assert!(Rights::GRANT.bits() as u64 == moho_abi::rights::GRANT);
 const _: () = assert!(Rights::ENUMERATE.bits() as u64 == moho_abi::rights::ENUMERATE);
 const _: () = assert!(Rights::BIND.bits() as u64 == moho_abi::rights::BIND);
 
-// **`ALL` is exactly the ABI's vocabulary and no more.** Both directions are load-bearing and they
-// fail differently. A bit in `moho_abi::rights` that is missing from `ALL` is a right userspace can name
-// and `Rights::from_bits` masks to zero, so a delegation asking for it succeeds while conferring
-// nothing. A bit in `ALL` with no ABI name is a right the kernel honors that no caller can ask for
-// by name, which is how a hand-listed set drifts into granting more than any manifest says.
+/// **Every right the system call interface names**: [`Rights::ALL`] without `REVOKE`. The kernel
+/// mints with this where it means "every right", and [`interface_rights`] masks what a caller asks
+/// for with it, so no capability carries `REVOKE` and no caller can ask for it. `REVOKE` is a right
+/// in `capability_table` that nothing consults; it joins the interface with milestone 1128 step 12,
+/// and this constant becomes `Rights::ALL` then. Name: provisional, 2026-11-25 (UTC).
+pub const INTERFACE_RIGHTS: Rights = Rights::from_bits(moho_abi::rights::ALL as u32);
+
+// **`INTERFACE_RIGHTS` is exactly the ABI's vocabulary and no more.** Both directions are
+// load-bearing and they fail differently. A bit in `moho_abi::rights` that is missing here is a
+// right userspace can name and [`interface_rights`] masks to zero, so a delegation asking for it
+// succeeds while conferring nothing. A bit here with no ABI name is a right the kernel honors that
+// no caller can ask for by name, which is how a hand-listed set drifts into granting more than any
+// manifest says.
 const _: () = assert!(
-    Rights::ALL.bits() as u64
+    INTERFACE_RIGHTS.bits() as u64
         == moho_abi::rights::READ
             | moho_abi::rights::WRITE
             | moho_abi::rights::GRANT
             | moho_abi::rights::ENUMERATE
             | moho_abi::rights::BIND
 );
+// `REVOKE` stays outside the interface until the interface names it. `Rights::ALL` holds it, so a
+// mint with `Rights::ALL` in the kernel would hand it out; this and the one above pin the gap.
+const _: () = assert!(!INTERFACE_RIGHTS.allows(Rights::REVOKE));
+const _: () = assert!(INTERFACE_RIGHTS.union(Rights::REVOKE).bits() == Rights::ALL.bits());
+
+/// **The rights a caller's argument word asks for**, as the kernel reads them: the low 32 bits,
+/// masked to [`INTERFACE_RIGHTS`]. A bit the interface does not name confers nothing, `REVOKE`'s
+/// included, so a caller that asks for it is answered as if it had not. Name: provisional,
+/// 2026-11-25 (UTC).
+pub const fn interface_rights(word: u64) -> Rights {
+    Rights::from_bits(word as u32).intersect(INTERFACE_RIGHTS)
+}
 
 // `moho_abi::rights` is `u64` and `Rights` is `u32`, and the system call path narrows with `a1 as u32`
 // (`SEND_CAPABILITY` and `CAPABILITY_INSERT` in kernel/src/system_call.rs). A right defined at bit 32 or above would
@@ -342,7 +362,7 @@ pub fn interrupt_capability_rights(intid: u32, rights: Rights) -> Capability {
     }
 }
 
-/// A capability to an untyped region with every right but `GRANT`: the spend-only budget a leaf
+/// A capability to an untyped region with every interface right but `GRANT`: the spend-only budget a leaf
 /// child is handed. The holder may retype, `SPLIT`, `MAP` and `DESTROY` but not delegate, since
 /// `SEND_CAPABILITY` and `CAPABILITY_INSERT` gate on `GRANT`. A retype mints its budget's rights (milestone 824
 /// (a retype mints no right its budget lacks)), so a leaf can use what it carves and lend none of
@@ -357,7 +377,7 @@ pub fn memory_region_capability(region: u64) -> Capability {
     }
 }
 
-/// **A budget whose holder lends what it carves from it**: every right, `GRANT` included. Since
+/// **A budget whose holder lends what it carves from it**: every interface right, `GRANT` included. Since
 /// milestone 824 (a retype mints no right its budget lacks) a frame or object carries its budget's
 /// rights, so a program that retypes a page and `SEND_CAPABILITY`s it, or builds a child and endows it,
 /// needs `GRANT` on the budget itself; [`memory_region_capability`] withholds it. The kernel-side harnesses
@@ -369,19 +389,19 @@ pub fn memory_region_capability(region: u64) -> Capability {
 pub fn memory_region_lending_capability(region: u64) -> Capability {
     Capability {
         object: Object::MemoryRegion(region),
-        rights: Rights::ALL,
+        rights: INTERFACE_RIGHTS,
     }
 }
 
-/// The rights of the spend-only budget [`memory_region_capability`] mints: [`Rights::ALL`] without
+/// The rights of the spend-only budget [`memory_region_capability`] mints: [`INTERFACE_RIGHTS`] without
 /// `GRANT`, the kernel's spelling of `moho_abi::rights::SPEND_ONLY`, which a userspace builder hands its
 /// leaves. Name: provisional (milestone 824's lane, 2026-10-12 UTC).
 pub const SPEND_ONLY: Rights = Rights::from_bits(moho_abi::rights::SPEND_ONLY as u32);
 
-// `moho_abi::rights::ALL` is what userspace hands a builder and `Rights::ALL` what the kernel's root
-// budget carries; a right added to one and not the other would make a builder's objects silently
-// narrower than the progenitor's.
-const _: () = assert!(Rights::ALL.bits() as u64 == moho_abi::rights::ALL);
+// `moho_abi::rights::ALL` is what userspace hands a builder and `INTERFACE_RIGHTS` what the kernel's
+// root budget carries; a right added to one and not the other would make a builder's objects
+// silently narrower than the progenitor's.
+const _: () = assert!(INTERFACE_RIGHTS.bits() as u64 == moho_abi::rights::ALL);
 
 /// A capability to an untyped region with explicit rights. Its one caller is
 /// [`memory_region_root_capability`]; `MemoryRegion::SPLIT` mints through `Capability::mint_child`, whose
@@ -397,7 +417,7 @@ pub fn memory_region_capability_rights(region: u64, rights: Rights) -> Capabilit
     }
 }
 
-/// The delegable root untyped the kernel hands the progenitor at boot, with [`Rights::ALL`]. Every
+/// The delegable root untyped the kernel hands the progenitor at boot, with [`INTERFACE_RIGHTS`]. Every
 /// right on every object comes from here, since a retype mints its budget's rights, and rights only
 /// narrow below it (a `SPLIT` child inherits, `CAPABILITY_INSERT` narrows). `ENUMERATE` lets
 /// `MemoryRegion::USAGE` answer what the region was spent on. See nifeos/record:notes/capability-objects.md.
@@ -405,7 +425,7 @@ pub fn memory_region_capability_rights(region: u64, rights: Rights) -> Capabilit
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `memory_region_root_capability` under the capability ruling of 2026-10-06 (UTC).
 pub fn memory_region_root_capability(region: u64) -> Capability {
-    memory_region_capability_rights(region, Rights::ALL)
+    memory_region_capability_rights(region, INTERFACE_RIGHTS)
 }
 
 /// A capability to a virtio device's transport. `WRITE` lets the holder operate it.
