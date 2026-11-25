@@ -1,11 +1,16 @@
 use core::cell::RefCell;
 
+use moho_abi::virtual_io::{
+    AVAILABLE_RING_OFFSET_BYTES, DESCRIPTOR_TABLE_OFFSET_BYTES, QUEUE_ENTRIES,
+    RINGS_END_OFFSET_BYTES,
+};
+
 use super::*;
 
-/// The queue size the proofs fix. Concrete so the bounded loops unroll to a known depth; it is
-/// the kernel's real `QSIZE`, so the proof is over the configuration that ships.
-const QS: u16 = 8;
-const Q: usize = 8;
+/// The queue size the proofs fix. A constant so the bounded loops unroll to a known depth; it is
+/// `QUEUE_ENTRIES`, the size the kernel drives, so the proof is over the configuration that ships.
+const QS: u16 = QUEUE_ENTRIES;
+const Q: usize = QUEUE_ENTRIES as usize;
 
 /// **The confinement predicate is sound: an accepted range is genuinely inside the region.**
 /// For every base, size, `physical_address`, and len, if [`is_in_region`] says yes then the addition did not
@@ -179,9 +184,9 @@ impl ChainMem {
         let off = p - SHADOW_DESC;
         // And it never writes *past* its own queue's descriptor table. Stated as an assertion
         // rather than left implicit in the array bound below, because this is the multi-queue
-        // half of the confinement: a write bounded by `16 * qsize` stays inside `DESC_OFF ..
-        // AVAIL_OFF` of one queue's ring block, and `distinct_queues_occupy_disjoint_blocks`
-        // proves the blocks do not overlap. Together: validating a NIC's receive queue cannot
+        // half of the confinement: a write bounded by `16 * qsize` stays inside
+        // `DESCRIPTOR_TABLE_OFFSET_BYTES .. AVAILABLE_RING_OFFSET_BYTES` of one queue's ring block,
+        // and `distinct_queues_occupy_disjoint_blocks` proves the blocks do not overlap. Together: validating a NIC's receive queue cannot
         // touch its transmit queue's rings.
         assert!(
             off < 16 * QS as u64,
@@ -467,15 +472,18 @@ fn distinct_queues_occupy_disjoint_blocks() {
     kani::assume((q2 as u64) < MAXIMUM_QUEUES);
     kani::assume(q1 < q2);
     // The lower queue's ring area ends at or before the higher queue's block begins: disjoint.
-    assert!(queue_block(q1) + RING_END <= queue_block(q2));
+    assert!(queue_block(q1) + RINGS_END_OFFSET_BYTES <= queue_block(q2));
     // And each queue's ring area fits within its own block, so the blocks fully contain them.
     // A `const` assertion, because both operands are constants: this is a fact about the layout
     // and not about `q1`/`q2`, so it is worth failing the build rather than a proof run.
-    const { assert!(RING_END <= RING_BLOCK) };
-    // The descriptor table a walk writes (`16 * qsize` bytes from `DESC_OFF`) ends at or before
-    // the available ring begins. This is what makes the walk's own `off < 16 * qsize` write bound
+    const { assert!(RINGS_END_OFFSET_BYTES <= RING_BLOCK_BYTES) };
+    // The descriptor table a walk writes (`16 * qsize` bytes from `DESCRIPTOR_TABLE_OFFSET_BYTES`)
+    // ends at or before the available ring begins. This is what makes the walk's own `off < 16 * qsize` write bound
     // (asserted in `ChainMem::write64`) add up to block isolation: a shadow write stays inside
-    // `DESC_OFF .. AVAIL_OFF` of one block, and the blocks do not overlap, so no shadow write can
-    // land in another queue's rings or in this queue's own available ring.
-    assert!(DESC_OFF + 16 * LAYOUT_QSIZE as u64 <= AVAIL_OFF);
+    // `DESCRIPTOR_TABLE_OFFSET_BYTES .. AVAILABLE_RING_OFFSET_BYTES` of one block, and the blocks
+    // do not overlap, so no shadow write can land in another queue's rings or in this queue's own
+    // available ring.
+    assert!(
+        DESCRIPTOR_TABLE_OFFSET_BYTES + 16 * QUEUE_ENTRIES as u64 <= AVAILABLE_RING_OFFSET_BYTES
+    );
 }

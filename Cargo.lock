@@ -454,6 +454,9 @@ dependencies = [
 [[package]]
 name = "direct_memory_access_validator"
 version = "0.1.0"
+dependencies = [
+ "moho_abi",
+]
 
 [[package]]
 name = "disk_tree"

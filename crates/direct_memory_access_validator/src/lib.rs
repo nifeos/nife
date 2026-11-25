@@ -284,34 +284,26 @@ fn shadow_one_head(
 }
 
 // ---------------------------------------------------------------------------------------------
-// The queue ring layout, owned here and used by the kernel (kernel/src/virtual_io.rs defines its
-// `QSIZE`, `RING_BLOCK`, `MAXIMUM_QUEUES` and the three ring offsets as aliases of these), because
-// a proof about a copy of the layout proves nothing about the layout that runs. The kernel keeps
-// its own compile-time asserts as well, so drift is a compile error in two places.
+// The queue ring layout. Its numbers are the agreement between the kernel and every driver, so they
+// live in `moho_abi::virtual_io`, beside `SETUP_QUEUE`, and both this crate and the kernel
+// (kernel/src/virtual_io.rs) use them from there: the layout these proofs cover is the layout that
+// runs and the layout each driver reads. The kernel keeps its own compile-time asserts as well, so
+// drift is a compile error in two places.
 // ---------------------------------------------------------------------------------------------
 
-/// The negotiated queue size the kernel drives (`QSIZE` in `kernel/src/virtual_io.rs`).
-pub const LAYOUT_QSIZE: u16 = 8;
-/// Offsets of a queue's three rings, relative to its ring block.
-pub const DESC_OFF: u64 = 0x000;
-/// Offset of the avail ring: past the descriptor table, `6 + 2*QSIZE` bytes in.
-pub const AVAIL_OFF: u64 = 0x080; // 6 + 2*QSIZE
-/// Offset of the used ring: past the avail ring, `6 + 8*QSIZE` bytes in.
-pub const USED_OFF: u64 = 0x100; // 6 + 8*QSIZE
-/// The whole ring area of one queue must fit under this; a queue's data buffers live above it.
-pub const RING_END: u64 = USED_OFF + 6 + 8 * LAYOUT_QSIZE as u64;
-/// The stride between successive queues' ring areas, in both the driver's region and the shadow.
-pub const RING_BLOCK: u64 = 0x200;
+use moho_abi::virtual_io::RING_BLOCK_BYTES;
+
 /// The most virtqueues the confinement drives per device (RX = queue 0, TX = queue 1 on a NIC).
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_QUEUES: u64 = 2;
 
 /// Queue `q`'s ring block base, relative to a region (driver DMA or shadow) base. Queue `q`'s
-/// descriptor table, available ring, and used ring sit at `queue_block(q) + {DESC,AVAIL,USED}_OFF`,
+/// descriptor table, available ring, and used ring sit at `queue_block(q)` plus
+/// `DESCRIPTOR_TABLE_OFFSET_BYTES`, `AVAILABLE_RING_OFFSET_BYTES` and `USED_RING_OFFSET_BYTES`,
 /// so distinct queues validate on disjoint blocks and never read or write each other's rings.
 pub const fn queue_block(q: u16) -> u64 {
-    q as u64 * RING_BLOCK
+    q as u64 * RING_BLOCK_BYTES
 }
 
 // =============================================================================================
@@ -327,6 +319,8 @@ mod verification;
 // =============================================================================================
 #[cfg(test)]
 mod tests {
+    use moho_abi::virtual_io::RINGS_END_OFFSET_BYTES;
+
     use super::*;
 
     const QSIZE: u16 = 8;
@@ -601,17 +595,6 @@ mod tests {
         );
     }
 
-    /// **`RING_END` is the value its formula documents: 0x100 + 6 + 8*8 = 0x146.** The used ring is
-    /// 2 (flags) + 2 (idx) + 8 bytes per element times `LAYOUT_QSIZE` = 8 elements + 2 (avail event).
-    /// Nothing else pins the value: every relation the proofs and the compile-time asserts state
-    /// (`RING_END <= RING_BLOCK`, disjoint blocks) still holds for the smaller wrong values an
-    /// operator slip produces, and the kernel aliases this constant, so a silent shrink would
-    /// under-reserve the ring area a real device writes into.
-    #[test]
-    fn ring_end_is_the_documented_value() {
-        assert_eq!(RING_END, 0x146);
-    }
-
     #[test]
     fn in_region_rejects_overflow() {
         assert!(!is_in_region(0, 0x1000, u64::MAX, 1)); // physical_address + len wraps
@@ -623,8 +606,8 @@ mod tests {
     fn ring_blocks_are_disjoint() {
         // Compile-time, because the relations are over constants: a queue's ring area fits inside its
         // block, and queue 0's area ends before queue 1's block begins (so the two never overlap).
-        const { assert!(RING_END <= RING_BLOCK) };
-        const { assert!(queue_block(0) + RING_END <= queue_block(1)) };
+        const { assert!(RINGS_END_OFFSET_BYTES <= RING_BLOCK_BYTES) };
+        const { assert!(queue_block(0) + RINGS_END_OFFSET_BYTES <= queue_block(1)) };
     }
     // The eighth outsider pass's host attacks (claims 13 to 17): the shapes around the cited
     // tests, host-run the way every test in this module is. Name: provisional (this pass's lane,
@@ -775,7 +758,7 @@ mod tests {
                 }
             },
             &|p, _v| {
-                if !(sa..sa + RING_END).contains(&p) {
+                if !(sa..sa + RINGS_END_OFFSET_BYTES).contains(&p) {
                     let mut e = escaped.borrow_mut();
                     let n = escapes.get();
                     if n < e.len() {
@@ -787,7 +770,7 @@ mod tests {
                 }
             },
             &|p, _v| {
-                if !(sd..sd + RING_END).contains(&p) {
+                if !(sd..sd + RINGS_END_OFFSET_BYTES).contains(&p) {
                     let mut e = escaped.borrow_mut();
                     let n = escapes.get();
                     if n < e.len() {

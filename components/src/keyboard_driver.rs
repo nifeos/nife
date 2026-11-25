@@ -99,14 +99,14 @@ const VIRTUAL_IO_ID_INPUT: u32 = 18;
 /// The event queue. virtio-input has a second (status) queue for LEDs, which this driver never sets
 /// up, so it stays inside the two-queue confinement ceiling DECISIONS §23 records.
 const EVENT_Q: u64 = 0;
-const QSIZE: u16 = 8;
+const QSIZE: u16 = moho_abi::virtual_io::QUEUE_ENTRIES;
 
 /// The DMA page's layout: the event queue's rings at the kernel's per-queue offsets, then the event
 /// buffers. All inside the one 4 KiB page the kernel granted, so the shadow-ring validator confines
 /// every address the device is handed.
-const EQ_DESC: u64 = 0x000;
-const EQ_AVAIL: u64 = 0x080;
-const EQ_USED: u64 = 0x100;
+const EQ_DESC: u64 = moho_abi::virtual_io::DESCRIPTOR_TABLE_OFFSET_BYTES;
+const EQ_AVAIL: u64 = moho_abi::virtual_io::AVAILABLE_RING_OFFSET_BYTES;
+const EQ_USED: u64 = moho_abi::virtual_io::USED_RING_OFFSET_BYTES;
 const EVENT_BASE: u64 = 0x400;
 
 /// `struct virtio_input_event { le16 type; le16 code; le32 value; }`. Eight bytes, and the device

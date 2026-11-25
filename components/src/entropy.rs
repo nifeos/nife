@@ -94,14 +94,14 @@ const VIRTUAL_IO_ID_ENTROPY: u32 = 4;
 /// virtio-rng has exactly one virtqueue, the request queue. Nothing rides the second slot of the
 /// two-queue confinement ceiling here.
 const RNG_Q: u64 = 0;
-const QSIZE: u16 = 8;
+const QSIZE: u16 = moho_abi::virtual_io::QUEUE_ENTRIES;
 
 /// The DMA page's layout: the queue's rings at the kernel's per-queue offsets, then the buffer the
 /// device fills. All inside the one 4 KiB page the kernel granted, so the shadow-ring validator
 /// confines every address the device is handed.
-const Q_DESC: u64 = 0x000;
-const Q_AVAIL: u64 = 0x080;
-const Q_USED: u64 = 0x100;
+const Q_DESC: u64 = moho_abi::virtual_io::DESCRIPTOR_TABLE_OFFSET_BYTES;
+const Q_AVAIL: u64 = moho_abi::virtual_io::AVAILABLE_RING_OFFSET_BYTES;
+const Q_USED: u64 = moho_abi::virtual_io::USED_RING_OFFSET_BYTES;
 const POOL_OFF: u64 = 0x400;
 
 /// How many bytes one device request fetches. 256 is 32 clients' worth of [`proto::MAXIMUM_BYTES`]

@@ -64,10 +64,10 @@ fn run_q(driver: u64, size: u64, shadow: u64, q: u16, from: u16, to: u16) -> boo
     validate_and_shadow(
         driver,
         size,
-        driver + block + DESC_OFF,
-        driver + block + AVAIL_OFF,
-        shadow + block + DESC_OFF,
-        shadow + block + AVAIL_OFF,
+        driver + block + DESCRIPTOR_TABLE_OFFSET_BYTES,
+        driver + block + AVAILABLE_RING_OFFSET_BYTES,
+        shadow + block + DESCRIPTOR_TABLE_OFFSET_BYTES,
+        shadow + block + AVAILABLE_RING_OFFSET_BYTES,
         from,
         to,
         &r16,
@@ -82,8 +82,8 @@ fn run_q(driver: u64, size: u64, shadow: u64, q: u16, from: u16, to: u16) -> boo
 #[test_case]
 fn the_validator_refuses_a_descriptor_that_escapes_the_dma_region() {
     let (driver, shadow, size) = two_regions();
-    let desc = driver + DESC_OFF;
-    let avail = driver + AVAIL_OFF;
+    let desc = driver + DESCRIPTOR_TABLE_OFFSET_BYTES;
+    let avail = driver + AVAILABLE_RING_OFFSET_BYTES;
 
     // --- a GOOD chain: header + data + status, all inside the region ---
     write_desc(desc, 0, driver + 0x200, 16, VIRTQ_DESC_F_NEXT, 1);
@@ -140,10 +140,10 @@ fn the_validator_refuses_a_descriptor_that_escapes_the_dma_region() {
 #[test_case]
 fn the_shadow_ring_is_immune_to_a_descriptor_mutated_after_validation() {
     let (driver, shadow, size) = two_regions();
-    let desc = driver + DESC_OFF;
-    let avail = driver + AVAIL_OFF;
-    let shadow_desc = shadow + DESC_OFF;
-    let shadow_avail = shadow + AVAIL_OFF;
+    let desc = driver + DESCRIPTOR_TABLE_OFFSET_BYTES;
+    let avail = driver + AVAILABLE_RING_OFFSET_BYTES;
+    let shadow_desc = shadow + DESCRIPTOR_TABLE_OFFSET_BYTES;
+    let shadow_avail = shadow + AVAILABLE_RING_OFFSET_BYTES;
 
     // One valid in-region descriptor, published as head 0.
     let good_addr = driver + 0x200;
@@ -184,8 +184,8 @@ fn the_shadow_ring_is_immune_to_a_descriptor_mutated_after_validation() {
 #[test_case]
 fn the_validator_refuses_an_indirect_descriptor() {
     let (driver, shadow, size) = two_regions();
-    let desc = driver + DESC_OFF;
-    let avail = driver + AVAIL_OFF;
+    let desc = driver + DESCRIPTOR_TABLE_OFFSET_BYTES;
+    let avail = driver + AVAILABLE_RING_OFFSET_BYTES;
 
     // desc[0]: a legal in-region address, but flagged INDIRECT.
     write_desc(desc, 0, driver + 0x200, 128, VIRTQ_DESC_F_INDIRECT, 0);
@@ -291,25 +291,25 @@ fn a_pci_queue_has_no_doorbell_until_it_is_set_up() {
 #[test_case]
 fn the_validator_refuses_more_new_entries_than_the_ring_can_hold() {
     let (driver, shadow, size) = two_regions();
-    let desc = driver + DESC_OFF;
-    let avail = driver + AVAIL_OFF;
+    let desc = driver + DESCRIPTOR_TABLE_OFFSET_BYTES;
+    let avail = driver + AVAILABLE_RING_OFFSET_BYTES;
 
     // Fill the whole ring with individually valid single-descriptor entries.
-    for i in 0..QSIZE as u64 {
+    for i in 0..QUEUE_ENTRIES as u64 {
         write_desc(desc, i, driver + 0x200 + i * 8, 8, 0, 0);
         w16(avail + 4 + i * 2, i as u16); // ring[i] = head i
     }
 
-    // Exactly QSIZE new entries is legal: the ring holds that many.
+    // Exactly QUEUE_ENTRIES new entries is legal: the ring holds that many.
     assert!(
-        run(driver, size, shadow, 0, QSIZE),
-        "a batch of exactly QSIZE valid entries was refused",
+        run(driver, size, shadow, 0, QUEUE_ENTRIES),
+        "a batch of exactly QUEUE_ENTRIES valid entries was refused",
     );
 
     // One more than the ring can hold is refused, though every descriptor is valid.
     assert!(
-        !run(driver, size, shadow, 0, QSIZE + 1),
-        "a jump of QSIZE+1 was walked instead of refused: a hostile avail.idx could spin the \
+        !run(driver, size, shadow, 0, QUEUE_ENTRIES + 1),
+        "a jump of QUEUE_ENTRIES+1 was walked instead of refused: a hostile avail.idx could spin the \
          validator up to 65535 times with interrupts masked",
     );
 
@@ -322,8 +322,8 @@ fn the_validator_refuses_more_new_entries_than_the_ring_can_hold() {
 #[test_case]
 fn the_validator_refuses_a_receive_descriptor_that_escapes_the_region() {
     let (driver, shadow, size) = two_regions();
-    let desc = driver + DESC_OFF;
-    let avail = driver + AVAIL_OFF;
+    let desc = driver + DESCRIPTOR_TABLE_OFFSET_BYTES;
+    let avail = driver + AVAILABLE_RING_OFFSET_BYTES;
 
     // A legitimate receive posting: one device-writable buffer, wholly in-region.
     write_desc(desc, 0, driver + 0x400, 1514, VIRTQ_DESC_F_WRITE, 0);
@@ -352,16 +352,16 @@ fn the_validator_refuses_a_receive_descriptor_that_escapes_the_region() {
 fn a_second_queue_validates_on_its_own_block() {
     let (driver, shadow, size) = two_regions();
     let q1 = queue_block(1);
-    let desc1 = driver + q1 + DESC_OFF;
-    let avail1 = driver + q1 + AVAIL_OFF;
+    let desc1 = driver + q1 + DESCRIPTOR_TABLE_OFFSET_BYTES;
+    let avail1 = driver + q1 + AVAILABLE_RING_OFFSET_BYTES;
 
     // A sentinel in queue 0's shadow descriptor slot. Frames from `alloc` are not zeroed, so we
     // plant a known value and assert queue-1 validation leaves it untouched.
     const SENTINEL: u64 = 0xC0FF_EE00_C0FF_EE00;
-    w64(shadow + DESC_OFF, SENTINEL);
+    w64(shadow + DESCRIPTOR_TABLE_OFFSET_BYTES, SENTINEL);
 
     // A good transmit chain on queue 1: header + data, wholly in-region, above every ring block.
-    let data = MAXIMUM_QUEUES as u64 * RING_BLOCK; // first byte past all queues' rings
+    let data = MAXIMUM_QUEUES as u64 * RING_BLOCK_BYTES; // first byte past all queues' rings
     write_desc(desc1, 0, driver + data, 60, VIRTQ_DESC_F_NEXT, 1);
     write_desc(desc1, 1, driver + data + 64, 8, 0, 0);
     w16(avail1 + 4, 0); // ring[0] = head 0
@@ -373,12 +373,12 @@ fn a_second_queue_validates_on_its_own_block() {
 
     // It landed in queue 1's shadow block, and queue 0's shadow block is untouched.
     assert_eq!(
-        r64(shadow + q1 + DESC_OFF),
+        r64(shadow + q1 + DESCRIPTOR_TABLE_OFFSET_BYTES),
         driver + data,
         "queue 1's validated descriptor did not reach queue 1's shadow block",
     );
     assert_eq!(
-        r64(shadow + DESC_OFF),
+        r64(shadow + DESCRIPTOR_TABLE_OFFSET_BYTES),
         SENTINEL,
         "validating queue 1 disturbed queue 0's shadow block",
     );

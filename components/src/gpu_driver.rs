@@ -108,20 +108,20 @@ const VIRTUAL_IO_ID_GPU: u32 = 16;
 /// never sets that queue up, which keeps the confinement's two-queue ceiling untouched.
 const CONTROL_Q: u64 = 0;
 
-/// Our ring size, matching the kernel's `QSIZE`.
-const QSIZE: usize = 8;
+/// Our ring size, the one the kernel drives.
+const QSIZE: usize = moho_abi::virtual_io::QUEUE_ENTRIES as usize;
 
 const VIRTQ_DESC_F_NEXT: u16 = 1;
 const VIRTQ_DESC_F_WRITE: u16 = 2;
 
 // --- The DMA region's layout. Page 0 is driver-private; the surface starts at page 1. ---
 //
-// The ring offsets are the kernel's contract (kernel/src/virtual_io.rs: queue q's rings sit at
-// q * 0x200 + {0x000, 0x080, 0x100}); queue 0 is the only one we use. The request and response
+// The ring offsets are the kernel's contract (`moho_abi::virtual_io`: queue q's rings sit at
+// q * RING_BLOCK_BYTES plus each offset); queue 0 is the only one we use. The request and response
 // buffers sit above both queues' ring blocks, the same place the net driver puts its packet buffers.
-const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000;
-const AVAILABLE_RING_OFFSET_BYTES: u64 = 0x080;
-const USED_RING_OFFSET_BYTES: u64 = 0x100;
+use moho_abi::virtual_io::{
+    AVAILABLE_RING_OFFSET_BYTES, DESCRIPTOR_TABLE_OFFSET_BYTES, USED_RING_OFFSET_BYTES,
+};
 /// The control request the device reads. The largest command we send is 56 bytes.
 const REQUEST_OFFSET_BYTES: u64 = 0x400;
 /// The control response the device writes. `GET_DISPLAY_INFO`'s reply is 408 bytes (a header plus 16

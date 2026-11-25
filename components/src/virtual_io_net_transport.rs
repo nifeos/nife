@@ -70,21 +70,25 @@ const F_ACCESS_PLATFORM_HI: u32 = 1 << 1; // feature bit 33 (behind an IOMMU)
 const VIRTQ_DESC_F_WRITE: u16 = 2;
 
 /// Queue size and the two queues, matching the kernel's contract (receive = 0, transmit = 1).
-const QSIZE: u16 = 8;
+const QSIZE: u16 = moho_abi::virtual_io::QUEUE_ENTRIES;
 const RECEIVE_Q: u64 = 0;
 const TRANSMIT_Q: u64 = 1;
 
 /// The 12-byte modern virtio-net header in front of every frame (`VIRTIO_F_VERSION_1` negotiated).
 const NET_HDR_LEN: u64 = 12;
 
-// The DMA-page layout: each queue's rings at the kernel's per-queue stride (RING_BLOCK = 0x200,
-// desc/avail/used at +0x000/+0x080/+0x100), then the frame buffers. All within the one 4 KiB page.
-const RECEIVE_DESC: u64 = 0x000;
-const RECEIVE_AVAIL: u64 = 0x080;
-const RECEIVE_USED: u64 = 0x100;
-const TRANSMIT_DESC: u64 = 0x200;
-const TRANSMIT_AVAIL: u64 = 0x280;
-const TRANSMIT_USED: u64 = 0x300;
+// The DMA-page layout: each queue's rings in its ring block at the kernel's offsets
+// (`moho_abi::virtual_io`), then the frame buffers. All within the one 4 KiB page.
+use moho_abi::virtual_io::{
+    AVAILABLE_RING_OFFSET_BYTES, DESCRIPTOR_TABLE_OFFSET_BYTES, RING_BLOCK_BYTES,
+    USED_RING_OFFSET_BYTES,
+};
+const RECEIVE_DESC: u64 = RECEIVE_Q * RING_BLOCK_BYTES + DESCRIPTOR_TABLE_OFFSET_BYTES;
+const RECEIVE_AVAIL: u64 = RECEIVE_Q * RING_BLOCK_BYTES + AVAILABLE_RING_OFFSET_BYTES;
+const RECEIVE_USED: u64 = RECEIVE_Q * RING_BLOCK_BYTES + USED_RING_OFFSET_BYTES;
+const TRANSMIT_DESC: u64 = TRANSMIT_Q * RING_BLOCK_BYTES + DESCRIPTOR_TABLE_OFFSET_BYTES;
+const TRANSMIT_AVAIL: u64 = TRANSMIT_Q * RING_BLOCK_BYTES + AVAILABLE_RING_OFFSET_BYTES;
+const TRANSMIT_USED: u64 = TRANSMIT_Q * RING_BLOCK_BYTES + USED_RING_OFFSET_BYTES;
 
 /// How many receive and transmit buffers fit, and how big each is. Two of each keeps a spare in
 /// flight; 0x2C0 bytes holds a small frame plus the virtio header.

@@ -135,9 +135,10 @@ const FEATURE_VERSION_1_HIGH_WORD: u32 = 1;
 #[doc(alias = "VIRTIO_F_ACCESS_PLATFORM")]
 const FEATURE_ACCESS_PLATFORM_HIGH_WORD: u32 = 1 << 1;
 
-// The virtqueue we build. Small: one request in flight is all a demo needs.
+// The virtqueue we build: the size the kernel drives. Small: one request in flight is all a demo
+// needs.
 #[doc(alias = "Queue Size")]
-const QUEUE_ENTRIES: usize = 8;
+const QUEUE_ENTRIES: usize = moho_abi::virtual_io::QUEUE_ENTRIES as usize;
 
 // The descriptor flags (virtio 1.2, the split virtqueue's descriptor table). Names: provisional,
 // minted 2026-11-22 (UTC) by lane 1113-finish-review.
@@ -186,16 +187,13 @@ const BLOCK_REQUEST_FLUSH: u32 = 4;
 const FEATURE_BLOCK_FLUSH_LOW_WORD: u32 = 1 << 9;
 
 // --- our DMA layout, offsets within the one DMA page ---
-// BUGS: `QUEUE_ENTRIES` and the three ring offsets below, and the net queues' 0x200 stride, restate the
-// layout the kernel builds and `direct_memory_access_validator` proves (`LAYOUT_QSIZE`,
-// `DESC_OFF`, `AVAIL_OFF`, `USED_OFF`, `RING_BLOCK`) as literals, and nothing checks the copy: a
-// change to the proved layout would leave this driver on the wrong offsets until a QEMU test
-// failed. The fix is to move the constants to `moho_abi::virtual_io`, where this crate, the kernel and the
-// validator all name them, as Decision 2 of milestone 1113 (what an outside maintainer would fix
-// before it leaves this tree) decides.
-const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000; // 16 * QUEUE_ENTRIES = 128 bytes
-const AVAILABLE_RING_OFFSET_BYTES: u64 = 0x080; // 6 + 2*QUEUE_ENTRIES
-const USED_RING_OFFSET_BYTES: u64 = 0x100; // 6 + 8*QUEUE_ENTRIES
+// The ring offsets are the layout the kernel builds and `direct_memory_access_validator` proves,
+// named once in `moho_abi::virtual_io`, so a change to it is a compile error here and not a wrong
+// offset a QEMU test finds.
+use moho_abi::virtual_io::{
+    AVAILABLE_RING_OFFSET_BYTES, DESCRIPTOR_TABLE_OFFSET_BYTES, RING_BLOCK_BYTES,
+    USED_RING_OFFSET_BYTES,
+};
 const REQUEST_HEADER_OFFSET_BYTES: u64 = 0x200; // 16-byte blk request header
 const DATA_OFFSET_BYTES: u64 = 0x400; // 512-byte block buffer
 const STATUS_OFFSET_BYTES: u64 = 0x600; // 1-byte status
@@ -943,18 +941,25 @@ const NET_TRANSMIT_QUEUE_NUMBER: u64 = 1;
 /// negotiate `VIRTIO_F_VERSION_1` (the `num_buffers` field is then always present).
 const NET_HEADER_BYTES: u64 = 12;
 
-// Our DMA-page layout for the net driver. The queue rings follow the kernel's per-queue stride
-// (RING_BLOCK = 0x200, with desc/avail/used at +0x000/+0x080/+0x100 inside each queue's block, see
-// kernel/src/virtual_io.rs), and the packet buffers live above both queues' blocks. Everything fits in
-// the one 4 KiB DMA page the spawn service hands us.
-const NET_RECEIVE_DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000;
-const NET_RECEIVE_AVAILABLE_RING_OFFSET_BYTES: u64 = 0x080;
-const NET_RECEIVE_USED_RING_OFFSET_BYTES: u64 = 0x100;
-const NET_TRANSMIT_DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x200;
-const NET_TRANSMIT_AVAILABLE_RING_OFFSET_BYTES: u64 = 0x280;
+// Our DMA-page layout for the net driver. Each queue's rings sit in its ring block at the kernel's
+// offsets (`moho_abi::virtual_io`), and the packet buffers live above both queues' blocks.
+// Everything fits in the one 4 KiB DMA page the spawn service hands us.
+const NET_RECEIVE_RING_BLOCK_OFFSET_BYTES: u64 = NET_RECEIVE_QUEUE_NUMBER * RING_BLOCK_BYTES;
+const NET_TRANSMIT_RING_BLOCK_OFFSET_BYTES: u64 = NET_TRANSMIT_QUEUE_NUMBER * RING_BLOCK_BYTES;
+const NET_RECEIVE_DESCRIPTOR_TABLE_OFFSET_BYTES: u64 =
+    NET_RECEIVE_RING_BLOCK_OFFSET_BYTES + DESCRIPTOR_TABLE_OFFSET_BYTES;
+const NET_RECEIVE_AVAILABLE_RING_OFFSET_BYTES: u64 =
+    NET_RECEIVE_RING_BLOCK_OFFSET_BYTES + AVAILABLE_RING_OFFSET_BYTES;
+const NET_RECEIVE_USED_RING_OFFSET_BYTES: u64 =
+    NET_RECEIVE_RING_BLOCK_OFFSET_BYTES + USED_RING_OFFSET_BYTES;
+const NET_TRANSMIT_DESCRIPTOR_TABLE_OFFSET_BYTES: u64 =
+    NET_TRANSMIT_RING_BLOCK_OFFSET_BYTES + DESCRIPTOR_TABLE_OFFSET_BYTES;
+const NET_TRANSMIT_AVAILABLE_RING_OFFSET_BYTES: u64 =
+    NET_TRANSMIT_RING_BLOCK_OFFSET_BYTES + AVAILABLE_RING_OFFSET_BYTES;
 // The driver never waits on transmit completions, only on the receive side; [`submit`] reads the
 // transmit used ring's index and nothing reads its elements.
-const NET_TRANSMIT_USED_RING_OFFSET_BYTES: u64 = 0x300;
+const NET_TRANSMIT_USED_RING_OFFSET_BYTES: u64 =
+    NET_TRANSMIT_RING_BLOCK_OFFSET_BYTES + USED_RING_OFFSET_BYTES;
 /// One receive buffer: the 12-byte virtio header plus room for a full 1514-byte Ethernet frame.
 const NET_RECEIVE_BUFFER_OFFSET_BYTES: u64 = 0x400;
 const NET_RECEIVE_BUFFER_BYTES: u64 = 0x600;
@@ -1774,13 +1779,13 @@ pub mod direct {
     const COMMON_QUEUE_DRIVER: u64 = 0x28;
     const COMMON_QUEUE_DEVICE: u64 = 0x30;
 
-    /// The stride between queues' ring blocks in the DMA region, and each ring's offset in its
-    /// block: the layout the mediated grant's kernel uses (`direct_memory_access_validator`), so a
-    /// driver role writes its descriptors at one place on either grant.
-    const RING_BLOCK: u64 = 0x200;
-    const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000;
-    const AVAILABLE_RING_OFFSET_BYTES: u64 = 0x080;
-    const USED_RING_OFFSET_BYTES: u64 = 0x100;
+    // The stride between queues' ring blocks in the DMA region, and each ring's offset in its
+    // block: the layout the mediated grant's kernel uses (`moho_abi::virtual_io`), so a driver
+    // role writes its descriptors at one place on either grant.
+    use moho_abi::virtual_io::{
+        AVAILABLE_RING_OFFSET_BYTES, DESCRIPTOR_TABLE_OFFSET_BYTES, RING_BLOCK_BYTES,
+        USED_RING_OFFSET_BYTES,
+    };
 
     /// The queues a driver role uses: a disk one, a NIC two.
     const QUEUES: usize = 2;
@@ -1950,7 +1955,7 @@ pub mod direct {
                 return -1;
             }
         }
-        let block = h.data_plane_physical_address + queue * RING_BLOCK;
+        let block = h.data_plane_physical_address + queue * RING_BLOCK_BYTES;
         store::<u64>(
             common + COMMON_QUEUE_DESCRIPTOR,
             block + DESCRIPTOR_TABLE_OFFSET_BYTES,

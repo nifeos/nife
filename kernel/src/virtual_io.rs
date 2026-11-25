@@ -488,40 +488,36 @@ impl Transport {
     }
 }
 
-/// The fixed queue layout, a contract shared with the userspace driver (`components/src/block_driver_roles.rs`).
-/// The kernel places the rings at these offsets in the DMA region, so it always knows where they
-/// are.
-/// These offsets are **relative to a queue's ring block**; a device's queue `q` puts its rings at
-/// `q * RING_BLOCK + {DESC,AVAIL,USED}_OFF` (see `RING_BLOCK`).
-///
-/// Aliases, not copies, of `crates/direct_memory_access_validator`'s layout, so the layout
-/// `distinct_queues_occupy_disjoint_blocks` proves is the layout that runs.
-pub(crate) const QSIZE: u16 = direct_memory_access_validator::LAYOUT_QSIZE;
-const DESC_OFF: u64 = direct_memory_access_validator::DESC_OFF; // 16 * QSIZE
-const AVAIL_OFF: u64 = direct_memory_access_validator::AVAIL_OFF; // 6 + 2*QSIZE
-const USED_OFF: u64 = direct_memory_access_validator::USED_OFF; // 6 + 8*QSIZE
-/// The whole ring area of one queue must fit under this; a queue's data buffers live above it.
-const RING_END: u64 = direct_memory_access_validator::RING_END;
+// The fixed queue layout, the contract every userspace driver shares with the kernel. The kernel
+// places the rings at these offsets in the DMA region, so it always knows where they are. They
+// are **relative to a queue's ring block**: a device's queue `q` puts its rings at
+// `q * RING_BLOCK_BYTES` plus each offset. `RING_BLOCK_BYTES` (0x200) holds a whole ring area
+// (`RINGS_END_OFFSET_BYTES`) and keeps queue 0 identical to the disk's single-queue layout, whose
+// data buffers begin at 0x200 (a disk has no queue 1).
+//
+// The numbers live in `moho_abi::virtual_io`, which the drivers and
+// `crates/direct_memory_access_validator` use too, so the layout
+// `distinct_queues_occupy_disjoint_blocks` proves is the layout that runs and the layout each
+// driver reads.
+use moho_abi::virtual_io::{
+    AVAILABLE_RING_OFFSET_BYTES, DESCRIPTOR_TABLE_OFFSET_BYTES, QUEUE_ENTRIES, RING_BLOCK_BYTES,
+    RINGS_END_OFFSET_BYTES, USED_RING_OFFSET_BYTES,
+};
 
 /// The most virtqueues the confinement drives per device. A virtio-net device needs two (receive =
 /// queue 0, transmit = queue 1); the disk uses only queue 0. Fixed and small on purpose: one
 /// kernel-private shadow frame per device holds every queue's shadow rings, so the ceiling is what
-/// fits there (`MAXIMUM_QUEUES * RING_BLOCK <= FRAME_BYTES`), asserted below, not a policy dial.
+/// fits there (`MAXIMUM_QUEUES * RING_BLOCK_BYTES <= FRAME_BYTES`), asserted below, not a policy dial.
 pub(crate) const MAXIMUM_QUEUES: usize = direct_memory_access_validator::MAXIMUM_QUEUES as usize;
-
-/// The stride between successive queues' ring areas, in both the driver's DMA region and the
-/// kernel-private shadow. 0x200 holds a whole ring area (`RING_END`) and keeps queue 0 identical to
-/// the disk's single-queue layout, whose data buffers begin at 0x200 (a disk has no queue 1).
-const RING_BLOCK: u64 = direct_memory_access_validator::RING_BLOCK;
 
 // The shadow frame must hold every queue's ring block, and a queue's ring area must fit in its
 // block. Both are compile-time facts, so break the build if a future edit violates either.
 const _: () = assert!(
-    RING_END <= RING_BLOCK,
+    RINGS_END_OFFSET_BYTES <= RING_BLOCK_BYTES,
     "a queue's rings overflow its ring block"
 );
 const _: () = assert!(
-    MAXIMUM_QUEUES as u64 * RING_BLOCK <= page_frames::FRAME_BYTES,
+    MAXIMUM_QUEUES as u64 * RING_BLOCK_BYTES <= page_frames::FRAME_BYTES,
     "the shadow frame cannot hold every queue's ring block",
 );
 
@@ -785,7 +781,7 @@ fn direct_memory_access_write64(phys: u64, v: u64) {
 /// ring the device reads. Returns false if any descriptor escapes the DMA region.
 ///
 /// A thin adapter over `crates/direct_memory_access_validator::validate_and_shadow`, which Kani
-/// proves for every input: ring physical addresses, the direct-map closures and `QSIZE` pass
+/// proves for every input: ring physical addresses, the direct-map closures and `QUEUE_ENTRIES` pass
 /// straight through. See nifeos/record:notes/dma.md and nifeos/record:notes/verification.md.
 #[allow(clippy::too_many_arguments)]
 fn validate_and_shadow(
@@ -811,7 +807,7 @@ fn validate_and_shadow(
         shadow_avail,
         from_idx,
         to_idx,
-        QSIZE,
+        QUEUE_ENTRIES,
         read16,
         read64,
         write16,
@@ -904,7 +900,7 @@ fn sanitize_driver_features(sel: u32, val: u32) -> u32 {
 /// Set up queue `queue` with `num` entries, the kernel choosing the ring addresses: descriptor
 /// table and available ring in the kernel-private shadow page, used ring in the driver's region
 /// (the device writes only indices and lengths there). Each queue's rings sit at
-/// `queue * RING_BLOCK` in both. Refuses a queue that is out of range or does not fit.
+/// `queue * RING_BLOCK_BYTES` in both. Refuses a queue that is out of range or does not fit.
 pub(crate) fn setup_queue(id: u64, num: u16, queue: u16) -> Result<(), TransportError> {
     if queue as usize >= MAXIMUM_QUEUES {
         return Err(TransportError::BadQueue);
@@ -913,18 +909,21 @@ pub(crate) fn setup_queue(id: u64, num: u16, queue: u16) -> Result<(), Transport
     let dev = devs.get_mut(id).ok_or(TransportError::NoDevice)?;
 
     // Every queue's ring block must lie inside the driver's DMA region. The last block ends at
-    // `MAXIMUM_QUEUES * RING_BLOCK`, but this queue only needs its own block plus a ring area.
+    // `MAXIMUM_QUEUES * RING_BLOCK_BYTES`, but this queue only needs its own block plus a ring area.
     let block = queue_block(queue);
-    if num == 0 || num > QSIZE || dev.direct_memory_access_size < block + RING_END {
+    if num == 0
+        || num > QUEUE_ENTRIES
+        || dev.direct_memory_access_size < block + RINGS_END_OFFSET_BYTES
+    {
         return Err(TransportError::BadQueue);
     }
     if dev.transport.queue_num_max(queue) < num {
         return Err(TransportError::BadQueue);
     }
 
-    let desc = dev.shadow_base + block + DESC_OFF; // the SHADOW descriptor table (device-read)
-    let avail = dev.shadow_base + block + AVAIL_OFF; // the SHADOW available ring
-    let used = dev.direct_memory_access_base + block + USED_OFF; // the used ring stays in the driver's region
+    let desc = dev.shadow_base + block + DESCRIPTOR_TABLE_OFFSET_BYTES; // the SHADOW descriptor table (device-read)
+    let avail = dev.shadow_base + block + AVAILABLE_RING_OFFSET_BYTES; // the SHADOW available ring
+    let used = dev.direct_memory_access_base + block + USED_RING_OFFSET_BYTES; // the used ring stays in the driver's region
     dev.transport.setup_queue(queue, num, desc, avail, used);
     Ok(())
 }
@@ -947,10 +946,10 @@ pub(crate) fn notify(id: u64, queue: u16) -> Result<(), TransportError> {
     }
 
     let block = queue_block(queue);
-    let driver_desc = dev.direct_memory_access_base + block + DESC_OFF;
-    let driver_avail = dev.direct_memory_access_base + block + AVAIL_OFF;
-    let shadow_desc = dev.shadow_base + block + DESC_OFF;
-    let shadow_avail = dev.shadow_base + block + AVAIL_OFF;
+    let driver_desc = dev.direct_memory_access_base + block + DESCRIPTOR_TABLE_OFFSET_BYTES;
+    let driver_avail = dev.direct_memory_access_base + block + AVAILABLE_RING_OFFSET_BYTES;
+    let shadow_desc = dev.shadow_base + block + DESCRIPTOR_TABLE_OFFSET_BYTES;
+    let shadow_avail = dev.shadow_base + block + AVAILABLE_RING_OFFSET_BYTES;
     let to_idx = direct_memory_access_read16(driver_avail + 2); // the driver's avail.idx for this queue
 
     let ok = validate_and_shadow(
@@ -1032,10 +1031,10 @@ pub(crate) fn provoke_write_to_shadow(id: u64) -> u16 {
         .expect("provoke_write_to_shadow: no such device");
     reset_to_features_ok(dev);
 
-    let num = dev.transport.queue_num_max(0).min(QSIZE);
-    let desc = dev.direct_memory_access_base + DESC_OFF;
-    let avail = dev.direct_memory_access_base + AVAIL_OFF;
-    let used = dev.shadow_base + USED_OFF;
+    let num = dev.transport.queue_num_max(0).min(QUEUE_ENTRIES);
+    let desc = dev.direct_memory_access_base + DESCRIPTOR_TABLE_OFFSET_BYTES;
+    let avail = dev.direct_memory_access_base + AVAILABLE_RING_OFFSET_BYTES;
+    let used = dev.shadow_base + USED_RING_OFFSET_BYTES;
     // avail = { flags, idx = 0 }: nothing to process. used.flags = the canary.
     direct_memory_access_write16(avail, 0);
     direct_memory_access_write16(avail + 2, 0);
@@ -1069,9 +1068,9 @@ pub(crate) fn provoke_iommu_escape(id: u64, avail_out_of_domain: u64) {
 
     // Queue 0: descriptor table on the (in-domain) shadow, used ring in the (in-domain) driver
     // region, available ring pointed OUT of the domain. Then DRIVER_OK to make the queue live.
-    let num = dev.transport.queue_num_max(0).min(QSIZE);
-    let desc = dev.shadow_base + DESC_OFF;
-    let used = dev.direct_memory_access_base + USED_OFF;
+    let num = dev.transport.queue_num_max(0).min(QUEUE_ENTRIES);
+    let desc = dev.shadow_base + DESCRIPTOR_TABLE_OFFSET_BYTES;
+    let used = dev.direct_memory_access_base + USED_RING_OFFSET_BYTES;
     dev.transport
         .setup_queue(0, num, desc, avail_out_of_domain, used);
     dev.transport.write_reg(REG_STATUS, TEST_HOOK_DRIVER_OK);
@@ -1111,10 +1110,14 @@ pub(crate) fn provoke_completion(id: u64) -> bool {
     reset_to_features_ok(dev);
 
     let base = dev.direct_memory_access_base;
-    let num = dev.transport.queue_num_max(0).min(QSIZE);
-    let (desc, avail, used) = (base + DESC_OFF, base + AVAIL_OFF, base + USED_OFF);
+    let num = dev.transport.queue_num_max(0).min(QUEUE_ENTRIES);
+    let (desc, avail, used) = (
+        base + DESCRIPTOR_TABLE_OFFSET_BYTES,
+        base + AVAILABLE_RING_OFFSET_BYTES,
+        base + USED_RING_OFFSET_BYTES,
+    );
     // The request's three buffers, past every queue's ring block and inside the one frame.
-    let header = base + MAXIMUM_QUEUES as u64 * RING_BLOCK;
+    let header = base + MAXIMUM_QUEUES as u64 * RING_BLOCK_BYTES;
     let (serial, status) = (header + 0x40, header + 0x80);
     direct_memory_access_write64(header, GET_ID); // type, then reserved
     direct_memory_access_write64(header + 8, 0); // sector
