@@ -33,7 +33,7 @@ pub(crate) mod clockproto;
 #[allow(dead_code)]
 pub(crate) mod entropyproto;
 // The byte-sink contract (milestone 50, notes/sink-protocol.md): the one framing every "write
-// these bytes there" destination speaks, generated verbatim from `src/lib.rs` of the pinned `nifeos/byte_sink_contract` by
+// these bytes there" destination speaks, generated verbatim from `src/lib.rs` of the pinned `partsfoundry/byte_sink_contract` by
 // the same xtask step. `sys/stdio` is a *writer* of it, so the receiving half (`unpack`, `Message`)
 // belongs to the sinks; hence the allow.
 #[allow(dead_code)]
@@ -46,7 +46,7 @@ pub(crate) mod sinkproto;
 #[allow(dead_code)]
 pub(crate) mod envproto;
 // The argument page (milestone 205 (how a foreign program is told what to do), DECISIONS §170):
-// the byte argv's layout, generated verbatim from `src/lib.rs` of the pinned `nifeos/program_argument_contract` by the same
+// the byte argv's layout, generated verbatim from `src/lib.rs` of the pinned `partsfoundry/program_argument_contract` by the same
 // xtask step. `sys/args` is a *reader*; `PageBuilder` belongs to whoever assembles a page (the
 // shell), hence the allow.
 #[allow(dead_code)]
