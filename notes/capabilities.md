@@ -232,7 +232,7 @@ else. There is no `open`, `read`, `write` or `fork`. One call has been added sin
 no capability. The surface is five calls today <!--count:system_calls-->, and
 [`notes/abi.md`](https://github.com/nifeos/record/blob/main/notes/abi.md) is the current contract.
 
-- The ABI is a crate, `partsfoundry/moho_abi`, that the kernel and every user program depend on. If it
+- The ABI is a crate, `nifeos/moho_abi`, that the kernel and every user program depend on. If it
   changes, both sides fail to compile.
 - The capability table, `crates/capability_table`, is pure logic and host-tested. Its one operation with
   teeth is `derive`, and rights only ever narrow. `GRANT`, the right to pass a capability on, is one

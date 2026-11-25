@@ -100,7 +100,7 @@ def included(pin, files):
     """`files` (path -> bytes) narrowed to the pin's `include`, when it names any.
 
     **A pin vendors a whole tree unless it says otherwise.** A repository we depend on for a few
-    files (the naming gates in partsfoundry/crate-workflows) names those files in `include`, a
+    files (the naming gates in nifeos/crate-workflows) names those files in `include`, a
     space-separated list of paths, and a path ending in `/` takes the directory. Upstream's other
     files are then neither expected nor allowed under vendor/<name>/, so a file added there that the
     pin does not name fails exactly as an unrecorded edit does.

@@ -102,7 +102,7 @@ DECISIONS §12. What follows is the design that led there, kept because the reas
 and written in the present tense of *before* it existed.
 
 Before milestone 12 there was no Reply capability and no `Call` (atomic send-and-wait) primitive: the
-rendezvous methods were `SEND`, `RECEIVE`, `SEND_CAPABILITY`, `RECEIVE_CAPABILITY`, and that was all (`partsfoundry/moho_abi`).
+rendezvous methods were `SEND`, `RECEIVE`, `SEND_CAPABILITY`, `RECEIVE_CAPABILITY`, and that was all (`nifeos/moho_abi`).
 
 The gap is the direct consequence of the anonymity above. A server that `RECEIVE`s a request has no
 idea who sent it, so it cannot reply to that specific caller. seL4 solves this with a

@@ -55,7 +55,7 @@ It is one word at a time and whole words only, and it reads only the first word 
 `script/apropos`'s own header says what else it cannot do. It does not reach the design record:
 the decisions, the roadmap and most notes are in
 [nifeos/record](https://github.com/nifeos/record), and the system call numbers are in
-[partsfoundry/moho_abi](https://github.com/partsfoundry/moho_abi).
+[nifeos/moho_abi](https://github.com/nifeos/moho_abi).
 
 ## Getting it building
 

@@ -244,7 +244,7 @@ skip = [
 # Where code is allowed to come from. This is the check that would notice a dependency quietly
 # repointed at somebody's fork, which is the shape most real supply-chain attacks on a small project
 # would take. Everything here is crates.io, an in-tree path, or a git repository in the partsfoundry
-# organization, where the crate repositories live, pinned by `rev` to a commit that has landed on its main (DECISIONS §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)). A git
+# organization, where the crate repositories live, or in nifeos, which keeps moho_abi, pinned by `rev` to a commit that has landed on its main (DECISIONS §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)). A git
 # dependency anywhere else stays refused.
 unknown-registry = "deny"
 unknown-git = "deny"
@@ -254,4 +254,4 @@ allow-git = []
 # cargo-deny warns "no crate source fell under this organization" until the first git dependency
 # exists; the warning is expected and not a failure.
 [sources.allow-org]
-github = ["partsfoundry"]
+github = ["nifeos", "partsfoundry"]

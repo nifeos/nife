@@ -27,7 +27,6 @@ interfaces_note
 intrusive_queue
 jh7110_entropy
 line_editor
-moho_abi
 non_volatile_memory_express
 program_argument_contract
 rsext4

@@ -11,7 +11,7 @@ license.workspace = true
 # `nifeos/record:notes/process-view.md`.
 
 [dependencies]
-moho_abi = { version = "0.1.0", git = "https://github.com/partsfoundry/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
+moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
 byte_glob = { version = "0.1.0", git = "https://github.com/partsfoundry/byte_glob", rev = "f5dae9092130be6d66f176d2e1942a4c36686818" }
 ps = { version = "0.1.0", path = "../ps" }
 

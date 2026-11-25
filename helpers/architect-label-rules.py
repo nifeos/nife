@@ -216,7 +216,7 @@ by design: #2416's handoff crosses a live swap and #2512's page is read by publi
 # BUGS
 
 - **abi-surface reads a path the crate has left.** The binary interface lives in its own
-  repository, `partsfoundry/moho_abi`, and reaches this tree as a bump of a pinned `rev`, which rule 2
+  repository, `nifeos/moho_abi`, and reaches this tree as a bump of a pinned `rev`, which rule 2
   exempts as a pinned first-party git dependency. A pull request that moves the pin to a commit that
   changed a system call number therefore fires nothing here, and `helpers/format_values_check.py`'s
   second case reads the same path. The crate's own counting test and its repository's review are

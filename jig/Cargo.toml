@@ -28,7 +28,7 @@ publish = false
 # pages (`std_runtime_contract`), and the system calls a `std` program has no binding for
 # (`user_mode_runtime`, `moho_abi`, `address_space_layout`).
 [dependencies]
-moho_abi = { version = "0.1.0", git = "https://github.com/partsfoundry/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
+moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
 address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
 file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }

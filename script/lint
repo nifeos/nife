@@ -2400,7 +2400,7 @@ def _sh_scripts():
 def _moho_abi_source():
     """The `src` directory of the `moho_abi` the workspace links, wherever cargo put it.
 
-    The crate lives in its own repository (`partsfoundry/moho_abi`), which the workspace pins by git
+    The crate lives in its own repository (`nifeos/moho_abi`), which the workspace pins by git
     revision, so its source is in cargo's checkout of that revision and not in this tree. Asking
     `cargo metadata` for the package's manifest path finds the revision the lockfile names, so the
     counts below describe the binary interface nife actually builds against.
