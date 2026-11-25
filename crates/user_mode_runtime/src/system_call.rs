@@ -1,5 +1,6 @@
-//! **The trap**: the one six-register round trip per architecture every system call shares, and the raw
-//! and capability-invoking wrappers over it.
+//! **The trap**: the one six-register round trip per architecture every system call shares, the
+//! raw and capability-invoking wrappers over it, and [`trap_call`], which traps with the typed calls
+//! `moho_abi::system_call` generates from the method table.
 //!
 //! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
@@ -19,7 +20,7 @@
 /// acting; that is its whole job. The caller is trusting the kernel, not the other way around.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every system call
-/// shares. It began as milestone 105 (the two forks)'s `invoke6`, which is now a wrapper over it.
+/// shares. It began as milestone 105 (the two forks)'s `invoke6`.
 #[cfg(target_arch = "aarch64")]
 pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
     let (mut w0, mut w1, mut w2, mut w3, mut w4, mut w5): (u64, u64, u64, u64, u64, u64);
@@ -51,7 +52,7 @@ pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64
 /// contract as the aarch64 twin: the caller trusts the kernel, not the other way around.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every system call
-/// shares. It began as milestone 105 (the two forks)'s `invoke6`, which is now a wrapper over it.
+/// shares. It began as milestone 105 (the two forks)'s `invoke6`.
 #[cfg(target_arch = "riscv64")]
 pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
     let (mut w0, mut w1, mut w2, mut w3, mut w4, mut w5): (u64, u64, u64, u64, u64, u64);
@@ -84,7 +85,7 @@ pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64
 /// contract as the aarch64 twin: the caller trusts the kernel, not the other way around.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every system call
-/// shares. It began as milestone 105 (the two forks)'s `invoke6`, which is now a wrapper over it.
+/// shares. It began as milestone 105 (the two forks)'s `invoke6`.
 #[cfg(target_arch = "x86_64")]
 pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
     let (mut w0, mut w1, mut w2, mut w3, mut w4, mut w5): (u64, u64, u64, u64, u64, u64);
@@ -124,66 +125,29 @@ pub unsafe fn raw_system_call(number: u64, words: [u64; 6]) -> [u64; 6] {
     [w0, w1, w2, w3, w4, w5]
 }
 
-/// The six-register round trip through `SYSTEM_CALL_INVOKE`: [`trap6`] with the number fixed and the sixth
-/// word in as zero, so [`receive_message`](crate::receive_message) reads `0` for anything the kernel
-/// did not stamp.
+/// **Trap with one of `moho_abi`'s typed calls**: [`trap6`] with the number and the six words the
+/// method table placed, returning the six words the kernel answered. Every wrapper in this crate
+/// that makes a method the table lists builds its call with `moho_abi::system_call` and traps here,
+/// so the table, not the wrapper, decides which register carries which argument. A word the table
+/// does not define goes in as zero, the sixth included, so [`receive_message`](crate::receive_message)
+/// reads `0` for anything the kernel did not stamp.
 ///
 /// # Safety
 /// [`trap6`]'s: the kernel validates the capability and the method before acting.
 ///
-/// Name: ratified 2026-11-20 (UTC); first minted, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC).
+/// Name: provisional, minted for milestone 1128 step 3: the trap, taking a call. Considered
+/// `invoke_call` (refused: the table's calls include the four that are not `SYSTEM_CALL_INVOKE`).
 #[inline(always)]
-pub(crate) unsafe fn invoke6(
-    capability: u64,
-    method: u64,
-    argument_zero: u64,
-    argument_one: u64,
-    argument_two: u64,
-) -> (u64, u64, u64, u64, u64, u64) {
+pub(crate) unsafe fn trap_call<A>(call: moho_abi::system_call::Call<A>) -> [u64; 6] {
     // SAFETY: forwarded from this function's own contract.
-    unsafe {
-        trap6(
-            moho_abi::SYSTEM_CALL_INVOKE,
-            [
-                capability,
-                method,
-                argument_zero,
-                argument_one,
-                argument_two,
-                0,
-            ],
-        )
-    }
-}
-
-/// [`invoke6`] read to the five words every method but a death delivery uses.
-///
-/// # Safety
-/// Exactly [`invoke6`]'s contract.
-#[inline(always)]
-pub(crate) unsafe fn invoke5(
-    capability: u64,
-    method: u64,
-    argument_zero: u64,
-    argument_one: u64,
-    argument_two: u64,
-) -> (u64, u64, u64, u64, u64) {
-    // SAFETY: forwarded from this function's own contract.
-    let (w0, w1, w2, w3, w4, _) = unsafe {
-        invoke6(
-            capability,
-            method,
-            argument_zero,
-            argument_one,
-            argument_two,
-        )
-    };
-    (w0, w1, w2, w3, w4)
+    let (w0, w1, w2, w3, w4, w5) = unsafe { trap6(call.number, call.words) };
+    [w0, w1, w2, w3, w4, w5]
 }
 
 /// Invoke a capability: the one system call a userspace program makes. `capability` names a capability in the
 /// process's capability table, `method` selects the operation, and `argument_zero` to `argument_two` are its arguments; the return is
-/// the kernel's `i64` result. Everything else in this crate is built on this.
+/// the kernel's `i64` result. For a caller that names the method itself: this crate's own wrappers
+/// build their calls from the method table and trap through [`trap_call`].
 ///
 /// # Safety
 /// `svc`/`ecall` traps to the kernel. The kernel validates the capability and the method before
@@ -195,14 +159,18 @@ pub unsafe fn invoke(
     argument_one: u64,
     argument_two: u64,
 ) -> i64 {
-    // SAFETY: forwarded from this function's own contract, which is `invoke5`'s contract exactly.
+    // SAFETY: forwarded from this function's own contract, which is `trap6`'s.
     unsafe {
-        invoke5(
-            capability,
-            method,
-            argument_zero,
-            argument_one,
-            argument_two,
+        trap6(
+            moho_abi::SYSTEM_CALL_INVOKE,
+            [
+                capability,
+                method,
+                argument_zero,
+                argument_one,
+                argument_two,
+                0,
+            ],
         )
         .0 as i64
     }

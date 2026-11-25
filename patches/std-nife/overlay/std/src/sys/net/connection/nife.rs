@@ -46,6 +46,7 @@ use crate::io::{self, BorrowedCursor, IoSlice, IoSliceMut};
 use crate::net::{Ipv4Addr, Ipv6Addr, Shutdown, SocketAddr, SocketAddrV4, ToSocketAddrs};
 use crate::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use crate::sys::pal::nife::netproto::*;
+use crate::sys::pal::nife::moho_abi::system_call as typed;
 use crate::sys::pal::nife::{moho_abi, rt};
 use crate::sys::unsupported;
 use crate::time::Duration;
@@ -263,7 +264,7 @@ fn ensure_page(id: u64) -> io::Result<u64> {
     // Mint a fresh frame from the net untyped. A negative result means no untyped in slot 3, i.e.
     // this program was not endowed with the network: honestly Unsupported.
     // SAFETY: plain system call; the kernel validates the slot and the budget.
-    let frame = unsafe { rt::invoke(NET_MEMORY_REGION, moho_abi::memory_region::RETYPE, 0, 0, 0) };
+    let frame = unsafe {rt::trap_call(typed::memory_region::retype(NET_MEMORY_REGION, 0))[0] as i64 };
     if frame < 0 {
         return Err(io::Error::UNSUPPORTED_PLATFORM);
     }
@@ -271,7 +272,8 @@ fn ensure_page(id: u64) -> io::Result<u64> {
 
     // Map it writable at this socket's VA; its page table comes from the same untyped.
     // SAFETY: plain system call; the frame was just minted and is ours to map.
-    if unsafe { rt::invoke(frame, moho_abi::page_frame::MAP, va, 1, NET_MEMORY_REGION) } < 0 {
+    let map = typed::page_frame::map(frame, va, true, NET_MEMORY_REGION);
+    if unsafe { rt::trap_call(map)[0] as i64 } < 0 {
         return Err(io::const_error!(io::ErrorKind::Other, "mapping the socket frame failed"));
     }
     lock().slots()[id as usize].frame = frame;
@@ -290,13 +292,12 @@ fn take_socket(id: u64, socket: u64, carries_bytes: bool) -> io::Result<()> {
         // SAFETY: plain system call; the frame carries its budget's GRANT (slot 3's, milestone 824 (a
         // retype mints no right its budget lacks)), narrowed here.
         let sent = unsafe {
-            rt::invoke(
+            rt::trap_call(typed::rendezvous::send_capability(
                 socket,
-                moho_abi::rendezvous::SEND_CAPABILITY,
                 frame,
                 moho_abi::rights::READ | moho_abi::rights::WRITE,
                 OPERATION_ATTACH_SHARED_PAGE,
-            )
+            ))[0] as i64
         };
         if sent < 0 { Err(io::Error::UNSUPPORTED_PLATFORM) } else { Ok(()) }
     });
@@ -1082,13 +1083,15 @@ fn ensure_resolver_page(_held: &ResolverGuard, i: usize) -> io::Result<()> {
     let mut frame = RESOLVER_FRAME.load(Ordering::Relaxed);
     if frame == 0 {
         // SAFETY: plain system call; the kernel validates the slot and the budget.
-        let minted = unsafe { rt::invoke(NET_MEMORY_REGION, moho_abi::memory_region::RETYPE, 0, 0, 0) };
+        let retype = typed::memory_region::retype(NET_MEMORY_REGION, 0);
+        let minted = unsafe { rt::trap_call(retype)[0] as i64 };
         if minted < 0 {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
         frame = minted as u64;
         // SAFETY: plain system call; the frame was just minted and is ours to map.
-        if unsafe { rt::invoke(frame, moho_abi::page_frame::MAP, rt::RESOLVER_PAGE, 1, NET_MEMORY_REGION) } < 0 {
+        let map = typed::page_frame::map(frame, rt::RESOLVER_PAGE, true, NET_MEMORY_REGION);
+        if unsafe { rt::trap_call(map)[0] as i64 } < 0 {
             return Err(io::const_error!(io::ErrorKind::Other, "mapping the resolver page failed"));
         }
         RESOLVER_FRAME.store(frame, Ordering::Relaxed);
@@ -1100,13 +1103,12 @@ fn ensure_resolver_page(_held: &ResolverGuard, i: usize) -> io::Result<()> {
     // SAFETY: plain system call; the frame carries its budget's GRANT (slot 3's, milestone 824 (a
     // retype mints no right its budget lacks)), narrowed here.
     let sent = unsafe {
-        rt::invoke(
+        rt::trap_call(typed::rendezvous::send_capability(
             rt::RESOLVER_SLOTS[i],
-            moho_abi::rendezvous::SEND_CAPABILITY,
             frame,
             moho_abi::rights::READ | moho_abi::rights::WRITE,
             resolve::request(resolve::OPERATION_ATTACH_SHARED_PAGE),
-        )
+        ))[0] as i64
     };
     if sent < 0 {
         return Err(io::Error::UNSUPPORTED_PLATFORM);
