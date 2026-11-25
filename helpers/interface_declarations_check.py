@@ -231,7 +231,8 @@ def crate_interfaces(crate, src):
     return out
 
 
-NIFEOS_GIT = 'git+https://github.com/nifeos/'
+# The crate repositories moved to partsfoundry (2026-11-24 UTC); a lock may still name nifeos.
+FIRST_PARTY_GIT = ('git+https://github.com/partsfoundry/', 'git+https://github.com/nifeos/')
 
 
 def metadata():
@@ -254,7 +255,7 @@ def tree_problems():
     # its interface keeps its row in the table and its readers keep declaring it.
     members = set(meta['workspace_members']) | {
         p['id'] for p in meta['packages']
-        if (p.get('source') or '').startswith(NIFEOS_GIT)}
+        if (p.get('source') or '').startswith(FIRST_PARTY_GIT)}
     package = {p['id']: p for p in meta['packages']}
     by_name = {package[i]['name']: i for i in members}
     edges = {n['id']: [d['pkg'] for d in n['deps']
