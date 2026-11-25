@@ -1,6 +1,6 @@
 """The naming gates nife runs on the template's words: what nife adds beside the vendored copies.
 
-The template (nifeos/crate-workflows) owns, once for every repository, the words a name spells out
+The template (partsfoundry/crate-workflows) owns, once for every repository, the words a name spells out
 (`[spelled_out]`), the unit symbols a name never carries (`[units]`) and the Rust lexer that reads a
 name. nife vendors them at the commit `vendor/crate-workflows.pin` names, into
 `vendor/crate-workflows/helpers/`, and edits none of them: a change to a word goes to the template
@@ -740,7 +740,7 @@ def prose_problems(text, words):
     for word in sorted(prose - set(table)):
         if word not in PROSE_ONLY_WORDS:
             bad.append(f'`{word}` is spelled out by {NAMING} and the template word list has no row '
-                       f'for it. Add the row in nifeos/crate-workflows, or list it in '
+                       f'for it. Add the row in partsfoundry/crate-workflows, or list it in '
                        f'PROSE_ONLY_WORDS with the reason')
     for word in sorted(set(PROSE_ONLY_WORDS) & set(table)):
         bad.append(f'PROSE_ONLY_WORDS lists `{word}`, which the template word list holds now. '

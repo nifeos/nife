@@ -5,7 +5,7 @@
 # for every repository: the spelled-out words, the unit symbols, American spelling, the service
 # model, contract crate names, the question shape of a function name, the Rust lexer they read and
 # the word list they hold. vendor/README.md says what nife adds beside them and why nothing here is
-# edited in nife; a change goes to nifeos/crate-workflows and the pin moves to it. Format as
+# edited in nife; a change goes to partsfoundry/crate-workflows and the pin moves to it. Format as
 # vendor/redoxfs.pin, plus the two fields marked below.
 
 name = crate-workflows
@@ -15,7 +15,7 @@ version = 56437de
 
 source = git
 
-url = https://github.com/nifeos/crate-workflows/archive/56437ded32a66bf13b369b2095c8c7af2d840b05.tar.gz
+url = https://github.com/partsfoundry/crate-workflows/archive/56437ded32a66bf13b369b2095c8c7af2d840b05.tar.gz
 sha256 = f9ba7004c3139a15f79f91b5c07890b953799d2966b7968f208a13d9dc173d19
 
 vcs = 56437ded32a66bf13b369b2095c8c7af2d840b05
@@ -23,7 +23,7 @@ vcs = 56437ded32a66bf13b369b2095c8c7af2d840b05
 divergence = vendor/crate-workflows.divergence.patch
 
 # Where script/vendor-watch asks what has landed since `vcs`.
-vcs_url = https://github.com/nifeos/crate-workflows
+vcs_url = https://github.com/partsfoundry/crate-workflows
 vcs_branch = main
 
 # Only these files are vendored (script/vendor-verify): the rest of the template is workflows and

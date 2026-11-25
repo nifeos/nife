@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import crate_release  # noqa: E402
 import record_root  # noqa: E402
 
-TEMPLATE_URL = 'https://github.com/nifeos/crate-workflows'
+TEMPLATE_URL = 'https://github.com/partsfoundry/crate-workflows'
 REPOSITORY_URL = 'https://github.com/partsfoundry/{crate}'
 BARE_METAL = ('aarch64-unknown-none-softfloat', 'riscv64imac-unknown-none-elf', 'x86_64-unknown-none')
 DEP_TABLES = ('dependencies', 'dev-dependencies', 'build-dependencies')

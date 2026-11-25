@@ -21,7 +21,7 @@ Pinned at upstream git commit `56437ded32a6`; no registry carries it.
 
 **Upstream git: 16 non-merge commits** since the pinned sha (plus 11 merge commits, dropped), head `abad4c385e0d`.
 
-Full comparison: https://github.com/nifeos/crate-workflows/compare/56437ded32a66bf13b369b2095c8c7af2d840b05...main
+Full comparison: https://github.com/partsfoundry/crate-workflows/compare/56437ded32a66bf13b369b2095c8c7af2d840b05...main
 
 - 2026-11-21 `f4e01069ffb` Close template gaps the crate-move lanes found
 - 2026-11-21 `62c6d6ca561` Fold the entries shipped in v9 under its heading

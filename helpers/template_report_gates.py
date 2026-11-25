@@ -1,6 +1,6 @@
 """The template's report-only naming and README gates, held to a baseline that only shrinks.
 
-nife vendors, from nifeos/crate-workflows at the commit `vendor/crate-workflows.pin` names, six
+nife vendors, from partsfoundry/crate-workflows at the commit `vendor/crate-workflows.pin` names, six
 gates that read a crate: `register_names.py`, `abbreviations.py`, `prose_acronyms.py`,
 `readme_acronyms.py`, `inflated_wording.py` and `readme_sections.py`. In the template they report
 (or, for the register and acronym gates, fail a crate at ceiling 0). nife has not swept its crates
