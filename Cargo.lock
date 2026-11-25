@@ -662,7 +662,7 @@ version = "0.1.0"
 [[package]]
 name = "grant_contract"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/grant_contract?rev=d4e9ca29d51bc71d678aadaa00411eba953202b3#d4e9ca29d51bc71d678aadaa00411eba953202b3"
+source = "git+https://github.com/partsfoundry/grant_contract?rev=a1e5b048a9e6a26305a47663eb3c8f7e966beb12#a1e5b048a9e6a26305a47663eb3c8f7e966beb12"
 dependencies = [
  "program_argument_contract",
 ]
@@ -670,7 +670,7 @@ dependencies = [
 [[package]]
 name = "grant_plan"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/grant_plan?rev=a5d87c426ec0aeebeb51a13d3ffb116caebd73c9#a5d87c426ec0aeebeb51a13d3ffb116caebd73c9"
+source = "git+https://github.com/partsfoundry/grant_plan?rev=8f2555339461aae2bde04be579da7cac7b661698#8f2555339461aae2bde04be579da7cac7b661698"
 dependencies = [
  "byte_glob",
  "grant_contract",
