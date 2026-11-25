@@ -33,6 +33,9 @@ architect: see [ARCHITECTS.md](../../../ARCHITECTS.md).
   numbers and names can collide between sessions that cannot see each other. A lane's branch is
   pushed the moment it is cut, and every session lists remote branches before briefing a lane (`git
   ls-remote --heads`), because the pushed branch is the only lane ledger another session can see.
+  A brief for work on an issue names the issue and tells the lane to claim it with
+  `script/claim <branch> --new-work --issue N` before anything else; check it first with
+  `helpers/issue_claim.py status --issue N`, and brief another issue when it is held.
   Whoever merges prunes what they merged. Briefs
   developers, gates and merges their work, mints anything global to the tree (`nifeos/record:design/decisions/`
   sections, milestone numbers, names an architect has ratified), and keeps hygiene: prune the

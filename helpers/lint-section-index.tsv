@@ -6,6 +6,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	0	-	code	the CI fuzz job keeps a finding private
 -	1	-	-	0	-	code	script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot
 -	1	-	-	0	-	code	script/idle-pull-requests classifies open pull requests (the queue sweep's idle check)
+-	1	-	-	0	-	code	an issue claim refuses a held issue, and a stale one is released
 -	1	-	-	0	-	code	script/crate-move stages a move as the runbook says
 -	1	-	-	0	-	code	script/push believes origin's ref, not git's exit status
 -	1	-	-	0	-	code	script/push --requeue re-arms, and arming refuses a held pull request

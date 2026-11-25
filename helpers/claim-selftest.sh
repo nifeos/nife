@@ -44,6 +44,10 @@ expect "no classification" 2 "add --debt-paydown or --new-work" "$branch"
 expect "both classifications" 2 "both given" "$branch" --debt-paydown --new-work
 expect "both, other order" 2 "both given" --new-work "$branch" --debt-paydown
 expect "help names both" 0 "(--debt-paydown | --new-work)" --help
+# An issue that is not N or owner/repo#N, or an issue with --no-claim, is refused before gh runs.
+expect "issue not a number" 2 "takes N or owner/repo#N" "$branch" --new-work --issue 12x
+expect "issue, three slashes" 2 "takes N or owner/repo#N" "$branch" --new-work --issue a/b/c#1
+expect "issue without a draft" 2 "with --no-claim" "$branch" --new-work --issue 12 --no-claim
 # Classified, but the name is a milestone near-miss: the shape refusal still fires.
 expect "classified, bad name" 1 "does not parse" milestone-1-x --debt-paydown
 
@@ -77,6 +81,14 @@ set -e
 [ "$(cat "$work/added" 2>/dev/null)" = "$work/caller/../lanes/rel" ] \
     || fail "relative --worktree: git was handed '$(cat "$work/added" 2>/dev/null)', wanted it under $work/caller ($out)"
 rm -f "$work/called" "$work/added"
+
+# An issue someone holds is refused before git runs. The stub gh answers the three reads
+# helpers/issue_claim.py makes (the issue, assigned to someone; no comments; no pull request) and
+# records anything else, such as a claim comment, which must never be posted here.
+printf '#!/bin/sh\ncase "$*" in\n"api repos/o/r/issues/12") echo '"'"'{"state":"open","assignees":[{"login":"someone"}],"labels":[]}'"'"'; exit 0 ;;\n"api --paginate"*) exit 0 ;;\n"api graphql"*) echo '"'"'{"data":{"repository":{"issue":{"closedByPullRequestsReferences":{"nodes":[]}}}}}'"'"'; exit 0 ;;\nesac\necho "gh $*" >> "%s/called"\nexit 97\n' \
+    "$work" > "$work/bin/gh"
+printf '#!/bin/sh\necho "git $*" >> "%s/called"\nexit 97\n' "$work" > "$work/bin/git"
+expect "issue held by an assignee" 1 "assigned to @someone" "maintainer/claim-selftest-issue-$$" --new-work --issue o/r#12
 
 "$real_git" -C "$root" rev-parse --verify --quiet "refs/heads/$branch" >/dev/null \
     && fail "a refused claim created branch $branch"

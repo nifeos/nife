@@ -5,6 +5,7 @@
 #     script/claim milestone/238-a-thing --new-work
 #     script/claim maintainer/some-fix --debt-paydown --worktree ../nife-worktrees/somefix --no-claim
 #     script/claim maintainer/bold-sweep --debt-paydown
+#     script/claim lane/fix-the-thing --new-work --issue 4100
 #
 # # Why this exists
 #
@@ -51,6 +52,18 @@
 # label and flag, was ratified by calef on 2026-10-10 (UTC); `--new-work` is provisional.
 # helpers/claim-selftest.sh, run by script/lint-fleet, holds the refusal to that.
 #
+# # Why it claims an issue too
+#
+# A draft claims a branch; nothing claimed an issue, so two lanes, or a lane and an outside
+# contributor, could work one issue with nothing on it saying so (decided 2026-11-25 UTC: every
+# process claims an issue before work starts on it). `--issue N` refuses an issue that is already
+# held, before git is touched, then writes the claim (helpers/issue_claim.py: a comment naming the
+# lane and branch, and an assignee), opens the draft with `Closes #N` so the merge ends the claim,
+# and puts the draft's address in the claim comment, so the claim stands while that draft is open
+# even if an edit drops `Closes #N` from its body. A claim made but never followed by a draft is
+# taken back on the way out. `--issue` with `--no-claim` is refused: an issue claimed by a lane
+# with no draft is the state this exists to prevent. The flag's name is provisional.
+#
 # See notes/scripts.md.
 
 set -eu
@@ -63,6 +76,7 @@ repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 usage() {
     cat >&2 <<'EOF'
 usage: script/claim <branch-name> (--debt-paydown | --new-work) [--worktree <dir>] [--title <text>] [--no-claim]
+                    [--issue <N | owner/repo#N>]
 
   <branch-name>     e.g. milestone/238-a-thing or maintainer/some-fix. Checked against the same
                      shape rule script/lint-fleet's check 4 enforces, before anything is created.
@@ -83,6 +97,10 @@ usage: script/claim <branch-name> (--debt-paydown | --new-work) [--worktree <dir
                      the draft pull request (AGENTS.md §90's claim). Without this flag the claim is
                      made, because that is every lane's documented first act and a front door that
                      stops short of it hands back the exact race it exists to prevent.
+  --issue <N>       the issue this lane works: refuse if it is held (a standing claim, an
+                     assignee, or an open pull request that closes it), else claim it with a
+                     comment naming this lane and branch, and open the draft with `Closes #N`.
+                     owner/repo#N names an issue in another repository. Not with --no-claim.
 EOF
 }
 
@@ -92,6 +110,7 @@ title=""
 make_claim=yes
 label=""
 kind=""
+issue=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -111,6 +130,9 @@ while [ $# -gt 0 ]; do
             [ $# -ge 2 ] || { echo "claim: --title needs text" >&2; exit 2; }
             title="$2"; shift 2 ;;
         --no-claim) make_claim=no; shift ;;
+        --issue)
+            [ $# -ge 2 ] || { echo "claim: --issue needs an issue number" >&2; exit 2; }
+            issue="$2"; shift 2 ;;
         --debt-paydown|--new-work)
             if [ -n "$kind" ] && [ "$kind" != "$1" ]; then
                 echo "claim: --debt-paydown and --new-work both given; a lane is one or the other" >&2
@@ -144,6 +166,33 @@ if [ -z "$kind" ]; then
     exit 2
 fi
 [ "$kind" = --debt-paydown ] && label=debt-paydown
+
+# The issue's shape is checked before anything else runs, like the classification above.
+issue_repo=""
+issue_number=""
+if [ -n "$issue" ]; then
+    case "$issue" in
+        [!/#]*/[!/#]*'#'[0-9]*) issue_repo="${issue%%#*}"; issue_number="${issue#*#}" ;;
+        [0-9]*) issue_number="$issue" ;;
+    esac
+    case "$issue_repo$issue_number" in
+        *[!A-Za-z0-9._/-]*|'') issue_number="" ;;
+    esac
+    case "$issue_number" in
+        *[!0-9]*) issue_number="" ;;
+    esac
+    case "$issue_repo" in
+        */*/*) issue_number="" ;;
+    esac
+    if [ -z "$issue_number" ]; then
+        echo "claim: --issue takes N or owner/repo#N, not '$issue'" >&2
+        exit 2
+    fi
+    if [ "$make_claim" = no ]; then
+        echo "claim: --issue with --no-claim would claim an issue with no draft; drop one of them" >&2
+        exit 2
+    fi
+fi
 
 # The refusal this script exists for, and it runs first: before the worktree, before the branch,
 # before a single file changes on disk.
@@ -184,6 +233,27 @@ milestone/[0-9]*-*)
     fi
     ;;
 esac
+
+# The issue is checked and claimed here, before git, so a held issue costs one retyped command and
+# a lost race costs nothing. The claim comment is taken back if the script dies before the draft.
+issue_comment=""
+if [ -n "$issue_number" ]; then
+    issue_ref="#$issue_number"
+    [ -n "$issue_repo" ] && issue_ref="$issue_repo#$issue_number"
+    echo "==> claiming issue $issue_ref for $branch"
+    drop_unused_claim() {
+        [ -n "$issue_comment" ] || return 0
+        echo "claim: stopped before the draft; taking back the claim on issue $issue_ref" >&2
+        python3 "$repo_root/helpers/issue_claim.py" drop --issue "$issue_number" \
+            --comment "$issue_comment" ${issue_repo:+--repo "$issue_repo"} || true
+    }
+    # Set before the claim is posted: an interrupt inside the helper is handled there (it deletes
+    # its own comment), and one after it returns is handled here.
+    trap drop_unused_claim EXIT
+    trap 'exit 130' INT TERM
+    issue_comment="$(python3 "$repo_root/helpers/issue_claim.py" claim --issue "$issue_number" \
+        --branch "$branch" ${issue_repo:+--repo "$issue_repo"})" || exit 1
+fi
 
 # A lane's first act is the right moment to say which identity it is about to act as. A session
 # that opted in to the App (NIFE_SMELTER=1; milestone 128 (the automation gets its own identity),
@@ -281,10 +351,21 @@ Co-Authored-By: ${NIFE_CLAIM_MODEL:-Claude Code} <noreply@anthropic.com>"
     if [ "${NIFE_SMELTER_ACTIVE:-}" = 1 ]; then
         bot="$("$repo_root/helpers/smelter-token" identity 2>/dev/null)" && author="$bot is the author GitHub shows."
     fi
-    gh pr create --draft ${label:+--label "$label"} --title "$claim_text" --body "**Lane:** \`$branch\`, written by an agent; $author
+    closes=""
+    [ -n "$issue_number" ] && closes="
+Closes $issue_ref"
+    pr_url="$(gh pr create --draft ${label:+--label "$label"} --title "$claim_text" --body "**Lane:** \`$branch\`, written by an agent; $author
 
-Claim commit only so far. Classified at claim: \`${kind#--}\`."
+Claim commit only so far. Classified at claim: \`${kind#--}\`.$closes")"
+    echo "$pr_url"
+    if [ -n "$issue_number" ]; then
+        python3 "$repo_root/helpers/issue_claim.py" link --issue "$issue_number" \
+            --comment "$issue_comment" --pull-request "$pr_url" ${issue_repo:+--repo "$issue_repo"} \
+            || echo "claim: the draft is open but the claim comment does not name it yet" >&2
+    fi
 )
+# The draft now names the issue, so the claim stands from here on.
+issue_comment=""
 
 echo "claim: worktree $worktree, branch $branch, draft pull request opened"
 echo "claim: cd $worktree"
