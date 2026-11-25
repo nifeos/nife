@@ -127,12 +127,13 @@
 <path class="seg c12" d="M567.5,110.6 V86.4 Q567.5,82.4 571.5,82.4 H593.3 Q597.3,82.4 597.3,86.4 V110.6 Z"><title>2026W47, claim (an empty commit): 318</title></path>
 <text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W47</text>
 <text class="fg val" x="582.4" y="77.4" font-size="10" text-anchor="middle">2725</text>
-<rect class="seg c2" x="612.6" y="320.5" width="29.8" height="3.5"><title>2026W48, Opus 5.5: 39</title></rect>
-<rect class="seg c10" x="612.6" y="320.3" width="29.8" height="0.3"><title>2026W48, unattributed: 3</title></rect>
-<rect class="seg c11" x="612.6" y="318.0" width="29.8" height="2.3"><title>2026W48, merge (a pull request landing): 26</title></rect>
-<path class="seg c12" d="M612.6,318.0 V317.7 Q612.6,317.4 612.9,317.4 H642.0 Q642.3,317.4 642.3,317.7 V318.0 Z"><title>2026W48, claim (an empty commit): 7</title></path>
+<rect class="seg c2" x="612.6" y="310.7" width="29.8" height="13.3"><title>2026W48, Opus 5.5: 150</title></rect>
+<rect class="seg c4" x="612.6" y="310.1" width="29.8" height="0.6"><title>2026W48, Sonnet 5.5: 7</title></rect>
+<rect class="seg c10" x="612.6" y="308.7" width="29.8" height="1.3"><title>2026W48, unattributed: 15</title></rect>
+<rect class="seg c11" x="612.6" y="301.2" width="29.8" height="7.5"><title>2026W48, merge (a pull request landing): 85</title></rect>
+<path class="seg c12" d="M612.6,301.2 V299.1 Q612.6,297.0 614.7,297.0 H640.2 Q642.3,297.0 642.3,299.1 V301.2 Z"><title>2026W48, claim (an empty commit): 48</title></path>
 <text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W48</text>
-<text class="fg val" x="627.5" y="312.4" font-size="10" text-anchor="middle">75</text>
+<text class="fg val" x="627.5" y="292.0" font-size="10" text-anchor="middle">305</text>
 <rect class="c12" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">claim (an empty</tspan><tspan x="689" dy="13">commit)</tspan></text>
 <rect class="c11" x="672" y="96" width="11" height="11" rx="2"/>
