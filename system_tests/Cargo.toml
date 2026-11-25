@@ -54,33 +54,33 @@ package_archive = { version = "0.1.0", path = "../crates/package_archive" }
 # The e1000e family (milestone 494 (a driver for the network card a PC actually has)).
 # `wired_or_skip!` asks `e1000e::platform_controller_hub::is_platform_controller_hub_device` whether a NIC with no link is silicon or the
 # runner's, by the same predicate the boot uses to tell them apart.
-e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
+e1000e = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
 coremark = { version = "0.1.0", path = "../crates/coremark" }
 moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
-block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
-byte_sink_contract = { version = "0.1.0", git = "https://github.com/nifeos/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }
+block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
+byte_sink_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }
 byte_sink_fixture = { version = "0.1.0", path = "../crates/byte_sink_fixture" }
 # The system log's wire contracts (milestone 613 (a system log service: the in-memory half)): the
 # suite plays the spawner and a reader, so it links the words they agree on rather than copies.
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }
 capability_witness_contract = { version = "0.1.0", path = "../crates/capability_witness_contract" }
-clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
+clock_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
 compositor = { version = "0.1.0", path = "../crates/compositor" }
-counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
+counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 credential_contract = { version = "0.1.0", path = "../crates/credential_contract" }
 current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }
 confined_system_call_fuzzer_contract = { version = "0.1.0", path = "../crates/confined_system_call_fuzzer_contract" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
-entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
-environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "4778d5937460ef1e43e39113721422dd573a3306" }
+entropy_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
+environment_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/environment_contract", rev = "4778d5937460ef1e43e39113721422dd573a3306" }
 # The C programs' directory in the test image and their command lines (milestone 835 (a C library,
 # stage 1: files, clock and memory)).
 c_program_fixture = { path = "../crates/c_program_fixture" }
-file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
-file_system_fixture = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
-grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
-grant_plan = { version = "0.1.0", git = "https://github.com/nifeos/grant_plan", rev = "a5d87c426ec0aeebeb51a13d3ffb116caebd73c9" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+file_system_fixture = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "a1e5b048a9e6a26305a47663eb3c8f7e966beb12" }
+grant_plan = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_plan", rev = "8f2555339461aae2bde04be579da7cac7b661698" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The registration page's layout (milestone 129 (scheduled execution), DECISIONS §222 (who holds a
 # user's schedule)). The timetable test is the registrar until milestone 152 (durable delegation)
@@ -97,7 +97,7 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems)).
 jiff = { version = "1.0.0", default-features = false }
 line_editor_component = { version = "0.1.0", path = "../crates/line_editor_component" }
-terminal_contract = { version = "0.1.0", git = "https://github.com/nifeos/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
+terminal_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
 login_contract = { version = "0.1.0", path = "../crates/login_contract" }
 machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
@@ -114,8 +114,8 @@ domain_name_resolution_fixture = { version = "0.1.0", path = "../crates/domain_n
 # The package index's test names (milestone 801 (packages over the internet)): the zone the test
 # grants and the program asks inside, one definition for both.
 package_index = { version = "0.1.0", path = "../crates/package_index" }
-domain_name_system = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/domain_name_system", rev = "c656cdd9206149dd147d6550c339f1cc520aadd0" }
+domain_name_system = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/domain_name_system", rev = "c656cdd9206149dd147d6550c339f1cc520aadd0" }
 test_and_set_lock = { version = "0.1.0", path = "../crates/test_and_set_lock" }
 std_runtime_contract = { version = "0.1.0", path = "../crates/std_runtime_contract" }
 video_terminal = { version = "0.1.0", path = "../crates/video_terminal" }
-address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }

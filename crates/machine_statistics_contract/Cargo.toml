@@ -38,4 +38,4 @@ doc_markdown = "warn"
 # The page's line count must equal the CPU id bound; a compile-time assertion holds the two together.
 current_cpu_contract = { version = "0.1.0", path = "../current_cpu_contract" }
 # Where the page goes: `PAGE_VIRTUAL_ADDRESS` is a pair page on the address-space map.
-address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }

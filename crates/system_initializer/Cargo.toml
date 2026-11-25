@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
-address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
 moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
 # The boot self-test's shared terms (milestone 1063 (the boot self-test's spawning checks run from
 # userspace)): the kernel half's page and the slots, addresses and messages of `boot_self_test`,
@@ -24,7 +24,7 @@ static_elf = { version = "0.1.0", path = "../static_elf" }
 # The manifests and slot numbers a child is endowed by, and the spawn protocol's wire form with the
 # program table it names: the protocol init decodes on the other side of the spawn channel. This
 # crate is that other side, and it plans no line, so it does not link the planner.
-grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
+grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "a1e5b048a9e6a26305a47663eb3c8f7e966beb12" }
 program_table = { version = "0.1.0", path = "../program_table" }
 # The wire format of a manifest a program carries in its own bytes (milestone 597 (a program carries
 # its manifest in an ELF note), provisional): the progenitor endows a file's bytes from the note
@@ -32,14 +32,14 @@ program_table = { version = "0.1.0", path = "../program_table" }
 capability_manifest_note = { version = "0.1.0", path = "../capability_manifest_note" }
 # The `INTERFACES` note the progenitor reads at spawn (milestone 956 (the linked interfaces carry
 # checkable versions) step 3).
-interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfaces_note", rev = "bfa27187a87e0cc1916efb06238b2dd2ece004eb" }
+interfaces_note = { version = "0.1.0", git = "https://github.com/partsfoundry/interfaces_note", rev = "bfa27187a87e0cc1916efb06238b2dd2ece004eb" }
 # The filesystem contract, for exactly one word: the readiness sentinel a `fs_subtree_caretaker`
 # answers a directory grant's descent with (milestone 31 phase 3). An in-tree protocol crate rather
 # than a constant copied here, which is rule 7: what two binaries agree on is a crate. It brings
 # nothing with it (file_system_contract has no non-dev dependencies of its own).
-file_system_contract = { version = "0.1.0", git = "https://github.com/nifeos/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 # The terminal contract's framing, for the one sentence init prints (`proto::OPERATION_WRITE`).
-terminal_contract = { version = "0.1.0", git = "https://github.com/nifeos/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
+terminal_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/terminal_contract", rev = "4a93367e22366b1d6f0ddb149d087ee51a3335a2" }
 # The slot order `terminal_supervisor` is endowed in, which init builds it with.
 line_editor_component = { version = "0.1.0", path = "../line_editor_component" }
 # The hash and the manifest format the kernel measures init with (milestone 104). This crate is the
@@ -68,7 +68,7 @@ program_asks = { version = "0.1.0", path = "../program_asks" }
 package_index = { version = "0.1.0", path = "../package_index" }
 # The sink contract, for the end-of-stream init sends on a child's behalf when the child was never
 # built and therefore cannot end its own second stream.
-byte_sink_contract = { version = "0.1.0", git = "https://github.com/nifeos/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }
+byte_sink_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }
 # The userspace ELF loader, and the fault slot that makes a child born supervised. One loader in the
 # tree since milestone 96; this crate is one of its two callers.
 supervision_contract = { version = "0.1.0", path = "../supervision_contract" }
@@ -94,7 +94,7 @@ login_contract = { version = "0.1.0", path = "../login_contract" }
 # The entropy contract (DECISIONS §120's 2026-08-26 amendment), for the one message this crate
 # reads: the readiness sentinel an entropy service answers once it has drawn its first bufferful
 # from a real device. Pure logic, no non-dev dependencies of its own.
-entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
+entropy_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
 # The socket contract (milestone 590 (the booted system starts its network stack)), for exactly one
 # word: the inbound authority this
 # crate hands the `net_stack` it builds (`NO_PORT_GRANT`). Pure logic, no dependencies of its own.

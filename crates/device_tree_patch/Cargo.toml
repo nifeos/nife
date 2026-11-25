@@ -17,4 +17,4 @@ workspace = true
 # **The reader the kernel decodes with**, used to read the rewritten tree back before reporting
 # success, so a tree this accepts is a tree the kernel finds its archive in. Ours, in this
 # workspace, no dependencies of its own; not a §46 (thin primitives or whole subsystems) decision.
-device_tree_blob = { version = "0.1.0", git = "https://github.com/nifeos/device_tree_blob", rev = "96ad52af96e38e38577f91a787f53b789dbdda4f" }
+device_tree_blob = { version = "0.1.0", git = "https://github.com/partsfoundry/device_tree_blob", rev = "96ad52af96e38e38577f91a787f53b789dbdda4f" }

@@ -23,7 +23,7 @@ import crate_release  # noqa: E402
 import record_root  # noqa: E402
 
 TEMPLATE_URL = 'https://github.com/nifeos/crate-workflows'
-REPOSITORY_URL = 'https://github.com/nifeos/{crate}'
+REPOSITORY_URL = 'https://github.com/partsfoundry/{crate}'
 BARE_METAL = ('aarch64-unknown-none-softfloat', 'riscv64imac-unknown-none-elf', 'x86_64-unknown-none')
 DEP_TABLES = ('dependencies', 'dev-dependencies', 'build-dependencies')
 # The word, not a longer one: `nifeos` in a repository URL is allowed.
@@ -304,7 +304,7 @@ class Staged:
         self.changelog = [f for f in files if f == 'CHANGELOG.md']
         self.docs = [f for f in files if f.startswith('docs/') and f.endswith('.md')]
         self.nonlock = [f for f in files if not f.endswith('Cargo.lock')]
-        self.repository = 'nifeos/' + (crate or 'crate')
+        self.repository = 'partsfoundry/' + (crate or 'crate')
 
 
 BASELINE = '.cargo/mutants-baseline.txt'
@@ -1258,11 +1258,11 @@ def selftest():
     assert falsification_first(harness).startswith('/// Falsification: replayable'), harness
     assert falsification_first(falsification_first(harness)) == falsification_first(harness)
     m = '[package]\nname = "x"\nlicense = "MIT OR Apache-2.0"\n'
-    assert 'repository = "https://github.com/nifeos/x"' in add_repository(m, 'x')
+    assert 'repository = "https://github.com/partsfoundry/x"' in add_repository(m, 'x')
     assert add_repository(add_repository(m, 'x'), 'x').count('repository') == 1
     inherited = '[package]\nname = "x"\nlicense.workspace = true\n\n[lints]\nworkspace = true\n'
     assert add_repository(inherited, 'x') == \
-        '[package]\nname = "x"\nlicense.workspace = true\nrepository = "https://github.com/nifeos/x"\n' \
+        '[package]\nname = "x"\nlicense.workspace = true\nrepository = "https://github.com/partsfoundry/x"\n' \
         '\n[lints]\nworkspace = true\n', add_repository(inherited, 'x')
     try:
         add_repository('[package]\nname = "x"\n', 'x')

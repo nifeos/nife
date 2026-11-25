@@ -9,7 +9,7 @@ version = "0.1.0"
 [[package]]
 name = "address_space_layout"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/address_space_layout?rev=02d497b62915c1fb133ef1de6e76598fa51e67fe#02d497b62915c1fb133ef1de6e76598fa51e67fe"
+source = "git+https://github.com/partsfoundry/address_space_layout?rev=02d497b62915c1fb133ef1de6e76598fa51e67fe#02d497b62915c1fb133ef1de6e76598fa51e67fe"
 
 [[package]]
 name = "aho-corasick"
@@ -100,12 +100,12 @@ dependencies = [
 [[package]]
 name = "block_roster_contract"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/block_roster_contract?rev=2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1#2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1"
+source = "git+https://github.com/partsfoundry/block_roster_contract?rev=2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1#2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1"
 
 [[package]]
 name = "boot_ladder"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/boot_ladder?rev=ed235428c6551ddcf673bdb140b972535238fe3b#ed235428c6551ddcf673bdb140b972535238fe3b"
+source = "git+https://github.com/partsfoundry/boot_ladder?rev=ed235428c6551ddcf673bdb140b972535238fe3b#ed235428c6551ddcf673bdb140b972535238fe3b"
 
 [[package]]
 name = "boot_slot"
@@ -117,12 +117,12 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
+source = "git+https://github.com/partsfoundry/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
 
 [[package]]
 name = "byte_sink_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/byte_sink_contract?rev=8a6c4599882e505d219829fd106d9e572d56f6e9#8a6c4599882e505d219829fd106d9e572d56f6e9"
+source = "git+https://github.com/partsfoundry/byte_sink_contract?rev=8a6c4599882e505d219829fd106d9e572d56f6e9#8a6c4599882e505d219829fd106d9e572d56f6e9"
 
 [[package]]
 name = "byte_sink_fixture"
@@ -171,7 +171,7 @@ dependencies = [
 [[package]]
 name = "capability_table"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/capability_table?rev=968a16fed9723d88bf5168ec6604d0bbcaba853b#a8d0fa65b08050e788719bd0e88922f9cd6b43bb"
+source = "git+https://github.com/partsfoundry/capability_table?rev=968a16fed9723d88bf5168ec6604d0bbcaba853b#a8d0fa65b08050e788719bd0e88922f9cd6b43bb"
 
 [[package]]
 name = "capability_witness_contract"
@@ -200,7 +200,7 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 [[package]]
 name = "clock_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
+source = "git+https://github.com/partsfoundry/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
 dependencies = [
  "loom",
 ]
@@ -322,7 +322,7 @@ version = "0.1.0"
 [[package]]
 name = "counter_frequency_contract"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
+source = "git+https://github.com/partsfoundry/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
 
 [[package]]
 name = "cpu_set"
@@ -417,7 +417,7 @@ dependencies = [
 [[package]]
 name = "designware_ethernet"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/designware_ethernet?rev=d6730d2218edead38fac3fe96703eaa1e5e92ee2#d6730d2218edead38fac3fe96703eaa1e5e92ee2"
+source = "git+https://github.com/partsfoundry/designware_ethernet?rev=d6730d2218edead38fac3fe96703eaa1e5e92ee2#d6730d2218edead38fac3fe96703eaa1e5e92ee2"
 
 [[package]]
 name = "designware_inter_integrated_circuit"
@@ -426,12 +426,12 @@ version = "0.1.0"
 [[package]]
 name = "designware_mobile_storage"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/designware_mobile_storage?rev=85c4e1b58bb5d76efbc0b48d3ff51024d3904b12#85c4e1b58bb5d76efbc0b48d3ff51024d3904b12"
+source = "git+https://github.com/partsfoundry/designware_mobile_storage?rev=85c4e1b58bb5d76efbc0b48d3ff51024d3904b12#85c4e1b58bb5d76efbc0b48d3ff51024d3904b12"
 
 [[package]]
 name = "device_tree_blob"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/device_tree_blob?rev=96ad52af96e38e38577f91a787f53b789dbdda4f#96ad52af96e38e38577f91a787f53b789dbdda4f"
+source = "git+https://github.com/partsfoundry/device_tree_blob?rev=96ad52af96e38e38577f91a787f53b789dbdda4f#96ad52af96e38e38577f91a787f53b789dbdda4f"
 
 [[package]]
 name = "device_tree_patch"
@@ -488,7 +488,7 @@ dependencies = [
 [[package]]
 name = "domain_name_system"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/domain_name_system?rev=c656cdd9206149dd147d6550c339f1cc520aadd0#c656cdd9206149dd147d6550c339f1cc520aadd0"
+source = "git+https://github.com/partsfoundry/domain_name_system?rev=c656cdd9206149dd147d6550c339f1cc520aadd0#c656cdd9206149dd147d6550c339f1cc520aadd0"
 
 [[package]]
 name = "driver_process_contract"
@@ -508,17 +508,17 @@ dependencies = [
 [[package]]
 name = "e1000e"
 version = "0.1.0-pre.3"
-source = "git+https://github.com/nifeos/e1000e?rev=571d33f2e5fc9b287c7b9c8733bcdd0a17c18357#571d33f2e5fc9b287c7b9c8733bcdd0a17c18357"
+source = "git+https://github.com/partsfoundry/e1000e?rev=571d33f2e5fc9b287c7b9c8733bcdd0a17c18357#571d33f2e5fc9b287c7b9c8733bcdd0a17c18357"
 
 [[package]]
 name = "entropy_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
+source = "git+https://github.com/partsfoundry/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
 
 [[package]]
 name = "environment_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/environment_contract?rev=4778d5937460ef1e43e39113721422dd573a3306#4778d5937460ef1e43e39113721422dd573a3306"
+source = "git+https://github.com/partsfoundry/environment_contract?rev=4778d5937460ef1e43e39113721422dd573a3306#4778d5937460ef1e43e39113721422dd573a3306"
 
 [[package]]
 name = "equivalent"
@@ -529,22 +529,22 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 [[package]]
 name = "extensible_host_controller_interface"
 version = "0.1.0-pre.3"
-source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=99daca365beb53961c3d64b01751f8de85a281ac#99daca365beb53961c3d64b01751f8de85a281ac"
+source = "git+https://github.com/partsfoundry/extensible_host_controller_interface?rev=99daca365beb53961c3d64b01751f8de85a281ac#99daca365beb53961c3d64b01751f8de85a281ac"
 
 [[package]]
 name = "file_allocation_table"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/file_allocation_table?rev=6f8aa1df729d4d437d11b8305fadbafa07c93251#6f8aa1df729d4d437d11b8305fadbafa07c93251"
+source = "git+https://github.com/partsfoundry/file_allocation_table?rev=6f8aa1df729d4d437d11b8305fadbafa07c93251#6f8aa1df729d4d437d11b8305fadbafa07c93251"
 
 [[package]]
 name = "file_system_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
+source = "git+https://github.com/partsfoundry/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
 
 [[package]]
 name = "file_system_fixture"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
+source = "git+https://github.com/partsfoundry/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
 dependencies = [
  "file_system_contract",
 ]
@@ -630,7 +630,7 @@ dependencies = [
 [[package]]
 name = "generational_table"
 version = "0.1.0-pre.3"
-source = "git+https://github.com/nifeos/generational_table?rev=832836094b1170f0f07275bb2adbb889d949ccc5#832836094b1170f0f07275bb2adbb889d949ccc5"
+source = "git+https://github.com/partsfoundry/generational_table?rev=832836094b1170f0f07275bb2adbb889d949ccc5#832836094b1170f0f07275bb2adbb889d949ccc5"
 
 [[package]]
 name = "generator"
@@ -662,7 +662,7 @@ version = "0.1.0"
 [[package]]
 name = "grant_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/grant_contract?rev=d4e9ca29d51bc71d678aadaa00411eba953202b3#d4e9ca29d51bc71d678aadaa00411eba953202b3"
+source = "git+https://github.com/partsfoundry/grant_contract?rev=a1e5b048a9e6a26305a47663eb3c8f7e966beb12#a1e5b048a9e6a26305a47663eb3c8f7e966beb12"
 dependencies = [
  "program_argument_contract",
 ]
@@ -670,7 +670,7 @@ dependencies = [
 [[package]]
 name = "grant_plan"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/grant_plan?rev=a5d87c426ec0aeebeb51a13d3ffb116caebd73c9#a5d87c426ec0aeebeb51a13d3ffb116caebd73c9"
+source = "git+https://github.com/partsfoundry/grant_plan?rev=8f2555339461aae2bde04be579da7cac7b661698#8f2555339461aae2bde04be579da7cac7b661698"
 dependencies = [
  "byte_glob",
  "grant_contract",
@@ -786,12 +786,12 @@ dependencies = [
 [[package]]
 name = "interfaces_note"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/interfaces_note?rev=bfa27187a87e0cc1916efb06238b2dd2ece004eb#bfa27187a87e0cc1916efb06238b2dd2ece004eb"
+source = "git+https://github.com/partsfoundry/interfaces_note?rev=bfa27187a87e0cc1916efb06238b2dd2ece004eb#bfa27187a87e0cc1916efb06238b2dd2ece004eb"
 
 [[package]]
 name = "intrusive_queue"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/intrusive_queue?rev=10d1fa2893c1cab6db3901f79a1ab2bc0029170b#10d1fa2893c1cab6db3901f79a1ab2bc0029170b"
+source = "git+https://github.com/partsfoundry/intrusive_queue?rev=10d1fa2893c1cab6db3901f79a1ab2bc0029170b#10d1fa2893c1cab6db3901f79a1ab2bc0029170b"
 
 [[package]]
 name = "jh7110_clock_and_reset"
@@ -812,7 +812,7 @@ dependencies = [
 [[package]]
 name = "jh7110_entropy"
 version = "0.3.0-pre.1"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=df37dc91383c4226b0266499c48de7e5e92ecb99#df37dc91383c4226b0266499c48de7e5e92ecb99"
+source = "git+https://github.com/partsfoundry/jh7110_entropy?rev=df37dc91383c4226b0266499c48de7e5e92ecb99#df37dc91383c4226b0266499c48de7e5e92ecb99"
 
 [[package]]
 name = "jh7110_pci_express"
@@ -956,7 +956,7 @@ checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 [[package]]
 name = "line_editor"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/line_editor?rev=b43cb319b1cf57b8e38680d090348f347408ffa2#b43cb319b1cf57b8e38680d090348f347408ffa2"
+source = "git+https://github.com/partsfoundry/line_editor?rev=b43cb319b1cf57b8e38680d090348f347408ffa2#b43cb319b1cf57b8e38680d090348f347408ffa2"
 
 [[package]]
 name = "line_editor_component"
@@ -1120,7 +1120,7 @@ version = "0.1.0"
 [[package]]
 name = "non_volatile_memory_express"
 version = "0.1.0-pre.3"
-source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee#1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee"
+source = "git+https://github.com/partsfoundry/non_volatile_memory_express?rev=1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee#1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee"
 
 [[package]]
 name = "nu-ansi-term"
@@ -1256,7 +1256,7 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
+source = "git+https://github.com/partsfoundry/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
 
 [[package]]
 name = "program_asks"
@@ -1705,7 +1705,7 @@ dependencies = [
 [[package]]
 name = "terminal_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/terminal_contract?rev=4a93367e22366b1d6f0ddb149d087ee51a3335a2#4a93367e22366b1d6f0ddb149d087ee51a3335a2"
+source = "git+https://github.com/partsfoundry/terminal_contract?rev=4a93367e22366b1d6f0ddb149d087ee51a3335a2#4a93367e22366b1d6f0ddb149d087ee51a3335a2"
 
 [[package]]
 name = "test_and_set_lock"
@@ -1938,7 +1938,7 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 [[package]]
 name = "universal_serial_bus"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/universal_serial_bus?rev=0fbceff0ce9577cf8beb0b82b0f34360a86a5216#0fbceff0ce9577cf8beb0b82b0f34360a86a5216"
+source = "git+https://github.com/partsfoundry/universal_serial_bus?rev=0fbceff0ce9577cf8beb0b82b0f34360a86a5216#0fbceff0ce9577cf8beb0b82b0f34360a86a5216"
 
 [[package]]
 name = "uptime"

@@ -267,10 +267,10 @@ jobs:
           # One crate per word is the point: crate names carry no spaces (script/names refuses them).
           # shellcheck disable=SC2013
           for crate in $(grep -v '^#' crates/publish-allowlist.txt | grep -v '^[[:space:]]*$'); do
-            if python3 helpers/ci_job_times.py update --repo "nifeos/$crate"; then
-              echo "crate repository nifeos/$crate: recorded"
+            if python3 helpers/ci_job_times.py update --repo "partsfoundry/$crate"; then
+              echo "crate repository partsfoundry/$crate: recorded"
             else
-              echo "crate repository nifeos/$crate: no record yet (does the repository exist?)"
+              echo "crate repository partsfoundry/$crate: no record yet (does the repository exist?)"
             fi
           done
 

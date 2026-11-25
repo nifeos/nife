@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.88"
 description = "The ELF note a program carries to ask for authority, its compile-time encoder and its strict decoder"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/nifeos/capability_manifest_note"
+repository = "https://github.com/partsfoundry/capability_manifest_note"
 readme = "README.md"
 keywords = ["no-std", "elf", "manifest", "capability", "kani"]
 categories = ["no-std", "no-std::no-alloc", "parsing"]
@@ -32,11 +32,11 @@ doc_markdown = "warn"
 [dependencies]
 # The type a note carries. The note is `grant_contract::Manifest` in bytes, so the vocabulary is the one
 # the shell already binds lines against and the loader already endows from.
-grant_contract = { version = "0.1.0", git = "https://github.com/nifeos/grant_contract", rev = "d4e9ca29d51bc71d678aadaa00411eba953202b3" }
+grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "a1e5b048a9e6a26305a47663eb3c8f7e966beb12" }
 # The zone limits and spelling, which are the resolver's: a manifest asks for what a badge can carry.
 domain_name_resolution_contract = { version = "0.1.0", path = "../domain_name_resolution_contract" }
 
 [dev-dependencies]
 # Only to hold its note header to this crate's: that crate repeats the owner string so it can
 # depend on nothing, and a test here is what notices if the two drift.
-interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfaces_note", rev = "bfa27187a87e0cc1916efb06238b2dd2ece004eb" }
+interfaces_note = { version = "0.1.0", git = "https://github.com/partsfoundry/interfaces_note", rev = "bfa27187a87e0cc1916efb06238b2dd2ece004eb" }

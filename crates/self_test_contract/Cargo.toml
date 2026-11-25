@@ -27,4 +27,4 @@ manual_let_else = "warn"
 doc_markdown = "warn"
 
 [dependencies]
-boot_ladder = { version = "0.1.0", git = "https://github.com/nifeos/boot_ladder", rev = "ed235428c6551ddcf673bdb140b972535238fe3b" }
+boot_ladder = { version = "0.1.0", git = "https://github.com/partsfoundry/boot_ladder", rev = "ed235428c6551ddcf673bdb140b972535238fe3b" }

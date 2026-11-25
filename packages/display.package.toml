@@ -7,7 +7,7 @@
 name = "display"
 kind = "optional"
 home = { repo = "display", status = "provisional" }
-# `nifeos/extensible_host_controller_interface` is the xHCI crate, which the kernel and
+# `partsfoundry/extensible_host_controller_interface` is the xHCI crate, which the kernel and
 # `usb_keyboard_driver` link; it lives in a repository of its own and is no longer a package member.
 interfaces = [
     "compositor",

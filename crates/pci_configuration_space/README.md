@@ -1,9 +1,9 @@
 # pci_configuration_space
 
-[![check](https://github.com/nifeos/pci_configuration_space/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nifeos/pci_configuration_space/actions/workflows/ci.yml?query=branch%3Amain)
-[![proofs](https://github.com/nifeos/pci_configuration_space/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/nifeos/pci_configuration_space/actions/workflows/proofs.yml?query=branch%3Amain)
-[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/pci_configuration_space#license)
-[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/pci_configuration_space/blob/main/Cargo.toml)
+[![check](https://github.com/partsfoundry/pci_configuration_space/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/partsfoundry/pci_configuration_space/actions/workflows/ci.yml?query=branch%3Amain)
+[![proofs](https://github.com/partsfoundry/pci_configuration_space/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/partsfoundry/pci_configuration_space/actions/workflows/proofs.yml?query=branch%3Amain)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/partsfoundry/pci_configuration_space#license)
+[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/partsfoundry/pci_configuration_space/blob/main/Cargo.toml)
 
 PCI and PCI Express configuration-space decoding, with none of the memory-mapped input and output.
 The crate addresses a function in the enhanced configuration access mechanism (ECAM) window, walks

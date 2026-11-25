@@ -1,9 +1,9 @@
 # capability_manifest_note
 
-[![check](https://github.com/nifeos/capability_manifest_note/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nifeos/capability_manifest_note/actions/workflows/ci.yml?query=branch%3Amain)
-[![proofs](https://github.com/nifeos/capability_manifest_note/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/nifeos/capability_manifest_note/actions/workflows/proofs.yml?query=branch%3Amain)
-[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/capability_manifest_note#license)
-[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/capability_manifest_note/blob/main/Cargo.toml)
+[![check](https://github.com/partsfoundry/capability_manifest_note/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/partsfoundry/capability_manifest_note/actions/workflows/ci.yml?query=branch%3Amain)
+[![proofs](https://github.com/partsfoundry/capability_manifest_note/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/partsfoundry/capability_manifest_note/actions/workflows/proofs.yml?query=branch%3Amain)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/partsfoundry/capability_manifest_note#license)
+[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/partsfoundry/capability_manifest_note/blob/main/Cargo.toml)
 
 The ELF (Executable and Linkable Format) note a program carries to ask for authority, the
 compile-time encoder that writes it and the strict decoder that reads it. `no_std`, no allocation,
