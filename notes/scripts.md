@@ -135,7 +135,7 @@ Full rows: the appendices above.
 |---|---|
 | `script/lint-fleet` | The fleet tooling's checks, apart from `script/lint`; CI runs both. |
 | `script/read-advisory <id>` | A fix lane reads an advisory. |
-| `script/claim <branch-name>` | Cut a lane's branch, worktree and draft pull request; sets `nife.fleet`. Push with `script/push`. `--debt-paydown` or `--new-work` ([debt-paydown.md](https://github.com/nifeos/record/blob/main/notes/debt-paydown.md)). |
+| `script/claim <branch-name>` | Cut a lane's branch, worktree and draft pull request; sets `nife.fleet`. Push with `script/push`. `--debt-paydown` or `--new-work` ([debt-paydown.md](https://github.com/nifeos/record/blob/main/notes/debt-paydown.md)). `--issue N` claims an issue first and refuses a held one (`helpers/issue_claim.py`; outsiders comment `/claim`). |
 | `script/grant-org-secrets <repo>...` | Grant a repository the selected organization secrets. |
 | `script/preflight-queue`, `script/queue-conflicts` | Replay the merge queue locally; check for conflicts. |
 | `script/architect-queue`, `script/record-ruling` | The architect's queue; rulings. |

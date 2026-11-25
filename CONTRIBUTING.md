@@ -142,6 +142,15 @@ them). The empty commit matters, because without it GitHub closes the draft as m
 lands. Any branch prefix is accepted except a near-miss of `milestone/<N>-<slug>`, the one prefix
 with a meaning: `script/lint` reads it to require that milestone's roadmap block be updated.
 
+To work an issue, claim the issue as well, before you start. Comment `/claim` on a line of its own
+and the `issue claim` workflow assigns you and replies; `/release` gives it back. Open your pull
+request with `Closes #N` in its description, which ends the claim when it merges. A claim with no
+such pull request open after 14 days is released. An issue that already has an assignee, a claim
+or an open pull request closing it is held, and the workflow refuses a second claim rather than
+moving it; ask the holder on the issue instead. While your first claim is open, the workflow
+refuses you a second. A lane claims with `script/claim <branch> --new-work --issue N`, which
+follows the same rules. The commands and the 14 days are provisional.
+
 `script/ci-build` is the one command to remember. With no arguments it runs every local check,
 cheapest first, so a formatting slip costs twenty seconds rather than the whole run. It provisions
 first with `script/bootstrap`, so it works on a cold checkout. `script/ci-build --list` prints the
@@ -187,7 +196,7 @@ is in the medium this project exists to get things out of.
   **including the decisions that were refused**. That is on purpose: you can disagree with an
   argument, but not with an authority.
 - [`design/roadmap/`](https://github.com/nifeos/record/blob/main/design/roadmap/README.md) is the only status in the tree: one file per
-  milestone, with `script/roadmap` as the index. It has a fixed status vocabulary
+  milestone, with `script/roadmap` in nifeos/record as the index. It has a fixed status vocabulary
   ([notes/roadmap.md](https://github.com/nifeos/record/blob/main/notes/roadmap.md)) and a checker; anywhere else that claims status is stale by
   construction.
 - [`notes/`](https://github.com/nifeos/record/blob/main/notes/README.md) is a glossary written while building, one file per question that
