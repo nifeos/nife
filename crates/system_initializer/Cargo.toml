@@ -11,7 +11,7 @@ workspace = true
 [dependencies]
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
 address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
-moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
+moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "3492929db274b5c4b9eddf60ea26c5ea7a892f65" }
 # The boot self-test's shared terms (milestone 1063 (the boot self-test's spawning checks run from
 # userspace)): the kernel half's page and the slots, addresses and messages of `boot_self_test`,
 # which this crate builds before the shell.

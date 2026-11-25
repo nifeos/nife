@@ -683,7 +683,7 @@ machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 boot_ladder = { version = "0.1.0", git = "https://github.com/partsfoundry/boot_ladder", rev = "ed235428c6551ddcf673bdb140b972535238fe3b" }
 # What `boot_self_test` and the kernel pass between the two halves of the boot self-test.
 self_test_contract = { version = "0.1.0", path = "../crates/self_test_contract" }
-moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "c8d556ec5ca7e567df529368c7dd24943423ab74" }
+moho_abi = { version = "0.1.0", git = "https://github.com/nifeos/moho_abi", rev = "3492929db274b5c4b9eddf60ea26c5ea7a892f65" }
 # Named here so the first cut's `carry_interfaces!` lists can read these interfaces' ids and
 # versions (milestone 956 (the linked interfaces carry checkable versions)); each program already
 # links them through `user_mode_runtime` or `grant_plan`.
