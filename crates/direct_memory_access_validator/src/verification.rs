@@ -478,8 +478,9 @@ fn distinct_queues_occupy_disjoint_blocks() {
     // and not about `q1`/`q2`, so it is worth failing the build rather than a proof run.
     const { assert!(RINGS_END_OFFSET_BYTES <= RING_BLOCK_BYTES) };
     // The descriptor table a walk writes (`16 * qsize` bytes from `DESCRIPTOR_TABLE_OFFSET_BYTES`)
-    // ends at or before the available ring begins. This is what makes the walk's own `off < 16 * qsize` write bound
-    // (asserted in `ChainMem::write64`) add up to block isolation: a shadow write stays inside
+    // ends at or before the available ring begins. This is what makes the walk's own
+    // `off < 16 * qsize` write bound (asserted in `ChainMem::write64`) add up to block isolation:
+    // a shadow write stays inside
     // `DESCRIPTOR_TABLE_OFFSET_BYTES .. AVAILABLE_RING_OFFSET_BYTES` of one block, and the blocks
     // do not overlap, so no shadow write can land in another queue's rings or in this queue's own
     // available ring.

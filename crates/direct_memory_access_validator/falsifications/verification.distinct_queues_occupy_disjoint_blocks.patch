@@ -7,31 +7,32 @@ would restore. A NIC drives receive on queue 0 and transmit on queue 1; with thi
 validating the receive queue writes into the transmit queue's shadow descriptor
 table, so one queue's confinement is decided by the other's descriptors.
 
-Expected to fail: `assert!(queue_block(q1) + RING_END <= queue_block(q2))`, the
-disjointness assertion, for the only pair the harness admits (`q1 = 0, q2 = 1`).
-The two constant-folded assertions around it, `RING_END <= RING_BLOCK` and
-`DESC_OFF + 16 * LAYOUT_QSIZE <= AVAIL_OFF`, are facts about the layout rather
-than about `queue_block` and stay green, which is what makes this a falsification
-of the isolation claim specifically. Confirmed: one failing check, described by
-Kani as `assertion failed: queue_block(q1) + RING_END <= queue_block(q2)`.
+Expected to fail: `assert!(queue_block(q1) + RINGS_END_OFFSET_BYTES <=
+queue_block(q2))`, the disjointness assertion, for the only pair the harness admits
+(`q1 = 0, q2 = 1`). The two constant-folded assertions around it,
+`RINGS_END_OFFSET_BYTES <= RING_BLOCK_BYTES` and `DESCRIPTOR_TABLE_OFFSET_BYTES + 16
+* QUEUE_ENTRIES <= AVAILABLE_RING_OFFSET_BYTES`, are facts about the layout rather
+than about `queue_block` and stay green, which is what makes this a falsification of
+the isolation claim specifically. Confirmed: one failing check, described by Kani as
+`assertion failed: queue_block(q1) + RINGS_END_OFFSET_BYTES <= queue_block(q2)`.
 
-**Why the defect is not the obvious one.** Shrinking `RING_BLOCK` below `RING_END`
-would be the more natural way to overlap two queues, and it cannot be recorded
-here: the harness states that particular fact as `const { assert!(RING_END <=
-RING_BLOCK) }`, deliberately, so the layout error is a build failure rather than a
-proof failure. A patch expressing it would not compile, and a falsification that
-does not run proves nothing.
+**Why the defect is not the obvious one.** Shrinking `RING_BLOCK_BYTES` below
+`RINGS_END_OFFSET_BYTES` would be the more natural way to overlap two queues, and it
+cannot be recorded here: the harness states that particular fact as `const {
+assert!(RINGS_END_OFFSET_BYTES <= RING_BLOCK_BYTES) }`, deliberately, so the layout
+error is a build failure rather than a proof failure. A patch expressing it would
+not compile, and a falsification that does not run proves nothing.
 
 diff --git a/crates/direct_memory_access_validator/src/lib.rs b/crates/direct_memory_access_validator/src/lib.rs
-index 9a6d0500..365f8a5a 100644
+index 1ab08e12f..754c256c9 100644
 --- a/crates/direct_memory_access_validator/src/lib.rs
 +++ b/crates/direct_memory_access_validator/src/lib.rs
-@@ -320,8 +320,8 @@ pub const MAXIMUM_QUEUES: u64 = 2;
- /// Queue `q`'s ring block base, relative to a region (driver DMA or shadow) base. Queue `q`'s
- /// descriptor table, available ring, and used ring sit at `queue_block(q) + {DESC,AVAIL,USED}_OFF`,
+@@ -302,8 +302,8 @@ pub const MAXIMUM_QUEUES: u64 = 2;
+ /// descriptor table, available ring, and used ring sit at `queue_block(q)` plus
+ /// `DESCRIPTOR_TABLE_OFFSET_BYTES`, `AVAILABLE_RING_OFFSET_BYTES` and `USED_RING_OFFSET_BYTES`,
  /// so distinct queues validate on disjoint blocks and never read or write each other's rings.
 -pub const fn queue_block(q: u16) -> u64 {
--    q as u64 * RING_BLOCK
+-    q as u64 * RING_BLOCK_BYTES
 +pub const fn queue_block(_q: u16) -> u64 {
 +    0
  }
