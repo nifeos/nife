@@ -135,7 +135,7 @@ pub unsafe fn raw_system_call(number: u64, words: [u64; 6]) -> [u64; 6] {
 /// # Safety
 /// [`trap6`]'s: the kernel validates the capability and the method before acting.
 ///
-/// Name: provisional, minted for milestone 1128 step 3: the trap, taking a call. Considered
+/// Name: provisional: the trap, taking a call. Considered
 /// `invoke_call` (refused: the table's calls include the four that are not `SYSTEM_CALL_INVOKE`).
 #[inline(always)]
 pub(crate) unsafe fn trap_call<A>(call: moho_abi::system_call::Call<A>) -> [u64; 6] {
