@@ -1,8 +1,8 @@
 name: issue claim
 
 # Observed failing: 2026-11-25, by script: helpers/issue_claim.py --selftest holds every arm this
-#   workflow carries (a second claim refused, a pasted release marker ignored, the outsider limit,
-#   a stale claim released) on fixtures, and each assertion was broken on purpose and seen to fail.
+#   workflow carries (a second claim refused, a pasted release marker ignored, a read-back that
+#   finds the earlier claim, the outsider limit after a burst, a stale claim released) on fixtures, and each assertion was broken on purpose and seen to fail.
 #   A real run cannot be staged first: an issue_comment workflow runs only from the default branch.
 
 # Lets anyone claim an issue by commenting `/claim` on a line of its own, and give it up with
@@ -18,8 +18,12 @@ name: issue claim
 #   fork, and the job skips a comment on a pull request, so no fork's code or event reaches it.
 # - The comment body is never written into a shell line. The helper reads the event file that
 #   GitHub writes, and the shell below interpolates nothing from the comment.
-# - The concurrency group serializes the runs for one issue, so two `/claim` comments in the same
-#   second are decided one after the other and the second is refused.
+# - Two `/claim` comments in the same second, or a `/claim` and a lane's claim, are settled by a
+#   read-back, not a concurrency group: each run posts, reads the comments again, and the claim that
+#   is not first rewrites itself into a refusal. A concurrency group would be wrong here. GitHub
+#   keeps one pending run per group and cancels the one before, so any later comment on the issue,
+#   command or not, could cancel a waiting `/claim` and leave it with no reply. Only the sweep has a
+#   group, its own, so two sweeps never overlap.
 
 on:
   issue_comment:
@@ -32,10 +36,6 @@ on:
 permissions:
   contents: read
   issues: write
-
-concurrency:
-  group: issue-claim-${{ github.event.issue.number || 'sweep' }}
-  cancel-in-progress: false
 
 jobs:
   claim:
@@ -72,6 +72,9 @@ jobs:
   sweep:
     name: release stale claims
     if: github.event_name != 'issue_comment'
+    concurrency:
+      group: issue-claim-sweep
+      cancel-in-progress: false
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:

@@ -53,7 +53,8 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
   open pull request that closes it. A refusal ends the claim there. Never steal a held issue, and
   never work it unclaimed; report the holder instead. On success the issue carries a comment
   naming the lane, its branch and its draft, the account as assignee, and the draft says
-  `Closes #N`, so the merge ends the claim. A lane that stops without finishing gives the issue
+  `Closes #N`, so the merge ends the claim; keep that line in the body. The claim stands
+  while the draft it names is open. A lane that stops without finishing gives the issue
   back with `helpers/issue_claim.py release --issue N --reason "<why>"`. An outside contributor
   claims the same issues by commenting `/claim` (`.github/workflows/issue-claim.yml`), and each
   mechanism refuses the other's claim.

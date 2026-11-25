@@ -59,8 +59,9 @@
 # process claims an issue before work starts on it). `--issue N` refuses an issue that is already
 # held, before git is touched, then writes the claim (helpers/issue_claim.py: a comment naming the
 # lane and branch, and an assignee), opens the draft with `Closes #N` so the merge ends the claim,
-# and puts the draft's address in the claim comment. A claim made but never followed by a draft
-# is taken back on the way out. `--issue` with `--no-claim` is refused: an issue claimed by a lane
+# and puts the draft's address in the claim comment, so the claim stands while that draft is open
+# even if an edit drops `Closes #N` from its body. A claim made but never followed by a draft is
+# taken back on the way out. `--issue` with `--no-claim` is refused: an issue claimed by a lane
 # with no draft is the state this exists to prevent. The flag's name is provisional.
 #
 # See notes/scripts.md.
@@ -240,15 +241,18 @@ if [ -n "$issue_number" ]; then
     issue_ref="#$issue_number"
     [ -n "$issue_repo" ] && issue_ref="$issue_repo#$issue_number"
     echo "==> claiming issue $issue_ref for $branch"
-    issue_comment="$(python3 "$repo_root/helpers/issue_claim.py" claim --issue "$issue_number" \
-        --branch "$branch" ${issue_repo:+--repo "$issue_repo"})" || exit 1
     drop_unused_claim() {
         [ -n "$issue_comment" ] || return 0
         echo "claim: stopped before the draft; taking back the claim on issue $issue_ref" >&2
         python3 "$repo_root/helpers/issue_claim.py" drop --issue "$issue_number" \
             --comment "$issue_comment" ${issue_repo:+--repo "$issue_repo"} || true
     }
+    # Set before the claim is posted: an interrupt inside the helper is handled there (it deletes
+    # its own comment), and one after it returns is handled here.
     trap drop_unused_claim EXIT
+    trap 'exit 130' INT TERM
+    issue_comment="$(python3 "$repo_root/helpers/issue_claim.py" claim --issue "$issue_number" \
+        --branch "$branch" ${issue_repo:+--repo "$issue_repo"})" || exit 1
 fi
 
 # A lane's first act is the right moment to say which identity it is about to act as. A session

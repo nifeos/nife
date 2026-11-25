@@ -21,7 +21,8 @@ A claim is a comment on the issue that this helper writes, carrying a marker lin
 see (`<!-- issue-claim: claim holder=<login> lane=<branch> -->`), and the holder's login among the
 issue's assignees. The comment is the record and the assignee is the flag in the issue list. Every
 agent here acts through one person's account, so the assignee alone cannot tell two lanes apart;
-the comment names the lane and its branch, and later its draft pull request.
+the comment names the lane and its branch, and later its draft pull request (`pull=owner/repo#N`
+in the marker, once `link` writes it).
 
 An issue is held when any one of these is true, which is the strict reading on purpose:
 
@@ -38,19 +39,27 @@ marker into their own comment changes nothing.
 
 The pull request that names the issue with a closing keyword merges and closes it; a `/release`
 by the holder or a member; `release` by a lane; or the sweep, once the claim is `STALE_DAYS` old
-and no open pull request closes the issue. A hand assignment with no claim comment is never
+and no open pull request closes the issue. A claim whose marker names a pull request that is still
+open stands too, so a lane that edits `Closes #N` out of its draft does not lose a live claim. A
+hand assignment with no claim comment is never
 released by the sweep: a person made it, and a person undoes it.
 
 # BUGS
 
 - `sweep` reads the comments of every open issue that has any, two calls each. That is fine at
   tens of issues and slow at thousands; the search API could narrow it.
-- The check before a lane claims and the claim itself are two calls, so two lanes can both pass
-  the check. The first claim comment wins and `claim` deletes the loser's comment and refuses, so
-  the window costs a retry, never a shared issue. Comment claims are serialized by the workflow's
-  concurrency group instead.
-- The one-claim limit for an outsider counts open issues assigned to them in this repository, so a
-  claim whose assignment GitHub refused does not count against it.
+- The check before a claim and the claim itself are two calls, so two claimants can both pass the
+  check. Both sides then post and read back: the first claim comment wins, a lane deletes its
+  losing comment and refuses, and the workflow rewrites its losing comment into a refusal. The
+  window costs a retry, never a shared issue, and it needs no concurrency group, which would let
+  an unrelated comment cancel a pending `/claim` and leave it with no reply.
+- The one-claim limit for an outsider reads the issues assigned to them through the REST issues
+  list, not search, which lags and has a small rate limit. Two `/claim` comments on two issues in
+  the same second can both pass the first count, so each run counts again after it assigns, and
+  the claim that is not among the oldest OUTSIDER_LIMIT withdraws itself. A claim whose
+  assignment GitHub refused is not assigned, so it does not count against the limit.
+- A lane needs `gh api user` to name the account it claims as. A token that cannot answer it, such
+  as an App installation token, makes `claim` refuse before it posts anything.
 """
 
 import json
@@ -73,14 +82,16 @@ MARKER = re.compile(r"^<!-- issue-claim: (claim|release)((?: [a-z]+=[^ ]+)*) -->
 FIELD = re.compile(r" ([a-z]+)=([^ ]+)")
 COMMAND = re.compile(r"^/(claim|release)\s*$", re.M)
 # A login or a branch goes into a marker field, so neither may carry a space or end the comment.
-SAFE_VALUE = re.compile(r"^[A-Za-z0-9._/\[\]-]+$")
+SAFE_VALUE = re.compile(r"^[A-Za-z0-9._/#\[\]-]+$")
+PULL_URL = re.compile(r"^https://github\.com/([A-Za-z0-9._-]+/[A-Za-z0-9._-]+)/pull/([0-9]+)$")
 
 
 class Claim:
     """One claim comment: who holds it, the lane if a lane made it, when, and the comment's id."""
 
-    def __init__(self, holder, lane, at, comment_id):
+    def __init__(self, holder, lane, at, comment_id, pull=None):
         self.holder, self.lane, self.at, self.comment_id = holder, lane, at, comment_id
+        self.pull = pull
 
     def describe(self):
         if self.lane:
@@ -113,7 +124,8 @@ def standing_claim(comments):
                 current = None
             elif current is None:
                 current = Claim(values.get("holder", ""), values.get("lane"),
-                                parse_time(comment["created_at"]), comment["id"])
+                                parse_time(comment["created_at"]), comment["id"],
+                                values.get("pull"))
     return current
 
 
@@ -151,12 +163,43 @@ def refusal(issue, comments, open_pulls):
     return None
 
 
-def is_stale(comments, open_pulls, now):
-    """The standing claim when the sweep should release it, else None."""
+def is_stale(comments, open_pulls, now, pull_is_open=lambda ref: False):
+    """The standing claim when the sweep should release it, else None.
+
+    pull_is_open(ref) answers for the pull request a lane's marker names (`owner/repo#N`), so a
+    claim outlives an edit that drops `Closes #N` from a draft that is still open.
+    """
     claim = standing_claim(comments)
-    if claim and not open_pulls and now - claim.at > timedelta(days=STALE_DAYS):
-        return claim
-    return None
+    if not claim or open_pulls or now - claim.at <= timedelta(days=STALE_DAYS):
+        return None
+    if claim.pull and pull_is_open(claim.pull):
+        return None
+    return claim
+
+
+def pull_reference(url):
+    """`owner/repo#N` for a pull request's web address, or None."""
+    found = PULL_URL.match(url.strip())
+    return f"{found.group(1)}#{found.group(2)}" if found else None
+
+
+def won(comments, comment_id):
+    """True when the claim comment comment_id is the one in force after a read-back."""
+    claim = standing_claim(comments)
+    return claim is not None and claim.comment_id == comment_id
+
+
+def over_limit(held, mine, limit):
+    """True when the author's claim on issue mine is past the outsider limit and must withdraw.
+
+    held: (issue number, claimed at or None) for every open issue assigned to the author, mine
+    included; None is an assignment with no claim comment, such as one made by hand, and counts as
+    oldest. The oldest `limit` stand and the rest withdraw. Every run that sees two claims orders
+    them the same way, so a burst keeps exactly `limit`.
+    """
+    floor = datetime.min.replace(tzinfo=timezone.utc)
+    order = sorted(held, key=lambda entry: (entry[1] or floor, entry[0]))
+    return mine not in [number for number, _ in order[:limit]]
 
 
 def marker(kind, **fields):
@@ -171,7 +214,10 @@ def claim_body(holder, lane=None, pull_request=None):
         text = (f"Claimed by lane `{lane}`, written by an agent; the account shown is the person "
                 f"running it. Branch `{lane}`.")
         text += f" Draft pull request: {pull_request}." if pull_request else " Draft pull request to follow."
-        mark = marker("claim", holder=holder, lane=lane)
+        ref = pull_reference(pull_request) if pull_request else None
+        if pull_request and not ref:
+            raise SystemExit(f"issue_claim: {pull_request!r} is not a pull request's address")
+        mark = marker("claim", holder=holder, lane=lane, **({"pull": ref} if ref else {}))
     else:
         text = (f"Claimed by @{holder}. Open a pull request whose description says `Closes #<this "
                 f"issue>`; the claim is released if none is open {STALE_DAYS} days after this "
@@ -227,6 +273,34 @@ def unassign(repo, number, login):
        data={"assignees": [login]})
 
 
+def whoami():
+    """The login a lane claims as. Refuses, before anything is posted, when the token cannot say."""
+    proc = subprocess.run(["gh", "api", "user", "--jq", ".login"], capture_output=True, text=True)
+    login = proc.stdout.strip()
+    if proc.returncode != 0 or not SAFE_VALUE.match(login):
+        raise SystemExit("issue_claim: cannot tell which account this lane acts as (`gh api user`: "
+                         f"{proc.stderr.strip() or 'no login'}). An App installation token cannot "
+                         "answer it; claim with a user's token. Nothing was posted.")
+    return login
+
+
+def pull_is_open(ref):
+    repo, number = ref.split("#", 1)
+    return gh("api", f"repos/{repo}/pulls/{number}").get("state") == "open"
+
+
+def assigned_claims(repo, author):
+    """(issue number, claimed at or None) for every open issue in repo assigned to author."""
+    held = []
+    for issue in gh_list(f"repos/{repo}/issues?state=open&assignee={author}&per_page=100"):
+        if issue.get("pull_request"):
+            continue
+        _, comments, _ = fetch(repo, issue["number"])
+        claim = standing_claim(comments)
+        held.append((issue["number"], claim.at if claim and claim.holder == author else None))
+    return held
+
+
 def current_repo():
     return os.environ.get("GITHUB_REPOSITORY") or gh("repo", "view", "--json", "nameWithOwner")["nameWithOwner"]
 
@@ -245,17 +319,24 @@ def command_claim(repo, number, branch):
     if reason:
         print(f"issue_claim: {repo}#{number}: {reason}. Not claimed; take another issue.", file=sys.stderr)
         return 1
-    login = gh("api", "user")["login"]
+    login = whoami()
     mine = post(repo, number, claim_body(login, lane=branch))
-    # Read back: if another claim landed first, ours is the one ignored, so take ours away.
-    _, comments, _ = fetch(repo, number)
-    winner = standing_claim(comments)
-    if winner is None or winner.comment_id != mine["id"]:
-        gh("api", "-X", "DELETE", f"repos/{repo}/issues/comments/{mine['id']}")
-        held = winner.describe() if winner else "a release that landed at the same moment"
-        print(f"issue_claim: {repo}#{number}: lost a race to {held}. Not claimed.", file=sys.stderr)
-        return 1
-    assign(repo, number, login)
+    try:
+        # Read back: if another claim landed first, ours is the one ignored, so take ours away.
+        _, comments, _ = fetch(repo, number)
+        if not won(comments, mine["id"]):
+            gh("api", "-X", "DELETE", f"repos/{repo}/issues/comments/{mine['id']}")
+            winner = standing_claim(comments)
+            held = winner.describe() if winner else "a release that landed at the same moment"
+            print(f"issue_claim: {repo}#{number}: lost a race to {held}. Not claimed.",
+                  file=sys.stderr)
+            return 1
+        assign(repo, number, login)
+    except BaseException:
+        # Anything that stops us between the post and the printed id would orphan the comment.
+        subprocess.run(["gh", "api", "-X", "DELETE", f"repos/{repo}/issues/comments/{mine['id']}"],
+                       capture_output=True)
+        raise
     print(mine["id"])
     return 0
 
@@ -337,18 +418,39 @@ def command_comment():
         return 0
     issue, comments, pulls = fetch(repo, number)
     # The command comment itself is not a marker, so leave it in: it changes nothing.
-    open_claims = gh("api", "search/issues", "-X", "GET", "-f",
-                     f"q=repo:{repo} is:issue is:open assignee:{author}")["total_count"]
+    member = comment.get("author_association") in TRUSTED_ASSOCIATIONS
+    open_claims = 0
+    if found.group(1) == "claim" and not member:
+        open_claims = sum(1 for n, _ in assigned_claims(repo, author) if n != number)
     reply, to_assign, to_unassign = decide_comment(issue, comments, pulls, author,
                                                    comment.get("author_association"),
                                                    found.group(1), open_claims)
     if to_unassign:
         unassign(repo, number, to_unassign)
-    post(repo, number, reply)
-    if to_assign:
-        # They commented, so GitHub lets them be assigned; the comment above is the record either way.
-        assign(repo, number, to_assign)
+    mine = post(repo, number, reply)
+    if not to_assign:
+        return 0
+    # Read back, as a lane does: a lane or another run may have claimed in the same moment.
+    _, comments, _ = fetch(repo, number)
+    if not won(comments, mine["id"]):
+        winner = standing_claim(comments)
+        held = winner.describe() if winner else "a claim made at the same moment"
+        withdraw(repo, number, mine["id"], f"@{author}, not claimed: {held} came first.")
+        return 0
+    # They commented, so GitHub lets them be assigned; the comment above is the record either way.
+    assign(repo, number, to_assign)
+    if not member and over_limit(assigned_claims(repo, author), number, OUTSIDER_LIMIT):
+        unassign(repo, number, author)
+        withdraw(repo, number, mine["id"],
+                 f"@{author}, not claimed: an older claim of yours is still open here, and the "
+                 f"limit is {OUTSIDER_LIMIT} until one closes or is released.")
     return 0
+
+
+def withdraw(repo, number, comment_id, text):
+    """Turn the workflow's own claim comment into a refusal, so its marker no longer counts."""
+    gh("api", "-X", "PATCH", f"repos/{repo}/issues/comments/{comment_id}", "--input", "-",
+       data={"body": text})
 
 
 def command_sweep(repo, now=None):
@@ -358,7 +460,7 @@ def command_sweep(repo, now=None):
         if issue.get("pull_request") or not issue.get("comments"):
             continue
         _, comments, pulls = fetch(repo, issue["number"])
-        claim = is_stale(comments, pulls, now)
+        claim = is_stale(comments, pulls, now, pull_is_open)
         if claim:
             command_release(repo, issue["number"],
                             f"claimed {claim.at:%Y-%m-%d}, and no open pull request closes this "
@@ -397,6 +499,22 @@ def selftest():
     assert not is_stale([outsider], [9], now), "an open pull request keeps a claim"
     assert not is_stale([outsider], [], parse_time(t0) + timedelta(days=1)), "a new claim stands"
     assert not is_stale([], [], now), "a hand assignment is never swept"
+    url = "https://github.com/nifeos/nife/pull/4100"
+    assert pull_reference(url) == "nifeos/nife#4100" and pull_reference("x/pull/1") is None
+    linked = c(6, claim_body("calef", lane="lane/a", pull_request=url), "calef", "OWNER")
+    assert standing_claim([linked]).pull == "nifeos/nife#4100", "link records the draft"
+    assert not is_stale([linked], [], now, lambda ref: ref == "nifeos/nife#4100"), \
+        "an open draft keeps a claim whose body lost Closes"
+    assert is_stale([linked], [], now, lambda ref: False), "a closed draft does not"
+    assert won([lane, lane2], 1) and not won([lane, lane2], 2), "a read-back finds the winner"
+    assert not won([outsider, lane], 1), "a lane loses to an earlier comment claim"
+    t1, t2 = parse_time(t0), parse_time(t0) + timedelta(seconds=1)
+    assert not over_limit([(8, t1)], 8, 1), "a first claim stands"
+    assert over_limit([(8, t1), (9, t2)], 9, 1), "the newer of a burst withdraws"
+    assert not over_limit([(8, t1), (9, t2)], 8, 1), "the older of a burst stands"
+    assert over_limit([(8, None), (9, t1)], 9, 1), "a hand assignment counts first"
+    assert not over_limit([(8, t1), (9, t1)], 8, 1), "a tie keeps the lower issue"
+    assert over_limit([(8, t2), (9, t1)], 8, 1), "age decides, not the issue number"
 
     reply, add, drop = decide_comment(issue, [], [], "stranger", "NONE", "claim", 0)
     assert add == "stranger" and "issue-claim: claim holder=stranger" in reply
