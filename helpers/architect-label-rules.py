@@ -50,14 +50,16 @@ yields it, and drops one in a file that an open pull request carrying `architect
    `--base-rev REV`; without it nothing is known and every changed dependency fires. See BUGS for
    what "external" cannot see: a multi-line inline table. Since calef's ruling of 2026-11-09
    (UTC), a dependency on one of our own crates is approved in advance and does not fire when it is
-   a git dependency whose URL is `https://github.com/nifeos/<repository>` (a trailing `.git` is
-   allowed) with `rev` a full 40-hexadecimal-digit commit and no `branch` or `tag`. A branch, a tag,
+   a git dependency whose URL is `https://github.com/partsfoundry/<repository>` or
+   `https://github.com/nifeos/<repository>` (a trailing `.git` is allowed) with `rev` a full 40-hexadecimal-digit commit and no `branch` or `tag`. A branch, a tag,
    a short rev, no rev, another organization, or a look-alike such as `nifeos-fork` still fires.
    Third-party dependencies are unchanged (§46). Known gaps, both deliberate: (a) a crates.io
    dependency whose name is a first-party crate still fires, because no reliable list exists (the
    organization's repositories include non-crates, `packages/homes.toml` names homes rather than
    crates, and nothing is published to crates.io yet); (b) the rule cannot tell that the commit is
    on that repository's main, which the ruling requires. Reviewers check it until a lint does.
+   The ruling of 2026-11-25 (UTC) extends that approval to the same crates in the `partsfoundry`
+   organization, where the crate repositories are moving, so both organizations count as our own.
 3. **format-crate**: a version constant, magic value, or documented on-disk layout moved in a crate
    that is classified, from its own head content, as a format crate: it declares a `pub const`
    ending in `VERSION` or `MAGIC`, or its module doc carries a markdown table with a `version`
@@ -639,14 +641,16 @@ DEP_KEY_RE = re.compile(r'^([A-Za-z0-9_.-]+)\s*=\s*(.*)$')
 
 GIT_URL_RE = re.compile(r'\bgit\s*=\s*"([^"]*)"')
 REV_RE = re.compile(r'\brev\s*=\s*"([^"]*)"')
-FIRST_PARTY_GIT_RE = re.compile(r'https://github\.com/nifeos/[A-Za-z0-9_.-]+')
+# The crate repositories moved to partsfoundry (2026-11-24 UTC); nife and basalt stay in nifeos.
+FIRST_PARTY_GIT_RE = re.compile(r'https://github\.com/(?:partsfoundry|nifeos)/[A-Za-z0-9_.-]+')
 FULL_COMMIT_RE = re.compile(r'[0-9a-fA-F]{40}')
 
 
 def is_pinned_first_party_git(rest):
-    """True for a git dependency on a crate of the `nifeos` organization at a full commit.
+    """True for a git dependency on a crate of our own organizations at a full commit.
 
-    The URL must be `https://github.com/nifeos/<repository>` (optionally ending `.git`) and `rev`
+    The URL must be `https://github.com/partsfoundry/<repository>` or
+    `https://github.com/nifeos/<repository>` (optionally ending `.git`) and `rev`
     must be 40 hexadecimal digits. A `branch`, a `tag`, a short or missing `rev` is not pinned, so
     it is not exempt. Whether the commit is on that repository's main is NOT checked here (see the
     module docstring's follow-up note).
@@ -1605,7 +1609,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
++e1000e = { version = "0.1.0", git = "https://github.com/partsfoundry/e1000e", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 """, None),
 
     ("dependency: a nifeos git dependency with a .git suffix at a full commit stays quiet", """\
@@ -1614,7 +1618,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { git = "https://github.com/nifeos/e1000e.git", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
++e1000e = { git = "https://github.com/partsfoundry/e1000e.git", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 """, None),
 
     ("dependency: a nifeos git dependency on a branch fires", """\
@@ -1623,7 +1627,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { git = "https://github.com/nifeos/e1000e", branch = "main" }
++e1000e = { git = "https://github.com/partsfoundry/e1000e", branch = "main" }
 """, 'dependency'),
 
     ("dependency: a nifeos git dependency on a tag fires", """\
@@ -1632,7 +1636,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { git = "https://github.com/nifeos/e1000e", tag = "v0.1.0" }
++e1000e = { git = "https://github.com/partsfoundry/e1000e", tag = "v0.1.0" }
 """, 'dependency'),
 
     ("dependency: a nifeos git dependency with no rev fires", """\
@@ -1641,7 +1645,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e" }
++e1000e = { version = "0.1.0", git = "https://github.com/partsfoundry/e1000e" }
 """, 'dependency'),
 
     ("dependency: a nifeos git dependency with a short rev fires", """\
@@ -1650,7 +1654,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { git = "https://github.com/nifeos/e1000e", rev = "8ac75a6" }
++e1000e = { git = "https://github.com/partsfoundry/e1000e", rev = "8ac75a6" }
 """, 'dependency'),
 
     ("dependency: a nifeos git dependency with a rev and a branch fires", """\
@@ -1659,7 +1663,7 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
 +++ b/kernel/Cargo.toml
 @@ -1,2 +1,3 @@
  [dependencies]
-+e1000e = { git = "https://github.com/nifeos/e1000e", branch = "main", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
++e1000e = { git = "https://github.com/partsfoundry/e1000e", branch = "main", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 """, 'dependency'),
 
     ("dependency: a git dependency on another organization at a full commit fires", """\
@@ -1679,6 +1683,24 @@ diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
  [dependencies]
 +thing = { git = "https://github.com/nifeos-fork/thing", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 """, 'dependency'),
+
+    ("dependency: a look-alike of partsfoundry at a full commit fires", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++thing = { git = "https://github.com/partsfoundry-fork/thing", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+""", 'dependency'),
+
+    ("dependency: a crate still at its nifeos address at a full commit stays quiet (ruling of 2026-11-25 UTC covers both)", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++jh7110_entropy = { git = "https://github.com/nifeos/jh7110_entropy", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+""", None),
 
     ("dependency: a crates.io dependency named like a first-party crate still fires", """\
 diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
