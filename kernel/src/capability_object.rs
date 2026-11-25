@@ -247,8 +247,11 @@ const _: () = assert!(Rights::BIND.bits() as u64 == moho_abi::rights::BIND);
 /// **Every right the system call interface names**: [`Rights::ALL`] without `REVOKE`. The kernel
 /// mints with this where it means "every right", and [`interface_rights`] masks what a caller asks
 /// for with it, so no capability carries `REVOKE` and no caller can ask for it. `REVOKE` is a right
-/// in `capability_table` that nothing consults; it joins the interface with milestone 1128 step 12,
-/// and this constant becomes `Rights::ALL` then. Name: provisional, 2026-11-25 (UTC).
+/// in `capability_table` that nothing consults; it joins the interface with milestone 1128 (the Moho
+/// review's rulings: the order in which they land) step 12, and this constant becomes
+/// `Rights::ALL` then.
+///
+/// Name: provisional, minted 2026-11-25 (UTC) by lane kernel-takes-sized-capability-table.
 pub const INTERFACE_RIGHTS: Rights = Rights::from_bits(moho_abi::rights::ALL as u32);
 
 // **`INTERFACE_RIGHTS` is exactly the ABI's vocabulary and no more.** Both directions are
@@ -272,8 +275,9 @@ const _: () = assert!(INTERFACE_RIGHTS.union(Rights::REVOKE).bits() == Rights::A
 
 /// **The rights a caller's argument word asks for**, as the kernel reads them: the low 32 bits,
 /// masked to [`INTERFACE_RIGHTS`]. A bit the interface does not name confers nothing, `REVOKE`'s
-/// included, so a caller that asks for it is answered as if it had not. Name: provisional,
-/// 2026-11-25 (UTC).
+/// included, so a caller that asks for it is answered as if it had not.
+///
+/// Name: provisional, minted 2026-11-25 (UTC) by lane kernel-takes-sized-capability-table.
 pub const fn interface_rights(word: u64) -> Rights {
     Rights::from_bits(word as u32).intersect(INTERFACE_RIGHTS)
 }
