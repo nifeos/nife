@@ -277,6 +277,12 @@ echo "==> script/idle-pull-requests classifies open pull requests (the queue swe
 # nifeos/record:notes/idle-pull-requests.md: the classifier (queued, armed, held, running, idle) and its four flags run on
 # fixture pull requests with a stub for the blocker lookup, no `gh` and no network.
 python3 helpers/idle_pull_requests.py --selftest >/dev/null
+echo "==> an issue claim refuses a held issue, and a stale one is released"
+# lint-scope: code
+# helpers/issue_claim.py, behind script/claim --issue and .github/workflows/issue-claim.yml: who
+# holds an issue, that a second claim never steals, that a pasted marker is ignored, the outsider
+# limit and the stale rule, on fixture comments with no `gh` and no network.
+python3 helpers/issue_claim.py --selftest >/dev/null
 echo "==> script/crate-move stages a move as the runbook says"
 # lint-scope: code
 # nifeos/record:notes/crate-move.md: the dry run deletes Name: blocks, regenerates falsification patches over the stripped source and

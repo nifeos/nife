@@ -47,6 +47,16 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
   2026-10-10 UTC). `--debt-paydown` is for work that meets the definition in
   [notes/debt-paydown.md](https://github.com/nifeos/record/blob/main/notes/debt-paydown.md), and it puts the `debt-paydown` label on the draft.
   Everything else is `--new-work`. A brief says which one, so the lane doesn't have to guess.
+- **A lane on an issue claims the issue first, with `script/claim <branch> --new-work --issue N`**
+  (`owner/repo#N` for an issue in another repository; decided 2026-11-25 UTC, flag name
+  provisional). It refuses an issue that is held: a standing claim comment, any assignee, or an
+  open pull request that closes it. A refusal ends the claim there. Never steal a held issue, and
+  never work it unclaimed; report the holder instead. On success the issue carries a comment
+  naming the lane, its branch and its draft, the account as assignee, and the draft says
+  `Closes #N`, so the merge ends the claim. A lane that stops without finishing gives the issue
+  back with `helpers/issue_claim.py release --issue N --reason "<why>"`. An outside contributor
+  claims the same issues by commenting `/claim` (`.github/workflows/issue-claim.yml`), and each
+  mechanism refuses the other's claim.
 - **Push the real commits, confirm the remote head, and only then mark the pull request ready.**
   Push with `script/push`, which reads the branch back from origin. Then confirm the head is the
   commit you mean: `git ls-remote origin refs/heads/<branch>` prints the same commit as

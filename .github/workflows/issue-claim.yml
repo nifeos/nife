@@ -1,0 +1,98 @@
+name: issue claim
+
+# Observed failing: 2026-11-25, by script: helpers/issue_claim.py --selftest holds every arm this
+#   workflow carries (a second claim refused, a pasted release marker ignored, the outsider limit,
+#   a stale claim released) on fixtures, and each assertion was broken on purpose and seen to fail.
+#   A real run cannot be staged first: an issue_comment workflow runs only from the default branch.
+
+# Lets anyone claim an issue by commenting `/claim` on a line of its own, and give it up with
+# `/release`, and releases a claim that has stood STALE_DAYS with no open pull request closing the
+# issue (helpers/issue_claim.py holds the rules and the reasons). A lane claims through
+# `script/claim --issue N` instead; both write the same record, so each refuses the other's claim.
+# The commands, the workflow's name and the stale limit are provisional (2026-11-25 UTC).
+#
+# What keeps it safe to run on a comment from anyone:
+# - Hosted runners only, and no secrets: the only credential is this run's GITHUB_TOKEN, held to
+#   `issues: write` plus the `contents: read` the checkout needs.
+# - `issue_comment` runs the workflow file and the helper from the default branch, never from a
+#   fork, and the job skips a comment on a pull request, so no fork's code or event reaches it.
+# - The comment body is never written into a shell line. The helper reads the event file that
+#   GitHub writes, and the shell below interpolates nothing from the comment.
+# - The concurrency group serializes the runs for one issue, so two `/claim` comments in the same
+#   second are decided one after the other and the second is refused.
+
+on:
+  issue_comment:
+    types: [created]
+  schedule:
+    # 09:20 UTC daily: the stale sweep.
+    - cron: "20 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: issue-claim-${{ github.event.issue.number || 'sweep' }}
+  cancel-in-progress: false
+
+jobs:
+  claim:
+    name: claim or release by comment
+    if: >-
+      github.event_name == 'issue_comment' && !github.event.issue.pull_request &&
+      github.event.comment.user.type != 'Bot' &&
+      (contains(github.event.comment.body, '/claim') || contains(github.event.comment.body, '/release'))
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          persist-credentials: false
+          sparse-checkout: helpers/issue_claim.py
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
+          persist-credentials: false
+          sparse-checkout: helpers/issue_claim.py
+          sparse-checkout-cone-mode: false
+
+      - name: decide the command
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -I helpers/issue_claim.py comment
+
+  sweep:
+    name: release stale claims
+    if: github.event_name != 'issue_comment'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          persist-credentials: false
+          sparse-checkout: helpers/issue_claim.py
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
+          persist-credentials: false
+          sparse-checkout: helpers/issue_claim.py
+          sparse-checkout-cone-mode: false
+
+      - name: sweep
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -I helpers/issue_claim.py sweep
