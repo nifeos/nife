@@ -184,7 +184,7 @@ and priced it is notes/redoxfs-audit.md).
 
 ## crate-workflows, at upstream commit 56437ded32a6
 
-The naming gates every repository shares, from `nifeos/crate-workflows`, the template that crate
+The naming gates every repository shares, from `partsfoundry/crate-workflows`, the template that crate
 and package repositories call. A gate that is not specific to nife lives once, there; nife carries
 a pinned copy so it runs the same words as the crates do, and the two cannot drift.
 
@@ -203,7 +203,7 @@ a pinned copy so it runs the same words as the crates do, and the two cannot dri
   list does not name, as it fails any unrecorded edit. No registry carries the template, so the pin
   says `registry = none` and `script/vendor-watch` reports its commits as the releases.
 - **Divergence from upstream, exhaustively:** none. The patch is empty. A change to a word or a
-  check goes to `nifeos/crate-workflows` as its own pull request, and the pin moves to the merged
+  check goes to `partsfoundry/crate-workflows` as its own pull request, and the pin moves to the merged
   commit (never to a branch).
 - **The report-only crate gates** run over every crate under `crates/` in `script/lint`, through
   `helpers/template_report_gates.py`. A finding that exists never fails; a count over
