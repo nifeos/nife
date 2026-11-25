@@ -3,7 +3,7 @@ use super::*;
 /// Reassemble a std program's stdout off its endpoint until the writer says the stream is over,
 /// and compare byte for byte.
 ///
-/// The framing is the sink contract's (`nifeos/byte_sink_contract`, milestone 50 (pipes and
+/// The framing is the sink contract's (`partsfoundry/byte_sink_contract`, milestone 50 (pipes and
 /// redirection: one sink protocol, and `|` turns out to be an endpoint)): `w0` is the count, `w1`
 /// and `w2` the bytes, little-endian. `SEND` blocks until a receiver takes it, so the program is
 /// between its last `println!` and `SYSTEM_CALL_EXIT` when the bytes land. Reading to `OPERATION_END_OF_STREAM`

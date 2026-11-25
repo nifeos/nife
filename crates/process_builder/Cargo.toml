@@ -15,11 +15,11 @@ user_mode_runtime = { version = "0.1.0", path = "../user_mode_runtime" }
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): where a child's
 # stack goes, and the check that refuses an image the map has no room for, shared with
 # `kernel::user::load` so the two loaders agree.
-address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
 # The x86_64 timebase page's fixed VA (milestone 161's `cntfrq` follow-up): this crate's own
 # x86_64-gated code in `lay_out_child` needs the same constant `kernel::user::load` and
 # `user_mode_runtime::cntfrq` agree on, so no party keeps its own copy.
-counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
+counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
 # The protocol words, the endowment and the retention declaration. The loader consumes them and
 # the contract never depends on this crate (DECISIONS §235 (the OS is built and updated from packages, and its source divides by purpose) P3).
 supervision_contract = { version = "0.1.0", path = "../supervision_contract" }

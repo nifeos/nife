@@ -1,7 +1,7 @@
 //! A 1 KiB-block filesystem on a device with 4,096-byte logical sectors cannot be addressed, so the
 //! mount must refuse it, and the error that reaches the caller must say why: the `BadSuperblock`
 //! with its `device:filesystem_geometry` operation that `validate_filesystem_geometry` returns, not
-//! a bare `Io`, which is the error a failed read gives. nifeos/rsext4 carries that fix (item 7 of
+//! a bare `Io`, which is the error a failed read gives. partsfoundry/rsext4 carries that fix (item 7 of
 //! the upstream drafts). See nifeos/record:design/roadmap/0190-ext4-read-write.md.
 
 use rsext4::error::Ext4Result;

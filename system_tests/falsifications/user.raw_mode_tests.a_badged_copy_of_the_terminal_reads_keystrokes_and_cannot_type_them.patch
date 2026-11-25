@@ -2,7 +2,7 @@ Falsifies `system_tests::user::raw_mode_tests::a_badged_copy_of_the_terminal_rea
 
 Architecture: all three (the change is in a userspace component, `components/src/line_editor.rs`,
 built for every ISA from one source; the table it reads is `terminal_contract::admits`, which
-nife takes from `nifeos/terminal_contract` by rev).
+nife takes from `partsfoundry/terminal_contract` by rev).
 
 The defect this restores is the one milestone 709 closes: the boot line discipline served every
 request the same whatever the badge on the capability that sent it, so a `graphical_terminal`

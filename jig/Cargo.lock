@@ -5,7 +5,7 @@ version = 4
 [[package]]
 name = "address_space_layout"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/address_space_layout?rev=02d497b62915c1fb133ef1de6e76598fa51e67fe#02d497b62915c1fb133ef1de6e76598fa51e67fe"
+source = "git+https://github.com/partsfoundry/address_space_layout?rev=02d497b62915c1fb133ef1de6e76598fa51e67fe#02d497b62915c1fb133ef1de6e76598fa51e67fe"
 
 [[package]]
 name = "aead"
@@ -89,7 +89,7 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
+source = "git+https://github.com/partsfoundry/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
 
 [[package]]
 name = "capability_manifest_note"
@@ -152,7 +152,7 @@ dependencies = [
 [[package]]
 name = "clock_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
+source = "git+https://github.com/partsfoundry/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
 dependencies = [
  "loom",
 ]
@@ -172,7 +172,7 @@ checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
 [[package]]
 name = "counter_frequency_contract"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
+source = "git+https://github.com/partsfoundry/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
 
 [[package]]
 name = "cpubits"
@@ -329,7 +329,7 @@ dependencies = [
 [[package]]
 name = "domain_name_system"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/domain_name_system?rev=c656cdd9206149dd147d6550c339f1cc520aadd0#c656cdd9206149dd147d6550c339f1cc520aadd0"
+source = "git+https://github.com/partsfoundry/domain_name_system?rev=c656cdd9206149dd147d6550c339f1cc520aadd0#c656cdd9206149dd147d6550c339f1cc520aadd0"
 
 [[package]]
 name = "ecdsa"
@@ -398,7 +398,7 @@ dependencies = [
 [[package]]
 name = "entropy_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
+source = "git+https://github.com/partsfoundry/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
 
 [[package]]
 name = "ff"
@@ -419,7 +419,7 @@ checksum = "64cd1e32ddd350061ae6edb1b082d7c54915b5c672c389143b9a63403a109f24"
 [[package]]
 name = "file_system_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
+source = "git+https://github.com/partsfoundry/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
 
 [[package]]
 name = "find-msvc-tools"
@@ -477,7 +477,7 @@ dependencies = [
 [[package]]
 name = "grant_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/grant_contract?rev=d4e9ca29d51bc71d678aadaa00411eba953202b3#d4e9ca29d51bc71d678aadaa00411eba953202b3"
+source = "git+https://github.com/partsfoundry/grant_contract?rev=a1e5b048a9e6a26305a47663eb3c8f7e966beb12#a1e5b048a9e6a26305a47663eb3c8f7e966beb12"
 dependencies = [
  "program_argument_contract",
 ]
@@ -485,7 +485,7 @@ dependencies = [
 [[package]]
 name = "grant_plan"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/grant_plan?rev=a5d87c426ec0aeebeb51a13d3ffb116caebd73c9#a5d87c426ec0aeebeb51a13d3ffb116caebd73c9"
+source = "git+https://github.com/partsfoundry/grant_plan?rev=8f2555339461aae2bde04be579da7cac7b661698#8f2555339461aae2bde04be579da7cac7b661698"
 dependencies = [
  "byte_glob",
  "grant_contract",
@@ -813,7 +813,7 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
+source = "git+https://github.com/partsfoundry/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
 
 [[package]]
 name = "program_table"

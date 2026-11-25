@@ -9,7 +9,7 @@ kind = "base"
 home = { repo = "kernel", status = "provisional" }
 crates = [
     "kernel",
-    # `capability_table` lives in the repository `nifeos/capability_table` and is not listed here;
+    # `capability_table` lives in the repository `partsfoundry/capability_table` and is not listed here;
     # the kernel links it by revision.
     "page_tables",
     "page_frames",

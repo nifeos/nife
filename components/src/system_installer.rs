@@ -87,7 +87,7 @@ const ALIGN: u64 = 2048;
 /// **How big the EFI system partition is**, in logical blocks: 512 MiB.
 ///
 /// It is not the 100 MiB a reader expects, and the reason is arithmetic rather than generosity.
-/// `file_allocation_table` (`nifeos/file_allocation_table`) refuses to build a volume with fewer
+/// `file_allocation_table` (`partsfoundry/file_allocation_table`) refuses to build a volume with fewer
 /// than 65525 data clusters, because below that the volume is FAT16 whatever its boot sector
 /// claims; at 4096-byte clusters that floor is a little over 256 MiB. 512 MiB clears it with room for a second boot file when
 /// somebody builds the two-slot layout milestone 515 lists as L2.

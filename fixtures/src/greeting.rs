@@ -8,7 +8,7 @@
 
 //! # What this program holds
 //!
-//! Slot 0, its output: the sink contract (`nifeos/byte_sink_contract`). Slot 1, the clock page,
+//! Slot 0, its output: the sink contract (`partsfoundry/byte_sink_contract`). Slot 1, the clock page,
 //! because [`MANIFEST`] asks for one, carried as an ELF note (milestone 597 (a program carries its
 //! manifest in an ELF note), provisional; DECISIONS §197 (a package is one archive file) option
 //! M2). No boot image has a row for this program, so a vouched copy holding slot 1, the second line

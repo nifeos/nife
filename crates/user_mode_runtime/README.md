@@ -1,9 +1,9 @@
 # user_mode_runtime
 
-[![check](https://github.com/nifeos/user_mode_runtime/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nifeos/user_mode_runtime/actions/workflows/ci.yml?query=branch%3Amain)
-[![proofs](https://github.com/nifeos/user_mode_runtime/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/nifeos/user_mode_runtime/actions/workflows/proofs.yml?query=branch%3Amain)
-[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/user_mode_runtime#license)
-[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/user_mode_runtime/blob/main/Cargo.toml)
+[![check](https://github.com/partsfoundry/user_mode_runtime/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/partsfoundry/user_mode_runtime/actions/workflows/ci.yml?query=branch%3Amain)
+[![proofs](https://github.com/partsfoundry/user_mode_runtime/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/partsfoundry/user_mode_runtime/actions/workflows/proofs.yml?query=branch%3Amain)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/partsfoundry/user_mode_runtime#license)
+[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/partsfoundry/user_mode_runtime/blob/main/Cargo.toml)
 
 The runtime a user-mode program of a capability microkernel links. `no_std`, on aarch64 (exception
 level 0), riscv64 (U-mode) and `x86_64` (ring 3). It holds the one system call wrapper, the entry

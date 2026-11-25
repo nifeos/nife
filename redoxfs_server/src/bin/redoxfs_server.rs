@@ -75,7 +75,7 @@ impl redoxfs_server::WallClock for ClockPageClock {
 }
 
 /// Where the kernel maps the two shared regions: the block channel, a service window on the
-/// address-space map (`nifeos/address_space_layout`), above the heap band and below the image band.
+/// address-space map (`partsfoundry/address_space_layout`), above the heap band and below the image band.
 ///
 /// [`BLK_PAGE`] is `block::MAXIMUM_TRANSFER_BYTES` bytes wide rather than one page (milestone 138 step 4)
 /// and [`FILE_PAGE`] is `file_system::MAXIMUM_TRANSFER_BYTES` bytes wide rather than one page (step 3);

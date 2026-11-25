@@ -13,7 +13,7 @@ Which commit a repository resolves at:
   this repository until the record moves, and `nifeos/record` after it.
 - A repository that `pins.toml` on basalt's `main` names is read at the commit it pins.
 - Any other `nifeos` repository is read at every revision a pinned component's `Cargo.lock` files
-  name for it, at that component's pinned commit. A crate such as `nifeos/jh7110_entropy` is no
+  name for it, at that component's pinned commit. A crate such as `partsfoundry/jh7110_entropy` is no
   basalt component, but the nife commit basalt pins locks it at one revision, and that revision is
   what the image builds. The path has to exist at each revision named, so a crate locked at two
   revisions cannot hide a path that one of them lacks.
@@ -199,12 +199,12 @@ def problems(cited, root):
 def selftest():
     """The parse and the existence rule, with no network; returns the failures as strings."""
     failed = []
-    text = ("`nifeos/jh7110_entropy:src/lib.rs` and `nifeos/record:<path>`\n"
+    text = ("`partsfoundry/jh7110_entropy:src/lib.rs` and `nifeos/record:<path>`\n"
             "`nifeos/basalt:123`, `nifeos/record:design/naming.md#a-heading`, `crates/x`")
     want = [(1, "jh7110_entropy", "src/lib.rs"), (2, "record", "design/naming.md")]
     if citations(text) != want:
         failed.append(f"citations read {citations(text)}, expected {want}")
-    lock = ('source = "git+https://github.com/nifeos/jh7110_entropy?rev=ab#' + "a" * 40 + '"\n'
+    lock = ('source = "git+https://github.com/partsfoundry/jh7110_entropy?rev=ab#' + "a" * 40 + '"\n'
             'source = "git+https://github.com/other/x?rev=ab#' + "b" * 40 + '"\n')
     if LOCKED_SOURCE.findall(lock) != [("jh7110_entropy", "a" * 40)]:
         failed.append(f"LOCKED_SOURCE read {LOCKED_SOURCE.findall(lock)}")

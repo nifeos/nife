@@ -2437,7 +2437,7 @@ def _rights_bits():
     """Named single-bit rights in `moho_abi::rights`: how many rights a capability can carry.
 
     Counted from the ABI's rights module, which the kernel asserts equal to the rights mask of the
-    capability table crate it links (`nifeos/capability_table`, a pinned dependency that is no
+    capability table crate it links (`partsfoundry/capability_table`, a pinned dependency that is no
     longer in this tree). Only the single-bit constants count: `ALL` and `SPEND_ONLY` are masks of
     the others, so the shape assumed is `pub const NAME: u64 = 1 << N;` and neither mask matches it.
 

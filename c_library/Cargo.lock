@@ -5,7 +5,7 @@ version = 4
 [[package]]
 name = "address_space_layout"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/address_space_layout?rev=02d497b62915c1fb133ef1de6e76598fa51e67fe#02d497b62915c1fb133ef1de6e76598fa51e67fe"
+source = "git+https://github.com/partsfoundry/address_space_layout?rev=02d497b62915c1fb133ef1de6e76598fa51e67fe#02d497b62915c1fb133ef1de6e76598fa51e67fe"
 
 [[package]]
 name = "aho-corasick"
@@ -49,7 +49,7 @@ checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 [[package]]
 name = "clock_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
+source = "git+https://github.com/partsfoundry/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
 dependencies = [
  "loom",
 ]
@@ -57,7 +57,7 @@ dependencies = [
 [[package]]
 name = "counter_frequency_contract"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
+source = "git+https://github.com/partsfoundry/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
 
 [[package]]
 name = "current_cpu_contract"
@@ -69,7 +69,7 @@ dependencies = [
 [[package]]
 name = "entropy_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
+source = "git+https://github.com/partsfoundry/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
 
 [[package]]
 name = "find-msvc-tools"
