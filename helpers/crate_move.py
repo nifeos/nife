@@ -25,6 +25,10 @@ import record_root  # noqa: E402
 # The organization that owns every crate repository. The template still spells the old one in its
 # callers, its owners team and its `deny.toml` allowed source; `in_organization` rewrites those.
 ORGANIZATION = 'partsfoundry'
+# The template revision a move pins unless `--template-rev` names another: the commit the moved
+# crates carry. The newest `v*` tag is older, and lacks the settings that read the owning organization.
+# Change it here when the crates move to a newer one; nowhere else names it.
+DEFAULT_TEMPLATE_REVISION = '11d6d6bbf760'
 TEMPLATE_URL = f'https://github.com/{ORGANIZATION}/crate-workflows'
 REPOSITORY_URL = f'https://github.com/{ORGANIZATION}/{{crate}}'
 # The three places the template names an organization: a reusable workflow, the owners team, the
@@ -769,12 +773,7 @@ def template_tree(args, work):
         code, out = run(['git', 'clone', '--quiet', '--no-checkout', TEMPLATE_URL, source], work)
         if code:
             sys.exit(f'crate-move: cannot clone {TEMPLATE_URL}: {tail(out)}')
-    rev = args.template_rev
-    if not rev:
-        code, out = run(['git', '-C', source, 'tag', '-l', 'v*', '--sort=-v:refname'], work)
-        rev = out.split()[0] if out.split() else ''
-        if not rev:
-            sys.exit('crate-move: the template has no v* release to pin; name one with --template-rev')
+    rev = args.template_rev or DEFAULT_TEMPLATE_REVISION
     code, sha = run(['git', '-C', source, 'rev-parse', '--verify', rev + '^{commit}'], work)
     if code:
         sys.exit(f'crate-move: the template has no revision {rev}: {tail(sha)}')
