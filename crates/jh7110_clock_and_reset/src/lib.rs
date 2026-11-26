@@ -170,7 +170,7 @@ pub(crate) const STGCLK_SECURITY_MISC_AHB: u32 = 16;
 /// **It is a *shared* reset** (\[mainline-trng\] takes it with `devm_reset_control_get_shared`),
 /// which is a fact about the silicon rather than about Linux's API: the same line resets the whole
 /// security top block, the `PL080` DMA at `0x1600_8000` included. Deasserting it is safe; asserting
-/// it would reset a neighbour, which is why nothing in this crate offers an assert.
+/// it would reset a neighbor, which is why nothing in this crate offers an assert.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
 #[doc(alias = "JH7110_STGRST_SEC_AHB")]
@@ -776,7 +776,7 @@ pub struct PowerManagementChipBus {
     pub power_management_chip: Option<&'static [u8]>,
     /// Clock or reset specifiers the bus named that are **not** a SYS-domain gate or line, and
     /// were skipped rather than written: the vendor tree's virtual clock 298 is the expected one. A provider
-    /// this crate does not recognise, or an id past [`SYSTEM`]'s bounds, lands here, never in a
+    /// this crate does not recognize, or an id past [`SYSTEM`]'s bounds, lands here, never in a
     /// store.
     pub skipped: usize,
     /// True when the bus named more usable steps than [`MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS`].
