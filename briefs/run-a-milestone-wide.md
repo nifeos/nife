@@ -52,7 +52,7 @@ Two lanes in one source file is a conflict resolved by hand. Prevent it before t
    that wants work goes to the residual lane's list through the maintainer, not into its own diff.
 
 The shared baseline is the collision surface a partition does not remove. In milestone 929 it was
-`design/comment-block-baseline.tsv`, which every lane's paydown changes. Its helper's `--bank`
+`lint/comment-block-baseline.tsv`, which every lane's paydown changes. Its helper's `--bank`
 rewrites the whole file, so two lanes that bank conflict on every row. The rule for a run:
 
 - A lane never runs a whole-file rewrite of a shared baseline. It edits its own rows by hand, the

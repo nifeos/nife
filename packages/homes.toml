@@ -235,13 +235,11 @@ status = "provisional"
 repo = "generational_table"
 paths = ["notes/generational-names.md", "notes/generational-table-and-existing-crates.md"]
 
-# ---- What stays: tool data under design/ ------------------------------------------------------
-# The lint and prose baselines, and the removed-files index, which lists code paths. Each is read
+# ---- What stays: tool data under lint/ --------------------------------------------------------
+# The lint baselines, and the removed-files index, which lists code paths. Each is read
 # by a tool and leaves with it (milestone 1018, question 4).
 [[home]]
 status = "undecided"
 reason = "lint baselines and tool data; they leave with the lint that reads them, whose repository is not yet named"
-paths = ["design/lint-baseline.tsv", "design/prose-baseline.tsv", "design/passive-baseline.tsv",
-         "design/file-length-baseline.tsv", "design/comment-block-baseline.tsv",
-         "design/parent-index-baseline.tsv", "design/module-block-baseline.txt",
-         "design/naming-rule-baseline.txt", "design/removed.tsv"]
+paths = ["lint/passive-baseline.tsv", "lint/comment-block-baseline.tsv",
+         "lint/module-block-baseline.txt", "lint/naming-rule-baseline.txt", "lint/removed.tsv"]

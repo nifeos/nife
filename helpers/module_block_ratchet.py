@@ -48,7 +48,7 @@ import baseline_layout  # noqa: E402
 import moved_rows  # noqa: E402
 import name_census  # noqa: E402
 
-BASELINE = 'design/module-block-baseline.txt'
+BASELINE = 'lint/module-block-baseline.txt'
 # The baseline's format. A merge base whose baseline lacks this line holds a list of a smaller
 # scope (format 1 had no items), so the change that widens the scope is compared with nothing, as
 # the change that first lands a baseline is. This is an exception and a foot gun: bumping the

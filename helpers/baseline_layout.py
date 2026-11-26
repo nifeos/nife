@@ -1,7 +1,7 @@
 """The layout of a row baseline that many pull requests shrink at once, so git merges their removals.
 
 Two ratchets keep a committed list of rows that only shrinks: `helpers/module_block_ratchet.py`
-(`design/module-block-baseline.txt`) and `helpers/name_checks.py` (`design/naming-rule-baseline.txt`).
+(`lint/module-block-baseline.txt`) and `helpers/name_checks.py` (`lint/naming-rule-baseline.txt`).
 Naming pull requests each clear a run of rows, and rows sort by path, so two pull requests that clear
 rows next to each other touched adjacent lines. Git reports adjacent changed lines as a conflict even
 though the two changes never overlap, and a merge queue that meets one removes every entry behind it.
