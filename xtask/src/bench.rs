@@ -9,27 +9,33 @@ use crate::archive::{
     riscv64_initial_ramdisk_path, x86_initial_ramdisk_path,
 };
 use crate::disk::{disk_path, mkdisk, mkredoxfs, redoxfs_server_build};
-use crate::host::{flag_value, kernel_elf, run, workspace_root};
-use crate::{RELEASE, RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, cargo_profiled, user};
+use crate::host::{flag_value, kernel_elf, workspace_root};
+use crate::{
+    RELEASE, RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, cargo_profiled, profile_dir, user,
+};
 
 /// The microbenchmarks (milestone 21 (benchmarks with teeth); nifeos/record:design/roadmap/0021-benchmarks.md),
 /// with two instruments:
 ///
-/// - default: TCG with `-icount`, exact counts. `--check` diffs them against
-///   `bench/baseline-aarch64.txt`; `--save --why "<reason>"` rewrites it, refused without a reason
-///   (milestone 302 (a baseline records what it was saved against)).
-/// - `--real`: HVF on the host core, statistical nanoseconds, never gating. `--release` implies it.
+/// - default: TCG with `-icount`, exact counts of a release kernel and userspace. `--check` diffs
+///   them against `bench/baseline-aarch64.txt`; `--save --why "<reason>"` rewrites it, refused
+///   without a reason (milestone 302 (a baseline records what it was saved against)).
+/// - `--real`: HVF on the host core, statistical nanoseconds, never gating. It builds the dev
+///   profile unless `--release` is given; `--release` implies it.
 ///
 /// The bench kernel never exits on its own (semihosting does not work under HVF), so xtask watches
 /// the QEMU child for `bench: done` and kills it under both accelerators. See nifeos/record:notes/benchmarks.md.
 pub(crate) fn bench() -> bool {
     let check = std::env::args().any(|a| a == "--check");
     let save = std::env::args().any(|a| a == "--save");
-    // `--release` is for magnitudes next to release Linux. It changes instruction counts, so it
-    // never runs under icount and never gates.
+    // **The gating icount bench counts the release build** (the ruling on nifeos/nife#4132,
+    // 2026-11-26 UTC): the build that ships, so a floor defends the shipped kernel and not the
+    // compiler's opt-level 0 copies around it (nifeos/record:design/roadmap/1130-measure-an-optimized-test-and-bench-build.md).
+    // `--release` on its own asks for HVF magnitudes next to release Linux, so it implies `--real`;
+    // `--real` without it keeps the dev profile it has always timed.
     let release = std::env::args().any(|a| a == "--release");
-    RELEASE.store(release, Ordering::Relaxed);
     let real = release || std::env::args().any(|a| a == "--real");
+    RELEASE.store(release || !real, Ordering::Relaxed);
     if real && (check || save) {
         let why = if release { "--release" } else { "--real" };
         eprintln!("bench: {why} numbers are statistical and never gate; no --check/--save");
@@ -193,26 +199,26 @@ fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
 /// `os_primitives_benchmarker` and `coremark`. Its baseline is `bench/baseline-riscv64.txt`.
 /// `cargo xtask bench --riscv64 [--check|--save]`.
 fn bench_riscv64(check: bool, save: bool, features: &str) -> bool {
+    // `cargo_profiled`, so the kernel is built in the profile `bench` chose, and booted from that
+    // profile's directory (nifeos/nife#4122: a plain `cargo build` here booted a dev kernel under
+    // every flag).
     if !has_initial_ramdisk_riscv64()
-        || !run(
-            "cargo",
-            &[
-                "build",
-                "-p",
-                "kernel",
-                // `features`, not "bench": it carries `--extra-features` too.
-                "--features",
-                features,
-                "--target",
-                RISCV64_TARGET,
-            ],
-        )
+        || !cargo_profiled(&[
+            "build",
+            "-p",
+            "kernel",
+            // `features`, not "bench": it carries `--extra-features` too.
+            "--features",
+            features,
+            "--target",
+            RISCV64_TARGET,
+        ])
     {
         return false;
     }
 
     let mut cmd = Command::new("helpers/qemu-runner-riscv64.sh");
-    cmd.arg(format!("target/{RISCV64_TARGET}/debug/kernel"));
+    cmd.arg(format!("target/{RISCV64_TARGET}/{}/kernel", profile_dir()));
     // icount pins `rdtime` to the instruction stream; sleep=off never waits on the wall clock.
     cmd.args(["-icount", "shift=0,sleep=off"]);
     cmd.env("NIFE_INITIAL_RAMDISK", riscv64_initial_ramdisk_path());
@@ -256,25 +262,30 @@ fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
     if keyboard() && !has_initial_ramdisk_x86() {
         return false;
     }
-    if !run(
-        "cargo",
-        &[
-            "build",
-            "-p",
-            "kernel",
-            // As in `bench_riscv64`. `fastpath_pad` does not build on x86_64
-            // (`script/fastpath-footprint`'s BUGS), so cargo refuses rather than mismeasures.
-            "--features",
-            features,
-            "--target",
-            X86_TARGET,
-        ],
-    ) {
+    // As in `bench_riscv64`: the profile `bench` chose, and its directory (nifeos/nife#4122).
+    if !cargo_profiled(&[
+        "build",
+        "-p",
+        "kernel",
+        // `fastpath_pad` does not build on x86_64 (`script/fastpath-footprint`'s BUGS), so cargo
+        // refuses rather than mismeasures.
+        "--features",
+        features,
+        "--target",
+        X86_TARGET,
+    ]) {
         return false;
     }
 
     let mut cmd = Command::new("helpers/qemu-runner-x86_64.sh");
-    cmd.arg(format!("target/{X86_TARGET}/debug/kernel"));
+    cmd.arg(format!("target/{X86_TARGET}/{}/kernel", profile_dir()));
+    // `cargo_profiled` runs `host::runner_env`, which exports the aarch64 initial ramdisk, a disk and
+    // a NIC for every later child. The x86_64 bench boot has none of the three: measured boot
+    // refuses the aarch64 archive after the `coremark` row and halts before `bench: done`
+    // (nifeos/nife#4122). The keyboard run sets its own archive below.
+    for name in ["NIFE_INITIAL_RAMDISK", "NIFE_DISK", "NIFE_NET"] {
+        cmd.env_remove(name);
+    }
     // One core, pinned rather than inherited from the runner, whose default is 2. Two cores are a
     // different instrument: still deterministic, but `spawn_reap`'s parent spins until the reaper
     // on the other core runs, and unrelated edits swing rows by 40 to 90%
