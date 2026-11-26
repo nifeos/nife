@@ -152,7 +152,8 @@ def write(path, text):
 
 def make_fence(reserve_mib):
     """The path of a new capped cgroup and its cap in MiB, or (None, the reason there is none)."""
-    if not sys.platform.startswith("linux"):
+    # A selftest root is a plain directory, so the fixture fences on any host.
+    if USE_SUDO and not sys.platform.startswith("linux"):
         return None, "not Linux"
     try:
         with open(os.path.join(CGROUP_ROOT, "cgroup.controllers")) as f:

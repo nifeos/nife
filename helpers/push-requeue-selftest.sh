@@ -99,6 +99,9 @@ export ARM_STACK_LINT
 
 fail=0
 # run <name> <want: 0|nonzero> <fragment of output or ''> -- args...   state comes from the caller
+# A case's stub settings go after `--` through env(1), never as `NAME=value run ...`, because bash
+# 3.2's sh (macOS) keeps an assignment made before a function call after the function returns, and
+# the setting then leaks into every later case.
 run() {
 	name="$1"; want="$2"; frag="$3"; shift 4
 	out="$(PATH="$tmp/bin:$PATH" STUB_DIR="$tmp" ARM_VERIFY_SLEEP=0 ARM_VERIFY_TRIES=2 NIFE_SKIP_QUEUE_CHECK=1 "$@" 2>&1)"
@@ -150,7 +153,7 @@ rm -f "$tmp/hook" "$tmp/refuse"
 
 # 2. Falsification: the re-arm step is a no-op, so the lane must hear it was NOT armed.
 state true false "" false
-STUB_MERGE_NOOP=1 run "no-op re-arm fails loudly" nonzero "NOT ARMED" -- "$root/script/push" --requeue
+run "no-op re-arm fails loudly" nonzero "NOT ARMED" -- env STUB_MERGE_NOOP=1 "$root/script/push" --requeue
 
 # 3. Every hold refuses, names the label, and never calls merge.
 for hold in needs-architect held-by-lane held-for-red-trunk; do
@@ -168,7 +171,7 @@ check "unarmed: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 
 # 5. The push does not land: no re-arm, and the lane is told.
 state true false "" false
-STUB_REMOTE=bbbb run "unlanded push does not re-arm" nonzero "NOT armed" -- "$root/script/push" --requeue
+run "unlanded push does not re-arm" nonzero "NOT armed" -- env STUB_REMOTE=bbbb "$root/script/push" --requeue
 check "unlanded: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 
 # 6. Without the flag nothing touches the pull request.
@@ -178,7 +181,7 @@ check "no flag: gh never called" sh -c "! grep -q '^gh' '$tmp/log'"
 
 # 6b. GitHub cannot be asked: --requeue pushes nothing and says so.
 state true false "" false
-STUB_GRAPHQL_FAIL=1 run "unreadable state stops before the push" nonzero "nothing was pushed" -- "$root/script/push" --requeue
+run "unreadable state stops before the push" nonzero "nothing was pushed" -- env STUB_GRAPHQL_FAIL=1 "$root/script/push" --requeue
 check "unreadable: no push" sh -c "! grep -q 'git push' '$tmp/log'"
 
 # 7. No pull request for the branch.
@@ -240,22 +243,22 @@ cd "$fx/work" && PATH="$PATH" exec "$root/script/queue-conflicts" --pr 42 --head
 CHECK
 	chmod +x "$tmp/check-fixture"
 	state false false "" false
-	FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" run "conflict refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+	run "conflict refused" nonzero "NOT ARMED" -- env FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" "$root/helpers/arm.sh" 42
 	check "conflict: names the file" sh -c "printf '%s' \"\$1\" | grep -q 'shared  (changed by #7)'" _ "$out"
 	check "conflict: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 	check "conflict: still unarmed" test "$(cat "$tmp/queued")" = false
 	state false false "" false
-	FIXTURE_HEAD="$clean" ARM_QUEUE_CHECK="$tmp/check-fixture" run "clean passes" 0 "armed" -- "$root/helpers/arm.sh" 42
+	run "clean passes" 0 "armed" -- env FIXTURE_HEAD="$clean" ARM_QUEUE_CHECK="$tmp/check-fixture" "$root/helpers/arm.sh" 42
 	check "clean: merge called" logged "pr merge 42 --auto --merge"
 	state false false "" false
-	FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" run "override arms" 0 "armed" -- "$root/helpers/arm.sh" 42 --despite-conflict "entry 7 is being dequeued"
+	run "override arms" 0 "armed" -- env FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" "$root/helpers/arm.sh" 42 --despite-conflict "entry 7 is being dequeued"
 	check "override: reason commented, then merge" awk '/pr comment 42/{c=NR} /entry 7 is being dequeued/{w=NR} /pr merge 42/{m=NR} END{exit !(c && w && c<m)}' "$tmp/log"
 	check "override: ends queued" test "$(cat "$tmp/queued")" = true
 	state false false "" false
-	FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" STUB_COMMENT_FAIL=1 run "override, comment fails" nonzero "could not post" -- "$root/helpers/arm.sh" 42 --despite-conflict "why"
+	run "override, comment fails" nonzero "could not post" -- env FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" STUB_COMMENT_FAIL=1 "$root/helpers/arm.sh" 42 --despite-conflict "why"
 	check "override, comment fails: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 	state true false "" false
-	FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" run "requeue over a conflict is not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
+	run "requeue over a conflict is not re-armed" nonzero "NOT re-armed" -- env FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" "$root/script/push" --requeue
 	check "requeue over a conflict: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 else
 	echo "$me: case 10: could not build the git fixture" >&2; fail=1
@@ -264,7 +267,7 @@ state false false "" false
 run "override needs a reason" nonzero "needs the reason" -- "$root/helpers/arm.sh" 42 --despite-conflict " "
 run "unknown argument" nonzero "usage" -- "$root/helpers/arm.sh" 42 --force
 state false false "" false
-ARM_QUEUE_CHECK="$tmp/check-unknown" run "check could not tell: armed, and says so" 0 "armed unchecked" -- "$root/helpers/arm.sh" 42
+run "check could not tell: armed, and says so" 0 "armed unchecked" -- env ARM_QUEUE_CHECK="$tmp/check-unknown" "$root/helpers/arm.sh" 42
 check "check could not tell: merge called" logged "pr merge 42 --auto --merge"
 
 # 12. Two ways into the queue that per-pull-request CI cannot see (the proposal "lint fails in the
@@ -294,7 +297,7 @@ run "lint running, no skip, arms" 0 "armed" -- "$root/helpers/arm.sh" 42
 state true false "" false; lint '[]'
 run "requeue after a push still re-arms" 0 "armed" -- "$root/script/push" --requeue
 state false false "" false
-STUB_CHECKS_FAIL=1 run "unreadable lint refuses" nonzero "could not read the lint check" -- "$root/helpers/arm.sh" 42
+run "unreadable lint refuses" nonzero "could not read the lint check" -- env STUB_CHECKS_FAIL=1 "$root/helpers/arm.sh" 42
 
 # Then the last queue removal: failed checks at this same head refuse; at an older head, or for
 # another reason, arming goes ahead. --despite-failed-checks posts its reason first.
@@ -312,28 +315,28 @@ run "failed at an older head arms" 0 "armed" -- "$root/helpers/arm.sh" 42
 # is a fixture, so the cases do not depend on what helpers/known-flakes.tsv holds today.
 printf '# fixture\nprogenitor-oom\tthe progenitor is out of memory\tnotes/swish-check-flake.md\n' >"$tmp/flakes"
 state false false "" false; removal "failed_checks g1 h1"; echo "swish-check: could not spawn (the progenitor is out of memory)" >"$tmp/runlog"
-ARM_KNOWN_FLAKES="$tmp/flakes" run "failed head, a known flake: armed" 0 "known flake progenitor-oom" -- "$root/helpers/arm.sh" 42
+run "failed head, a known flake: armed" 0 "known flake progenitor-oom" -- env ARM_KNOWN_FLAKES="$tmp/flakes" "$root/helpers/arm.sh" 42
 check "known flake: the group's failed log was read" logged "run view 7 --log-failed"
 check "known flake: merge called" logged "pr merge 42 --auto --merge"
 state false false "" false; removal "failed_checks g1 h1"; echo "an assertion failed in vm_test" >"$tmp/runlog"
-ARM_KNOWN_FLAKES="$tmp/flakes" run "failed head, no flake matches: refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+run "failed head, no flake matches: refused" nonzero "NOT ARMED" -- env ARM_KNOWN_FLAKES="$tmp/flakes" "$root/helpers/arm.sh" 42
 check "no flake matches: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 state false false "" false; removal "failed_checks g1 h1"; echo "the progenitor is out of memory" >"$tmp/runlog"
-ARM_KNOWN_FLAKES="$tmp/no-such-list" run "failed head, no list: refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+run "failed head, no list: refused" nonzero "NOT ARMED" -- env ARM_KNOWN_FLAKES="$tmp/no-such-list" "$root/helpers/arm.sh" 42
 # A job the runner killed has a cancelled step, so --log-failed prints nothing for it; the job's whole
 # log is read instead, led by the job name, and a signature scoped to the job name matches it.
 printf 'kani-shutdown\t^prove \\(shard [0-9]+/[0-9]+\\)[[:space:]].*##\\[error\\]The runner has received a shutdown signal\tnotes/swish-check-flake.md\n' >"$tmp/flakes-scoped"
 printf '{"jobs":[{"id":9,"name":"prove (shard 2/5)","conclusion":"failure","steps":[{"conclusion":"success"},{"conclusion":"cancelled"}]},{"id":10,"name":"verify (Kani proofs)","conclusion":"failure","steps":[{"conclusion":"failure"}]}]}' >"$tmp/jobs"
 printf '2026-11-15T23:48:37.1139356Z ##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped.\n' >"$tmp/joblog"
 state false false "" false; removal "failed_checks g1 h1"; : >"$tmp/runlog"
-ARM_KNOWN_FLAKES="$tmp/flakes-scoped" run "killed prove shard: armed" 0 "known flake kani-shutdown" -- "$root/helpers/arm.sh" 42
+run "killed prove shard: armed" 0 "known flake kani-shutdown" -- env ARM_KNOWN_FLAKES="$tmp/flakes-scoped" "$root/helpers/arm.sh" 42
 check "killed prove shard: the job's whole log was read" logged "api repos/{owner}/{repo}/actions/jobs/9/logs"
 printf '{"jobs":[{"id":9,"name":"mutation shard","conclusion":"failure","steps":[{"conclusion":"cancelled"}]}]}' >"$tmp/jobs"
 state false false "" false; removal "failed_checks g1 h1"
-ARM_KNOWN_FLAKES="$tmp/flakes-scoped" run "killed job that is not a prove shard: refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+run "killed job that is not a prove shard: refused" nonzero "NOT ARMED" -- env ARM_KNOWN_FLAKES="$tmp/flakes-scoped" "$root/helpers/arm.sh" 42
 rm -f "$tmp/jobs" "$tmp/joblog"
 state true false "" false; removal "failed_checks g1 h1"; echo "an assertion failed in vm_test" >"$tmp/runlog"
-ARM_KNOWN_FLAKES="$tmp/flakes" run "requeue that leaves the failed head: not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
+run "requeue that leaves the failed head: not re-armed" nonzero "NOT re-armed" -- env ARM_KNOWN_FLAKES="$tmp/flakes" "$root/script/push" --requeue
 # A flake's record is a note: in this tree, or in the design record at the commit basalt pins.
 record="$(python3 "$root/helpers/record_root.py")"
 check "every known flake names a record that exists" sh -c "grep '^[^#]' '$here/known-flakes.tsv' | while IFS='	' read -r n s r; do [ -n \"\$s\" ] && { [ -e '$root/'\"\$r\" ] || [ -e '$record/'\"\$r\" ]; } || { echo \"known-flakes.tsv: \$n: no signature, or no record at \$r\" >&2; exit 1; }; done"
@@ -343,7 +346,7 @@ state false false "" false; removal "failed_checks g1 h1"
 run "failed-checks override arms" 0 "armed" -- "$root/helpers/arm.sh" 42 --despite-failed-checks "a runner died mid-job"
 check "failed-checks override: reason commented, then merge" awk '/pr comment 42/{c=NR} /a runner died mid-job/{w=NR} /pr merge 42/{m=NR} END{exit !(c && w && c<m)}' "$tmp/log"
 state false false "" false; removal "failed_checks g1 h1"
-STUB_COMMENT_FAIL=1 run "failed-checks override, comment fails" nonzero "could not post" -- "$root/helpers/arm.sh" 42 --despite-failed-checks "why"
+run "failed-checks override, comment fails" nonzero "could not post" -- env STUB_COMMENT_FAIL=1 "$root/helpers/arm.sh" 42 --despite-failed-checks "why"
 check "failed-checks override, comment fails: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 state false false "" false
 run "failed-checks override needs a reason" nonzero "needs the reason" -- "$root/helpers/arm.sh" 42 --despite-failed-checks ""
@@ -356,18 +359,18 @@ state false false "" false
 run "stack lint is asked about this pull request" 0 "armed" -- "$root/helpers/arm.sh" 42
 check "stack lint: called with the number" logged "arm-check 42"
 state false false "" false
-ARM_STACK_LINT="$tmp/lint-red" run "red over the queue refused" nonzero "makes lint red on main plus the queue" -- "$root/helpers/arm.sh" 42
+run "red over the queue refused" nonzero "makes lint red on main plus the queue" -- env ARM_STACK_LINT="$tmp/lint-red" "$root/helpers/arm.sh" 42
 check "red over the queue: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 state false false "" false
-ARM_STACK_LINT="$tmp/lint-red" run "lint override arms" 0 "armed" -- "$root/helpers/arm.sh" 42 --despite-lint "the entry ahead is being dequeued"
+run "lint override arms" 0 "armed" -- env ARM_STACK_LINT="$tmp/lint-red" "$root/helpers/arm.sh" 42 --despite-lint "the entry ahead is being dequeued"
 check "lint override: reason commented, then merge" awk '/pr comment 42/{c=NR} /pr merge 42/{m=NR} END{exit !(c && c<m)}' "$tmp/log"
 state false false "" false
-ARM_STACK_LINT="$tmp/lint-red" STUB_COMMENT_FAIL=1 run "lint override, comment fails" nonzero "could not post" -- "$root/helpers/arm.sh" 42 --despite-lint "why"
+run "lint override, comment fails" nonzero "could not post" -- env ARM_STACK_LINT="$tmp/lint-red" STUB_COMMENT_FAIL=1 "$root/helpers/arm.sh" 42 --despite-lint "why"
 check "lint override, comment fails: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 state false false "" false
-ARM_STACK_LINT="$tmp/lint-unknown" run "stack lint could not tell: armed, and says so" 0 "armed with that unchecked" -- "$root/helpers/arm.sh" 42
+run "stack lint could not tell: armed, and says so" 0 "armed with that unchecked" -- env ARM_STACK_LINT="$tmp/lint-unknown" "$root/helpers/arm.sh" 42
 state true false "" false
-ARM_STACK_LINT="$tmp/lint-red" run "requeue onto a red stack is not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
+run "requeue onto a red stack is not re-armed" nonzero "NOT re-armed" -- env ARM_STACK_LINT="$tmp/lint-red" "$root/script/push" --requeue
 state false false "" false
 run "lint override needs a reason" nonzero "needs the reason" -- "$root/helpers/arm.sh" 42 --despite-lint " "
 

@@ -197,7 +197,7 @@ env -u NIFE_HEAVY_SLOTS NIFE_HEAVY_SLOT_DIR="$work/count/slots" python3 - "$work
 import os, sys
 sys.path.insert(0, sys.argv[1])
 import heavy_slot
-beside = sys.argv[2]
+beside = os.path.abspath(sys.argv[2])  # macOS TMPDIR ends in /, and count_file() normalizes the //
 assert heavy_slot.count_file() == os.path.join(beside, "heavy-slot-count"), heavy_slot.count_file()
 default = heavy_slot.slot_count()
 open(heavy_slot.count_file(), "w").write("10\n")

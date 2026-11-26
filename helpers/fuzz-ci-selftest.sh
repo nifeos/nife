@@ -67,10 +67,15 @@ git -C "$tree" init -q
 git -C "$tree" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m stand-in
 commit="$(git -C "$tree" rev-parse HEAD)"
 
-run() { # run SHARD KVM_DEVICE; output in $work/out, status in $work/rc
+# run SHARD KVM_DEVICE [NAME=value...]; output in $work/out, status in $work/rc. The stub settings
+# go through env(1), never as `NAME=value run`, because bash 3.2's sh (macOS) keeps an assignment
+# made before a function call after the function returns.
+run() {
+    shard="$1" kvm="$2"
+    shift 2
     set +e
-    (cd "$tree" && HOME="$work/home" PATH="$work/bin:$PATH" TMPDIR="$work/tmp" NIFE_FUZZ_KVM_DEVICE="$2" \
-        helpers/continuous-fuzz.sh --ci "$1") > "$work/out" 2>&1
+    (cd "$tree" && HOME="$work/home" PATH="$work/bin:$PATH" TMPDIR="$work/tmp" NIFE_FUZZ_KVM_DEVICE="$kvm" \
+        env "$@" helpers/continuous-fuzz.sh --ci "$shard") > "$work/out" 2>&1
     echo $? > "$work/rc"
     set -e
 }
@@ -85,7 +90,7 @@ first="$(cd "$tree" && helpers/continuous-fuzz.sh --ci-range 0)"
     echo "panicked at kernel/src/secret.rs: SECRETPANICTEXT"
     echo "replay: NIFE_SYSTEM_CALL_FUZZ_SEEDS=7785200123:1"
 } > "$work/guest-finding"
-STUB_GUEST="$work/guest-finding" STUB_GUEST_RC=1 run 0 /dev/null
+run 0 /dev/null STUB_GUEST="$work/guest-finding" STUB_GUEST_RC=1
 [ "$(cat "$work/rc")" = 1 ] || fail "a finding did not exit 1 (exit $(cat "$work/rc")): $(cat "$work/out")"
 grep -q "the fuzz host replays this shard" "$work/out" || fail "a finding did not say the fuzz host replays the shard"
 grep -q "1 finding in shard 0 at commit $commit" "$work/out" || fail "a finding did not print the count, shard and commit"
@@ -95,12 +100,12 @@ sed "s/$commit//g" "$work/out" | grep -qE '[0-9]{9,}' && fail "a finding printed
 
 # A clean window.
 echo "system call fuzzer: 500 seeds, 1000 ms (all clean)" > "$work/guest-clean"
-STUB_GUEST="$work/guest-clean" run 0 /dev/null
+run 0 /dev/null STUB_GUEST="$work/guest-clean"
 [ "$(cat "$work/rc")" = 0 ] || fail "a clean window did not exit 0: $(cat "$work/out")"
 grep -q "shard 0 (kernel-thread) clean" "$work/out" || fail "a clean window did not say so"
 
 # No KVM is infrastructure, never a pass and never a finding.
-STUB_GUEST="$work/guest-clean" run 0 "$work/no-such-device"
+run 0 "$work/no-such-device" STUB_GUEST="$work/guest-clean"
 [ "$(cat "$work/rc")" = 3 ] || fail "a missing KVM device did not exit 3"
 
 echo "fuzz-ci-selftest: the job is wired for merge_group only, a finding prints no guest output, a clean shard and a missing KVM device exit 0 and 3"

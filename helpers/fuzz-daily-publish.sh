@@ -128,7 +128,8 @@ if [ -e "$filer_ledger" ]; then
     fi
 fi
 
-# The timer's state and last start, from systemd. GNU date reads systemd's UTC timestamp.
+# The timer's state and last start, from systemd. GNU date reads systemd's UTC timestamp; the BSD
+# form is for the selftest, which runs on every lint host and not only on the fuzz host.
 f_enabled="$("$systemctl_bin" is-enabled fuzz-filer.timer 2>/dev/null || true)"
 case "$f_enabled" in enabled) f_enabled=yes ;; "") f_enabled=unknown ;; *) f_enabled=no ;; esac
 f_last="$("$systemctl_bin" show fuzz-filer.timer --property=LastTriggerUSec --timestamp=utc 2>/dev/null \
@@ -136,7 +137,9 @@ f_last="$("$systemctl_bin" show fuzz-filer.timer --property=LastTriggerUSec --ti
 case "$f_last" in
     "" ) f_last=unknown ;;
     n/a|0) f_last=never ;;
-    *) f_last="$(date -u -d "$f_last" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)" ;;
+    *) f_last="$(date -u -d "$f_last" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+        || date -u -j -f '%a %Y-%m-%d %H:%M:%S UTC' "$f_last" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+        || echo unknown)" ;;
 esac
 
 {
