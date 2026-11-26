@@ -22,8 +22,23 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import crate_release  # noqa: E402
 import record_root  # noqa: E402
 
-TEMPLATE_URL = 'https://github.com/partsfoundry/crate-workflows'
-REPOSITORY_URL = 'https://github.com/partsfoundry/{crate}'
+# The organization that owns every crate repository. The template still spells the old one in its
+# callers, its owners team and its `deny.toml` allowed source; `in_organization` rewrites those.
+ORGANIZATION = 'partsfoundry'
+# The template revision a move pins unless `--template-rev` names another: the commit the moved
+# crates carry. The newest `v*` tag is older, and lacks the settings that read the owning organization.
+# Change it here when the crates move to a newer one; nowhere else names it.
+DEFAULT_TEMPLATE_REVISION = '11d6d6bbf760'
+TEMPLATE_URL = f'https://github.com/{ORGANIZATION}/crate-workflows'
+REPOSITORY_URL = f'https://github.com/{ORGANIZATION}/{{crate}}'
+# The three places the template names an organization: a reusable workflow, the owners team, the
+# `deny.toml` allowed source. Group 1 and 2 keep the text around the name.
+OLD_ORGANIZATION = 'nifeos'
+ORGANIZATION_SPOTS = (
+    re.compile(r'(\buses:\s*)' + OLD_ORGANIZATION + r'(/)'),
+    re.compile(r'(@)' + OLD_ORGANIZATION + r'(/)'),
+    re.compile(r'(\bgithub\s*=\s*\[\s*")' + OLD_ORGANIZATION + r'(")'),
+)
 BARE_METAL = ('aarch64-unknown-none-softfloat', 'riscv64imac-unknown-none-elf', 'x86_64-unknown-none')
 DEP_TABLES = ('dependencies', 'dev-dependencies', 'build-dependencies')
 # The word, not a longer one: `nifeos` in a repository URL is allowed.
@@ -228,6 +243,21 @@ def add_repository(manifest, crate):
     if not n:
         raise ValueError('Cargo.toml has no `license` line to place `repository` after')
     return new
+
+
+def in_organization(text):
+    """`text` with the template's old organization replaced in the three spots it names one."""
+    for spot in ORGANIZATION_SPOTS:
+        text = spot.sub(lambda m: m.group(1) + ORGANIZATION + m.group(2), text)
+    return text
+
+
+def stale_organization(texts):
+    """`path:line` for each line of `texts` ({path: text}) that still names the old organization
+    in one of those spots."""
+    return [f'{path}:{n}' for path, text in sorted(texts.items())
+            for n, line in enumerate(text.split('\n'), 1)
+            if any(spot.search(line) for spot in ORGANIZATION_SPOTS)]
 
 
 def caller_workflow(text, sha, targets, cron=None):
@@ -743,12 +773,7 @@ def template_tree(args, work):
         code, out = run(['git', 'clone', '--quiet', '--no-checkout', TEMPLATE_URL, source], work)
         if code:
             sys.exit(f'crate-move: cannot clone {TEMPLATE_URL}: {tail(out)}')
-    rev = args.template_rev
-    if not rev:
-        code, out = run(['git', '-C', source, 'tag', '-l', 'v*', '--sort=-v:refname'], work)
-        rev = out.split()[0] if out.split() else ''
-        if not rev:
-            sys.exit('crate-move: the template has no v* release to pin; name one with --template-rev')
+    rev = args.template_rev or DEFAULT_TEMPLATE_REVISION
     code, sha = run(['git', '-C', source, 'rev-parse', '--verify', rev + '^{commit}'], work)
     if code:
         sys.exit(f'crate-move: the template has no revision {rev}: {tail(sha)}')
@@ -790,7 +815,7 @@ def stage(root, crate, into, tree, sha, report):
                 kept.append(dest)
                 continue
             os.makedirs(os.path.dirname(to), exist_ok=True)
-            text = open(os.path.join(dirpath, name)).read()
+            text = in_organization(open(os.path.join(dirpath, name)).read())
             if dest.startswith('.github/workflows/'):
                 text = caller_workflow(text, sha, targets, cron)
             open(to, 'w').write(text)
@@ -1277,6 +1302,12 @@ def selftest():
     cron_wf = "    - cron: '@MUTATION_CRON@'\n"
     assert caller_workflow(cron_wf, 'abc', [], '1 2 * * 3') == "    - cron: '1 2 * * 3'\n"
     assert caller_workflow(cron_wf, 'abc', []) == cron_wf, 'no cron leaves the placeholder'
+    old = ('    uses: nifeos/crate-workflows/.github/workflows/check.yml@x\n* @nifeos/crate-maintainers\n'
+           '[sources.allow-org]\ngithub = ["nifeos"]\n')
+    assert len(stale_organization({'t': old})) == 3, 'each of the three spots is found'
+    assert stale_organization({'t': in_organization(old)}) == [], in_organization(old)
+    assert in_organization(old).count(ORGANIZATION) == 3
+    assert stale_organization({'t': 'see github.com/nifeos/moho_abi and nifeos/nife'}) == []
     assert NIFE_WORD.search('used by nife') and not NIFE_WORD.search('github.com/nifeos/x')
     with tempfile.TemporaryDirectory() as tmp:
         os.makedirs(os.path.join(tmp, '.cargo'))
@@ -1345,6 +1376,20 @@ def main(argv):
     tree, sha, rev = template_tree(args, work)
     report('ok', 'template', f'{TEMPLATE_URL} at {rev} ({sha})')
     manifest, targets, moved, own = stage(root, args.crate, into, tree, sha, report)
+    texts = {}
+    for dirpath, dirs, names in os.walk(into):
+        dirs[:] = [d for d in dirs if d not in ('.git', 'target')]
+        for name in names:
+            try:
+                texts[os.path.relpath(os.path.join(dirpath, name), into)] = \
+                    open(os.path.join(dirpath, name)).read()
+            except (UnicodeDecodeError, OSError):
+                pass
+    stale = stale_organization(texts)
+    if stale:
+        report('FAIL', 'organization', f'names {OLD_ORGANIZATION}, not {ORGANIZATION}, in ' + ', '.join(stale))
+    else:
+        report('ok', 'organization', f'workflow references, owners team and deny.toml source name {ORGANIZATION}')
     if args.no_build:
         report('note', 'build', 'skipped (--no-build); the staged tree has no Cargo.lock')
     else:

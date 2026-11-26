@@ -18,14 +18,18 @@
 #
 # **What it does**, in order:
 #
-# 1. Fetches the template, `partsfoundry/crate-workflows`, at its newest `v*` release (or
-#    `--template-rev`), by a fresh clone into a temporary directory, or from `--template`, a local
-#    checkout it only reads (`git archive`).
+# 1. Fetches the template, `partsfoundry/crate-workflows`, at the revision the moved crates
+#    pin (`DEFAULT_TEMPLATE_REVISION` in helpers/crate_move.py, or `--template-rev`), by a fresh
+#    clone into a temporary directory, or from `--template`, a local checkout it only reads
+#    (`git archive`).
 # 2. Copies the crate's tracked files into `--into`, which must be empty or absent.
 # 3. Adds the template's `scaffold/`: the callers go to `.github/workflows/` with `@PINS@` replaced
 #    by the release's commit, `ci.yml` gets the crate's targets (docs.rs `targets`, else the three
 #    bare-metal ones) and `allow-unpublished: true` for the soak. A file the crate already carries
 #    wins over the scaffold's, and says so.
+#    The template still names `nifeos` in its callers, its owners team and its `deny.toml` allowed
+#    source; each is written as `partsfoundry` (`ORGANIZATION` in helpers/crate_move.py), and a
+#    staged file that still names the old one fails as `organization`.
 # 4. Deletes every `Name:` block (`crate_release.strip_name_blocks`), regenerates each falsification
 #    patch over the stripped source, and sets `repository` in `Cargo.toml` after `license`, a value
 #    or `license.workspace = true` (a manifest with neither is a finding). A patch is regenerated
@@ -81,7 +85,7 @@
 #
 #     $ script/crate-move --dry-run --into "$TMPDIR/fat" --no-build file_allocation_table
 #     crate-move: file_allocation_table, a dry run into /tmp/fat
-#       ok   template: https://github.com/partsfoundry/crate-workflows at v7 (ce603f5...)
+#       ok   template: https://github.com/partsfoundry/crate-workflows at 11d6d6bbf760 (11d6d6bbf760...)
 #       ok   copy: 116 tracked files of crates/file_allocation_table
 #       ...
 #
