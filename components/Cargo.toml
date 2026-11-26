@@ -673,7 +673,7 @@ driver_process_contract = { version = "0.1.0", path = "../crates/driver_process_
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 # radon's SD/MMC driver (milestone 53): designware_mobile_storage.rs is its register window and
 # serve loop over it.
-designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/designware_mobile_storage", rev = "85c4e1b58bb5d76efbc0b48d3ff51024d3904b12" }
+designware_mobile_storage = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/designware_mobile_storage", rev = "f52f89aca200476e57212c6a9f71bfc04ad013df" }
 # The JH7110 facts `designware_ethernet_control` needs and the driver crate does not hold: the
 # board's bus configuration and the always-on syscon's interface-select field.
 machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
@@ -687,7 +687,7 @@ moho_abi = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/moho_abi"
 # Named here so the first cut's `carry_interfaces!` lists can read these interfaces' ids and
 # versions (milestone 956 (the linked interfaces carry checkable versions)); each program already
 # links them through `user_mode_runtime` or `grant_plan`.
-counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
+counter_frequency_contract = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/counter_frequency_contract", rev = "4decec9d5e43054c88a6d5e6f5254b37906db92e" }
 current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }
 program_argument_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/program_argument_contract", rev = "b097970b8650ca8a370018f18ce533c1f22db3e4" }
 supervision_contract = { version = "0.1.0", path = "../crates/supervision_contract" }
@@ -710,14 +710,14 @@ http_response = { version = "0.1.0", path = "../crates/http_response" }
 domain_name_system = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/domain_name_system", rev = "c656cdd9206149dd147d6550c339f1cc520aadd0" }
 # The name resolver's contract with its clients and its spawner (milestone 384, provisional name).
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }
-block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
+block_roster_contract = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/block_roster_contract", rev = "f0c199acc9cf2ca9e01c9350d3124aecf7994654" }
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../crates/globally_unique_identifier_partition_table" }
 nife_partition_types = { version = "0.1.0", path = "../crates/nife_partition_types" }
 # RFC 9562's UUID: what `uuid` prints and what `disk_partitioner` and `system_installer` stamp
 # before the partition table stores it mixed-endian. Taken, not written: calef's "A" on #2548
 # (§46 (thin primitives or whole subsystems)), default features off, so `no_std` with no dependencies of its own.
 uuid = { version = "1.28.0", default-features = false }
-file_allocation_table = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/file_allocation_table", rev = "8aedc02e7ac1991dd3c6f479b5cf9e50f97a58af" }
+file_allocation_table = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/file_allocation_table", rev = "b55594420e19e8aa1a5b5b1d17a78beeb0157d76" }
 # Milestone 198 rung 2b: the two-slot boot state the installer writes into GPT attribute bits and
 # `uefi_loader`'s chooser reads back. One implementation, two programs.
 boot_slot = { version = "0.1.0", path = "../crates/boot_slot" }
@@ -764,7 +764,7 @@ jh7110_clock_and_reset_devices = { version = "0.1.0", path = "../crates/jh7110_c
 designware_inter_integrated_circuit = { version = "0.1.0", path = "../crates/designware_inter_integrated_circuit" }
 # The JH7110 TRNG's register logic, DTB discovery and byte pool (milestone 159), host-tested in
 # the crate itself; jh7110_entropy.rs is the volatile shell of register writes over it.
-jh7110_entropy = { version = "0.3.0-pre.1", git = "https://github.com/partsfoundry/jh7110_entropy", rev = "df37dc91383c4226b0266499c48de7e5e92ecb99" }
+jh7110_entropy = { version = "0.3.0-pre.2", git = "https://github.com/partsfoundry/jh7110_entropy", rev = "eac91efd0381cc4cd7556a53e512bcfb2eeaaf17" }
 # login's own measured-boot consultation before it will build a caretaker from an archive entry
 # (milestone 49's BUGS, resolved): the same crate `crates/system_initializer` already depends on.
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
@@ -778,18 +778,18 @@ file_system_fixture = { version = "0.1.0", git = "https://github.com/partsfoundr
 # The NVMe queue arithmetic (milestone 53's crate, milestone 261's consumer):
 # non_volatile_memory_express.rs is the volatile shell of ring copies and doorbell writes over it,
 # the crate/program pair this tree already uses for `jh7110_entropy` and `line_editor`.
-non_volatile_memory_express = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/non_volatile_memory_express", rev = "253c68a0786d5a4f3705e4b9402a0c896bff0181" }
+non_volatile_memory_express = { version = "0.1.0-pre.4", git = "https://github.com/partsfoundry/non_volatile_memory_express", rev = "60b34280ecbba250ea4272984c5bcb3afe908e57" }
 # The `e1000e` NIC's ring logic (milestone 494 (a driver for the network card a PC actually has)):
 # `net_stack`'s e1000e_transport.rs is the volatile shell of tail writes and window copies over it.
-e1000e = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
+e1000e = { version = "0.1.0-pre.4", git = "https://github.com/partsfoundry/e1000e", rev = "42cdc139a81a254d420dac0590ac9d85a8ff4aad" }
 # radon's Ethernet port's ring logic (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): `net_stack`'s designware_ethernet_transport.rs is the volatile shell over it.
-designware_ethernet = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/designware_ethernet", rev = "d6730d2218edead38fac3fe96703eaa1e5e92ee2" }
+designware_ethernet = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/designware_ethernet", rev = "f518554c96f868e0fafcf245afea538a35bf7104" }
 # usb_keyboard_driver.rs is the volatile shell over these two (milestone 242 (USB host and HID)):
 # descriptors and boot reports, and the xHCI ring and context arithmetic. What it agrees on with the
 # kernel (the handoff, the register window and the bring-up report) is in `driver_process_contract`.
 usb = { package = "universal_serial_bus", version = "0.1.0", git = "https://github.com/partsfoundry/universal_serial_bus", rev = "0fbceff0ce9577cf8beb0b82b0f34360a86a5216" }
-extensible_host_controller_interface = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/extensible_host_controller_interface", rev = "99daca365beb53961c3d64b01751f8de85a281ac" }
+extensible_host_controller_interface = { version = "0.1.0-pre.4", git = "https://github.com/partsfoundry/extensible_host_controller_interface", rev = "a10790e1557aa761b889663f68c8a3541d0c5402" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The aperture arithmetic `framebuffer_driver` copies through: the clipped geometry, the stride and
 # the byte order, host-tested there because this program has no harness of its own.

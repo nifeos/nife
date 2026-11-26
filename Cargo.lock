@@ -99,8 +99,8 @@ dependencies = [
 
 [[package]]
 name = "block_roster_contract"
-version = "0.1.0-pre.2"
-source = "git+https://github.com/partsfoundry/block_roster_contract?rev=2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1#2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1"
+version = "0.1.0-pre.3"
+source = "git+https://github.com/partsfoundry/block_roster_contract?rev=f0c199acc9cf2ca9e01c9350d3124aecf7994654#f0c199acc9cf2ca9e01c9350d3124aecf7994654"
 
 [[package]]
 name = "boot_ladder"
@@ -321,8 +321,8 @@ version = "0.1.0"
 
 [[package]]
 name = "counter_frequency_contract"
-version = "0.1.0-pre.1"
-source = "git+https://github.com/partsfoundry/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
+version = "0.1.0-pre.2"
+source = "git+https://github.com/partsfoundry/counter_frequency_contract?rev=4decec9d5e43054c88a6d5e6f5254b37906db92e#4decec9d5e43054c88a6d5e6f5254b37906db92e"
 
 [[package]]
 name = "cpu_set"
@@ -417,7 +417,7 @@ dependencies = [
 [[package]]
 name = "designware_ethernet"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/partsfoundry/designware_ethernet?rev=d6730d2218edead38fac3fe96703eaa1e5e92ee2#d6730d2218edead38fac3fe96703eaa1e5e92ee2"
+source = "git+https://github.com/partsfoundry/designware_ethernet?rev=f518554c96f868e0fafcf245afea538a35bf7104#f518554c96f868e0fafcf245afea538a35bf7104"
 
 [[package]]
 name = "designware_inter_integrated_circuit"
@@ -425,8 +425,8 @@ version = "0.1.0"
 
 [[package]]
 name = "designware_mobile_storage"
-version = "0.1.0-pre.2"
-source = "git+https://github.com/partsfoundry/designware_mobile_storage?rev=85c4e1b58bb5d76efbc0b48d3ff51024d3904b12#85c4e1b58bb5d76efbc0b48d3ff51024d3904b12"
+version = "0.1.0-pre.3"
+source = "git+https://github.com/partsfoundry/designware_mobile_storage?rev=f52f89aca200476e57212c6a9f71bfc04ad013df#f52f89aca200476e57212c6a9f71bfc04ad013df"
 
 [[package]]
 name = "device_tree_blob"
@@ -510,8 +510,8 @@ dependencies = [
 
 [[package]]
 name = "e1000e"
-version = "0.1.0-pre.3"
-source = "git+https://github.com/partsfoundry/e1000e?rev=571d33f2e5fc9b287c7b9c8733bcdd0a17c18357#571d33f2e5fc9b287c7b9c8733bcdd0a17c18357"
+version = "0.1.0-pre.4"
+source = "git+https://github.com/partsfoundry/e1000e?rev=42cdc139a81a254d420dac0590ac9d85a8ff4aad#42cdc139a81a254d420dac0590ac9d85a8ff4aad"
 
 [[package]]
 name = "entropy_contract"
@@ -539,13 +539,13 @@ dependencies = [
 
 [[package]]
 name = "extensible_host_controller_interface"
-version = "0.1.0-pre.3"
-source = "git+https://github.com/partsfoundry/extensible_host_controller_interface?rev=99daca365beb53961c3d64b01751f8de85a281ac#99daca365beb53961c3d64b01751f8de85a281ac"
+version = "0.1.0-pre.4"
+source = "git+https://github.com/partsfoundry/extensible_host_controller_interface?rev=a10790e1557aa761b889663f68c8a3541d0c5402#a10790e1557aa761b889663f68c8a3541d0c5402"
 
 [[package]]
 name = "file_allocation_table"
-version = "0.1.0-pre.2"
-source = "git+https://github.com/partsfoundry/file_allocation_table?rev=8aedc02e7ac1991dd3c6f479b5cf9e50f97a58af#8aedc02e7ac1991dd3c6f479b5cf9e50f97a58af"
+version = "0.1.0-pre.3"
+source = "git+https://github.com/partsfoundry/file_allocation_table?rev=b55594420e19e8aa1a5b5b1d17a78beeb0157d76#b55594420e19e8aa1a5b5b1d17a78beeb0157d76"
 
 [[package]]
 name = "file_system_contract"
@@ -640,8 +640,8 @@ dependencies = [
 
 [[package]]
 name = "generational_table"
-version = "0.1.0-pre.3"
-source = "git+https://github.com/partsfoundry/generational_table?rev=832836094b1170f0f07275bb2adbb889d949ccc5#832836094b1170f0f07275bb2adbb889d949ccc5"
+version = "0.1.0-pre.4"
+source = "git+https://github.com/partsfoundry/generational_table?rev=b5243332a65255fb8549b20b586cc4b58674eefa#b5243332a65255fb8549b20b586cc4b58674eefa"
 
 [[package]]
 name = "generator"
@@ -823,8 +823,8 @@ dependencies = [
 
 [[package]]
 name = "jh7110_entropy"
-version = "0.3.0-pre.1"
-source = "git+https://github.com/partsfoundry/jh7110_entropy?rev=df37dc91383c4226b0266499c48de7e5e92ecb99#df37dc91383c4226b0266499c48de7e5e92ecb99"
+version = "0.3.0-pre.2"
+source = "git+https://github.com/partsfoundry/jh7110_entropy?rev=eac91efd0381cc4cd7556a53e512bcfb2eeaaf17#eac91efd0381cc4cd7556a53e512bcfb2eeaaf17"
 
 [[package]]
 name = "jh7110_pci_express"
@@ -1131,8 +1131,8 @@ version = "0.1.0"
 
 [[package]]
 name = "non_volatile_memory_express"
-version = "0.1.0-pre.3"
-source = "git+https://github.com/partsfoundry/non_volatile_memory_express?rev=253c68a0786d5a4f3705e4b9402a0c896bff0181#253c68a0786d5a4f3705e4b9402a0c896bff0181"
+version = "0.1.0-pre.4"
+source = "git+https://github.com/partsfoundry/non_volatile_memory_express?rev=60b34280ecbba250ea4272984c5bcb3afe908e57#60b34280ecbba250ea4272984c5bcb3afe908e57"
 
 [[package]]
 name = "nu-ansi-term"

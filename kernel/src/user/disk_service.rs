@@ -78,13 +78,13 @@ pub struct Wiring {
 /// comes last so that adding it moved no virtio entry. A device is listed whether or not a server
 /// has been wired for it.
 fn devices() -> (
-    [block_roster_contract::Device; block_roster_contract::capacity_of(FRAME_BYTES as usize)],
+    [block_roster_contract::Device; block_roster_contract::entry_capacity(FRAME_BYTES as usize)],
     usize,
 ) {
     let mut out = [block_roster_contract::Device {
         ordinal: 0,
         transport: block_roster_contract::TRANSPORT_VIRTIO_MEMORY_MAPPED_IO,
-    }; block_roster_contract::capacity_of(FRAME_BYTES as usize)];
+    }; block_roster_contract::entry_capacity(FRAME_BYTES as usize)];
     let mut n = 0;
 
     for i in 0..crate::virtual_io::count_block_devices() {
