@@ -11,7 +11,7 @@ documentation = "https://docs.rs/jh7110_clock_and_reset"
 keywords = ["no-std", "kani", "driver", "jh7110", "starfive"]
 categories = ["no-std", "no-std::no-alloc", "embedded", "hardware-support"]
 include = ["src/**", "README.md", "LICENSE-*", "clippy.toml"]
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+publish = false     # stays false until the release that publishes this crate
 
 [package.metadata.docs.rs]
 targets = ["riscv64gc-unknown-linux-gnu"]

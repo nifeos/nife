@@ -65,6 +65,7 @@ TEMPLATE_CHECKS = (
     ('question shape', 'question_shape.py', lambda s: ['--manifest', 'Cargo.toml'] + s.rust),
     ('service model prose', 'service_model.py', lambda s: ['--prose'] + s.nonlock),
     ('README badge row', 'readme_badges.py', lambda s: ['--crate-dir', '.', '--repository', s.repository]),
+    ('naming exempt paths', 'naming_exempt_paths.py', lambda s: s.nonlock),
     ('typos', 'typos_gate.sh', lambda s: ['.']),
     ('orphan modules', 'orphan_modules.py', lambda s: ['.']),
     ('markdown links', 'check_links.py', lambda s: s.markdown),
