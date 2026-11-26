@@ -29,7 +29,10 @@ pub(crate) fn bench() -> bool {
     // never runs under icount and never gates.
     let release = std::env::args().any(|a| a == "--release");
     // Measurement branch only, not meant to merge: build the icount bench with the release profile.
-    RELEASE.store(release || std::env::var_os("NIFE_MEASURE_ICOUNT_RELEASE").is_some(), Ordering::Relaxed);
+    RELEASE.store(
+        release || std::env::var_os("NIFE_MEASURE_ICOUNT_RELEASE").is_some(),
+        Ordering::Relaxed,
+    );
     let real = release || std::env::args().any(|a| a == "--real");
     if real && (check || save) {
         let why = if release { "--release" } else { "--real" };
@@ -211,7 +214,10 @@ fn bench_riscv64(check: bool, save: bool, features: &str) -> bool {
     }
 
     let mut cmd = Command::new("helpers/qemu-runner-riscv64.sh");
-    cmd.arg(format!("target/{RISCV64_TARGET}/{}/kernel", crate::profile_dir()));
+    cmd.arg(format!(
+        "target/{RISCV64_TARGET}/{}/kernel",
+        crate::profile_dir()
+    ));
     // icount pins `rdtime` to the instruction stream; sleep=off never waits on the wall clock.
     cmd.args(["-icount", "shift=0,sleep=off"]);
     cmd.env("NIFE_INITIAL_RAMDISK", riscv64_initial_ramdisk_path());
@@ -257,24 +263,25 @@ fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
     }
     // Measurement branch only, not meant to merge: `cargo_profiled`, so a release run builds release
     // here too; on main this path always builds dev, even under `--release`.
-    if !cargo_profiled(
-        &[
-            "build",
-            "-p",
-            "kernel",
-            // As in `bench_riscv64`. `fastpath_pad` does not build on x86_64
-            // (`script/fastpath-footprint`'s BUGS), so cargo refuses rather than mismeasures.
-            "--features",
-            features,
-            "--target",
-            X86_TARGET,
-        ],
-    ) {
+    if !cargo_profiled(&[
+        "build",
+        "-p",
+        "kernel",
+        // As in `bench_riscv64`. `fastpath_pad` does not build on x86_64
+        // (`script/fastpath-footprint`'s BUGS), so cargo refuses rather than mismeasures.
+        "--features",
+        features,
+        "--target",
+        X86_TARGET,
+    ]) {
         return false;
     }
 
     let mut cmd = Command::new("helpers/qemu-runner-x86_64.sh");
-    cmd.arg(format!("target/{X86_TARGET}/{}/kernel", crate::profile_dir()));
+    cmd.arg(format!(
+        "target/{X86_TARGET}/{}/kernel",
+        crate::profile_dir()
+    ));
     // One core, pinned rather than inherited from the runner, whose default is 2. Two cores are a
     // different instrument: still deterministic, but `spawn_reap`'s parent spins until the reaper
     // on the other core runs, and unrelated edits swing rows by 40 to 90%
