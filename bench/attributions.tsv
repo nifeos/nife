@@ -800,3 +800,9 @@ riscv64	63ce5c08e	ipc_rtt_el0	-1.77	dev-profile opt-level 1 for fixtures, user_m
 riscv64	63ce5c08e	sink_throughput	-1.78	dev-profile opt-level 1 for fixtures, user_mode_runtime and moho_abi: the EL0 programs' system call wrappers no longer spill their words to the stack, measured on one machine against main at 1d9b67454
 riscv64	63ce5c08e	map_el0	-1.91	dev-profile opt-level 1 for fixtures, user_mode_runtime and moho_abi: the EL0 programs' system call wrappers no longer spill their words to the stack, measured on one machine against main at 1d9b67454
 riscv64	63ce5c08e	spawn_el0	-0.47	dev-profile opt-level 1 for fixtures, user_mode_runtime and moho_abi: the EL0 programs' system call wrappers no longer spill their words to the stack, measured on one machine against main at 1d9b67454
+
+# 2026-11-26: the gate moves from the opt-level 0 dev build to the release build (#4132, ruled A
+# 2026-11-26 UTC). The save's whole step on every row is that change of build.
+aarch64	d12656a42	*	*	the icount gate counts the release build as it ships, not the opt-level 0 dev build (#4132)
+riscv64	d12656a42	*	*	the icount gate counts the release build as it ships, not the opt-level 0 dev build (#4132)
+x86_64	d12656a42	*	*	the icount gate counts the release build as it ships, not the opt-level 0 dev build (#4132)
