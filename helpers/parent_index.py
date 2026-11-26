@@ -1,21 +1,16 @@
-"""The parent-index check: §282 (when a file is split, the parent becomes an index), held to a
-baseline that only falls.
+"""The parent-index check: §282 (when a file is split, the parent becomes an index).
 
 calef ruled §282 on 2026-10-11 (UTC), ruling fork 1 of #1959, the cut of milestone 872 (the
 kernel's user-mode file is split along its seams): a parent that has been split holds module docs,
 `mod` lines, `use` and re-exports, and nothing that can grow into a feature. This is that rule's
-gate. It copies `helpers/file_length_ratchet.py`, §266 (a Rust source file stays under 2,000
-lines)'s ratchet, on purpose: a committed list that only shrinks, a comparison against the merge
-base, and a selftest that runs before the check.
+gate. It began as a ratchet against a baseline of parents that held more than an index; the
+baseline emptied and was removed, so the rule is now absolute, with no list of exceptions.
 
     python3 helpers/parent_index.py --check          # what script/lint runs
     python3 helpers/parent_index.py --list           # every parent, and each item it holds
-    python3 helpers/parent_index.py --bank           # lower the baseline to the tree; never raises
     python3 helpers/parent_index.py --selftest       # the rules, as fixtures
-    python3 helpers/parent_index.py --init           # write the baseline anew (§282's lane only)
 
-Name: provisional, minted 2026-10-11 by lane/split-parent-is-an-index, as is the baseline's,
-`design/parent-index-baseline.tsv`, and the mark's wording. A shared python module under
+Name: provisional, minted 2026-10-11 by lane/split-parent-is-an-index, as is the mark's wording. A shared python module under
 `helpers/`, which `script/names` puts out of its own scope, so its provenance is this paragraph.
 calef names things; expect these to change.
 
@@ -46,17 +41,9 @@ and `pub use` (with `extern crate`), and an inline module whose body holds only 
   visible. A comment that names an index exception in any other form fails, so a typo cannot
   quietly unmark an item.
 
-**The rules**, the file-length ratchet's, over a different number. A parent's number is the code
-lines of every item it holds that the above does not allow.
-
-- An unlisted parent fails at any number above zero. A new split is unlisted, so §282 binds it on
-  the day it lands.
-- A listed parent fails if its number grew against the merge base, or exceeds its entry. That is
-  how the rule binds an existing parent as it is touched: no new code lands in it.
-- An entry is a ceiling `--bank` lowers and nothing raises. An entry fails when its file is gone,
-  renamed, no longer a parent, or down to zero, so dead rows cannot accumulate.
-- Against the merge base, a row may not be added and an entry may not rise. A rename moves its row
-  in the same change, at the same number.
+**The rule.** A parent's number is the code lines of every item it holds that the above does not
+allow. A parent with a number above zero fails, and so does a malformed mark. Nothing is exempt but
+a marked item.
 
 **What it cannot see.** A top-level `mod` declared by a macro expansion; a parent's items behind
 `include!`. The lexer is the one this tree's other Rust checks use, adapted, and is not a parser:
@@ -68,29 +55,14 @@ import re
 import subprocess
 import sys
 
-# --- the numbers, the baseline and the mark -------------------------------------------------------
+# --- the numbers and the mark -------------------------------------------------------
 
 SMALL = 3      # code lines: an item this size or smaller may stay unmarked
 HANDFUL = 8    # how many such items a parent may hold before none of them may
 TEST_CHILDREN = ('tests', 'proofs', 'verification')
-BASELINE = 'design/parent-index-baseline.tsv'
-COLUMN = 'code_lines'
 
 MARK = re.compile(r'^//\s*Index exception \((\d{4}-\d{2}-\d{2})\):\s*(\S.*)$')
 MARK_WORDS = re.compile(r'index[ -]exception', re.I)
-
-HEADER = """\
-# The parent-index check's baseline: §282 (when a file is split, the parent becomes an index).
-# One row per parent that held more than an index when it was written: path, then the code lines
-# (comments and literals blanked, blank lines dropped) of the items an index may not hold.
-# A number is a ceiling that may only go DOWN: lower it with
-# `python3 helpers/parent_index.py --bank`, which never raises and never adds. A row may be
-# removed, in the same change that takes its parent to zero or stops it being a parent; a row may
-# not be added and a number may not rise (script/lint compares against the merge base). A rename
-# moves its row in the same change, at the same number. Moving an item into a child named for it
-# is the remedy; a mark beside the item (`// Index exception (YYYY-MM-DD): reason.`) is the
-# exception §282 allows, and it is reviewed like any other line.
-"""
 
 REMEDY = ('Move it into a child module named for it (§282), or, if it is one of the few small '
           'things every child uses and nothing here can grow into a feature, mark it where it '
@@ -425,28 +397,6 @@ def describe(item):
     return f'{item["kind"]}{name}'
 
 
-# --- the baseline ---------------------------------------------------------------------------------
-
-def read_baseline(text):
-    rows = {}
-    for line in text.splitlines():
-        if not line.strip() or line.startswith('#'):
-            continue
-        cells = line.split('\t')
-        if cells[0] == 'path':
-            continue
-        rows[cells[0]] = int(cells[1])
-    return rows
-
-
-def write_baseline(rows):
-    out = [HEADER, 'path\t' + COLUMN + '\n']
-    for path in sorted(rows):
-        out.append(f'{path}\t{rows[path]}\n')
-    with open(BASELINE, 'w') as f:
-        f.write(''.join(out))
-
-
 # --- git ------------------------------------------------------------------------------------------
 
 def git(*args):
@@ -465,42 +415,17 @@ def tracked_rust():
     return {f for f in files.split('\0') if f and in_scope(f) and os.path.exists(f)}
 
 
-BASE_OVERRIDE = None  # `--check --base REV`: falsify the merge-base half against a chosen commit
-
-
-def merge_base():
-    if BASE_OVERRIDE:
-        return (git('rev-parse', BASE_OVERRIDE) or '').strip() or None
-    base = (git('merge-base', 'HEAD', 'origin/main') or '').strip()
-    head = (git('rev-parse', 'HEAD') or '').strip()
-    return base if base and base != head else None
-
-
-def renamed_rust(base):
-    """[(old, new)] for every `.rs` file git itself calls renamed between `base` and the tree."""
-    pairs = []
-    for line in (git('diff', '--name-status', '-M', base, '--', '*.rs') or '').splitlines():
-        cells = line.split('\t')
-        if cells[0].startswith('R') and len(cells) == 3:
-            pairs.append((cells[1], cells[2]))
-    return pairs
-
-
 # --- the rules, pure so the selftest can drive them -----------------------------------------------
 
-def problems(judged, rows, base_numbers=None, base_rows=None, renames=(), scanned=1):
+def problems(judged, scanned=1):
     """Every failure in one tree.
 
-    `judged` is {path: judge(text)} for every parent in the tree; `rows` the baseline's
-    {path: ceiling}; `base_numbers` {path: number} at the merge base for the files that were
-    parents there; `base_rows` the baseline there, None when the base has none (the change that
-    first lands it); `renames` git's (old, new) `.rs` pairs since the base; `scanned` how many Rust
-    files were read at all.
+    `judged` is {path: judge(text)} for every parent in the tree; `scanned` how many Rust files
+    were read at all.
     """
     if not scanned or not judged:
         return ['the check judged no parent at all. A selector that matches nothing passes by '
                 'checking nothing (design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md)']
-    was_called = {new: old for old, new in renames}
     bad = []
     for path in sorted(judged):
         j = judged[path]
@@ -508,57 +433,12 @@ def problems(judged, rows, base_numbers=None, base_rows=None, renames=(), scanne
             bad.append(f'{path}:{line}: a comment names an index exception but is not one: '
                        f'{text!r}. The form is `// Index exception (YYYY-MM-DD): <reason of three '
                        f'words or more>.`')
-        if path in rows:
-            continue
         for item, size in j['held']:
             why = (f'{size} code lines' if size > SMALL else
                    f'{size} code lines, but the parent holds more than {HANDFUL} small items')
-            bad.append(f'{path}:{item["first"]}: {describe(item)} ({why}) in a split parent, '
-                       f'which is not on the list. {REMEDY}')
-    for path in sorted(rows):
-        j = judged.get(path)
-        ceiling = rows[path]
-        if j is None:
-            bad.append(f'{BASELINE}: {path} is not a parent in the tree (gone, renamed, or no '
-                       f'longer split). Move its row with a rename, at the same number, or remove '
-                       f'it; the list cannot go stale')
-            continue
-        if j['number'] == 0:
-            bad.append(f'{BASELINE}: {path} is an index now. Remove its row; the list cannot go '
-                       f'stale')
-        elif j['number'] > ceiling:
-            bad.append(f'{path}: {fmt(j["number"])} code lines outside the index, over its '
-                       f'baseline ceiling of {fmt(ceiling)}. {REMEDY}')
-        if base_numbers is not None:
-            was = base_numbers.get(was_called.get(path, path))
-            if was is not None and j['number'] > was:
-                bad.append(f'{path}: grew from {fmt(was)} to {fmt(j["number"])} code lines outside '
-                           f'the index against the merge base. A listed parent may only shrink. '
-                           f'{REMEDY}')
-    if base_rows is not None:
-        for path in sorted(rows):
-            prior = base_rows.get(path)
-            if prior is None:
-                prior = base_rows.get(was_called.get(path, ''))
-            if prior is None:
-                bad.append(f'{BASELINE}: {path} was added. The list only shrinks; a new split '
-                           f'leaves an index outright')
-            elif rows[path] > prior:
-                bad.append(f'{BASELINE}: {path} raised its ceiling from {fmt(prior)} to '
-                           f'{fmt(rows[path])}. An entry only goes down')
+            bad.append(f'{path}:{item["first"]}: {describe(item)} ({why}) in a split parent. '
+                       f'{REMEDY}')
     return bad
-
-
-def banked(rows, judged):
-    """The baseline after banking: entries lowered to the tree, never raised, never added; a row
-    whose parent is gone or is an index now drops out."""
-    out = {}
-    for path, ceiling in rows.items():
-        j = judged.get(path)
-        if j is None or j['number'] == 0:
-            continue
-        out[path] = min(j['number'], ceiling)
-    return out
 
 
 # --- the verbs ------------------------------------------------------------------------------------
@@ -584,46 +464,22 @@ def judge_tree():
     return paths, judged
 
 
-def gather():
-    paths, judged = judge_tree()
-    rows = read_baseline(read(BASELINE))
-    base = merge_base()
-    base_numbers, base_rows, renames = None, None, ()
-    if base:
-        renames = renamed_rust(base)
-        wanted = set(rows) | {old for old, _new in renames}
-        base_numbers = {}
-        for path in sorted(wanted):
-            text = git('show', f'{base}:{path}')
-            j = judge(text) if text is not None else None
-            if j is not None:
-                base_numbers[path] = j['number']
-        old = git('show', f'{base}:{BASELINE}')
-        if old is not None:
-            base_rows = read_baseline(old)
-    return paths, judged, rows, base_numbers, base_rows, renames
-
-
 def run_check():
-    if not os.path.exists(BASELINE):
-        print(f'parent-index check: {BASELINE} is missing. The gate and its list are one change; '
-              f'deleting one deletes the gate', file=sys.stderr)
-        return 1
-    paths, judged, rows, base_numbers, base_rows, renames = gather()
-    bad = problems(judged, rows, base_numbers, base_rows, renames, len(paths))
+    paths, judged = judge_tree()
+    bad = problems(judged, len(paths))
     if bad:
         print('parent-index check: a split parent holds more than an index (§282):',
               file=sys.stderr)
         for b in bad:
             print(f'  {b}', file=sys.stderr)
-        print('\nMove the item into a child named for it, mark the exception where it sits, or '
-              'bank a shrink with --bank. See design/decisions/'
+        print('\nMove the item into a child named for it, or mark the exception where it sits. '
+              'See design/decisions/'
               '0282-when-a-file-is-split-the-parent-becomes-an-index.md.', file=sys.stderr)
         return 1
     marks = sum(len(j['marked']) for j in judged.values())
     indexes = sum(1 for j in judged.values() if j['number'] == 0)
     print(f'parent-index check: {len(paths)} Rust files, {len(judged)} split parents, {indexes} '
-          f'of them indexes; {len(rows)} held by the baseline; {marks} marked exceptions')
+          f'of them indexes; {marks} marked exceptions')
     return 0
 
 
@@ -638,25 +494,6 @@ def run_list():
             print(f'          {item["first"]:>5}  {size:4}  {describe(item)}  (small)')
         for item, date, reason in j['marked']:
             print(f'          {item["first"]:>5}  mark  {describe(item)}  ({date}: {reason})')
-    return 0
-
-
-def bank(initialize=False):
-    if initialize and os.path.exists(BASELINE):
-        print(f'parent-index check: {BASELINE} already exists. --init wrote it once, for §282; it '
-              f'is refused now, and --bank is the verb that never raises', file=sys.stderr)
-        return 2
-    if not initialize and not os.path.exists(BASELINE):
-        print(f'parent-index check: {BASELINE} does not exist; there is nothing to bank',
-              file=sys.stderr)
-        return 2
-    _paths, judged = judge_tree()
-    if initialize:
-        rows = {p: j['number'] for p, j in judged.items() if j['number']}
-    else:
-        rows = banked(read_baseline(read(BASELINE)), judged)
-    write_baseline(rows)
-    print(f'parent-index check: {len(rows)} rows written to {BASELINE}')
     return 0
 
 
@@ -775,41 +612,15 @@ const impl<T> Thing<T> {
     def parent(number):
         return dict(held=[], marked=[], small=[], bad=[], number=number)
 
-    check('an unlisted parent that is an index passes', not problems({'x/a.rs': parent(0)}, {}))
+    check('an unlisted parent that is an index passes', not problems({'x/a.rs': parent(0)}))
     j = judge(INDEX + FOUR)
-    msg = problems({'x/a.rs': j}, {})
+    msg = problems({'x/a.rs': j})
     check('an unlisted parent holding a function fails, naming the item and the remedy',
           msg and 'fn four' in msg[0] and 'child module named for it' in msg[0]
           and 'Index exception' in msg[0])
-    row = {'x/a.rs': 100}
-    check('a listed parent unchanged passes',
-          not problems({'x/a.rs': parent(90)}, row, {'x/a.rs': 90}, row))
-    check('a listed parent that shrank passes',
-          not problems({'x/a.rs': parent(80)}, row, {'x/a.rs': 90}, row))
-    check('a listed parent that grew against the merge base fails, within its entry',
-          problems({'x/a.rs': parent(91)}, row, {'x/a.rs': 90}, row))
-    check('a listed parent over its entry fails',
-          problems({'x/a.rs': parent(101)}, row, {'x/a.rs': 101}, row))
-    check('an entry for a parent that is an index now fails',
-          problems({'x/a.rs': parent(0)}, row, {'x/a.rs': 90}, row))
-    check('an entry for a file that is no longer a parent fails',
-          problems({'x/b.rs': parent(0)}, row, {}, row))
-    check('a row added against the merge base fails',
-          problems({'x/a.rs': parent(90), 'x/b.rs': parent(5)}, {'x/a.rs': 100, 'x/b.rs': 5},
-                   {'x/a.rs': 90}, row))
-    check('an entry raised against the merge base fails',
-          problems({'x/a.rs': parent(90)}, {'x/a.rs': 110}, {'x/a.rs': 90}, row))
-    check('a rename that moves its row at the same number passes',
-          not problems({'x/new.rs': parent(90)}, {'x/new.rs': 100}, {'x/a.rs': 90}, row,
-                       [('x/a.rs', 'x/new.rs')]))
-    check('a rename that leaves its row behind fails',
-          problems({'x/new.rs': parent(90)}, row, {'x/a.rs': 90}, row, ()))
-    check('a malformed mark fails even in a listed parent',
-          problems({'x/a.rs': dict(parent(90), bad=[(3, '// index exception')])}, row))
-    check('a selector that matches nothing fails loudly', problems({}, {}, scanned=0))
-    check('bank lowers, drops an index, never raises, never adds',
-          banked({'a': 50, 'b': 40, 'c': 30}, {'a': parent(45), 'b': parent(0), 'c': parent(35),
-                                              'd': parent(9)}) == {'a': 45, 'c': 30})
+    check('a malformed mark fails',
+          problems({'x/a.rs': dict(parent(0), bad=[(3, '// index exception')])}))
+    check('a selector that matches nothing fails loudly', problems({}, scanned=0))
 
     failed = [name for name, ok in cases if not ok]
     for name in failed:
@@ -823,21 +634,12 @@ def main(argv):
     root = git('rev-parse', '--show-toplevel')
     if root:
         os.chdir(root.strip())
-    global BASE_OVERRIDE
-    if len(argv) >= 3 and argv[0] == '--check' and argv[1] == '--base':
-        BASE_OVERRIDE = argv[2]
-        argv = argv[:1]
     if argv and argv[0] == '--selftest':
         return selftest()
     if not argv or argv[0] == '--check':
         return run_check()
     if argv[0] == '--list':
         return run_list()
-    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
-    # The difference is deliberate (design/naming/command-line-names.md, "The command line
-    # abbreviates, and the code behind it does not").
-    if argv[0] in ('--bank', '--init'):
-        return bank(initialize=argv[0] == '--init')
     print(__doc__.split('\n\n')[2], file=sys.stderr)
     return 2
 

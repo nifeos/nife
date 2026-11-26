@@ -477,7 +477,7 @@ def _selftest_virtio():
 
 # --- the ratchet: names meet the current rules ------------------------------------------------------
 
-BASELINE = "design/naming-rule-baseline.txt"
+BASELINE = "lint/naming-rule-baseline.txt"
 # The rules' revision. Bump it in the change that adds or revises a check, and only then: that is
 # the one change whose new rows the merge-base comparison admits, so new debt arrives with its cause.
 # This is an exception and a foot gun on purpose, the module-block ratchet's FORMAT line one door

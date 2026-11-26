@@ -1,4 +1,4 @@
-"""The removed-files index check: every row of design/removed.tsv is true, and no number returns.
+"""The removed-files index check: every row of lint/removed.tsv is true, and no number returns.
 
 The index lists files taken out of the tree on purpose (path, removal date, the last commit that
 held the file, reason). This check keeps it honest in three ways. A row's path is absent from the
@@ -19,7 +19,7 @@ import subprocess
 import sys
 import tempfile
 
-INDEX = "design/removed.tsv"
+INDEX = "lint/removed.tsv"
 SHA = re.compile(r"[0-9a-f]{40}")
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 BLOCK = re.compile(r"design/roadmap/(\d{4})-[^/]+\.md$")
