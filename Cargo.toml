@@ -358,6 +358,12 @@ opt-level = 2
 [profile.dev.package.timetable]
 opt-level = 2
 
+# The capability table, optimised even in a debug build: every `CALL` mints and deletes a Reply
+# capability through it, a kernel hot path `script/bench` measures, and unoptimised its free-slot
+# search is a chain of iterator calls the optimiser would fold into one `trailing_zeros`.
+[profile.dev.package.capability_table]
+opt-level = 2
+
 # Overflow checks in release, ruled by calef 2026-10-04 (UTC) (nifeos/record:notes/overflow-checks.md, option A).
 # The shipped build now means by `a + b` what every tested build means: an overflow halts rather
 # than wraps into a quiet wrong answer. Where a hot path wants a wrap, it says so at the site with
