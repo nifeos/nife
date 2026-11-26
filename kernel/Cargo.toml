@@ -30,7 +30,7 @@ workspace = true
 # and its device registers are named offsets in `drivers/`, as on riscv64 and x86_64, so a proof can
 # stub every access (milestone 707 (aarch64 registers spelled the way riscv64 and x86_64
 # spell them), §46).
-moho_abi = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/moho_abi", rev = "1e99eedd208b36d752a2d630a7bd129a933d81a6" }
+moho_abi = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/moho_abi", rev = "b4b6ec3a01475d4ab012cd104da32895955f7b15" }
 address_space_identifier = { version = "0.1.0", path = "../crates/address_space_identifier" }
 # The corruption canary's arm/check/disarm serialization (2026-08-15), lifted out of `sched.rs`
 # after its hand-written two-flag protocol raced: the kernel calls the loom-searched gate rather
@@ -49,7 +49,7 @@ address_space_identifier = { version = "0.1.0", path = "../crates/address_space_
 # warning is expected; any other `unused_dependencies` warning from the kernel is a real finding.
 # Do not add an `allow` for it either, because that would hide a second, real one.
 memory_corruption_canary_gate = { version = "0.1.0", path = "../crates/memory_corruption_canary_gate" }
-capability_table = { version = "0.1.0", git = "https://github.com/partsfoundry/capability_table", rev = "968a16fed9723d88bf5168ec6604d0bbcaba853b", features = ["peak"] }
+capability_table = { version = "0.1.0", git = "https://github.com/partsfoundry/capability_table", rev = "94147c270abe20e2a9a794f45bd63d46f6139fe6", features = ["peak"] }
 # The timer re-arm's arithmetic (milestone 360 (`crates/timetable`'s proved `next_after` is not what
 # the timer calls), §178 (where the timer re-arm seam goes)). The aarch64 and riscv64 `rearm` call
 # the Kani-proved `next_after` rather than keeping a copy, so the proof binds the code that runs.

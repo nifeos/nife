@@ -18,7 +18,7 @@ use crate::sched;
 /// `space_slot` names the address space a `PROCESS` holds. `BadMethod` for an unknown kind.
 ///
 /// Every kind carries the budget's rights and no others, through `budget.mint_child` (milestone
-/// 824 (a retype mints no right its budget lacks)). The root budget is `Rights::ALL`, so the
+/// 824 (a retype mints no right its budget lacks)). The root budget is `INTERFACE_RIGHTS`, so the
 /// progenitor still gets every right on what it makes.
 ///
 /// Name: ratified 2026-11-11 (UTC), beside its neighbors `memory_region_retype` and

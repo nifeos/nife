@@ -1,8 +1,9 @@
 //! **`user_mode_runtime`**: the user-mode runtime every user-mode program of the kernel links, on all three
 //! architectures (`EL0` on aarch64, U-mode on riscv64, ring 3 on `x86_64`).
 //!
-//! [`invoke`] is the one system call wrapper. [`send`], [`receive`], [`call`] and [`exit`] are built on
-//! it, and [`require`] is how a program says no. [`panic_handler!`] expands to each binary's
+//! Every wrapper builds its call from `moho_abi::system_call`, which the method table generates, and
+//! traps through one six-register round trip; [`invoke`] is that trap for a caller naming the method
+//! itself. [`require`] is how a program says no. [`panic_handler!`] expands to each binary's
 //! handler over [`trap`]. Opt-in modules ([`mapped_window`], [`initial_ramdisk`], [`virtual_io`]) hold
 //! what only some programs need. A system call runs only in a user-mode process under the kernel,
 //! so the examples that make one are `no_run`; the pure logic has host tests. The signatures and

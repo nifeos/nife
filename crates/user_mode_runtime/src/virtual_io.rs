@@ -1,7 +1,7 @@
 //! **Thin safe wrappers over the four `VirtualIo` capability methods**, and the barrier that orders
 //! a virtqueue against the device.
 //!
-//! Each wrapper's only obligation is `invoke`'s own; `moho_abi::virtual_io` states what the kernel checks
+//! Each wrapper's only obligation is the trap's own; `moho_abi::virtual_io` states what the kernel checks
 //! (`WRITE_REGISTER` refuses the queue-address and notify registers; `SETUP_QUEUE` and `NOTIFY` are
 //! bounds-checked against the DMA region and its high-water mark). A module rather than crate-root
 //! items, because only a program that owns a `VirtualIo` capability needs them.
@@ -18,13 +18,10 @@ pub fn read_register(virtual_io_slot: u64, offset: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the VirtualIo capability before it reads the
     // register and refuses an offset outside the device's slot.
     unsafe {
-        super::invoke(
+        super::system_call::trap_call(moho_abi::system_call::virtual_io::read_register(
             virtual_io_slot,
-            moho_abi::virtual_io::READ_REGISTER,
             offset,
-            0,
-            0,
-        )
+        ))[0] as i64
     }
 }
 
@@ -39,13 +36,11 @@ pub fn write_register(virtual_io_slot: u64, offset: u64, value: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the VirtualIo capability and refuses any register
     // this call is not DMA-safe to write.
     unsafe {
-        super::invoke(
+        super::system_call::trap_call(moho_abi::system_call::virtual_io::write_register(
             virtual_io_slot,
-            moho_abi::virtual_io::WRITE_REGISTER,
             offset,
             value,
-            0,
-        )
+        ))[0] as i64
     }
 }
 
@@ -62,13 +57,11 @@ pub fn setup_queue(virtual_io_slot: u64, descriptors: u64, queue: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the VirtualIo capability, `queue`, and that the
     // ring block fits the driver's DMA region before it programs anything.
     unsafe {
-        super::invoke(
+        super::system_call::trap_call(moho_abi::system_call::virtual_io::setup_queue(
             virtual_io_slot,
-            moho_abi::virtual_io::SETUP_QUEUE,
             descriptors,
             queue,
-            0,
-        )
+        ))[0] as i64
     }
 }
 
@@ -82,7 +75,12 @@ pub fn setup_queue(virtual_io_slot: u64, descriptors: u64, queue: u64) -> i64 {
 pub fn notify(virtual_io_slot: u64, queue: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates every published descriptor on `queue` against the
     // driver's own high-water mark before it lets the device see them.
-    unsafe { super::invoke(virtual_io_slot, moho_abi::virtual_io::NOTIFY, queue, 0, 0) }
+    unsafe {
+        super::system_call::trap_call(moho_abi::system_call::virtual_io::notify(
+            virtual_io_slot,
+            queue,
+        ))[0] as i64
+    }
 }
 
 /// **Order this driver's ring writes before a doorbell store to device memory**: what a driver

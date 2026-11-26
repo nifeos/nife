@@ -339,6 +339,25 @@ opt-level = 2
 [profile.dev.package.graphics_contract]
 opt-level = 2
 
+# The benchmarked user programs and the system call wrappers under them, optimised even in a debug
+# build, so that `script/bench`'s EL0 rows (ctx_switch, ipc_rtt_el0, sink_throughput, map_el0,
+# spawn_el0) measure the system call path and not the compiler's unoptimised copies around it. At
+# opt-level 0, `user_mode_runtime::process::yield_now` is 17 instructions: it stores six zero words
+# to the stack and calls `trap6` out of line. A wrapper that builds its words in a value and passes
+# the value on, as one built from `moho_abi::system_call`'s typed calls does, is 33 instructions,
+# plus a call into the builder and a 48-byte `memcpy`. At opt-level 1 both are the same 9: the six
+# argument registers, the call number and `svc`. Level 1 is the lowest that removes the copies, so
+# it is the level here. `fixtures` holds the benchmarked programs (os_primitives_benchmarker,
+# sink_producer, sink_consumer, map_el0, null_system_call) beside the kernel tests' other fixtures,
+# which take the same level. `user_mode_runtime` holds the wrappers, and `moho_abi` the typed calls
+# they build.
+[profile.dev.package.fixtures]
+opt-level = 1
+[profile.dev.package.user_mode_runtime]
+opt-level = 1
+[profile.dev.package.moho_abi]
+opt-level = 1
+
 # The shell's planner, optimised even in a debug build (milestone 946 (a granted file name can be
 # longer than sixteen bytes)). An `Endowment` carries four file grants, each holding a name of up
 # to 252 bytes, and an unoptimised build keeps a copy of one in a frame for every `?` and every
@@ -356,6 +375,12 @@ opt-level = 2
 # holds two plans at once, so its debug frames grew by the same file grants and ran
 # `login_user_schedule_tests`'s timetable off its 48-page stack in `Registry::register`.
 [profile.dev.package.timetable]
+opt-level = 2
+
+# The capability table, optimised even in a debug build: every `CALL` mints and deletes a Reply
+# capability through it, a kernel hot path `script/bench` measures, and unoptimised its free-slot
+# search is a chain of iterator calls the optimiser would fold into one `trailing_zeros`.
+[profile.dev.package.capability_table]
 opt-level = 2
 
 # Overflow checks in release, ruled by calef 2026-10-04 (UTC) (nifeos/record:notes/overflow-checks.md, option A).

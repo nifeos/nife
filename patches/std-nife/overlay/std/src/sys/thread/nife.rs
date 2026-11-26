@@ -109,15 +109,14 @@ impl Thread {
             }
         };
 
-        // SAFETY: `invoke` traps to the kernel, which validates each capability and method.
+        // SAFETY: the trap goes to the kernel, which validates each capability and method.
         let tcb = unsafe {
-            rt::invoke(
+            rt::trap_call(moho_abi::system_call::memory_region::retype_object(
                 runtimeproto::MEMORY_REGION_SLOT,
-                moho_abi::memory_region::RETYPE_OBJECT,
                 moho_abi::object_type::THREAD_CONTROL_BLOCK,
                 0,
                 runtimeproto::SLOTS, // above every fixed slot (`RETYPE_OBJECT`'s floor)
-            )
+            ))[0] as i64
         };
         if tcb < 0 {
             undo(packet, data);
@@ -144,13 +143,8 @@ impl Thread {
         unsafe { tls::set_current_cpu_page(block, page as u64) };
         // SAFETY: as `RETYPE_OBJECT` above. The three words are the thread's first argument registers.
         let started = unsafe {
-            rt::invoke(
-                tcb,
-                moho_abi::thread_control_block::START,
-                data as u64,
-                packet as u64,
-                0,
-            )
+            rt::trap_call(moho_abi::system_call::thread_control_block::start(tcb, data as u64, packet as u64, 0))[0]
+                as i64
         };
         if started < 0 {
             rt::capability_delete(tcb);
@@ -304,11 +298,12 @@ pub fn sleep(dur: Duration) {
     let ticks = moho_abi::timer::counter_ticks_for(dur.as_secs(), dur.subsec_nanos(), rt::cntfrq());
     let deadline = rt::now().saturating_add(ticks);
     if let Some((timer, notification)) = tls::sleep_objects() {
-        // SAFETY: `invoke` traps to the kernel, which validates both capabilities.
-        let armed = unsafe { rt::invoke(timer, moho_abi::timer::ARM, deadline, notification, 1) };
+        // SAFETY: the trap goes to the kernel, which validates both capabilities.
+        let arm = moho_abi::system_call::timer::arm(timer, deadline, notification, 1);
+        let armed = unsafe { rt::trap_call(arm)[0] };
         if armed == 0 {
             // SAFETY: as above.
-            unsafe { rt::invoke(notification, moho_abi::notification::WAIT, 0, 0, 0) };
+            unsafe { rt::trap_call(moho_abi::system_call::notification::wait(notification)) };
         }
     }
     while rt::now() < deadline {

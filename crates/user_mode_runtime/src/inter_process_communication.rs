@@ -8,21 +8,15 @@
 //! module and the file. Named for the calls it holds, one module per seam of the old crate root.
 //! Refused `ipc` (§154 (the acronym test is whether the phrase is spoken) spells it out).
 
+use moho_abi::system_call as typed;
+
 use crate::objects::{self, retype_into_kernel_object};
-use crate::system_call::{invoke, invoke5, invoke6};
+use crate::system_call::{trap_call, trap6};
 
 /// `SEND` three words on the endpoint capability in `slot`. Blocks until a receiver takes them.
 pub fn send(slot: u64, word_zero: u64, word_one: u64, word_two: u64) -> i64 {
     // SAFETY: `svc` traps to EL1, which validates the capability named by `slot`.
-    unsafe {
-        invoke(
-            slot,
-            moho_abi::rendezvous::SEND,
-            word_zero,
-            word_one,
-            word_two,
-        )
-    }
+    unsafe { trap_call(typed::rendezvous::send(slot, word_zero, word_one, word_two))[0] as i64 }
 }
 
 /// **Collect the corpse of a child this supervision endpoint supervises**, authorized by the
@@ -41,7 +35,7 @@ pub fn send(slot: u64, word_zero: u64, word_one: u64, word_two: u64) -> i64 {
 #[doc(alias = "reap")]
 pub fn reap_thread(slot: u64, thread_id: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the capability and the supervision relationship.
-    unsafe { invoke(slot, moho_abi::rendezvous::REAP, thread_id, 0, 0) }
+    unsafe { trap_call(typed::rendezvous::reap(slot, thread_id))[0] as i64 }
 }
 
 /// **Read one entry of the domain this supervision endpoint supervises**
@@ -66,9 +60,8 @@ pub fn survey(slot: u64, cursor: u64) -> (i64, u64, u64) {
 ///
 /// Name: ratified 2026-11-20 (UTC).
 pub fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
-    // SAFETY: forwarded from `invoke5`'s contract; SURVEY reads no more than the three words used.
-    let (r0, w1, w2, ..) =
-        unsafe { invoke5(slot, moho_abi::rendezvous::SURVEY, cursor, record, 0) };
+    // SAFETY: forwarded from `trap_call`'s contract; SURVEY answers no more than the three words used.
+    let [r0, w1, w2, ..] = unsafe { trap_call(typed::rendezvous::survey(slot, cursor, record)) };
     (r0 as i64, w1, w2)
 }
 
@@ -83,8 +76,8 @@ pub fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub fn virtual_address_space_list(slot: u64, cursor: u64) -> (i64, u64, u64) {
-    // SAFETY: forwarded from `invoke5`'s contract; LIST reads no more than the three words used.
-    let (r0, w1, w2, ..) = unsafe { invoke5(slot, moho_abi::address_space::LIST, cursor, 0, 0) };
+    // SAFETY: forwarded from `trap_call`'s contract; LIST answers no more than the three words used.
+    let [r0, w1, w2, ..] = unsafe { trap_call(typed::address_space::list(slot, cursor)) };
     (r0 as i64, w1, w2)
 }
 
@@ -115,8 +108,8 @@ pub fn virtual_address_space_list(slot: u64, cursor: u64) -> (i64, u64, u64) {
 /// }
 /// ```
 pub fn receive(slot: u64) -> (u64, u64, u64) {
-    // SAFETY: forwarded from `invoke5`'s contract; RECEIVE reads no more than the three words used.
-    let (w0, w1, w2, ..) = unsafe { invoke5(slot, moho_abi::rendezvous::RECEIVE, 0, 0, 0) };
+    // SAFETY: forwarded from `trap_call`'s contract; RECEIVE answers no more than the three words used.
+    let [w0, w1, w2, ..] = unsafe { trap_call(typed::rendezvous::receive(slot)) };
     (w0, w1, w2)
 }
 
@@ -131,9 +124,8 @@ pub fn receive(slot: u64) -> (u64, u64, u64) {
 /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
 /// `receive_cap` under the capability ruling of 2026-10-06 (UTC).
 pub fn receive_capability(slot: u64) -> (u64, u64, u64) {
-    // SAFETY: forwarded from `invoke5`'s contract; RECEIVE_CAPABILITY reads no more than the three words used.
-    let (w0, w1, w2, ..) =
-        unsafe { invoke5(slot, moho_abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) };
+    // SAFETY: forwarded from `trap_call`'s contract; RECEIVE_CAPABILITY answers no more than the three words used.
+    let [w0, w1, w2, ..] = unsafe { trap_call(typed::rendezvous::receive_capability(slot)) };
     (w0, w1, w2)
 }
 
@@ -145,7 +137,7 @@ pub fn receive_capability(slot: u64) -> (u64, u64, u64) {
 /// which is how a server tells one client apart from its siblings on one endpoint.
 pub fn badge(slot: u64, badge: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the endpoint capability and mints into a free slot.
-    unsafe { invoke(slot, moho_abi::rendezvous::BADGE, badge, 0, 0) }
+    unsafe { trap_call(typed::rendezvous::badge(slot, badge))[0] as i64 }
 }
 
 /// **One message a receive returned**: the three words the sender passed, the badge on the endpoint
@@ -179,7 +171,7 @@ pub struct Message {
     /// message's faulting address.
     pub badge: u64,
     /// `x5`: the dead child's label, which a supervisor resolves by asking the kernel, `0` when unbadged or
-    /// unstamped. `invoke6` zeroes the register on the way in, so any other receive reads `0`.
+    /// unstamped. The typed call zeroes the register on the way in, so any other receive reads `0`.
     pub label: u64,
     /// What `w1` is, told by the kernel-written `x4`: a [`Reply`], a delegated capability or
     /// nothing. Always [`Delivered::Nothing`] after a plain [`receive_message`].
@@ -227,9 +219,8 @@ impl Received {
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub fn receive_message(slot: u64) -> Received {
-    // SAFETY: forwarded from `invoke6`'s contract; RECEIVE returns up to six words.
-    let (w0, w1, w2, badge, w4, label) =
-        unsafe { invoke6(slot, moho_abi::rendezvous::RECEIVE, 0, 0, 0) };
+    // SAFETY: forwarded from `trap_call`'s contract; RECEIVE returns up to six words.
+    let [w0, w1, w2, badge, w4, label] = unsafe { trap_call(typed::rendezvous::receive(slot)) };
     if w4 == moho_abi::notification::BOUND {
         Received::Notification(w1)
     } else {
@@ -251,9 +242,9 @@ pub fn receive_message(slot: u64) -> Received {
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub fn receive_capability_message(slot: u64) -> Received {
-    // SAFETY: forwarded from `invoke6`'s contract; RECEIVE_CAPABILITY returns up to six words.
-    let (w0, w1, w2, badge, w4, label) =
-        unsafe { invoke6(slot, moho_abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) };
+    // SAFETY: forwarded from `trap_call`'s contract; RECEIVE_CAPABILITY returns up to six words.
+    let [w0, w1, w2, badge, w4, label] =
+        unsafe { trap_call(typed::rendezvous::receive_capability(slot)) };
     if w4 == moho_abi::notification::BOUND {
         Received::Notification(w1)
     } else {
@@ -272,27 +263,27 @@ pub fn receive_capability_message(slot: u64) -> Received {
 /// negative [`moho_abi::Error`].
 pub fn notification_signal(slot: u64, bits: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the capability.
-    unsafe { invoke(slot, moho_abi::notification::SIGNAL, bits, 0, 0) }
+    unsafe { trap_call(typed::notification::signal(slot, bits))[0] as i64 }
 }
 
 /// `Notification::WAIT`: the accumulated word, blocking until it is non-zero. A negative
 /// [`moho_abi::Error`] on refusal (see `moho_abi::notification::WAIT` for the top-bit caveat).
 pub fn notification_wait(slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the capability.
-    unsafe { invoke(slot, moho_abi::notification::WAIT, 0, 0, 0) }
+    unsafe { trap_call(typed::notification::wait(slot))[0] as i64 }
 }
 
 /// `Notification::POLL`: the accumulated word without blocking, `0` if nothing was pending.
 pub fn notification_poll(slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the capability.
-    unsafe { invoke(slot, moho_abi::notification::POLL, 0, 0, 0) }
+    unsafe { trap_call(typed::notification::poll(slot))[0] as i64 }
 }
 
 /// `Notification::BIND`: bind the notification in `slot` to the thread whose `ThreadControlBlock`
 /// capability is in `thread_slot`. `0`, or a negative [`moho_abi::Error`].
 pub fn notification_bind(slot: u64, thread_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates both capabilities.
-    unsafe { invoke(slot, moho_abi::notification::BIND, thread_slot, 0, 0) }
+    unsafe { trap_call(typed::notification::bind(slot, thread_slot))[0] as i64 }
 }
 
 /// `Timer::ARM`, the kernel's timer, which no user-mode service holds: when the counter
@@ -305,13 +296,12 @@ pub fn notification_bind(slot: u64, thread_slot: u64) -> i64 {
 pub fn timer_arm(timer_slot: u64, deadline: u64, notification_slot: u64, bits: u64) -> i64 {
     // SAFETY: `svc`/`ecall`/`system_call`; the kernel validates both capabilities.
     unsafe {
-        invoke(
+        trap_call(typed::timer::arm(
             timer_slot,
-            moho_abi::timer::ARM,
             deadline,
             notification_slot,
             bits,
-        )
+        ))[0] as i64
     }
 }
 
@@ -319,7 +309,7 @@ pub fn timer_arm(timer_slot: u64, deadline: u64, notification_slot: u64, bits: u
 /// pending (so any signal has already been sent), or a negative [`moho_abi::Error`].
 pub fn timer_cancel(timer_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`/`system_call`; the kernel validates the capability.
-    unsafe { invoke(timer_slot, moho_abi::timer::CANCEL, 0, 0, 0) }
+    unsafe { trap_call(typed::timer::cancel(timer_slot))[0] as i64 }
 }
 
 /// **A timer and a notification to sleep on, retyped from the untyped in `memory_region_slot`**:
@@ -384,8 +374,8 @@ pub fn sleep_until(timer_slot: u64, notification_slot: u64, deadline: u64) -> i6
 /// # }
 /// ```
 pub fn call(slot: u64, word_zero: u64, word_one: u64) -> (u64, u64) {
-    // SAFETY: forwarded from `invoke5`'s contract; CALL reads no more than the two words used.
-    let (r0, r1, ..) = unsafe { invoke5(slot, moho_abi::rendezvous::CALL, word_zero, word_one, 0) };
+    // SAFETY: forwarded from `trap_call`'s contract; CALL answers no more than the two words used.
+    let [r0, r1, ..] = unsafe { trap_call(typed::rendezvous::call(slot, word_zero, word_one)) };
     (r0, r1)
 }
 
@@ -394,11 +384,20 @@ pub fn call(slot: u64, word_zero: u64, word_one: u64) -> (u64, u64) {
 /// table was full. A socket server answers this way, since each socket is its own capability.
 pub fn call_receiving(slot: u64, word_zero: u64, word_one: u64) -> (u64, u64, Option<u64>) {
     // `NO_CAPABILITY` goes in as the unused third argument: a refused CALL returns without writing x2,
-    // so x2 is then this value rather than a 0 that would read as slot 0.
+    // so x2 is then this value rather than a 0 that would read as slot 0. The one wrapper here not
+    // built on the method table, an exception: the table defines no bit of CALL's word 4, so its
+    // typed call sends zero there, and a refusal would read as slot 0.
     let none = moho_abi::rendezvous::NO_CAPABILITY;
-    // SAFETY: forwarded from `invoke5`'s contract; CALL returns the delivered slot in x2.
-    let (r0, r1, x2, ..) =
-        unsafe { invoke5(slot, moho_abi::rendezvous::CALL, word_zero, word_one, none) };
+    let words = [
+        slot,
+        moho_abi::rendezvous::CALL,
+        word_zero,
+        word_one,
+        none,
+        0,
+    ];
+    // SAFETY: forwarded from `trap6`'s contract; CALL returns the delivered slot in x2.
+    let (r0, r1, x2, ..) = unsafe { trap6(moho_abi::SYSTEM_CALL_INVOKE, words) };
     let delivered = (x2 != none).then_some(x2);
     (r0, r1, delivered)
 }
@@ -416,15 +415,15 @@ pub fn reply_capability(
     capability: u64,
 ) -> Result<bool, (Reply, i64)> {
     // SAFETY: `svc`/`ecall`; the kernel validates the Reply and the carried capability.
-    let r = unsafe {
-        invoke(
+    let [r, ..] = unsafe {
+        trap_call(typed::reply::reply_capability(
             to.0,
-            moho_abi::reply::REPLY_CAPABILITY,
             result_word_zero,
             result_word_one,
             capability,
-        )
+        ))
     };
+    let r = r as i64;
     if r < 0 { Err((to, r)) } else { Ok(r == 0) }
 }
 
@@ -439,15 +438,7 @@ pub fn reply_capability(
 /// the kernel's own tag, so the type is the check and no server has to remember it.
 pub fn reply(to: Reply, result_word_zero: u64, result_word_one: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the Reply capability and consumes it.
-    unsafe {
-        invoke(
-            to.0,
-            moho_abi::reply::REPLY,
-            result_word_zero,
-            result_word_one,
-            0,
-        )
-    }
+    unsafe { trap_call(typed::reply::reply(to.0, result_word_zero, result_word_one))[0] as i64 }
 }
 
 /// **A `CALL`'s one-shot Reply capability, known to be one.** The only constructor is [`receive_request`]'s reading of the kernel-written
@@ -528,9 +519,9 @@ pub struct Request {
 /// until a message arrives and returns it with `x1` typed by the kernel's `x4`. The receive every
 /// server that answers with [`reply`] uses, because it is the only source of a [`Reply`].
 pub fn receive_request(slot: u64) -> Request {
-    // SAFETY: forwarded from `invoke5`'s contract; RECEIVE_CAPABILITY returns five words.
-    let (w0, x1, w1, badge, x4) =
-        unsafe { invoke5(slot, moho_abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) };
+    // SAFETY: forwarded from `trap_call`'s contract; RECEIVE_CAPABILITY returns five words.
+    let [w0, x1, w1, badge, x4, _] =
+        unsafe { trap_call(typed::rendezvous::receive_capability(slot)) };
     Request {
         w0,
         w1,
@@ -550,12 +541,11 @@ pub fn send_capability(slot: u64, capability_slot: u64, rights: u64, word_one: u
     // SAFETY: `svc`/`ecall`. The kernel validates the endpoint, `GRANT` on the delegated capability,
     // and narrows it to `rights` before it delegates anything.
     unsafe {
-        invoke(
+        trap_call(typed::rendezvous::send_capability(
             slot,
-            moho_abi::rendezvous::SEND_CAPABILITY,
             capability_slot,
             rights,
             word_one,
-        )
+        ))[0] as i64
     }
 }

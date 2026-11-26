@@ -27,6 +27,10 @@ arms of `system_call::invoke` moved to `kernel/src/system_call/rendezvous.rs` fo
 on function length); the defect is unchanged. Replayed red at the same assertion on aarch64 that
 day.
 
+Re-cut on 2026-11-25 (UTC) by lane kernel-takes-sized-capability-table, when the rights word
+came to be read through `capability_object::interface_rights`; the defect is unchanged.
+Replayed red at `revocation_window_tests.rs:149`, the headline assertion, on aarch64 that day.
+
 diff --git a/kernel/src/system_call/rendezvous.rs b/kernel/src/system_call/rendezvous.rs
 --- a/kernel/src/system_call/rendezvous.rs
 +++ b/kernel/src/system_call/rendezvous.rs
@@ -38,7 +42,7 @@ diff --git a/kernel/src/system_call/rendezvous.rs b/kernel/src/system_call/rende
 +    if !src.rights.allows(Rights::GRANT) {
 +        return Err(Error::NotPermitted);
 +    }
-+    let narrowed = Rights::from_bits(narrow as u32);
++    let narrowed = crate::capability_object::interface_rights(narrow);
 +    if !narrowed.is_subset_of(src.rights) {
 +        return Err(Error::NotPermitted);
 +    }
@@ -50,7 +54,7 @@ diff --git a/kernel/src/system_call/rendezvous.rs b/kernel/src/system_call/rende
          word,
 -        sched::Delegation {
 -            slot,
--            rights: Rights::from_bits(narrow as u32),
+-            rights: crate::capability_object::interface_rights(narrow),
 +        crate::capability_object::Capability {
 +            object: src.object,
 +            rights: narrowed,

@@ -554,7 +554,7 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 [[package]]
 name = "moho_abi"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/moho_abi?rev=1e99eedd208b36d752a2d630a7bd129a933d81a6#1e99eedd208b36d752a2d630a7bd129a933d81a6"
+source = "git+https://github.com/nifeos/moho_abi?rev=b4b6ec3a01475d4ab012cd104da32895955f7b15#b4b6ec3a01475d4ab012cd104da32895955f7b15"
 
 [[package]]
 name = "nu-ansi-term"

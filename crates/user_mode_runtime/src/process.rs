@@ -7,18 +7,20 @@
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
-use crate::system_call::trap6;
+use moho_abi::system_call as typed;
+
+use crate::system_call::trap_call;
 
 /// Give up the CPU (`SYSTEM_CALL_YIELD`). Returns when the scheduler runs this thread again; if another
 /// thread is ready, control goes there and back, which is one context-switch round trip.
 ///
 /// Not `nomem`: while this thread is away others write memory it shares with them, which a caller
-/// spinning on a shared word with `yield_now` relies on. Through `trap6`, because the kernel
+/// spinning on a shared word with `yield_now` relies on. Through the six-word trap, because the kernel
 /// writes its result into `x0`/`a0`/`rdi` on the way out of a yield too.
 pub fn yield_now() {
     // SAFETY: SYSTEM_CALL_YIELD gives up the CPU and comes back; it reads no argument and touches no
     // memory of this thread's own.
-    let _ = unsafe { trap6(moho_abi::SYSTEM_CALL_YIELD, [0; 6]) };
+    let _ = unsafe { trap_call(typed::yield_now()) };
 }
 
 /// Terminate this process. The kernel reaps the thread and frees its whole address space. Never
@@ -28,7 +30,7 @@ pub fn yield_now() {
 /// `SYSTEM_CALL_EXIT_THREAD` directly, and no `no_std` program needs a wrapper.
 pub fn exit() -> ! {
     // SAFETY: the system call never returns; the trailing spin only satisfies the `-> !` type.
-    let _ = unsafe { trap6(moho_abi::SYSTEM_CALL_EXIT, [0; 6]) };
+    let _ = unsafe { trap_call(typed::exit(0)) };
     loop {
         core::hint::spin_loop();
     }

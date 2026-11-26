@@ -26,18 +26,24 @@ pub type SmallPrimitive = u32;
 
 const FLAGS: u64 = moho_abi::address_wait::PRIVATE | moho_abi::address_wait::WIDTH_32_BITS;
 
-/// `WAIT` or `WAKE` on `futex`, through the space capability. A negative answer is the kernel's
-/// refusal; the callers below treat every refusal as "no kernel wait here".
-fn invoke(method: u64, futex: &Atomic<u32>, word: u64) -> i64 {
-    // SAFETY: `invoke` traps to the kernel, which checks the capability names this program's own
+/// `WAIT` or `WAKE` on `futex`, through the space capability: `method` is the typed call's
+/// builder, given the futex word's address, the flags and its third word. A negative answer is the
+/// kernel's refusal; the callers below treat every refusal as "no kernel wait here".
+fn invoke<A>(
+    method: fn(u64, u64, u64, u64) -> moho_abi::system_call::Call<A>,
+    futex: &Atomic<u32>,
+    word: u64,
+) -> i64 {
+    let call = method(runtimeproto::SPACE_SLOT, futex.as_ptr() as u64, FLAGS, word);
+    // SAFETY: the trap goes to the kernel, which checks the capability names this program's own
     // space and that the word is a 4-aligned, mapped user address, which an `Atomic<u32>` is.
-    unsafe { rt::invoke(runtimeproto::SPACE_SLOT, method, futex.as_ptr() as u64, FLAGS, word) }
+    unsafe { rt::trap_call(call)[0] as i64 }
 }
 
 /// **Wait while `futex` holds `expected`.** `false` only when `timeout` ran out first.
 pub fn futex_wait(futex: &Atomic<u32>, expected: u32, timeout: Option<Duration>) -> bool {
     let Some(timeout) = timeout else {
-        if invoke(moho_abi::address_space::WAIT, futex, expected as u64) < 0 {
+        if invoke(moho_abi::system_call::address_space::wait, futex, expected as u64) < 0 {
             rt::yield_now();
         }
         return true;
@@ -60,11 +66,11 @@ pub fn futex_wait(futex: &Atomic<u32>, expected: u32, timeout: Option<Duration>)
 /// asked, which callers read as "nobody was waiting", correct for a yield-based wait.
 #[inline]
 pub fn futex_wake(futex: &Atomic<u32>) -> bool {
-    invoke(moho_abi::address_space::WAKE, futex, 1) > 0
+    invoke(moho_abi::system_call::address_space::wake, futex, 1) > 0
 }
 
 /// **Wake every waiter on `futex`.**
 #[inline]
 pub fn futex_wake_all(futex: &Atomic<u32>) {
-    let _ = invoke(moho_abi::address_space::WAKE, futex, u64::MAX);
+    let _ = invoke(moho_abi::system_call::address_space::wake, futex, u64::MAX);
 }
