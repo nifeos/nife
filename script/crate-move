@@ -26,6 +26,9 @@
 #    by the release's commit, `ci.yml` gets the crate's targets (docs.rs `targets`, else the three
 #    bare-metal ones) and `allow-unpublished: true` for the soak. A file the crate already carries
 #    wins over the scaffold's, and says so.
+#    The template still names `nifeos` in its callers, its owners team and its `deny.toml` allowed
+#    source; each is written as `partsfoundry` (`ORGANIZATION` in helpers/crate_move.py), and a
+#    staged file that still names the old one fails as `organization`.
 # 4. Deletes every `Name:` block (`crate_release.strip_name_blocks`), regenerates each falsification
 #    patch over the stripped source, and sets `repository` in `Cargo.toml` after `license`, a value
 #    or `license.workspace = true` (a manifest with neither is a finding). A patch is regenerated
