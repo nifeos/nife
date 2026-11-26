@@ -171,7 +171,7 @@ dependencies = [
 [[package]]
 name = "capability_table"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/capability_table?rev=94147c270abe20e2a9a794f45bd63d46f6139fe6#94147c270abe20e2a9a794f45bd63d46f6139fe6"
+source = "git+https://github.com/partsfoundry/capability_table?rev=a0e8b159e550943828d4ddb61137e53a2c2cd631#a0e8b159e550943828d4ddb61137e53a2c2cd631"
 
 [[package]]
 name = "capability_witness_contract"
