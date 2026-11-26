@@ -9,7 +9,7 @@ use crate::archive::{
     riscv64_initial_ramdisk_path, x86_initial_ramdisk_path,
 };
 use crate::disk::{disk_path, mkdisk, mkredoxfs, redoxfs_server_build};
-use crate::host::{flag_value, kernel_elf, run, workspace_root};
+use crate::host::{flag_value, kernel_elf, workspace_root};
 use crate::{RELEASE, RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, cargo_profiled, user};
 
 /// The microbenchmarks (milestone 21 (benchmarks with teeth); nifeos/record:design/roadmap/0021-benchmarks.md),
@@ -245,6 +245,15 @@ fn bench_riscv64(check: bool, save: bool, features: &str) -> bool {
     )
 }
 
+/// Measurement branch only: unset what `host::runner_env` exports, which `cargo_profiled` runs and
+/// main's plain `run` does not, so the x86_64 leg boots the machine it boots on main. (The riscv64
+/// leg needs none: its archive build already runs `runner_env` on main too.)
+fn strip_runner_env(cmd: &mut Command) {
+    for name in ["NIFE_INITIAL_RAMDISK", "NIFE_DISK", "NIFE_NET"] {
+        cmd.env_remove(name);
+    }
+}
+
 /// **The `x86_64` benchmark path** (DECISIONS §121's amendment, milestone 161 item 4): the same
 /// suite, `_el0` benches self-skipping (no initial ramdisk), plus `tss_iomap_switch`, the cost of
 /// §121 (what a device capability is when the device has no page)'s option 1: `yield_switch` with
@@ -299,6 +308,9 @@ fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
         );
     }
 
+    // Measurement branch only: `cargo_profiled` above runs `runner_env`, which exports the aarch64
+    // archive, a disk and a NIC; main's plain `run` exports none, so remove them to boot main's machine.
+    strip_runner_env(&mut cmd);
     if keyboard() {
         cmd.env("NIFE_INITIAL_RAMDISK", x86_initial_ramdisk_path());
     }
