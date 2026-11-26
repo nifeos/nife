@@ -40,7 +40,15 @@ cd "$(dirname "$0")/.."
 #
 # The service targets come after the parsers (proposal #1592 part a): each replays a session of
 # requests against a server built on the host and checks a confinement rule, not only "no panic".
-targets="device_tree_patch_initial_ramdisk elf_parse globally_unique_identifier_partition_table http_response_feed nifefs_roundtrip package_archive_roundtrip package_index_text capability_manifest_note_decode redoxfs_server_session system_log_session compositor_session acpi_firmware_tables machine_description_from_device_tree video_terminal_feed"
+#
+# The ext4 targets come last and live in a fuzz workspace of their own, tools/ext4_oracle_fuzz, because
+# `rsext4` is ruled host-only (pull request #3639) and stays out of fuzz/'s lockfile. `rsext4_*` are
+# `rsext4`'s own targets, seeded by its make-seeds.sh; `ext4_server_*` drive the read-only server over
+# the generated ext4 corpus. Both need e2fsprogs 1.47 or later, and the corpus needs Linux, so on
+# another system a run of the whole table skips them and says so; one named on the command line is
+# refused there instead. `rsext4_superblock` is built but held out of this table for now, and
+# `script/fuzz rsext4_superblock` still runs it.
+targets="device_tree_patch_initial_ramdisk elf_parse globally_unique_identifier_partition_table http_response_feed nifefs_roundtrip package_archive_roundtrip package_index_text capability_manifest_note_decode redoxfs_server_session system_log_session compositor_session acpi_firmware_tables machine_description_from_device_tree video_terminal_feed ext4_server_session ext4_server_walk rsext4_group_descriptor_table rsext4_extent_tree rsext4_directory_block rsext4_htree_lookup rsext4_mount_and_walk rsext4_journal_replay"
 
 usage() {
     cat <<'EOF'
@@ -76,6 +84,15 @@ while [ $# -gt 0 ]; do
             echo "machine_description_from_device_tree  the CPU, ISA, PLIC, interrupt and JH7110 readers over a firmware device tree"
             echo "compositor_session  the compositor's frames: a lying client's damage re-copies only itself"
             echo "video_terminal_feed  the display terminal's escape engine: cursor and damage stay in the grid, and cutting the input anywhere gives the same screen"
+            echo "ext4_server_session  the read-only ext4 server over a corrupted generated image: read only, handles, scope and reply bounds"
+            echo "ext4_server_walk  a whole client walk of a corrupted generated image: listings are names, every handle closes, sizes agree"
+            echo "rsext4_superblock  rsext4's superblock parser (rsext4's own target; not in the table, run it by name)"
+            echo "rsext4_group_descriptor_table  rsext4's group descriptor table reader (rsext4's own target)"
+            echo "rsext4_extent_tree  rsext4's extent tree walk (rsext4's own target)"
+            echo "rsext4_directory_block  rsext4's directory block parser (rsext4's own target)"
+            echo "rsext4_htree_lookup  rsext4's hash-tree lookup over a whole image (rsext4's own target)"
+            echo "rsext4_mount_and_walk  rsext4 mounts a whole image and walks it (rsext4's own target)"
+            echo "rsext4_journal_replay  rsext4 replays a whole image's journal (rsext4's own target)"
             exit 0
             ;;
         -h|--help) usage; exit 0 ;;
@@ -85,6 +102,10 @@ while [ $# -gt 0 ]; do
 done
 if [ -n "$wanted" ]; then
     targets="$wanted"
+fi
+linux=""
+if [ "$(uname -s)" = Linux ]; then
+    linux=1
 fi
 
 # CI cuts the table into interleaved slices so that no one job carries every target's minute
@@ -132,9 +153,41 @@ if [ "$installed" != "$pinned" ]; then
     cargo install --locked "cargo-fuzz@$pinned"
 fi
 
+# The ext4 targets' inputs, built once per run under target/ext4-fuzz and never committed: the
+# generated ext4 corpus the `ext4_server_*` targets start from (the variable names its directory),
+# and the seeds `rsext4`'s make-seeds.sh writes for its own targets, from the `rsext4` checkout the
+# workspace's lockfile pins.
+ext4_inputs=""
+prepare_ext4() {
+    if [ -n "$ext4_inputs" ]; then
+        return
+    fi
+    ext4_inputs="target/ext4-fuzz"
+    rm -rf "$ext4_inputs"
+    mkdir -p "$ext4_inputs"
+    echo "==> fuzz: building the generated ext4 corpus and rsext4's seeds in $ext4_inputs"
+    tools/ext4_oracle/corpus/make-corpus.sh "$ext4_inputs/images" > /dev/null
+    rsext4_fuzz=$(cargo metadata --manifest-path tools/ext4_oracle_fuzz/Cargo.toml --format-version 1 --locked |
+        python3 -c 'import json, os, sys; print(next(os.path.dirname(p["manifest_path"]) for p in json.load(sys.stdin)["packages"] if p["name"] == "rsext4-fuzz"))')
+    sh "$rsext4_fuzz/make-seeds.sh" "$ext4_inputs/rsext4-seeds" > /dev/null
+}
+
 for target in $targets; do
+    # The fuzz workspace that holds the target.
+    case "$target" in
+        ext4_server_*|rsext4_*) fuzz_dir=tools/ext4_oracle_fuzz ;;
+        *) fuzz_dir=fuzz ;;
+    esac
+    if [ "$fuzz_dir" = tools/ext4_oracle_fuzz ] && [ -z "$linux" ]; then
+        if [ -n "$wanted" ]; then
+            echo "script/fuzz: $target needs the generated ext4 corpus, which builds on Linux only" >&2
+            exit 2
+        fi
+        echo "==> fuzz: $target skipped: the generated ext4 corpus builds on Linux only"
+        continue
+    fi
     # `cargo fuzz list` prints one name per line, so the newlines become spaces before the match.
-    case " $(cargo fuzz list | tr '\n' ' ') " in
+    case " $(cargo fuzz list --fuzz-dir "$fuzz_dir" | tr '\n' ' ') " in
         *" $target "*) ;;
         *) echo "script/fuzz: no such target '$target' (try --list)" >&2; exit 2 ;;
     esac
@@ -142,14 +195,31 @@ for target in $targets; do
     # The writable corpus first, then the read-only seed directories. Both kinds are listed per
     # target rather than discovered, because a seed is a choice with a reason: a directory that
     # happens to hold files is not a corpus.
-    corpus="fuzz/corpus/$target"
+    corpus="$fuzz_dir/corpus/$target"
     mkdir -p "$corpus"
     set -- "$corpus"
     # An `if` rather than `[ ... ] && set --`, because under `set -e` a trailing AND-OR list whose
     # left side is false exits the script, and "this target has no seed directory" is not a failure.
-    if [ -d "fuzz/seeds/$target" ]; then
-        set -- "$@" "fuzz/seeds/$target"
+    if [ -d "$fuzz_dir/seeds/$target" ]; then
+        set -- "$@" "$fuzz_dir/seeds/$target"
     fi
+    # libFuzzer caps an input at 1 MiB unless told otherwise, below `rsext4`'s whole-image seeds, so
+    # those targets take the largest seed's size as their limit.
+    max_len=""
+    case "$target" in
+        ext4_server_*)
+            prepare_ext4
+            EXT4_ORACLE_FUZZ_IMAGES="$PWD/$ext4_inputs/images"
+            export EXT4_ORACLE_FUZZ_IMAGES ;;
+        rsext4_*)
+            prepare_ext4
+            seeds="$ext4_inputs/rsext4-seeds/${target#rsext4_}"
+            set -- "$@" "$seeds"
+            largest=$(wc -c "$seeds"/* | awk '$2 != "total" && $1 > n { n = $1 } END { print n + 0 }')
+            if [ "$largest" -gt 1048576 ]; then
+                max_len="-max_len=$largest"
+            fi ;;
+    esac
     case "$target" in
         device_tree_patch_initial_ramdisk)
             set -- "$@" crates/machine_discovery/tests/fixtures ;;
@@ -164,8 +234,8 @@ for target in $targets; do
     # fuzzer spends its budget rediscovering that a device-tree token is `\x00\x00\x00\x01` and that
     # an ELF starts `\x7fELF`, which are facts, not discoveries.
     dict=""
-    if [ -f "fuzz/dictionaries/$target.dict" ]; then
-        dict="-dict=fuzz/dictionaries/$target.dict"
+    if [ -f "$fuzz_dir/dictionaries/$target.dict" ]; then
+        dict="-dict=$fuzz_dir/dictionaries/$target.dict"
     fi
 
     echo "==> fuzz: $target (${seconds}s, corpus $corpus)"
@@ -174,15 +244,15 @@ for target in $targets; do
     # -print_final_stats=1: the execs/second and the corpus size are the only evidence that the run
     # did anything, and a fuzz job whose output is silence is a job nobody can audit.
     #
-    # $dict is unquoted on purpose: it is either empty (and must vanish rather than become an empty
-    # argument) or one whole `-dict=...` token with no spaces in it.
+    # $dict and $max_len are unquoted on purpose: each is either empty (and must vanish rather than
+    # become an empty argument) or one whole `-flag=...` token with no spaces in it.
     #
     # Each target's wall time, its build included, goes into the job's time record when
     # NIFE_TIME_RECORD names one (milestone 808 (every gate accounts for its time)); the helper
     # returns cargo-fuzz's own exit status.
     # shellcheck disable=SC2086
-    python3 helpers/time_record.py run host fuzz target "$target" -- cargo fuzz run "$target" "$@" -- \
-        $dict -max_total_time="$seconds" -timeout=10 -print_final_stats=1
+    python3 helpers/time_record.py run host fuzz target "$target" -- cargo fuzz run --fuzz-dir "$fuzz_dir" "$target" "$@" -- \
+        $dict $max_len -max_total_time="$seconds" -timeout=10 -print_final_stats=1
 done
 
 echo "==> fuzz: no crashes in $(echo "$targets" | wc -w | tr -d ' ') targets at ${seconds}s each"
