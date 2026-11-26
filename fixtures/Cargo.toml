@@ -648,8 +648,8 @@ capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
 # The serving loop both swappable programs run; the wire format stays in `hot_swap_contract`.
 hot_swap_server = { version = "0.1.0", path = "../crates/hot_swap_server" }
-grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "a1e5b048a9e6a26305a47663eb3c8f7e966beb12" }
-grant_plan = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_plan", rev = "3741a30a2068c8f1c32b24af36c482305d489e0a" }
+grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "f84cd7e6ff2efccbaf18988c584ff9bb7b32e4e7" }
+grant_plan = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_plan", rev = "69aedfbc9adb70d877435c6a62dc4983ef035e0d" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The soak workload's shared page (milestone 219). The kernel reads what the soaker writes, so the
 # layout and the reply transform live in one crate rather than in two copies.

@@ -31,7 +31,7 @@ publish = false
 moho_abi = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/moho_abi", rev = "b4b6ec3a01475d4ab012cd104da32895955f7b15" }
 address_space_layout = { version = "0.1.0", git = "https://github.com/partsfoundry/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
 file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
-grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "a1e5b048a9e6a26305a47663eb3c8f7e966beb12" }
+grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "f84cd7e6ff2efccbaf18988c584ff9bb7b32e4e7" }
 program_table = { path = "../crates/program_table" }
 http_response = { path = "../crates/http_response" }
 capability_manifest_note = { path = "../crates/capability_manifest_note" }

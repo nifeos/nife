@@ -15,16 +15,16 @@ workspace = true
 
 [dependencies]
 # The manifest types and slot numbers every row is written in.
-grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "a1e5b048a9e6a26305a47663eb3c8f7e966beb12" }
+grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "f84cd7e6ff2efccbaf18988c584ff9bb7b32e4e7" }
 # The planner: `plan` and `plan_stage` resolve a name here and plan against its manifest there.
-grant_plan = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_plan", rev = "3741a30a2068c8f1c32b24af36c482305d489e0a" }
+grant_plan = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_plan", rev = "69aedfbc9adb70d877435c6a62dc4983ef035e0d" }
 
 # Dev dependencies only: host tests pin `spawn_protocol`'s rights words to the filesystem contract's bits
 # and `map_el0`'s budget to the one the primitive benchmark measured, without linking either, and
 # read a verb back off an argument page the way the progenitor does.
 [dev-dependencies]
 capability_manifest_note = { version = "0.1.0", path = "../capability_manifest_note" }
-program_argument_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/program_argument_contract", rev = "764e0e55a238252391b1c06135e228ef6b9436c8" }
+program_argument_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/program_argument_contract", rev = "b097970b8650ca8a370018f18ce533c1f22db3e4" }
 file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 # The planner's glob fixtures are checked against its matcher, at the revision the planner pins.
 file_system_fixture = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }

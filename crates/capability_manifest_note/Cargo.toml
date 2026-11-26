@@ -32,7 +32,7 @@ doc_markdown = "warn"
 [dependencies]
 # The type a note carries. The note is `grant_contract::Manifest` in bytes, so the vocabulary is the one
 # the shell already binds lines against and the loader already endows from.
-grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "a1e5b048a9e6a26305a47663eb3c8f7e966beb12" }
+grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "f84cd7e6ff2efccbaf18988c584ff9bb7b32e4e7" }
 # The zone limits and spelling, which are the resolver's: a manifest asks for what a badge can carry.
 domain_name_resolution_contract = { version = "0.1.0", path = "../domain_name_resolution_contract" }
 
