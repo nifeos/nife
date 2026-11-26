@@ -1,0 +1,108 @@
+# The ext4 fuzz workspace: libFuzzer targets over `rsext4` and over `ext4_server` driving it, run by
+# `script/fuzz` in the same rotation as `fuzz/` (`--fuzz-dir tools/ext4_oracle_fuzz`).
+#
+# **Its own workspace, and not part of `fuzz/`**, for the reason tools/ext4_oracle is its own: `rsext4`
+# is ruled host-only (pull request #3639, 2026-11-16 UTC), so it stays out of every lockfile a shipped
+# program or the top-level fuzz workspace resolves. deny.toml's `wrappers` entries refuse `rsext4`, and
+# `rsext4-fuzz` that carries it, in any graph but this one and the oracle's; the package-boundary rule
+# refuses a link to this crate from anything outside the ext4-oracle test package. That ruling is not
+# the §46 (thin primitives or whole subsystems) adoption ruling, which stays open.
+#
+# Name: provisional, minted 2026-11-26 (UTC) by lane/ext4-fuzz-rotation. A package name of its own,
+# since helpers/packages.py keys crates by name and `fuzz` is taken. calef names things.
+[workspace]
+
+[package]
+name = "ext4_oracle_fuzz"
+version = "0.0.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[lib]
+name = "ext4_oracle_fuzz"
+path = "src/lib.rs"
+
+[dependencies]
+libfuzzer-sys = "0.4"
+# The oracle's own `rsext4` adapter (`ext4_oracle_manifest::volume`), so the fuzzed server is the
+# server tools/ext4_oracle judges against `debugfs`, and its `rsext4` is the one pinned there.
+ext4_oracle = { path = "../ext4_oracle" }
+ext4_server = { path = "../../crates/ext4_server" }
+file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+# `rsext4`'s own fuzz target bodies, as functions (`rsext4_fuzz::targets`). Pinned at the commit
+# tools/ext4_oracle pins `rsext4` at, so the two resolve to one `rsext4` and a finding here is a
+# finding in the commit the oracle measures. Bump the two together.
+rsext4-fuzz = { git = "https://github.com/partsfoundry/rsext4", rev = "a0bce1584827277b3e37174cd0534a8fc69ccba1" }
+
+# Overflow checks and debug assertions on in an optimised build, as in fuzz/Cargo.toml.
+[profile.release]
+debug = 1
+debug-assertions = true
+overflow-checks = true
+
+[[bin]]
+name = "ext4_server_walk"
+path = "fuzz_targets/ext4_server_walk.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ext4_server_session"
+path = "fuzz_targets/ext4_server_session.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rsext4_superblock"
+path = "fuzz_targets/rsext4_superblock.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rsext4_group_descriptor_table"
+path = "fuzz_targets/rsext4_group_descriptor_table.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rsext4_extent_tree"
+path = "fuzz_targets/rsext4_extent_tree.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rsext4_directory_block"
+path = "fuzz_targets/rsext4_directory_block.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rsext4_htree_lookup"
+path = "fuzz_targets/rsext4_htree_lookup.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rsext4_mount_and_walk"
+path = "fuzz_targets/rsext4_mount_and_walk.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rsext4_journal_replay"
+path = "fuzz_targets/rsext4_journal_replay.rs"
+test = false
+doc = false
+bench = false

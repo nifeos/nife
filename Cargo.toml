@@ -139,6 +139,7 @@ exclude = [
     "crates/master_boot_record/fuzz",
     "crates/domain_name_resolution_contract/fuzz",
     "crates/pci_configuration_space/fuzz",
+    "tools/ext4_oracle_fuzz",
 ]
 
 # Shared package metadata. Each member opts in with `license.workspace = true`, so the

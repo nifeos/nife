@@ -3,9 +3,9 @@
 //!
 //! Usage: `ext4_oracle_server <image>`
 //!
-//! The image is read as the block capability serves a device, in whole 4,096-byte blocks, through
-//! `ext4_server::Sectors` at `ext4_server::SECTOR_BYTES`, and mounted read-only by `rsext4` with
-//! journal replay off. An `ext4_server::Server` serves the mount, and everything below reaches the
+//! The image is mounted through the library's adapter (`ext4_oracle_manifest::volume`), which reads
+//! it as the block capability serves a device and mounts it read-only by `rsext4` with journal
+//! replay off. An `ext4_server::Server` serves the mount, and everything below reaches the
 //! volume only through file-service requests a client could send: `OPENDIR`, `READDIR`, `OPEN`,
 //! `FSTAT`, `READ`, `LISTXATTR`, `GETXATTR`, `GET_MODIFICATION_TIME_UNIX_SECONDS` and `CLOSE`.
 //!
@@ -14,9 +14,6 @@
 //! manifest onto the same fields. A kind is `Directory` or `RegularFile`, or the error `OPEN`
 //! answers for anything else (`ELOOP` for a symbolic link, `ENXIO` for a device, a named pipe or a
 //! socket). A mount the crate refuses prints one `MOUNT-ERROR` line with the error and exits 2.
-//!
-//! This file is the one place `rsext4` meets `ext4_server`: the crate links no ext4 code, and
-//! `rsext4` stays host-only in this tool (ruled on pull request #3639, 2026-11-16 UTC).
 //!
 //! It computes CRC32C on the path `ext4_oracle_manifest::crc32c_path::select` takes, and
 //! `EXT4_ORACLE_CRC32C` can require one.
@@ -28,15 +25,11 @@ use std::fs::File;
 use std::io::Write;
 use std::os::unix::fs::FileExt;
 
-use ext4_oracle_manifest::{fnv, hex_or_text, namespace};
-use ext4_server::{
-    BlockDevice, DirectoryEntry, ErrorNumber, NodeId, NodeKind, NodeStatus, SECTOR_BYTES, Sectors,
-    Server, Volume, VolumeStatistics,
-};
-use file_system_contract::directory::{self, rights};
+use ext4_oracle_manifest::volume::{self, Ext4Volume};
+use ext4_oracle_manifest::{fnv, hex_or_text};
+use ext4_server::{BlockDevice, ErrorNumber, Server};
+use file_system_contract::directory::rights;
 use file_system_contract::{block, directory_entry, extended_attribute, file_system};
-use rsext4::error::Ext4Result;
-use rsext4::*;
 
 /// The image file as a block device: whole blocks, the tail of the last one zero.
 struct FileBlocks {
@@ -66,192 +59,9 @@ impl BlockDevice for FileBlocks {
     }
 }
 
-/// `rsext4`'s device: the sectors the server adapts from the block capability. Every write is
-/// refused before it reaches them.
-struct Device(Sectors<FileBlocks>);
-
-impl BlockIo for Device {
-    fn read(&mut self, buffer: &mut [u8], sector: SectorId, count: u32) -> Ext4Result<()> {
-        self.0
-            .read(sector.raw(), count, buffer)
-            .map_err(|_| Ext4Error::io())
-    }
-    fn write(&mut self, _: &[u8], _: SectorId, _: u32) -> Ext4Result<()> {
-        Err(Ext4Error::read_only())
-    }
-    fn flush(&mut self) -> Ext4Result<()> {
-        Ok(())
-    }
-    fn geometry(&self) -> DeviceGeometry {
-        DeviceGeometry::new(self.0.sector_bytes(), self.0.sectors())
-    }
-    fn capabilities(&self) -> DeviceCapabilities {
-        DeviceCapabilities {
-            read_only: true,
-            ..DeviceCapabilities::default()
-        }
-    }
-}
-
-struct FixedClock;
-impl Clock for FixedClock {
-    fn now(&self) -> Ext4Result<Ext4Timestamp> {
-        Ok(Ext4Timestamp::new(1_600_000_000, 0))
-    }
-}
-
-type Fs = Ext4<Device, MountedServices<(), NoopObserver, ()>>;
-
-/// An `rsext4` mount as the server's [`Volume`].
-struct Ext4Volume(Fs);
-
-/// The errno a client sees for an `rsext4` error: the three the contract tells apart, and `EIO`
-/// for every other, corruption and checksum failures included.
-fn errno(error: Ext4Error) -> ErrorNumber {
-    match error.kind() {
-        Ext4ErrorKind::NotFound => 2,
-        Ext4ErrorKind::NotDirectory => directory::ENOTDIR,
-        Ext4ErrorKind::IsDirectory => directory::EISDIR,
-        _ => ext4_server::INPUT_OUTPUT_ERROR,
-    }
-}
-
-fn kind_of(file_type: DirectoryEntryType) -> NodeKind {
-    match file_type {
-        DirectoryEntryType::Directory => NodeKind::Directory,
-        DirectoryEntryType::RegularFile => NodeKind::RegularFile,
-        DirectoryEntryType::Symlink => NodeKind::SymbolicLink,
-        _ => NodeKind::Special,
-    }
-}
-
-fn inode_number(node: NodeId) -> Result<InodeNumber, ErrorNumber> {
-    InodeNumber::from_u64(node).map_err(errno)
-}
-
-impl Ext4Volume {
-    /// The namespace and the name within it of a full attribute name, as `rsext4` stores it.
-    fn split_attribute(name: &[u8]) -> Option<(XattrNamespace, &[u8])> {
-        let spaces = [
-            XattrNamespace::PosixAclAccess,
-            XattrNamespace::PosixAclDefault,
-            XattrNamespace::User,
-            XattrNamespace::Trusted,
-            XattrNamespace::Security,
-            XattrNamespace::System,
-        ];
-        spaces.into_iter().find_map(|space| {
-            let prefix = namespace(space);
-            let rest = name.strip_prefix(prefix.as_bytes())?;
-            let whole = !prefix.ends_with('.');
-            (whole == rest.is_empty()).then_some((space, rest))
-        })
-    }
-}
-
-impl Volume for Ext4Volume {
-    fn root(&self) -> NodeId {
-        u64::from(self.0.root_inode().raw())
-    }
-
-    fn lookup(
-        &mut self,
-        dir: NodeId,
-        name: &[u8],
-    ) -> Result<Option<(NodeId, NodeKind)>, ErrorNumber> {
-        let name = FileName::new(name).map_err(|_| directory::EINVAL)?;
-        let found = self
-            .0
-            .lookup_child(inode_number(dir)?, name)
-            .map_err(errno)?;
-        Ok(found.map(|info| (u64::from(info.number.raw()), kind_of(info.file_type()))))
-    }
-
-    fn list(&mut self, dir: NodeId) -> Result<Vec<DirectoryEntry>, ErrorNumber> {
-        let dir = inode_number(dir)?;
-        let mut entries = Vec::new();
-        let mut cursor = DirectoryCursor::Start;
-        loop {
-            let batch = self.0.read_directory(dir, cursor, 256).map_err(errno)?;
-            let Some(last) = batch.last() else { break };
-            cursor = last.next_cursor;
-            for entry in batch {
-                let kind = match entry.file_type {
-                    DirectoryEntryType::Unknown => {
-                        kind_of(self.0.inode(entry.inode).map_err(errno)?.file_type())
-                    }
-                    known => kind_of(known),
-                };
-                entries.push(DirectoryEntry {
-                    name: entry.name,
-                    node: u64::from(entry.inode.raw()),
-                    kind,
-                });
-            }
-            if cursor == DirectoryCursor::End {
-                break;
-            }
-        }
-        Ok(entries)
-    }
-
-    fn status(&mut self, node: NodeId) -> Result<NodeStatus, ErrorNumber> {
-        let info = self.0.inode(inode_number(node)?).map_err(errno)?;
-        Ok(NodeStatus {
-            kind: kind_of(info.file_type()),
-            size_bytes: info.size,
-            modification_seconds: info.mtime.sec,
-        })
-    }
-
-    fn read(&mut self, node: NodeId, offset: u64, out: &mut [u8]) -> Result<usize, ErrorNumber> {
-        self.0
-            .read_inode(inode_number(node)?, offset, out)
-            .map_err(errno)
-    }
-
-    fn extended_attribute_names(&mut self, node: NodeId) -> Result<Vec<Vec<u8>>, ErrorNumber> {
-        let names = self.0.list_xattrs(inode_number(node)?).map_err(errno)?;
-        Ok(names
-            .into_iter()
-            .map(|n| [namespace(n.namespace).into_bytes(), n.name].concat())
-            .collect())
-    }
-
-    fn extended_attribute(
-        &mut self,
-        node: NodeId,
-        name: &[u8],
-    ) -> Result<Option<Vec<u8>>, ErrorNumber> {
-        if !self
-            .extended_attribute_names(node)?
-            .iter()
-            .any(|n| n == name)
-        {
-            return Ok(None);
-        }
-        let Some((space, within)) = Self::split_attribute(name) else {
-            return Ok(None);
-        };
-        self.0
-            .get_xattr(inode_number(node)?, space, within)
-            .map(Some)
-            .map_err(errno)
-    }
-
-    fn statistics(&mut self) -> VolumeStatistics {
-        let s = self.0.statfs();
-        VolumeStatistics {
-            block_bytes: s.block_size,
-            total_blocks: s.total_blocks,
-            free_blocks: s.free_blocks,
-        }
-    }
-}
-
 /// A client of the server: its one window, and requests sent through it.
 struct Client {
-    server: Server<Ext4Volume>,
+    server: Server<Ext4Volume<FileBlocks>>,
     window: Vec<u8>,
 }
 
@@ -482,22 +292,15 @@ fn main() {
     }
     let file = File::open(&args[1]).expect("the image opens for reading");
     let size = file.metadata().expect("the image has a length").len();
-    let sectors = Sectors::new(FileBlocks { file, size }, SECTOR_BYTES)
-        .expect("SECTOR_BYTES is a sector size Sectors accepts");
-    let services = MountServices::new(FixedClock, (), NoopObserver);
-    let fs = match Ext4::mount(
-        Device(sectors),
-        services,
-        MountOptions::read_only_no_journal_replay(),
-    ) {
-        Ok(fs) => fs,
+    let volume = match volume::mount(FileBlocks { file, size }) {
+        Ok(volume) => volume,
         Err(e) => {
             println!("MOUNT-ERROR\t{e:?}");
             std::process::exit(2);
         }
     };
     let mut client = Client {
-        server: Server::new(Ext4Volume(fs)),
+        server: Server::new(volume),
         window: vec![0; file_system::MAXIMUM_TRANSFER_BYTES],
     };
     let mut lines = client.walk();

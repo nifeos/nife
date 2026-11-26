@@ -236,7 +236,7 @@ UNIT_KEPT = {
         ({'sec', 'nsec'}, 'a field of btrfs_disk::items::Timespec, an external crate'),
     'tools/ext4_oracle/src/main.rs':
         ({'sec', 'nsec'}, 'a field of rsext4::Ext4Timestamp, an external crate'),
-    'tools/ext4_oracle/src/bin/ext4_oracle_server.rs':
+    'tools/ext4_oracle/src/volume.rs':
         ({'sec'}, 'a field of rsext4::Ext4Timestamp, an external crate'),
     'kernel/src/drivers/gicv3.rs': ({'GICD_CTLR_ARE_NS'}, 'the Arm GICv3 bit name; NS is Non-secure'),
     'components/src/clock.rs': ({'offset_nanos'}, _OVERLAY),

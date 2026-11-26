@@ -2220,6 +2220,10 @@ jobs:
   # exists for icount counts and guest devices (script/ci-qemu), and this leg counts nothing and
   # boots no guest. The corpus, `debugfs` and `e2fsck` run natively on every leg; only the code
   # under test changes architecture.
+  #
+  # The ext4 fuzz targets (tools/ext4_oracle_fuzz) link the same adapter and `rsext4`, so their
+  # clippy runs here too, once, on the x86_64 leg and for the host; `script/fuzz` runs the targets
+  # themselves in the `fuzz-shard` rotation.
   ext4-read-oracle:
     name: ext4 read oracle (${{ matrix.arch }}, CRC32C by ${{ matrix.crc32c }}; rsext4 against debugfs over the generated corpus)
     runs-on: ${{ matrix.runner }}
@@ -2276,7 +2280,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           if [ "${{ github.event_name }}" = pull_request ] &&
-              git diff --quiet "$BASE_SHA" HEAD -- tools/ext4_oracle crates/ext4_server crates/subtree_scope .github/workflows/ci.yml; then
+              git diff --quiet "$BASE_SHA" HEAD -- tools/ext4_oracle tools/ext4_oracle_fuzz crates/ext4_server crates/subtree_scope .github/workflows/ci.yml; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
               echo "ext4-read-oracle: this pull request does not touch the oracle or the server it judges; the merge group runs it"
           fi
@@ -2297,6 +2301,9 @@ jobs:
         name: Lint and test the reader and the writer
         run: |
           cargo clippy --locked --manifest-path tools/ext4_oracle/Cargo.toml --target ${{ matrix.target }} --all-targets -- -D warnings
+          if [ "${{ matrix.arch }}" = x86_64 ]; then
+              cargo clippy --locked --manifest-path tools/ext4_oracle_fuzz/Cargo.toml --all-targets -- -D warnings
+          fi
           cargo test --locked --manifest-path tools/ext4_oracle/Cargo.toml --target ${{ matrix.target }}
           cargo build --locked --release --manifest-path tools/ext4_oracle/Cargo.toml --target ${{ matrix.target }}
       # The scripts run each binary by its path, so on riscv64 that path is a wrapper that runs the
