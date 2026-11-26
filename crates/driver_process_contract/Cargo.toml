@@ -30,7 +30,7 @@ designware_inter_integrated_circuit = { version = "0.1.0", path = "../designware
 # The block server answers `blk`, and its block size sets how many card sectors a block is.
 file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
 # The NVMe handoff's doorbell stride bound is checked against the crate's doorbell arithmetic.
-non_volatile_memory_express = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/non_volatile_memory_express", rev = "1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee" }
+non_volatile_memory_express = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/non_volatile_memory_express", rev = "253c68a0786d5a4f3705e4b9402a0c896bff0181" }
 # The virtio window is drawn from the function's capability list, which `pci` walks.
 pci_configuration_space = { version = "0.1.0", path = "../pci_configuration_space" }
 # Each window's kind is a startup page entry kind.

@@ -537,7 +537,7 @@ source = "git+https://github.com/partsfoundry/extensible_host_controller_interfa
 [[package]]
 name = "file_allocation_table"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/partsfoundry/file_allocation_table?rev=6f8aa1df729d4d437d11b8305fadbafa07c93251#6f8aa1df729d4d437d11b8305fadbafa07c93251"
+source = "git+https://github.com/partsfoundry/file_allocation_table?rev=5c0833682b181007e4b8c451c8b2f30644c8e11d#5c0833682b181007e4b8c451c8b2f30644c8e11d"
 
 [[package]]
 name = "file_system_contract"
@@ -1123,7 +1123,7 @@ version = "0.1.0"
 [[package]]
 name = "non_volatile_memory_express"
 version = "0.1.0-pre.3"
-source = "git+https://github.com/partsfoundry/non_volatile_memory_express?rev=1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee#1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee"
+source = "git+https://github.com/partsfoundry/non_volatile_memory_express?rev=253c68a0786d5a4f3705e4b9402a0c896bff0181#253c68a0786d5a4f3705e4b9402a0c896bff0181"
 
 [[package]]
 name = "nu-ansi-term"
