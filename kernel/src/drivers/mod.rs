@@ -36,7 +36,7 @@ pub mod plic;
 
 // The JH7110's clock and reset generator (milestone 220). Gated to riscv64: the JH7110 is a
 // RISC-V SoC, so on the other two architectures the module would be dead code naming a device
-// that cannot be present. Pure MMIO Rust over `crates/jh7110_clock_and_reset`'s offsets; takes its base and
+// that cannot be present. Pure MMIO Rust over the `jh7110_clock_and_reset` crate's offsets; takes its base and
 // its plan from the caller and holds no state of its own. It serves the two things the kernel
 // brings up itself before any server is spawned: the PCI Express root port (milestone 163) and, in
 // a soak that arms it, the watchdog. Every other device, the PMIC bus among them, goes through the

@@ -1,7 +1,7 @@
 //! The JH7110's clock and reset generator, the kernel's own volatile half: what the kernel's PCI
 //! Express root port and its watchdog need to turn their clocks on.
 //!
-//! `crates/jh7110_clock_and_reset` owns the offsets, bit positions, bring-up plan and device-tree
+//! The `jh7110_clock_and_reset` crate (partsfoundry/jh7110_clock_and_reset) owns the offsets, bit positions, bring-up plan and device-tree
 //! query, host-tested and pointer-free. This walks a plan it is handed against a base it is handed
 //! and reports what the hardware said. It reaches into no kernel global (§4 (kernel shape)). Every
 //! device a userspace driver serves asks the clock and reset server instead
