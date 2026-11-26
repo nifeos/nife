@@ -1,7 +1,7 @@
 use super::*;
 use crate::capability_object::{
-    Rights, interrupt_capability, notification_capability, rendezvous_capability, timer_capability,
-    virtual_io_capability,
+    INTERFACE_RIGHTS, Rights, interrupt_capability, notification_capability, rendezvous_capability,
+    timer_capability, virtual_io_capability,
 };
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
@@ -266,7 +266,7 @@ fn wire_net_server(
                     virtual_io_capability(vid),  // slot 2: the confined transport
                     memory_region_capability(budget), // slot 3: the heap's budget
                     rendezvous_capability(stack, Rights::READ), // slot 4: serve clients' requests
-                    notification_capability(wake, Rights::ALL), // slot 5: bound; arm it, poll it
+                    notification_capability(wake, INTERFACE_RIGHTS), // slot 5: bound; arm it, poll it
                     timer_capability(retransmit, Rights::WRITE), // slot 6: smoltcp's next deadline
                     // slot 7: what each socket is minted from (§255 (each socket is its own
                     // capability)); slot 8, its own address space, `run_with_own_space` adds.

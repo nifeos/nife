@@ -504,7 +504,7 @@ impl Model {
         if !src.allows(Rights::GRANT) {
             return refuse(Error::NotPermitted);
         }
-        let narrowed = (a1 as u32) & Rights::ALL.bits();
+        let narrowed = (a1 as u32) & crate::capability_object::INTERFACE_RIGHTS.bits();
         if narrowed & !src.rights != 0 {
             return refuse(Error::NotPermitted);
         }
@@ -1290,7 +1290,7 @@ fn endow(rng: &mut Rng, model: &mut Model, a: usize) -> [Option<ModelCapability>
     let rights = |rng: &mut Rng| {
         let r = rng.below(16) as u32;
         if r == 0 || rng.chance(50) {
-            Rights::ALL.bits()
+            crate::capability_object::INTERFACE_RIGHTS.bits()
         } else {
             r
         }

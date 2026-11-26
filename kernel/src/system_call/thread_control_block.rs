@@ -144,7 +144,7 @@ fn thread_control_block_capability_insert(
         tid,
         sched::Delegation {
             slot: src_slot,
-            rights: Rights::from_bits(rights as u32),
+            rights: crate::capability_object::interface_rights(rights),
         },
         target,
     )?;

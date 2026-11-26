@@ -20,6 +20,10 @@ delegation, and the premise check says the sweep really did reach that thread's 
 Nothing here is architecture-specific: the system call layer, the sweeps and the seam are portable
 code, so one patch serves every leg.
 
+Re-cut on 2026-11-25 (UTC) by lane kernel-takes-sized-capability-table, when the rights word
+came to be read through `capability_object::interface_rights`; the defect is unchanged.
+Replayed red at `revocation_window_tests.rs:221`, the headline assertion, on aarch64 that day.
+
 diff --git a/kernel/src/system_call/thread_control_block.rs b/kernel/src/system_call/thread_control_block.rs
 --- a/kernel/src/system_call/thread_control_block.rs
 +++ b/kernel/src/system_call/thread_control_block.rs
@@ -31,7 +35,7 @@ diff --git a/kernel/src/system_call/thread_control_block.rs b/kernel/src/system_
 +    if !src.rights.allows(Rights::GRANT) {
 +        return Err(Error::NotPermitted);
 +    }
-+    let narrowed = Rights::from_bits(rights as u32);
++    let narrowed = crate::capability_object::interface_rights(rights);
 +    if !narrowed.is_subset_of(src.rights) {
 +        return Err(Error::NotPermitted);
 +    }
@@ -42,7 +46,7 @@ diff --git a/kernel/src/system_call/thread_control_block.rs b/kernel/src/system_
          tid,
 -        sched::Delegation {
 -            slot: src_slot,
--            rights: Rights::from_bits(rights as u32),
+-            rights: crate::capability_object::interface_rights(rights),
 +        crate::capability_object::Capability {
 +            object: src.object,
 +            rights: narrowed,

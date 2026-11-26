@@ -258,7 +258,10 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
     let Object::Timer(t) = capability.object else {
         panic!("RETYPE_OBJECT(TIMER) minted {:?}", capability.object);
     };
-    assert_eq!(capability.rights, Rights::ALL);
+    assert_eq!(
+        capability.rights,
+        crate::capability_object::INTERFACE_RIGHTS
+    );
     let n_slot = invoke(
         ut,
         moho_abi::memory_region::RETYPE_OBJECT,
