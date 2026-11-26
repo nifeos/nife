@@ -236,8 +236,9 @@ pub fn address_space_layout_into(
 /// faults, which is its own bug, not a Rust-safety obligation.
 ///
 /// Name: provisional, minted by lane `maintainer/unmap-through-wrapper`, the counterpart of
-/// [`address_space_layout_into`] for `address_space::UNMAP`.
-pub fn address_space_unmap(virtual_address_space_slot: u64, virtual_address: u64) -> i64 {
+/// [`address_space_layout_into`] for `address_space::UNMAP`. Considered `address_space_unmap`
+/// (refused: the template's abbreviation gate does not count `unmap` as a word).
+pub fn address_space_remove_page(virtual_address_space_slot: u64, virtual_address: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the address-space capability's `WRITE` and the
     // address before it touches a page table.
     unsafe {

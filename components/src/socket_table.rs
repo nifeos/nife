@@ -187,7 +187,7 @@ impl Table {
             return true;
         }
         // The kernel checks the capability, the right and the address.
-        let gone = user_mode_runtime::address_space_unmap(OWN_SPACE, socket_va(entry)) == 0;
+        let gone = user_mode_runtime::address_space_remove_page(OWN_SPACE, socket_va(entry)) == 0;
         if gone {
             self.mapped[entry] = false;
         }
