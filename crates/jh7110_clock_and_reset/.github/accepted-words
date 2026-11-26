@@ -1,0 +1,2 @@
+# Words this crate's names keep, one per line with its reason, read by the abbreviation gate.
+rtx  StarFive's name for the Ethernet port's reduced media-independent interface clock (GMAC0_RMII_RTX), and no source expands it

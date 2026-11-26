@@ -339,7 +339,7 @@ fn gmac0s_plans_ungate_every_clock_before_either_reset_and_leave_the_parent_to_t
     );
     assert!(GMAC0_ALWAYS_ON_BRING_UP.contains(&Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_TRANSMIT)));
     let Step::SelectParent { clock, parent } =
-        GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT
+        GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX
     else {
         panic!("the v1.3B parent is a parent step");
     };
@@ -1157,7 +1157,7 @@ fn a_v1_3b_tree_assigns_gmac0_transmit_the_rmii_clock() {
     assert_eq!(
         gmac0_transmit_parent(Some(&clocks), Some(&parents), provider),
         Ok(TransmitParent::Assigned(
-            GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT
+            GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX
         ))
     );
 }

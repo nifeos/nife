@@ -22,8 +22,10 @@ so the baseline only shrinks. Fixing a finding is a separate lane and renames no
 **What each gate reads.** The crate's Rust under `src/` for the register, abbreviation and
 acronym gates (the last also reads the README, the CHANGELOG and `docs/*.md`), and the crate's
 README and crate-root documentation for the three README gates, each as the template runs it.
-There is no `.github/accepted-words` file in this tree, so a word is accepted only where the
-template's own lists accept it.
+A crate's own accepted words are `crates/<crate>/.github/accepted-words`, which the abbreviation
+gate reads as the template reads a crate repository's `.github/accepted-words`, and which becomes
+that file when the crate moves to its own repository. A crate without one accepts only the words
+the template's own lists accept.
 
 The baseline is one `<crate> <gate> <count>` line per nonzero entry, sorted, with no total.
 
@@ -43,6 +45,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HELPERS = os.path.join(ROOT, 'vendor', 'crate-workflows', 'helpers')
 BASELINE = os.path.join(ROOT, 'helpers', 'template_report_baseline.txt')
 CRATES = 'crates'
+# A crate's own accepted words, the path a crate repository keeps them at.
+ACCEPTED = '.github/accepted-words'
 
 GATES = ('register_names', 'abbreviations', 'prose_acronyms', 'readme_acronyms',
          'inflated_wording', 'readme_sections')
@@ -73,7 +77,11 @@ def command(gate, crate):
     script = os.path.join(HELPERS, gate + '.py')
     directory = f'{CRATES}/{crate}'
     manifest = f'{directory}/Cargo.toml'
-    if gate in ('register_names', 'abbreviations'):
+    if gate == 'abbreviations':
+        accepted = f'{directory}/{ACCEPTED}'
+        extra = ['--accepted', accepted] if os.path.isfile(os.path.join(ROOT, accepted)) else []
+        return [sys.executable, '-B', script, '--manifest', manifest, *extra, *rust_files(crate)]
+    if gate == 'register_names':
         return [sys.executable, '-B', script, '--manifest', manifest, *rust_files(crate)]
     if gate == 'prose_acronyms':
         return [sys.executable, '-B', script, *documents(crate), *rust_files(crate)]
