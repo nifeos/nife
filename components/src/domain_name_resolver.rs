@@ -216,16 +216,8 @@ fn attach_client(state: &mut State, badge: u32, frame: u64) {
 /// was reclaimed first, and revoking the frame took the mapping with it), which is the same end.
 fn give_up_window(state: &mut State, window: usize) {
     if let Some(frame) = state.attached[window].take() {
-        // SAFETY: `invoke` traps to the kernel, which checks the slot, the rights and the address.
-        let _ = unsafe {
-            user_mode_runtime::invoke(
-                OWN_SPACE,
-                moho_abi::address_space::UNMAP,
-                window_va(window),
-                0,
-                0,
-            )
-        };
+        // The kernel checks the slot, the rights and the address.
+        let _ = user_mode_runtime::address_space_unmap(OWN_SPACE, window_va(window));
         capability_delete(frame);
     }
 }

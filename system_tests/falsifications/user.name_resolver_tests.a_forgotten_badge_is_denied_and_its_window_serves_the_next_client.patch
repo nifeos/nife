@@ -14,20 +14,12 @@ diff --git a/components/src/domain_name_resolver.rs b/components/src/domain_name
 index dbbb588e5..7d85a6487 100644
 --- a/components/src/domain_name_resolver.rs
 +++ b/components/src/domain_name_resolver.rs
-@@ -278,16 +278,6 @@ fn attach_client(state: &mut State, badge: u32, frame: u64) {
+@@ -216,6 +216,4 @@ fn attach_client(state: &mut State, badge: u32, frame: u64) {
  /// was reclaimed first, and revoking the frame took the mapping with it), which is the same end.
  fn give_up_window(state: &mut State, window: usize) {
      if let Some(frame) = state.attached[window].take() {
--        // SAFETY: `invoke` traps to the kernel, which checks the slot, the rights and the address.
--        let _ = unsafe {
--            user_mode_runtime::invoke(
--                OWN_SPACE,
--                moho_abi::address_space::UNMAP,
--                window_va(window),
--                0,
--                0,
--            )
--        };
+-        // The kernel checks the slot, the rights and the address.
+-        let _ = user_mode_runtime::address_space_unmap(OWN_SPACE, window_va(window));
          capability_delete(frame);
      }
  }

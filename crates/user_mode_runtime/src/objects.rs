@@ -227,6 +227,27 @@ pub fn address_space_layout_into(
     }
 }
 
+/// `UNMAP`: take the page at `virtual_address` out of the address space named by
+/// `virtual_address_space_slot`. `0` on success; a negative `moho_abi::Error` (`BadPointer` when no
+/// page is mapped there, `NotPermitted` without `WRITE`).
+///
+/// Safe for the reason [`address_space_layout_into`] is: the kernel checks the capability's `WRITE`
+/// and the address, and changes nothing on a refusal. A caller that still reads the page afterward
+/// faults, which is its own bug, not a Rust-safety obligation.
+///
+/// Name: provisional, minted by lane `maintainer/unmap-through-wrapper`, the counterpart of
+/// [`address_space_layout_into`] for `address_space::UNMAP`.
+pub fn address_space_unmap(virtual_address_space_slot: u64, virtual_address: u64) -> i64 {
+    // SAFETY: `svc`/`ecall`. The kernel validates the address-space capability's `WRITE` and the
+    // address before it touches a page table.
+    unsafe {
+        trap_call(typed::address_space::unmap(
+            virtual_address_space_slot,
+            virtual_address,
+        ))[0] as i64
+    }
+}
+
 /// `CAPABILITY_INSERT`: copy the capability in the caller's `capability_slot`, narrowed to `rights`, into the
 /// child TCB's capability table. `target = 0` places it in the first free slot; `target = n` places
 /// it in slot `n - 1` (see `moho_abi::thread_control_block::CAPABILITY_INSERT`'s own doc for the supervision-slot
