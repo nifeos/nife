@@ -19,7 +19,7 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
+source = "git+https://github.com/partsfoundry/byte_glob?rev=a095cd860ae8b6aa678913bdd7b2b32db24cc596#a095cd860ae8b6aa678913bdd7b2b32db24cc596"
 
 [[package]]
 name = "capability_manifest_note"
@@ -157,7 +157,7 @@ dependencies = [
 [[package]]
 name = "grant_contract"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/grant_contract?rev=a1e5b048a9e6a26305a47663eb3c8f7e966beb12#a1e5b048a9e6a26305a47663eb3c8f7e966beb12"
+source = "git+https://github.com/partsfoundry/grant_contract?rev=f84cd7e6ff2efccbaf18988c584ff9bb7b32e4e7#f84cd7e6ff2efccbaf18988c584ff9bb7b32e4e7"
 dependencies = [
  "program_argument_contract",
 ]
@@ -165,7 +165,7 @@ dependencies = [
 [[package]]
 name = "grant_plan"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/grant_plan?rev=8f2555339461aae2bde04be579da7cac7b661698#8f2555339461aae2bde04be579da7cac7b661698"
+source = "git+https://github.com/partsfoundry/grant_plan?rev=69aedfbc9adb70d877435c6a62dc4983ef035e0d#69aedfbc9adb70d877435c6a62dc4983ef035e0d"
 dependencies = [
  "byte_glob",
  "grant_contract",
@@ -256,7 +256,7 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
+source = "git+https://github.com/partsfoundry/program_argument_contract?rev=b097970b8650ca8a370018f18ce533c1f22db3e4#b097970b8650ca8a370018f18ce533c1f22db3e4"
 
 [[package]]
 name = "program_table"
