@@ -95,7 +95,7 @@ import sys
 # --- the ceiling and the baseline -----------------------------------------------------------------
 
 CEILING = 40
-BASELINE = 'design/comment-block-baseline.tsv'
+BASELINE = 'lint/comment-block-baseline.tsv'
 
 HEADER = """\
 # The comment-block ratchet's baseline: milestone 860 (comments state the constraint as it is now),

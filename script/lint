@@ -3538,24 +3538,21 @@ echo "==> the prose ratchet (§212 words, §213 sentences, bold and passives)"
 # Milestone 586 (a prose ratchet in lint). §212 (a prose budget) and §213 (writing standards) were
 # ratified on 2026-09-23 with a ratchet as their enforcement and no gate built, and on 2026-09-24 the
 # word cap slipped twice in one day because nothing checked it: one lane moved facts into eight
-# notes already over the cap and every one of them grew. The measuring, the baseline and the orphan
+# notes already over the cap and every one of them grew. The measuring, the passive baseline and the orphan
 # check live in helpers/prose_ratchet.py, whose header is the manual. The document scope there is
 # shared with script/metrics' passive-voice chart, so the gate and the chart judge the same
 # files; the word count is `budget_words` (calef's ruling of 2026-10-13 UTC).
 #
-# A document over a limit passes only while it is no worse than design/prose-baseline.tsv and no
-# worse than it was at the merge base, or while it carries a marked exception with a date and a
-# reason. A document missing from the baseline meets the limits outright. The baseline itself may
-# only shrink. When a document improves, `python3 helpers/prose_ratchet.py --bank` lowers its row;
-# nothing forces that, on purpose, because the block names baseline churn as the thing that would
-# make this ratchet cost more than it saves.
+# A document over a word, sentence or bold limit fails, unless it carries a marked exception with a
+# date and a reason. Those three measures have no baseline: it was emptied and removed.
 #
 # §213 rule 6 (milestone 952 (a passive-voice ratchet in lint), calef 2026-10-25 UTC) rides the same pass: helpers/passive_voice.py
 # counts passives, and a document over 2 per 1,000 prose words passes only while
-# design/passive-baseline.tsv holds it and its count has not risen there or since the merge base.
+# lint/passive-baseline.tsv holds it and its count has not risen there or since the merge base. When a
+# document improves, `python3 helpers/prose_ratchet.py --bank` lowers its row.
 python3 helpers/prose_ratchet.py --selftest
 python3 helpers/prose_ratchet.py --check
-echo "==> the removed-files index (design/removed.tsv: each path absent, each sha real, no retired number returns)"
+echo "==> the removed-files index (lint/removed.tsv: each path absent, each sha real, no retired number returns)"
 # lint-scope: both
 # lint-quick
 # 2026-10-31 (UTC) the architect ruled that files nothing depends on are removed and an index keeps
@@ -3568,14 +3565,12 @@ echo "==> the file-length ratchet (§266's 2,000-line ceiling on Rust files)"
 # Milestone 841 (a ratchet on Rust file length, and its dashboard row). calef ruled §266 (a Rust
 # source file stays under 2,000 lines) on 2026-10-08 (UTC): the measure (physical lines, comments
 # and blank lines counted, because a reader loads every line), the 2,000-line ceiling, and option
-# (b) for the gate's matching rule, a list entry that is a ceiling and only falls. Nothing in
+# (b) for the gate's matching rule, since replaced by no list at all: every file meets the ceiling. Nothing in
 # script/lint read a source file's length before this; the share of Rust lines in files over 2,000
 # sat between 17% and 24% for two months while the tree tripled, because a file got split only when
 # somebody noticed, which is rung zero. The rules, the baseline format and the failure messages
-# live in helpers/file_length_ratchet.py, whose header is the manual, as the prose ratchet's is.
-# Twenty files are over the ceiling today and are held one row each in
-# design/file-length-baseline.tsv; they may only shrink, and an unlisted file meets the ceiling
-# outright.
+# live in helpers/file_length_ratchet.py, whose header is the manual, as the prose check's is.
+# No file is over the ceiling, and none is exempt.
 python3 helpers/file_length_ratchet.py --selftest
 python3 helpers/file_length_ratchet.py --check
 echo "==> the module-block ratchet (every module, document and pub item carries a Name: block; the unblocked list only shrinks)"
@@ -3583,11 +3578,11 @@ echo "==> the module-block ratchet (every module, document and pub item carries 
 # lint-quick
 # A module is a file, every .rs under a src/ directory, and a pub item is a line in one, so
 # script/names and script/metrics count each whether or not its block exists, and one without a
-# block sits in no status. This holds the ones without to design/module-block-baseline.txt, which
+# block sits in no status. This holds the ones without to lint/module-block-baseline.txt, which
 # may only shrink, so new code arrives with its block. The rules live in helpers/module_block_ratchet.py, whose header is the manual.
 python3 helpers/module_block_ratchet.py --selftest
 python3 helpers/module_block_ratchet.py --check
-echo "==> the lint ratchet's selftest (clippy lints counted against a baseline that only falls)"
+echo "==> the lint ratchet's selftest (clippy lints counted against their limit)"
 # lint-scope: code
 # Milestone 888 (a ratchet on function length). The rules, the baseline format and the failure
 # messages live in helpers/lint_ratchet.py, whose header is the manual. The selftest is fixtures
@@ -3597,9 +3592,9 @@ echo "==> the lint ratchet (the clippy sections' saved diagnostics, judged; no c
 # lint-scope: code
 # The panic proposal's mechanism (nifeos/record:design/roadmap/0896-panics-in-the-kernel-and-the-parsers-are-
 # counted-and-fall.md), built by milestone 888 with one lint registered: `too_many_lines` at 100
-# code lines (calef, 2026-10-09 UTC), one row per function in design/lint-baseline.tsv, over every
+# code lines (calef, 2026-10-09 UTC), with no function exempt, over every
 # tracked .rs file outside vendor/ (§283 (a function is held to 100 code lines by a lint ratchet)).
-# The text measure decides every row; the clippy diagnostics are the cross-check on each function
+# The text measure decides each function; the clippy diagnostics are the cross-check on each function
 # the passes compile.
 #
 # Milestone 980 (script/lint stops paying per-item costs), part 6: this section used to run clippy
@@ -3635,7 +3630,7 @@ echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 202
 # failure messages live in helpers/comment_block_ratchet.py, whose header is the manual, as the
 # other two ratchets' are. Its lexer is adapted from the note's own, so the gate and the
 # measurement read the same tree. The blocks over their directory's cap are held one row each in
-# design/comment-block-baseline.tsv; they may only shrink, swept a milestone's worth at a time, and
+# lint/comment-block-baseline.tsv; they may only shrink, swept a milestone's worth at a time, and
 # an unlisted block meets the cap outright. Milestone 929 (comments in the Linux style across
 # first-party Rust) steps each directory's cap from 40 to 20 to 10 and holds its in-body comment
 # lines to a ceiling, in the same file.
@@ -3648,10 +3643,8 @@ echo "==> the parent-index check (§282: when a file is split, the parent become
 # fork 1 of #1959: a parent that has been split holds module docs, `mod` lines, `use` and
 # re-exports, and nothing that can grow into a feature. The split files grew because the parent was
 # the default home for new code, so the rule gives new code nowhere to land but a named file. A
-# parent is any Rust file declaring a child out of line other than its own `tests` or `proofs`. 49
-# of the 57 parents held more than an index the day the rule landed and are held one row each in
-# design/parent-index-baseline.tsv, a ceiling on the code lines outside the index that only falls;
-# a new split meets the rule outright. The definitions, the small-item allowance, the exception
+# parent is any Rust file declaring a child out of line other than its own `tests` or `proofs`. No
+# parent holds more than an index, and none is exempt. The definitions, the small-item allowance, the exception
 # mark and the failure messages live in helpers/parent_index.py, whose header is the manual, as the
 # other ratchets' are.
 python3 helpers/parent_index.py --selftest

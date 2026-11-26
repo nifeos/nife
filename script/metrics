@@ -518,8 +518,8 @@ MEASURES = [
     ('line-citations', ['line_citations_code', 'line_citations_doc', 'line_citations_ceiling']),
     # `bold-backlog.csv` (2026W29 to 2026W41) is history that nothing writes or reads any more. The
     # bold backlog reached zero on 2026-10-06 (UTC) and calef asked that it stop being tracked; the
-    # gate that holds it at zero is `check` in helpers/prose_ratchet.py, which refuses any bold
-    # ceiling in design/prose-baseline.tsv.
+    # gate that holds it at zero is `check` in helpers/prose_ratchet.py, which refuses any
+    # document over 4 bold per 1,000 words.
     # Milestone 611. File and column names provisional (that lane's, 2026-09-27).
     ('homes', HOMES_COLUMNS),
     # Milestone 415 (sub-tripwire drift accumulates across baseline saves), item 3, a report and

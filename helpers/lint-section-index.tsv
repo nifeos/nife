@@ -92,10 +92,10 @@ review-status	1	-	-	1	-	both	crate reviews keep one closed set of finding states
 -	1	-	-	0	-	code	every userspace trap declares the registers the kernel writes
 -	1	-	-	1	-	both	markdown links
 -	1	-	-	1	-	both	the prose ratchet (§212 words, §213 sentences, bold and passives)
--	1	-	-	1	-	both	the removed-files index (design/removed.tsv: each path absent, each sha real, no retired number returns)
+-	1	-	-	1	-	both	the removed-files index (lint/removed.tsv: each path absent, each sha real, no retired number returns)
 -	1	-	-	0	-	code	the file-length ratchet (§266's 2,000-line ceiling on Rust files)
 -	1	-	-	1	-	both	the module-block ratchet (every module, document and pub item carries a Name: block; the unblocked list only shrinks)
--	1	-	-	0	-	code	the lint ratchet's selftest (clippy lints counted against a baseline that only falls)
+-	1	-	-	0	-	code	the lint ratchet's selftest (clippy lints counted against their limit)
 -	0	main	host,aarch64,x86_64,x86_64_user,riscv64,redoxfs_host,glyph_atlas_generator,redoxfs_server,fuzz	0	-	code	the lint ratchet (the clippy sections' saved diagnostics, judged; no clippy of its own)
 -	1	-	-	0	-	code	the comment-block ratchet (calef's 40-line cap on a comment block, 2026-10-07; per-directory caps and in-body ceilings, milestone 929)
 -	1	-	-	1	-	code	the parent-index check (§282: when a file is split, the parent becomes an index)

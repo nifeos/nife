@@ -1,9 +1,0 @@
-# The lint ratchet's baseline: helpers/lint_ratchet.py, from milestone 888 (a ratchet on function
-# length). One row per ratcheted finding: the clippy lint, the file, the item (a function's name for
-# a measure lint, `-` for a per-file count), and the value (the function's code lines, or the file's
-# hit count).
-# A value is a ceiling that may only go DOWN: lower it with `python3 helpers/lint_ratchet.py --bank`,
-# which never raises and never adds. A row is removed in the same change that takes its item to the
-# threshold or below, or deletes it. A rename moves its row at the same number. script/lint compares
-# this file against the merge base, so a row cannot be added and a number cannot rise.
-lint	path	item	value

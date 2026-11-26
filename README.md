@@ -129,7 +129,7 @@ today's definitions to old commits.
 - [design/roadmap/](https://github.com/nifeos/record/blob/main/design/roadmap/README.md) and [notes/roadmap.md](https://github.com/nifeos/record/blob/main/notes/roadmap.md): milestones and their status vocabulary.
 - [design/decisions/](https://github.com/nifeos/record/blob/main/design/decisions/README.md): what was chosen and refused, and why.
 - [design/audit-reports/](https://github.com/nifeos/record/blob/main/design/audit-reports/README.md): every audit, its lens, and when the next is due.
-- [design/removed.tsv](design/removed.tsv): the index of files taken out of the tree on purpose. Each row gives the path, the removal date, the last commit that held it and the reason; read the file back with `git show <sha>:<path>`. A removed roadmap block keeps its number retired, and `script/lint` refuses a block that takes it.
+- [lint/removed.tsv](lint/removed.tsv): the index of files taken out of the tree on purpose. Each row gives the path, the removal date, the last commit that held it and the reason; read the file back with `git show <sha>:<path>`. A removed roadmap block keeps its number retired, and `script/lint` refuses a block that takes it.
 - [notes/corrections.md](https://github.com/nifeos/record/blob/main/notes/corrections.md): things this project got wrong, each with its full account.
 
 ### Security and license

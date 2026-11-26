@@ -1,4 +1,4 @@
-"""The prose ratchet: §212's word cap and §213's density rules, held to a baseline that only falls.
+"""The prose check: §212's word cap and §213's density rules, with the passive-voice count held to a baseline that only falls.
 
 Milestone 586 (a prose ratchet in lint). calef ratified both decisions on 2026-09-23 with a ratchet
 as their enforcement and no gate built, and the budget slipped twice on 2026-09-24 because nothing
@@ -6,9 +6,7 @@ checked it: a lane moved facts into notes already over the cap and each note gre
 
     python3 helpers/prose_ratchet.py --check          # what script/lint runs
     python3 helpers/prose_ratchet.py --report PATH..  # one document's measures, and why
-    python3 helpers/prose_ratchet.py --bank           # lower the baseline to the tree; never raises
-    python3 helpers/prose_ratchet.py --init           # write the baseline from scratch (milestone 586 only)
-    python3 helpers/prose_ratchet.py --remeasure      # once, in the change that bumps MEASURE (see there)
+    python3 helpers/prose_ratchet.py --bank           # lower the passive baseline to the tree; never raises
     python3 helpers/prose_ratchet.py --init-passive   # write the passive baseline (milestone 952 only)
     python3 helpers/prose_ratchet.py --remeasure-passive  # once, with a PASSIVE_MEASURE bump
 
@@ -25,19 +23,16 @@ which is §212's half alone.
 | median sentence, in words | 20 | §213 (writing standards) rule 1 |
 | longest sentence, in words | 40 | §213 rule 2 |
 | bold spans per 1,000 words | 4 | §213 rule 3, held as two counts: line-opening and inline |
-| passive constructions per 1,000 words | 2 | §213 rule 6, held in its own baseline |
+| passive constructions per 1,000 words | 2 | §213 rule 6, held to a baseline that only falls |
 
-**The ratchet.** A measure at or under its limit passes. A measure over it passes only if the
-committed baseline (`design/prose-baseline.tsv`) records the document as already over on that
-measure and the document has not got worse than the baseline says. A document missing from the
-baseline, which is every new one, meets the limits outright. Against the merge base as well: a
-document that shrank on `main` without anyone banking the shrink may not grow back into the slack,
-because §212's rule is "may not grow", not "may not exceed a number written down once".
+**The rule.** A measure at or under its limit passes. A measure over it fails, unless the document
+carries a marked exception for that measure's decision. A document is held to the limits outright,
+new or old: the baselines the word, sentence and bold measures once had emptied, and were removed.
 
 **The passive-voice half** (milestone 952, §213 rule 6, calef 2026-10-25 UTC: "Lets implement
 A."). `helpers/passive_voice.py` counts passives over the prose the sentence limits read (blocks,
 quotes out, inline code one word). A document of at least 200 prose words over 2 per 1,000 fails,
-unless `design/passive-baseline.tsv` holds a row for it, and then its count may not rise above the
+unless `lint/passive-baseline.tsv` holds a row for it, and then its count may not rise above the
 row nor above its count at the merge base. That file is its own: `--init-passive` wrote it once,
 `--bank` lowers it, and nothing raises it. No touch rule applies, unlike bold: ruling A holds an
 existing document to a count that only falls, and a document gains no allowance by being edited.
@@ -91,14 +86,13 @@ of median and a gate built on it would fail documents that pass:
 **Bold is judged on density in any document a change touches** (calef, 2026-09-26 UTC: "4 bolds
 per 1000 is the right ratio for our written prose. That it was previously written without density
 is irrelevant. Bold should be rare."). A document whose content differs from the merge base must
-be at or under 4 bold per 1,000 words afterwards, and its baseline bold columns grant it nothing.
+be at or under 4 bold per 1,000 words afterwards.
 This was built first as two counts, because density is bold over words and a lane that condenses a
 document raises it. The answer now is that whoever condenses a document removes its bold too.
 
-Untouched documents passed on their baseline bold counts, so the tree did not go red on the day
-of the ruling. That allowance is spent: the backlog reached zero on 2026-10-06 (UTC), the baseline's
-bold columns are empty, and `check` refuses any bold ceiling there, so every document meets the
-limit whether or not a change touches it. "Touched" is the diff against the merge base this module already takes for its
+Every document meets that limit, whether or not a change touches it (the backlog reached zero on
+2026-10-06 UTC, and the baseline that once excused untouched documents has since been removed), so the
+touch rule only makes the failure message name the change. "Touched" is the diff against the merge base this module already takes for its
 tight half, read with renames: a pure rename (100% similar) is not a touch, and an edit is.
 
 **A mechanical rename is not a touch either** (calef, 2026-09-27T05:23Z, ruling on the
@@ -271,8 +265,6 @@ THEMATIC_APPENDIX_DIRS = {'design/tenets/': 'AGENTS.md'}
 LIMITS = {'words': 3000, 'median': 20, 'longest': 40, 'bold_per_1000': 4}
 SMALL_DOCUMENT = 200  # words; below this, median and density are not asked (see the header)
 
-BASELINE = 'design/prose-baseline.tsv'
-COLUMNS = ('words', 'median', 'longest', 'bold_lead', 'bold_inline')
 FAMILY = {'words': 'prose-budget', 'median': 'writing-standards', 'longest': 'writing-standards',
           'bold_lead': 'writing-standards', 'bold_inline': 'writing-standards'}
 
@@ -841,17 +833,6 @@ def granted_words(text):
 # module the parser reads them with, so nothing here lists them. Kept a separate function from the
 # bold counting on purpose: #1311 changes that, and the two should not share a hunk.
 #
-# MEASURE numbers the measurement. The baseline records the one it was written with, and a baseline
-# written with a newer one may re-measure rows upward once, in the same change as the code that
-# moved (see `check`). That is a re-measurement of the same prose, not a relaxed limit.
-#
-# REMEASURED names the columns the current MEASURE moved: `check` lets those cells rise, or a row
-# holding only them appear, in the change that bumps MEASURE and nowhere else. MEASURE 3 made
-# `words` the whole-file count (`budget_words`).
-MEASURE = 3
-REMEASURED = ('words',)
-
-
 def measured(path, text):
     """`measure`, with a roadmap document's field tokens read as syntax rather than sentences, and
     a mechanical rename (`RENAME_PAIRS`) read as the form it replaced, per calef's 2026-09-27
@@ -978,39 +959,12 @@ def over(m):
     return out
 
 
-# --- the baseline ------------------------------------------------------------------------------
-
-HEADER = """\
-# The prose ratchet's baseline: milestone 586 (a prose ratchet in lint), for §212 (a prose budget)
-# and §213 (writing standards).
-# One row per document over at least one limit when it was written. `-` means that measure was
-# within its limit, and so may not cross it. A number is a ceiling that may only go DOWN: lower it
-# with `python3 helpers/prose_ratchet.py --bank`, which never raises and never adds. A row may be
-# removed; a row may not be added and a number may not rise (script/lint compares against the
-# merge base). A document that must exceed its row gets a marked exception, not an edit here.
-# The one exception is a change of measurement: the `measure:` line below says which one wrote
-# these rows, and a change that bumps it re-measures the rows it moved (`--remeasure`), once.
-# Limits: words 3000, median sentence 20, longest sentence 40, bold 4 per 1,000 words (held as the
-# two counts). Median and bold are not asked of documents under 200 words.
-"""
-
+# --- formatting and the passive-voice baseline ----------------------------------------------
 
 def fmt(v):
     if v is None:
         return '-'
     return str(int(v)) if float(v).is_integer() else f'{v:.1f}'
-
-
-def read_baseline(text):
-    rows = {}
-    for line in text.splitlines():
-        if not line.strip() or line.startswith('#'):
-            continue
-        cells = line.split('\t')
-        if cells[0] == 'path':
-            continue
-        rows[cells[0]] = {c: (None if v == '-' else float(v)) for c, v in zip(COLUMNS, cells[1:])}
-    return rows
 
 
 def baseline_measure(text):
@@ -1019,25 +973,15 @@ def baseline_measure(text):
     return int(m.group(1)) if m else 1
 
 
-def write_baseline(rows):
-    out = [HEADER, f'# measure: {MEASURE}\n', 'path\t' + '\t'.join(COLUMNS) + '\n']
-    for path in sorted(rows):
-        out.append(path + '\t' + '\t'.join(fmt(rows[path].get(c)) for c in COLUMNS) + '\n')
-    with open(BASELINE, 'w') as f:
-        f.write(''.join(out))
-
-
 
 # --- the passive-voice baseline (milestone 952) -----------------------------------------------
 #
-# Its own file, so the prose baseline's MEASURE and REMEASURED stay about the prose baseline's own
-# columns: adding this measure moved none of them, and needs no bump there. PASSIVE_MEASURE numbers
-# this file's measurement the same way. A change to `passive_voice` that raises counts (an entry
+# PASSIVE_MEASURE numbers this file's measurement. A change to `passive_voice` that raises counts (an entry
 # leaving NOT_PASSIVE, a participle joining IRREGULAR) bumps it, runs `--remeasure-passive`, and
 # `check` lets rows rise or appear in that change alone. A change that only lowers counts needs no
 # bump: the rows are ceilings, and `--bank` lowers them.
 
-PASSIVE_BASELINE = 'design/passive-baseline.tsv'
+PASSIVE_BASELINE = 'lint/passive-baseline.tsv'
 PASSIVE_PER_1000 = 2
 PASSIVE_MEASURE = 1
 PASSIVE_FAMILY = 'writing-standards'
@@ -1227,58 +1171,9 @@ def check():
     paths = tracked()
     docs = documents(paths)
     base = merge_base()
-    baseline = read_baseline(open(BASELINE).read()) if os.path.exists(BASELINE) else {}
     bad = []
 
-    # The baseline may only go down. Rows are compared with the merge base's copy of the file.
-    if base:
-        old_text = at(base, BASELINE)
-        # A change that moves MEASURE re-measures the columns it moved (REMEASURED) once, with the
-        # code that moved them: those cells may rise, and a row holding only them may appear, in
-        # that change and in no other.
-        remeasured = (old_text is not None and baseline_measure(old_text) < MEASURE
-                      and baseline_measure(open(BASELINE).read()) == MEASURE)
-        if old_text is not None:
-            old = read_baseline(old_text)
-            renames = {}
-            for line in (git('diff', '--name-status', '-M', base, '--', '*.md') or '').splitlines():
-                cells = line.split('\t')
-                if cells[0].startswith('R') and len(cells) == 3:
-                    renames[cells[2]] = cells[1]
-            for path, row in baseline.items():
-                prior = old.get(path) or old.get(renames.get(path, ''))
-                held_cells = {c for c in COLUMNS if row.get(c) is not None}
-                if prior is None and remeasured and held_cells <= set(REMEASURED):
-                    continue
-                if prior is None:
-                    bad.append(f'{BASELINE}: {path} was added. The baseline only shrinks; a new '
-                               f'document meets the limits outright, or carries a marked exception')
-                    continue
-                for c in COLUMNS:
-                    if remeasured and c in REMEASURED:
-                        continue
-                    was, now = prior.get(c), row.get(c)
-                    if now is not None and (was is None or now > was):
-                        bad.append(f'{BASELINE}: {path} raised {NAMES[c]} from {fmt(was)} to '
-                                   f'{fmt(now)}. The baseline only goes down; an exception belongs '
-                                   f'in the document, marked, with its reason')
-    # The bold backlog reached zero on 2026-10-06 (UTC), and calef asked that it stop being
-    # tracked (lane/bold-backlog-final). Its weekly chart went from script/metrics; this is what
-    # replaced it. No baseline row may hold a bold ceiling, so a document over 4 bold per 1,000
-    # words fails outright unless it carries a marked writing-standards exception. A raise is
-    # already refused above; this also refuses one written by `--remeasure`.
-    for path, row in baseline.items():
-        for c in ('bold_lead', 'bold_inline'):
-            if row.get(c) is not None:
-                bad.append(f'{BASELINE}: {path} holds a ceiling for {NAMES[c]} ({fmt(row[c])}). '
-                           f'The bold backlog is zero and that column stays empty: the document '
-                           f'meets 4 bold per 1,000 words, or carries a marked exception')
-    for path in baseline:
-        if path not in paths:
-            bad.append(f'{BASELINE}: {path} is not in the tree. Remove its row (or move it, if the '
-                       f'document was renamed)')
-
-    # The passive-voice baseline, by the same two rules: it only shrinks against the merge base,
+    # The passive-voice baseline: it only shrinks against the merge base,
     # a renamed document's row is compared with its old path's, and every row names a document.
     passive_rows = (read_passive_baseline(open(PASSIVE_BASELINE).read())
                     if os.path.exists(PASSIVE_BASELINE) else {})
@@ -1317,7 +1212,6 @@ def check():
         touched = {p for p in touched if not only_paths_renamed(p, base, renamed)}
 
     excused = 0
-    held = 0
     passive_held = 0
     for path in docs:
         text = open(path).read()
@@ -1349,14 +1243,6 @@ def check():
         now_over = over(m)
         if not now_over:
             continue
-        row = baseline.get(path, {})
-        # The merge base's measures, for a document this branch changed: the tight half of the
-        # ratchet, which closes the slack an unbanked shrink leaves in the baseline.
-        was = None
-        if path in changed:
-            old_text = at(base, path)
-            was = measured(path, old_text) if old_text is not None else None
-        doc_held = False
         if path in touched and 'bold_lead' in now_over and FAMILY['bold_lead'] not in exc:
             spans = m['bold_lead'] + m['bold_inline']
             bad.append(f'{path}: {spans} bold spans in {m["prose_words"]:,} words of prose, and this '
@@ -1369,62 +1255,11 @@ def check():
             if FAMILY[c] in exc:
                 excused += 1
                 continue
-            ceiling = row.get(c)
-            if ceiling is None:
-                if path not in baseline:
-                    why = 'a document not in the baseline meets the limits outright'
-                else:
-                    why = ('its baseline row has no ceiling for this measure (it was within the '
-                           'limit, or excused by an exception, when the row was written), so it '
-                           'may not cross')
-                bad.append(f'{path}: {NAMES[c]} is {fmt(v)}, over {LIMIT_TEXT[c]}; {why}')
-                continue
-            if v > ceiling:
-                bad.append(f'{path}: {NAMES[c]} is {fmt(v)}, over its baseline of {fmt(ceiling)} and '
-                           f'{LIMIT_TEXT[c]}. A document already over may not get worse')
-                continue
-            if was is not None and v > was[c]:
-                bad.append(f'{path}: {NAMES[c]} went from {fmt(was[c])} to {fmt(v)} on this branch, '
-                           f'over {LIMIT_TEXT[c]}. The baseline ({fmt(ceiling)}) has room only '
-                           f'because a shrink was never banked, and a document over a limit may not '
-                           f'get worse')
-                continue
-            doc_held = True
-        held += doc_held
+            bad.append(f'{path}: {NAMES[c]} is {fmt(v)}, over {LIMIT_TEXT[c]}; a document meets the '
+                       f'limits outright, or carries a marked exception')
 
     bad += orphans(paths)
-    return docs, held, passive_held, excused, bad
-
-
-def remeasure():
-    """Raise or add the baseline cells a new MEASURE moved, and touch no other cell.
-
-    Only the columns in REMEASURED are written, and only where a document now measures over its
-    limit there, at what it now measures; no marked exception's measure is written. Every other cell
-    is copied as it stands, so this cannot lower or loosen anything the measurement did not reach.
-    Run once, in the change that bumps MEASURE; `check` refuses the raise anywhere else. MEASURE 3
-    moved `words` for nearly every document, so every document is visited.
-    """
-    docs = documents(tracked())
-    rows = read_baseline(open(BASELINE).read()) if os.path.exists(BASELINE) else {}
-    moved = []
-    for path in docs:
-        text = open(path).read()
-        new = measured(path, text)
-        exc = exceptions(text)
-        row = dict(rows.get(path, {}))
-        changed = False
-        for c, v in over(new).items():
-            if FAMILY[c] in exc or c not in REMEASURED:
-                continue
-            if row.get(c) is None or v > row[c]:
-                row[c] = v
-                changed = True
-        if changed:
-            rows[path] = row
-            moved.append(path)
-    write_baseline(rows)
-    return moved
+    return docs, passive_held, excused, bad
 
 
 def bank_passive(initialize=False):
@@ -1461,32 +1296,6 @@ def remeasure_passive():
             moved.append(path)
     write_passive_baseline(rows)
     return moved
-
-
-def bank(initialize=False):
-    docs = documents(tracked())
-    old = {} if initialize or not os.path.exists(BASELINE) else read_baseline(open(BASELINE).read())
-    rows = {}
-    for path in docs:
-        text = open(path).read()
-        exc = exceptions(text)
-        o = {c: v for c, v in over(measured(path, text)).items() if FAMILY[c] not in exc}
-        if not o:
-            continue
-        if initialize:
-            rows[path] = o
-            continue
-        if path not in old:
-            continue  # never adds
-        prior = old[path]
-        kept = {}
-        for c, v in o.items():
-            if prior.get(c) is not None:
-                kept[c] = min(v, prior[c])
-        if kept:
-            rows[path] = kept
-    write_baseline(rows)
-    return rows
 
 
 def selftest():
@@ -1688,18 +1497,17 @@ def main(argv):
     if argv and argv[0] == '--selftest':
         return selftest()
     if not argv or argv[0] == '--check':
-        docs, held, passive_held, excused, bad = check()
+        docs, passive_held, excused, bad = check()
         if bad:
-            print('prose ratchet: the tree breaks §212 or §213 against its baseline:', file=sys.stderr)
+            print('prose ratchet: the tree breaks §212 or §213:', file=sys.stderr)
             for b in bad:
                 print(f'  {b}', file=sys.stderr)
             print('\nFix the document (cut restatement, split a sentence, drop or promote a bold '
                   'lead-in), or mark an exception in it with its date and reason. See milestone '
                   '586\'s block, design/roadmap/0586-a-prose-ratchet-in-lint.md.', file=sys.stderr)
             return 1
-        print(f'prose ratchet: {len(docs)} documents; {held} over a limit and held to the baseline, '
-              f'{passive_held} over the passive limit and held to theirs, {excused} measures '
-              f'excused by a marked exception, every appendix linked')
+        print(f'prose ratchet: {len(docs)} documents; {passive_held} over the passive limit and held to the passive baseline, '
+              f'{excused} measures excused by a marked exception, every appendix linked')
         return 0
     if argv[0] == '--report':
         for path in argv[1:]:
@@ -1712,19 +1520,9 @@ def main(argv):
             for line, span, readers in key_spans(open(path).read()):
                 print(f'{path}:{line}: {span}  <- {", ".join(readers)}')
         return 0
-    if argv[0] == '--remeasure':
-        moved = remeasure()
-        print(f'prose ratchet: re-measured {len(moved)} rows under measure {MEASURE}')
-        return 0
-    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
-    # The difference is deliberate (design/naming/command-line-names.md, "The command line
-    # abbreviates, and the code behind it does not").
-    if argv[0] in ('--bank', '--init'):
-        rows = bank(initialize=argv[0] == '--init')
-        print(f'prose ratchet: {len(rows)} rows written to {BASELINE}')
-        if argv[0] == '--bank' and os.path.exists(PASSIVE_BASELINE):
-            rows = bank_passive()
-            print(f'prose ratchet: {len(rows)} rows written to {PASSIVE_BASELINE}')
+    if argv[0] == '--bank':
+        rows = bank_passive()
+        print(f'prose ratchet: {len(rows)} rows written to {PASSIVE_BASELINE}')
         return 0
     if argv[0] == '--init-passive':
         # Once, by milestone 952. A second run would reset every ceiling to today's count, which
