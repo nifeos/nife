@@ -16,8 +16,9 @@
 #   - A matching version is not proof that Kani works. `cargo kani setup` links
 #     ~/.kani/kani-<pin>/toolchain at the pinned nightly inside the active rustup, and a link that
 #     dangles (its target deleted) fails `cargo kani` for every lane. So after the version check
-#     this resolves the link with `readlink -e`, requires a directory with bin/rustc, and reruns
-#     setup, saying so, when it does not.
+#     this resolves the link with `cd -P` and `pwd -P` (`readlink -e` is GNU only, and BSD
+#     readlink refuses it), requires a directory with bin/rustc, and reruns setup, saying so, when
+#     it does not.
 #   - Setup follows RUSTUP_HOME at the moment it runs, so a lane with a private RUSTUP_HOME would
 #     point the shared link into a directory that lane may delete. This refuses, with exit 1, when
 #     RUSTUP_HOME is set to anything but $HOME/.rustup and it would run setup. A person who means
@@ -63,7 +64,7 @@ refuse_private_rustup() {
 
 if [ "$have" = "$pin" ]; then
 	link="$HOME/.kani/kani-$pin/toolchain"
-	resolved="$(readlink -e "$link" 2>/dev/null || true)"
+	resolved="$(CDPATH='' cd -P -- "$link" 2>/dev/null && pwd -P || true)"
 	if [ -n "$resolved" ] && [ -d "$resolved" ] && [ -x "$resolved/bin/rustc" ]; then
 		exit 0
 	fi
