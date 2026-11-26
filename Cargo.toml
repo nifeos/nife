@@ -398,6 +398,12 @@ opt-level = 2
 [profile.dev.package.smoltcp]
 opt-level = 2
 
+# Set explicitly so a cargo default cannot move the gated icount floors: the default moved from full
+# debuginfo to line tables only between nightlies, and every floor moved with it (nifeos/nife#4125).
+# `cargo xtask gdb` builds its kernel with full debuginfo instead, so the debugger shows arguments and locals.
+[profile.dev]
+debug = "line-tables-only"
+
 [profile.release]
 overflow-checks = true
 
