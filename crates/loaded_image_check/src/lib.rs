@@ -61,7 +61,10 @@ pub fn verify(fail: fn() -> !) {
             fail()
         }
     };
-    check(RODATA_MARKER == [0xc0, 0xff, 0xee, 0xd0]);
+    // `black_box` on the reference: an immutable static's value is known at compile time, so an
+    // optimized build folds this comparison to `true`, drops the static and links no `.rodata`.
+    // Hiding the address keeps the read, and so the segment the loader tests inspect.
+    check(*core::hint::black_box(&RODATA_MARKER) == [0xc0, 0xff, 0xee, 0xd0]);
     check(DATA_MARKER.load(Relaxed) == 0x0000_c0ff_ee00_d0d0);
     check(BSS_MARKER.load(Relaxed) == 0); // .bss was zeroed
     BSS_MARKER.store(1, Relaxed);
