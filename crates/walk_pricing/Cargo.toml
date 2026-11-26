@@ -19,4 +19,4 @@ file_system_fixture = { version = "0.1.0", git = "https://github.com/partsfoundr
 [dev-dependencies]
 # `examples/rg_host.rs` splits `fixture::walk::RG_SEARCH` with the function that builds nife's argv,
 # so the host's `rg` hears the words nife's does per milestone 121 (`ripgrep` on nife).
-grant_plan = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_plan", rev = "8f2555339461aae2bde04be579da7cac7b661698" }
+grant_plan = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_plan", rev = "3741a30a2068c8f1c32b24af36c482305d489e0a" }

@@ -19,7 +19,7 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
+source = "git+https://github.com/partsfoundry/byte_glob?rev=f4ebfe62f8e6dcd3a348825026ae2d566beb5897#f4ebfe62f8e6dcd3a348825026ae2d566beb5897"
 
 [[package]]
 name = "capability_manifest_note"
@@ -165,7 +165,7 @@ dependencies = [
 [[package]]
 name = "grant_plan"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/grant_plan?rev=8f2555339461aae2bde04be579da7cac7b661698#8f2555339461aae2bde04be579da7cac7b661698"
+source = "git+https://github.com/partsfoundry/grant_plan?rev=3741a30a2068c8f1c32b24af36c482305d489e0a#3741a30a2068c8f1c32b24af36c482305d489e0a"
 dependencies = [
  "byte_glob",
  "grant_contract",
