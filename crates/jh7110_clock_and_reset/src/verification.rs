@@ -175,9 +175,7 @@ fn every_fixed_plan_ungates_its_clocks_before_releasing_a_reset() {
         &SYSTEM_TOP_GROUP
     ));
     assert!(ungates_before_releasing(
-        &with_parent_first(
-            GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT
-        ),
+        &with_parent_first(GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX),
         &ALWAYS_ON
     ));
 }
