@@ -356,13 +356,15 @@ impl Delegation {
         self,
         table: &crate::capability_object::CapabilityTable,
     ) -> Result<crate::capability_object::Capability, moho_abi::Error> {
-        let src = table
-            .get(self.slot)
-            .map_err(|_| moho_abi::Error::NoSuchSlot)?;
-        // The crate's rule, proved there: the holder may pass it on (`GRANT`) and the copy only
-        // narrows. Both refusals are one answer on the system call surface.
-        src.delegate(self.rights)
-            .map_err(|_| moho_abi::Error::NotPermitted)
+        // The crate's `derive`, which its proofs cover: an empty slot is `NoSuchSlot`, and the
+        // two refusals of the rule (no `GRANT`, a wider request) are one answer on the system
+        // call surface. The copy is filed by the caller, in whichever table receives it.
+        table
+            .derive(self.slot, self.rights)
+            .map_err(|error| match error {
+                crate::capability_object::Error::NoSuchSlot => moho_abi::Error::NoSuchSlot,
+                _ => moho_abi::Error::NotPermitted,
+            })
     }
 }
 
