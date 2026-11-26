@@ -157,7 +157,10 @@ mod tests {
             static __interrupt_stacks_start: core::ffi::c_void;
             static __interrupt_stacks_end: core::ffi::c_void;
         }
-        let start = (&raw const __interrupt_stacks_start) as u64;
+        // `black_box`: LLVM folds an address comparison of two distinct globals to unequal
+        // above -O0, so the check fails at -O1 and up with both sides printing the same
+        // address. Measurement branch only (nifeos/record milestone 1130).
+        let start = core::hint::black_box((&raw const __interrupt_stacks_start) as u64);
         let end = (&raw const __interrupt_stacks_end) as u64;
         let (ours_start, ours_end) = region();
         assert_eq!(
