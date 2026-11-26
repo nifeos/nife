@@ -4716,6 +4716,14 @@ if [ -n "$shfail" ]; then
     exit 1
 fi
 echo "sh -n: every #!/bin/sh script parses under this machine's own /bin/sh"
+# An even number of apostrophes in the same table parses, so `sh -n` passes, but bash 3.2 then reads
+# the heredoc's `TABLE` and `)` lines into CRATES as two more rows, and script/verify --parallel
+# fails on a row with no tabs. Only the Mac's shell has the bug, so this greps the table on every
+# host.
+if awk '/^CRATES="\$\(cat <<.TABLE.$/ { on = 1; next } /^TABLE$/ { on = 0 } on' script/verify | grep -n "'" >&2; then
+    echo "lint: script/verify's CRATES table has an apostrophe (above); macOS's /bin/sh misreads the table" >&2
+    exit 1
+fi
 
 # script/verify passes extra arguments through to `cargo kani` (found 2026-10-05). It once ended its
 # option parsing with `set -- -j ... --output-format=terse`, which overwrote "$@" and dropped
