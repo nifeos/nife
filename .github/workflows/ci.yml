@@ -2196,6 +2196,9 @@ jobs:
   # against what `debugfs` reads, held to tools/ext4_oracle/expected.txt. The tool and its pinned
   # `rsext4` are a workspace of their own, host-only (ruled on #3639, 2026-11-16 UTC). Measured at
   # 25 seconds for the corpus and the fourteen comparisons on a developer machine, plus the build.
+  # The same corpus judges the server path: `ext4_oracle_server` reads each image only through
+  # file-service requests to crates/ext4_server over an `rsext4` mount, held to
+  # tools/ext4_oracle/server-expected.txt.
   # Its write half, in the same job: the cases in tools/ext4_oracle/write-cases.txt, applied through
   # `rsext4` to fresh copies of three corpus images, each judged by `e2fsck -fn` and read back by
   # `debugfs`, held to tools/ext4_oracle/write-expected.txt. Measured at 100 seconds for 48 runs on a
@@ -2237,9 +2240,9 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           if [ "${{ github.event_name }}" = pull_request ] &&
-              git diff --quiet "$BASE_SHA" HEAD -- tools/ext4_oracle .github/workflows/ci.yml; then
+              git diff --quiet "$BASE_SHA" HEAD -- tools/ext4_oracle crates/ext4_server crates/subtree_scope .github/workflows/ci.yml; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
-              echo "ext4-read-oracle: this pull request does not touch tools/ext4_oracle; the merge group runs it"
+              echo "ext4-read-oracle: this pull request does not touch the oracle or the server it judges; the merge group runs it"
           fi
       - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
         name: Install the pinned toolchain
@@ -2255,10 +2258,11 @@ jobs:
           cargo test --locked --manifest-path tools/ext4_oracle/Cargo.toml
           cargo build --locked --release --manifest-path tools/ext4_oracle/Cargo.toml
       - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
-        name: Compare the reader with debugfs over the corpus
+        name: Compare the reader and the server path with debugfs over the corpus
         run: |
           helpers/hang_evidence.py run -- python3 -I tools/ext4_oracle/compare.py \
-              tools/ext4_oracle/target/release/ext4_oracle "$RUNNER_TEMP/ext4-oracle"
+              tools/ext4_oracle/target/release/ext4_oracle "$RUNNER_TEMP/ext4-oracle" \
+              --server tools/ext4_oracle/target/release/ext4_oracle_server
       - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
         name: Apply the write cases through rsext4, judge each with e2fsck and read it back with debugfs
         run: |

@@ -34,3 +34,9 @@ path = "src/manifest.rs"
 # would add nothing the oracle reads.
 [dependencies]
 rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/partsfoundry/rsext4", rev = "388ebd6a4ec0c6c91af5bbaf577c8737c2322f94", default-features = false }
+# The server path: `ext4_oracle_server` drives the read-only server's contract side over the
+# `rsext4` mount above, through file-service requests, and is the one place the two meet. The
+# crate is in the ext4-oracle test package with this one, so nothing that ships links it.
+ext4_server = { path = "../../crates/ext4_server" }
+# The wire the server path speaks, at the revision `ext4_server` is built against.
+file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }

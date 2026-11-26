@@ -1,0 +1,7 @@
+default-1k	server	equal
+default-2k	server	equal
+default-4k	server	equal
+inline-data-4k	server	refused	Ext4Error { kind: UnsupportedFeature, context: Some(Feature { set: Incompatible, bits: 32768 }) }
+no-metadata-csum-1k	server	equal
+no-metadata-csum-4k	server	equal
+no-orphan-file-4k	server	equal

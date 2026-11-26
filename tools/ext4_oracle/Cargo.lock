@@ -12,8 +12,23 @@ checksum = "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06"
 name = "ext4_oracle"
 version = "0.0.0"
 dependencies = [
+ "ext4_server",
+ "file_system_contract",
  "rsext4",
 ]
+
+[[package]]
+name = "ext4_server"
+version = "0.0.0"
+dependencies = [
+ "file_system_contract",
+ "subtree_scope",
+]
+
+[[package]]
+name = "file_system_contract"
+version = "0.1.0"
+source = "git+https://github.com/partsfoundry/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
 
 [[package]]
 name = "proc-macro2"
@@ -40,6 +55,13 @@ source = "git+https://github.com/partsfoundry/rsext4?rev=388ebd6a4ec0c6c91af5bba
 dependencies = [
  "bitflags",
  "thiserror",
+]
+
+[[package]]
+name = "subtree_scope"
+version = "0.1.0"
+dependencies = [
+ "file_system_contract",
 ]
 
 [[package]]
