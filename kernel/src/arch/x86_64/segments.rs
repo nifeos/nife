@@ -435,9 +435,13 @@ static BENCH_IOMAP: SyncUnsafeCell<BenchIoBitmap> =
     SyncUnsafeCell::new(BenchIoBitmap([0; IOMAP_BYTES]));
 
 /// Write a full I/O permission bitmap's worth of bytes into this CPU's bench-only scratch region,
-/// the way `schedule()` would write the incoming thread's bitmap into the TSS under option 1. The
-/// pattern argument (varied per call by the caller) and the touch after are both there so nothing
-/// about this write is provably dead code to the optimizer.
+/// the way `schedule()` would write the incoming thread's bitmap into the TSS under option 1.
+///
+/// Nothing reads the region, so the write is dead code unless something says otherwise. The
+/// pointer goes through `black_box` after the write, which makes the optimizer assume an unknown
+/// reader of all 8 KiB. A varied pattern and a read of the last byte are not enough: the read
+/// forwards from the write, and at opt-level 3 with debug assertions on LLVM deleted the static
+/// and every write to it, so the row measured the switch alone.
 ///
 /// Safe to call from anywhere: the internal `unsafe` is this CPU's own static, single-hart, no
 /// concurrent access, the same fact `bench.rs`'s single-threaded caller already relies on.
@@ -447,6 +451,6 @@ pub(crate) fn bench_write_io_bitmap(pattern: u8) -> u8 {
     unsafe {
         let base = (&raw mut (*BENCH_IOMAP.get()).0).cast::<u8>();
         base.write_bytes(pattern, IOMAP_BYTES);
-        base.add(IOMAP_BYTES - 1).read()
+        core::hint::black_box(base).add(IOMAP_BYTES - 1).read()
     }
 }
