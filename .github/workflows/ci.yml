@@ -191,6 +191,9 @@ concurrency:
 # pool from one runner to four, which is the price of removing the 33-minute serial pole and is
 # paid knowingly.
 #
+# The `ext4-read-oracle` job's aarch64 leg runs there for a reason of its own: it runs the oracle as
+# aarch64 code, so the CRC32 extension it judges is the host CPU's.
+#
 # Everything else moved because the arm64 hosted pool, not the 60-job cap, was the constraint: on
 # 2026-09-24 about 20 jobs ran while 128 to 173 waited, arm64 jobs waited a median 15 to 24 minutes
 # per busy hour against x86_64's 0 to 8, and one x86_64 run of every job reproduced arm64's results
@@ -2205,12 +2208,45 @@ jobs:
   # developer machine, about 5 minutes of processor time, so a four-core runner takes 2 to 3 minutes.
   # It runs in every merge group and on `main`, and on a pull request only when the pull request
   # touches the oracle itself, so an unrelated pull request pays nothing for it.
+  #
+  # One leg per architecture, each holding its outcomes to the same three expected files, so a
+  # difference between architectures fails the leg that shows it. Each leg names the CRC32C code
+  # `rsext4` runs there and `EXT4_ORACLE_CRC32C` makes the binaries refuse any other
+  # (tools/ext4_oracle/src/crc32c_path.rs): the CPU's instructions on x86_64 (SSE4.2, built in by
+  # `-C target-feature=+sse4.2`) and on aarch64 (the CRC32 extension, read from HWCAP on the arm
+  # runner), and the table-driven code on riscv64, where `rsext4` has no instruction path. riscv64
+  # has no hosted runner, so its leg cross-builds on x86_64 and runs every oracle binary and test
+  # under qemu-user. That emulator is Ubuntu's package, not the `.qemu-version` pin: the pin
+  # exists for icount counts and guest devices (script/ci-qemu), and this leg counts nothing and
+  # boots no guest. The corpus, `debugfs` and `e2fsck` run natively on every leg; only the code
+  # under test changes architecture.
   ext4-read-oracle:
-    name: ext4 read oracle (rsext4 against debugfs, over the generated corpus)
-    runs-on: ubuntu-26.04
+    name: ext4 read oracle (${{ matrix.arch }}, CRC32C by ${{ matrix.crc32c }}; rsext4 against debugfs over the generated corpus)
+    runs-on: ${{ matrix.runner }}
     needs: gate
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-26.04
+            target: x86_64-unknown-linux-gnu
+            crc32c: instructions
+          - arch: aarch64
+            runner: ubuntu-26.04-arm
+            target: aarch64-unknown-linux-gnu
+            crc32c: instructions
+          - arch: riscv64
+            runner: ubuntu-26.04
+            target: riscv64gc-unknown-linux-gnu
+            crc32c: table
+    env:
+      EXT4_ORACLE_CRC32C: ${{ matrix.crc32c }}
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: -C target-feature=+sse4.2
+      CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER: riscv64-linux-gnu-gcc
+      CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_RUNNER: qemu-riscv64 -L /usr/riscv64-linux-gnu
     steps:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
@@ -2247,6 +2283,12 @@ jobs:
       - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
         name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
+      - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true' && matrix.arch == 'riscv64'
+        name: Install the riscv64 target, its cross linker and qemu-user
+        run: |
+          helpers/rustup-retry.sh target add ${{ matrix.target }}
+          helpers/apt-install.sh gcc-riscv64-linux-gnu qemu-user
+          qemu-riscv64 --version
       # The corpus needs e2fsprogs 1.47 or later (tools/ext4_oracle/corpus/make-corpus.sh).
       - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
         name: Show the e2fsprogs the corpus is built with
@@ -2254,20 +2296,36 @@ jobs:
       - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
         name: Lint and test the reader and the writer
         run: |
-          cargo clippy --locked --manifest-path tools/ext4_oracle/Cargo.toml --all-targets -- -D warnings
-          cargo test --locked --manifest-path tools/ext4_oracle/Cargo.toml
-          cargo build --locked --release --manifest-path tools/ext4_oracle/Cargo.toml
+          cargo clippy --locked --manifest-path tools/ext4_oracle/Cargo.toml --target ${{ matrix.target }} --all-targets -- -D warnings
+          cargo test --locked --manifest-path tools/ext4_oracle/Cargo.toml --target ${{ matrix.target }}
+          cargo build --locked --release --manifest-path tools/ext4_oracle/Cargo.toml --target ${{ matrix.target }}
+      # The scripts run each binary by its path, so on riscv64 that path is a wrapper that runs the
+      # binary under qemu-user, as cargo's runner above does for the tests.
+      - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
+        name: Name the binaries the scripts run
+        run: |
+          built="$GITHUB_WORKSPACE/tools/ext4_oracle/target/${{ matrix.target }}/release"
+          if [ "${{ matrix.arch }}" = riscv64 ]; then
+              mkdir -p "$RUNNER_TEMP/ext4-oracle-bin"
+              for name in ext4_oracle ext4_oracle_server ext4_oracle_write; do
+                  printf '#!/bin/sh\nexec qemu-riscv64 -L /usr/riscv64-linux-gnu %s "$@"\n' \
+                      "$built/$name" > "$RUNNER_TEMP/ext4-oracle-bin/$name"
+                  chmod +x "$RUNNER_TEMP/ext4-oracle-bin/$name"
+              done
+              built="$RUNNER_TEMP/ext4-oracle-bin"
+          fi
+          echo "ORACLE_BIN=$built" >> "$GITHUB_ENV"
       - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
         name: Compare the reader and the server path with debugfs over the corpus
         run: |
           helpers/hang_evidence.py run -- python3 -I tools/ext4_oracle/compare.py \
-              tools/ext4_oracle/target/release/ext4_oracle "$RUNNER_TEMP/ext4-oracle" \
-              --server tools/ext4_oracle/target/release/ext4_oracle_server
+              "$ORACLE_BIN/ext4_oracle" "$RUNNER_TEMP/ext4-oracle" \
+              --server "$ORACLE_BIN/ext4_oracle_server"
       - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
         name: Apply the write cases through rsext4, judge each with e2fsck and read it back with debugfs
         run: |
           helpers/hang_evidence.py run -- python3 -I tools/ext4_oracle/write_compare.py \
-              tools/ext4_oracle/target/release/ext4_oracle_write "$RUNNER_TEMP/ext4-write-oracle"
+              "$ORACLE_BIN/ext4_oracle_write" "$RUNNER_TEMP/ext4-write-oracle"
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''

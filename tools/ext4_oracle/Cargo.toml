@@ -4,7 +4,8 @@
 # that lockfile on its own and runs cargo-deny over it; deny.toml's `wrappers` entry refuses
 # `rsext4` in any graph where something else depends on it, and the package-boundary rule refuses
 # a link to this crate from anything outside a test package (packages/ext4-oracle.package.toml).
-# `script/fmt` reaches it by --manifest-path; the CI job `ext4 read oracle` builds, lints and runs it.
+# `script/fmt` reaches it by --manifest-path; the CI job `ext4 read oracle` builds, lints and runs it
+# on aarch64, riscv64 and x86_64.
 [workspace]
 
 # Name: provisional. It is the oracle of milestone 190 (ext4, read and write), and the directory
