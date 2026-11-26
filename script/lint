@@ -4708,6 +4708,31 @@ done
 if [ -n "$shfail" ]; then
     exit 1
 fi
+# bash 3.2 reads a case pattern's `)` inside `$( )` as the end of the substitution. Unquoted, `sh -n`
+# above catches that on a macOS host. Inside double quotes bash 3.2 parses the body only when the
+# line runs, so `sh -n` passes, and dash on CI never fails at all. This awk runs on every host and
+# refuses the one-line form: a `$(case ...` whose patterns do not each open with `(`, which bash 3.2
+# accepts. A quoted case spread over several lines inside `$( )` still escapes both; set a variable
+# with the case before the line instead.
+case_subst=$(for f in script/* helpers/*.sh; do
+    [ -f "$f" ] && head -n1 "$f" | grep -qE '^#!.*\b(ba)?sh\b' && printf '%s\n' "$f"
+done | tr '\n' '\0' | xargs -0 awk '
+    /^[[:space:]]*#/ { next }
+    {
+        i = match($0, /\$\([[:space:]]*case[[:space:]]/)
+        if (!i) next
+        t = substr($0, i)
+        e = index(t, "esac")
+        if (e) t = substr(t, 1, e - 1)
+        if (t ~ /[[:space:]]in[[:space:]]+[^([:space:]]/ || t ~ /;;[[:space:]]*[^([:space:]]/)
+            print FILENAME ":" FNR ": " $0
+    }')
+if [ -n "$case_subst" ]; then
+    echo "lint: a case pattern without a leading ( inside \$( ), which bash 3.2 cannot parse;" >&2
+    echo "  write (pattern) or set a variable with the case before this line:" >&2
+    printf '%s\n' "$case_subst" | sed 's/^/  /' >&2
+    exit 1
+fi
 echo "sh -n: every #!/bin/sh script parses under this machine's own /bin/sh"
 
 # script/verify passes extra arguments through to `cargo kani` (found 2026-10-05). It once ended its

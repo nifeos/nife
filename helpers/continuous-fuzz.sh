@@ -278,7 +278,13 @@ bound_target() {
     fi
     if [ -n "$why" ]; then
         rm -rf "$dir/target"
-        echo "continuous-fuzz: $(case "$2" in replay) echo replay ;; *) echo "slot $2" ;; esac): cleared target/ before its next build: $why" >&2
+        # The label is set before the echo, not by a case inside $( ): bash 3.2, a macOS host's
+        # /bin/sh, reads a case pattern's `)` there as the end of the substitution.
+        case "$2" in
+            replay) label=replay ;;
+            *) label="slot $2" ;;
+        esac
+        echo "continuous-fuzz: $label: cleared target/ before its next build: $why" >&2
     fi
     if [ -n "$pin" ] && [ "$(cat "$mark" 2>/dev/null)" != "$pin" ]; then
         { printf '%s\n' "$pin" > "$mark.tmp" && mv -f "$mark.tmp" "$mark"; } 2>/dev/null || rm -f "$mark.tmp"
