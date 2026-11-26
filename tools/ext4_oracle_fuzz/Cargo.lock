@@ -135,7 +135,7 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 [[package]]
 name = "rsext4"
 version = "0.10.0-nifeos.1"
-source = "git+https://github.com/partsfoundry/rsext4?rev=d5fe7eab2e1abf4370925049ff2036a4925687d1#d5fe7eab2e1abf4370925049ff2036a4925687d1"
+source = "git+https://github.com/partsfoundry/rsext4?rev=c36a73e26f4819e1a5a795a46e950cb10419be0e#c36a73e26f4819e1a5a795a46e950cb10419be0e"
 dependencies = [
  "bitflags",
  "thiserror",
@@ -144,7 +144,7 @@ dependencies = [
 [[package]]
 name = "rsext4-fuzz"
 version = "0.0.0"
-source = "git+https://github.com/partsfoundry/rsext4?rev=d5fe7eab2e1abf4370925049ff2036a4925687d1#d5fe7eab2e1abf4370925049ff2036a4925687d1"
+source = "git+https://github.com/partsfoundry/rsext4?rev=c36a73e26f4819e1a5a795a46e950cb10419be0e#c36a73e26f4819e1a5a795a46e950cb10419be0e"
 dependencies = [
  "libfuzzer-sys",
  "rsext4",

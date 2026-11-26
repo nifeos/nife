@@ -46,9 +46,8 @@ cd "$(dirname "$0")/.."
 # `rsext4`'s own targets, seeded by its make-seeds.sh; `ext4_server_*` drive the read-only server over
 # the generated ext4 corpus. Both need e2fsprogs 1.47 or later, and the corpus needs Linux, so on
 # another system a run of the whole table skips them and says so; one named on the command line is
-# refused there instead. `rsext4_mount_and_walk` is built but held out of this table for now, and
-# `script/fuzz rsext4_mount_and_walk` still runs it.
-targets="device_tree_patch_initial_ramdisk elf_parse globally_unique_identifier_partition_table http_response_feed nifefs_roundtrip package_archive_roundtrip package_index_text capability_manifest_note_decode redoxfs_server_session system_log_session compositor_session acpi_firmware_tables machine_description_from_device_tree video_terminal_feed ext4_server_session ext4_server_walk rsext4_superblock rsext4_group_descriptor_table rsext4_extent_tree rsext4_directory_block rsext4_htree_lookup rsext4_journal_replay"
+# refused there instead.
+targets="device_tree_patch_initial_ramdisk elf_parse globally_unique_identifier_partition_table http_response_feed nifefs_roundtrip package_archive_roundtrip package_index_text capability_manifest_note_decode redoxfs_server_session system_log_session compositor_session acpi_firmware_tables machine_description_from_device_tree video_terminal_feed ext4_server_session ext4_server_walk rsext4_superblock rsext4_group_descriptor_table rsext4_extent_tree rsext4_directory_block rsext4_htree_lookup rsext4_mount_and_walk rsext4_journal_replay"
 
 usage() {
     cat <<'EOF'
@@ -91,7 +90,7 @@ while [ $# -gt 0 ]; do
             echo "rsext4_extent_tree  rsext4's extent tree walk (rsext4's own target)"
             echo "rsext4_directory_block  rsext4's directory block parser (rsext4's own target)"
             echo "rsext4_htree_lookup  rsext4's hash-tree lookup over a whole image (rsext4's own target)"
-            echo "rsext4_mount_and_walk  rsext4 mounts a whole image and walks it (rsext4's own target; not in the table, run it by name)"
+            echo "rsext4_mount_and_walk  rsext4 mounts a whole image and walks it (rsext4's own target)"
             echo "rsext4_journal_replay  rsext4 replays a whole image's journal (rsext4's own target)"
             exit 0
             ;;
