@@ -1,7 +1,8 @@
-# toolchain: nightly-2026-11-25
+# toolchain: nightly-2026-11-26
 # qemu: 11.1.2
 # date: 2026-11-26
 # why: 2026-11-26: the gate counts the release build, as ruled on #4132 (A, 2026-11-26 UTC). Every row is re-taken from the release profile as it ships, with its own strip setting; the floor before this one counted the opt-level 0 dev kernel.
+# why: 2026-11-26: re-recorded from nightly-2026-11-25 to nightly-2026-11-26, which the restamp job could not carry; compiler term only: ipc_rtt +0.662%, relay_rtt +0.662%, call_reply +0.397%, broker_rtt +0.396%, sink_throughput +0.314%, ipc_rtt_el0 +0.260%, spawn_el0 +0.036%, spawn_reap +0.072%; all far inside the 10% tripwire
 # bench/baseline-aarch64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check fails when the QEMU on
@@ -15,16 +16,16 @@
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
              # 10% tripwire (icount counts drift across builds; see nifeos/record:notes/benchmarks.md).
 yield_switch 71500 2000
-ipc_rtt 75563 1000
-relay_rtt 151063 1000
-call_reply 78875 1000
-broker_rtt 157688 1000
-spawn_reap 62833 64
+ipc_rtt 76063 1000
+relay_rtt 152063 1000
+call_reply 79188 1000
+broker_rtt 158313 1000
+spawn_reap 62878 64
 map_new 7345 64
 coremark 1451164 256
 null_system_call 131250 20000
 ctx_switch 248125 5000
-ipc_rtt_el0 961458 5000
-sink_throughput 397496 80000
+ipc_rtt_el0 963959 5000
+sink_throughput 398747 80000
 map_el0 38904 500
-spawn_el0 311369 100
+spawn_el0 311482 100

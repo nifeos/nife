@@ -10,6 +10,9 @@
 //! `MOUNT-ERROR` line with the error and exits 2. An error on one entry is printed in that entry's
 //! line rather than ending the walk.
 //!
+//! It computes CRC32C on the path `ext4_oracle_manifest::crc32c_path::select` takes, and
+//! `EXT4_ORACLE_CRC32C` can require one.
+//!
 //! See nifeos/record:design/roadmap/0190-ext4-read-write/read-oracle.md.
 //!
 //! Name: provisional. calef names files.
@@ -79,6 +82,7 @@ fn read_all<F>(
 }
 
 fn main() {
+    ext4_oracle_manifest::crc32c_path::select();
     let mut fs = mount_from_arguments();
     let mut lines = walk(&mut fs);
     lines.sort();

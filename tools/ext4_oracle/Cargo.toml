@@ -4,7 +4,8 @@
 # that lockfile on its own and runs cargo-deny over it; deny.toml's `wrappers` entry refuses
 # `rsext4` in any graph where something else depends on it, and the package-boundary rule refuses
 # a link to this crate from anything outside a test package (packages/ext4-oracle.package.toml).
-# `script/fmt` reaches it by --manifest-path; the CI job `ext4 read oracle` builds, lints and runs it.
+# `script/fmt` reaches it by --manifest-path; the CI job `ext4 read oracle` builds, lints and runs it
+# on aarch64, riscv64 and x86_64.
 [workspace]
 
 # Name: provisional. It is the oracle of milestone 190 (ext4, read and write), and the directory
@@ -16,11 +17,11 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 publish = false
 
-# The manifest fields both readers print, in one place: the direct reader and the server path link
-# it, so neither binary carries a copy.
+# The manifest fields both readers print, and the CRC32C path every binary takes, in one place:
+# the three binaries link it, so none carries a copy.
 [lib]
 name = "ext4_oracle_manifest"
-path = "src/manifest.rs"
+path = "src/lib.rs"
 
 # The implementation under test. Ruled 2026-11-16 (UTC) on pull request #3639: a host-only
 # dependency of this tool, pinned exactly, in a workspace of its own, never in a nife image,
