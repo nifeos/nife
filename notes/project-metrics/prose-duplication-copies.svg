@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="380" viewBox="0 0 860 380" role="img" aria-label="Copies of sentences that appear in more than one file">
+<style>
+  .bg{fill:#ffffff} .fg{fill:#1f2328} .mut{fill:#59636e} .grid{stroke:#d1d9e0}
+  .seg{stroke:#ffffff;stroke-width:1}
+  .val{paint-order:stroke;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round}
+  .s0{fill:#2a78d6}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117} .fg{fill:#e6edf3} .mut{fill:#9198a1} .grid{stroke:#30363d}
+    .seg{stroke:#0d1117} .val{stroke:#0d1117} .s0{fill:#3987e5}}
+  text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+</style>
+<rect class="bg" width="860" height="380"/>
+<text class="fg" x="20" y="26" font-size="16" font-weight="600">Copies of sentences that appear in more than one file</text>
+<text class="mut" x="20" y="44" font-size="11">sentences of 100 or more characters in two or more of the Markdown files under design/ and notes/ of nifeos/record, counted once per file that holds them</text>
+<line class="grid" x1="64" y1="324.0" x2="650.0" y2="324.0" stroke-width="1"/>
+<text class="mut" x="56" y="327.0" font-size="10" text-anchor="end">0</text>
+<line class="grid" x1="64" y1="257.5" x2="650.0" y2="257.5" stroke-width="1"/>
+<text class="mut" x="56" y="260.5" font-size="10" text-anchor="end">1000</text>
+<line class="grid" x1="64" y1="191.0" x2="650.0" y2="191.0" stroke-width="1"/>
+<text class="mut" x="56" y="194.0" font-size="10" text-anchor="end">2000</text>
+<line class="grid" x1="64" y1="124.5" x2="650.0" y2="124.5" stroke-width="1"/>
+<text class="mut" x="56" y="127.5" font-size="10" text-anchor="end">3000</text>
+<line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
+<text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">4000</text>
+<path class="seg s0" d="M71.7,324.0 V315.5 Q71.7,311.5 75.7,311.5 H97.4 Q101.4,311.5 101.4,315.5 V324.0 Z"><title>2026W36, copies: 188</title></path>
+<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="86.5" y="306.5" font-size="10" text-anchor="middle">188</text>
+<path class="seg s0" d="M116.7,324.0 V315.6 Q116.7,311.6 120.7,311.6 H142.5 Q146.5,311.6 146.5,315.6 V324.0 Z"><title>2026W37, copies: 186</title></path>
+<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<text class="fg val" x="131.6" y="306.6" font-size="10" text-anchor="middle">186</text>
+<path class="seg s0" d="M161.8,324.0 V115.4 Q161.8,111.4 165.8,111.4 H187.6 Q191.6,111.4 191.6,115.4 V324.0 Z"><title>2026W38, copies: 3197</title></path>
+<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="fg val" x="176.7" y="106.4" font-size="10" text-anchor="middle">3197</text>
+<path class="seg s0" d="M206.9,324.0 V285.6 Q206.9,281.6 210.9,281.6 H232.6 Q236.6,281.6 236.6,285.6 V324.0 Z"><title>2026W39, copies: 637</title></path>
+<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<text class="fg val" x="221.8" y="276.6" font-size="10" text-anchor="middle">637</text>
+<path class="seg s0" d="M252.0,324.0 V285.6 Q252.0,281.6 256.0,281.6 H277.7 Q281.7,281.6 281.7,285.6 V324.0 Z"><title>2026W40, copies: 637</title></path>
+<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<text class="fg val" x="266.8" y="276.6" font-size="10" text-anchor="middle">637</text>
+<path class="seg s0" d="M297.0,324.0 V261.2 Q297.0,257.2 301.0,257.2 H322.8 Q326.8,257.2 326.8,261.2 V324.0 Z"><title>2026W41, copies: 1005</title></path>
+<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<text class="fg val" x="311.9" y="252.2" font-size="10" text-anchor="middle">1005</text>
+<path class="seg s0" d="M342.1,324.0 V254.2 Q342.1,250.2 346.1,250.2 H367.9 Q371.9,250.2 371.9,254.2 V324.0 Z"><title>2026W42, copies: 1110</title></path>
+<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<text class="fg val" x="357.0" y="245.2" font-size="10" text-anchor="middle">1110</text>
+<path class="seg s0" d="M387.2,324.0 V252.2 Q387.2,248.2 391.2,248.2 H413.0 Q417.0,248.2 417.0,252.2 V324.0 Z"><title>2026W43, copies: 1140</title></path>
+<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<text class="fg val" x="402.1" y="243.2" font-size="10" text-anchor="middle">1140</text>
+<path class="seg s0" d="M432.3,324.0 V250.7 Q432.3,246.7 436.3,246.7 H458.0 Q462.0,246.7 462.0,250.7 V324.0 Z"><title>2026W44, copies: 1163</title></path>
+<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W44</text>
+<text class="fg val" x="447.2" y="241.7" font-size="10" text-anchor="middle">1163</text>
+<path class="seg s0" d="M477.4,324.0 V251.6 Q477.4,247.6 481.4,247.6 H503.1 Q507.1,247.6 507.1,251.6 V324.0 Z"><title>2026W45, copies: 1149</title></path>
+<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<text class="fg val" x="492.2" y="242.6" font-size="10" text-anchor="middle">1149</text>
+<path class="seg s0" d="M522.4,324.0 V246.4 Q522.4,242.4 526.4,242.4 H548.2 Q552.2,242.4 552.2,246.4 V324.0 Z"><title>2026W46, copies: 1227</title></path>
+<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W46</text>
+<text class="fg val" x="537.3" y="237.4" font-size="10" text-anchor="middle">1227</text>
+<path class="seg s0" d="M567.5,324.0 V242.6 Q567.5,238.6 571.5,238.6 H593.3 Q597.3,238.6 597.3,242.6 V324.0 Z"><title>2026W47, copies: 1284</title></path>
+<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W47</text>
+<text class="fg val" x="582.4" y="233.6" font-size="10" text-anchor="middle">1284</text>
+<path class="seg s0" d="M612.6,324.0 V242.1 Q612.6,238.1 616.6,238.1 H638.3 Q642.3,238.1 642.3,242.1 V324.0 Z"><title>2026W48, copies: 1291</title></path>
+<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W48</text>
+<text class="fg val" x="627.5" y="233.1" font-size="10" text-anchor="middle">1291</text>
+<rect class="s0" x="672" y="64" width="11" height="11" rx="2"/>
+<text class="fg" y="74" font-size="11"><tspan x="689" dy="0">copies</tspan></text>
+</svg>
