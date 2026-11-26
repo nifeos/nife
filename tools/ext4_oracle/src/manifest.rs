@@ -1,10 +1,13 @@
 //! The manifest fields both readers print as `debugfs_manifest.py` does: the content hash, hex,
 //! a path as text or hex, and an extended attribute's namespace prefix. The direct reader
-//! (`main.rs`) and the server path (`bin/ext4_oracle_server.rs`) both link this library.
+//! (`main.rs`) and the server path (`bin/ext4_oracle_server.rs`) both link this library, and with
+//! the writer (`bin/ext4_oracle_write.rs`) take the CRC32C path from [`crc32c_path`].
 //!
 //! Name: provisional, minted 2026-11-26 (UTC) by milestone/190-ext4-server-read-only. calef names
 //! files.
 use rsext4::XattrNamespace;
+
+pub mod crc32c_path;
 
 /// FNV-1a-64, the hash `debugfs_manifest.py` prints for content and attribute values.
 ///

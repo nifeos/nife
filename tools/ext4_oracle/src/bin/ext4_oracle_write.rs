@@ -15,6 +15,9 @@
 //! The bytes a `write` puts down are `stream(seed)`, the xorshift64 generator below, which the
 //! driver computes the same way, so the model never asks `rsext4` what it wrote.
 //!
+//! It computes CRC32C on the path `ext4_oracle_manifest::crc32c_path::select` takes, and
+//! `EXT4_ORACLE_CRC32C` can require one.
+//!
 //! See nifeos/record:design/roadmap/0190-ext4-read-write/write-oracle.md.
 //!
 //! Name: provisional. calef names files.
@@ -258,6 +261,7 @@ fn apply(fs: &mut Fs, line: &str) -> Ext4Result<()> {
 }
 
 fn main() {
+    ext4_oracle_manifest::crc32c_path::select();
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 3 {
         eprintln!("usage: ext4_oracle_write <image> <sector-size> < operations");

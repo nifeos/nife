@@ -18,6 +18,9 @@
 //! This file is the one place `rsext4` meets `ext4_server`: the crate links no ext4 code, and
 //! `rsext4` stays host-only in this tool (ruled on pull request #3639, 2026-11-16 UTC).
 //!
+//! It computes CRC32C on the path `ext4_oracle_manifest::crc32c_path::select` takes, and
+//! `EXT4_ORACLE_CRC32C` can require one.
+//!
 //! See nifeos/record:design/roadmap/0190-ext4-read-write/read-oracle.md.
 //!
 //! Name: provisional. calef names files.
@@ -471,6 +474,7 @@ impl Client {
 }
 
 fn main() {
+    ext4_oracle_manifest::crc32c_path::select();
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
         eprintln!("usage: ext4_oracle_server <image>");
