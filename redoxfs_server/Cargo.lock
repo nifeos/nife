@@ -183,8 +183,8 @@ checksum = "f8f59926911ef34d1efb9ea1ee8ca78385df62ce700ccf2bcb149011bd226888"
 
 [[package]]
 name = "entropy_contract"
-version = "0.1.0"
-source = "git+https://github.com/partsfoundry/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/partsfoundry/entropy_contract?rev=5150f14f781160debacd33310a6941f8829d958c#5150f14f781160debacd33310a6941f8829d958c"
 
 [[package]]
 name = "env_filter"

@@ -29,5 +29,5 @@ manual_let_else = "warn"
 doc_markdown = "warn"
 
 [dependencies]
-jh7110_clock_and_reset = { version = "0.1.0", git = "https://github.com/partsfoundry/jh7110_clock_and_reset", rev = "0785c634483929e6b83ac0319c03aa16748cae9a" }
+jh7110_clock_and_reset = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/jh7110_clock_and_reset", rev = "29ef3bb8db37bbd7cfe86713b8270adc48b79323" }
 jh7110_clock_and_reset_contract = { version = "0.1.0", path = "../jh7110_clock_and_reset_contract" }

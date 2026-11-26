@@ -515,8 +515,8 @@ source = "git+https://github.com/partsfoundry/e1000e?rev=42cdc139a81a254d420dac0
 
 [[package]]
 name = "entropy_contract"
-version = "0.1.0"
-source = "git+https://github.com/partsfoundry/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/partsfoundry/entropy_contract?rev=5150f14f781160debacd33310a6941f8829d958c#5150f14f781160debacd33310a6941f8829d958c"
 
 [[package]]
 name = "environment_contract"
@@ -806,8 +806,8 @@ source = "git+https://github.com/partsfoundry/intrusive_queue?rev=10d1fa2893c1ca
 
 [[package]]
 name = "jh7110_clock_and_reset"
-version = "0.1.0"
-source = "git+https://github.com/partsfoundry/jh7110_clock_and_reset?rev=0785c634483929e6b83ac0319c03aa16748cae9a#0785c634483929e6b83ac0319c03aa16748cae9a"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/partsfoundry/jh7110_clock_and_reset?rev=29ef3bb8db37bbd7cfe86713b8270adc48b79323#29ef3bb8db37bbd7cfe86713b8270adc48b79323"
 
 [[package]]
 name = "jh7110_clock_and_reset_contract"

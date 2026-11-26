@@ -47,7 +47,7 @@ clock_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/clo
 current_cpu_contract = { version = "0.1.0", path = "../current_cpu_contract" }
 # The entropy contract, for `entropy::fill_random_bytes`: the client loop four programs had copied.
 # Dependency-free and no_std, like the other protocol crates here.
-entropy_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
+entropy_contract = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/entropy_contract", rev = "5150f14f781160debacd33310a6941f8829d958c" }
 # The socket contract's frame layout: `socket_frame::Frame` reads and writes the shared frame
 # through it. Dependency-free and no_std,
 # like the protocol crates above. The type lives here rather than in socket_contract because a
