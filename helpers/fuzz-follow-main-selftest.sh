@@ -132,10 +132,12 @@ git -C "$clone" checkout --quiet --detach "$a"
 PATH="$bin:$PATH"
 export PATH
 follow() { python3 -I "$clone/helpers/fuzz-follow-main.py" "$@"; }
+# look [NAME=value...]: the stub settings go through env(1), never as `NAME=value look`, because
+# bash 3.2's sh (macOS) keeps an assignment made before a function call after the function returns.
 look() {
     : > "$STUB_CURLS"
     set +e
-    out="$(follow look 2>&1)"
+    out="$(env "$@" python3 -I "$clone/helpers/fuzz-follow-main.py" look 2>&1)"
     rc=$?
     set -e
     curls="$(wc -l < "$STUB_CURLS" | tr -d ' ')"
@@ -158,9 +160,9 @@ printf '%s' "$out" | grep -q 'not a fast-forward' || fail "non-fast-forward: no 
 
 # Limit 3: an unreadable API, then a red check, then green.
 git -C "$up" update-ref refs/heads/main "$b"
-STUB_API_FAIL=1 look
+look STUB_API_FAIL=1
 [ "$rc" -eq 1 ] || fail "unreadable API: exit $rc ($out)"
-STUB_CONCLUSION=failure look
+look STUB_CONCLUSION=failure
 [ "$rc" -eq 1 ] || fail "red check: exit $rc ($out)"
 printf '%s' "$out" | grep -q "'test' concluded failure" || fail "red check: no reason ($out)"
 look
