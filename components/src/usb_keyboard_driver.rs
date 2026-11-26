@@ -265,7 +265,17 @@ impl Host {
                 .interrupter(registers::EVENT_RING_DEQUEUE_POINTER_REGISTER),
             self.events.dequeue_pointer() | registers::EVENT_RING_DEQUEUE_POINTER_BUSY,
         );
-        Some(Event::decode(t))
+        let e = Event::decode(t);
+        // Every command completion frees its entry and those before it, a late one included, so
+        // a command that timed out stops counting against the ring once anything after it lands.
+        if let Event::Command {
+            transfer_request_block,
+            ..
+        } = e
+        {
+            self.commands.complete(transfer_request_block);
+        }
+        Some(e)
     }
 
     /// Poll for an event `wanted` accepts until the [`deadline`] `end`, remembering port changes
@@ -288,11 +298,28 @@ impl Host {
         }
     }
 
+    /// **Place one TRB on `ring` if it has room.** A full ring means the controller has not
+    /// consumed [`ProducerRing::capacity`] TRBs already placed, and placing another would overwrite
+    /// one of them.
+    fn place(
+        ring: &mut ProducerRing,
+        page: u64,
+        trb: TransferRequestBlock,
+    ) -> Option<TransferRequestBlockPlacement> {
+        let p = ring.try_enqueue(trb)?;
+        Host::put(page, p);
+        Some(p)
+    }
+
     /// **One command, to its completion.** The slot the completion names, on success.
+    /// A full command ring is a [`BringUpStep::CommandTimeout`]: earlier commands were never
+    /// completed.
     fn command(&mut self, trb: TransferRequestBlock) -> Result<u8, Fail> {
-        let p = self.commands.enqueue(trb);
+        let Some(p) = Host::place(&mut self.commands, direct_memory_access::COMMAND_RING, trb)
+        else {
+            return Err((BringUpStep::CommandTimeout, trb.kind() as u32));
+        };
         let at = self.commands.entry_physical_address(p.index);
-        Host::put(direct_memory_access::COMMAND_RING, p);
         self.ring_doorbell(0, 0);
         match self.wait_for(
             deadline(COMMAND_COMPLETION_TIMEOUT_MILLISECONDS),
@@ -305,8 +332,10 @@ impl Host {
     }
 
     /// **One control transfer on endpoint 0 of `slot`**, data into the control buffer. The number
-    /// of bytes the data stage moved, on success.
+    /// of bytes the data stage moved, on success. A full control ring is a
+    /// [`BringUpStep::TransferTimeout`]: earlier transfers were never completed.
     fn transfer(&mut self, slot: u8, setup: SetupPacket) -> Result<usize, Fail> {
+        let timeout = (BringUpStep::TransferTimeout, u32::from(setup.request));
         let len = setup.length.min(PAGE_BYTES as u16);
         let inbound = setup.is_device_to_host();
         let transfer_type = match (len > 0, inbound) {
@@ -314,24 +343,46 @@ impl Host {
             (true, true) => TransferType::DeviceToHost,
             (true, false) => TransferType::HostToDevice,
         };
-        let p = self
-            .control
-            .enqueue(TransferRequestBlock::setup(setup.to_u64(), transfer_type));
-        Host::put(direct_memory_access::CONTROL_RING, p);
+        // Every stage or none: a ring with room for only part of them is refused before anything
+        // is written, so the controller never sees a setup stage with no status stage. The ring is
+        // `Copy`, so the trial places on a copy and writes nothing.
+        let mut trial = self.control;
+        let stages = 2 + usize::from(len > 0);
+        if (0..stages).any(|_| {
+            trial
+                .try_enqueue(TransferRequestBlock::status(false))
+                .is_none()
+        }) {
+            return Err(timeout);
+        }
+        let ring = direct_memory_access::CONTROL_RING;
+        let Some(_) = Host::place(
+            &mut self.control,
+            ring,
+            TransferRequestBlock::setup(setup.to_u64(), transfer_type),
+        ) else {
+            return Err(timeout);
+        };
         let mut data_at = None;
         if len > 0 {
             let buffer = self.phys(direct_memory_access::CONTROL_BUFFER);
-            let p = self
-                .control
-                .enqueue(TransferRequestBlock::data(buffer, len, inbound));
+            let Some(p) = Host::place(
+                &mut self.control,
+                ring,
+                TransferRequestBlock::data(buffer, len, inbound),
+            ) else {
+                return Err(timeout);
+            };
             data_at = Some(self.control.entry_physical_address(p.index));
-            Host::put(direct_memory_access::CONTROL_RING, p);
         }
-        let p = self
-            .control
-            .enqueue(TransferRequestBlock::status(len > 0 && inbound));
+        let Some(p) = Host::place(
+            &mut self.control,
+            ring,
+            TransferRequestBlock::status(len > 0 && inbound),
+        ) else {
+            return Err(timeout);
+        };
         let status_at = self.control.entry_physical_address(p.index);
-        Host::put(direct_memory_access::CONTROL_RING, p);
         self.ring_doorbell(slot, 1);
 
         let mut moved = usize::from(len);
@@ -350,8 +401,11 @@ impl Host {
                 ..
             }) = e
             else {
-                return Err((BringUpStep::TransferTimeout, u32::from(setup.request)));
+                return Err(timeout);
             };
+            // A stall consumed the TRB it names too; the reset and dequeue move in `recover`
+            // abandon the rest, and the next transfer's completion frees them.
+            self.control.complete(trb);
             match code {
                 completion::SUCCESS | completion::SHORT_PACKET if trb == status_at => {
                     barrier();
@@ -583,12 +637,18 @@ impl Host {
         Ok(attached)
     }
 
+    /// Queue one report read into `buffer`. Nothing is queued when the interrupt ring is full,
+    /// which only a controller that completes TRBs it never consumed can bring about.
     fn queue_report(&mut self, k: Attached, buffer: u64) {
-        let p = self
-            .interrupt
-            .enqueue(TransferRequestBlock::normal(buffer, REPORT_BYTES as u16));
-        Host::put(direct_memory_access::INTERRUPT_RING, p);
-        self.ring_doorbell(k.slot, u32::from(k.dci));
+        if Host::place(
+            &mut self.interrupt,
+            direct_memory_access::INTERRUPT_RING,
+            TransferRequestBlock::normal(buffer, REPORT_BYTES as u16),
+        )
+        .is_some()
+        {
+            self.ring_doorbell(k.slot, u32::from(k.dci));
+        }
     }
 }
 
@@ -937,7 +997,10 @@ impl Host {
         let Some(k) = self.keyboard else { return };
         if code != completion::SUCCESS && code != completion::SHORT_PACKET {
             // A halted endpoint: reset it and queue fresh reads. A device that left is noticed by
-            // its port change instead, and this fails harmlessly.
+            // its port change instead, and this fails harmlessly. The failed TRB and those before
+            // it are consumed; the reads after it are abandoned by the dequeue move, and the next
+            // completion frees them.
+            self.interrupt.complete(trb);
             if self.recover(k.slot, k.dci, false).is_ok() {
                 for i in 0..direct_memory_access::REPORTS_QUEUED {
                     self.queue_report(
@@ -955,6 +1018,11 @@ impl Host {
             return;
         };
         if index >= u64::from(direct_memory_access::RING_ENTRIES) {
+            return;
+        }
+        // A completion for a TRB that is not outstanding (one already reported, or never queued)
+        // queues nothing, so the reads outstanding never exceed the ring.
+        if !self.interrupt.complete(trb) {
             return;
         }
         let sent = Host::read_trb(direct_memory_access::INTERRUPT_RING, index as u16);
