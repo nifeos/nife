@@ -470,6 +470,11 @@ MEASURES = [
     ('lines', ['kernel_code_lines', 'kernel_comment_lines',
                'other_code_lines', 'other_comment_lines']),
     ('bugs', ['bugs_markdown', 'bugs_rust']),
+    # How much of the record's prose is a sentence stated again in another file (`prose_duplication`
+    # says how). Derived from nifeos/record's own history, so it needs `--record`. File and column
+    # names provisional (lane/prose-duplication-metric).
+    ('prose-duplication', ['prose_markdown_files', 'prose_duplicated_sentences', 'prose_copies',
+                           'prose_duplicated_pct']),
     ('harnesses', ['harnesses_falsified', 'harnesses_unfalsifiable', 'harnesses_unfalsified',
                    'harnesses_total']),
     ('unsafe', ['unsafe_outside_arch', 'unsafe_inside_arch', 'unsafe_thread_safety',
@@ -1199,6 +1204,82 @@ def waits_cells(held):
     return {'ci_hosted_jobs': held['jobs'],
             'ci_wait_median_minutes': '%.1f' % (held['median_seconds'] / 60.0),
             'ci_wait_over_5_pct': '%.1f' % (100.0 * held['over'] / held['jobs'])}
+
+
+# A sentence this long or longer, in two or more files, is one fact or rule stated twice
+# (nifeos/record issue 50: the one-home rule). Short sentences repeat by accident ("See above.").
+DUPLICATE_MIN_CHARACTERS = 100
+# The record's two prose trees. The record's history includes the weeks when they lived in nife.
+PROSE_TREES = ('design/', 'notes/')
+_SENTENCE_BREAK = re.compile(r'(?<=[.!?]) ')
+
+
+def prose_duplication(texts):
+    """(files, duplicated sentences, copies, duplicated share in per cent) for a list of texts.
+
+    Each text is one Markdown file, read as one line: every run of whitespace is one space. A
+    sentence ends after `.`, `!` or `?` followed by a space. A duplicated sentence has
+    DUPLICATE_MIN_CHARACTERS or more characters and appears in two or more files. Copies is the
+    sum of files over the duplicated sentences. The share is the characters in copies beyond the
+    first, over all characters of all the files.
+    """
+    where = {}
+    total = 0
+    for index, text in enumerate(texts):
+        text = ' '.join(text.split())
+        total += len(text)
+        for sentence in _SENTENCE_BREAK.split(text):
+            if len(sentence) >= DUPLICATE_MIN_CHARACTERS:
+                where.setdefault(sentence, set()).add(index)
+    repeated = {sentence: files for sentence, files in where.items() if len(files) >= 2}
+    copies = sum(len(files) for files in repeated.values())
+    extra = sum(len(sentence) * (len(files) - 1) for sentence, files in repeated.items())
+    return len(texts), len(repeated), copies, (100.0 * extra / total if total else 0.0)
+
+
+def week_end(week):
+    """The last second of an ISO week such as `2026W31`, as a UTC ISO 8601 string."""
+    year, number = week.split('W')
+    sunday = date.fromisocalendar(int(year), int(number), 7)
+    return sunday.isoformat() + 'T23:59:59+00:00'
+
+
+def prose_duplication_by_week(weeks):
+    """{ISO week: the four `prose-duplication` cells} read from nifeos/record's main.
+
+    The record's commit for a week is the last one on its first-parent history at or before the
+    week's end, so a week stands for the record as it was, and a week with no later commit reads
+    the newest one. Every Markdown file under `design/` and `notes/` at that commit is read.
+    Needs `--record`: the weeks before the record left nife are in its history as well.
+    """
+    if RECORD_GIT is None:
+        raise SystemExit('metrics: the prose duplication measure reads nifeos/record\'s history; '
+                         'pass --record <a full clone of nifeos/record>')
+    out, seen = {}, {}
+    for week in weeks:
+        rev = subprocess.run(['git', '-C', RECORD_GIT, 'rev-list', '-1', '--first-parent',
+                              '--before=' + week_end(week), 'HEAD'],
+                             capture_output=True, check=True).stdout.decode().strip()
+        if not rev:
+            continue
+        if rev not in seen:
+            listing = subprocess.run(['git', '-C', RECORD_GIT, 'ls-tree', '-r', '-z', rev],
+                                     capture_output=True, check=True).stdout
+            oids = []
+            for entry in listing.decode('utf-8', 'replace').split('\0'):
+                if not entry:
+                    continue
+                meta, path = entry.split('\t', 1)
+                mode, kind, oid = meta.split()
+                if kind == 'blob' and mode != '120000' and path.endswith('.md') \
+                        and path.startswith(PROSE_TREES):
+                    oids.append(oid)
+            files, sentences, copies, share = prose_duplication(_cat(oids, RECORD_GIT))
+            seen[rev] = {'prose_markdown_files': files,
+                         'prose_duplicated_sentences': sentences, 'prose_copies': copies,
+                         'prose_duplicated_pct': '%.2f' % share}
+        out[week] = seen[rev]
+    return out
 
 
 def debt_paydown_by_week(path=DEBT_PAYDOWN_PATH):
@@ -2852,6 +2933,15 @@ CHARTS = [
      'rising is good: an honest limitation beside the thing it limits',
      [('in markdown', 'bugs_markdown'), ('in Rust doc comments', 'bugs_rust')], 1.0, None,
      None),
+    # The record's prose, stated twice (nifeos/record issue 50). Two panels because a count and a
+    # per cent cannot share an axis. Chart names provisional (lane/prose-duplication-metric).
+    ('prose-duplication-copies.svg', 'Copies of sentences that appear in more than one file',
+     'sentences of 100 or more characters in two or more of the Markdown files under design/ and '
+     'notes/ of nifeos/record, counted once per file that holds them',
+     [('copies', 'prose_copies')], 1.0, None, 'prose_copies'),
+    ('prose-duplication-share.svg', 'Duplicated share of the record\u2019s prose, per cent',
+     'the characters in copies beyond the first, over all characters in the same files',
+     [('duplicated share', 'prose_duplicated_pct')], 1.0, None, 'prose_duplicated_pct'),
     ('harnesses.svg', 'Kani proof harnesses, and what can falsify them',
      'fatal risk 2: a proof nobody can turn red is not evidence',
      [('falsification on record', 'harnesses_falsified'),
@@ -3239,6 +3329,7 @@ def fill_derived(rows, rev):
     debt = debt_paydown_by_week()
     builds = builds_by_week()
     waits = waits_by_week()
+    duplication = prose_duplication_by_week(sorted(rows))
     restate_drift(rows)
     for week, row in rows.items():
         # Empty before the record starts, never zero, for the verify columns' reason.
@@ -3254,6 +3345,7 @@ def fill_derived(rows, rev):
         row['queue_ejection_pct'] = ('' if not held_queue or not held_queue['entries']
                                      else '%.1f' % (100.0 * held_queue['ejected'] / held_queue['entries']))
         row.update(waits_cells(waits.get(week)))
+        row.update(duplication.get(week, {}))
         row.update(debt_paydown_cells(debt.get(week)))
         row.update(models.get(week, {}))
         held = effort.get(week) or {}
@@ -3519,6 +3611,26 @@ def print_table(row):
 # would mislead: a threshold off by an inequality, a prune that requotes what it kept, a render
 # that loses the page around its own output. Each case below is one of those, fixture-built, no
 # git and no real file written. Deliberately not in `script/lint`: run it when touching those.
+
+def _prose_duplication_cases():
+    """The sentence rule: the length floor, the file count, whitespace and the share."""
+    long_one = 'This sentence is long enough to count, because it runs past one hundred characters ' \
+               'without a single break in it.'
+    short_one = 'Too short to count.'
+    assert len(long_one) >= DUPLICATE_MIN_CHARACTERS > len(short_one)
+    a = long_one + ' ' + short_one
+    b = long_one.replace(' ', '\n  ') + ' ' + short_one + ' ' + short_one
+    only_here = 'A sentence that appears twice in one file is not a duplicate, and it is long ' \
+                'enough to count if it were in two files.'
+    c = only_here + ' ' + only_here
+    files, sentences, copies, share = prose_duplication([a, b, c])
+    total = len(' '.join(a.split())) + len(' '.join(b.split())) + len(' '.join(c.split()))
+    return [('three files, one duplicated sentence', (files, sentences, copies), (3, 1, 2)),
+            ('share counts the copies beyond the first',
+             round(share, 6), round(100.0 * len(long_one) / total, 6)),
+            ('no text reads as no duplication', prose_duplication([]), (0, 0, 0, 0.0)),
+            ('a week ends on its Sunday', week_end('2026W31'), '2026-08-02T23:59:59+00:00')]
+
 
 def _decision_cases():
     """The three records a decision's status has lived in, newest first, driven with fixtures."""
@@ -3929,6 +4041,7 @@ def selftest():
     cases += _update_target_cases()
     cases += _drift_restate_cases()
     cases += _chart_total_cases()
+    cases += _prose_duplication_cases()
     cases += _fatal_risk_cases()
     cases += _decision_cases()
     cases += _ratchet_debt_cases()
