@@ -257,8 +257,9 @@ fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
     if keyboard() && !has_initial_ramdisk_x86() {
         return false;
     }
-    if !run(
-        "cargo",
+    // Measurement branch only, not meant to merge: `cargo_profiled`, so a release run builds release
+    // here too; on main this path always builds dev, even under `--release`.
+    if !cargo_profiled(
         &[
             "build",
             "-p",
@@ -275,7 +276,7 @@ fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
     }
 
     let mut cmd = Command::new("helpers/qemu-runner-x86_64.sh");
-    cmd.arg(format!("target/{X86_TARGET}/debug/kernel"));
+    cmd.arg(format!("target/{X86_TARGET}/{}/kernel", crate::profile_dir()));
     // One core, pinned rather than inherited from the runner, whose default is 2. Two cores are a
     // different instrument: still deterministic, but `spawn_reap`'s parent spins until the reaper
     // on the other core runs, and unrelated edits swing rows by 40 to 90%
