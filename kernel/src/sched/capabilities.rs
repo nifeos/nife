@@ -361,10 +361,20 @@ impl Delegation {
         // call surface. The copy is filed by the caller, in whichever table receives it.
         table
             .derive(self.slot, self.rights)
-            .map_err(|error| match error {
-                crate::capability_object::Error::NoSuchSlot => moho_abi::Error::NoSuchSlot,
-                _ => moho_abi::Error::NotPermitted,
-            })
+            .map_err(delegation_refusal)
+    }
+}
+
+/// The system call surface's answer to a refused [`Delegation::derive`]. `#[cold]` and out of
+/// line because `SEND`, `CALL` and `RECEIVE` all inline the delegation, and a refusal is never the
+/// path a round trip takes: kept inline, this match put bytes on `script/fastpath-footprint`'s
+/// closures for a branch no benchmark runs. Name provisional.
+#[cold]
+#[inline(never)]
+fn delegation_refusal(error: crate::capability_object::Error) -> moho_abi::Error {
+    match error {
+        crate::capability_object::Error::NoSuchSlot => moho_abi::Error::NoSuchSlot,
+        _ => moho_abi::Error::NotPermitted,
     }
 }
 
