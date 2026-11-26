@@ -113,6 +113,10 @@ starts() { [ "$(grep -c '^start' "$tmp/events")" -ge "$1" ]; }
 # run3_decided: the third run either printed that it waits, or got its units and started a proof.
 run3_decided() { grep -q "waiting for" "$tmp/run3.out" || starts 3; }
 
+# A stage sets its environment in a subshell, `(NAME=value three)`, because bash 3.2's sh (macOS)
+# keeps an assignment made before a function call after the function returns, and stage 4's
+# GITHUB_ACTIONS=true then turned the pool off for every stage after it.
+#
 # three: start three `script/verify --only page_tables` runs one at a time, each only once the one before
 # it holds a proof, hold all of them until the third has either said it waits or started, then
 # release them and join. A third run that starts without waiting still ends the stage, and the
@@ -136,14 +140,14 @@ three() {
 
 # 1.
 pids=""
-NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=1 three
+(NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=1 three)
 [ "$(peak "$tmp/events")" -eq 2 ] || fail "stage 1: peak $(peak "$tmp/events"), want 2 on a two-unit pool"
 grep -q "waiting for 1 of 2 Kani units" "$tmp/run3.out" || fail "stage 1: the third run did not say it waits"
 [ "$(grep -c start "$tmp/events")" -eq 3 ] || fail "stage 1: not all three runs proved"
 
 # 2.
 pids=""
-NIFE_VERIFY_MEMORY_BYTES=$POOL4 VERIFY_JOBS=2 three
+(NIFE_VERIFY_MEMORY_BYTES=$POOL4 VERIFY_JOBS=2 three)
 [ "$(peak "$tmp/events")" -eq 2 ] || fail "stage 2: peak $(peak "$tmp/events"), want 2 runs on four units at two each"
 grep -q "waiting for 2 of 4 Kani units" "$tmp/run3.out" || fail "stage 2: the third run did not say it waits"
 
@@ -157,13 +161,13 @@ grep -q -- "-j 2 " "$tmp/args" || fail "stage 3: cargo kani was not run at -j 2:
 
 # 4.
 pids=""
-GITHUB_ACTIONS=true NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=1 three
+(GITHUB_ACTIONS=true NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=1 three)
 [ "$(peak "$tmp/events")" -eq 3 ] || fail "stage 4: the pool bounded a CI run"
 ! grep -q "Kani units" "$tmp"/run*.out || fail "stage 4: a CI run mentioned the pool"
 
 # 5.
 pids=""
-NIFE_KANI_HARNESS_GIB=10 NIFE_VERIFY_MEMORY_BYTES=$POOL11 VERIFY_JOBS=1 three
+(NIFE_KANI_HARNESS_GIB=10 NIFE_VERIFY_MEMORY_BYTES=$POOL11 VERIFY_JOBS=1 three)
 [ "$(peak "$tmp/events")" -eq 2 ] || fail "stage 5: peak $(peak "$tmp/events"), want 2 at the default weight"
 grep -q "waiting for 5 of 11 Kani units" "$tmp/run3.out" || fail "stage 5: the third run did not say it waits: $(cat "$tmp/run3.out")"
 
@@ -239,7 +243,7 @@ printf 'row\tpath\ttree\tkani\tpeak_mib\npage_tables\t.kani-version\t%s\t%s\t150
 	"$(git -C "$root" rev-parse HEAD:.kani-version)" "$(tr -d '[:space:]' <"$root/.kani-version")" >"$tmp/peaks.tsv"
 pids=""
 unset NIFE_KANI_HARNESS_GIB
-NIFE_KANI_PEAKS="$tmp/peaks.tsv" NIFE_VERIFY_MEMORY_BYTES=$POOL4 VERIFY_JOBS=2 three
+(NIFE_KANI_PEAKS="$tmp/peaks.tsv" NIFE_VERIFY_MEMORY_BYTES=$POOL4 VERIFY_JOBS=2 three)
 [ "$(peak "$tmp/events")" -eq 2 ] || fail "stage 8: peak $(peak "$tmp/events"), want 2 runs of two one-unit harnesses on four units"
 grep -q "waiting for 2 of 4 Kani units" "$tmp/run3.out" ||
 	fail "stage 8: the third run did not wait for its measured two units: $(cat "$tmp/run3.out")"
