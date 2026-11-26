@@ -717,7 +717,7 @@ nife_partition_types = { version = "0.1.0", path = "../crates/nife_partition_typ
 # before the partition table stores it mixed-endian. Taken, not written: calef's "A" on #2548
 # (§46 (thin primitives or whole subsystems)), default features off, so `no_std` with no dependencies of its own.
 uuid = { version = "1.28.0", default-features = false }
-file_allocation_table = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/file_allocation_table", rev = "6f8aa1df729d4d437d11b8305fadbafa07c93251" }
+file_allocation_table = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/file_allocation_table", rev = "5c0833682b181007e4b8c451c8b2f30644c8e11d" }
 # Milestone 198 rung 2b: the two-slot boot state the installer writes into GPT attribute bits and
 # `uefi_loader`'s chooser reads back. One implementation, two programs.
 boot_slot = { version = "0.1.0", path = "../crates/boot_slot" }
@@ -778,7 +778,7 @@ file_system_fixture = { version = "0.1.0", git = "https://github.com/partsfoundr
 # The NVMe queue arithmetic (milestone 53's crate, milestone 261's consumer):
 # non_volatile_memory_express.rs is the volatile shell of ring copies and doorbell writes over it,
 # the crate/program pair this tree already uses for `jh7110_entropy` and `line_editor`.
-non_volatile_memory_express = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/non_volatile_memory_express", rev = "1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee" }
+non_volatile_memory_express = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/non_volatile_memory_express", rev = "253c68a0786d5a4f3705e4b9402a0c896bff0181" }
 # The `e1000e` NIC's ring logic (milestone 494 (a driver for the network card a PC actually has)):
 # `net_stack`'s e1000e_transport.rs is the volatile shell of tail writes and window copies over it.
 e1000e = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
