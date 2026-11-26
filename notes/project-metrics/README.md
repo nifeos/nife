@@ -24,16 +24,19 @@ Four more records come from GitHub's job and pull request data, each written by 
 `prose-duplication-share.svg`, count how much of the record's prose is stated in more than one
 file. For each week, `script/metrics --record <checkout>` takes the last first-parent commit of
 nifeos/record's main on or before the week's end, which reaches back to the weeks when `design/`
-and `notes/` lived in nife. It reads every Markdown file under `design/` and `notes/` there and
-collapses each run of whitespace to one space. It splits sentences after `.`, `!` or `?` followed
-by a space. A duplicated sentence has 100 or more characters and appears in two or more files.
-The columns are the Markdown files, the duplicated sentences, the copies (the sum of files over
-the duplicated sentences) and the duplicated share (the characters in copies beyond the first, as
-a percent of all characters). The rule is the one in nifeos/record issue 50; the record's own
-duplication lint has not merged, so when it does, this rule follows its exact text and exemptions.
-The spike in 2026W38 (2202 copies, 2.12 percent) is `design/roadmap/README.md`, a generated
-roadmap index of 420,245 bytes that held 939 sentences also present in the milestone blocks, 83
-percent of that week's duplicated characters. It was retired on 2026-09-22 UTC.
+and `notes/` lived in nife, and reads every Markdown file under `design/` and `notes/` there. The
+rule is the record's own one-home lint, `helpers/repeated_sentences.py` in that checkout, loaded
+from it so that this script holds no second copy: a sentence of 100 or more characters that two or
+more files hold, read a block at a time, with a link read as its text and `*` dropped, and with
+block quotes, front matter, table header rows, fenced code, HTML comments and `Name:` paragraphs
+left out. The columns are the Markdown files, the duplicated sentences, the copies (the sum of
+files over the duplicated sentences) and the duplicated share (the characters in copies beyond the
+first, as a percent of all characters of the files, with each run of whitespace one space). The
+latest week's sentence and copy counts equal the lint's own `--report` count at the same record
+commit. The record's rule applies to every week, so an earlier week reads as the lint would have
+read it. The spike in 2026W38 (3197 copies, 2.86 percent) is `design/roadmap/README.md`, a
+generated roadmap index of 420,245 bytes that held 1397 sentences also present in other files,
+88 percent of that week's duplicated characters. It was retired on 2026-09-22 UTC.
 Names provisional (lane/prose-duplication-metric).
 
 *Name: provisional, minted 2026-09-02 with `script/metrics` (`175a2409b`), for the directory and

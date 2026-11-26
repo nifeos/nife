@@ -1206,35 +1206,50 @@ def waits_cells(held):
             'ci_wait_over_5_pct': '%.1f' % (100.0 * held['over'] / held['jobs'])}
 
 
-# A sentence this long or longer, in two or more files, is one fact or rule stated twice
-# (nifeos/record issue 50: the one-home rule). Short sentences repeat by accident ("See above.").
-DUPLICATE_MIN_CHARACTERS = 100
-# The record's two prose trees. The record's history includes the weeks when they lived in nife.
+# The reader and the rule are the record's own: `helpers/repeated_sentences.py` in the checkout that
+# `--record` names (nifeos/record issue 50, the one-home rule; its lint is the record's gate). It
+# splits a document into blocks, drops block quotes, front matter, table header rows, fenced code,
+# HTML comments and `Name:` paragraphs, reads a link as its text, drops `*`, and keeps a sentence of
+# 100 or more characters that two or more files hold. Loaded by path from the checkout so that this
+# script holds no second copy of the rule; a week is read by the rule at the checkout's head.
 PROSE_TREES = ('design/', 'notes/')
-_SENTENCE_BREAK = re.compile(r'(?<=[.!?]) ')
+_REPEATED_SENTENCES = []
+
+
+def repeated_sentences():
+    """The record's `helpers/repeated_sentences.py` module, loaded once from `--record`'s checkout."""
+    if not _REPEATED_SENTENCES:
+        import importlib.util
+        path = pathlib.Path(RECORD_GIT) / 'helpers' / 'repeated_sentences.py'
+        if not path.exists():
+            raise SystemExit('metrics: %s is not in the record checkout; the prose duplication '
+                             'measure uses the record\'s own rule' % path)
+        spec = importlib.util.spec_from_file_location('record_repeated_sentences', path)
+        module = importlib.util.module_from_spec(spec)
+        held = list(sys.path)
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            sys.path[:] = held
+        _REPEATED_SENTENCES.append(module)
+    return _REPEATED_SENTENCES[0]
 
 
 def prose_duplication(texts):
-    """(files, duplicated sentences, copies, duplicated share in per cent) for a list of texts.
+    """(files, duplicated sentences, copies, duplicated share in per cent) for `{path: text}`.
 
-    Each text is one Markdown file, read as one line: every run of whitespace is one space. A
-    sentence ends after `.`, `!` or `?` followed by a space. A duplicated sentence has
-    DUPLICATE_MIN_CHARACTERS or more characters and appears in two or more files. Copies is the
-    sum of files over the duplicated sentences. The share is the characters in copies beyond the
-    first, over all characters of all the files.
+    Files, sentences and copies are the record's own count: a copy is a sentence of 100 or more
+    characters in two or more files, and copies sum the files over those sentences. The share is
+    the characters in copies beyond the first, over all the characters of all the files with each
+    run of whitespace read as one space (the exempt text counts in the denominator).
     """
-    where = {}
-    total = 0
-    for index, text in enumerate(texts):
-        text = ' '.join(text.split())
-        total += len(text)
-        for sentence in _SENTENCE_BREAK.split(text):
-            if len(sentence) >= DUPLICATE_MIN_CHARACTERS:
-                where.setdefault(sentence, set()).add(index)
-    repeated = {sentence: files for sentence, files in where.items() if len(files) >= 2}
-    copies = sum(len(files) for files in repeated.values())
-    extra = sum(len(sentence) * (len(files) - 1) for sentence, files in repeated.items())
-    return len(texts), len(repeated), copies, (100.0 * extra / total if total else 0.0)
+    rule = repeated_sentences()
+    rows, said = rule.copies(texts)
+    held = rule.per_sentence(rows)
+    total = sum(len(' '.join(text.split())) for text in texts.values())
+    extra = sum(len(said[h]) * (n - 1) for h, n in held.items())
+    return (len(texts), len(held), sum(held.values()),
+            100.0 * extra / total if total else 0.0)
 
 
 def week_end(week):
@@ -1265,7 +1280,7 @@ def prose_duplication_by_week(weeks):
         if rev not in seen:
             listing = subprocess.run(['git', '-C', RECORD_GIT, 'ls-tree', '-r', '-z', rev],
                                      capture_output=True, check=True).stdout
-            oids = []
+            paths, oids = [], []
             for entry in listing.decode('utf-8', 'replace').split('\0'):
                 if not entry:
                     continue
@@ -1273,8 +1288,10 @@ def prose_duplication_by_week(weeks):
                 mode, kind, oid = meta.split()
                 if kind == 'blob' and mode != '120000' and path.endswith('.md') \
                         and path.startswith(PROSE_TREES):
+                    paths.append(path)
                     oids.append(oid)
-            files, sentences, copies, share = prose_duplication(_cat(oids, RECORD_GIT))
+            files, sentences, copies, share = prose_duplication(
+                dict(zip(paths, _cat(oids, RECORD_GIT))))
             seen[rev] = {'prose_markdown_files': files,
                          'prose_duplicated_sentences': sentences, 'prose_copies': copies,
                          'prose_duplicated_pct': '%.2f' % share}
@@ -3613,22 +3630,39 @@ def print_table(row):
 # git and no real file written. Deliberately not in `script/lint`: run it when touching those.
 
 def _prose_duplication_cases():
-    """The sentence rule: the length floor, the file count, whitespace and the share."""
-    long_one = 'This sentence is long enough to count, because it runs past one hundred characters ' \
-               'without a single break in it.'
-    short_one = 'Too short to count.'
-    assert len(long_one) >= DUPLICATE_MIN_CHARACTERS > len(short_one)
-    a = long_one + ' ' + short_one
-    b = long_one.replace(' ', '\n  ') + ' ' + short_one + ' ' + short_one
-    only_here = 'A sentence that appears twice in one file is not a duplicate, and it is long ' \
-                'enough to count if it were in two files.'
-    c = only_here + ' ' + only_here
-    files, sentences, copies, share = prose_duplication([a, b, c])
-    total = len(' '.join(a.split())) + len(' '.join(b.split())) + len(' '.join(c.split()))
-    return [('three files, one duplicated sentence', (files, sentences, copies), (3, 1, 2)),
-            ('share counts the copies beyond the first',
-             round(share, 6), round(100.0 * len(long_one) / total, 6)),
-            ('no text reads as no duplication', prose_duplication([]), (0, 0, 0, 0.0)),
+    """The counts and the share, driven with a stand-in for the record's reader (it is not here)."""
+    import collections
+    from types import SimpleNamespace
+
+    def stand_in_copies(texts):
+        if not texts:
+            return collections.Counter(), {}
+        rows = collections.Counter({'aaa a.md': 1, 'aaa b.md': 1, 'aaa c.md': 1, 'bbb a.md': 1,
+                                    'bbb b.md': 1})
+        return rows, {'aaa': 'x' * 100, 'bbb': 'y' * 120}
+
+    def stand_in_per_sentence(rows):
+        out = collections.Counter()
+        for row, n in rows.items():
+            out[row.split(' ', 1)[0]] += n
+        return out
+
+    held = list(_REPEATED_SENTENCES)
+    _REPEATED_SENTENCES[:] = [SimpleNamespace(copies=stand_in_copies,
+                                              per_sentence=stand_in_per_sentence)]
+    try:
+        texts = {'a.md': 'a ' * 500, 'b.md': 'b\n\n' * 500, 'c.md': 'c'}
+        files, sentences, copies, share = prose_duplication(texts)
+        total = len(' '.join(('a ' * 500).split())) \
+            + len(' '.join(('b\n\n' * 500).split())) + 1
+        empty = prose_duplication({})
+    finally:
+        _REPEATED_SENTENCES[:] = held
+    return [('files, sentences and copies come from the record\'s rows',
+             (files, sentences, copies), (3, 2, 5)),
+            ('the share counts the characters beyond the first copy',
+             round(share, 6), round(100.0 * (100 * 2 + 120 * 1) / total, 6)),
+            ('no files read as no duplication', empty, (0, 0, 0, 0.0)),
             ('a week ends on its Sunday', week_end('2026W31'), '2026-08-02T23:59:59+00:00')]
 
 

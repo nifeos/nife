@@ -32,4 +32,4 @@ week,chart,note
 2026W47,ci-jobs.svg,CI job swish-check ran at 87% of its budget on its newest merge-group run; tracking issue #3681
 2026W47,ci-jobs.svg,CI job prove ran at 109% of its budget on its newest merge-group run; tracking issue #3713
 2026W47,ci-jobs.svg,CI job prove ran at 88% of its budget on its newest merge-group run; tracking issue #3763
-2026W38,prose-duplication-copies.svg,"copies rose from 126 to 2202 because design/roadmap/README.md, a generated index of 420,245 bytes, held 939 sentences that each also sit in one milestone block, which is 83% of the duplicated characters; the index was retired on 2026-09-22 UTC and the file is now a pointer of about one kilobyte"
+2026W38,prose-duplication-copies.svg,"copies rose from 186 to 3197 because design/roadmap/README.md, a generated index of 420,245 bytes, held 1397 sentences that each also sit in another file, which is 88% of the duplicated characters; the index was retired on 2026-09-22 UTC and the file is now a pointer of about one kilobyte"
