@@ -173,9 +173,9 @@ pub fn give_up_own_page(va: u64) -> bool {
     if own == NO_OWN_SPACE {
         return false;
     }
-    // SAFETY: `invoke` is the system call; the kernel validates the capability, the right and the
-    // address, and changes nothing on a refusal. The caller is done with every byte at `va`.
-    unsafe { invoke(own, moho_abi::address_space::UNMAP, va, 0, 0) == 0 }
+    // The kernel validates the capability, the right and the address, and changes nothing on a
+    // refusal. The caller is done with every byte at `va`.
+    user_mode_runtime::address_space_remove_page(own, va) == 0
 }
 
 /// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
