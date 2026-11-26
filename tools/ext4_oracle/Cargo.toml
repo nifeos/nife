@@ -17,11 +17,11 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 publish = false
 
-# The manifest fields both readers print, in one place: the direct reader and the server path link
-# it, so neither binary carries a copy.
+# The manifest fields both readers print, and the CRC32C path every binary takes, in one place:
+# the three binaries link it, so none carries a copy.
 [lib]
 name = "ext4_oracle_manifest"
-path = "src/manifest.rs"
+path = "src/lib.rs"
 
 # The implementation under test. Ruled 2026-11-16 (UTC) on pull request #3639: a host-only
 # dependency of this tool, pinned exactly, in a workspace of its own, never in a nife image,
