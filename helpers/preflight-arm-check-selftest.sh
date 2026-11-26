@@ -86,7 +86,7 @@ check "queued: entries behind it are not ahead" 0 "green" "$mine" 42="$mine" 7="
 out="$("$root/script/preflight-queue" --arm-check nope 2>&1)"
 [ $? = 2 ] || { echo "$me: a non-number was not refused: $out" >&2; fail=1; }
 # No worktree is left behind.
-[ "$(git -C "$fx/work" worktree list | wc -l)" = 1 ] ||
+[ "$(git -C "$fx/work" worktree list | wc -l | tr -d " ")" = 1 ] ||
 	{ echo "$me: a stack worktree was left behind" >&2; fail=1; }
 
 [ "$fail" = 0 ] && echo "$me: ok"
