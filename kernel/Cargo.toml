@@ -84,12 +84,12 @@ std_runtime_contract = { version = "0.1.0", path = "../crates/std_runtime_contra
 # TSC rate into a frame once, at boot, and `kernel::user::load` maps it read-only into every
 # x86_64 process; `user_mode_runtime::cntfrq` is the reader, through this same crate, so neither side keeps
 # its own copy of the page's layout or its fixed address.
-counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
+counter_frequency_contract = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/counter_frequency_contract", rev = "4decec9d5e43054c88a6d5e6f5254b37906db92e" }
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 # The block-device roster (milestone 57). The kernel writes the page and the surveyor reads it, and
 # the kernel's own tests read it back through this crate rather than by trusting the count the
 # program sent home, so no party has its own copy of the layout.
-block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
+block_roster_contract = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/block_roster_contract", rev = "f0c199acc9cf2ca9e01c9350d3124aecf7994654" }
 # The boot ladder's console markers (milestone 268): the exact bytes each rung of the boot prints.
 # The kernel prints them and `serial_console` matches them, so AGENTS.md rule 7 makes them a crate
 # rather than two copies of a literal. That is not hypothetical here: the one marker that existed
@@ -161,7 +161,7 @@ entropy_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/e
 # thing only: `discover`, the device-tree query that says whether this machine has a TRNG at all,
 # so `entropy_service` can wire the userspace driver for it (`components/src/jh7110_entropy.rs`) instead of
 # keeping a second copy of the `compatible` string and the `reg` decode.
-jh7110_entropy = { version = "0.3.0-pre.1", git = "https://github.com/partsfoundry/jh7110_entropy", rev = "df37dc91383c4226b0266499c48de7e5e92ecb99" }
+jh7110_entropy = { version = "0.3.0-pre.2", git = "https://github.com/partsfoundry/jh7110_entropy", rev = "eac91efd0381cc4cd7556a53e512bcfb2eeaaf17" }
 
 # The JH7110's clock and reset generator (milestone 220), for `drivers::jh7110_clock_and_reset` and for
 # `memory::initialize`'s discovery of the controller's window. Pure logic; the volatile half is the
@@ -181,7 +181,7 @@ designware_inter_integrated_circuit = { version = "0.1.0", path = "../crates/des
 # The JH7110's SD/MMC controller (milestone 53 (the board's own peripherals: network and storage on
 # real silicon)): the whole driver as pure logic behind one `Registers` trait, which
 # `kernel/src/designware_mobile_storage.rs` implements over a mapped device window.
-designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/designware_mobile_storage", rev = "85c4e1b58bb5d76efbc0b48d3ff51024d3904b12" }
+designware_mobile_storage = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/designware_mobile_storage", rev = "f52f89aca200476e57212c6a9f71bfc04ad013df" }
 # Sector 0 of a card: the MBR's partition entries and the scratch range before the first partition
 # (`kernel/src/storage_bench_steps.rs`). It left `designware_mobile_storage` for a crate of its own.
 master_boot_record = { version = "0.1.0", path = "../crates/master_boot_record" }
@@ -190,12 +190,12 @@ pci_configuration_space = { version = "0.1.0", path = "../crates/pci_configurati
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
 # it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as `pci` above.
-e1000e = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
+e1000e = { version = "0.1.0-pre.4", git = "https://github.com/partsfoundry/e1000e", rev = "42cdc139a81a254d420dac0590ac9d85a8ff4aad" }
 # The xHCI half of the USB keyboard (milestone 242 (USB host and HID)): the register window the
 # driver is mapped and the handoff it is spawned with. The kernel's extensible_host_controller_interface
 # module is its volatile half, the same split as `pci` above. The window, the
 # handoff and the driver's bring-up report are `driver_process_contract`'s.
-extensible_host_controller_interface = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/extensible_host_controller_interface", rev = "99daca365beb53961c3d64b01751f8de85a281ac" }
+extensible_host_controller_interface = { version = "0.1.0-pre.4", git = "https://github.com/partsfoundry/extensible_host_controller_interface", rev = "a10790e1557aa761b889663f68c8a3541d0c5402" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 intrusive_queue = { version = "0.1.0", git = "https://github.com/partsfoundry/intrusive_queue", rev = "10d1fa2893c1cab6db3901f79a1ab2bc0029170b" }
@@ -229,7 +229,7 @@ memory_regions = { version = "0.1.0", path = "../crates/memory_regions" }
 # *grants* a net server its listen ports, so it packs the grant with the same `listen_grant` the
 # server checks against rather than open-coding the layout of a word two programs must agree on.
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
-generational_table = { version = "0.1.0-pre.3", git = "https://github.com/partsfoundry/generational_table", rev = "832836094b1170f0f07275bb2adbb889d949ccc5" }
+generational_table = { version = "0.1.0-pre.4", git = "https://github.com/partsfoundry/generational_table", rev = "b5243332a65255fb8549b20b586cc4b58674eefa" }
 # The lock under `InterruptSafeMutualExclusionLock`: an Acquire compare-exchange and a Release store, written in
 # the
 # tree so loom can check them, the fourth retrofit of work_steal_slot's move. Its `unsafe` and what

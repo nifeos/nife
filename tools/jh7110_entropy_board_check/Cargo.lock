@@ -14,8 +14,8 @@ source = "git+https://github.com/partsfoundry/jh7110_clock_and_reset?rev=0785c63
 
 [[package]]
 name = "jh7110_entropy"
-version = "0.2.0"
-source = "git+https://github.com/partsfoundry/jh7110_entropy?rev=ee0bde8feb9f78a67da011c928f9a2a697f3bbc1#ee0bde8feb9f78a67da011c928f9a2a697f3bbc1"
+version = "0.3.0-pre.2"
+source = "git+https://github.com/partsfoundry/jh7110_entropy?rev=eac91efd0381cc4cd7556a53e512bcfb2eeaaf17#eac91efd0381cc4cd7556a53e512bcfb2eeaaf17"
 
 [[package]]
 name = "jh7110_entropy_board_check"

@@ -143,8 +143,8 @@ dependencies = [
 
 [[package]]
 name = "counter_frequency_contract"
-version = "0.1.0-pre.1"
-source = "git+https://github.com/partsfoundry/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
+version = "0.1.0-pre.2"
+source = "git+https://github.com/partsfoundry/counter_frequency_contract?rev=4decec9d5e43054c88a6d5e6f5254b37906db92e#4decec9d5e43054c88a6d5e6f5254b37906db92e"
 
 [[package]]
 name = "cpufeatures"
@@ -175,7 +175,7 @@ dependencies = [
 [[package]]
 name = "designware_ethernet"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/partsfoundry/designware_ethernet?rev=d6730d2218edead38fac3fe96703eaa1e5e92ee2#d6730d2218edead38fac3fe96703eaa1e5e92ee2"
+source = "git+https://github.com/partsfoundry/designware_ethernet?rev=f518554c96f868e0fafcf245afea538a35bf7104#f518554c96f868e0fafcf245afea538a35bf7104"
 
 [[package]]
 name = "device_tree_blob"
@@ -386,8 +386,8 @@ source = "git+https://github.com/partsfoundry/jh7110_clock_and_reset?rev=0785c63
 
 [[package]]
 name = "jh7110_entropy"
-version = "0.3.0-pre.1"
-source = "git+https://github.com/partsfoundry/jh7110_entropy?rev=df37dc91383c4226b0266499c48de7e5e92ecb99#df37dc91383c4226b0266499c48de7e5e92ecb99"
+version = "0.3.0-pre.2"
+source = "git+https://github.com/partsfoundry/jh7110_entropy?rev=eac91efd0381cc4cd7556a53e512bcfb2eeaaf17#eac91efd0381cc4cd7556a53e512bcfb2eeaaf17"
 
 [[package]]
 name = "jh7110_pci_express"
