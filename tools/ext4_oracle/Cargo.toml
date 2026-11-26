@@ -34,7 +34,7 @@ path = "src/lib.rs"
 # Default features off: the reader needs no `std` integration from the crate, and the defaults
 # would add nothing the oracle reads.
 [dependencies]
-rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/partsfoundry/rsext4", rev = "d5fe7eab2e1abf4370925049ff2036a4925687d1", default-features = false }
+rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/partsfoundry/rsext4", rev = "c36a73e26f4819e1a5a795a46e950cb10419be0e", default-features = false }
 # The server path: `ext4_oracle_server` drives the read-only server's contract side over the
 # `rsext4` mount above, through file-service requests, and is the one place the two meet. The
 # crate is in the ext4-oracle test package with this one, so nothing that ships links it.
