@@ -88,6 +88,21 @@ impl<V: Volume> Server<V> {
         Server { volume, handles }
     }
 
+    /// Bind the root with `granted` in place of the read-only set, for a test that needs a handle
+    /// the read-only root never mints.
+    #[cfg(test)]
+    pub(crate) fn rebind_root(&mut self, granted: u64) {
+        if let Some(Open::Directory { rights, .. }) = self.handles.get_mut(&file_system::ROOT) {
+            *rights = Rights::root(granted);
+        }
+    }
+
+    /// The volume, for a test that counts what was asked of it.
+    #[cfg(test)]
+    pub(crate) fn volume(&self) -> &V {
+        &self.volume
+    }
+
     /// **Answer one request**: `w0` and `w1` as the client sent them, and `window` the client's
     /// channel, which names and bytes are read from and replies written into. Returns the two
     /// reply words.

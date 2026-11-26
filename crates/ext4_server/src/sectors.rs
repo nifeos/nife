@@ -82,16 +82,16 @@ impl<D: BlockDevice> Sectors<D> {
         if (out.len() as u64) < length || end > self.sectors() * sector {
             return Err(INPUT_OUTPUT_ERROR);
         }
-        let mut at = start;
+        // One pass per block the range touches, so the loop is bounded by the range itself.
+        let block = BLOCK as u64;
         let mut filled = 0;
-        while at < end {
-            let index = at / BLOCK as u64;
-            let within = (at % BLOCK as u64) as usize;
-            let take = (BLOCK - within).min((end - at) as usize);
+        for index in start / block..end.div_ceil(block) {
+            let base = index * block;
+            let from = (start.max(base) - base) as usize;
+            let to = (end.min(base + block) - base) as usize;
             let data = self.block(index)?;
-            out[filled..filled + take].copy_from_slice(&data[within..within + take]);
-            filled += take;
-            at += take as u64;
+            out[filled..filled + to - from].copy_from_slice(&data[from..to]);
+            filled += to - from;
         }
         Ok(())
     }
