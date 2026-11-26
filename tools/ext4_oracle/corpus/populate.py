@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Write the ext4 read-oracle corpus's source tree into an empty directory.
 
-Usage: populate.py <empty-directory> <block-size-bytes>
+Usage: populate.py <empty-directory> <block-size-bytes> <attribute-directory>
 
 The tree is deterministic: every byte comes from a seeded generator, and `make-corpus.sh` fixes
 every time, so two runs build the same image from it. Each part exists to put one on-disk shape in
@@ -41,9 +41,10 @@ def sparse_file(rng, path, block_size, runs):
 
 
 def main():
-    root, block_size = sys.argv[1], int(sys.argv[2])
-    if os.listdir(root):
-        sys.exit(f'populate.py: {root} is not empty')
+    root, block_size, values = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+    for directory in (root, values):
+        if os.listdir(directory):
+            sys.exit(f'populate.py: {directory} is not empty')
     rng = random.Random(190)
 
     os.makedirs(f'{root}/files')
@@ -76,15 +77,22 @@ def main():
     os.link(f'{root}/links/hard-a', f'{root}/links/hard-b')
     os.link(f'{root}/links/hard-a', f'{root}/files/hard-c')
 
+    # mke2fs -d copies extended attributes only on Linux, and macOS's os module cannot set them, so
+    # the attributes are written as a debugfs script that make-corpus.sh runs on the image.
     os.makedirs(f'{root}/attributes')
     write(f'{root}/attributes/small', b'small\n')
-    os.setxattr(f'{root}/attributes/small', 'user.color', b'blue')
-    os.setxattr(f'{root}/attributes/small', 'user.empty', b'')
     write(f'{root}/attributes/large', b'large\n')
-    os.setxattr(f'{root}/attributes/large', 'user.blob', data(rng, 900))
-    os.setxattr(f'{root}/attributes/large', 'user.second', b'2')
     os.makedirs(f'{root}/attributes/directory')
-    os.setxattr(f'{root}/attributes/directory', 'user.on-a-directory', b'yes')
+    attributes = [('/attributes/small', 'user.color', b'blue'),
+                  ('/attributes/small', 'user.empty', b''),
+                  ('/attributes/large', 'user.blob', data(rng, 900)),
+                  ('/attributes/large', 'user.second', b'2'),
+                  ('/attributes/directory', 'user.on-a-directory', b'yes')]
+    script = []
+    for i, (path, name, value) in enumerate(attributes):
+        write(f'{values}/{i}', value)
+        script.append(f'ea_set -f {values}/{i} {path} {name}\n')
+    write(f'{values}/attributes.debugfs', ''.join(script).encode())
 
     os.makedirs(f'{root}/names')
     for name in ('with space', 'café', '日本語', 'n' * 255, '.hidden', '-dash'):

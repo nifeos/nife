@@ -16,8 +16,8 @@
 # writes linear directories), and `e2fsck -fn` must then exit 0, so a profile that e2fsprogs itself
 # calls damaged never reaches the reader.
 #
-# Needs: mke2fs, e2fsck and dumpe2fs from e2fsprogs 1.47 or later, and python3. Linux only: the
-# tree carries user extended attributes, which macOS cannot set on a file for mke2fs to copy.
+# Needs: mke2fs, debugfs, e2fsck and dumpe2fs from e2fsprogs 1.47 or later, and python3. The
+# extended attributes are set in the image by debugfs, not copied from the tree, so it runs on macOS.
 #
 # See nifeos/record:design/roadmap/0190-ext4-read-write.md.
 #
@@ -48,9 +48,10 @@ echo "$profiles" | while read -r name block features; do
     [ -n "$name" ] || continue
     tree="$out/$name.tree"
     image="$out/$name.img"
-    rm -rf "$tree" "$image"
-    mkdir "$tree"
-    python3 -I "$here/populate.py" "$tree" "$block"
+    attributes="$out/$name.attributes"
+    rm -rf "$tree" "$image" "$attributes"
+    mkdir "$tree" "$attributes"
+    python3 -I "$here/populate.py" "$tree" "$block" "$attributes"
     MKE2FS_CONFIG=$config SOURCE_DATE_EPOCH=1600000000 E2FSPROGS_FAKE_TIME=1600000000 mke2fs -q -F -t ext4 \
         -b "$block" -I 256 -N 8192 -O "$features" \
         -U 0b5f4a3e-1900-4e1a-8f00-000000000190 -E hash_seed=0b5f4a3e-1900-4e1a-8f00-0000000001a5 \
@@ -59,6 +60,7 @@ echo "$profiles" | while read -r name block features; do
     # time past 2106 (an epoch bit in the extra field). Each extra field is nanoseconds << 2 | epoch,
     # and Linux reads the seconds field as signed, so 0xffffff9c with epoch 0 is 100 seconds before
     # 1970. debugfs sets the epoch bits from the seconds it is given, so the extra fields are set after.
+    debugfs -w -f "$attributes/attributes.debugfs" "$image" >/dev/null 2>&1
     debugfs -w -f - "$image" >/dev/null 2>&1 <<EOF
 sif /timestamps/nanoseconds mtime 0x5f5e1000
 sif /timestamps/nanoseconds mtime_extra 0x1d6f3454
