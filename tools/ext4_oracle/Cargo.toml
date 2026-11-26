@@ -16,6 +16,12 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 publish = false
 
+# The manifest fields both readers print, in one place: the direct reader and the server path link
+# it, so neither binary carries a copy.
+[lib]
+name = "ext4_oracle_manifest"
+path = "src/manifest.rs"
+
 # The implementation under test. Ruled 2026-11-16 (UTC) on pull request #3639: a host-only
 # dependency of this tool, pinned exactly, in a workspace of its own, never in a nife image,
 # kernel, program or shipping lockfile. That ruling is not the §46 (thin primitives or whole
@@ -28,3 +34,9 @@ publish = false
 # would add nothing the oracle reads.
 [dependencies]
 rsext4 = { version = "0.10.0-nifeos.1", git = "https://github.com/partsfoundry/rsext4", rev = "388ebd6a4ec0c6c91af5bbaf577c8737c2322f94", default-features = false }
+# The server path: `ext4_oracle_server` drives the read-only server's contract side over the
+# `rsext4` mount above, through file-service requests, and is the one place the two meet. The
+# crate is in the ext4-oracle test package with this one, so nothing that ships links it.
+ext4_server = { path = "../../crates/ext4_server" }
+# The wire the server path speaks, at the revision `ext4_server` is built against.
+file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }

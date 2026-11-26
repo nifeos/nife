@@ -17,6 +17,7 @@ use std::fs::File;
 use std::io::Write;
 use std::os::unix::fs::FileExt;
 
+use ext4_oracle_manifest::{fnv, hex, hex_or_text, namespace};
 use rsext4::error::Ext4Result;
 use rsext4::*;
 
@@ -57,31 +58,6 @@ struct FixedClock;
 impl Clock for FixedClock {
     fn now(&self) -> Ext4Result<Ext4Timestamp> {
         Ok(Ext4Timestamp::new(1_600_000_000, 0))
-    }
-}
-
-fn fnv(bytes: &[u8]) -> u64 {
-    let mut h: u64 = 0xcbf29ce484222325;
-    for b in bytes {
-        h ^= u64::from(*b);
-        h = h.wrapping_mul(0x100000001b3);
-    }
-    h
-}
-
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
-fn namespace(attribute_namespace: XattrNamespace) -> String {
-    match attribute_namespace {
-        XattrNamespace::User => "user.".into(),
-        XattrNamespace::Trusted => "trusted.".into(),
-        XattrNamespace::Security => "security.".into(),
-        XattrNamespace::System => "system.".into(),
-        XattrNamespace::PosixAclAccess => "system.posix_acl_access".into(),
-        XattrNamespace::PosixAclDefault => "system.posix_acl_default".into(),
-        other => format!("{other:?}."),
     }
 }
 
@@ -306,8 +282,4 @@ fn attributes_of(fs: &mut Fs, number: InodeNumber) -> String {
 
 fn block_size(fs: &Fs) -> u64 {
     fs.statfs().block_size
-}
-
-fn hex_or_text(p: &[u8]) -> String {
-    String::from_utf8(p.to_vec()).unwrap_or_else(|_| hex(p))
 }

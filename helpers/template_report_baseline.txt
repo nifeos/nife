@@ -62,6 +62,7 @@ domain_name_resolution_contract abbreviations 3
 driver_process_contract abbreviations 38
 driver_process_contract prose_acronyms 18
 driver_process_contract register_names 8
+ext4_server abbreviations 1
 firmware_configuration abbreviations 7
 firmware_configuration prose_acronyms 4
 firmware_configuration readme_acronyms 2

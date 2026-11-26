@@ -76,6 +76,7 @@ entropy_protocol	shared	retired
 environment_contract	shared	retired
 environment_proto	shared	retired
 environment_protocol	shared	retired
+ext4_server	host	-
 extensible_host_controller_interface	shared	retired
 extensible_host_controller_interface_contract	shared	retired
 file_allocation_table	userspace	retired
