@@ -117,7 +117,7 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
+source = "git+https://github.com/partsfoundry/byte_glob?rev=a095cd860ae8b6aa678913bdd7b2b32db24cc596#a095cd860ae8b6aa678913bdd7b2b32db24cc596"
 
 [[package]]
 name = "byte_sink_contract"
@@ -171,7 +171,7 @@ dependencies = [
 [[package]]
 name = "capability_table"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/capability_table?rev=94147c270abe20e2a9a794f45bd63d46f6139fe6#94147c270abe20e2a9a794f45bd63d46f6139fe6"
+source = "git+https://github.com/partsfoundry/capability_table?rev=a0e8b159e550943828d4ddb61137e53a2c2cd631#a0e8b159e550943828d4ddb61137e53a2c2cd631"
 
 [[package]]
 name = "capability_witness_contract"
@@ -530,6 +530,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
+name = "ext4_server"
+version = "0.0.0"
+dependencies = [
+ "file_system_contract",
+ "subtree_scope",
+]
+
+[[package]]
 name = "extensible_host_controller_interface"
 version = "0.1.0-pre.3"
 source = "git+https://github.com/partsfoundry/extensible_host_controller_interface?rev=99daca365beb53961c3d64b01751f8de85a281ac#99daca365beb53961c3d64b01751f8de85a281ac"
@@ -537,7 +545,7 @@ source = "git+https://github.com/partsfoundry/extensible_host_controller_interfa
 [[package]]
 name = "file_allocation_table"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/partsfoundry/file_allocation_table?rev=6f8aa1df729d4d437d11b8305fadbafa07c93251#6f8aa1df729d4d437d11b8305fadbafa07c93251"
+source = "git+https://github.com/partsfoundry/file_allocation_table?rev=8aedc02e7ac1991dd3c6f479b5cf9e50f97a58af#8aedc02e7ac1991dd3c6f479b5cf9e50f97a58af"
 
 [[package]]
 name = "file_system_contract"
@@ -665,7 +673,7 @@ version = "0.1.0"
 [[package]]
 name = "grant_contract"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/grant_contract?rev=a1e5b048a9e6a26305a47663eb3c8f7e966beb12#a1e5b048a9e6a26305a47663eb3c8f7e966beb12"
+source = "git+https://github.com/partsfoundry/grant_contract?rev=f84cd7e6ff2efccbaf18988c584ff9bb7b32e4e7#f84cd7e6ff2efccbaf18988c584ff9bb7b32e4e7"
 dependencies = [
  "program_argument_contract",
 ]
@@ -673,7 +681,7 @@ dependencies = [
 [[package]]
 name = "grant_plan"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/grant_plan?rev=8f2555339461aae2bde04be579da7cac7b661698#8f2555339461aae2bde04be579da7cac7b661698"
+source = "git+https://github.com/partsfoundry/grant_plan?rev=69aedfbc9adb70d877435c6a62dc4983ef035e0d#69aedfbc9adb70d877435c6a62dc4983ef035e0d"
 dependencies = [
  "byte_glob",
  "grant_contract",
@@ -1123,7 +1131,7 @@ version = "0.1.0"
 [[package]]
 name = "non_volatile_memory_express"
 version = "0.1.0-pre.3"
-source = "git+https://github.com/partsfoundry/non_volatile_memory_express?rev=1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee#1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee"
+source = "git+https://github.com/partsfoundry/non_volatile_memory_express?rev=253c68a0786d5a4f3705e4b9402a0c896bff0181#253c68a0786d5a4f3705e4b9402a0c896bff0181"
 
 [[package]]
 name = "nu-ansi-term"
@@ -1259,7 +1267,7 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/program_argument_contract?rev=764e0e55a238252391b1c06135e228ef6b9436c8#764e0e55a238252391b1c06135e228ef6b9436c8"
+source = "git+https://github.com/partsfoundry/program_argument_contract?rev=b097970b8650ca8a370018f18ce533c1f22db3e4#b097970b8650ca8a370018f18ce533c1f22db3e4"
 
 [[package]]
 name = "program_asks"

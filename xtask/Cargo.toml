@@ -43,7 +43,7 @@ uuid = { version = "1.28.0", default-features = false }
 # The FAT32 `mkfs` the installer lays its EFI system partition down with (milestone 578 (an ACPI
 # discovery path for aarch64), item 7): `acpi-boot` writes the cloud boot disk with the same crate,
 # so the disk a person imports into a cloud is the installer's format, booted by EDK2 in the gate.
-file_allocation_table = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/file_allocation_table", rev = "6f8aa1df729d4d437d11b8305fadbafa07c93251" }
+file_allocation_table = { version = "0.1.0-pre.2", git = "https://github.com/partsfoundry/file_allocation_table", rev = "8aedc02e7ac1991dd3c6f479b5cf9e50f97a58af" }
 # **The boot state `cargo xtask rollback-boot` stages an upgrade with** (rung 2b of milestone 198 (a package manager, and the trivial install that makes a second customer possible)).
 # The gate writes a slot's attribute bits through exactly the code the installer writes them with,
 # so what it exercises is the format rather than a host-side second spelling of it.
@@ -96,7 +96,7 @@ screen_console = { version = "0.1.0", path = "../crates/screen_console" }
 # The programs the shell can spawn (milestone 150): the packer refuses to build an archive missing
 # one, because a `Program` whose binary is not packed compiles, passes every host test and cannot be
 # spawned. Both `no_std`, so they cost the host build nothing.
-grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "a1e5b048a9e6a26305a47663eb3c8f7e966beb12" }
+grant_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/grant_contract", rev = "f84cd7e6ff2efccbaf18988c584ff9bb7b32e4e7" }
 program_table = { version = "0.1.0", path = "../crates/program_table" }
 # To find a program's manifest note on the host and stage a copy of it that cannot be read
 # (milestone 597 (a program carries its manifest in an ELF note), provisional), for

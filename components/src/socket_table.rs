@@ -186,16 +186,8 @@ impl Table {
         if !self.mapped[entry] {
             return true;
         }
-        // SAFETY: the system call; the kernel checks the capability, the right and the address.
-        let gone = unsafe {
-            user_mode_runtime::invoke(
-                OWN_SPACE,
-                moho_abi::address_space::UNMAP,
-                socket_va(entry),
-                0,
-                0,
-            )
-        } == 0;
+        // The kernel checks the capability, the right and the address.
+        let gone = user_mode_runtime::address_space_remove_page(OWN_SPACE, socket_va(entry)) == 0;
         if gone {
             self.mapped[entry] = false;
         }
