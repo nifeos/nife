@@ -1,0 +1,5 @@
+# The working corpus, the crash artifacts and the build tree, none committed, as in fuzz/.gitignore.
+corpus/
+artifacts/
+coverage/
+target/

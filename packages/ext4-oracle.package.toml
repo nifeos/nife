@@ -12,6 +12,8 @@
 # `ext4_server` is the read-only server's contract side, with no ext4 code in it. It stays here,
 # where nothing that ships can link it, until the adoption ruling decides what implements its
 # `Volume` in an image; tools/ext4_oracle drives it over `rsext4` and judges it against `debugfs`.
+# `ext4_oracle_fuzz` (tools/ext4_oracle_fuzz) fuzzes `rsext4` and that server over the same adapter,
+# and links `rsext4`'s own fuzz targets, so it is host-only for the same reason and comes with it.
 #
 # Name: provisional, the lane's proposal; calef names packages. The home is undecided: it leaves
 # with the ext4 server it judges, whose package is not yet named.
@@ -19,4 +21,4 @@
 name = "ext4-oracle"
 kind = "test"
 home = { status = "undecided", reason = "it leaves with the ext4 server it judges, whose package is not yet named" }
-crates = ["ext4_oracle", "ext4_server"]
+crates = ["ext4_oracle", "ext4_oracle_fuzz", "ext4_server"]

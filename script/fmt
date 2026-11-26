@@ -44,6 +44,7 @@ cargo fmt --manifest-path tools/redoxfs_host/Cargo.toml "$@"
 # GUI)) is its own workspace for the same reason.
 cargo fmt --manifest-path tools/glyph_atlas_generator/Cargo.toml "$@"
 cargo fmt --manifest-path tools/ext4_oracle/Cargo.toml "$@"
+cargo fmt --manifest-path tools/ext4_oracle_fuzz/Cargo.toml "$@"
 cargo fmt --manifest-path tools/host_reordering_litmus/Cargo.toml "$@"
 cargo fmt --manifest-path tools/jh7110_entropy_board_check/Cargo.toml "$@"
 
