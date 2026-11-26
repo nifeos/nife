@@ -423,6 +423,8 @@ fn initialize_with_features(driver_features_low: u32, want_flush: bool) -> bool 
 /// arrives as an argument.
 ///
 /// ```no_run
+/// use components::block_driver_roles;
+///
 /// fn start(direct_memory_access_physical_address: u64) -> ! {
 ///     block_driver_roles::run(direct_memory_access_physical_address)
 /// }
