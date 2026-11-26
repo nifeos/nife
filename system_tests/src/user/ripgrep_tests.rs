@@ -529,7 +529,11 @@ fn ripgrep_searches_the_tree_it_was_granted() {
             want.as_str(),
         );
     }
-    assert!(text.ends_with(" seconds\n"), "rg did not finish its stats");
+    // ripgrep 14 ends its stats with "<n> seconds", 15 with "<n> seconds total".
+    assert!(
+        text.ends_with(" seconds\n") || text.ends_with(" seconds total\n"),
+        "rg did not finish its stats",
+    );
 }
 
 /// `rg` through a grant lacking `ENUMERATE` is refused, and says so, rather than finding nothing.
