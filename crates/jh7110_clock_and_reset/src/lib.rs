@@ -234,14 +234,14 @@ pub(crate) const ALWAYS_ON_CLOCK_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE: u32 = 3;
 pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT: u32 = 5;
 /// `JH7110_AONCLK_GMAC0_RMII_RTX` \[mainline-ids\], **4**: `gmac0`'s reduced media-independent
 /// interface (RMII) reference clock, the clock a tree's `assigned-clock-parents` names when it
-/// feeds `gmac0_tx` from it.
+/// feeds `gmac0_tx` from it. `RTX` is kept as written, since no source expands it.
 #[doc(alias = "JH7110_AONCLK_GMAC0_RMII_RTX")]
-pub(crate) const ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT: u32 =
-    4;
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX: u32 = 4;
 /// `gmac0_tx`'s mux input 1, `gmac0_rmii_rtx`: the field value that selects
-/// [`ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT`], the same bit the
+/// [`ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX`], the same bit the
 /// vendor U-Boot sets.
-pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT: u32 = 1;
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX:
+    u32 = 1;
 /// `gmac0_tx`'s mux input 0, `gmac0_gtxclk`: the field value that selects
 /// [`SYSCLK_GMAC0_GTXCLK`], the SYS-domain gigabit transmit clock, which is the mux's reset value.
 pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_GIGABIT_TRANSMIT: u32 = 0;
@@ -293,8 +293,13 @@ pub const GMAC0_ALWAYS_ON_BRING_UP: &[Step] = &[
     Step::DeassertReset(ALWAYS_ON_RESET_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS),
 ];
 
-/// **`gmac0_tx` fed from `gmac0_rmii_rtx`**: the parent mainline's VisionFive 2 v1.3B tree
-/// assigns, `jh7110-starfive-visionfive-2-v1.3b.dts` (\[mainline-v1.3b-dts\]):
+/// **`gmac0_tx` fed from `gmac0_rmii_rtx`**: the step that selects `gmac0_rmii_rtx`, the reduced
+/// media-independent interface (RMII) clock that feeds both the transmit and the receive selectors
+/// of Ethernet port 0, as `gmac0_tx`'s parent. No source expands `RTX`, so the name keeps it as
+/// written.
+///
+/// It is the parent mainline's VisionFive 2 v1.3B tree assigns,
+/// `jh7110-starfive-visionfive-2-v1.3b.dts` (\[mainline-v1.3b-dts\]):
 ///
 /// ```text
 /// &gmac0 {
@@ -310,16 +315,21 @@ pub const GMAC0_ALWAYS_ON_BRING_UP: &[Step] = &[
 ///
 /// [mainline-v1.3b-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110-starfive-visionfive-2-v1.3b.dts
 ///
-/// Name: provisional.
-pub const GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT: Step =
+/// Name: ratified 2026-11-26 (UTC), on #4119, renamed from the `RECEIVE_TRANSMIT` spelling, which
+/// expanded `RTX` where no source does.
+#[doc(alias = "rmii")]
+#[doc(alias = "gmac0_rmii_rtx")]
+pub const GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX: Step =
     Step::SelectParent {
         clock: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT,
-        parent: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
+        parent: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX,
     };
 
 /// **What a `gmac0` node's `assigned-clocks` and `assigned-clock-parents` say about `gmac0_tx`.**
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-26 (UTC), on #4119, with its variants `Unassigned`, `Assigned` and
+/// `Refused`.
+#[doc(alias = "tx")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TransmitParent {
@@ -367,9 +377,11 @@ fn assigned_clock<'t, E>(
     Ok(Some((kind, id)))
 }
 
-/// **`gmac0_tx`'s parent, as a `gmac0` node assigns it**: the node's `assigned-clocks` and
-/// `assigned-clock-parents`, read the way [`DevicePlan::from_specifiers`] reads `clocks` and
-/// `resets`, with `provider` the same phandle lookup.
+/// **`gmac0_tx`'s parent as the device tree assigns it, read from the tree and not the hardware.**
+///
+/// It reads a `gmac0` node's `assigned-clocks` and `assigned-clock-parents` the way
+/// [`DevicePlan::from_specifiers`] reads `clocks` and `resets`, with `provider` the same phandle
+/// lookup.
 ///
 /// The binding (\[assigned-clocks\]) pairs the two lists entry by entry. An entry whose clock is
 /// mainline's `aoncrg` clock `JH7110_AONCLK_GMAC0_TX` (5) gives the step, and its parent must be
@@ -390,7 +402,8 @@ fn assigned_clock<'t, E>(
 ///
 /// Propagates the first error `provider` returns.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-26 (UTC), on #4119.
+#[doc(alias = "gmac0_tx")]
 pub fn gmac0_transmit_parent<'t, E>(
     assigned_clocks: Option<&[u8]>,
     assigned_clock_parents: Option<&[u8]>,
@@ -424,8 +437,8 @@ pub fn gmac0_transmit_parent<'t, E>(
         let input = match parent {
             (
                 AssignedClockProvider::AlwaysOn,
-                ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
-            ) => ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
+                ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX,
+            ) => ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX,
             (AssignedClockProvider::System, SYSCLK_GMAC0_GTXCLK) => {
                 ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_GIGABIT_TRANSMIT
             }
@@ -673,8 +686,7 @@ pub(crate) const SYSTEM_TOP_GROUP_RESETS_PCI_EXPRESS: [[u32; 6]; 2] =
 /// bus. Firmware that has already used the STG domain (for the TRNG, say) has left both on, and
 /// both steps are idempotent.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane lane/163-jh7110-pcie-kernel-wiring, in
-/// [`GMAC0_SYSTEM_BRING_UP`]'s shape. calef has not named it.
+/// Name: ratified 2026-11-26 (UTC), on #4119.
 #[doc(alias = "pcie")]
 pub const PCI_EXPRESS_SYSTEM_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSTEM_CLOCK_SYSTEM_TOP_GROUP_BUS),
@@ -686,9 +698,9 @@ pub const PCI_EXPRESS_SYSTEM_BRING_UP: &[Step] = &[
 /// enables the bulk clocks, then deasserts the bulk resets). The port's physical (PHY) layer and
 /// glue words answer only after this.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane lane/163-jh7110-pcie-kernel-wiring, in
-/// [`SD_IO_BRING_UP`]'s shape. calef has not named it.
+/// Name: ratified 2026-11-26 (UTC), on #4119.
 #[doc(alias = "pcie")]
+#[doc(alias = "stg")]
 pub const PCI_EXPRESS_SYSTEM_TOP_GROUP_BRING_UP: [&[Step]; 2] = [&port_steps(0), &port_steps(1)];
 
 /// Port `port`'s STG steps, built from the two tables so a plan cannot name the other port's ids.

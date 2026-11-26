@@ -9,8 +9,8 @@ use jh7110_clock_and_reset::{
     ALWAYS_ON_WINDOW, COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
     COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR, COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR,
     COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR, COMPATIBLE_VENDOR_CLOCK_GENERATOR,
-    GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
-    SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, Step, TransmitParent,
+    GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX, SYSTEM_TOP_GROUP_WINDOW,
+    SYSTEM_WINDOW, Step, TransmitParent,
 };
 use machine_discovery::jh7110::clock_and_reset::{
     discover, discover_aon, discover_sys, first_ethernet_port_transmit_parent, pmic_bus,
@@ -297,7 +297,7 @@ fn mainlines_v1_3b_tree_feeds_gmac0s_transmit_clock_from_its_rmii_clock() {
     assert_eq!(
         first_ethernet_port_transmit_parent(&tree(GMAC_MAINLINE)),
         Ok(TransmitParent::Assigned(
-            GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT
+            GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX
         ))
     );
 }

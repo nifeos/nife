@@ -27,8 +27,7 @@ struct ReadmeExample;
 
 use jh7110_clock_and_reset::{
     ALWAYS_ON, CLOCK_ENABLE, Domain, ENTROPY_BRING_UP, GMAC0_ALWAYS_ON_BRING_UP,
-    GMAC0_SYSTEM_BRING_UP,
-    GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
+    GMAC0_SYSTEM_BRING_UP, GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX,
     InterIntegratedCircuitClockWords, MAXIMUM_SD_CARD_DIVIDER, POWER_MANAGEMENT_CHIP_BUS_BRING_UP,
     SD_IO_BRING_UP, SYSTEM, SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0,
     SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION, SYSTEM_CLOCK_BUS_ROOT,
@@ -161,7 +160,7 @@ pub const DEVICES: [Device; 5] = [
             // The transmit clock's parent goes first, while that clock is still gated.
             Part {
                 window: WindowName::AlwaysOn,
-                plan: &[GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT],
+                plan: &[GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX],
             },
             Part {
                 window: WindowName::AlwaysOn,

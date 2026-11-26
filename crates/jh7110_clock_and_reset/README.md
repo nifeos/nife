@@ -130,7 +130,7 @@ usual way to get one) and a git checkout. From the crate root:
   memory access (DMA) engine, so the crate offers no assert.
 - Some items describe one board and not the chip: the PMIC reset register and bit, the PMIC bus
   plan and the I2C5 clock chain follow the VisionFive 2's `AXP15060` wiring.
-- `GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT` is the VisionFive 2
+- `GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX` is the VisionFive 2
   v1.3B board's choice of Ethernet transmit clock parent. The chip's own plan holds no parent
   step, and `gmac0_transmit_parent` reads the parent from a tree's assignment instead.
 - The crate describes only the STG, `AON` and SYS domains, each only as far as a device needed it.
