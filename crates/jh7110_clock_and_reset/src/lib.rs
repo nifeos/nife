@@ -653,16 +653,32 @@ pub const SD_IO_BRING_UP: [&[Step]; 2] = [
 /// name. Word `0x180`.
 #[doc(alias = "JH7110_SYSCLK_NOC_BUS_STG_AXI")]
 pub(crate) const SYSTEM_CLOCK_SYSTEM_TOP_GROUP_BUS: u32 = 96;
-/// **The STG bus reset** (`JH7110_SYSRST_NOC_BUS_STG_AXI` in \[mainline-ids\]), **30**: the reset
-/// mainline's `stgcrg` node takes, bit 30 of the word at `0x2f8`. Releasing it is idempotent.
+/// **The STG bus reset** (`JH7110_SYSRST_NOC_BUS_STG_AXI` in \[mainline-ids\]), **30**: bit 30 of
+/// the word at `0x2f8`. Releasing it is idempotent.
+///
+/// No mainline node or driver names this reset: mainline's `pcie0` and `pcie1` nodes name the STG
+/// bus clock and not its reset. The source is the vendor Linux tree (`JH7110_VisionFive2_devel`).
+/// Its `dma-controller@16050000` node, a device behind the same STG bus, lists this reset
+/// (`RSTN_U0_NOC_BUS_STG_AXI_N`, 30 in its header) beside the bus clock (\[vendor-linux-dts\]),
+/// and its `dw-axi-dmac` driver deasserts every reset the node lists before it touches the
+/// controller (\[vendor-linux-dma\]). That tree's `pcie0` and `pcie1` nodes do not list it, so
+/// releasing it before the ports' STG steps follows the bus they share, not a source about the
+/// ports.
+///
+/// [vendor-linux-dts]: https://github.com/starfive-tech/linux/blob/6d6aee034b81121f75bf939d8305a42ef03fb5ef/arch/riscv/boot/dts/starfive/jh7110.dtsi
+/// [vendor-linux-dma]: https://github.com/starfive-tech/linux/blob/6d6aee034b81121f75bf939d8305a42ef03fb5ef/drivers/dma/dw-axi-dmac/dw-axi-dmac-platform.c
 #[doc(alias = "JH7110_SYSRST_NOC_BUS_STG_AXI")]
+#[doc(alias = "RSTN_U0_NOC_BUS_STG_AXI_N")]
 pub(crate) const SYSTEM_RESET_SYSTEM_TOP_GROUP_BUS: u32 = 30;
 
 /// **The Peripheral Component Interconnect (PCI) Express ports' STG clocks**
-/// (\[mainline-clock-ids\]), indexed by port: the
-/// transaction layer clock (`JH7110_STGCLK_PCIE0_TL` 10, `PCIE1_TL` 13), the bus master clock
-/// (`JH7110_STGCLK_PCIE0_AXI_MST0` 8, `PCIE1_AXI_MST0` 11) and the register bus clock
+/// (\[mainline-clock-ids\]), indexed by port: the transport layer clock (`JH7110_STGCLK_PCIE0_TL`
+/// 10, `PCIE1_TL` 13; the term of the mainline binding the vendor maintains,
+/// \[mainline-pcie-binding\]), the bus master clock (`JH7110_STGCLK_PCIE0_AXI_MST0` 8,
+/// `PCIE1_AXI_MST0` 11) and the register bus clock
 /// (`JH7110_STGCLK_PCIE0_APB` 9, `PCIE1_APB` 12), in the order mainline's nodes name them.
+///
+/// [mainline-pcie-binding]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/Documentation/devicetree/bindings/pci/starfive%2Cjh7110-pcie.yaml
 #[doc(alias = "JH7110_STGCLK_PCIE0_TL")]
 #[doc(alias = "JH7110_STGCLK_PCIE1_TL")]
 #[doc(alias = "JH7110_STGCLK_PCIE0_AXI_MST0")]
