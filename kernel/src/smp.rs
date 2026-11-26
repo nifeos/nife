@@ -534,7 +534,9 @@ mod tests {
             static __secondary_stacks_start: core::ffi::c_void;
             static __secondary_stacks_end: core::ffi::c_void;
         }
-        let lo = (&raw const __secondary_stacks_start) as u64;
+        // `black_box`: LLVM folds an address comparison of two distinct globals to unequal
+        // above -O0. Measurement branch only; it is not meant to merge.
+        let lo = core::hint::black_box((&raw const __secondary_stacks_start) as u64);
         let hi = (&raw const __secondary_stacks_end) as u64;
         let (start, end) = super::secondary_stack_region();
 
