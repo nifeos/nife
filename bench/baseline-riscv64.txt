@@ -1,8 +1,7 @@
 # toolchain: nightly-2026-11-25
 # qemu: 11.1.2
 # date: 2026-11-26
-# why: 2026-11-26: the benchmarked user programs build at opt-level 1 in the dev profile (fixtures, user_mode_runtime and moho_abi), so the EL0 rows measure the system call path and not opt-level 0 copies around it. Measured on one machine against main at 1d9b67454: null_system_call -21.00%, ctx_switch -2.74%, ipc_rtt_el0 -1.77%, sink_throughput -1.78%, map_el0 -1.91%, spawn_el0 -0.47%; the kernel-only rows did not move.
-# why: This save also absorbs drift already on main against the 2026-11-18 floor, up to +1.43% (ipc_rtt, relay_rtt).
+# why: 2026-11-26: the gate counts the release build, as ruled on #4132 (A, 2026-11-26 UTC). Every row is re-taken from the release profile as it ships, with its own strip setting; the floor before this one counted the opt-level 0 dev kernel.
 # bench/baseline-riscv64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check fails when the QEMU on
@@ -15,18 +14,18 @@
              # Updating this file is a statement that a performance change is intended and
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
              # 10% tripwire (icount counts drift across builds; see nifeos/record:notes/benchmarks.md).
-yield_switch 136301 2000
-ipc_rtt 129380 1000
-relay_rtt 258141 1000
-call_reply 139041 1000
-broker_rtt 277620 1000
-spawn_reap 29234 64
-map_new 2229 64
-rfence_self 5935 512
-coremark 3129038 256
-null_system_call 47400 20000
-ctx_switch 369200 5000
-ipc_rtt_el0 1349724 5000
-sink_throughput 588268 80000
-map_el0 37839 500
-spawn_el0 187196 100
+yield_switch 12640 2000
+ipc_rtt 12720 1000
+relay_rtt 25430 1000
+call_reply 13150 1000
+broker_rtt 26290 1000
+spawn_reap 10630 64
+map_new 1197 64
+rfence_self 5315 512
+coremark 355534 256
+null_system_call 35200 20000
+ctx_switch 50100 5000
+ipc_rtt_el0 175299 5000
+sink_throughput 71224 80000
+map_el0 6751 500
+spawn_el0 50240 100
