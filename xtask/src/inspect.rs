@@ -8,13 +8,20 @@ use crate::{RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, build};
 /// Boot the kernel with QEMU frozen and a GDB stub listening.
 ///
 /// `-s` opens the stub on :1234, `-S` holds the CPU before the first instruction.
-/// The kernel ELF carries symbols and DWARF, so GDB shows Rust source lines rather
-/// than raw addresses (nifeos/record:notes/elf.md). Point GDB at the **ELF**, even though QEMU is
-/// running the flat image: the image has no symbols, and the addresses match.
+/// The kernel ELF carries symbols and full DWARF (`debug = 2` for this build), so GDB shows Rust
+/// source lines, arguments and locals rather than raw addresses (nifeos/record:notes/elf.md). Point GDB at the **ELF**, even though QEMU
+/// is running the flat image: the image has no symbols, and the addresses match.
 ///
 /// This is the tool that will save you at milestone 4, when the MMU comes on and
 /// `println!` stops being an option.
 pub(crate) fn gdb() -> bool {
+    // The dev profile carries line tables only (the root Cargo.toml says why), which leaves a
+    // debugger without arguments and locals. This build asks cargo for full debuginfo instead, so
+    // `info args` and `print` work. It is a different build from the gated one, so cargo rebuilds
+    // the kernel when this command and another alternate.
+    // SAFETY: `set_var` became unsafe in edition 2024 because it races other threads. xtask is
+    // single-threaded here: this runs on the main thread before the child that reads it is spawned.
+    unsafe { std::env::set_var("CARGO_PROFILE_DEV_DEBUG", "2") };
     if !build() {
         return false;
     }
