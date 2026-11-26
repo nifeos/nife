@@ -328,6 +328,28 @@ fn pwrite<T: Copy>(phys: u64, v: T) {
 }
 
 impl Transport {
+    /// The physical address that tells this transport's hardware apart from every other's: the
+    /// virtio-mmio slot, or the PCI function's common-config block. Two entries with the same
+    /// address drive the same device. Name: provisional.
+    fn hardware_address(&self) -> u64 {
+        match self {
+            Transport::Mmio { mmio_phys } => *mmio_phys,
+            Transport::Pci { common, .. } => *common,
+        }
+    }
+
+    /// Wait, bounded by [`RESET_POLLS`], for a reset just written to the status register to read
+    /// back zero. Returns whether it did.
+    fn reset_has_landed(&self) -> bool {
+        for _ in 0..RESET_POLLS {
+            if self.read_reg(REG_STATUS) == 0 {
+                return true;
+            }
+            core::hint::spin_loop();
+        }
+        false
+    }
+
     /// The PCI transport for an enumerated function (kernel/src/pci.rs). The one place its fields
     /// are copied, which [`pread`]'s invariant rests on.
     pub(crate) fn pci(d: &crate::pci::PciVirtualIoDevice) -> Transport {
@@ -558,6 +580,13 @@ struct Device {
     /// the device reads, copied here by `notify` after validation, so the bytes the device reads
     /// are the bytes the kernel validated. See nifeos/record:notes/dma.md, "The shadow descriptor ring".
     shadow_base: u64,
+    /// Whether another entry for the same hardware has reset the device since this entry's driver
+    /// last touched it. Set by [`write_register`] when another entry's driver resets the device and
+    /// the reset reads back; cleared whenever this entry's driver writes a register, sets up a
+    /// queue or notifies. While it is set the device holds nothing this entry programmed, so
+    /// [`unregister`] frees the entry without resetting the device, which would wipe the newer
+    /// driver's queues and lose the request it has in flight. Name: provisional.
+    superseded: bool,
 }
 
 /// The most virtio transports the kernel drives **at once**. Fixed-size, so probing never allocates.
@@ -655,6 +684,7 @@ pub(crate) fn register(
             last_avail: [0; MAXIMUM_QUEUES],
             driver_features_sel: 0,
             shadow_base,
+            superseded: false,
         })
         .expect("more virtio devices live at once than MAXIMUM_DEVICES")
         .to_bits();
@@ -711,19 +741,22 @@ pub(crate) fn release_owned_by(tid: crate::thread::ThreadId) {
 /// driver programmed and stops reading memory that is about to be reused. The kernel-private shadow
 /// frame goes back to the allocator after the reset. The driver's DMA region is the caller's, as it
 /// was at `register`. See nifeos/record:notes/virtual-io.md, "The kernel's half".
+///
+/// The reset is skipped when the entry is [`Device::superseded`]: another driver of the same
+/// hardware has reset it since this one last touched it, so the device already holds nothing of
+/// this entry's, and resetting it again would take the newer driver's queues and its request in
+/// flight with it. That is what happens when a killed driver is reaped after its successor has
+/// started (nifeos/nife#4129).
 pub(crate) fn unregister(id: u64) -> bool {
     let removed = {
         let mut devs = DEVICES.lock();
         let Some(mut dev) = devs.table.remove(device_entry(id)) else {
             return false;
         };
-        dev.transport.write_reg(REG_STATUS, 0);
-        // Bounded: a device that never reads back zero is as quiet as it will get.
-        for _ in 0..RESET_POLLS {
-            if dev.transport.read_reg(REG_STATUS) == 0 {
-                break;
-            }
-            core::hint::spin_loop();
+        if !dev.superseded {
+            dev.transport.write_reg(REG_STATUS, 0);
+            // Bounded: a device that never reads back zero is as quiet as it will get.
+            dev.transport.reset_has_landed();
         }
         dev
     };
@@ -863,6 +896,7 @@ pub(crate) fn write_register(id: u64, off: u64, val: u32) -> Result<(), Transpor
     }
     let mut devs = DEVICES.lock();
     let dev = devs.get_mut(id).ok_or(TransportError::NoDevice)?;
+    dev.superseded = false;
 
     // Feature negotiation is a two-step dance: the driver selects a 32-bit word with
     // `DRIVER_FEATURES_SEL`, then writes that word with `DRIVER_FEATURES`. We remember the selector
@@ -878,6 +912,18 @@ pub(crate) fn write_register(id: u64, off: u64, val: u32) -> Result<(), Transpor
     };
 
     dev.transport.write_reg(off, val);
+
+    // A reset that lands takes the device from every other entry for the same hardware: none of
+    // their queues survive it, so none of their releases may reset it again. See
+    // [`Device::superseded`].
+    if off == REG_STATUS && val == 0 && dev.transport.reset_has_landed() {
+        let hardware = dev.transport.hardware_address();
+        for (name, other) in devs.table.iter_mut() {
+            if name.to_bits() != id && other.transport.hardware_address() == hardware {
+                other.superseded = true;
+            }
+        }
+    }
     Ok(())
 }
 
@@ -907,6 +953,7 @@ pub(crate) fn setup_queue(id: u64, num: u16, queue: u16) -> Result<(), Transport
     }
     let mut devs = DEVICES.lock();
     let dev = devs.get_mut(id).ok_or(TransportError::NoDevice)?;
+    dev.superseded = false;
 
     // Every queue's ring block must lie inside the driver's DMA region. The last block ends at
     // `MAXIMUM_QUEUES * RING_BLOCK_BYTES`, but this queue only needs its own block plus a ring area.
@@ -939,6 +986,7 @@ pub(crate) fn notify(id: u64, queue: u16) -> Result<(), TransportError> {
     }
     let mut devs = DEVICES.lock();
     let dev = devs.get_mut(id).ok_or(TransportError::NoDevice)?;
+    dev.superseded = false;
 
     // An in-range queue may still be unconfigured, and then has no doorbell.
     if !dev.transport.is_doorbell_ready(queue) {
