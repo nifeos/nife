@@ -174,7 +174,9 @@ jobs:
 
       # `--restamp` writes no floor number. Each leg either rewrites its file's `# toolchain:` line
       # and adds one `# why:` line, or leaves the file alone and exits non-zero; its report says
-      # which, with the table. See xtask/src/restamp.rs.
+      # which, with the table. See xtask/src/restamp.rs. Both passes build the release profile as it
+      # ships, the build the floors count since the 2026-11-26 ruling on #4132, so the compiler
+      # term it measures is the optimizer's and not the opt-level 0 code generator's.
       - name: Raise the pin and restamp each floor
         id: measure
         if: steps.install.outcome == 'success'

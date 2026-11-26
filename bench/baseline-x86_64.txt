@@ -1,14 +1,7 @@
 # toolchain: nightly-2026-11-25
 # qemu: 11.1.2
-# date: 2026-11-18
-# why: nightly-2026-11-18: every row fell, none rose. Cargo's default dev debuginfo moved from full to line tables only between the two pins, and the debuginfo level alone moved yield_switch -16.04%, tss_iomap_switch -13.12%, tss_iomap_lazy_switch -15.71%, tss_iomap_lazy_nop -15.83%, ipc_rtt -16.61%, relay_rtt -16.61%, call_reply -16.08%, broker_rtt -16.08%, spawn_reap -15.86%, map_new -12.54%, coremark -14.05%. The bench kernel builds at -O0; coremark touches no OS primitive and moved with the rest, so this is debuginfo, not a kernel path. The two nightlies at one debuginfo level move no row (nifeos/nife#4125). This save also absorbs drift already on main at the old pin, from -4.19% (relay_rtt) to +0.14% (map_new) against the 2026-10-22 floor.
-# why: 2026-11-19: restamped from nightly-2026-11-18 to nightly-2026-11-19 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-11-20: restamped from nightly-2026-11-19 to nightly-2026-11-20 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-11-21: restamped from nightly-2026-11-20 to nightly-2026-11-21 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-11-22: restamped from nightly-2026-11-21 to nightly-2026-11-22 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-11-23: restamped from nightly-2026-11-22 to nightly-2026-11-23 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-11-24: restamped from nightly-2026-11-23 to nightly-2026-11-24 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: spawn_reap +0.093%, broker_rtt +0.082%, call_reply +0.082% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: spawn_reap +0.093%, broker_rtt +0.082%, call_reply +0.082%, relay_rtt +0.073%, ipc_rtt +0.073%, yield_switch +0.054%, tss_iomap_lazy_nop +0.052%, tss_iomap_lazy_switch +0.042%, tss_iomap_switch +0.041%, map_new +0.040%
-# why: 2026-11-25: restamped from nightly-2026-11-24 to nightly-2026-11-25 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: spawn_reap +0.093%, call_reply +0.082%, broker_rtt +0.082%, ipc_rtt +0.073%, relay_rtt +0.073%, yield_switch +0.054%, tss_iomap_lazy_nop +0.052%, tss_iomap_lazy_switch +0.042%, tss_iomap_switch +0.041%, map_new +0.040%
+# date: 2026-11-26
+# why: 2026-11-26: the gate counts the release build, as ruled on #4132 (A, 2026-11-26 UTC). Every row is re-taken from the release profile as it ships, with its own strip setting; the floor before this one counted the opt-level 0 dev kernel.
 # bench/baseline-x86_64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check fails when the QEMU on
@@ -16,19 +9,19 @@
 # apples to apples.
 # A tick is not an instruction: one guest instruction is one virtual nanosecond under -icount
 # shift=0 and this counter ticks at its own rate (instructions = ticks * 1e9 / cntfrq), so raw
-# ticks do not compare across architectures; notes/benchmarks/icount-tick-scales.md holds the
+# ticks do not compare across architectures; nifeos/record:notes/benchmarks/icount-tick-scales.md holds the
 # per-architecture scales and the corrected cross-arch table.
              # Updating this file is a statement that a performance change is intended and
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
-             # 10% tripwire (icount counts drift across builds; see notes/benchmarks.md).
-yield_switch 14862049 2000
-tss_iomap_switch 19550051 2000
-tss_iomap_lazy_switch 18827190 2000
-tss_iomap_lazy_nop 15330049 2000
-ipc_rtt 13597053 1000
-relay_rtt 27146053 1000
-call_reply 14532051 1000
-broker_rtt 29027051 1000
-spawn_reap 2443453 64
-map_new 168227 64
-coremark 263128262 256
+             # 10% tripwire (icount counts drift across builds; see nifeos/record:notes/benchmarks.md).
+yield_switch 1214007 2000
+tss_iomap_switch 5438014 2000
+tss_iomap_lazy_switch 1697915 2000
+tss_iomap_lazy_nop 1314014 2000
+ipc_rtt 1181010 1000
+relay_rtt 2361010 1000
+call_reply 1219009 1000
+broker_rtt 2437009 1000
+spawn_reap 510192 64
+map_new 51435 64
+coremark 29535158 256

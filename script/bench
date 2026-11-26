@@ -1,7 +1,8 @@
 #!/bin/sh
 # script/bench: the performance microbenchmarks (milestone 21). Two instruments:
 #
-#   script/bench             deterministic icount counts (TCG); the regression currency
+#   script/bench             deterministic icount counts (TCG) of the release build; the
+#                            regression currency (the ruling on #4132, 2026-11-26 UTC)
 #   script/bench --check     diff against bench/baseline-aarch64.txt; FAILS on >10% drift
 #   script/bench --save --why "<reason>"
 #                            rewrite the baseline (do it in the commit that moved the numbers).
@@ -14,7 +15,8 @@
 #                            A save whose moves are accounted for also adds lines to
 #                            bench/attributions.tsv, or the weekly chart reads its step as
 #                            unexplained drift (calef's ruling on #2554, 2026-10-22 UTC).
-#   script/bench --real      HVF: natively on the Apple Silicon core; per-core magnitudes, no gating
+#   script/bench --real      HVF: natively on the Apple Silicon core; per-core magnitudes, no gating;
+#                            the dev build unless --release is given
 #   script/bench --real --smp  HVF on 4 harts; adds the multi-hart throughput bench (smp_throughput)
 #                              and, with a RedoxFS disk attached, the filesystem ones: fs_read and
 #                              milestone 38's four throughput phases (fs_seq_read and friends)

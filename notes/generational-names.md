@@ -153,7 +153,7 @@ leaves live entries spread across the table, so every walk costs up to `N` again
 bound exists to remove. Next-fit wins only near full (200 of 256), where first-fit scans past every
 live slot.
 
-The kernel's icount bench measures the -O0 build the gate uses, here against the same tree without
+These figures are the icount bench on the -O0 dev build, against the same tree without
 saturation on the same host. There, the insert scan that tests the generation inside the scan costs
 `spawn_reap` +1.07% on aarch64, +1.16% on riscv64 and +1.20% on x86_64, and `spawn_el0` +0.96% and
 +1.04%. Every other row is unchanged. That is the form in the crate, and all five harnesses prove in

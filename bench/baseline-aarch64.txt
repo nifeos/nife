@@ -1,8 +1,7 @@
 # toolchain: nightly-2026-11-25
 # qemu: 11.1.2
 # date: 2026-11-26
-# why: 2026-11-26: the benchmarked user programs build at opt-level 1 in the dev profile (fixtures, user_mode_runtime and moho_abi), so the EL0 rows measure the system call path and not opt-level 0 copies around it. Measured on one machine against main at 1d9b67454: null_system_call -24.21%, ctx_switch -2.73%, ipc_rtt_el0 -1.80%, sink_throughput -1.85%, map_el0 -1.80%, spawn_el0 -0.46%; the kernel-only rows did not move.
-# why: This save also absorbs drift already on main against the 2026-11-18 floor, up to +1.42% (ipc_rtt, relay_rtt) and -0.48% (map_new).
+# why: 2026-11-26: the gate counts the release build, as ruled on #4132 (A, 2026-11-26 UTC). Every row is re-taken from the release profile as it ships, with its own strip setting; the floor before this one counted the opt-level 0 dev kernel.
 # bench/baseline-aarch64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check fails when the QEMU on
@@ -15,17 +14,17 @@
              # Updating this file is a statement that a performance change is intended and
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
              # 10% tripwire (icount counts drift across builds; see nifeos/record:notes/benchmarks.md).
-yield_switch 844503 2000
-ipc_rtt 803253 1000
-relay_rtt 1602753 1000
-call_reply 850878 1000
-broker_rtt 1698753 1000
-spawn_reap 183389 64
-map_new 14628 64
-coremark 17739199 256
-null_system_call 238750 20000
-ctx_switch 2251875 5000
-ipc_rtt_el0 8143640 5000
-sink_throughput 3579483 80000
-map_el0 241171 500
-spawn_el0 1177938 100
+yield_switch 71500 2000
+ipc_rtt 75563 1000
+relay_rtt 151063 1000
+call_reply 78875 1000
+broker_rtt 157688 1000
+spawn_reap 62833 64
+map_new 7345 64
+coremark 1451164 256
+null_system_call 131250 20000
+ctx_switch 248125 5000
+ipc_rtt_el0 961458 5000
+sink_throughput 397496 80000
+map_el0 38904 500
+spawn_el0 311369 100

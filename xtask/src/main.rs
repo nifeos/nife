@@ -103,9 +103,11 @@ const RISCV64_TARGET: &str = "riscv64imac-unknown-none-elf";
 /// nifeos/record:notes/x86-port/userspace.md.
 const X86_TARGET: &str = "x86_64-unknown-none";
 
-/// Whether this run builds optimized binaries. Only `bench --release` sets it (a fair cross-OS
-/// comparison wants an optimized kernel and userspace, not the debug default). Everything else stays
-/// debug: faster builds, and the tests and the tour want debuginfo and cheap rebuilds.
+/// Whether this run builds optimized binaries. `bench` sets it for the gating icount bench and for
+/// `--release`, since both measure the kernel and userspace that ship, as do the commands that
+/// build what a machine boots (`install`, the UEFI image, the network and disk benches, the
+/// soaks). Everything else stays debug: faster builds, and the tests and the tour want debuginfo
+/// and cheap rebuilds.
 static RELEASE: AtomicBool = AtomicBool::new(false);
 
 /// Whether this run's userspace carries the confinement tests' attacker roles
