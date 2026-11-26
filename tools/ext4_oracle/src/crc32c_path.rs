@@ -7,8 +7,9 @@
 //! make that promise, the table elsewhere.
 //!
 //! - aarch64: the ARMv8 CRC32 extension, when `is_aarch64_feature_detected!("crc")` says so. std
-//!   reads `HWCAP_CRC32`, which Linux sets only when every CPU has the extension and refuses to
-//!   bring up a later CPU that lacks it.
+//!   reads `HWCAP_CRC32` on Linux, which Linux sets only when every CPU has the extension and
+//!   refuses to bring up a later CPU that lacks it. On macOS it reads the `hw.optional.armv8_crc32`
+//!   sysctl, one value for the whole machine, whose cores all implement the same instruction set.
 //! - x86_64: SSE4.2, only when the binary is built with `-C target-feature=+sse4.2`. Such a build
 //!   already assumes SSE4.2 wherever it runs, since the compiler may emit it anywhere. A run-time
 //!   CPUID read describes only the CPU that made it, so it is not used.
@@ -57,9 +58,11 @@ fn enable_instructions() -> bool {
     if !std::arch::is_aarch64_feature_detected!("crc") {
         return false;
     }
-    // SAFETY: Linux sets HWCAP_CRC32, which the detection above reads, only when every CPU
-    // implements the CRC32 extension, and it refuses to bring up a later CPU without it, so every
-    // CPU this process may run on has the instructions.
+    // SAFETY: on Linux the detection above reads HWCAP_CRC32, which Linux sets only when every CPU
+    // implements the CRC32 extension, and it refuses to bring up a later CPU without it. On macOS
+    // it reads hw.optional.armv8_crc32, which describes the machine, and every core of an Apple
+    // chip implements the same instruction set. Either way, every CPU this process may run on has
+    // the instructions.
     unsafe { rsext4::crc32c::enable_hardware_crc32c() };
     true
 }
