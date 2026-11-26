@@ -42,25 +42,23 @@ and you cannot restructure someone else's crate to make a model checker tractabl
 
 ```rust
 pub enum LeadingDot { Special, Ordinary }
+#[non_exhaustive]
+pub struct Outcome { pub matched: bool, pub steps: usize }
 
 pub fn matches(pattern: &[u8], name: &[u8]) -> bool;
 pub fn matches_with(pattern: &[u8], name: &[u8], dot: LeadingDot) -> bool;
 pub fn has_magic(pattern: &[u8]) -> bool;
-pub fn literal<'a>(pattern: &[u8], out: &'a mut [u8]) -> Option<&'a [u8]>;
-pub fn match_steps(pattern: &[u8], name: &[u8], dot: LeadingDot) -> (bool, usize);
+pub fn match_steps(pattern: &[u8], name: &[u8], dot: LeadingDot) -> Outcome;
 pub const fn step_bound(pattern_bytes: usize, name_bytes: usize) -> usize;
 ```
 
-Six functions, and each is there for a caller that exists:
+Five functions, and each is there for a caller that exists:
 
 - **`matches`** is the matcher.
-- **`has_magic`** and `literal` are the two questions the shell asks of a word *before* it plans
-  a grant: is this a pattern at all, and if not, what name is it with the escapes stripped? A word
-  with no magic names one file and wants a single-name caretaker; a word with magic is an
-  enumeration and wants a caretaker over the matched set. `literal` exists so escape-stripping is
-  written once: `a\*b` is the file called `a*b`, and getting that wrong means asking the filesystem
-  for a name nobody has.
-- **`match_steps`** and `step_bound` are the anti-blowup claim made checkable. See below.
+- **`has_magic`** is the question the shell asks of a word *before* it plans a grant: is this a
+  pattern at all? A word with no magic names one file and wants a single-name caretaker; a word
+  with magic is an enumeration and wants a caretaker over the matched set.
+- **`match_steps`** (which returns an `Outcome`: `matched` is the answer, `steps` the cost) and `step_bound` are the anti-blowup claim made checkable. See below.
 
 Everything is bytes. A name here is a byte string (`file_system_contract::grant::MAXIMUM_NAME_BYTES` is 252
 of them). So a matcher that decoded UTF-8 would have to decide what to do with a name that is not
@@ -184,7 +182,7 @@ Six Kani harnesses, run by `script/verify`, and the split with the host tests is
 |---|---|
 | `matching_is_total` | every pattern of 0..=3 arbitrary bytes against every name of 0..=3 arbitrary bytes, both `LeadingDot` settings: no panic, no overflow, no out-of-bounds index, and the loop terminates |
 | `the_cost_never_exceeds_the_bound` | the same domain: `steps <= step_bound(pattern_bytes, name_bytes)`, which is the *accounting* rather than the blowup (see below) |
-| `no_magic_means_the_pattern_is_its_own_only_match` | the same domain: if `has_magic` is false, the pattern matches a name **iff** that name is `literal(pattern)` |
+| `no_magic_means_the_pattern_is_its_own_only_match` | the same domain: if `has_magic` is false, the pattern matches a name **iff** that name is the pattern with its escapes stripped |
 | `star_matches_anything_and_question_matches_one_byte` | every name of 0..=3 arbitrary bytes: `*` and `**` always match, `?` matches iff the name is one byte, `??` iff two, `*?*` iff non-empty |
 | `the_dot_rule_only_touches_names_that_start_with_a_dot` | the same domain: `Special` is never more permissive than `Ordinary`, it is permissive only for a pattern opening with a literal `.`, and for a name not starting with `.` the two settings are **identical** |
 | `a_negated_class_is_the_exact_complement_of_the_class` | every two-byte class body and every byte: `[xy]` and `[!xy]` partition the byte space. Also the harness that reaches the four- and five-byte class forms the three-byte domain cannot |
@@ -226,9 +224,7 @@ The unit tests exist for these. Every one is a place a real glob implementation 
 
 - No filesystem access of any kind, no enumeration, no `file_system_contract`, no `grant_plan`. It does not depend on
   anything, inside the tree or out.
-- No allocation. `literal` writes into a caller buffer and returns `None` rather than truncating,
-  because a truncated filename is a different file and this is the path that decides what gets
-  granted.
+- No allocation.
 - No `**`, no qualifiers, no POSIX classes, no locale, no case folding, no path separator.
 - **No grant.** The attenuated-to-a-name-set work, the shell's expansion, `program_table::plan` seeing the
   expanded set rather than the pattern, and `ARG_MAX` as a capability limit are milestone 47
