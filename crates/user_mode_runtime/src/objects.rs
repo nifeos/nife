@@ -7,7 +7,9 @@
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
-use crate::system_call::{invoke, trap6};
+use moho_abi::system_call as typed;
+
+use crate::system_call::{invoke, trap_call};
 
 /// **Map the `PageFrame` capability in `frame_slot` at `virtual_address`**, drawing the page tables from the untyped
 /// in `memory_region_slot`. `true` if the page is now there.
@@ -28,13 +30,13 @@ pub fn map_page_frame(
     // SAFETY: `svc`/`ecall`. The kernel validates the frame capability, the rights, the address and
     // the untyped before it touches a page table.
     unsafe {
-        invoke(
+        trap_call(typed::page_frame::map(
             frame_slot,
-            moho_abi::page_frame::MAP,
             virtual_address,
-            writable as u64,
+            writable,
             memory_region_slot,
-        ) == 0
+        ))[0]
+            == 0
     }
 }
 
@@ -69,7 +71,7 @@ pub fn is_granted(slot: u64) -> bool {
 /// `retype_into_kernel_object`". Refused `retype_page_frame` (round 7's provisional name).
 pub fn retype_into_page_frame(memory_region_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the untyped capability and its remaining budget.
-    unsafe { invoke(memory_region_slot, moho_abi::memory_region::RETYPE, 0, 0, 0) }
+    unsafe { trap_call(typed::memory_region::retype(memory_region_slot, 0))[0] as i64 }
 }
 
 /// `RETYPE` a run of `pages` contiguous pages into one `PageFrame` capability (a frame names a run
@@ -83,15 +85,7 @@ pub fn retype_into_page_frame(memory_region_slot: u64) -> i64 {
 /// replacement), 2026-09-26).
 pub fn retype_page_frame_run(memory_region_slot: u64, pages: u64) -> i64 {
     // SAFETY: as `retype_into_page_frame`; the kernel checks the count against the remaining budget.
-    unsafe {
-        invoke(
-            memory_region_slot,
-            moho_abi::memory_region::RETYPE, // run wrapper
-            pages,
-            0,
-            0,
-        )
-    }
+    unsafe { trap_call(typed::memory_region::retype(memory_region_slot, pages))[0] as i64 }
 }
 
 /// **`page_frame::SLICE`: a capability naming `count` pages of the run in `frame_slot`, from page
@@ -100,7 +94,7 @@ pub fn retype_page_frame_run(memory_region_slot: u64, pages: u64) -> i64 {
 /// this way. Name follows the method.
 pub fn slice_page_frame(frame_slot: u64, first: u64, count: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the capability, the range and the right.
-    unsafe { invoke(frame_slot, moho_abi::page_frame::SLICE, first, count, 0) }
+    unsafe { trap_call(typed::page_frame::slice(frame_slot, first, count))[0] as i64 }
 }
 
 /// `RETYPE_OBJECT` one page out of the untyped in `region` into a kernel object of
@@ -116,13 +110,12 @@ pub fn retype_into_kernel_object(region: u64, object_type: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the untyped, the object_type and the budget before it
     // touches a page.
     unsafe {
-        invoke(
+        trap_call(typed::memory_region::retype_object(
             region,
-            moho_abi::memory_region::RETYPE_OBJECT,
             object_type,
             0,
             0,
-        )
+        ))[0] as i64
     }
 }
 
@@ -138,15 +131,7 @@ pub fn retype_into_kernel_object(region: u64, object_type: u64) -> i64 {
 pub fn split_memory_region(memory_region_slot: u64, pages: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE` and the remaining budget before it splits
     // anything off.
-    unsafe {
-        invoke(
-            memory_region_slot,
-            moho_abi::memory_region::SPLIT,
-            pages,
-            0,
-            0,
-        )
-    }
+    unsafe { trap_call(typed::memory_region::split(memory_region_slot, pages))[0] as i64 }
 }
 
 /// `DESTROY` the region in `memory_region_slot`: reclaim it and every object retyped from it
@@ -161,15 +146,7 @@ pub fn split_memory_region(memory_region_slot: u64, pages: u64) -> i64 {
 pub fn destroy_memory_region(memory_region_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE` and that nothing still occupies or splits
     // from the region before it reclaims anything.
-    unsafe {
-        invoke(
-            memory_region_slot,
-            moho_abi::memory_region::DESTROY,
-            0,
-            0,
-            0,
-        )
-    }
+    unsafe { trap_call(typed::memory_region::destroy(memory_region_slot))[0] as i64 }
 }
 
 /// `USAGE`: how many pages of the region in `memory_region_slot` are spent on `record`, one of
@@ -180,15 +157,7 @@ pub fn destroy_memory_region(memory_region_slot: u64) -> i64 {
 pub fn memory_region_usage(memory_region_slot: u64, record: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. USAGE reads one record and writes nothing of the caller's; the kernel
     // validates `ENUMERATE` and the record before it answers.
-    unsafe {
-        invoke(
-            memory_region_slot,
-            moho_abi::memory_region::USAGE,
-            record,
-            0,
-            0,
-        )
-    }
+    unsafe { trap_call(typed::memory_region::usage(memory_region_slot, record))[0] as i64 }
 }
 
 /// `MAP` (untyped): retype one page out of the untyped in `memory_region_slot` and map it,
@@ -207,13 +176,10 @@ pub fn map_memory_region_page(memory_region_slot: u64, virtual_address: u64) -> 
     // SAFETY: `svc`/`ecall`. The kernel validates the untyped, the address, and maps a fresh page
     // from its own budget.
     unsafe {
-        invoke(
+        trap_call(typed::memory_region::map(
             memory_region_slot,
-            moho_abi::memory_region::MAP,
             virtual_address,
-            0,
-            0,
-        )
+        ))[0] as i64
     }
 }
 
@@ -228,7 +194,7 @@ pub fn map_memory_region_page(memory_region_slot: u64, virtual_address: u64) -> 
 pub fn revoke_page_frame(frame_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `GRANT` before it unmaps and deletes every
     // capability to the page.
-    unsafe { invoke(frame_slot, moho_abi::page_frame::REVOKE, 0, 0, 0) }
+    unsafe { trap_call(typed::page_frame::revoke(frame_slot))[0] as i64 }
 }
 
 /// `MAP_INTO`: map the frame in `frame_slot` into the address space named by `virtual_address_space_slot`, at
@@ -252,13 +218,12 @@ pub fn address_space_layout_into(
     // SAFETY: `svc`/`ecall`. The kernel validates the address-space capability, the frame's rights
     // against `mode`, and the address before it touches a page table.
     unsafe {
-        invoke(
+        trap_call(typed::address_space::map_into(
             virtual_address_space_slot,
-            moho_abi::address_space::MAP_INTO,
             virtual_address,
             frame_slot,
             mode,
-        )
+        ))[0] as i64
     }
 }
 
@@ -281,13 +246,12 @@ pub fn thread_control_block_capability_insert(
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE` on the TCB and `GRANT` on the inserted
     // capability before it copies anything.
     unsafe {
-        invoke(
+        trap_call(typed::thread_control_block::capability_insert(
             thread_control_block_slot,
-            moho_abi::thread_control_block::CAPABILITY_INSERT,
             capability_slot,
             rights,
             target,
-        )
+        ))[0] as i64
     }
 }
 
@@ -310,13 +274,13 @@ pub fn thread_control_block_configure(
 ) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE` on both capabilities before it binds them.
     unsafe {
-        invoke(
+        trap_call(typed::thread_control_block::configure(
             thread_control_block_slot,
-            moho_abi::thread_control_block::CONFIGURE,
             entry,
             user_stack_pointer,
             virtual_address_space_slot,
-        )
+            0,
+        ))[0] as i64
     }
 }
 
@@ -338,13 +302,12 @@ pub fn thread_control_block_start(
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE` and that the TCB is whole before it joins
     // the run queue.
     unsafe {
-        invoke(
+        trap_call(typed::thread_control_block::start(
             thread_control_block_slot,
-            moho_abi::thread_control_block::START,
             argument_zero,
             argument_one,
             argument_two,
-        )
+        ))[0] as i64
     }
 }
 
@@ -356,13 +319,9 @@ pub fn thread_control_block_start(
 pub fn thread_control_block_suspend(thread_control_block_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE`; nothing in this address space changes.
     unsafe {
-        invoke(
+        trap_call(typed::thread_control_block::suspend(
             thread_control_block_slot,
-            moho_abi::thread_control_block::SUSPEND,
-            0,
-            0,
-            0,
-        )
+        ))[0] as i64
     }
 }
 
@@ -373,29 +332,20 @@ pub fn thread_control_block_suspend(thread_control_block_slot: u64) -> i64 {
 pub fn thread_control_block_resume(thread_control_block_slot: u64) -> i64 {
     // SAFETY: as `thread_control_block_suspend`.
     unsafe {
-        invoke(
+        trap_call(typed::thread_control_block::resume(
             thread_control_block_slot,
-            moho_abi::thread_control_block::RESUME,
-            0,
-            0,
-            0,
-        )
+        ))[0] as i64
     }
 }
 
 /// Drop the capability in `slot` from this thread's capability table (`SYSTEM_CALL_CAPABILITY_DELETE`). Deleting an empty
 /// slot is a no-op. A program that retypes many objects (a loader, a spawner) frees each slot as
-/// soon as it is done with it, so its fixed capability table does not fill. Through `trap6` for
-/// [`yield_now`](crate::yield_now)'s reason: the kernel answers in the register `slot` went in on.
+/// soon as it is done with it, so its fixed capability table does not fill. Through the six-word
+/// trap for [`yield_now`](crate::yield_now)'s reason: the kernel answers in the register `slot` went in on.
 ///
 /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
 /// `cap_delete` under the capability ruling of 2026-10-06 (UTC).
 pub fn capability_delete(slot: u64) {
     // SAFETY: SYSTEM_CALL_CAPABILITY_DELETE frees a slot in the caller's own capability table, nothing to clean up.
-    let _ = unsafe {
-        trap6(
-            moho_abi::SYSTEM_CALL_CAPABILITY_DELETE,
-            [slot, 0, 0, 0, 0, 0],
-        )
-    };
+    let _ = unsafe { trap_call(typed::capability_delete(slot)) };
 }

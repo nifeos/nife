@@ -28,6 +28,7 @@ use crate::ptr;
 use crate::sync::atomic::Ordering::{Acquire, Relaxed, Release};
 use crate::sync::atomic::{Atomic, AtomicBool, AtomicPtr, AtomicUsize};
 use crate::sys::alloc::nife::allocation_cache::Cache;
+use crate::sys::pal::nife::moho_abi::system_call as typed;
 use crate::sys::pal::nife::{moho_abi, currentcpuproto, rt, runtimeproto};
 
 pub type Key = usize;
@@ -144,16 +145,9 @@ fn main_block() -> *mut Block {
     }
     // SAFETY: just made, ours.
     unsafe { (*block).cpu_page = currentcpuproto::PAGE_VIRTUAL_ADDRESS };
-    // SAFETY: `invoke` traps to the kernel, which validates the capability.
-    let set = unsafe {
-        rt::invoke(
-            runtimeproto::THREAD_SLOT,
-            moho_abi::thread_control_block::SET_THREAD_POINTER,
-            block as u64,
-            0,
-            0,
-        )
-    };
+    let call = typed::thread_control_block::set_thread_pointer(runtimeproto::THREAD_SLOT, block as u64);
+    // SAFETY: the trap goes to the kernel, which validates the capability.
+    let set = unsafe { rt::trap_call(call)[0] as i64 };
     MAIN.store(block, Release);
     MAIN_POINTER_SET.store(set == 0, Release);
     MAIN_READY.store(set == 0, Release);
@@ -203,15 +197,14 @@ pub fn sleep_objects() -> Option<(u64, u64)> {
         t => return Some((t, notification)),
     }
     let retype = |object_type| {
-        // SAFETY: `invoke` traps to the kernel, which validates the capability.
+        // SAFETY: the trap goes to the kernel, which validates the capability.
         unsafe {
-            rt::invoke(
+            rt::trap_call(typed::memory_region::retype_object(
                 runtimeproto::MEMORY_REGION_SLOT,
-                moho_abi::memory_region::RETYPE_OBJECT,
                 object_type,
                 0,
                 runtimeproto::SLOTS, // above every fixed slot (`RETYPE_OBJECT`'s floor)
-            )
+            ))[0] as i64
         }
     };
     let n = retype(moho_abi::object_type::NOTIFICATION);

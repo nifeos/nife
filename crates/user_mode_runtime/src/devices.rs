@@ -6,7 +6,9 @@
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
-use crate::system_call::invoke;
+use moho_abi::system_call as typed;
+
+use crate::system_call::trap_call;
 
 /// `WAIT` on the `Interrupt` capability in `interrupt_slot`: block until the interrupt fires. The
 /// kernel masks
@@ -19,7 +21,7 @@ use crate::system_call::invoke;
 pub fn interrupt_wait(interrupt_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the Interrupt capability before it blocks the
     // caller.
-    unsafe { invoke(interrupt_slot, moho_abi::interrupt::WAIT, 0, 0, 0) }
+    unsafe { trap_call(typed::interrupt::wait(interrupt_slot))[0] as i64 }
 }
 
 /// `ACKNOWLEDGE` the `Interrupt` capability in `interrupt_slot`: re-enable the interrupt at the generic interrupt controller (GIC) once
@@ -32,7 +34,7 @@ pub fn interrupt_wait(interrupt_slot: u64) -> i64 {
 pub fn interrupt_acknowledge(interrupt_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the Interrupt capability before it re-enables
     // anything.
-    unsafe { invoke(interrupt_slot, moho_abi::interrupt::ACKNOWLEDGE, 0, 0, 0) }
+    unsafe { trap_call(typed::interrupt::acknowledge(interrupt_slot))[0] as i64 }
 }
 
 /// **Invoke the reboot object in `slot`**: `moho_abi::reboot::REBOOT`. Restarting the machine is a
@@ -44,7 +46,7 @@ pub fn interrupt_acknowledge(interrupt_slot: u64) -> i64 {
 /// Name: ratified 2026-11-20 (UTC); first minted, milestone 805's lane, 2026-10-06 (UTC).
 pub fn reboot(slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the capability before it touches the firmware.
-    unsafe { invoke(slot, moho_abi::reboot::REBOOT, 0, 0, 0) }
+    unsafe { trap_call(typed::reboot::reboot(slot))[0] as i64 }
 }
 
 /// **Write one byte to an x86 I/O port.** Not a system call: `out` is an instruction,
