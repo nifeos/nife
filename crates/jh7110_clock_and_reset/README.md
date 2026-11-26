@@ -1,5 +1,10 @@
 # jh7110_clock_and_reset
 
+[![check](https://github.com/partsfoundry/jh7110_clock_and_reset/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/partsfoundry/jh7110_clock_and_reset/actions/workflows/ci.yml?query=branch%3Amain)
+[![proofs](https://github.com/partsfoundry/jh7110_clock_and_reset/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/partsfoundry/jh7110_clock_and_reset/actions/workflows/proofs.yml?query=branch%3Amain)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/partsfoundry/jh7110_clock_and_reset#license)
+[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/partsfoundry/jh7110_clock_and_reset/blob/main/Cargo.toml)
+
 The logic of the clock and reset generator in the StarFive JH7110, the RISC-V system-on-chip of the
 VisionFive 2. It holds the register offsets and bit fields of the STG (System-Top-Group), `AON`
 (always-on) and SYS (system) domains, and what each of the chip's two device trees calls the
@@ -125,7 +130,7 @@ usual way to get one) and a git checkout. From the crate root:
   memory access (DMA) engine, so the crate offers no assert.
 - Some items describe one board and not the chip: the PMIC reset register and bit, the PMIC bus
   plan and the I2C5 clock chain follow the VisionFive 2's `AXP15060` wiring.
-- `GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT` is the VisionFive 2
+- `GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX` is the VisionFive 2
   v1.3B board's choice of Ethernet transmit clock parent. The chip's own plan holds no parent
   step, and `gmac0_transmit_parent` reads the parent from a tree's assignment instead.
 - The crate describes only the STG, `AON` and SYS domains, each only as far as a device needed it.

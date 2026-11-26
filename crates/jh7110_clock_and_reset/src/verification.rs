@@ -71,7 +71,7 @@ fn system_provider(_phandle: u32, name: &[u8]) -> Result<Option<&'static [u8]>, 
 fn split_provider(phandle: u32, name: &[u8]) -> Result<Option<&'static [u8]>, ()> {
     if name != b"compatible" {
         Ok(Some(&[0, 0, 0, 1]))
-    } else if phandle % 2 == 0 {
+    } else if phandle.is_multiple_of(2) {
         Ok(Some(COMPATIBLE_ALWAYS_ON_CLOCK_AND_RESET_GENERATOR))
     } else {
         Ok(Some(COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR))
@@ -175,9 +175,7 @@ fn every_fixed_plan_ungates_its_clocks_before_releasing_a_reset() {
         &SYSTEM_TOP_GROUP
     ));
     assert!(ungates_before_releasing(
-        &with_parent_first(
-            GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT
-        ),
+        &with_parent_first(GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RTX),
         &ALWAYS_ON
     ));
 }
