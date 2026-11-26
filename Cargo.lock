@@ -176,7 +176,7 @@ dependencies = [
 [[package]]
 name = "capability_table"
 version = "0.1.0"
-source = "git+https://github.com/partsfoundry/capability_table?rev=94147c270abe20e2a9a794f45bd63d46f6139fe6#94147c270abe20e2a9a794f45bd63d46f6139fe6"
+source = "git+https://github.com/partsfoundry/capability_table?rev=a0e8b159e550943828d4ddb61137e53a2c2cd631#a0e8b159e550943828d4ddb61137e53a2c2cd631"
 
 [[package]]
 name = "capability_witness_contract"
@@ -533,6 +533,14 @@ name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
+
+[[package]]
+name = "ext4_server"
+version = "0.0.0"
+dependencies = [
+ "file_system_contract",
+ "subtree_scope",
+]
 
 [[package]]
 name = "extensible_host_controller_interface"
