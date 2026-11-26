@@ -192,10 +192,12 @@ def patch_application(into, patch):
     context line missing. The ceiling keeps git from finding a repository above `into`, inside
     which it would skip every path outside its working directory and report success.
     """
-    code, out = run(['patch', '-p1', '--dry-run', '-F0', '-i', patch], into)
+    # BSD patch (macOS) names an offset or fuzz only under --verbose, which also echoes the patch's
+    # preamble, so only the hunk lines are read.
+    code, out = run(['patch', '-p1', '--dry-run', '--verbose', '-F0', '-i', patch], into)
     if code:
         return 'does not apply: ' + tail(out)
-    notes = [line for line in out.splitlines() if re.search(r'offset|fuzz', line)]
+    notes = [line for line in out.splitlines() if re.match(r'Hunk #\d+ succeeded at .*(offset|fuzz)', line)]
     if notes:
         return '; '.join(notes[:2])
     env = dict(os.environ, GIT_CEILING_DIRECTORIES=os.path.dirname(os.path.abspath(into)))
