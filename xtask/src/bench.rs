@@ -28,7 +28,8 @@ pub(crate) fn bench() -> bool {
     // `--release` is for magnitudes next to release Linux. It changes instruction counts, so it
     // never runs under icount and never gates.
     let release = std::env::args().any(|a| a == "--release");
-    RELEASE.store(release, Ordering::Relaxed);
+    // Measurement branch only, not meant to merge: build the icount bench with the release profile.
+    RELEASE.store(release || std::env::var_os("NIFE_MEASURE_ICOUNT_RELEASE").is_some(), Ordering::Relaxed);
     let real = release || std::env::args().any(|a| a == "--real");
     if real && (check || save) {
         let why = if release { "--release" } else { "--real" };
