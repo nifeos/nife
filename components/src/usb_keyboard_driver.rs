@@ -27,6 +27,7 @@
 //! - **One keyboard.** The first found is served; a second is ignored until the first is unplugged.
 //! - **No key repeat, no lock keys, no LEDs** (`partsfoundry/universal_serial_bus`'s BUGS): holding a key types it once.
 //! - **Bring-up polls the event ring**, with bounds from the specification (nifeos/record:notes/usb.md).
+//!   A wait that reaches its bound fails the step it was in; it never hangs.
 //! - **Only port changes survive a command wait**; a key pressed meanwhile is lost (nifeos/record:notes/usb.md).
 //! - **A lying controller can silence the keyboard.** A transfer event naming a TRB or a buffer
 //!   this driver never queued is dropped without queuing a report buffer again, so a few of them
@@ -50,7 +51,8 @@ use driver_process_contract::extensible_host_controller_interface::{
     self as report, BringUpStep, Handoff,
 };
 use extensible_host_controller_interface::{
-    Capabilities, Event, EventRing, PAGE_BYTES, ProducerRing, TransferRequestBlock,
+    COMMAND_COMPLETION_TIMEOUT_MILLISECONDS, CONTROLLER_RESET_TIMEOUT_MILLISECONDS, Capabilities,
+    Event, EventRing, HALT_TIMEOUT_MILLISECONDS, PAGE_BYTES, ProducerRing, TransferRequestBlock,
     TransferRequestBlockPlacement, TransferType, completion, context, direct_memory_access, port,
     registers,
 };
@@ -108,6 +110,17 @@ fn control_buffer() -> MappedWindow {
 
 /// One millisecond, in the units [`monotonic_nanoseconds`] counts.
 const NANOSECONDS_PER_MILLISECOND: u64 = 1_000_000;
+
+/// **How long to wait for a control transfer's status stage** after ringing its doorbell. The
+/// controller crate has no bound for a transfer; this is USB 2.0's for a standard request (section
+/// 9.2.6.4, five seconds) and Linux's `USB_CTRL_GET_TIMEOUT`.
+const CONTROL_TRANSFER_TIMEOUT_MILLISECONDS: u64 = 5000;
+
+/// **How long to wait for the controller to leave the halted state** after setting
+/// [`registers::COMMAND_RUN`]. The specification sets no bound, and the controller crate has none;
+/// Linux's `xhci_start` waits [`HALT_TIMEOUT_MILLISECONDS`] (its `XHCI_MAX_HALT_USEC`), the bound
+/// on the opposite transition, and so does this.
+const RUN_TIMEOUT_MILLISECONDS: u64 = HALT_TIMEOUT_MILLISECONDS;
 
 /// **Order ring writes before the doorbell, and a cycle bit's read before the payload it gates.**
 /// The NVMe server's barrier and for its reason (`components/src/non_volatile_memory_express.rs`
@@ -255,9 +268,9 @@ impl Host {
         Some(Event::decode(t))
     }
 
-    /// Poll for an event `wanted` accepts, remembering port changes and dropping the rest.
-    fn wait_for(&mut self, milliseconds: u64, wanted: &dyn Fn(&Event) -> bool) -> Option<Event> {
-        let end = deadline(milliseconds);
+    /// Poll for an event `wanted` accepts until the [`deadline`] `end`, remembering port changes
+    /// and dropping the rest. `None` once `end` passes, however many other events keep arriving.
+    fn wait_for(&mut self, end: u64, wanted: &dyn Fn(&Event) -> bool) -> Option<Event> {
         loop {
             if let Some(e) = self.poll_event() {
                 if wanted(&e) {
@@ -266,12 +279,12 @@ impl Host {
                 if matches!(e, Event::PortStatus { .. }) {
                     self.ports_changed = true;
                 }
-                continue;
+            } else {
+                core::hint::spin_loop();
             }
             if past(end) {
                 return None;
             }
-            core::hint::spin_loop();
         }
     }
 
@@ -282,7 +295,7 @@ impl Host {
         Host::put(direct_memory_access::COMMAND_RING, p);
         self.ring_doorbell(0, 0);
         match self.wait_for(
-            1000,
+            deadline(COMMAND_COMPLETION_TIMEOUT_MILLISECONDS),
             &|e| matches!(e, Event::Command { transfer_request_block, .. } if *transfer_request_block == at),
         ) {
             Some(Event::Command { code, slot, .. }) if code == completion::SUCCESS => Ok(slot),
@@ -322,9 +335,12 @@ impl Host {
         self.ring_doorbell(slot, 1);
 
         let mut moved = usize::from(len);
+        // One deadline for the whole transfer, so events for its earlier stages cannot keep
+        // renewing it.
+        let end = deadline(CONTROL_TRANSFER_TIMEOUT_MILLISECONDS);
         loop {
             let e = self.wait_for(
-                1000,
+                end,
                 &|e| matches!(e, Event::Transfer { slot: s, endpoint: 1, .. } if *s == slot),
             );
             let Some(Event::Transfer {
@@ -386,7 +402,7 @@ impl Host {
         self.set_reg(portsc, port::write_value(sc, sc & port::CHANGES));
         if sc & port::ENABLED == 0 {
             self.set_reg(portsc, port::write_value(sc, port::RESET));
-            let end = deadline(500);
+            let end = deadline(port::RESET_TIMEOUT_MILLISECONDS);
             while self.reg(portsc) & port::RESET_CHANGE == 0 {
                 if past(end) {
                     return Err((BringUpStep::PortResetTimeout, port_number.into()));
@@ -659,7 +675,7 @@ impl Host {
 
         // Halt (the firmware may have left it running), then reset.
         self.set_reg(usbcmd, self.reg(usbcmd) & !registers::COMMAND_RUN);
-        let end = deadline(100);
+        let end = deadline(HALT_TIMEOUT_MILLISECONDS);
         while self.reg(usbsts) & registers::STATUS_HALTED == 0 {
             if past(end) {
                 return Err((BringUpStep::HaltTimeout, self.reg(usbsts)));
@@ -667,7 +683,7 @@ impl Host {
             core::hint::spin_loop();
         }
         self.set_reg(usbcmd, registers::COMMAND_RESET);
-        let end = deadline(1000);
+        let end = deadline(CONTROLLER_RESET_TIMEOUT_MILLISECONDS);
         while self.reg(usbcmd) & registers::COMMAND_RESET != 0
             || self.reg(usbsts) & registers::STATUS_NOT_READY != 0
         {
@@ -768,7 +784,7 @@ impl Host {
             usbcmd,
             registers::COMMAND_RUN | registers::COMMAND_INTERRUPTS,
         );
-        let end = deadline(100);
+        let end = deadline(RUN_TIMEOUT_MILLISECONDS);
         while self.reg(usbsts) & registers::STATUS_HALTED != 0 {
             if past(end) {
                 return Err((BringUpStep::RunTimeout, self.reg(usbsts)));
@@ -778,8 +794,10 @@ impl Host {
         Ok(())
     }
 
-    /// Power every port that is not powered (only on a controller with port power control).
+    /// Power every port that is not powered (only on a controller with port power control), and
+    /// then wait [`port::POWER_ON_WAIT_MILLISECONDS`] before anything changes a port's state.
     fn power_ports(&self) {
+        let mut powered = false;
         for n in 1..=self.capabilities.maximum_ports {
             let Some(at) = self.capabilities.port_status_and_control(n) else {
                 continue;
@@ -787,6 +805,13 @@ impl Host {
             let sc = self.reg(at);
             if sc & port::POWER == 0 {
                 self.set_reg(at, port::write_value(sc, port::POWER));
+                powered = true;
+            }
+        }
+        if powered {
+            let end = deadline(port::POWER_ON_WAIT_MILLISECONDS);
+            while !past(end) {
+                core::hint::spin_loop();
             }
         }
     }
