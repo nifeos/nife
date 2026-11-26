@@ -194,26 +194,24 @@ fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
 /// `os_primitives_benchmarker` and `coremark`. Its baseline is `bench/baseline-riscv64.txt`.
 /// `cargo xtask bench --riscv64 [--check|--save]`.
 fn bench_riscv64(check: bool, save: bool, features: &str) -> bool {
+    // Measurement branch only, as in `bench_x86`: `cargo_profiled`, so a release run builds release.
     if !has_initial_ramdisk_riscv64()
-        || !run(
-            "cargo",
-            &[
-                "build",
-                "-p",
-                "kernel",
-                // `features`, not "bench": it carries `--extra-features` too.
-                "--features",
-                features,
-                "--target",
-                RISCV64_TARGET,
-            ],
-        )
+        || !cargo_profiled(&[
+            "build",
+            "-p",
+            "kernel",
+            // `features`, not "bench": it carries `--extra-features` too.
+            "--features",
+            features,
+            "--target",
+            RISCV64_TARGET,
+        ])
     {
         return false;
     }
 
     let mut cmd = Command::new("helpers/qemu-runner-riscv64.sh");
-    cmd.arg(format!("target/{RISCV64_TARGET}/debug/kernel"));
+    cmd.arg(format!("target/{RISCV64_TARGET}/{}/kernel", crate::profile_dir()));
     // icount pins `rdtime` to the instruction stream; sleep=off never waits on the wall clock.
     cmd.args(["-icount", "shift=0,sleep=off"]);
     cmd.env("NIFE_INITIAL_RAMDISK", riscv64_initial_ramdisk_path());
