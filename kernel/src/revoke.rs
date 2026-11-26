@@ -806,7 +806,9 @@ mod tests {
     use page_tables::Flags;
 
     use super::*;
-    use crate::capability_object::{Rights, page_frame_run_capability, page_frame_run_len};
+    use crate::capability_object::{
+        INTERFACE_RIGHTS, page_frame_run_capability, page_frame_run_len,
+    };
     use crate::user::AddressSpace;
 
     /// `N` consecutive pages out of one region. A region is a contiguous span and `retype_page`
@@ -861,7 +863,7 @@ mod tests {
         let slot = crate::sched::grant(page_frame_run_capability(
             run[0],
             page_frame_run_len(3),
-            Rights::ALL,
+            INTERFACE_RIGHTS,
         ))
         .expect("grant the run");
 
@@ -897,18 +899,18 @@ mod tests {
         let region = crate::memory_region::create(8).expect("no region");
         let run = consecutive::<4>(region);
 
-        // `Rights::ALL` carries the `GRANT` `PageFrame::REVOKE` requires, which no run capability
-        // in the shipping tree has; minting it here is what makes this path reachable.
+        // `INTERFACE_RIGHTS` carries the `GRANT` `PageFrame::REVOKE` requires, which no run
+        // capability in the shipping tree has; minting it here is what makes this path reachable.
         let window = crate::sched::grant(page_frame_run_capability(
             run[0],
             page_frame_run_len(4),
-            Rights::ALL,
+            INTERFACE_RIGHTS,
         ))
         .expect("grant the whole window");
         let surface = crate::sched::grant(page_frame_run_capability(
             run[1],
             page_frame_run_len(3),
-            Rights::ALL,
+            INTERFACE_RIGHTS,
         ))
         .expect("grant the inner surface");
 
@@ -1023,12 +1025,12 @@ mod tests {
         let run_slot = crate::sched::grant(page_frame_run_capability(
             run[0],
             page_frame_run_len(3),
-            Rights::ALL,
+            INTERFACE_RIGHTS,
         ))
         .expect("grant the run");
         let lone_slot = crate::sched::grant(crate::capability_object::page_frame_capability(
             unmapped,
-            Rights::ALL,
+            INTERFACE_RIGHTS,
         ))
         .expect("grant the unmapped page");
 

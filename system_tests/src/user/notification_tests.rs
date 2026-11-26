@@ -317,7 +317,7 @@ fn bind_is_once_per_side_and_a_destroyed_binding_frees_the_thread() {
 /// waits and polls, and neither does the other's job. Driven through `system_call::invoke` so the
 /// boundary is what is proved, not the helper behind it. `RETYPE_OBJECT` mints the object, and the
 /// creator's capability carries every right its budget holds (milestone 824 (a retype mints no
-/// right its budget lacks)); the budget here is the root's, `Rights::ALL`.
+/// right its budget lacks)); the budget here is the root's, `INTERFACE_RIGHTS`.
 ///
 /// Falsification: unfalsified. No planted defect has been run against it yet.
 #[test_case]
@@ -335,7 +335,10 @@ fn the_rights_are_101s_and_retype_object_mints_a_full_rights_notification() {
     let Object::Notification(id) = capability.object else {
         panic!("RETYPE_OBJECT(NOTIFICATION) minted {:?}", capability.object);
     };
-    assert_eq!(capability.rights, Rights::ALL);
+    assert_eq!(
+        capability.rights,
+        crate::capability_object::INTERFACE_RIGHTS
+    );
 
     let read = sched::grant(crate::capability_object::notification_capability(
         id,

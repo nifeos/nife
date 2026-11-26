@@ -84,7 +84,7 @@ pub(super) fn rendezvous_send_capability(
         word,
         sched::Delegation {
             slot,
-            rights: Rights::from_bits(narrow as u32),
+            rights: crate::capability_object::interface_rights(narrow),
         },
         badge, // the endpoint we send on may be badged (milestone 599 (a frame per filesystem client channel))
     )?;

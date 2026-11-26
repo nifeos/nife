@@ -16,7 +16,7 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
     let root = crate::user::user_address_space_root(name).expect("no root");
     let space_slot = sched::grant(crate::capability_object::address_space_capability(
         name,
-        Rights::ALL,
+        crate::capability_object::INTERFACE_RIGHTS,
     ))
     .expect("grant the address space");
 
@@ -37,7 +37,7 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
     let frame_slot = sched::grant(crate::capability_object::page_frame_run_capability(
         base,
         crate::capability_object::page_frame_run_len(3),
-        Rights::ALL,
+        crate::capability_object::INTERFACE_RIGHTS,
     ))
     .expect("grant the run");
 
@@ -97,7 +97,7 @@ fn a_slice_maps_only_its_window() {
     let root = crate::user::user_address_space_root(name).expect("no root");
     let space_slot = sched::grant(crate::capability_object::address_space_capability(
         name,
-        Rights::ALL,
+        crate::capability_object::INTERFACE_RIGHTS,
     ))
     .expect("grant the address space");
 
