@@ -9,10 +9,14 @@
 # The corpus recipe, the debugfs side and the write cases under tools/ext4_oracle/ come with the
 # crate.
 #
+# `ext4_server` is the read-only server's contract side, with no ext4 code in it. It stays here,
+# where nothing that ships can link it, until the adoption ruling decides what implements its
+# `Volume` in an image; tools/ext4_oracle drives it over `rsext4` and judges it against `debugfs`.
+#
 # Name: provisional, the lane's proposal; calef names packages. The home is undecided: it leaves
 # with the ext4 server it judges, whose package is not yet named.
 
 name = "ext4-oracle"
 kind = "test"
 home = { status = "undecided", reason = "it leaves with the ext4 server it judges, whose package is not yet named" }
-crates = ["ext4_oracle"]
+crates = ["ext4_oracle", "ext4_server"]

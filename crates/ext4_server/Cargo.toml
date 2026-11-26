@@ -1,0 +1,20 @@
+# Name: the block lives in src/lib.rs, where `script/names` reads it.
+[package]
+name = "ext4_server"
+version = "0.0.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+[lints]
+workspace = true
+
+# No ext4 implementation here, on purpose: `rsext4` is ruled a host-only dependency of
+# tools/ext4_oracle (#3639), and the adoption ruling under §46 (thin primitives, whole subsystems
+# and everything in between) is still open. This crate is the contract side, which any ext4
+# implementation plugs into through `Volume`.
+[dependencies]
+# The wire this server answers.
+file_system_contract = { version = "0.1.0", git = "https://github.com/partsfoundry/file_system_contract", rev = "7577a7d0df339107f75747c3681f5990f116cf61" }
+# The one shared path walk: a step is one name, and a walk never widens or follows a link.
+subtree_scope = { version = "0.1.0", path = "../subtree_scope" }
