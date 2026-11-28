@@ -1226,6 +1226,7 @@ const JH7110_MARKER: &str = "  jh7110 pcie:";
 pub(crate) fn bring_up_jh7110_root_port() {
     use crate::drivers::jh7110_pci_express::{CONFIGURATION_BUSES, Controller};
     if let Some(why) = crate::memory::jh7110_pci_express_absent() {
+        print_jh7110_tree_nodes();
         crate::println!("{JH7110_MARKER} port One stays off: {why}");
         return;
     }
@@ -1235,6 +1236,7 @@ pub(crate) fn bring_up_jh7110_root_port() {
     ) else {
         return;
     };
+    print_jh7110_tree_nodes();
     let port = found.port;
     let windows = jh7110_windows(&found, top_group.base_physical_address);
     crate::println!(
@@ -1331,6 +1333,105 @@ fn jh7110_windows(
             system_top_group_clock_and_reset_physical_address,
         ) as usize,
         configuration: page(configuration),
+    }
+}
+
+/// How many `pcie@` nodes [`print_jh7110_tree_nodes`] reports; a JH7110 tree has two.
+#[cfg(target_arch = "riscv64")]
+const JH7110_TREE_NODE_SLOTS: usize = 4;
+
+/// **One line for each `pcie@` node the boot device tree holds**, with the four properties port
+/// One's discovery reads to accept or refuse it: `compatible`, `reg` (every cell, in hex),
+/// `reg-names` and `linux,pci-domain`, and `status`. A missing property prints `absent`.
+///
+/// Printed on a JH7110 only, before the port's verdict, so a bench log answers what the firmware's
+/// tree says about the M.2 port without anyone typing `fdt` commands at the firmware prompt
+/// (nifeos/record:notes/jh7110-pci-express-bench.md, step 1). The nodes print in tree order.
+#[cfg(target_arch = "riscv64")]
+fn print_jh7110_tree_nodes() {
+    const PREFIX: &[u8] = b"pcie@";
+    let Ok(tree) = crate::device_tree() else {
+        crate::println!("{JH7110_MARKER} tree: unreadable");
+        return;
+    };
+    let read = |name: &[u8]| {
+        let mut out = [None; JH7110_TREE_NODE_SLOTS];
+        let count = tree.node_properties(PREFIX, name, &mut out).unwrap_or(0);
+        (count, out)
+    };
+    let (count, compatible) = read(b"compatible");
+    let (_, reg) = read(b"reg");
+    let (_, reg_names) = read(b"reg-names");
+    let (_, domain) = read(b"linux,pci-domain");
+    let (_, status) = read(b"status");
+    crate::println!("{JH7110_MARKER} tree: {count} pcie@ node(s)");
+    for index in 0..count.min(JH7110_TREE_NODE_SLOTS) {
+        crate::println!(
+            "{JH7110_MARKER} tree node {index}: compatible {}, reg {}, reg-names {}, \
+             linux,pci-domain {}, status {}",
+            TreeStrings(compatible[index]),
+            TreeCells(reg[index]),
+            TreeStrings(reg_names[index]),
+            TreeCells(domain[index]),
+            TreeStrings(status[index]),
+        );
+    }
+}
+
+/// A device-tree string-list property for a bench line: its strings in quotes, comma-separated,
+/// or `absent`.
+#[cfg(target_arch = "riscv64")]
+struct TreeStrings<'a>(Option<&'a [u8]>);
+
+#[cfg(target_arch = "riscv64")]
+impl core::fmt::Display for TreeStrings<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let Some(value) = self.0 else {
+            return f.write_str("absent");
+        };
+        let value = value.strip_suffix(b"\0").unwrap_or(value);
+        for (index, piece) in value.split(|&b| b == 0).enumerate() {
+            if index > 0 {
+                f.write_str(",")?;
+            }
+            f.write_str("\"")?;
+            for &byte in piece {
+                if byte.is_ascii_graphic() || byte == b' ' {
+                    write!(f, "{}", char::from(byte))?;
+                } else {
+                    write!(f, "\\x{byte:02x}")?;
+                }
+            }
+            f.write_str("\"")?;
+        }
+        Ok(())
+    }
+}
+
+/// A device-tree cell-array property for a bench line: `<` its big-endian 32-bit cells in hex `>`,
+/// trailing bytes that make no whole cell in hex after a `+`, or `absent`.
+#[cfg(target_arch = "riscv64")]
+struct TreeCells<'a>(Option<&'a [u8]>);
+
+#[cfg(target_arch = "riscv64")]
+impl core::fmt::Display for TreeCells<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let Some(value) = self.0 else {
+            return f.write_str("absent");
+        };
+        let (cells, rest) = value.as_chunks::<4>();
+        f.write_str("<")?;
+        for (index, cell) in cells.iter().enumerate() {
+            if index > 0 {
+                f.write_str(" ")?;
+            }
+            write!(f, "{:#x}", u32::from_be_bytes(*cell))?;
+        }
+        f.write_str(">")?;
+        for byte in rest {
+            write!(f, "+{byte:02x}")?;
+        }
+        Ok(())
     }
 }
 
