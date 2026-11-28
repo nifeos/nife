@@ -644,6 +644,16 @@ echo "==> clippy: kernel --features network_bench (x86_64, the binary only; see 
 cargo clippy -p kernel --features network_bench --target x86_64-unknown-none -- \
     -D warnings -A dead_code -A clippy::reversed_empty_ranges
 
+# `disk_read_bench` (milestone 163 (the JH7110's PCIe root complex)'s read-only NVMe bench boot) on
+# x86_64, for `network_bench`'s reason: `cargo xtask disk-read-bench` is in no gate. The other two
+# ISAs lint it in the feature loop below.
+echo "==> clippy: kernel --features disk_read_bench (x86_64, the binary only; see the note above)"
+# lint-scope: code
+# lint-lane: x86_64
+# lint-target-dir: x86_64
+cargo clippy -p kernel --features disk_read_bench --target x86_64-unknown-none -- \
+    -D warnings -A dead_code -A clippy::reversed_empty_ranges
+
 # And userspace on the third architecture (milestone 161, item 4's hand-off). Held to the SAME bar
 # as the aarch64 pass above, with no `-A dead_code` and no narrowings, because there is nothing
 # partial about it: every program in `user/` compiles for this target and `crates/user_mode_runtime` has arms
@@ -680,7 +690,7 @@ cargo clippy -p user_mode_runtime --target x86_64-unknown-none --lib -- -D warni
 # empties, which is how milestone 265's crate check passed by checking zero crates. This loop cannot
 # do that -- an empty `for` list is visible in the diff and in the output, since every iteration
 # echoes its own `==>` line -- so removing a feature here is a deletion a reader can see rather than
-# a silence. Count: 8 builds x 2 targets = 16 `==>` lines. `lock_wait` is a measurement build no
+# a silence. Count: 9 builds x 2 targets = 18 `==>` lines. `lock_wait` is a measurement build no
 # gate otherwise compiles, and it is the only build that compiles the counting arm of
 # `InterruptSafeMutualExclusionLock::lock` and the reaper's timing (kernel/src/lock_wait.rs). `bench,cycle_counter_grant`
 # is the one pair: it alone compiles the bench boot's `ipc_rtt_el0_cycles` probe (milestone 101 (the L4 calibration)),
@@ -692,7 +702,7 @@ cargo clippy -p user_mode_runtime --target x86_64-unknown-none --lib -- -D warni
 # Architectural parity is a gate, not an aspiration (DECISIONS §19 (architectural parity is a
 # tenet)), and that applies to the gate itself.
 for tgt in aarch64-unknown-none-softfloat riscv64imac-unknown-none-elf; do
-    for feat in bench icount board fastpath_pad soak_test cycle_counter_grant lock_wait bench,cycle_counter_grant; do
+    for feat in bench icount board fastpath_pad soak_test cycle_counter_grant lock_wait bench,cycle_counter_grant disk_read_bench; do
         echo "==> clippy: kernel --features $feat ($tgt)"
         cargo clippy -p kernel --features "$feat" --target "$tgt" -- -D warnings
     done

@@ -46,10 +46,15 @@ pub fn device_tree() -> Result<device_tree_blob::DeviceTreeBlob<'static>, device
 /// `-> !` means this never returns, which is true: there is nowhere to return *to*.
 // The icount boot parks before the bench boot it implies, so `bench::run()` and everything after
 // it is deliberately unreachable in that one configuration (milestone 78).
-// And riscv64's `storage_bench` boot diverges in `run_measurement_boot`, leaving the hand-over after
-// it unreachable but compiled, which is what keeps the hand-over's callees linted in that build.
+// And riscv64's `storage_bench` boot and the `disk_read_bench` boot diverge in
+// `run_measurement_boot`, leaving the hand-over after it unreachable but compiled, which is what
+// keeps the hand-over's callees linted in those builds.
 #[cfg_attr(
-    any(feature = "icount", feature = "storage_bench"),
+    any(
+        feature = "icount",
+        feature = "storage_bench",
+        feature = "disk_read_bench"
+    ),
     allow(unreachable_code)
 )]
 #[unsafe(no_mangle)]
@@ -415,7 +420,8 @@ pub(super) fn run_test_suite() {
     feature = "soak_test",
     feature = "disk_throughput",
     feature = "network_bench",
-    feature = "storage_bench"
+    feature = "storage_bench",
+    feature = "disk_read_bench"
 ))]
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
@@ -435,6 +441,9 @@ pub(super) fn run_measurement_boot() -> ! {
     network_bench::run();
     #[cfg(feature = "storage_bench")]
     storage_bench::run();
+    // Read-only; see kernel/src/disk_read_bench.rs.
+    #[cfg(feature = "disk_read_bench")]
+    disk_read_bench::run();
 }
 
 /// No measurement boot was built, so there is nothing to run, and the boot goes on to hand over.
@@ -443,7 +452,8 @@ pub(super) fn run_measurement_boot() -> ! {
     feature = "soak_test",
     feature = "disk_throughput",
     feature = "network_bench",
-    feature = "storage_bench"
+    feature = "storage_bench",
+    feature = "disk_read_bench"
 )))]
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
