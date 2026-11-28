@@ -494,4 +494,105 @@ mod tests {
         r.waited(false, 10_000);
         assert_eq!((r.sleeps.count(), r.yields.count()), (1, 1));
     }
+
+    /// The top bucket takes everything past it, so a huge value neither panics nor loses count.
+    #[test]
+    fn a_huge_value_lands_in_the_last_bucket() {
+        let mut s = Spread::new();
+        s.record(u64::MAX);
+        assert_eq!(s.count(), 1);
+        assert_eq!(s.below(100), Some((1u64 << (BUCKETS - 1)) - 1));
+    }
+
+    /// Fixed-buffer text keeps what fits, accumulates across writes, and refuses the rest.
+    #[test]
+    fn text_keeps_what_fits_and_refuses_the_rest() {
+        let mut t = Text::<8>::new();
+        assert!(t.write_str("abc").is_ok());
+        assert!(t.write_str("de").is_ok());
+        assert_eq!(t.as_bytes(), b"abcde");
+        assert!(t.write_str("fghi").is_err());
+        assert_eq!(t.as_bytes(), b"abcdefgh");
+        let mut exact = Text::<3>::new();
+        assert!(exact.write_str("xyz").is_ok());
+        assert_eq!(exact.as_bytes(), b"xyz");
+    }
+
+    /// A frame that is IPv4 but not TCP, or TCP without the acknowledgment flag, is read as such.
+    #[test]
+    fn only_tcp_and_only_flags_that_are_set_count() {
+        let mut udp = frame(0, 0, 0x10, 0, 10);
+        udp[23] = 17;
+        assert_eq!(tcp_segment(&udp), None);
+        let mut version_six = frame(0, 0, 0x10, 0, 10);
+        version_six[14] = 0x65;
+        assert_eq!(tcp_segment(&version_six), None);
+        assert!(!tcp_segment(&frame(0, 0, 0x02, 0, 0)).unwrap().acknowledges);
+        assert!(tcp_segment(&frame(0, 0, 0x12, 0, 0)).unwrap().acknowledges);
+    }
+
+    /// A poll counts the frames since the last one and divides its time among them; a poll that
+    /// took none records nothing.
+    #[test]
+    fn a_poll_records_its_frames_and_its_time_per_frame() {
+        let mut r = Receiver::new();
+        r.polled(0, 500);
+        assert_eq!(r.frames_per_poll.count(), 0);
+        for at in [10, 20, 30, 40] {
+            r.received(at, &frame(1, 0, 0x10, 0, 0));
+        }
+        r.polled(0, 100);
+        assert_eq!(r.other_frames, 4);
+        assert_eq!(r.frames_per_poll.count(), 1);
+        assert_eq!(r.frames_per_poll.below(100), Some(7)); // 4 frames
+        assert_eq!(r.poll_per_frame.below(100), Some(31)); // 25 us each
+        r.polled(0, 100);
+        assert_eq!(r.frames_per_poll.count(), 1);
+    }
+
+    /// A request served by a data segment times both, and a reply alone times only itself.
+    #[test]
+    fn requests_time_to_the_first_frame_and_to_the_reply() {
+        let mut r = Receiver::new();
+        r.requested(100);
+        r.received(150, &frame(1, 0, 0x10, 0, 1460));
+        r.replied(100, 200);
+        assert_eq!(r.request_to_frame.count(), 1);
+        assert_eq!(r.request_to_frame.below(100), Some(63)); // 50 us
+        assert_eq!(r.request_to_reply.count(), 1);
+        assert_eq!(r.request_to_reply.below(100), Some(127)); // 100 us
+        r.requested(300);
+        r.replied(300, 310);
+        r.received(400, &frame(1461, 0, 0x10, 0, 1460));
+        assert_eq!(r.request_to_frame.count(), 1);
+    }
+
+    /// The summary names every line and the counts of segments, other frames and acknowledgments.
+    #[test]
+    fn the_summary_names_each_distribution() {
+        let mut r = Receiver::new();
+        r.transmitted(5, &frame(1, 1000, 0x10, 2920, 0));
+        r.received(10, &frame(1000, 1, 0x10, 0, 1460));
+        r.received(20, &frame(2460, 1, 0x10, 0, 1460));
+        r.received(30, &frame(1, 0, 0x10, 0, 0));
+        let mut text = String::new();
+        r.write_summary(&mut text).unwrap();
+        assert!(text.starts_with(
+            "server    : 2 data segments, 1 other frames, 1 acknowledgments sent\n"
+        ));
+        for label in [
+            "gap       :",
+            "per poll  : none",
+            "poll cost : none",
+            "yield     : none",
+            "sleep     : none",
+            "to frame  : none",
+            "to reply  : none",
+            "advertised:",
+            "room      :",
+            "ack->data :",
+        ] {
+            assert!(text.contains(label), "{label} missing from {text}");
+        }
+    }
 }
