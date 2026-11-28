@@ -35,6 +35,7 @@ mod confirm;
 mod coverage;
 mod disk;
 mod disk_check;
+mod disk_read_bench;
 mod disk_throughput;
 mod farm;
 mod foreign_note;

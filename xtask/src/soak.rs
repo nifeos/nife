@@ -262,7 +262,10 @@ impl RunArgs {
 
 /// **The kernel target, runner script and initial ramdisk for `arch`**, after building that
 /// architecture's archive (and the disk image its runner checks for). `None` after saying why not.
-fn kernel_leg(command: &str, arch: &str) -> Option<(&'static str, &'static str, String)> {
+pub(crate) fn kernel_leg(
+    command: &str,
+    arch: &str,
+) -> Option<(&'static str, &'static str, String)> {
     match arch {
         "aarch64" => (mkdisk() && user()).then(|| {
             (
@@ -297,7 +300,7 @@ fn kernel_leg(command: &str, arch: &str) -> Option<(&'static str, &'static str, 
 /// **The QEMU command for a run**: the runner script on the kernel this command built, with its
 /// initial ramdisk, `smp` cores if asked, the guest's console piped back, and the runner's own
 /// diagnostics left on this terminal.
-fn qemu_command(
+pub(crate) fn qemu_command(
     runner: &str,
     target: &str,
     initial_ramdisk: &str,
@@ -329,7 +332,7 @@ fn qemu_command(
 }
 
 /// Start `cmd` and take the guest's console from it. `None` after saying why not.
-fn start_qemu(
+pub(crate) fn start_qemu(
     command: &str,
     runner: &str,
     cmd: &mut Command,
@@ -357,7 +360,7 @@ fn start_qemu(
 /// `helpers/qemu-runner-x86_64.sh` runs QEMU as a plain foreground child rather than `exec`-ing into
 /// it, so killing the wrapper alone orphans the emulator, which keeps holding this pipe. The other
 /// two runners `exec`, so `pkill -P` finds nothing there and costs one process.
-fn stop_qemu(child: &mut std::process::Child, sink: &mut impl std::io::Write) {
+pub(crate) fn stop_qemu(child: &mut std::process::Child, sink: &mut impl std::io::Write) {
     let _ = Command::new("pkill")
         .args(["-9", "-P", &child.id().to_string()])
         .status();
@@ -753,8 +756,10 @@ fn second_boot(
 }
 
 /// The guest's console as a channel of lines, read on a thread of its own so the caller can wait on
-/// it with a deadline. Shared by [`second_boot`] and [`watchdog_verdict`].
-fn console_lines(stdout: std::process::ChildStdout) -> std::sync::mpsc::Receiver<String> {
+/// it with a deadline. Shared by [`second_boot`], [`watchdog_verdict`] and `disk-read-bench`.
+pub(crate) fn console_lines(
+    stdout: std::process::ChildStdout,
+) -> std::sync::mpsc::Receiver<String> {
     use std::io::BufRead;
 
     let (sender, receiver) = std::sync::mpsc::channel();
