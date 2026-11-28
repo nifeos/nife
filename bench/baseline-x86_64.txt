@@ -1,8 +1,9 @@
-# toolchain: nightly-2026-11-26
+# toolchain: nightly-2026-11-28
 # qemu: 11.1.2
 # date: 2026-11-26
 # why: 2026-11-26: the gate counts the release build, as ruled on #4132 (A, 2026-11-26 UTC). Every row is re-taken from the release profile as it ships, with its own strip setting; the floor before this one counted the opt-level 0 dev kernel.
 # why: 2026-11-26: restamped from nightly-2026-11-25 to nightly-2026-11-26 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: spawn_reap +0.071% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: spawn_reap +0.071%
+# why: 2026-11-28: restamped from nightly-2026-11-26 to nightly-2026-11-28 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: spawn_reap +0.071% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: spawn_reap +0.142%
 # bench/baseline-x86_64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check fails when the QEMU on

@@ -1,8 +1,7 @@
-# toolchain: nightly-2026-11-26
+# toolchain: nightly-2026-11-28
 # qemu: 11.1.2
-# date: 2026-11-26
-# why: 2026-11-26: the gate counts the release build, as ruled on #4132 (A, 2026-11-26 UTC). Every row is re-taken from the release profile as it ships, with its own strip setting; the floor before this one counted the opt-level 0 dev kernel.
-# why: 2026-11-26: re-recorded from nightly-2026-11-25 to nightly-2026-11-26, which the restamp job could not carry; compiler term only: ipc_rtt +0.662%, relay_rtt +0.662%, call_reply +0.397%, broker_rtt +0.396%, sink_throughput +0.314%, ipc_rtt_el0 +0.260%, spawn_el0 +0.036%, spawn_reap +0.072%; all far inside the 10% tripwire
+# date: 2026-11-28
+# why: nightly-2026-11-28: re-recorded from nightly-2026-11-26, which the restamp job could not carry because map_el0 moved -1.341% (39590 to 39059) between the two nightlies on one tree, over its 0.5% bound; compiler term only, every other row moved at most 0.001% in that comparison. Against the old floor the rows now read: ipc_rtt -0.659%, relay_rtt -0.658%, call_reply -0.394%, broker_rtt -0.395%, sink_throughput -0.313%, ipc_rtt_el0 -0.259%, spawn_reap -0.059%, map_el0 +0.401%, spawn_el0 +0.016%; the ipc and relay rows are drift already on main since the last save, not this bump; all far inside the 10% tripwire
 # bench/baseline-aarch64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check fails when the QEMU on
@@ -16,16 +15,16 @@
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
              # 10% tripwire (icount counts drift across builds; see nifeos/record:notes/benchmarks.md).
 yield_switch 71500 2000
-ipc_rtt 76063 1000
-relay_rtt 152063 1000
-call_reply 79188 1000
-broker_rtt 158313 1000
-spawn_reap 62878 64
+ipc_rtt 75562 1000
+relay_rtt 151062 1000
+call_reply 78876 1000
+broker_rtt 157688 1000
+spawn_reap 62841 64
 map_new 7345 64
 coremark 1451164 256
 null_system_call 131250 20000
 ctx_switch 248125 5000
-ipc_rtt_el0 963959 5000
-sink_throughput 398747 80000
-map_el0 38904 500
-spawn_el0 311482 100
+ipc_rtt_el0 961458 5000
+sink_throughput 397497 80000
+map_el0 39060 500
+spawn_el0 311532 100
