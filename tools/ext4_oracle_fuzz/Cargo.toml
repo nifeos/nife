@@ -36,7 +36,7 @@ file_system_contract = { version = "0.1.0", git = "https://github.com/partsfound
 # `rsext4`'s own fuzz target bodies, as functions (`rsext4_fuzz::targets`). Pinned at the commit
 # tools/ext4_oracle pins `rsext4` at, so the two resolve to one `rsext4` and a finding here is a
 # finding in the commit the oracle measures. Bump the two together.
-rsext4-fuzz = { git = "https://github.com/partsfoundry/rsext4", rev = "c36a73e26f4819e1a5a795a46e950cb10419be0e" }
+rsext4-fuzz = { git = "https://github.com/partsfoundry/rsext4", rev = "4dcc95f3cea59de1cc76eea32ad516d4a6fd4cf0" }
 
 # Overflow checks and debug assertions on in an optimised build, as in fuzz/Cargo.toml.
 [profile.release]
