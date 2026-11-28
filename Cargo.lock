@@ -511,7 +511,7 @@ dependencies = [
 [[package]]
 name = "e1000e"
 version = "0.1.0-pre.4"
-source = "git+https://github.com/partsfoundry/e1000e?rev=a583ffe97e724086984de877c921f97e6105970d#a583ffe97e724086984de877c921f97e6105970d"
+source = "git+https://github.com/partsfoundry/e1000e?rev=e20316449951155b6ccbfec7ce85a1dd9b366aa4#e20316449951155b6ccbfec7ce85a1dd9b366aa4"
 
 [[package]]
 name = "entropy_contract"
