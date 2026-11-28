@@ -44,8 +44,9 @@ impl Nic {
             Nic::Gigabit(n) => n.receive_frame(),
             Nic::DesignWare(n) => n.receive_frame(),
         };
-        if frame.is_some() {
+        if let Some(frame) = &frame {
             nic_wait::frame_taken();
+            receive_trace::received(frame);
         }
         frame
     }
@@ -117,6 +118,7 @@ impl smoltcp::phy::TxToken for NicTransmitToken {
     {
         let mut buf = vec![0u8; len];
         let r = f(&mut buf);
+        receive_trace::transmitted(&buf);
         // SAFETY: single-threaded; the device outlives this token, and the `&mut self` borrow that
         // produced the token has ended (the token is an owned value). `virtual_io_net_transport`'s own
         // token made the same argument before this enum took its place.

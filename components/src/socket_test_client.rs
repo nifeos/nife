@@ -20,12 +20,14 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use domain_name_system::{Query, Reject, TcpReply};
+use driver_process_contract::network_bench_report::Report;
 use moho_abi::rights;
+use network_stack::receive_trace::{Spread, Text};
 use socket_contract::*;
 use user_mode_runtime::socket_frame::Frame;
 use user_mode_runtime::{
-    call, call_receiving, capability_delete, counter_ticks, exit, map_page_frame, receive,
-    receive_capability, retype_into_page_frame, send, send_capability,
+    call, call_receiving, capability_delete, counter_hertz, counter_ticks, exit, map_page_frame,
+    receive, receive_capability, retype_into_page_frame, send, send_capability,
 };
 
 const REPORT: u64 = 0;
@@ -918,7 +920,10 @@ fn exchange(stem: &str, tampered: bool, expected: &measured_boot::Digest) -> u64
 /// byte)`. After an `OK` it sends a second report, `(RECEIVE calls that carried bytes, counter
 /// ticks spent inside those calls, how many of them filled the frame)`, which the bench boot
 /// prints as its `receive` line: whether the server's turnaround per call or this loop sets the
-/// rate (nifeos/record:notes/designware-ethernet/the-receive-rate.md).
+/// rate (nifeos/record:notes/designware-ethernet/the-receive-rate.md). Then comes its text, as
+/// `driver_process_contract::network_bench_report` reports: in the bench build, the distributions
+/// of time inside and between calls and bytes per call, and an end that says the server's trace
+/// follows; in any other build, the end alone.
 ///
 /// "Ends" is the peer closing or `net_stack`'s 15-second receive bound, whichever comes first,
 /// and neither is counted: the clock stops at the last byte that arrived, so the tail of waiting
@@ -937,6 +942,8 @@ fn tcp_drain(peer: u64) -> ! {
     }
     let mut bytes: u64 = 0;
     let (mut calls, mut inside, mut full) = (0u64, 0u64, 0u64);
+    let mut spreads = [Spread::new(), Spread::new(), Spread::new()];
+    let microseconds = |ticks: u64| ticks.saturating_mul(1_000_000) / counter_hertz();
     let first = counter_ticks();
     let mut last = first;
     loop {
@@ -945,15 +952,40 @@ fn tcp_drain(peer: u64) -> ! {
         if got == 0 || got > MAXIMUM_PAYLOAD_BYTES as u64 {
             break;
         }
+        let previous = last;
         last = counter_ticks();
         bytes += got;
         calls += 1;
         inside += last.saturating_sub(asked);
         full += u64::from(got == MAXIMUM_PAYLOAD_BYTES as u64);
+        if crate::receive_trace::ON {
+            spreads[0].record(microseconds(last.saturating_sub(asked)));
+            spreads[1].record(microseconds(asked.saturating_sub(previous)));
+            spreads[2].record(got);
+        }
     }
     let _ = close(SOCKET);
     send(REPORT, OK, bytes, last.saturating_sub(first));
     send(REPORT, calls, inside, full);
+    if crate::receive_trace::ON {
+        let mut text = Text::<1024>::new();
+        for (spread, label, unit) in [
+            (&spreads[0], "inside    ", "us"),
+            (&spreads[1], "between   ", "us"),
+            (&spreads[2], "per call  ", "bytes"),
+        ] {
+            let _ = spread.write_line(label, unit, &mut text);
+        }
+        for r in Report::text(text.as_bytes()) {
+            let [a, b, c] = r.pack();
+            send(REPORT, a, b, c);
+        }
+    }
+    let [a, b, c] = Report::End {
+        server_follows: crate::receive_trace::ON,
+    }
+    .pack();
+    send(REPORT, a, b, c);
     exit();
 }
 

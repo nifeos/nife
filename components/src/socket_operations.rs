@@ -19,7 +19,9 @@ pub(crate) fn service_until(
     // when nothing arrives at all. The disk driver's bounded discipline.
     let deadline = instant().total_millis() + 15_000;
     loop {
+        let started = receive_trace::microseconds();
         iface.poll(instant(), dev, sockets);
+        receive_trace::polled(started);
         if cond(sockets) {
             return true;
         }
@@ -77,6 +79,7 @@ pub(crate) fn sock_receive(
     };
     let handle = sk.handle;
     let is_tcp = sk.kind == Kind::Tcp;
+    let asked = receive_trace::requested();
     let ready = if is_tcp {
         service_until(iface, dev, sockets, |s| {
             s.get_mut::<tcp::Socket>(handle).can_recv()
@@ -115,6 +118,7 @@ pub(crate) fn sock_receive(
     };
     window.copy_from_slice(PAYLOAD_OFFSET_BYTES, &buf[..n]);
     window.write_volatile::<u16>(PAYLOAD_LENGTH_OFFSET_BYTES, n as u16);
+    receive_trace::replied(asked);
     n as u64
 }
 

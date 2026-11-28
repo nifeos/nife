@@ -95,6 +95,9 @@ mod socket_operations;
 mod socket_server;
 #[path = "socket_table.rs"]
 mod socket_table;
+// The bench build's receive trace; every other build compiles its hooks away.
+#[path = "receive_trace.rs"]
+mod receive_trace;
 
 use nic_device::*;
 use socket_operations::*;

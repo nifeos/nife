@@ -162,6 +162,12 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
             reply(to, REPLY_ERROR, 0);
             continue;
         };
+        // The trace covers one TCP connection, from its connect to its close.
+        let tcp = table.socks[entry].is_some_and(|s| s.kind == Kind::Tcp);
+        if tcp && operation == OPERATION_CONNECT {
+            receive_trace::connecting();
+        }
+        let closed_tcp = tcp && operation == OPERATION_CLOSE;
         let rep = match operation {
             OPERATION_SEND_TO => udp_sendto(
                 &mut iface,
@@ -198,5 +204,8 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
             _ => REPLY_ERROR,
         };
         reply(to, rep, 0);
+        if closed_tcp {
+            receive_trace::closed();
+        }
     }
 }
