@@ -11,7 +11,7 @@
 //!   it, so the trace build is for the bench boot only, whose kernel reads it after the drain.
 
 use driver_process_contract::network_bench_report::Report;
-use network_stack::receive_trace::{Receiver, Text};
+use network_stack::receive_trace::{Receiver, Text, tcp_segment};
 
 use super::*;
 
@@ -23,6 +23,10 @@ const REPORT: u64 = 0;
 
 /// The trace, in `.bss`.
 static mut TRACE: Receiver = Receiver::new();
+
+/// Whether the connection's first data segment has arrived. The trace starts there, since the
+/// wait for a peer to begin sending (15 s under QEMU's slirp) is not part of the stream.
+static mut STREAMING: bool = false;
 
 /// The one reference to [`TRACE`].
 fn trace() -> &'static mut Receiver {
@@ -39,10 +43,28 @@ pub(crate) fn microseconds() -> u64 {
     (u128::from(counter_ticks()) * 1_000_000 / u128::from(counter_hertz())) as u64
 }
 
-pub(crate) fn received(frame: &[u8]) {
+/// A TCP socket is connecting: the trace waits for its first data segment.
+pub(crate) fn connecting() {
     if ON {
-        trace().received(microseconds(), frame);
+        // SAFETY: the server has one thread.
+        unsafe { STREAMING = false };
     }
+}
+
+pub(crate) fn received(frame: &[u8]) {
+    if !ON {
+        return;
+    }
+    // SAFETY: the server has one thread.
+    let streaming = unsafe { &mut *core::ptr::addr_of_mut!(STREAMING) };
+    if !*streaming {
+        if !tcp_segment(frame).is_some_and(|s| s.payload_bytes > 0) {
+            return;
+        }
+        *streaming = true;
+        *trace() = Receiver::new();
+    }
+    trace().received(microseconds(), frame);
 }
 
 pub(crate) fn transmitted(frame: &[u8]) {
@@ -59,17 +81,13 @@ pub(crate) fn polled(started: u64) {
 
 pub(crate) fn yielded(started: u64) {
     if ON {
-        trace()
-            .yields
-            .record(microseconds().saturating_sub(started));
+        trace().waited(true, microseconds().saturating_sub(started));
     }
 }
 
 pub(crate) fn slept(started: u64) {
     if ON {
-        trace()
-            .sleeps
-            .record(microseconds().saturating_sub(started));
+        trace().waited(false, microseconds().saturating_sub(started));
     }
 }
 
@@ -87,8 +105,8 @@ pub(crate) fn replied(asked: u64) {
     }
 }
 
-/// A TCP socket closed: send the summary to the kernel, one text report at a time, and start
-/// again. The send blocks until the kernel takes each report.
+/// A TCP socket closed: send the summary to the kernel, one text report at a time. The send blocks
+/// until the kernel takes each report.
 pub(crate) fn closed() {
     if !ON {
         return;
@@ -104,5 +122,4 @@ pub(crate) fn closed() {
     }
     .pack();
     send(REPORT, a, b, c);
-    *trace() = Receiver::new();
 }

@@ -16,13 +16,13 @@ pub const TEXT_BYTES: usize = 16;
 /// Name: provisional, minted 2026-11-28 (UTC) by lane/e1000e-rx-latency.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Report {
-    /// The next `length` bytes of text (1 to [`TEXT_BYTES`]), UTF-8 split anywhere, lines ending
+    /// The next `length_bytes` bytes of text (1 to [`TEXT_BYTES`]), UTF-8 split anywhere, lines ending
     /// in `\n`.
     Text {
-        /// The bytes; those past `length` are zero.
+        /// The bytes; those past `length_bytes` are zero.
         bytes: [u8; TEXT_BYTES],
         /// How many of them count.
-        length: usize,
+        length_bytes: usize,
     },
     /// The text has ended. `server_follows` says the server's own text comes next, on the
     /// server's report endpoint; only the drain client's end sets it.
@@ -42,7 +42,7 @@ impl Report {
             bytes[..chunk.len()].copy_from_slice(chunk);
             Report::Text {
                 bytes,
-                length: chunk.len(),
+                length_bytes: chunk.len(),
             }
         })
     }
@@ -53,13 +53,16 @@ impl Report {
     /// Name: provisional, minted 2026-11-28 (UTC) by lane/e1000e-rx-latency.
     pub fn pack(&self) -> [u64; 3] {
         match *self {
-            Report::Text { bytes, length } => {
+            Report::Text {
+                bytes,
+                length_bytes,
+            } => {
                 let word = |i: usize| {
                     let mut w = [0u8; 8];
                     w.copy_from_slice(&bytes[i * 8..i * 8 + 8]);
                     u64::from_le_bytes(w)
                 };
-                [length as u64, word(0), word(1)]
+                [length_bytes as u64, word(0), word(1)]
             }
             Report::End { server_follows } => [0, u64::from(server_follows), 0],
         }
@@ -80,7 +83,7 @@ impl Report {
         bytes[8..].copy_from_slice(&words[2].to_le_bytes());
         Report::Text {
             bytes,
-            length: (words[0] as usize).min(TEXT_BYTES),
+            length_bytes: (words[0] as usize).min(TEXT_BYTES),
         }
     }
 }
@@ -96,7 +99,10 @@ mod tests {
         let mut joined = Vec::new();
         for r in Report::text(text) {
             match Report::unpack(r.pack()) {
-                Report::Text { bytes, length } => joined.extend_from_slice(&bytes[..length]),
+                Report::Text {
+                    bytes,
+                    length_bytes,
+                } => joined.extend_from_slice(&bytes[..length_bytes]),
                 Report::End { .. } => panic!("text packed as an end"),
             }
         }

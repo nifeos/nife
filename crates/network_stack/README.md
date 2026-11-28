@@ -10,7 +10,7 @@ is not published.
 - `polled_wait::next` decides whether a stack may sleep while it waits on a network card that
   raises no interrupt.
 - `receive_trace::Receiver` keeps the distributions the network bench boot prints about a received
-  TCP stream: segment gaps at the ring, frames per poll, waits between looks, and the advertised
+  Transmission Control Protocol (TCP) stream: segment gaps at the ring, frames per poll, waits between looks, and the advertised
   window against the room the peer has left.
 
 ## EXAMPLES

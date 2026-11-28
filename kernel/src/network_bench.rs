@@ -195,8 +195,11 @@ fn print_trace(cli: crate::sched::RendezvousId, server: crate::sched::Rendezvous
     loop {
         let [a, b, c, ..] = crate::sched::ipc_receive(from);
         match Report::unpack([a, b, c]) {
-            Report::Text { bytes, length } => {
-                for &byte in &bytes[..length] {
+            Report::Text {
+                bytes,
+                length_bytes,
+            } => {
+                for &byte in &bytes[..length_bytes] {
                     if byte == b'\n' || used == line.len() {
                         println!(
                             "network-bench: {}",

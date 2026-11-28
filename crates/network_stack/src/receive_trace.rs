@@ -1,4 +1,4 @@
-//! **Where a received TCP stream's time goes**, as distributions the network bench boot prints:
+//! **Where a received Transmission Control Protocol (TCP) stream's time goes**, as distributions the network bench boot prints:
 //! when each data segment reaches the ring, how many frames each poll of the stack takes, what the
 //! waits between looks cost, and the receive window the stack advertises against the room the peer
 //! has left when its next segment lands. The program supplies the clock in microseconds and calls
@@ -22,7 +22,7 @@ pub struct Spread {
     buckets: [u32; BUCKETS],
     count: u64,
     sum: u64,
-    max: u64,
+    maximum: u64,
 }
 
 impl Default for Spread {
@@ -40,7 +40,7 @@ impl Spread {
             buckets: [0; BUCKETS],
             count: 0,
             sum: 0,
-            max: 0,
+            maximum: 0,
         }
     }
 
@@ -52,7 +52,19 @@ impl Spread {
         self.buckets[bucket] = self.buckets[bucket].saturating_add(1);
         self.count += 1;
         self.sum = self.sum.saturating_add(value);
-        self.max = self.max.max(value);
+        self.maximum = self.maximum.max(value);
+    }
+
+    /// Count every value `other` counted.
+    ///
+    /// Name: provisional, minted 2026-11-28 (UTC) by lane/e1000e-rx-latency.
+    pub fn merge(&mut self, other: &Spread) {
+        for (mine, theirs) in self.buckets.iter_mut().zip(other.buckets) {
+            *mine = mine.saturating_add(theirs);
+        }
+        self.count += other.count;
+        self.sum = self.sum.saturating_add(other.sum);
+        self.maximum = self.maximum.max(other.maximum);
     }
 
     /// How many values were counted.
@@ -93,7 +105,7 @@ impl Spread {
             self.sum / self.count,
             self.below(90).unwrap_or(0),
             self.below(99).unwrap_or(0),
-            self.max,
+            self.maximum,
         )?;
         for (k, &n) in self.buckets.iter().enumerate() {
             if n != 0 {
@@ -154,7 +166,7 @@ impl<const N: usize> Write for Text<N> {
     }
 }
 
-/// The fields of a TCP segment over IPv4 in an Ethernet frame that the trace reads.
+/// The fields of a TCP segment over Internet Protocol version 4 (IPv4) in an Ethernet frame that the trace reads.
 ///
 /// Name: provisional, minted 2026-11-28 (UTC) by lane/e1000e-rx-latency.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -163,7 +175,7 @@ pub struct Segment {
     pub sequence: u32,
     /// The acknowledgment number, meaningful when [`Segment::acknowledges`] holds.
     pub acknowledgment: u32,
-    /// The ACK flag.
+    /// The acknowledgment (ACK) flag.
     pub acknowledges: bool,
     /// The window field, unscaled.
     pub window: u16,
@@ -190,16 +202,16 @@ pub fn tcp_segment(frame: &[u8]) -> Option<Segment> {
     if be16(12)? != 0x0800 {
         return None;
     }
-    let ip = ETHERNET_HEADER_BYTES;
-    let version_and_length = *frame.get(ip)?;
-    if version_and_length >> 4 != 4 || *frame.get(ip + 9)? != TCP {
+    let packet = ETHERNET_HEADER_BYTES;
+    let version_and_length = *frame.get(packet)?;
+    if version_and_length >> 4 != 4 || *frame.get(packet + 9)? != TCP {
         return None;
     }
-    let ip_header = usize::from(version_and_length & 0xf) * 4;
-    let ip_total = usize::from(be16(ip + 2)?);
-    let tcp = ip + ip_header;
+    let packet_header = usize::from(version_and_length & 0xf) * 4;
+    let packet_total = usize::from(be16(packet + 2)?);
+    let tcp = packet + packet_header;
     let tcp_header = usize::from(*frame.get(tcp + 12)? >> 4) * 4;
-    let payload = ip_total.checked_sub(ip_header + tcp_header)?;
+    let payload = packet_total.checked_sub(packet_header + tcp_header)?;
     Some(Segment {
         sequence: be32(tcp + 4)?,
         acknowledgment: be32(tcp + 8)?,
@@ -221,11 +233,12 @@ pub struct Receiver {
     pub frames_per_poll: Spread,
     /// Microseconds each such poll spent per frame it took: the stack's own work per frame.
     pub poll_per_frame: Spread,
-    /// Microseconds a yield between looks at the ring took.
+    /// Microseconds a yield between looks at the ring took, counting only the yields before a
+    /// data segment, so the wait after the stream's last one is left out.
     pub yields: Spread,
-    /// Microseconds a timed sleep between looks took.
+    /// Microseconds a timed sleep between looks took, counted the same way.
     pub sleeps: Spread,
-    /// Microseconds from a receive request to the first frame taken while serving it.
+    /// Microseconds from a receive request to the first data segment taken while serving it.
     pub request_to_frame: Spread,
     /// Microseconds from a receive request to its reply being ready.
     pub request_to_reply: Spread,
@@ -244,6 +257,8 @@ pub struct Receiver {
     acknowledged_since_data: bool,
     frames_this_poll: u64,
     request_microseconds: Option<u64>,
+    yields_since_data: Spread,
+    sleeps_since_data: Spread,
 }
 
 impl Receiver {
@@ -268,6 +283,8 @@ impl Receiver {
             acknowledged_since_data: false,
             frames_this_poll: 0,
             request_microseconds: None,
+            yields_since_data: Spread::new(),
+            sleeps_since_data: Spread::new(),
         }
     }
 
@@ -276,13 +293,17 @@ impl Receiver {
     /// Name: provisional, minted 2026-11-28 (UTC) by lane/e1000e-rx-latency.
     pub fn received(&mut self, now: u64, frame: &[u8]) {
         self.frames_this_poll += 1;
-        if let Some(asked) = self.request_microseconds.take() {
-            self.request_to_frame.record(now.saturating_sub(asked));
-        }
         let Some(segment) = tcp_segment(frame).filter(|s| s.payload_bytes != 0) else {
             self.other_frames += 1;
             return;
         };
+        if let Some(asked) = self.request_microseconds.take() {
+            self.request_to_frame.record(now.saturating_sub(asked));
+        }
+        self.yields
+            .merge(&core::mem::take(&mut self.yields_since_data));
+        self.sleeps
+            .merge(&core::mem::take(&mut self.sleeps_since_data));
         if let Some(previous) = self.last_data_microseconds {
             self.gap.record(now.saturating_sub(previous));
         }
@@ -323,6 +344,17 @@ impl Receiver {
         }
     }
 
+    /// A wait between looks at the ring took `microseconds`: a yield, or else a timed sleep.
+    ///
+    /// Name: provisional, minted 2026-11-28 (UTC) by lane/e1000e-rx-latency.
+    pub fn waited(&mut self, yielded: bool, microseconds: u64) {
+        if yielded {
+            self.yields_since_data.record(microseconds);
+        } else {
+            self.sleeps_since_data.record(microseconds);
+        }
+    }
+
     /// A receive request arrived at `now`.
     ///
     /// Name: provisional, minted 2026-11-28 (UTC) by lane/e1000e-rx-latency.
@@ -331,7 +363,7 @@ impl Receiver {
     }
 
     /// The request that arrived at `asked` has its reply ready at `now`. A request served from
-    /// bytes already buffered took no frame, and its `request_to_frame` is not counted.
+    /// bytes already buffered took no data segment, and its `request_to_frame` is not counted.
     ///
     /// Name: provisional, minted 2026-11-28 (UTC) by lane/e1000e-rx-latency.
     pub fn replied(&mut self, asked: u64, now: u64) {
@@ -410,10 +442,10 @@ mod tests {
                 payload_bytes: 1460,
             }
         );
-        let mut arp = frame(0, 0, 0, 0, 0);
-        arp[12..14].copy_from_slice(&0x0806u16.to_be_bytes());
-        assert_eq!(tcp_segment(&arp), None);
-        assert_eq!(tcp_segment(&arp[..20]), None);
+        let mut not_internet_protocol = frame(0, 0, 0, 0, 0);
+        not_internet_protocol[12..14].copy_from_slice(&0x0806u16.to_be_bytes());
+        assert_eq!(tcp_segment(&not_internet_protocol), None);
+        assert_eq!(tcp_segment(&not_internet_protocol[..20]), None);
     }
 
     /// A peer that sends to the edge of the window shows zero room; the first segment after an
@@ -447,5 +479,19 @@ mod tests {
             line,
             "x: n 10, mean 710, p50 <= 511, p90 <= 511, p99 <= 8191, max 5000 us | 0:1 1:1 256:7 4096:1\n"
         );
+    }
+
+    /// The stream's tail, a peer that sent its last byte and has not closed, is waits with no
+    /// data after them; they must not land in the yield and sleep lines, or a run that ends in a
+    /// 15 s wait reads as a stack that slept through the stream.
+    #[test]
+    fn waits_after_the_last_segment_are_not_counted() {
+        let mut r = Receiver::new();
+        r.waited(false, 10_000);
+        r.waited(true, 3);
+        r.received(100, &frame(1, 0, 0x10, 0, 1460));
+        r.waited(false, 10_000);
+        r.waited(false, 10_000);
+        assert_eq!((r.sleeps.count(), r.yields.count()), (1, 1));
     }
 }
