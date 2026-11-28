@@ -190,7 +190,7 @@ pci_configuration_space = { version = "0.1.0", path = "../crates/pci_configurati
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
 # it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as `pci` above.
-e1000e = { version = "0.1.0-pre.4", git = "https://github.com/partsfoundry/e1000e", rev = "42cdc139a81a254d420dac0590ac9d85a8ff4aad" }
+e1000e = { version = "0.1.0-pre.4", git = "https://github.com/partsfoundry/e1000e", rev = "a583ffe97e724086984de877c921f97e6105970d" }
 # The xHCI half of the USB keyboard (milestone 242 (USB host and HID)): the register window the
 # driver is mapped and the handoff it is spawned with. The kernel's extensible_host_controller_interface
 # module is its volatile half, the same split as `pci` above. The window, the

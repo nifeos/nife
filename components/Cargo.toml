@@ -781,7 +781,7 @@ file_system_fixture = { version = "0.1.0", git = "https://github.com/partsfoundr
 non_volatile_memory_express = { version = "0.1.0-pre.4", git = "https://github.com/partsfoundry/non_volatile_memory_express", rev = "60b34280ecbba250ea4272984c5bcb3afe908e57" }
 # The `e1000e` NIC's ring logic (milestone 494 (a driver for the network card a PC actually has)):
 # `net_stack`'s e1000e_transport.rs is the volatile shell of tail writes and window copies over it.
-e1000e = { version = "0.1.0-pre.4", git = "https://github.com/partsfoundry/e1000e", rev = "42cdc139a81a254d420dac0590ac9d85a8ff4aad" }
+e1000e = { version = "0.1.0-pre.4", git = "https://github.com/partsfoundry/e1000e", rev = "a583ffe97e724086984de877c921f97e6105970d" }
 # radon's Ethernet port's ring logic (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): `net_stack`'s designware_ethernet_transport.rs is the volatile shell over it.
 designware_ethernet = { version = "0.1.0-pre.1", git = "https://github.com/partsfoundry/designware_ethernet", rev = "f518554c96f868e0fafcf245afea538a35bf7104" }
