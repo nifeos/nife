@@ -113,10 +113,10 @@ pub fn start_net_server(image: &'static [u8], listen_grant: u64) -> Result<Wirin
 pub(crate) enum NotAtBoot {
     /// What [`start_net_server`] would have said.
     Absent(Absent),
-    /// A part no gate has driven, an I219 or another PCH part ([`::e1000e::platform_controller_hub::is_platform_controller_hub_device`]), left
-    /// untouched: its bring-up runs FreeBSD's I219 passes (`partsfoundry/e1000e/src/platform_controller_hub/sequence.rs`),
-    /// unproven on silicon, and a hang there would take xenon's prompt. See
-    /// [`PCH_PROVEN_ON_SILICON`].
+    /// An I219 or another PCH part ([`::e1000e::platform_controller_hub::is_platform_controller_hub_device`]),
+    /// left untouched while [`PCH_PROVEN_ON_SILICON`] is `false`: its bring-up runs FreeBSD's I219
+    /// passes (`partsfoundry/e1000e/src/platform_controller_hub/sequence.rs`), and a hang there
+    /// would take xenon's prompt.
     Unproven {
         /// The PCI device id.
         device: u16,
@@ -140,12 +140,16 @@ pub(crate) fn start_for_boot(image: &'static [u8]) -> Result<Wiring, NotAtBoot> 
 }
 
 /// Whether the booted system may bring up an I219 on its own, gated on silicon, not on review.
+/// `true`: a xenon network-bench boot of this bring-up (nife `4c86f224b3`, which waits up to
+/// 10 s for link) ran the three I219 passes, saw link inside the wait on its I219-LM (8086:15e3),
+/// took a DHCP lease and ended `verdict LEASED-AND-MEASURED` on 2026-11-28 UTC, with 0 CRC errors
+/// and 0 missed frames over a 100 MiB transfer. The image's SHA-256 was
+/// `812730dbe71d3569e5dcc7a24f40caa4c24060ebb2adbacfa27744775da16619`.
 ///
-/// Flip it to `true` only in a commit that cites a xenon bench boot of the same I219 bring-up
-/// ending `verdict LEASED-AND-MEASURED` (nifeos/record:notes/e1000e/the-i219-cabled-run.md, with its Results
-/// table filled in). Nothing a lane can run proves it: QEMU's 82574L never takes the PCH
-/// path, and the host simulation is this tree's reading of FreeBSD, not the device.
-pub(crate) const PCH_PROVEN_ON_SILICON: bool = false;
+/// Nothing a lane can run proves it: QEMU's 82574L never takes the PCH path, and the host
+/// simulation is this tree's reading of FreeBSD, not the device. Only a xenon boot can show this
+/// path broken again; set it back to `false` if one does.
+pub(crate) const PCH_PROVEN_ON_SILICON: bool = true;
 
 /// What the device's statistics counters say crossed the wire since the last call, or since the
 /// last bring-up for the first call after it: [`crate::e1000e::frame_counts`], for the bench boot
