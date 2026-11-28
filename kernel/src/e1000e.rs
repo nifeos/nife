@@ -9,7 +9,8 @@
 //! - Two bring-ups share this file (the 82574L's and the I219's), and QEMU proves only one.
 //! - [`frame_counts`] reads counters that clear on read, so two callers would split one count
 //!   between them; the bench boot and the DHCP gate are its only callers, one per boot.
-//! - Waiting for link is a spin of up to [`LINK_WAIT_MILLISECONDS`], holding a core once per wiring.
+//! - Waiting for link is a spin of up to [`LINK_WAIT_MILLISECONDS`], holding a core once per wiring,
+//!   and on a PCH part in the bench boot up to [`link_watch::WATCH_MILLISECONDS`] more.
 //! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES`] pages.
 
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -17,6 +18,8 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use e1000e::{layout, registers};
 
 use crate::arch::mmu;
+
+mod link_watch;
 
 /// The longest bring-up waits for `CTRL.RST` to clear.
 const RESET_WAIT_MILLISECONDS: u64 = 1000;
@@ -143,6 +146,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     let pch = ::e1000e::platform_controller_hub::is_platform_controller_hub_device(dev.device);
     let mut hw = Bar { c: &c, dev: &dev };
     let mut physical_layer_device_id = None;
+    let mut initialized_at = 0;
     if pch {
         // An I219 behind a PCH: FreeBSD's passes, in FreeBSD's order; QEMU's 82574L never comes
         // here.
@@ -176,6 +180,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         ::e1000e::platform_controller_hub::sequence::initialize_hardware(&mut hw)
             .map_err(|e| refused(Error::Pch(e)))?;
         crate::println!("  e1000e: the three passes returned");
+        initialized_at = crate::arch::timer::now();
     } else {
         c.w(
             registers::DEVICE_CONTROL_REGISTER,
@@ -235,9 +240,13 @@ pub fn bring_up() -> Result<Found, Absent> {
         }
     };
 
+    // Only the bench boot watches past the wait: a booted system without a cable would otherwise
+    // hold the prompt for the whole watch.
     let link_up = wait_milliseconds(LINK_WAIT_MILLISECONDS, || {
         c.r(registers::DEVICE_STATUS_REGISTER) & ::e1000e::DEVICE_STATUS_LINK_UP != 0
-    });
+    }) || (pch
+        && cfg!(feature = "network_bench")
+        && link_watch::watch(&mut hw, initialized_at));
 
     Ok(Found {
         bar0: dev.bar0,
