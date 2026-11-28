@@ -33,6 +33,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	0	x86_64	-	0	x86_64	code	clippy: kernel --features bench (x86_64, the binary only; see the note above)
 -	0	x86_64	-	0	x86_64	code	clippy: kernel --features cycle_counter_grant (x86_64, the binary only; see the note above)
 -	0	x86_64	-	0	x86_64	code	clippy: kernel --features network_bench (x86_64, the binary only; see the note above)
+-	0	x86_64	-	0	x86_64	code	clippy: kernel --features disk_read_bench (x86_64, the binary only; see the note above)
 -	0	x86_64_user	-	0	x86_64_user	code	clippy: user + user_mode_runtime (x86_64)
 -	0	x86_64	-	0	x86_64	code	clippy: kernel --features watchdog_probe (x86_64)
 -	0	uefi	-	0	uefi	code	uefi_loader: build the three kernels the boot files embed (see the note above)

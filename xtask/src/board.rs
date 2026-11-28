@@ -1498,6 +1498,11 @@ utun6: flags=8051<UP,POINTOPOINT,RUNNING,MULTICAST> mtu 1280
     /// served script's text, which is what U-Boot does with the image the card's script fetched.
     /// The constructs they use are common to hush and POSIX `sh`.
     ///
+    /// The `source` stub is an alias for a function of another name, because bash in POSIX mode
+    /// (macOS's `/bin/sh`) finds a special builtin such as `source` before any function, so a
+    /// function named `source` never runs. Every POSIX `sh` expands an alias first, and the board's
+    /// own `source` line stays as U-Boot runs it.
+    ///
     /// It proves the control flow (which loads run in which order, that a network failure reaches
     /// the card, that a half-transfer takes both halves from the card, that `booti` gets the length
     /// of the load that happened, that the words handed over are the ones beside the pair loaded)
@@ -1529,7 +1534,8 @@ tftpboot() {{
   filesize=9044480
   [ \"$tftp_calls\" != \"{tftp_fails_at}\" ]
 }}
-source() {{ echo CALL source $1; . {served}; }}
+served_source() {{ echo CALL source $1; . {served}; }}
+alias source=served_source
 load() {{ echo CALL load $3 $4; filesize=1234; return {load}; }}
 fdt() {{ echo CALL fdt $*; }}
 booti() {{ echo CALL booti $*; echo WITH $bootargs; exit 0; }}

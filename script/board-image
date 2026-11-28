@@ -9,6 +9,7 @@
 #   NIFE_FASTPATH_PAD=0 NIFE_FASTPATH_SHIFT=1640 script/board-image --bench --extra-features fastpath_pad
 #                                             # ...one image of E3's layout control (134)
 #   script/board-image --soak --reboot        # ...and the board cold-reboots every two minutes (249)
+#   script/board-image --tftp --extra-features disk_read_bench   # the read-only NVMe bench boot (163)
 #   script/board-image --card /Volumes/NIFE   # and copy the matched set onto an already-formatted card
 #   script/board-image --tftp                 # a boot script that fetches over the network first (257)
 #   script/board-image --tftp --server 10.0.0.5   # ...from an address you name rather than one read here

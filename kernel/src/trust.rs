@@ -118,7 +118,8 @@ pub(crate) fn require_program_measurements(fs: &nifefs::Fs<'_>) {
         feature = "job_mix",
         feature = "disk_throughput",
         feature = "network_bench",
-        feature = "storage_bench"
+        feature = "storage_bench",
+        feature = "disk_read_bench"
     )),
     allow(dead_code)
 )]
@@ -143,7 +144,8 @@ pub fn require_program(name: &str) -> Option<&'static [u8]> {
         feature = "job_mix",
         feature = "disk_throughput",
         feature = "network_bench",
-        feature = "storage_bench"
+        feature = "storage_bench",
+        feature = "disk_read_bench"
     )),
     allow(dead_code)
 )]
