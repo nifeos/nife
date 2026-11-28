@@ -108,9 +108,10 @@ exclude_globs = [
     # otherwise reach an image build and score MISSED.
     #
     # The bench and workload boots. `bench`, `icount`, `storage_bench`, `disk_throughput`,
-    # `network_bench`, `job_mix`, `lock_wait` and `soak_test` are kernel features that neither
-    # test image enables: the kernel unit-test image builds default features under `cfg(test)`
-    # and the system image adds only `system_tests` (`system_tests/Cargo.toml`). The module
+    # `disk_read_bench`, `network_bench`, `job_mix`, `lock_wait` and `soak_test` are kernel
+    # features that neither test image enables: the kernel unit-test image builds default
+    # features under `cfg(test)` and the system image adds only `system_tests`
+    # (`system_tests/Cargo.toml`). The module
     # declarations stay behind their feature cfgs, so a patch to one of these files edits a file
     # no image build reads: both tiers run the unmutated kernel, the verdict is always
     # "survived", and the run pays both image preparations for it. What proves each module is
@@ -121,6 +122,7 @@ exclude_globs = [
     "kernel/src/icount.rs",
     "kernel/src/storage_bench.rs",
     "kernel/src/disk_throughput.rs",
+    "kernel/src/disk_read_bench.rs",
     "kernel/src/network_bench.rs",
     "kernel/src/job_mix.rs",
     "kernel/src/lock_wait.rs",

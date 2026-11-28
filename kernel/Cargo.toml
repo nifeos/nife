@@ -353,6 +353,14 @@ lock_wait = ["job_mix"]
 # OVMF and stages the stick image. See kernel/src/disk_throughput.rs and
 # nifeos/record:notes/risk-6-bench-evening.md. Name provisional.
 disk_throughput = []
+# **Milestone 163 (the JH7110's PCIe root complex)'s read-only NVMe bench boot**: after the tour,
+# start the confined EL0 NVMe server, print the controller's place on the bus, its DMA scope and
+# the namespace's geometry, time a fixed number of reads through the disk tree's window and halt
+# with one verdict. **Read-only**: it sends no WRITE or FLUSH, and the window's capability refuses
+# both. Every architecture; `cargo xtask disk-read-bench` rehearses it under QEMU and
+# `script/board-image --extra-features disk_read_bench` builds it for the board. See
+# kernel/src/disk_read_bench.rs and nifeos/record:notes/jh7110-pci-express-bench.md. Name provisional.
+disk_read_bench = []
 # **Milestone 494 (a driver for the network card a PC actually has)'s bench boot**: after the tour,
 # bring up the `e1000e` NIC, print which IOMMU unit owns it, take a DHCP lease, drain a TCP stream
 # from the peer named at build time (`NIFE_NETWORK_BENCH_PEER=a.b.c.d:port`) and halt with one

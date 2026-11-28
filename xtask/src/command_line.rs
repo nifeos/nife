@@ -166,6 +166,10 @@ pub(crate) fn main() -> ExitCode {
         // Fatal risk 6's bench boot (milestone 261 (the NVMe driver leaves the kernel)): stage the stick image and rehearse its four
         // verdicts under OVMF. Name provisional. See xtask/src/disk_throughput.rs.
         "disk-throughput" => return disk_throughput::disk_throughput(),
+        // Milestone 163 (the JH7110's PCIe root complex)'s read-only NVMe bench boot, rehearsed on
+        // each architecture: the verdict, and the image unchanged after it. Name provisional. See
+        // xtask/src/disk_read_bench.rs.
+        "disk-read-bench" => return disk_read_bench::disk_read_bench(),
         // Milestone 494 (a driver for the network card a PC actually has)'s bench boot: stage the
         // stick image and rehearse its verdict under OVMF against a slirp peer. Name provisional.
         // See xtask/src/network_bench.rs.

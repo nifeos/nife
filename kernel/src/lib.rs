@@ -116,6 +116,11 @@ mod lock_wait;
 // feature because it writes to the disk.
 #[cfg(feature = "disk_throughput")]
 mod disk_throughput;
+// Milestone 163 (the JH7110's PCIe root complex)'s read-only NVMe bench boot: the confined EL0
+// server's identify facts and a timed read through the disk tree's window, for a board that boots
+// from the network and so never mounts the drive. See kernel/src/disk_read_bench.rs.
+#[cfg(feature = "disk_read_bench")]
+mod disk_read_bench;
 #[cfg(feature = "network_bench")]
 mod network_bench;
 // Milestone 53 (the board's own peripherals: network and storage on real silicon)'s storage bench
