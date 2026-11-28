@@ -230,10 +230,22 @@ echo 0 > "$disk/free"
 (disk_exec='exec'; disk_env NIFE_FUZZ_GUESTS=0 NIFE_FUZZ_KVM_DEVICE=/dev/null NIFE_FUZZ_FOLLOW_EVERY=1 \
     NIFE_FUZZ_REPLAY_EVERY=1 "$sup" > "$disk/journal" 2>&1) &
 supervisor=$!
-sleep 3
+# Wait for the line instead of sleeping a fixed time: a loaded host can take longer than three
+# seconds to start the supervisor, and a fixed sleep then raised the free space before the first
+# check ever saw it low, so no line was written and the count below was 0.
+waited=0
+until grep -q 'below the 20 GB floor' "$disk/journal" || [ "$waited" -ge 60 ]; do
+    sleep 1
+    waited=$((waited + 1))
+done
 [ ! -s "$disk/looks" ] || { kill "$supervisor"; fail "floor: a look ran below it: $(cat "$disk/looks")"; }
 kib 100 > "$disk/free"
-sleep 2
+waited=0
+until grep -q 'back above the 20 GB floor' "$disk/journal" || [ "$waited" -ge 60 ]; do
+    sleep 1
+    waited=$((waited + 1))
+done
+sleep 1  # let the look that follows the line run
 kill "$supervisor" 2>/dev/null || true
 wait "$supervisor" 2>/dev/null || true
 want "floor: lines while low" "$(grep -c 'below the 20 GB floor' "$disk/journal")" 1
