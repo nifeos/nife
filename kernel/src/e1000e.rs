@@ -22,7 +22,13 @@ use crate::arch::mmu;
 /// The longest bring-up waits for `CTRL.RST` to clear.
 const RESET_WAIT_MILLISECONDS: u64 = 1000;
 /// The longest bring-up waits for `STATUS.LU`.
-pub(crate) const LINK_WAIT_MILLISECONDS: u64 = 3000;
+///
+/// A bench boot on xenon measured its I219 link rising 3.5 s after bring-up. FreeBSD em's optional
+/// wait (`e1000_wait_autoneg`) gives up at 4.5 s, so this leaves room over both. A deadline is the
+/// wrong shape for a link: the fix is reporting link asynchronously, as FreeBSD em does (milestone
+/// 1062 (the device control planes leave the kernel), step 1). Until then, a boot with no cable
+/// pays all of it.
+pub(crate) const LINK_WAIT_MILLISECONDS: u64 = 10_000;
 
 /// Why a controller that is on the bus was not brought up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
