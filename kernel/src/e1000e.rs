@@ -11,6 +11,9 @@
 //!   between them; the bench boot and the DHCP gate are its only callers, one per boot.
 //! - Waiting for link is a spin of up to [`LINK_WAIT_MILLISECONDS`], holding a core once per wiring,
 //!   and on a PCH part in the bench boot up to [`crate::e1000e_link_watch::WATCH_MILLISECONDS`] more.
+//! - On a PCH part the kernel calls the crate's link check only during that link wait. A link that
+//!   comes up later (in the bench's link watch, or after boot) or changes speed is not set up for
+//!   it, so it runs without the gap, K1, pointer gap and latency tolerance FreeBSD sets at link up.
 //! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES`] pages.
 
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -29,6 +32,19 @@ const RESET_WAIT_MILLISECONDS: u64 = 1000;
 /// 1062 (the device control planes leave the kernel), step 1). Until then, a boot with no cable
 /// pays all of it.
 pub(crate) const LINK_WAIT_MILLISECONDS: u64 = 10_000;
+/// How often the link wait on a PCH part runs the crate's link check while `STATUS.LU` is clear.
+/// Each check blocks for [`::e1000e::platform_controller_hub::link::SUNRISE_POINT_SETTLE_MILLISECONDS`]
+/// and notes a latency tolerance, so checking on every poll would flood the console.
+///
+/// Name: provisional.
+const LINK_CHECK_INTERVAL_MILLISECONDS: u64 = 1000;
+/// **The platform's latency limits** in the I219's configuration space (FreeBSD's
+/// `E1000_PCI_LTR_CAP_LPT`): the maximum snoop latency at `0xA8` and the maximum no-snoop latency
+/// at `0xAA`, one aligned dword ([`::e1000e::platform_controller_hub::link::PlatformLatencyTolerance`]).
+///
+/// Name: provisional.
+#[doc(alias = "E1000_PCI_LTR_CAP_LPT")]
+const PLATFORM_LATENCY_LIMITS_CONFIGURATION_OFFSET: u64 = 0xa8;
 
 /// Why a controller that is on the bus was not brought up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -244,13 +260,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         }
     };
 
-    // Only the bench boot watches past the wait: a booted system without a cable would otherwise
-    // hold the prompt for the whole watch.
-    let link_up = wait_milliseconds(LINK_WAIT_MILLISECONDS, || {
-        c.r(registers::DEVICE_STATUS_REGISTER) & ::e1000e::DEVICE_STATUS_LINK_UP != 0
-    }) || (pch
-        && cfg!(feature = "network_bench")
-        && crate::e1000e_link_watch::watch(&mut hw, initialized_at));
+    let link_up = wait_for_link(&mut hw, pch, initialized_at);
 
     Ok(Found {
         bar0: dev.bar0,
@@ -263,6 +273,66 @@ pub fn bring_up() -> Result<Found, Absent> {
         link_up,
         physical_layer_device_id,
     })
+}
+
+/// Wait for `STATUS.LU`, the crate's link check running alongside on a PCH part. True when it was
+/// set; `initialized_at` is when `initialize_hardware` returned, for the bench's link watch.
+fn wait_for_link(hw: &mut Bar<'_>, pch: bool, initialized_at: u64) -> bool {
+    let waited = if pch {
+        wait_for_link_checking_it(hw)
+    } else {
+        wait_milliseconds(LINK_WAIT_MILLISECONDS, || {
+            hw.c.r(registers::DEVICE_STATUS_REGISTER) & ::e1000e::DEVICE_STATUS_LINK_UP != 0
+        })
+    };
+    // Only the bench boot watches past the wait: a booted system without a cable would otherwise
+    // hold the prompt for the whole watch.
+    waited
+        || (pch
+            && cfg!(feature = "network_bench")
+            && crate::e1000e_link_watch::watch(hw, initialized_at))
+}
+
+/// **The link wait on a PCH part**: poll `STATUS.LU` for up to [`LINK_WAIT_MILLISECONDS`], running
+/// the crate's link check every [`LINK_CHECK_INTERVAL_MILLISECONDS`] and once more when `STATUS.LU`
+/// is seen, so the I219's link-up configuration runs when the link comes up. Its notes reach the
+/// console through [`Bar`]; the last report it gave is printed once at the end. True when
+/// `STATUS.LU` was set. The check touches only PCH registers, so the 82574L never comes here.
+///
+/// Name: provisional.
+fn wait_for_link_checking_it(hw: &mut Bar<'_>) -> bool {
+    use ::e1000e::platform_controller_hub::link::{self, LinkReport, LinkWatch};
+    let limits = hw
+        .dev
+        .config_read32(PLATFORM_LATENCY_LIMITS_CONFIGURATION_OFFSET);
+    let mut watch = LinkWatch::new(link::PlatformLatencyTolerance {
+        maximum_snoop: limits as u16,
+        maximum_no_snoop: (limits >> 16) as u16,
+    });
+    let interval = LINK_CHECK_INTERVAL_MILLISECONDS * crate::arch::timer::frequency() / 1000;
+    let mut last = LinkReport::NotChecked;
+    let mut next_check = 0;
+    // Only the boot's link wait checks the link. The periodic and link-change checks FreeBSD em
+    // makes after boot belong to the userspace control process, which reports link asynchronously
+    // (milestone 1062 (the device control planes leave the kernel), step 1).
+    let up = wait_milliseconds(LINK_WAIT_MILLISECONDS, || {
+        let up = hw.c.r(registers::DEVICE_STATUS_REGISTER) & ::e1000e::DEVICE_STATUS_LINK_UP != 0;
+        let now = crate::arch::timer::now();
+        if up && !matches!(last, LinkReport::Up { .. }) {
+            watch.link_status_changed();
+        }
+        if up || now >= next_check {
+            next_check = now + interval;
+            match link::check_for_copper_link(hw, &mut watch) {
+                Ok(LinkReport::NotChecked) => {}
+                Ok(report) => last = report,
+                Err(e) => crate::println!("  e1000e: link check: {e}"),
+            }
+        }
+        up
+    });
+    crate::println!("  e1000e: link check: {last:?}");
+    up
 }
 
 /// The console line before each I219 pass, so a refusal or a hang on the bench names its pass: the
@@ -474,6 +544,16 @@ impl ::e1000e::platform_controller_hub::Hardware for Bar<'_> {
             BringUpObservation::PhysicalLayerDeviceReached { at, id } => {
                 crate::println!(
                     "  e1000e: PhysicalLayerDeviceReached {{ at: {at:?}, id: {id:#010x} }}"
+                );
+            }
+            // The encoding in hex, as the crate's scale and value fields read.
+            BringUpObservation::LatencyToleranceReported {
+                encoded,
+                high_water_mark_kibibytes,
+            } => {
+                crate::println!(
+                    "  e1000e: LatencyToleranceReported {{ encoded: {encoded:#06x}, \
+                     high_water_mark_kibibytes: {high_water_mark_kibibytes} }}"
                 );
             }
             n => crate::println!("  e1000e: {n:?}"),
