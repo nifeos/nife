@@ -10,7 +10,7 @@
 //! - [`frame_counts`] reads counters that clear on read, so two callers would split one count
 //!   between them; the bench boot and the DHCP gate are its only callers, one per boot.
 //! - Waiting for link is a spin of up to [`LINK_WAIT_MILLISECONDS`], holding a core once per wiring,
-//!   and on a PCH part in the bench boot up to [`link_watch::WATCH_MILLISECONDS`] more.
+//!   and on a PCH part in the bench boot up to [`crate::e1000e_link_watch::WATCH_MILLISECONDS`] more.
 //! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES`] pages.
 
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -18,8 +18,6 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use e1000e::{layout, registers};
 
 use crate::arch::mmu;
-
-mod link_watch;
 
 /// The longest bring-up waits for `CTRL.RST` to clear.
 const RESET_WAIT_MILLISECONDS: u64 = 1000;
@@ -246,7 +244,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         c.r(registers::DEVICE_STATUS_REGISTER) & ::e1000e::DEVICE_STATUS_LINK_UP != 0
     }) || (pch
         && cfg!(feature = "network_bench")
-        && link_watch::watch(&mut hw, initialized_at));
+        && crate::e1000e_link_watch::watch(&mut hw, initialized_at));
 
     Ok(Found {
         bar0: dev.bar0,

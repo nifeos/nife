@@ -1,7 +1,7 @@
 //! **The bench boot's link watch on a PCH part**: when `STATUS.LU` has not risen within
-//! [`super::LINK_WAIT_MILLISECONDS`], keep reading both sides of the link for
+//! [`crate::e1000e::LINK_WAIT_MILLISECONDS`], keep reading both sides of the link for
 //! [`WATCH_MILLISECONDS`] more and say which side never saw it. Only the `network_bench` build runs
-//! it ([`super::bring_up`]).
+//! it ([`crate::e1000e::bring_up`]).
 //!
 //! Each poll reads the MAC's `STATUS` and the PHY's status register twice (its link bit latches
 //! low, so the first read reports a drop since the last poll and the second the link now), and
@@ -27,13 +27,14 @@
 //!   0 register 26) is not read: the crate does not name it, and a register above 15 takes a
 //!   page-select write.
 
+use ::e1000e::platform_controller_hub::Hardware;
 use ::e1000e::platform_controller_hub::physical_layer_device::{self, Error, SoftwareFlag};
 use ::e1000e::registers;
 
-use super::{Bar, LINK_WAIT_MILLISECONDS, spin_milliseconds};
+use crate::e1000e::LINK_WAIT_MILLISECONDS;
 
 /// How long the watch runs after the link wait gives up.
-pub(super) const WATCH_MILLISECONDS: u64 = 30_000;
+pub(crate) const WATCH_MILLISECONDS: u64 = 30_000;
 /// The gap between two polls.
 const POLL_MILLISECONDS: u64 = 100;
 
@@ -78,15 +79,14 @@ const CONTROL_FORCE_DUPLEX: u32 = 1 << 12;
 /// Watch until `STATUS.LU` rises or [`WATCH_MILLISECONDS`] pass, printing each change, then the
 /// verdict. `since` is the timer count when `initialize_hardware` returned. True when `STATUS.LU`
 /// rose, so the bench carries on to its lease.
-pub(super) fn watch(hw: &mut Bar<'_>, since: u64) -> bool {
-    let c = hw.c;
+pub(crate) fn watch(hw: &mut impl Hardware, since: u64) -> bool {
     let at = || ticks_to_milliseconds(crate::arch::timer::now().saturating_sub(since));
     crate::println!(
         "  e1000e: link watch: STATUS.LU not set after {LINK_WAIT_MILLISECONDS} ms; watching up to \
          {WATCH_MILLISECONDS} ms more, every {POLL_MILLISECONDS} ms, times from the end of \
          initialize_hardware"
     );
-    let control = c.r(registers::DEVICE_CONTROL_REGISTER);
+    let control = hw.read(registers::DEVICE_CONTROL_REGISTER);
     let phy_control = read_phy(
         hw,
         [physical_layer_device::registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER],
@@ -105,7 +105,7 @@ pub(super) fn watch(hw: &mut Bar<'_>, since: u64) -> bool {
     loop {
         let now = at();
         let sample = Sample {
-            status: c.r(registers::DEVICE_STATUS_REGISTER),
+            status: hw.read(registers::DEVICE_STATUS_REGISTER),
             phy_status: read_phy(hw, [STATUS_REGISTER, STATUS_REGISTER]),
         };
         let seen = w.observe(now, &sample);
@@ -137,7 +137,7 @@ pub(super) fn watch(hw: &mut Bar<'_>, since: u64) -> bool {
         if w.mac_link_at.is_some() || now >= end {
             break;
         }
-        spin_milliseconds(POLL_MILLISECONDS);
+        hw.delay_microseconds(POLL_MILLISECONDS * 1000);
     }
     crate::println!("{}", w.verdict());
     w.mac_link_at.is_some()
@@ -148,7 +148,7 @@ fn ticks_to_milliseconds(ticks: u64) -> u64 {
 }
 
 /// Read page-0 PHY registers in order under one hold of the software flag.
-fn read_phy<const N: usize>(hw: &mut Bar<'_>, which: [u32; N]) -> Result<[u16; N], Error> {
+fn read_phy<const N: usize>(hw: &mut impl Hardware, which: [u32; N]) -> Result<[u16; N], Error> {
     let flag = SoftwareFlag::acquire(hw)?;
     let mut out = [0; N];
     let mut result = Ok(());
