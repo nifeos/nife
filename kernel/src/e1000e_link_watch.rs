@@ -572,7 +572,7 @@ mod tests {
         assert_line(
             a.verdict(),
             "  e1000e: link watch verdict (a): PHY link first seen at +3001 ms and STATUS.LU at \
-             +4501 ms, so the 3000 ms link wait is too short for this link",
+             +4501 ms, so the 10000 ms link wait is too short for this link",
         );
         let mut c = Watch::default();
         c.observe(3001, &sample(MAC_DOWN, [LINK_DOWN, LINK_DOWN]));
