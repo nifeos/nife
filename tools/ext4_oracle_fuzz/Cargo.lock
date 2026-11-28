@@ -109,6 +109,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "lock_api"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65d91b22da179613dcf4d6ec8349563f52a363f6849e03b00dd0a185ec4a59af"
+dependencies = [
+ "scopeguard",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -134,27 +143,43 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "rsext4"
-version = "0.10.0-nifeos.1"
-source = "git+https://github.com/partsfoundry/rsext4?rev=c36a73e26f4819e1a5a795a46e950cb10419be0e#c36a73e26f4819e1a5a795a46e950cb10419be0e"
+version = "0.10.0-partsfoundry.1"
+source = "git+https://github.com/partsfoundry/rsext4?rev=4dcc95f3cea59de1cc76eea32ad516d4a6fd4cf0#4dcc95f3cea59de1cc76eea32ad516d4a6fd4cf0"
 dependencies = [
  "bitflags",
+ "spinning_top",
  "thiserror",
 ]
 
 [[package]]
 name = "rsext4-fuzz"
 version = "0.0.0"
-source = "git+https://github.com/partsfoundry/rsext4?rev=c36a73e26f4819e1a5a795a46e950cb10419be0e#c36a73e26f4819e1a5a795a46e950cb10419be0e"
+source = "git+https://github.com/partsfoundry/rsext4?rev=4dcc95f3cea59de1cc76eea32ad516d4a6fd4cf0#4dcc95f3cea59de1cc76eea32ad516d4a6fd4cf0"
 dependencies = [
  "libfuzzer-sys",
  "rsext4",
 ]
 
 [[package]]
+name = "scopeguard"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
 name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
+
+[[package]]
+name = "spinning_top"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25d2a7182db4a0a3627c89fc9dae5cccb36e57bdb3c2a087936e9a84630820d6"
+dependencies = [
+ "lock_api",
+]
 
 [[package]]
 name = "subtree_scope"

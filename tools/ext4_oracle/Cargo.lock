@@ -31,6 +31,15 @@ version = "0.1.0"
 source = "git+https://github.com/partsfoundry/file_system_contract?rev=7577a7d0df339107f75747c3681f5990f116cf61#7577a7d0df339107f75747c3681f5990f116cf61"
 
 [[package]]
+name = "lock_api"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65d91b22da179613dcf4d6ec8349563f52a363f6849e03b00dd0a185ec4a59af"
+dependencies = [
+ "scopeguard",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -50,11 +59,27 @@ dependencies = [
 
 [[package]]
 name = "rsext4"
-version = "0.10.0-nifeos.1"
-source = "git+https://github.com/partsfoundry/rsext4?rev=c36a73e26f4819e1a5a795a46e950cb10419be0e#c36a73e26f4819e1a5a795a46e950cb10419be0e"
+version = "0.10.0-partsfoundry.1"
+source = "git+https://github.com/partsfoundry/rsext4?rev=4dcc95f3cea59de1cc76eea32ad516d4a6fd4cf0#4dcc95f3cea59de1cc76eea32ad516d4a6fd4cf0"
 dependencies = [
  "bitflags",
+ "spinning_top",
  "thiserror",
+]
+
+[[package]]
+name = "scopeguard"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "spinning_top"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25d2a7182db4a0a3627c89fc9dae5cccb36e57bdb3c2a087936e9a84630820d6"
+dependencies = [
+ "lock_api",
 ]
 
 [[package]]
