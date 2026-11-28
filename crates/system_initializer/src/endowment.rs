@@ -174,9 +174,8 @@ pub struct BootEndowment {
     /// every right, the same endpoint to everything downstream as the virtio path's. The kernel
     /// builds this server for `kernel::user::boot_usb_keyboard`'s reason (spawn-time mappings no
     /// capability names). **Never both** this and [`virtual_io_net`](BootEndowment::virtual_io_net).
-    /// **Absent** on every `virt` boot, on a NIC with no link, and on a part no gate has driven,
-    /// such as the I219 that milestone 494 (a driver for the network card a PC actually has) is
-    /// for. [`boot`](crate::boot) probes.
+    /// **Absent** on every `virt` boot, on a NIC with no link, and on a part the kernel holds back
+    /// as not yet driven on silicon. [`boot`](crate::boot) probes.
     ///
     /// Name: provisional, milestone 198's lane, 2026-10-05 (UTC).
     pub net_stack_ep: u64,

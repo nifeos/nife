@@ -163,8 +163,10 @@ pub(super) fn boot_virtual_io_net_device() -> Option<VirtualIoBootGrant> {
 
 /// **A network stack over an `e1000e`, when this boot has one and no virtio-net** (milestone 198 (a
 /// package manager)'s rung 3a, on milestone 494 (a driver for the network card a PC actually has)'s
-/// driver). `None`, having said why, for an unproven part, a link that was down or a refused
-/// bring-up; `None` silently with no such NIC, which is every `virt` boot.
+/// driver). `None`, having said why, for a part `e1000e_service::PCH_PROVEN_ON_SILICON` holds
+/// back, a link that was down or a refused bring-up; `None` silently with no such NIC, which is
+/// every `virt` boot. With no cable in the port it costs the whole link wait
+/// (`e1000e::LINK_WAIT_MILLISECONDS`), then says `NONE`.
 ///
 /// The kernel builds it, for [`boot_usb_keyboard`]'s reason, and it is the wiring every `e1000e`
 /// gate already runs. See nifeos/record:notes/progenitor-boot.md.
@@ -200,8 +202,8 @@ pub(super) fn boot_e1000e_network() -> Option<e1000e_service::Wiring> {
         Err(NotAtBoot::Unproven { device }) => {
             crate::println!(
                 "  network     : NONE. An e1000e ({}, 8086:{device:04x}) is on the bus and left \
-                 alone: no gate has driven that part yet (milestone 494's bench boot is how one \
-                 does)",
+                 alone: PCH_PROVEN_ON_SILICON is false (milestone 494's bench boot is how it \
+                 turns true)",
                 name(device),
             );
             None
