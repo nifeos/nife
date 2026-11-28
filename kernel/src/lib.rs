@@ -76,6 +76,9 @@ mod non_volatile_memory_express;
 // kernel/src/e1000e.rs. Driven only by the test boot so far, like the NVMe module above.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 mod e1000e;
+// The bench boot's watch on an I219 whose link wait failed; see the module.
+#[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
+mod e1000e_link_watch;
 // The xHCI bring-up policy (milestone 242 (USB host and HID)): find the controller, take it from
 // the firmware, draw the driver's register window and confine its DMA, then hand the whole
 // controller to `usb_keyboard_driver` at EL0. See
