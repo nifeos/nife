@@ -577,9 +577,11 @@ mod tests {
         r.received(30, &frame(1, 0, 0x10, 0, 0));
         let mut text = String::new();
         r.write_summary(&mut text).unwrap();
-        assert!(text.starts_with(
-            "server    : 2 data segments, 1 other frames, 1 acknowledgments sent\n"
-        ));
+        assert!(
+            text.starts_with(
+                "server    : 2 data segments, 1 other frames, 1 acknowledgments sent\n"
+            )
+        );
         for label in [
             "gap       :",
             "per poll  : none",
