@@ -128,6 +128,30 @@ pub fn frame_counts() -> Option<FrameCounts> {
     (bar0 != 0).then(|| read_frame_counts(&Controller(mmu::phys_to_virt(bar0))))
 }
 
+/// The receive control, receive delay timer, receive absolute delay timer, receive descriptor
+/// control, interrupt throttling and interrupt mask registers, in that order, of the controller
+/// [`bring_up`] last brought up; `None` before any bring-up. The network bench prints them, since
+/// each sets when a received frame reaches the ring or raises an interrupt. Reading none of them
+/// has a side effect. The `e1000e` crate does not name the two delay timers; their offsets are
+/// the ones Intel's 82574L and I219 datasheets give.
+///
+/// Name: provisional, minted 2026-11-28 (UTC) by lane/e1000e-rx-latency.
+#[cfg(feature = "network_bench")]
+pub fn receive_timing_registers() -> Option<[u32; 6]> {
+    const RECEIVE_DELAY_TIMER: u64 = 0x2820;
+    const RECEIVE_ABSOLUTE_DELAY_TIMER: u64 = 0x282c;
+    let bar0 = BRING_UP_BAR0.load(Ordering::Acquire);
+    let c = Controller(mmu::phys_to_virt((bar0 != 0).then_some(bar0)?));
+    Some([
+        c.r(registers::RECEIVE_CONTROL_REGISTER),
+        c.r(RECEIVE_DELAY_TIMER),
+        c.r(RECEIVE_ABSOLUTE_DELAY_TIMER),
+        c.r(::e1000e::platform_controller_hub::registers::RECEIVE_DESCRIPTOR_CONTROL_REGISTER),
+        c.r(registers::INTERRUPT_THROTTLING_REGISTER),
+        c.r(registers::INTERRUPT_SET_MASK_REGISTER),
+    ])
+}
+
 fn read_frame_counts(c: &Controller) -> FrameCounts {
     FrameCounts {
         received: c.r(registers::GOOD_PACKETS_RECEIVED_COUNT_REGISTER),

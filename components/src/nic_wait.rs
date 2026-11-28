@@ -109,7 +109,9 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
         e1000e_transport::POLL_MILLISECONDS * 1000,
     ) {
         polled_wait::Next::Look => {
+            let started = receive_trace::microseconds();
             user_mode_runtime::yield_now();
+            receive_trace::yielded(started);
             return;
         }
         polled_wait::Next::SleepMicroseconds(0) => return,
@@ -117,7 +119,9 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
     };
     let ticks =
         moho_abi::timer::counter_ticks_for(0, (microseconds * 1000) as u32, counter_hertz());
+    let started = receive_trace::microseconds();
     if sleep_until(RETRANSMIT, WAKE, counter_ticks().saturating_add(ticks)) < 0 {
         user_mode_runtime::yield_now();
     }
+    receive_trace::slept(started);
 }

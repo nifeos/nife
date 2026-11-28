@@ -162,6 +162,7 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
             reply(to, REPLY_ERROR, 0);
             continue;
         };
+        let mut closed_tcp = false;
         let rep = match operation {
             OPERATION_SEND_TO => udp_sendto(
                 &mut iface,
@@ -182,6 +183,7 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
                 arg as usize,
             ),
             OPERATION_CLOSE => {
+                closed_tcp = table.socks[entry].is_some_and(|s| s.kind == Kind::Tcp);
                 table.close(&mut iface, &mut dev, &mut sockets, entry);
                 REPLY_OK
             }
@@ -198,5 +200,8 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
             _ => REPLY_ERROR,
         };
         reply(to, rep, 0);
+        if closed_tcp {
+            receive_trace::closed();
+        }
     }
 }

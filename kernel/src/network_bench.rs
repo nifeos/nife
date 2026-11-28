@@ -115,6 +115,7 @@ fn measure() -> &'static str {
     );
     let mut frames = Frames::default();
     print_frames("at the lease", &mut frames);
+    print_receive_timing("at the lease");
     let [code, bytes, ticks, ..] = crate::sched::ipc_receive(cli);
     if code != 1 {
         println!("network-bench: transfer  : client stopped with code {code:#x}");
@@ -123,7 +124,9 @@ fn measure() -> &'static str {
     }
     print_transfer(bytes, ticks);
     print_receive(cli, bytes, ticks);
+    print_trace(cli, w.report);
     print_frames("after the transfer", &mut frames);
+    print_receive_timing("after the transfer");
     if bytes == 0 {
         "FAILED: connected and received nothing"
     } else if w.confined_by_iommu {
@@ -179,6 +182,52 @@ fn print_receive(cli: crate::sched::RendezvousId, bytes: u64, ticks: u64) {
         bytes / calls.max(1),
         per(inside),
         per(ticks.saturating_sub(inside)),
+    );
+}
+
+/// The drain's text after its `receive` report, then the server's when the client says it follows,
+/// each line printed as it completes. See `driver_process_contract::network_bench_report`.
+fn print_trace(cli: crate::sched::RendezvousId, server: crate::sched::RendezvousId) {
+    use driver_process_contract::network_bench_report::Report;
+    let mut from = cli;
+    let mut line = [0u8; 256];
+    let mut used = 0;
+    loop {
+        let [a, b, c, ..] = crate::sched::ipc_receive(from);
+        match Report::unpack([a, b, c]) {
+            Report::Text { bytes, length } => {
+                for &byte in &bytes[..length] {
+                    if byte == b'\n' || used == line.len() {
+                        println!(
+                            "network-bench: {}",
+                            core::str::from_utf8(&line[..used]).unwrap_or("(not UTF-8)")
+                        );
+                        used = 0;
+                    }
+                    if byte != b'\n' {
+                        line[used] = byte;
+                        used += 1;
+                    }
+                }
+            }
+            Report::End {
+                server_follows: true,
+            } if from == cli => from = server,
+            Report::End { .. } => return,
+        }
+    }
+}
+
+/// The `timing` line: the registers that decide when the controller writes a received frame back
+/// and raises its interrupt, as the bring-up left them.
+fn print_receive_timing(when: &str) {
+    let Some([control, delay, absolute, descriptor_control, throttle, mask]) =
+        crate::e1000e::receive_timing_registers()
+    else {
+        return;
+    };
+    println!(
+        "network-bench: timing    : {when}, RCTL {control:#010x} RDTR {delay:#x} RADV {absolute:#x} RXDCTL {descriptor_control:#010x} ITR {throttle:#x} IMS {mask:#x}"
     );
 }
 
@@ -265,6 +314,7 @@ mod radon {
         }
         super::print_transfer(bytes, ticks);
         super::print_receive(cli, bytes, ticks);
+        super::print_trace(cli, w.report);
         if bytes == 0 {
             "FAILED: connected and received nothing"
         } else if coherent {
