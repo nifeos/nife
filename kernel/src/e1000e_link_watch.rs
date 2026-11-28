@@ -1,31 +1,22 @@
 //! **The bench boot's link watch on a PCH part**: when `STATUS.LU` has not risen within
-//! [`crate::e1000e::LINK_WAIT_MILLISECONDS`], keep reading both sides of the link for
-//! [`WATCH_MILLISECONDS`] more and say which side never saw it. Only the `network_bench` build runs
-//! it ([`crate::e1000e::bring_up`]).
+//! [`crate::e1000e::LINK_WAIT_MILLISECONDS`], read both sides of the link for [`WATCH_MILLISECONDS`]
+//! more, a line per change in milliseconds since `initialize_hardware` returned, then a verdict:
+//! (a) the wait was too short, (b) the PHY has link and the MAC never hears of it, (c) the PHY
+//! never has link. Only the `network_bench` build runs it ([`crate::e1000e::bring_up`]).
 //!
-//! Each poll reads the MAC's `STATUS` and the PHY's status register twice (its link bit latches
-//! low, so the first read reports a drop since the last poll and the second the link now), and
-//! prints a line only when what it read changed. Times are milliseconds since
-//! `initialize_hardware` returned. The verdict line names which explanation of a missed link
-//! wait the observations fit: (a) the wait was too short, (b) the PHY has link and the MAC never
-//! hears of it, (c) the PHY never has link (cable, switch port, or the PHY's own setup).
-//!
-//! The watch writes no configuration. Its only writes are the ones a PHY read is made of: the
-//! `MDIC` command and taking and releasing `EXTCNF_CTRL.SWFLAG`, which the crate's
-//! [`physical_layer_device::read`] requires so the Management Engine is not on the bus at the same
-//! time. Every PHY register it reads is on page 0 below register 16, so no page-select write
-//! happens either. See nifeos/record:notes/e1000e.md.
+//! It writes no configuration: its only writes are the `MDIC` command and `EXTCNF_CTRL.SWFLAG`,
+//! which [`physical_layer_device::read`] needs to keep the Management Engine off the bus. Every
+//! PHY register it reads is on page 0 below 16, so no page-select write. See
+//! nifeos/record:notes/e1000e.md.
 //!
 //! Name: provisional.
 //!
 //! # BUGS
-//! - The PHY and MAC bit positions below are IEEE 802.3 clause 22's and FreeBSD's, spelled here
-//!   because `partsfoundry/e1000e` keeps them crate-private or does not name them. They belong in
-//!   the crate; until it exports them, this module is the exception to "every offset is the
-//!   crate's" in [`super`].
-//! - The PHY-specific status register of the 82579/I217-family PHY (FreeBSD's `HV_M_STATUS`, page
-//!   0 register 26) is not read: the crate does not name it, and a register above 15 takes a
-//!   page-select write.
+//! - The PHY and MAC bits below are IEEE 802.3 clause 22's and FreeBSD's, spelled here because
+//!   `partsfoundry/e1000e` keeps them private or unnamed; they belong in the crate. This module is
+//!   the exception to [`crate::e1000e`]'s "every offset is the crate's".
+//! - The PHY-specific status register (FreeBSD's `HV_M_STATUS`, page 0 register 26) is not read:
+//!   the crate does not name it, and a register above 15 takes a page-select write.
 
 use ::e1000e::platform_controller_hub::Hardware;
 use ::e1000e::platform_controller_hub::physical_layer_device::{self, Error, SoftwareFlag};
@@ -169,7 +160,8 @@ fn read_phy<const N: usize>(hw: &mut impl Hardware, which: [u32; N]) -> Result<[
 /// bit and its second read's link and autonegotiation-complete bits.
 type Key = (u32, Result<(u16, u16), Error>);
 
-/// One poll: `STATUS`, and register 1 read twice (first, then second), or why the PHY read failed.
+/// One poll: `STATUS`, and register 1 read twice, or why the PHY read failed. Its link bit latches
+/// low, so the first read reports a drop since the last poll and the second the link now.
 #[derive(Debug, Clone, Copy)]
 struct Sample {
     status: u32,
